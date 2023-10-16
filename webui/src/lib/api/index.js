@@ -586,31 +586,34 @@ class Tags {
 
 // uploadWithProgress uses good ol' XMLHttpRequest because progress indication in fetch() is
 //  still not well supported across browsers (see https://stackoverflow.com/questions/35711724/upload-progress-indicators-for-fetch).
-export const uploadWithProgress = (url, file, method = 'POST', onProgress = null) => {
+export const uploadWithProgress = (url, file, method = 'POST', onProgress = null, additionalHeaders = null) => {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.upload.addEventListener('progress', event => {
-            if (onProgress)
-                onProgress((event.loaded / event.total) * 100)
+            if (onProgress) {
+                onProgress((event.loaded / event.total) * 100);
+            }
         });
         xhr.addEventListener('load', () => {
           resolve({
               status: xhr.status,
               body: xhr.responseText,
               contentType: xhr.getResponseHeader('Content-Type'),
-              etag: xhr.getResponseHeader('ETag')
+              etag: xhr.getResponseHeader('ETag'),
+              contentMD5: xhr.getResponseHeader('Content-MD5'),
           })
         });
         xhr.addEventListener('error', () => reject(new Error('Upload Failed')));
         xhr.addEventListener('abort', () => reject(new Error('Upload Aborted')));
         xhr.open(method, url, true);
-        xhr.setRequestHeader('Accept', 'application/json')
-        xhr.setRequestHeader('X-Lakefs-Client', 'lakefs-webui/__buildVersion')
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('X-Lakefs-Client', 'lakefs-webui/__buildVersion');
+        Object.keys(additionalHeaders).map(key => xhr.setRequestHeader(key, additionalHeaders[key]))
         if (url.startsWith(API_ENDPOINT)) {
             // swagger API requires a form with a "content" field
             const data = new FormData();
             data.append('content', file);
-            xhr.send(data)
+            xhr.send(data);
         } else {
             xhr.send(file);
         }
@@ -1003,9 +1006,8 @@ class BranchProtectionRules {
     }
 
     async setRules(repoID, rules, lastKnownChecksum) {
-        let additionalHeaders = {}
+        const additionalHeaders = {}
         if (lastKnownChecksum) {
-            console.log(`setting branch protection rules with checksum ${lastKnownChecksum}`)
             additionalHeaders['If-Match'] = lastKnownChecksum
         }
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/branch_protection`, {

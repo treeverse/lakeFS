@@ -33,7 +33,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
-	graveler "github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -80,7 +80,7 @@ type Migrator interface {
 
 type Controller struct {
 	Config                *config.Config
-	Catalog               catalog.Interface
+	Catalog               *catalog.Catalog
 	Authenticator         auth.Authenticator
 	Auth                  auth.Service
 	BlockAdapter          block.Adapter
@@ -281,24 +281,12 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-
-	token, err := c.Catalog.GetStagingToken(ctx, repository, branch)
-	if errors.Is(err, graveler.ErrNotFound) {
-		writeError(w, r, http.StatusNotFound, err)
-		return
-	}
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
-		return
-	}
-
 	address := c.PathProvider.NewPath()
 	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-
 	err = c.Catalog.SetLinkAddress(ctx, repository, address)
 	if err != nil {
 		c.handleAPIError(ctx, w, r, err)
@@ -307,7 +295,6 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 
 	response := &apigen.StagingLocation{
 		PhysicalAddress: swag.String(qk.Format()),
-		Token:           swag.StringValue(token),
 	}
 
 	if swag.BoolValue(params.Presign) {
@@ -371,17 +358,26 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	writeTime := time.Now()
-	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, swag.StringValue(body.Staging.PhysicalAddress))
+	fullPhysicalAddress := swag.StringValue(body.Staging.PhysicalAddress)
+	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, fullPhysicalAddress)
 
-	// validate physical address
-	err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
-	if c.handleAPIError(ctx, w, r, err) {
+	if addressType == catalog.AddressTypeRelative {
+		// if the address is in the storage namespace, verify it has been saved for linking
+		err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+	}
+
+	// trim spaces and quotes from etag
+	checksum := strings.TrimFunc(body.Checksum, func(r rune) bool {
+		return r == '"' || r == ' '
+	})
+	if checksum == "" {
+		writeError(w, r, http.StatusBadRequest, "checksum is required")
 		return
 	}
 
-	// Because CreateEntry tracks staging on a database with atomic operations,
-	// _ignore_ the staging token here: no harm done even if a race was lost
-	// against a commit.
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
 		Path(params.Path).
@@ -389,7 +385,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		AddressType(addressType).
 		CreationDate(writeTime).
 		Size(body.SizeBytes).
-		Checksum(body.Checksum).
+		Checksum(checksum).
 		ContentType(swag.StringValue(body.ContentType))
 	if body.UserMetadata != nil {
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
@@ -409,7 +405,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		Mtime:           entry.CreationDate.Unix(),
 		Path:            entry.Path,
 		PathType:        entryTypeObject,
-		PhysicalAddress: entry.PhysicalAddress,
+		PhysicalAddress: fullPhysicalAddress,
 		SizeBytes:       swag.Int64(entry.Size),
 	}
 
@@ -1059,6 +1055,7 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 		response.Results = append(response.Results, apigen.User{
 			Id:           u.Username,
 			Email:        u.Email,
+			FriendlyName: u.FriendlyName,
 			CreationDate: u.CreatedAt.Unix(),
 		})
 	}
@@ -1106,7 +1103,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 		}
 		err := inviter.InviteUser(ctx, *parsedEmail)
 		if c.handleAPIError(ctx, w, r, err) {
-			c.Logger.WithError(err).WithField("email", *parsedEmail).Warn("failed creating user")
+			c.Logger.WithError(err).WithField("email", *parsedEmail).Warn("Failed creating user")
 			return
 		}
 		writeResponse(w, r, http.StatusCreated, apigen.User{Id: *parsedEmail})
@@ -1821,11 +1818,7 @@ func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 			Value: blockedActions,
 		}
 	}
-	eTag := params.IfMatch
-	if swag.StringValue(eTag) == "" {
-		eTag = nil
-	}
-	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules, eTag)
+	err := c.Catalog.SetBranchProtectionRules(ctx, repository, rules, params.IfMatch)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3092,7 +3085,7 @@ func (c *Controller) InternalDeleteBranchProtectionRule(w http.ResponseWriter, r
 	for p := range rules.BranchPatternToBlockedActions {
 		if p == body.Pattern {
 			delete(rules.BranchPatternToBlockedActions, p)
-			err = c.Catalog.SetBranchProtectionRules(ctx, repository, rules, swag.String(graveler.BranchProtectionSkipValidationChecksum))
+			err = c.Catalog.SetBranchProtectionRules(ctx, repository, rules, nil)
 			if c.handleAPIError(ctx, w, r, err) {
 				return
 			}
@@ -3146,7 +3139,7 @@ func (c *Controller) InternalCreateBranchProtectionRule(w http.ResponseWriter, r
 		Value: []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT},
 	}
 	rules.BranchPatternToBlockedActions[body.Pattern] = blockedActions
-	err = c.Catalog.SetBranchProtectionRules(ctx, repository, rules, swag.String(graveler.BranchProtectionSkipValidationChecksum))
+	err = c.Catalog.SetBranchProtectionRules(ctx, repository, rules, nil)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -4548,7 +4541,7 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 	return pathRecords
 }
 
-func NewController(cfg *config.Config, catalog catalog.Interface, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, otfDiffService *tablediff.Service) *Controller {
+func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, otfDiffService *tablediff.Service) *Controller {
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,

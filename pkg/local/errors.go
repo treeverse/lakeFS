@@ -3,7 +3,7 @@ package local
 import "errors"
 
 var (
-	ErrConflict         = errors.New("conflict")
-	ErrDownloadingFile  = errors.New("error downloading file")
-	ErrRemoteDiffFailed = errors.New("remote diff failed")
+	ErrConflict        = errors.New("conflict")
+	ErrDownloadingFile = errors.New("error downloading file")
+	ErrRemoteFailure   = errors.New("remote failure")
 )

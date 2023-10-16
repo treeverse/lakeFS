@@ -9,8 +9,24 @@ Name | Type | Description | Notes
 **max_key** | **str** | Last key in the range. | 
 **count** | **int** | Number of records in the range. | 
 **estimated_size** | **int** | Estimated size of the range in bytes | 
-**any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
+## Example
+
+```python
+from lakefs_sdk.models.range_metadata import RangeMetadata
+
+# TODO update the JSON string below
+json = "{}"
+# create an instance of RangeMetadata from a JSON string
+range_metadata_instance = RangeMetadata.from_json(json)
+# print the JSON string representation of the object
+print RangeMetadata.to_json()
+
+# convert the object into a dict
+range_metadata_dict = range_metadata_instance.to_dict()
+# create an instance of RangeMetadata from a dict
+range_metadata_form_dict = range_metadata.from_dict(range_metadata_dict)
+```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
 

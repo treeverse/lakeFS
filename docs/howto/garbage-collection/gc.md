@@ -109,7 +109,6 @@ To run the job, use the following `spark-submit` command (or using your preferre
 <div class="tabs">
   <ul>
     <li><a href="#aws-option">On AWS</a></li>
-    <li><a href="#aws-301-option">On AWS (Hadoop 2 - deprecated)</a></li>
     <li><a href="#azure-option">On Azure</a></li>
     <li><a href="#gcp-option">On GCP</a></li>
   </ul>
@@ -126,20 +125,6 @@ spark-submit --class io.treeverse.gc.GarbageCollection \
   example-repo us-east-1
   ```
   </div>
-  <div markdown="1" id="aws-301-option">
-  ```bash
-spark-submit --class io.treeverse.gc.GarbageCollection \
-  --packages org.apache.hadoop:hadoop-aws:2.7.7 \
-  -c spark.hadoop.lakefs.api.url=https://lakefs.example.com:8000/api/v1  \
-  -c spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
-  -c spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
-  -c spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
-  -c spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
-  http://treeverse-clients-us-east.s3-website-us-east-1.amazonaws.com/lakefs-spark-client-301/0.10.0/lakefs-spark-client-301-assembly-0.10.0.jar \
-  example-repo us-east-1
-  ```
-  </div>
-
   <div markdown="1" id="azure-option">
 
 If you want to access your storage using the account key:

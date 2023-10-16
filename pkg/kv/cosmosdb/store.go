@@ -129,6 +129,17 @@ func getOrCreateDatabase(ctx context.Context, client *azcosmos.Client, params *k
 }
 
 func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient, params *kvparams.CosmosDB) (*azcosmos.ContainerClient, error) {
+	var opts *azcosmos.CreateContainerOptions
+	if params.Throughput > 0 {
+		var throughputProperties azcosmos.ThroughputProperties
+		if params.Autoscale {
+			throughputProperties = azcosmos.NewAutoscaleThroughputProperties(params.Throughput)
+		} else {
+			throughputProperties = azcosmos.NewManualThroughputProperties(params.Throughput)
+		}
+		opts = &azcosmos.CreateContainerOptions{ThroughputProperties: &throughputProperties}
+	}
+
 	_, err := dbClient.CreateContainer(ctx,
 		azcosmos.ContainerProperties{
 			ID: params.Container,
@@ -144,7 +155,7 @@ func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient
 				IncludedPaths: []azcosmos.IncludedPath{{Path: "/*"}},
 				ExcludedPaths: []azcosmos.ExcludedPath{{Path: "/value/?"}},
 			},
-		}, nil)
+		}, opts)
 	if err != nil {
 		if errStatusCode(err) != http.StatusConflict {
 			return nil, fmt.Errorf("creating container: %w", err)

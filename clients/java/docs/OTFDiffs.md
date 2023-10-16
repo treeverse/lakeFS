@@ -5,9 +5,9 @@
 
 ## Properties
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
-**diffs** | [**List&lt;DiffProperties&gt;**](DiffProperties.md) |  |  [optional]
+| Name | Type | Description | Notes |
+|------------ | ------------- | ------------- | -------------|
+|**diffs** | [**List&lt;DiffProperties&gt;**](DiffProperties.md) |  |  [optional] |
 
 
 

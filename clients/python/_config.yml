@@ -1,5 +1,5 @@
 theme: jekyll-theme-slate
-exclude: 
+exclude:
   - vendor
   - Gemfile
   - Gemfile.lock
@@ -7,8 +7,8 @@ exclude:
   - build
   - build-package.sh
   - dist
-  - lakefs_client
-  - lakefs_client.egg-info
+  - lakefs_sdk
+  - lakefs_sdk.egg-info
   - requirements.txt
   - setup.cfg
   - setup.py

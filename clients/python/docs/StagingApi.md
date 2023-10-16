@@ -1,37 +1,37 @@
-# lakefs_client.StagingApi
+# lakefs_sdk.StagingApi
 
-All URIs are relative to *http://localhost/api/v1*
+All URIs are relative to */api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**get_physical_address**](StagingApi.md#get_physical_address) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | get a physical address and a return token to write object to underlying storage
+[**get_physical_address**](StagingApi.md#get_physical_address) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | generate an address to which the client can upload an object
 [**link_physical_address**](StagingApi.md#link_physical_address) | **PUT** /repositories/{repository}/branches/{branch}/staging/backing | associate staging on this physical address with a path
 
 
 # **get_physical_address**
-> StagingLocation get_physical_address(repository, branch, path)
+> StagingLocation get_physical_address(repository, branch, path, presign=presign)
 
-get a physical address and a return token to write object to underlying storage
+generate an address to which the client can upload an object
 
 ### Example
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import staging_api
-from lakefs_client.model.staging_location import StagingLocation
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.staging_location import StagingLocation
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -40,70 +40,62 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
 # Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
+with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = staging_api.StagingApi(api_client)
-    repository = "repository_example" # str | 
-    branch = "branch_example" # str | 
-    path = "path_example" # str | relative to the branch
+    api_instance = lakefs_sdk.StagingApi(api_client)
+    repository = 'repository_example' # str | 
+    branch = 'branch_example' # str | 
+    path = 'path_example' # str | relative to the branch
     presign = True # bool |  (optional)
 
-    # example passing only required values which don't have defaults set
     try:
-        # get a physical address and a return token to write object to underlying storage
-        api_response = api_instance.get_physical_address(repository, branch, path)
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling StagingApi->get_physical_address: %s\n" % e)
-
-    # example passing only required values which don't have defaults set
-    # and optional values
-    try:
-        # get a physical address and a return token to write object to underlying storage
+        # generate an address to which the client can upload an object
         api_response = api_instance.get_physical_address(repository, branch, path, presign=presign)
+        print("The response of StagingApi->get_physical_address:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling StagingApi->get_physical_address: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **repository** | **str**|  |
- **branch** | **str**|  |
- **path** | **str**| relative to the branch |
- **presign** | **bool**|  | [optional]
+ **repository** | **str**|  | 
+ **branch** | **str**|  | 
+ **path** | **str**| relative to the branch | 
+ **presign** | **bool**|  | [optional] 
 
 ### Return type
 
@@ -111,21 +103,20 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | physical address for staging area |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -135,29 +126,28 @@ Name | Type | Description  | Notes
 
 associate staging on this physical address with a path
 
-If the supplied token matches the current staging token, associate the object as the physical address with the supplied path.  Otherwise, if staging has been committed and the token has expired, return a conflict and hint where to place the object to try again.  Caller should copy the object to the new physical address and PUT again with the new staging token.  (No need to back off, this is due to losing the race against a concurrent commit operation.) 
+Link the physical address with the path in lakeFS, creating an uncommitted change. The given address can be one generated by getPhysicalAddress, or an address outside the repository's storage namespace. 
 
 ### Example
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import staging_api
-from lakefs_client.model.staging_location import StagingLocation
-from lakefs_client.model.error import Error
-from lakefs_client.model.object_stats import ObjectStats
-from lakefs_client.model.staging_metadata import StagingMetadata
+import os
+import lakefs_sdk
+from lakefs_sdk.models.object_stats import ObjectStats
+from lakefs_sdk.models.staging_metadata import StagingMetadata
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -166,74 +156,62 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = staging_api.StagingApi(api_client)
-    repository = "repository_example" # str | 
-    branch = "branch_example" # str | 
-    path = "path_example" # str | relative to the branch
-    staging_metadata = StagingMetadata(
-        staging=StagingLocation(
-            physical_address="physical_address_example",
-            token="token_example",
-            presigned_url="presigned_url_example",
-            presigned_url_expiry=1,
-        ),
-        checksum="checksum_example",
-        size_bytes=1,
-        user_metadata={
-            "key": "key_example",
-        },
-        content_type="content_type_example",
-    ) # StagingMetadata | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.StagingApi(api_client)
+    repository = 'repository_example' # str | 
+    branch = 'branch_example' # str | 
+    path = 'path_example' # str | relative to the branch
+    staging_metadata = lakefs_sdk.StagingMetadata() # StagingMetadata | 
+
     try:
         # associate staging on this physical address with a path
         api_response = api_instance.link_physical_address(repository, branch, path, staging_metadata)
+        print("The response of StagingApi->link_physical_address:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling StagingApi->link_physical_address: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **repository** | **str**|  |
- **branch** | **str**|  |
- **path** | **str**| relative to the branch |
- **staging_metadata** | [**StagingMetadata**](StagingMetadata.md)|  |
+ **repository** | **str**|  | 
+ **branch** | **str**|  | 
+ **path** | **str**| relative to the branch | 
+ **staging_metadata** | [**StagingMetadata**](StagingMetadata.md)|  | 
 
 ### Return type
 
@@ -241,16 +219,14 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: application/json
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | object metadata |  -  |
@@ -258,6 +234,7 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Internal Server Error |  -  |
 **409** | conflict with a commit, try here |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

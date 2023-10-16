@@ -1,6 +1,46 @@
 # Changelog
 
+# v0.113.0
+
+:new: What's new:
+
+- Reintroduce recursive flag for lakectl fs download/upload (#6777)
+- Spark client update to use the latest lakefs SDK package (#6742)
+- Enable OpenAPI breaking changes workflow (#6739)
+
+:bug: Bugs fixed:
+
+- Fix lakectl upload with pre-sign for Azure (#6660)
+- Fix lakeFSFS ETag value when using pre-signed mode (#6751)
+- Fix LinkPhysicalAddress trim quotes and spaces from checksum (#6749)
+- Fix lakectl upload using pre-signed use ContentMD5 header for ETag (#6750)
+- Fix LinkPhysicalAddress response with full path (#6748)
+- Fix lakectl download error with bad path traversal blocked (#6775)
+- Fix UI Azure pre-sign upload (#6764)
+- Fix UI upload azure pre-signed URL checksum as hex md5 (#6770)
+- Fix UI copy pre-signed URL not working when pre-sign UI disabled (#6776)
+- Fix delete branch protection prevent commit because invalid state (#6788)
+- Update Go packages with relevant API updates (#6785,#6780)
+
+
+# v0.112.0
+
+:new: What's new:
+- New Java SDK (#6656)
+- New Pyhon SDK (#6562)
+- Export Hooks: Glue Catalog exporter (#6653)
+- Remove recursive flag from lakectl fs Upload and Download (#6681)
+- CosmosDB: Add throughput configuration (#6693)
+- lakectl: block `fs stage` command for objects in the storage namespace (#6696)
+- API: Deprecate stageObject (#6690)
+- API: linkPhysicalAddress do not verify external addresses (#6667)
+- API: GC prepare move operations to internal tag (#6700)
+- API: support response Too many requests 420 (#6711)
+- API: deprecate upload object If-None-Match and Storage Class (#6708)
+- LakeFSFileSystem is now compatible only with lakeFS versions >= 0.108.0 (#6725)
+
 # v0.111.1
+
 :bug: Bugs fixed:
 - Fix email display bug when using external auth provider (#6680)
 - Fix repository creation bug in quickstart mode (#6682)

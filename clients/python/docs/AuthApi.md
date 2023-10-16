@@ -1,6 +1,6 @@
-# lakefs_client.AuthApi
+# lakefs_sdk.AuthApi
 
-All URIs are relative to *http://localhost/api/v1*
+All URIs are relative to */api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
@@ -46,20 +46,20 @@ add group membership
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -68,56 +68,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    group_id = "groupId_example" # str | 
-    user_id = "userId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    group_id = 'group_id_example' # str | 
+    user_id = 'user_id_example' # str | 
+
     try:
         # add group membership
         api_instance.add_group_membership(group_id, user_id)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->add_group_membership: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **group_id** | **str**|  |
- **user_id** | **str**|  |
+ **group_id** | **str**|  | 
+ **user_id** | **str**|  | 
 
 ### Return type
 
@@ -125,21 +125,20 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | membership added successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -153,20 +152,20 @@ attach policy to group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -175,56 +174,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    group_id = "groupId_example" # str | 
-    policy_id = "policyId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    group_id = 'group_id_example' # str | 
+    policy_id = 'policy_id_example' # str | 
+
     try:
         # attach policy to group
         api_instance.attach_policy_to_group(group_id, policy_id)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->attach_policy_to_group: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **group_id** | **str**|  |
- **policy_id** | **str**|  |
+ **group_id** | **str**|  | 
+ **policy_id** | **str**|  | 
 
 ### Return type
 
@@ -232,21 +231,20 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | policy attached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -260,20 +258,20 @@ attach policy to user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -282,56 +280,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    user_id = "userId_example" # str | 
-    policy_id = "policyId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    user_id = 'user_id_example' # str | 
+    policy_id = 'policy_id_example' # str | 
+
     try:
         # attach policy to user
         api_instance.attach_policy_to_user(user_id, policy_id)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->attach_policy_to_user: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **user_id** | **str**|  |
- **policy_id** | **str**|  |
+ **user_id** | **str**|  | 
+ **policy_id** | **str**|  | 
 
 ### Return type
 
@@ -339,21 +337,20 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | policy attached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -367,21 +364,21 @@ create credentials
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.credentials_with_secret import CredentialsWithSecret
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -390,55 +387,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    user_id = "userId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    user_id = 'user_id_example' # str | 
+
     try:
         # create credentials
         api_response = api_instance.create_credentials(user_id)
+        print("The response of AuthApi->create_credentials:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->create_credentials: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **user_id** | **str**|  |
+ **user_id** | **str**|  | 
 
 ### Return type
 
@@ -446,27 +444,26 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | credentials |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **create_group**
-> Group create_group()
+> Group create_group(group_creation=group_creation)
 
 create group
 
@@ -474,22 +471,22 @@ create group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.group_creation import GroupCreation
-from lakefs_client.model.error import Error
-from lakefs_client.model.group import Group
+import os
+import lakefs_sdk
+from lakefs_sdk.models.group import Group
+from lakefs_sdk.models.group_creation import GroupCreation
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -498,58 +495,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    group_creation = GroupCreation(
-        id="id_example",
-    ) # GroupCreation |  (optional)
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
-    # and optional values
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    group_creation = lakefs_sdk.GroupCreation() # GroupCreation |  (optional)
+
     try:
         # create group
         api_response = api_instance.create_group(group_creation=group_creation)
+        print("The response of AuthApi->create_group:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->create_group: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **group_creation** | [**GroupCreation**](GroupCreation.md)|  | [optional]
+ **group_creation** | [**GroupCreation**](GroupCreation.md)|  | [optional] 
 
 ### Return type
 
@@ -557,21 +552,20 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: application/json
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | group |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -585,21 +579,21 @@ create policy
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.policy import Policy
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.policy import Policy
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -608,67 +602,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    policy = Policy(
-        id="id_example",
-        creation_date=1,
-        statement=[
-            Statement(
-                effect="allow",
-                resource="resource_example",
-                action=[
-                    "action_example",
-                ],
-            ),
-        ],
-    ) # Policy | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    policy = lakefs_sdk.Policy() # Policy | 
+
     try:
         # create policy
         api_response = api_instance.create_policy(policy)
+        print("The response of AuthApi->create_policy:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->create_policy: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **policy** | [**Policy**](Policy.md)|  |
+ **policy** | [**Policy**](Policy.md)|  | 
 
 ### Return type
 
@@ -676,28 +659,27 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: application/json
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | policy |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **409** | Resource Conflicts With Target |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **create_user**
-> User create_user()
+> User create_user(user_creation=user_creation)
 
 create user
 
@@ -705,22 +687,22 @@ create user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
-from lakefs_client.model.user import User
-from lakefs_client.model.user_creation import UserCreation
+import os
+import lakefs_sdk
+from lakefs_sdk.models.user import User
+from lakefs_sdk.models.user_creation import UserCreation
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -729,59 +711,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    user_creation = UserCreation(
-        id="id_example",
-        invite_user=True,
-    ) # UserCreation |  (optional)
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
-    # and optional values
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    user_creation = lakefs_sdk.UserCreation() # UserCreation |  (optional)
+
     try:
         # create user
         api_response = api_instance.create_user(user_creation=user_creation)
+        print("The response of AuthApi->create_user:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->create_user: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **user_creation** | [**UserCreation**](UserCreation.md)|  | [optional]
+ **user_creation** | [**UserCreation**](UserCreation.md)|  | [optional] 
 
 ### Return type
 
@@ -789,22 +768,21 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: application/json
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | user |  -  |
 **400** | validation error |  -  |
 **401** | Unauthorized |  -  |
 **409** | Resource Conflicts With Target |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -818,20 +796,20 @@ delete credentials
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -840,56 +818,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    user_id = "userId_example" # str | 
-    access_key_id = "accessKeyId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    user_id = 'user_id_example' # str | 
+    access_key_id = 'access_key_id_example' # str | 
+
     try:
         # delete credentials
         api_instance.delete_credentials(user_id, access_key_id)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->delete_credentials: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **user_id** | **str**|  |
- **access_key_id** | **str**|  |
+ **user_id** | **str**|  | 
+ **access_key_id** | **str**|  | 
 
 ### Return type
 
@@ -897,21 +875,20 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | credentials deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -925,20 +902,20 @@ delete group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -947,54 +924,54 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    group_id = "groupId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    group_id = 'group_id_example' # str | 
+
     try:
         # delete group
         api_instance.delete_group(group_id)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->delete_group: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **group_id** | **str**|  |
+ **group_id** | **str**|  | 
 
 ### Return type
 
@@ -1002,21 +979,20 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | group deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1030,20 +1006,20 @@ delete group membership
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1052,56 +1028,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    group_id = "groupId_example" # str | 
-    user_id = "userId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    group_id = 'group_id_example' # str | 
+    user_id = 'user_id_example' # str | 
+
     try:
         # delete group membership
         api_instance.delete_group_membership(group_id, user_id)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->delete_group_membership: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **group_id** | **str**|  |
- **user_id** | **str**|  |
+ **group_id** | **str**|  | 
+ **user_id** | **str**|  | 
 
 ### Return type
 
@@ -1109,21 +1085,20 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | membership deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1137,20 +1112,20 @@ delete policy
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1159,54 +1134,54 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    policy_id = "policyId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    policy_id = 'policy_id_example' # str | 
+
     try:
         # delete policy
         api_instance.delete_policy(policy_id)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->delete_policy: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **policy_id** | **str**|  |
+ **policy_id** | **str**|  | 
 
 ### Return type
 
@@ -1214,21 +1189,20 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | policy deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1242,20 +1216,20 @@ delete user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1264,54 +1238,54 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    user_id = "userId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    user_id = 'user_id_example' # str | 
+
     try:
         # delete user
         api_instance.delete_user(user_id)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->delete_user: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **user_id** | **str**|  |
+ **user_id** | **str**|  | 
 
 ### Return type
 
@@ -1319,21 +1293,20 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | user deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1347,20 +1320,20 @@ detach policy from group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1369,56 +1342,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    group_id = "groupId_example" # str | 
-    policy_id = "policyId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    group_id = 'group_id_example' # str | 
+    policy_id = 'policy_id_example' # str | 
+
     try:
         # detach policy from group
         api_instance.detach_policy_from_group(group_id, policy_id)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->detach_policy_from_group: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **group_id** | **str**|  |
- **policy_id** | **str**|  |
+ **group_id** | **str**|  | 
+ **policy_id** | **str**|  | 
 
 ### Return type
 
@@ -1426,21 +1399,20 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | policy detached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1454,20 +1426,20 @@ detach policy from user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1476,56 +1448,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    user_id = "userId_example" # str | 
-    policy_id = "policyId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    user_id = 'user_id_example' # str | 
+    policy_id = 'policy_id_example' # str | 
+
     try:
         # detach policy from user
         api_instance.detach_policy_from_user(user_id, policy_id)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->detach_policy_from_user: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **user_id** | **str**|  |
- **policy_id** | **str**|  |
+ **user_id** | **str**|  | 
+ **policy_id** | **str**|  | 
 
 ### Return type
 
@@ -1533,21 +1505,20 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | policy detached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1561,21 +1532,21 @@ get credentials
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.credentials import Credentials
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.credentials import Credentials
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1584,57 +1555,58 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    user_id = "userId_example" # str | 
-    access_key_id = "accessKeyId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    user_id = 'user_id_example' # str | 
+    access_key_id = 'access_key_id_example' # str | 
+
     try:
         # get credentials
         api_response = api_instance.get_credentials(user_id, access_key_id)
+        print("The response of AuthApi->get_credentials:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->get_credentials: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **user_id** | **str**|  |
- **access_key_id** | **str**|  |
+ **user_id** | **str**|  | 
+ **access_key_id** | **str**|  | 
 
 ### Return type
 
@@ -1642,21 +1614,20 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | credentials |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1670,20 +1641,21 @@ get current user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.current_user import CurrentUser
+import os
+import lakefs_sdk
+from lakefs_sdk.models.current_user import CurrentUser
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1692,47 +1664,48 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example, this endpoint has no required or optional parameters
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+
     try:
         # get current user
         api_response = api_instance.get_current_user()
+        print("The response of AuthApi->get_current_user:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->get_current_user: %s\n" % e)
 ```
+
 
 
 ### Parameters
@@ -1744,16 +1717,14 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | user |  -  |
@@ -1769,21 +1740,21 @@ get group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
-from lakefs_client.model.group import Group
+import os
+import lakefs_sdk
+from lakefs_sdk.models.group import Group
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1792,55 +1763,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    group_id = "groupId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    group_id = 'group_id_example' # str | 
+
     try:
         # get group
         api_response = api_instance.get_group(group_id)
+        print("The response of AuthApi->get_group:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->get_group: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **group_id** | **str**|  |
+ **group_id** | **str**|  | 
 
 ### Return type
 
@@ -1848,21 +1820,20 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | group |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1876,22 +1847,21 @@ get ACL of group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.acl import ACL
-from lakefs_client.model.error_no_acl import ErrorNoACL
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.acl import ACL
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -1900,55 +1870,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    group_id = "groupId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    group_id = 'group_id_example' # str | 
+
     try:
         # get ACL of group
         api_response = api_instance.get_group_acl(group_id)
+        print("The response of AuthApi->get_group_acl:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->get_group_acl: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **group_id** | **str**|  |
+ **group_id** | **str**|  | 
 
 ### Return type
 
@@ -1956,21 +1927,20 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | ACL of group |  -  |
 **401** | Unauthorized |  -  |
 **404** | Group not found, or group found but has no ACL |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1984,21 +1954,21 @@ get policy
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.policy import Policy
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.policy import Policy
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2007,55 +1977,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    policy_id = "policyId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    policy_id = 'policy_id_example' # str | 
+
     try:
         # get policy
         api_response = api_instance.get_policy(policy_id)
+        print("The response of AuthApi->get_policy:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->get_policy: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **policy_id** | **str**|  |
+ **policy_id** | **str**|  | 
 
 ### Return type
 
@@ -2063,21 +2034,20 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | policy |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -2091,21 +2061,21 @@ get user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
-from lakefs_client.model.user import User
+import os
+import lakefs_sdk
+from lakefs_sdk.models.user import User
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2114,55 +2084,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    user_id = "userId_example" # str | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    user_id = 'user_id_example' # str | 
+
     try:
         # get user
         api_response = api_instance.get_user(user_id)
+        print("The response of AuthApi->get_user:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->get_user: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **user_id** | **str**|  |
+ **user_id** | **str**|  | 
 
 ### Return type
 
@@ -2170,27 +2141,26 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | user |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **list_group_members**
-> UserList list_group_members(group_id)
+> UserList list_group_members(group_id, prefix=prefix, after=after, amount=amount)
 
 list group members
 
@@ -2198,21 +2168,21 @@ list group members
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.user_list import UserList
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.user_list import UserList
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2221,70 +2191,62 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
 # Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
+with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    group_id = "groupId_example" # str | 
-    prefix = "prefix_example" # str | return items prefixed with this value (optional)
-    after = "after_example" # str | return items after this value (optional)
-    amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    group_id = 'group_id_example' # str | 
+    prefix = 'prefix_example' # str | return items prefixed with this value (optional)
+    after = 'after_example' # str | return items after this value (optional)
+    amount = 100 # int | how many items to return (optional) (default to 100)
 
-    # example passing only required values which don't have defaults set
-    try:
-        # list group members
-        api_response = api_instance.list_group_members(group_id)
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling AuthApi->list_group_members: %s\n" % e)
-
-    # example passing only required values which don't have defaults set
-    # and optional values
     try:
         # list group members
         api_response = api_instance.list_group_members(group_id, prefix=prefix, after=after, amount=amount)
+        print("The response of AuthApi->list_group_members:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->list_group_members: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **group_id** | **str**|  |
- **prefix** | **str**| return items prefixed with this value | [optional]
- **after** | **str**| return items after this value | [optional]
- **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
+ **group_id** | **str**|  | 
+ **prefix** | **str**| return items prefixed with this value | [optional] 
+ **after** | **str**| return items after this value | [optional] 
+ **amount** | **int**| how many items to return | [optional] [default to 100]
 
 ### Return type
 
@@ -2292,26 +2254,25 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | group member list |  -  |
 **401** | Unauthorized |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **list_group_policies**
-> PolicyList list_group_policies(group_id)
+> PolicyList list_group_policies(group_id, prefix=prefix, after=after, amount=amount)
 
 list group policies
 
@@ -2319,21 +2280,21 @@ list group policies
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.policy_list import PolicyList
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.policy_list import PolicyList
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2342,70 +2303,62 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
 # Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
+with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    group_id = "groupId_example" # str | 
-    prefix = "prefix_example" # str | return items prefixed with this value (optional)
-    after = "after_example" # str | return items after this value (optional)
-    amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    group_id = 'group_id_example' # str | 
+    prefix = 'prefix_example' # str | return items prefixed with this value (optional)
+    after = 'after_example' # str | return items after this value (optional)
+    amount = 100 # int | how many items to return (optional) (default to 100)
 
-    # example passing only required values which don't have defaults set
-    try:
-        # list group policies
-        api_response = api_instance.list_group_policies(group_id)
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling AuthApi->list_group_policies: %s\n" % e)
-
-    # example passing only required values which don't have defaults set
-    # and optional values
     try:
         # list group policies
         api_response = api_instance.list_group_policies(group_id, prefix=prefix, after=after, amount=amount)
+        print("The response of AuthApi->list_group_policies:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->list_group_policies: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **group_id** | **str**|  |
- **prefix** | **str**| return items prefixed with this value | [optional]
- **after** | **str**| return items after this value | [optional]
- **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
+ **group_id** | **str**|  | 
+ **prefix** | **str**| return items prefixed with this value | [optional] 
+ **after** | **str**| return items after this value | [optional] 
+ **amount** | **int**| how many items to return | [optional] [default to 100]
 
 ### Return type
 
@@ -2413,27 +2366,26 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | policy list |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **list_groups**
-> GroupList list_groups()
+> GroupList list_groups(prefix=prefix, after=after, amount=amount)
 
 list groups
 
@@ -2441,21 +2393,21 @@ list groups
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.group_list import GroupList
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.group_list import GroupList
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2464,60 +2416,60 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    prefix = "prefix_example" # str | return items prefixed with this value (optional)
-    after = "after_example" # str | return items after this value (optional)
-    amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
-    # and optional values
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    prefix = 'prefix_example' # str | return items prefixed with this value (optional)
+    after = 'after_example' # str | return items after this value (optional)
+    amount = 100 # int | how many items to return (optional) (default to 100)
+
     try:
         # list groups
         api_response = api_instance.list_groups(prefix=prefix, after=after, amount=amount)
+        print("The response of AuthApi->list_groups:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->list_groups: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **prefix** | **str**| return items prefixed with this value | [optional]
- **after** | **str**| return items after this value | [optional]
- **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
+ **prefix** | **str**| return items prefixed with this value | [optional] 
+ **after** | **str**| return items after this value | [optional] 
+ **amount** | **int**| how many items to return | [optional] [default to 100]
 
 ### Return type
 
@@ -2525,26 +2477,25 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | group list |  -  |
 **401** | Unauthorized |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **list_policies**
-> PolicyList list_policies()
+> PolicyList list_policies(prefix=prefix, after=after, amount=amount)
 
 list policies
 
@@ -2552,21 +2503,21 @@ list policies
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.policy_list import PolicyList
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.policy_list import PolicyList
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2575,60 +2526,60 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    prefix = "prefix_example" # str | return items prefixed with this value (optional)
-    after = "after_example" # str | return items after this value (optional)
-    amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
-    # and optional values
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    prefix = 'prefix_example' # str | return items prefixed with this value (optional)
+    after = 'after_example' # str | return items after this value (optional)
+    amount = 100 # int | how many items to return (optional) (default to 100)
+
     try:
         # list policies
         api_response = api_instance.list_policies(prefix=prefix, after=after, amount=amount)
+        print("The response of AuthApi->list_policies:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->list_policies: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **prefix** | **str**| return items prefixed with this value | [optional]
- **after** | **str**| return items after this value | [optional]
- **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
+ **prefix** | **str**| return items prefixed with this value | [optional] 
+ **after** | **str**| return items after this value | [optional] 
+ **amount** | **int**| how many items to return | [optional] [default to 100]
 
 ### Return type
 
@@ -2636,26 +2587,25 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | policy list |  -  |
 **401** | Unauthorized |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **list_user_credentials**
-> CredentialsList list_user_credentials(user_id)
+> CredentialsList list_user_credentials(user_id, prefix=prefix, after=after, amount=amount)
 
 list user credentials
 
@@ -2663,21 +2613,21 @@ list user credentials
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.error import Error
-from lakefs_client.model.credentials_list import CredentialsList
+import os
+import lakefs_sdk
+from lakefs_sdk.models.credentials_list import CredentialsList
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2686,70 +2636,62 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
 # Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
+with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    user_id = "userId_example" # str | 
-    prefix = "prefix_example" # str | return items prefixed with this value (optional)
-    after = "after_example" # str | return items after this value (optional)
-    amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    user_id = 'user_id_example' # str | 
+    prefix = 'prefix_example' # str | return items prefixed with this value (optional)
+    after = 'after_example' # str | return items after this value (optional)
+    amount = 100 # int | how many items to return (optional) (default to 100)
 
-    # example passing only required values which don't have defaults set
-    try:
-        # list user credentials
-        api_response = api_instance.list_user_credentials(user_id)
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling AuthApi->list_user_credentials: %s\n" % e)
-
-    # example passing only required values which don't have defaults set
-    # and optional values
     try:
         # list user credentials
         api_response = api_instance.list_user_credentials(user_id, prefix=prefix, after=after, amount=amount)
+        print("The response of AuthApi->list_user_credentials:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->list_user_credentials: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **user_id** | **str**|  |
- **prefix** | **str**| return items prefixed with this value | [optional]
- **after** | **str**| return items after this value | [optional]
- **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
+ **user_id** | **str**|  | 
+ **prefix** | **str**| return items prefixed with this value | [optional] 
+ **after** | **str**| return items after this value | [optional] 
+ **amount** | **int**| how many items to return | [optional] [default to 100]
 
 ### Return type
 
@@ -2757,27 +2699,26 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | credential list |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **list_user_groups**
-> GroupList list_user_groups(user_id)
+> GroupList list_user_groups(user_id, prefix=prefix, after=after, amount=amount)
 
 list user groups
 
@@ -2785,21 +2726,21 @@ list user groups
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.group_list import GroupList
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.group_list import GroupList
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2808,70 +2749,62 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
 # Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
+with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    user_id = "userId_example" # str | 
-    prefix = "prefix_example" # str | return items prefixed with this value (optional)
-    after = "after_example" # str | return items after this value (optional)
-    amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    user_id = 'user_id_example' # str | 
+    prefix = 'prefix_example' # str | return items prefixed with this value (optional)
+    after = 'after_example' # str | return items after this value (optional)
+    amount = 100 # int | how many items to return (optional) (default to 100)
 
-    # example passing only required values which don't have defaults set
-    try:
-        # list user groups
-        api_response = api_instance.list_user_groups(user_id)
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling AuthApi->list_user_groups: %s\n" % e)
-
-    # example passing only required values which don't have defaults set
-    # and optional values
     try:
         # list user groups
         api_response = api_instance.list_user_groups(user_id, prefix=prefix, after=after, amount=amount)
+        print("The response of AuthApi->list_user_groups:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->list_user_groups: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **user_id** | **str**|  |
- **prefix** | **str**| return items prefixed with this value | [optional]
- **after** | **str**| return items after this value | [optional]
- **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
+ **user_id** | **str**|  | 
+ **prefix** | **str**| return items prefixed with this value | [optional] 
+ **after** | **str**| return items after this value | [optional] 
+ **amount** | **int**| how many items to return | [optional] [default to 100]
 
 ### Return type
 
@@ -2879,27 +2812,26 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | group list |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **list_user_policies**
-> PolicyList list_user_policies(user_id)
+> PolicyList list_user_policies(user_id, prefix=prefix, after=after, amount=amount, effective=effective)
 
 list user policies
 
@@ -2907,21 +2839,21 @@ list user policies
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.policy_list import PolicyList
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.policy_list import PolicyList
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -2930,72 +2862,64 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
 # Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
+with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    user_id = "userId_example" # str | 
-    prefix = "prefix_example" # str | return items prefixed with this value (optional)
-    after = "after_example" # str | return items after this value (optional)
-    amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
-    effective = False # bool | will return all distinct policies attached to the user or any of its groups (optional) if omitted the server will use the default value of False
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    user_id = 'user_id_example' # str | 
+    prefix = 'prefix_example' # str | return items prefixed with this value (optional)
+    after = 'after_example' # str | return items after this value (optional)
+    amount = 100 # int | how many items to return (optional) (default to 100)
+    effective = False # bool | will return all distinct policies attached to the user or any of its groups (optional) (default to False)
 
-    # example passing only required values which don't have defaults set
-    try:
-        # list user policies
-        api_response = api_instance.list_user_policies(user_id)
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling AuthApi->list_user_policies: %s\n" % e)
-
-    # example passing only required values which don't have defaults set
-    # and optional values
     try:
         # list user policies
         api_response = api_instance.list_user_policies(user_id, prefix=prefix, after=after, amount=amount, effective=effective)
+        print("The response of AuthApi->list_user_policies:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->list_user_policies: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **user_id** | **str**|  |
- **prefix** | **str**| return items prefixed with this value | [optional]
- **after** | **str**| return items after this value | [optional]
- **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
- **effective** | **bool**| will return all distinct policies attached to the user or any of its groups | [optional] if omitted the server will use the default value of False
+ **user_id** | **str**|  | 
+ **prefix** | **str**| return items prefixed with this value | [optional] 
+ **after** | **str**| return items after this value | [optional] 
+ **amount** | **int**| how many items to return | [optional] [default to 100]
+ **effective** | **bool**| will return all distinct policies attached to the user or any of its groups | [optional] [default to False]
 
 ### Return type
 
@@ -3003,27 +2927,26 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | policy list |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **list_users**
-> UserList list_users()
+> UserList list_users(prefix=prefix, after=after, amount=amount)
 
 list users
 
@@ -3031,21 +2954,21 @@ list users
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.user_list import UserList
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.user_list import UserList
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -3054,60 +2977,60 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    prefix = "prefix_example" # str | return items prefixed with this value (optional)
-    after = "after_example" # str | return items after this value (optional)
-    amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
-    # and optional values
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    prefix = 'prefix_example' # str | return items prefixed with this value (optional)
+    after = 'after_example' # str | return items after this value (optional)
+    amount = 100 # int | how many items to return (optional) (default to 100)
+
     try:
         # list users
         api_response = api_instance.list_users(prefix=prefix, after=after, amount=amount)
+        print("The response of AuthApi->list_users:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->list_users: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **prefix** | **str**| return items prefixed with this value | [optional]
- **after** | **str**| return items after this value | [optional]
- **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
+ **prefix** | **str**| return items prefixed with this value | [optional] 
+ **after** | **str**| return items after this value | [optional] 
+ **amount** | **int**| how many items to return | [optional] [default to 100]
 
 ### Return type
 
@@ -3115,72 +3038,68 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | user list |  -  |
 **401** | Unauthorized |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **login**
-> AuthenticationToken login()
+> AuthenticationToken login(login_information=login_information)
 
 perform a login
 
 ### Example
 
-
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.authentication_token import AuthenticationToken
-from lakefs_client.model.login_information import LoginInformation
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.authentication_token import AuthenticationToken
+from lakefs_sdk.models.login_information import LoginInformation
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 
 # Enter a context with an instance of the API client
-with lakefs_client.ApiClient() as api_client:
+with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    login_information = LoginInformation(
-        access_key_id="access_key_id_example",
-        secret_access_key="secret_access_key_example",
-    ) # LoginInformation |  (optional)
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    login_information = lakefs_sdk.LoginInformation() # LoginInformation |  (optional)
 
-    # example passing only required values which don't have defaults set
-    # and optional values
     try:
         # perform a login
         api_response = api_instance.login(login_information=login_information)
+        print("The response of AuthApi->login:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->login: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **login_information** | [**LoginInformation**](LoginInformation.md)|  | [optional]
+ **login_information** | [**LoginInformation**](LoginInformation.md)|  | [optional] 
 
 ### Return type
 
@@ -3195,13 +3114,12 @@ No authorization required
  - **Content-Type**: application/json
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | successful login |  * Set-Cookie -  <br>  |
 **401** | Unauthorized |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -3215,21 +3133,21 @@ set ACL of group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.acl import ACL
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.acl import ACL
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -3238,58 +3156,56 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    group_id = "groupId_example" # str | 
-    acl = ACL(
-        permission="permission_example",
-    ) # ACL | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    group_id = 'group_id_example' # str | 
+    acl = lakefs_sdk.ACL() # ACL | 
+
     try:
         # set ACL of group
         api_instance.set_group_acl(group_id, acl)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->set_group_acl: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **group_id** | **str**|  |
- **acl** | [**ACL**](ACL.md)|  |
+ **group_id** | **str**|  | 
+ **acl** | [**ACL**](ACL.md)|  | 
 
 ### Return type
 
@@ -3297,21 +3213,20 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: application/json
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | ACL successfully changed |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -3325,21 +3240,21 @@ update policy
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
-
+* Bearer (JWT) Authentication (jwt_token):
 ```python
 import time
-import lakefs_client
-from lakefs_client.api import auth_api
-from lakefs_client.model.policy import Policy
-from lakefs_client.model.error import Error
+import os
+import lakefs_sdk
+from lakefs_sdk.models.policy import Policy
+from lakefs_sdk.rest import ApiException
 from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
+
+# Defining the host is optional and defaults to /api/v1
 # See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
 )
 
 # The client must configure the authentication and authorization parameters
@@ -3348,69 +3263,58 @@ configuration = lakefs_client.Configuration(
 # satisfies your auth use case.
 
 # Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
 )
 
 # Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
 # Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['oidc_auth'] = 'Bearer'
 
 # Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['saml_auth'] = 'Bearer'
 
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = auth_api.AuthApi(api_client)
-    policy_id = "policyId_example" # str | 
-    policy = Policy(
-        id="id_example",
-        creation_date=1,
-        statement=[
-            Statement(
-                effect="allow",
-                resource="resource_example",
-                action=[
-                    "action_example",
-                ],
-            ),
-        ],
-    ) # Policy | 
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
 
-    # example passing only required values which don't have defaults set
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+    policy_id = 'policy_id_example' # str | 
+    policy = lakefs_sdk.Policy() # Policy | 
+
     try:
         # update policy
         api_response = api_instance.update_policy(policy_id, policy)
+        print("The response of AuthApi->update_policy:\n")
         pprint(api_response)
-    except lakefs_client.ApiException as e:
+    except Exception as e:
         print("Exception when calling AuthApi->update_policy: %s\n" % e)
 ```
+
 
 
 ### Parameters
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **policy_id** | **str**|  |
- **policy** | [**Policy**](Policy.md)|  |
+ **policy_id** | **str**|  | 
+ **policy** | [**Policy**](Policy.md)|  | 
 
 ### Return type
 
@@ -3418,22 +3322,21 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
  - **Content-Type**: application/json
  - **Accept**: application/json
 
-
 ### HTTP response details
-
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | policy |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

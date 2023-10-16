@@ -8,10 +8,26 @@ Name | Type | Description | Notes
 **action** | **str** |  | 
 **hook_id** | **str** |  | 
 **start_time** | **datetime** |  | 
-**status** | **str** |  | 
 **end_time** | **datetime** |  | [optional] 
-**any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
+**status** | **str** |  | 
 
+## Example
+
+```python
+from lakefs_sdk.models.hook_run import HookRun
+
+# TODO update the JSON string below
+json = "{}"
+# create an instance of HookRun from a JSON string
+hook_run_instance = HookRun.from_json(json)
+# print the JSON string representation of the object
+print HookRun.to_json()
+
+# convert the object into a dict
+hook_run_dict = hook_run_instance.to_dict()
+# create an instance of HookRun from a dict
+hook_run_form_dict = hook_run.from_dict(hook_run_dict)
+```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
 

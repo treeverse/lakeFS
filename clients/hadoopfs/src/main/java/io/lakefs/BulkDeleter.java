@@ -9,9 +9,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.model.ObjectErrorList;
-import io.lakefs.clients.api.model.PathList;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.model.ObjectErrorList;
+import io.lakefs.clients.sdk.model.PathList;
 
 class BulkDeleter implements Closeable {
     private static final int defaultBulkSize = 1000;

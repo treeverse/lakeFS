@@ -1,7 +1,7 @@
 local hive = require("lakefs/catalogexport/hive")
 
 -- helper function to slice table array
-function table.slice(tbl, first, last, step)
+local function slice_dense_array(tbl, first, last, step)
     local sliced = {}
 
     for i = first or 1, last or #tbl, step or 1 do
@@ -47,7 +47,7 @@ local lakefs = {
         end
         local end_idx = next_offset + page_size
         return 200, {
-            results = table.slice(all_entries, next_offset, end_idx),
+            results = slice_dense_array(all_entries, next_offset, end_idx),
             pagination = {
                 has_more = end_idx < #all_entries,
                 next_offset = end_idx + 1
@@ -56,14 +56,17 @@ local lakefs = {
     end
 }
 
-local page = 2
 local partitions = {"a", "b"}
 local prefix = "letters/"
-local pager = hive.extract_partition_pager(lakefs, action.repository_id, action.commit_id, prefix, partitions, page)
 
-for part_key, entries in pager do
-    print("# partition: " .. part_key)
-    for _, entry in ipairs(entries) do
-        print("path: " .. entry.path .. " physical: " .. entry.physical_address)
+for page_size = 1, 10 do
+    local pager = hive.extract_partition_pager(lakefs, action.repository_id, action.commit_id, prefix, partitions,
+        page_size)
+    print("result for page_size " .. tostring(page_size))
+    for part_key, entries in pager do
+        print("# partition: " .. part_key)
+        for _, entry in ipairs(entries) do
+            print("path: " .. entry.path .. " physical: " .. entry.physical_address)
+        end
     end
 end

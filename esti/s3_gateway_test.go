@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"io"
 	"math/rand"
+	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -168,6 +171,25 @@ func TestS3ReadObject(t *testing.T) {
 				t.Errorf("Got contents \"%s\" but expected \"%s\"", string(got), contents)
 			}
 		})
+		t.Run("ExistsPreSigned", func(t *testing.T) {
+			// using presigned URL so we can check the headers
+			// We expect the Content-Length header to be set
+			preSignedURL, err := client.Presign(ctx, http.MethodGet, repo, goodPath, time.Second*60, url.Values{})
+			if err != nil {
+				t.Fatalf("client.Presign(%s, %s): %s", repo, goodPath, err)
+			}
+
+			resp, err := http.Get(preSignedURL.String())
+			if err != nil {
+				t.Fatalf("http.Get %s: %s", preSignedURL.String(), err)
+			}
+			defer func() { _ = resp.Body.Close() }()
+			contentLength := resp.Header.Get("Content-Length")
+			if contentLength == "" {
+				t.Errorf("Expected Content-Length header to be set")
+			}
+		})
+
 		t.Run("Doesn't exist", func(t *testing.T) {
 			res, err := client.GetObject(ctx, repo, badPath, minio.GetObjectOptions{})
 			if err != nil {

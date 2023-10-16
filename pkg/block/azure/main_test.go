@@ -52,7 +52,7 @@ func createDNSResolver(domain string) {
 
 func runAzurite(dockerPool *dockertest.Pool) (string, func()) {
 	ctx := context.Background()
-	resource, err := dockerPool.Run("mcr.microsoft.com/azure-storage/azurite", "3.22.0", []string{
+	resource, err := dockerPool.Run("mcr.microsoft.com/azure-storage/azurite", "3.26.0", []string{
 		fmt.Sprintf("AZURITE_ACCOUNTS=%s:%s", accountName, accountKey),
 	})
 	if err != nil {

@@ -23,7 +23,7 @@ This reference uses `.` to denote the nesting of values.
 ## Reference
 
 * `logging.format` `(one of ["json", "text"] : "text")` - Format to output log message in
-* `logging.level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Logging level to output
+* `logging.level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "INFO")` - Logging level to output
 * `logging.audit_log_level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Audit logs level to output.
 
   **Note:** In case you configure this field to be lower than the main logger level, you won't be able to get the audit logs
@@ -65,6 +65,8 @@ This reference uses `.` to denote the nesting of values.
     + `database.cosmosdb.endpoint` `(string : "")` - CosmosDB account endpoint, e.g. `https://<account>.documents.azure.com/`.
     + `database.cosmosdb.database` `(string : "")` - CosmosDB database name.
     + `database.cosmosdb.container` `(string : "")` - CosmosDB container name.
+    + `database.cosmosdb.throughput` `(int32 : )` - CosmosDB container's RU/s. If not set - the default CosmosDB container throughput is used. 
+    + `database.cosmosdb.autoscale` `(bool : false)` - If set, CosmosDB container throughput is autoscaled (See CosmosDB docs for minimum throughput requirement). Otherwise, uses "Manual" mode ([Docs](https://learn.microsoft.com/en-us/azure/cosmos-db/provision-throughput-autoscale)).
   + `database.local` - Configuration section when using `database.type="local"`
     + `database.local.path` `(string : "~/lakefs/metadata")` - Local path on the filesystem to store embedded KV metadata, like branches and uncommitted entries
     + `database.local.sync_writes` `(bool: true)` - Ensure each write is written to the disk. Disable to increase performance

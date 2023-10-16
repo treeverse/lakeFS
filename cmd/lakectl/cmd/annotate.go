@@ -30,7 +30,7 @@ var annotateCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path", args[0])
-		recursive := Must(cmd.Flags().GetBool("recursive"))
+		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		firstParent := Must(cmd.Flags().GetBool("first-parent"))
 		client := getClient()
 		pfx := apigen.PaginationPrefix(*pathURI.Path)
@@ -105,7 +105,6 @@ func splitOnNewLine(str string) string {
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(annotateCmd)
-
-	annotateCmd.Flags().BoolP("recursive", "r", false, "recursively annotate all entries under a given path or prefix")
+	withRecursiveFlag(annotateCmd, "recursively annotate all entries under a given path or prefix")
 	annotateCmd.Flags().Bool("first-parent", false, "follow only the first parent commit upon seeing a merge commit")
 }

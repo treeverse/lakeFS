@@ -29,6 +29,11 @@ const (
 	ClientMtimeMetadataKey = apiutil.LakeFSMetadataPrefix + "client-mtime"
 )
 
+type SyncFlags struct {
+	Parallelism int
+	Presign     bool
+}
+
 func getMtimeFromStats(stats apigen.ObjectStats) (int64, error) {
 	if stats.Metadata == nil {
 		return stats.Mtime, nil
@@ -48,23 +53,21 @@ type Tasks struct {
 }
 
 type SyncManager struct {
-	ctx            context.Context
-	client         *apigen.ClientWithResponses
-	httpClient     *http.Client
-	progressBar    *ProgressPool
-	maxParallelism int
-	presign        bool
-	tasks          Tasks
+	ctx         context.Context
+	client      *apigen.ClientWithResponses
+	httpClient  *http.Client
+	progressBar *ProgressPool
+	flags       SyncFlags
+	tasks       Tasks
 }
 
-func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, maxParallelism int, presign bool) *SyncManager {
+func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, flags SyncFlags) *SyncManager {
 	return &SyncManager{
-		ctx:            ctx,
-		client:         client,
-		httpClient:     http.DefaultClient,
-		progressBar:    NewProgressPool(),
-		maxParallelism: maxParallelism,
-		presign:        presign,
+		ctx:         ctx,
+		client:      client,
+		httpClient:  http.DefaultClient,
+		progressBar: NewProgressPool(),
+		flags:       flags,
 	}
 }
 
@@ -75,7 +78,7 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	defer s.progressBar.Stop()
 
 	wg, ctx := errgroup.WithContext(s.ctx)
-	for i := 0; i < s.maxParallelism; i++ {
+	for i := 0; i < s.flags.Parallelism; i++ {
 		wg.Go(func() error {
 			for change := range changeSet {
 				if err := s.apply(ctx, rootPath, remote, change); err != nil {
@@ -140,7 +143,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	}
 	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
 		Path:         filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
-		Presign:      swag.Bool(s.presign),
+		Presign:      swag.Bool(s.flags.Presign),
 		UserMetadata: swag.Bool(true),
 	})
 	if err != nil {
@@ -184,7 +187,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	} else { // Download file
 		// make request
 		var body io.Reader
-		if s.presign {
+		if s.flags.Presign {
 			resp, err := s.httpClient.Get(statResp.JSON200.PhysicalAddress)
 			if err != nil {
 				return err
@@ -271,7 +274,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		file:   f,
 		reader: b.Reader(f),
 	}
-	if s.presign {
+	if s.flags.Presign {
 		_, err = helpers.ClientUploadPreSign(
 			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
 		return err
