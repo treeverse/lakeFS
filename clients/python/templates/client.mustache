@@ -12,20 +12,37 @@ from {{apiPackage}} import {{classFilename}}
 class _WrappedApiClient(ApiClient):
     """ApiClient that fixes some weirdness"""
 
-    # Wrap files_parameters to work with unnamed "files" (e.g. MemIOs).
     def files_parameters(self, files=None):
-        if files is not None:
-            for (param_name, file_instances) in files.items():
-                i = 0
-                if file_instances is None:
-                    continue
-                for file_instance in file_instances:
-                    if file_instance is not None and not hasattr(file_instance, 'name'):
-                        # Generate a fake name.
-                        i += 1
-                        file_instance.name = f'{param_name}{i}'
-        return super().files_parameters(files)
+        """
+        Transforms input file data into a formatted list and combines it with superclass file parameters.
+        In case file_name is a string we assume that it is a path to the file that needs to be read.
+        In case file_name is bytes we assume that it is a file-like object that we append the information.
+        The parent class will handle the files to read.
+        """
+        if not files:
+            return []
 
+        params = []
+        files_to_read = {}
+        item_index = 0
+
+        for key, value in files.items():
+            if not value:
+                continue
+
+            # Ensure the value is always a list.
+            file_names = value if isinstance(value, list) else [value]
+
+            for file_name in file_names:
+                if type(file_name) is str:
+                    files_to_read[k] = file_name
+                else:
+                    item_index += 1
+                    name = f'{k}{item_index}'
+                    mimetype = 'application/octet-stream'
+                    params.append(tuple([k, tuple([name, value, mimetype])]))
+
+        return super().files_parameters(files_to_read) + params
 
 class LakeFSClient:
     def __init__(self, configuration=None, header_name=None, header_value=None, cookie=None, pool_threads=1):
