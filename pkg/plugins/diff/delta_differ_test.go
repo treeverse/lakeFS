@@ -6,16 +6,14 @@ import (
 	"reflect"
 	"testing"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"google.golang.org/grpc"
 )
 
 func TestDeltaLakeDiffer_Diff(t *testing.T) {
-	changedDiffRes := DiffResponse{
+	changedDiffRes := TableDiffResponse{
 		Entries: []*TableOperation{
 			{
 				Id:        "id1",
@@ -54,7 +52,7 @@ func TestDeltaLakeDiffer_Diff(t *testing.T) {
 	tests := []struct {
 		name         string
 		client       TableDifferClientMock
-		diffResponse *DiffResponse
+		diffResponse *TableDiffResponse
 		want         Response
 		err          error
 		expectedErr  error
@@ -120,7 +118,7 @@ func TestDeltaLakeDiffer_Diff(t *testing.T) {
 }
 
 type testResponse struct {
-	dr *DiffResponse
+	dr *TableDiffResponse
 	e  error
 }
 
@@ -128,18 +126,18 @@ type TableDifferClientMock struct {
 	tr testResponse
 }
 
-func (tdc *TableDifferClientMock) TableDiff(ctx context.Context, in *DiffRequest, opts ...grpc.CallOption) (*DiffResponse, error) {
+func (tdc *TableDifferClientMock) TableDiff(ctx context.Context, in *TableDiffRequest, opts ...grpc.CallOption) (*TableDiffResponse, error) {
 	if tdc.tr.e != nil {
 		return nil, tdc.tr.e
 	}
 	return tdc.tr.dr, nil
 }
 
-func (tdc *TableDifferClientMock) ShowHistory(ctx context.Context, in *HistoryRequest, opts ...grpc.CallOption) (*HistoryResponse, error) {
+func (tdc *TableDifferClientMock) ShowHistory(ctx context.Context, in *ShowHistoryRequest, opts ...grpc.CallOption) (*ShowHistoryResponse, error) {
 	return nil, nil
 }
 
-func (tdc *TableDifferClientMock) loadResponse(dr *DiffResponse, e error) {
+func (tdc *TableDifferClientMock) loadResponse(dr *TableDiffResponse, e error) {
 	tdc.tr = testResponse{
 		dr: dr,
 		e:  e,
@@ -159,7 +157,7 @@ func (ge grpcErr) GRPCStatus() *status.Status {
 	return status.New(ge.code, ge.err)
 }
 
-func validateResults(t *testing.T, resp Response, dr *DiffResponse) {
+func validateResults(t *testing.T, resp Response, dr *TableDiffResponse) {
 	if len(resp.Diffs) != len(dr.GetEntries()) {
 		t.Errorf("Diff() got = %v, returned from inner op = %v", resp, dr)
 	}

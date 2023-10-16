@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/mitchellh/go-homedir"
-
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/plugins"

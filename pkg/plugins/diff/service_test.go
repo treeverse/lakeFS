@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/config"
-
 	"github.com/treeverse/lakefs/pkg/plugins/internal"
 )
 
@@ -48,7 +47,6 @@ func TestService_RunDiff(t *testing.T) {
 			if err != nil && !errors.Is(err, tc.expectedErr) {
 				t.Errorf("'%s' failed: %s", tc.description, err)
 			}
-
 		})
 	}
 }
