@@ -20,7 +20,7 @@ func (d *DeltaLakeDiffer) Diff(ctx context.Context, ps Params) (Response, error)
 	rtp := ps.TablePaths.Right
 	btp := ps.TablePaths.Base
 	s3Creds := ps.S3Creds
-	dr, err := d.client.TableDiff(ctx, &DiffRequest{
+	dr, err := d.client.TableDiff(ctx, &TableDiffRequest{
 		Props: &DiffProps{
 			Repo: ps.Repo,
 			LeftTablePath: &TablePath{
@@ -56,7 +56,7 @@ func (d *DeltaLakeDiffer) Diff(ctx context.Context, ps Params) (Response, error)
 	}, nil
 }
 
-func buildDiffEntries(dr *DiffResponse) []DiffEntry {
+func buildDiffEntries(dr *TableDiffResponse) []DiffEntry {
 	result := make([]DiffEntry, 0, len(dr.GetEntries()))
 	for _, diff := range dr.GetEntries() {
 		result = append(result, DiffEntry{

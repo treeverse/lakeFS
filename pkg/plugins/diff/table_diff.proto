@@ -27,7 +27,7 @@ message GatewayConfig {
   string endpoint = 3;
 }
 
-message DiffRequest {
+message TableDiffRequest {
   DiffProps props = 1;
   GatewayConfig gateway_config = 2;
 }
@@ -45,16 +45,16 @@ enum OperationType {
   UNKNOWN = 3;
 }
 
-message DiffResponse {
+message TableDiffResponse {
   repeated TableOperation entries = 1;
-  DiffType diffType = 2;
+  DiffType diff_type = 2;
 }
 
-message HistoryRequest {
+message ShowHistoryRequest {
   TablePath path = 1;
 }
 
-message HistoryResponse {
+message ShowHistoryResponse {
   repeated TableOperation entries = 1;
 }
 
@@ -76,6 +76,6 @@ message TableOperation {
 }
 
 service TableDiffer {
-  rpc TableDiff(DiffRequest) returns (DiffResponse);
-  rpc ShowHistory(HistoryRequest) returns (HistoryResponse);
+  rpc TableDiff(TableDiffRequest) returns (TableDiffResponse);
+  rpc ShowHistory(ShowHistoryRequest) returns (ShowHistoryResponse);
 }
