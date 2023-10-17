@@ -22,20 +22,35 @@ from lakefs_sdk.api import tags_api
 class _WrappedApiClient(ApiClient):
     """ApiClient that fixes some weirdness"""
 
-    # Wrap files_parameters to work with unnamed "files" (e.g. MemIOs).
     def files_parameters(self, files=None):
-        if files is not None:
-            for (param_name, file_instances) in files.items():
-                i = 0
-                if file_instances is None:
-                    continue
-                for file_instance in file_instances:
-                    if file_instance is not None and not hasattr(file_instance, 'name'):
-                        # Generate a fake name.
-                        i += 1
-                        file_instance.name = f'{param_name}{i}'
-        return super().files_parameters(files)
+        """
+        Transforms input file data into a formatted list to return file_parameters.
+        Assume a string file_name is a path to the file to read.
+        Assume a bytes file_name is a file-like object that we append the information.
+        The parent class will handle the files to read.
+        """
+        if not files:
+            return []
 
+        params = []
+        files_to_read = {}
+
+        for idx, (key, value) in enumerate(files.items()):
+            if not value:
+                continue
+
+            # Ensure the value is always a list.
+            file_names = value if isinstance(value, list) else [value]
+
+            for file_name in file_names:
+                if type(file_name) is str:
+                    files_to_read[key] = file_name
+                else:
+                    name = f'{key}_{idx}'
+                    mimetype = 'application/octet-stream'
+                    params.append(tuple([key, tuple([name, value, mimetype])]))
+
+        return super().files_parameters(files_to_read) + params
 
 class LakeFSClient:
     def __init__(self, configuration=None, header_name=None, header_value=None, cookie=None, pool_threads=1):
