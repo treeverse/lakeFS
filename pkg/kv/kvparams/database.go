@@ -44,6 +44,9 @@ type DynamoDB struct {
 	// Maximal number of items per page during scan operation
 	ScanLimit int64
 
+	// Specifies the maximum number attempts to make on a request.
+	MaxAttempts int
+
 	// The endpoint URL of the DynamoDB endpoint
 	// Can be used to redirect to DynamoDB on AWS, local docker etc.
 	Endpoint string
@@ -108,6 +111,7 @@ func NewConfig(cfg *config.Config) (Config, error) {
 			AwsAccessKeyID:      cfg.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
 			AwsSecretAccessKey:  cfg.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
 			HealthCheckInterval: cfg.Database.DynamoDB.HealthCheckInterval,
+			MaxAttempts:         cfg.Database.DynamoDB.MaxAttempts,
 		}
 	}
 
