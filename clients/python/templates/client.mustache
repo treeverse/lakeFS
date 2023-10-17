@@ -24,9 +24,8 @@ class _WrappedApiClient(ApiClient):
 
         params = []
         files_to_read = {}
-        item_index = 0
 
-        for key, value in files.items():
+        for idx, (key, value) in enumerate(files.items()):
             if not value:
                 continue
 
@@ -37,8 +36,7 @@ class _WrappedApiClient(ApiClient):
                 if type(file_name) is str:
                     files_to_read[key] = file_name
                 else:
-                    item_index += 1
-                    name = f'{key}{item_index}'
+                    name = f'{key}{idx}'
                     mimetype = 'application/octet-stream'
                     params.append(tuple([key, tuple([name, value, mimetype])]))
 

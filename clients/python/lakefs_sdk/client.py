@@ -24,9 +24,9 @@ class _WrappedApiClient(ApiClient):
 
     def files_parameters(self, files=None):
         """
-        Transforms input file data into a formatted list and combines it with superclass file parameters.
-        In case file_name is a string we assume that it is a path to the file that needs to be read.
-        In case file_name is bytes we assume that it is a file-like object that we append the information.
+        Transforms input file data into a formatted list to return file_parameters.
+        Assume a string file_name is a path to the file to read.
+        Assume a bytes file_name is a file-like object that we append the information.
         The parent class will handle the files to read.
         """
         if not files:
@@ -34,9 +34,8 @@ class _WrappedApiClient(ApiClient):
 
         params = []
         files_to_read = {}
-        item_index = 0
 
-        for key, value in files.items():
+        for idx, (key, value) in enumerate(files.items()):
             if not value:
                 continue
 
@@ -47,8 +46,7 @@ class _WrappedApiClient(ApiClient):
                 if type(file_name) is str:
                     files_to_read[key] = file_name
                 else:
-                    item_index += 1
-                    name = f'{key}{item_index}'
+                    name = f'{key}{idx}'
                     mimetype = 'application/octet-stream'
                     params.append(tuple([key, tuple([name, value, mimetype])]))
 
