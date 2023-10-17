@@ -255,12 +255,6 @@ func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPa
 	return checksum, content
 }
 
-func uploadFileRandomDataDirect(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
-	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, true)
-	require.NoError(t, err, "failed to direct upload file", repo, branch, objPath)
-	return checksum, content
-}
-
 func listRepositoryObjects(ctx context.Context, t *testing.T, repository string, ref string) []apigen.ObjectStats {
 	t.Helper()
 	const amount = 5
