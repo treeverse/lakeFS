@@ -2,6 +2,7 @@ package azure
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/url"
@@ -83,12 +84,17 @@ func (a *BlobWalker) Walk(ctx context.Context, storageURI *url.URL, op block.Wal
 			if op.After != "" && *blobInfo.Name <= op.After {
 				continue
 			}
+			// Skip folders
+			if *blobInfo.Properties.ContentLength == 0 && blobInfo.Properties.ContentMD5 == nil {
+				continue
+			}
+
 			a.mark.LastKey = *blobInfo.Name
 			if err := walkFn(block.ObjectStoreEntry{
 				FullKey:     *blobInfo.Name,
 				RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),
 				Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
-				ETag:        string(*blobInfo.Properties.ETag),
+				ETag:        hex.EncodeToString(blobInfo.Properties.ContentMD5),
 				Mtime:       *blobInfo.Properties.LastModified,
 				Size:        *blobInfo.Properties.ContentLength,
 			}); err != nil {
@@ -169,15 +175,16 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 				continue
 			}
 
+			// Skip folders
 			if *blobInfo.Properties.ContentLength == 0 && blobInfo.Properties.ContentMD5 == nil {
-				// Skip folders
 				continue
 			}
+
 			entry := block.ObjectStoreEntry{
 				FullKey:     *blobInfo.Name,
 				RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),
 				Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
-				ETag:        string(*blobInfo.Properties.ETag),
+				ETag:        hex.EncodeToString(blobInfo.Properties.ContentMD5),
 				Mtime:       *blobInfo.Properties.LastModified,
 				Size:        *blobInfo.Properties.ContentLength,
 			}
