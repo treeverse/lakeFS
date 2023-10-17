@@ -169,6 +169,9 @@ type Config struct {
 			// HealthCheckInterval - Interval to run health check for the DynamoDB instance
 			// Won't run when is equal or less than 0.
 			HealthCheckInterval time.Duration `mapstructure:"health_check_interval"`
+
+			// MaxAttempts - Specifies the maximum number attempts to make on a request.
+			MaxAttempts int `mapstructure:"max_attempts"`
 		} `mapstructure:"dynamodb"`
 
 		CosmosDB *struct {

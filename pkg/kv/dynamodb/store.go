@@ -98,6 +98,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		config.WithRetryer(func() aws.Retryer {
 			return retry.NewStandard(func(so *retry.StandardOptions) {
 				so.RateLimiter = &NopRateLimiter{}
+				so.MaxAttempts = params.MaxAttempts
 			})
 		}))
 
