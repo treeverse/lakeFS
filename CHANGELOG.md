@@ -6,7 +6,6 @@
 
 - Reintroduce recursive flag for lakectl fs download/upload (#6777)
 - Spark client update to use the latest lakefs SDK package (#6742)
-- Enable OpenAPI breaking changes workflow (#6739)
 
 :bug: Bugs fixed:
 
@@ -20,7 +19,6 @@
 - Fix UI upload azure pre-signed URL checksum as hex md5 (#6770)
 - Fix UI copy pre-signed URL not working when pre-sign UI disabled (#6776)
 - Fix delete branch protection prevent commit because invalid state (#6788)
-- Update Go packages with relevant API updates (#6785,#6780)
 
 
 # v0.112.0
