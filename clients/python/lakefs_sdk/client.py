@@ -46,7 +46,7 @@ class _WrappedApiClient(ApiClient):
                 if type(file_name) is str:
                     files_to_read[key] = file_name
                 else:
-                    name = f'{key}{idx}'
+                    name = f'{key}_{idx}'
                     mimetype = 'application/octet-stream'
                     params.append(tuple([key, tuple([name, value, mimetype])]))
 
