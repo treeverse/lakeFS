@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -84,17 +86,13 @@ func (a *BlobWalker) Walk(ctx context.Context, storageURI *url.URL, op block.Wal
 			if op.After != "" && *blobInfo.Name <= op.After {
 				continue
 			}
-			// Skip folders
-			if *blobInfo.Properties.ContentLength == 0 && blobInfo.Properties.ContentMD5 == nil {
-				continue
-			}
 
 			a.mark.LastKey = *blobInfo.Name
 			if err := walkFn(block.ObjectStoreEntry{
 				FullKey:     *blobInfo.Name,
 				RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),
 				Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
-				ETag:        hex.EncodeToString(blobInfo.Properties.ContentMD5),
+				ETag:        extractBlobItemEtag(blobInfo),
 				Mtime:       *blobInfo.Properties.LastModified,
 				Size:        *blobInfo.Properties.ContentLength,
 			}); err != nil {
@@ -108,6 +106,18 @@ func (a *BlobWalker) Walk(ctx context.Context, storageURI *url.URL, op block.Wal
 	}
 
 	return nil
+}
+
+// extractBlobItemEtag etag set by content md5 with fallback to use Etag value
+func extractBlobItemEtag(blobItem *container.BlobItem) string {
+	if blobItem.Properties.ContentMD5 != nil {
+		return hex.EncodeToString(blobItem.Properties.ContentMD5)
+	}
+	if blobItem.Properties.ETag != nil {
+		etag := string(*blobItem.Properties.ETag)
+		return strings.TrimFunc(etag, func(r rune) bool { return r == '"' || r == ' ' })
+	}
+	return ""
 }
 
 func (a *BlobWalker) Marker() block.Mark {
@@ -184,7 +194,7 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 				FullKey:     *blobInfo.Name,
 				RelativeKey: strings.TrimPrefix(*blobInfo.Name, basePath),
 				Address:     getAzureBlobURL(containerURL, *blobInfo.Name).String(),
-				ETag:        hex.EncodeToString(blobInfo.Properties.ContentMD5),
+				ETag:        extractBlobItemEtag(blobInfo),
 				Mtime:       *blobInfo.Properties.LastModified,
 				Size:        *blobInfo.Properties.ContentLength,
 			}
