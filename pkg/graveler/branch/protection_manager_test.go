@@ -29,18 +29,21 @@ var repository = &graveler.RepositoryRecord{
 func TestSetAndGet(t *testing.T) {
 	ctx := context.Background()
 	bpm := prepareTest(t, ctx)
-	rules, eTag, err := bpm.GetRules(ctx, repository)
+	_, eTag, err := bpm.GetRules(ctx, repository)
 	require.ErrorIs(t, err, graveler.ErrNotFound)
-	testutil.Must(t, bpm.SetRules(ctx, repository, &graveler.BranchProtectionRules{
+
+	err = bpm.SetRules(ctx, repository, &graveler.BranchProtectionRules{
 		BranchPatternToBlockedActions: map[string]*graveler.BranchProtectionBlockedActions{
-			"main*": {Value: []graveler.BranchProtectionBlockedAction{
-				graveler.BranchProtectionBlockedAction_STAGING_WRITE},
+			"main*": {
+				Value: []graveler.BranchProtectionBlockedAction{
+					graveler.BranchProtectionBlockedAction_STAGING_WRITE,
+				},
 			},
 		},
-	}, eTag))
+	}, eTag)
+	testutil.Must(t, err)
 
-	rules, eTag, err = bpm.GetRules(ctx, repository)
-
+	rules, _, err := bpm.GetRules(ctx, repository)
 	testutil.Must(t, err)
 
 	if len(rules.BranchPatternToBlockedActions) != 1 {
@@ -57,8 +60,10 @@ func TestSetWrongETag(t *testing.T) {
 	bpm := prepareTest(t, ctx)
 	err := bpm.SetRules(ctx, repository, &graveler.BranchProtectionRules{
 		BranchPatternToBlockedActions: map[string]*graveler.BranchProtectionBlockedActions{
-			"main*": {Value: []graveler.BranchProtectionBlockedAction{
-				graveler.BranchProtectionBlockedAction_STAGING_WRITE},
+			"main*": {
+				Value: []graveler.BranchProtectionBlockedAction{
+					graveler.BranchProtectionBlockedAction_STAGING_WRITE,
+				},
 			},
 		},
 	}, swag.String(base64.StdEncoding.EncodeToString([]byte("WRONG_ETAG"))))
