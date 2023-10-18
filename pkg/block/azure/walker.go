@@ -117,13 +117,17 @@ func (a *BlobWalker) Walk(ctx context.Context, storageURI *url.URL, op block.Wal
 	return nil
 }
 
-// isBlobItemFolder returns true if the blob item is a folder
+// isBlobItemFolder returns true if the blob item is a folder.
+// Make sure that metadata is populated before calling this function.
 func isBlobItemFolder(blobItem *container.BlobItem) bool {
 	if blobItem.Metadata == nil {
 		return false
 	}
-	isFolder, found := blobItem.Metadata[DirectoryBlobMetadataKey]
-	if !found || isFolder == nil {
+	if blobItem.Properties.ContentLength == nil || *blobItem.Properties.ContentLength != 0 {
+		return false
+	}
+	isFolder, ok := blobItem.Metadata[DirectoryBlobMetadataKey]
+	if !ok || isFolder == nil {
 		return false
 	}
 	return *isFolder == "true"
