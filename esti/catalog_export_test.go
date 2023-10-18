@@ -295,7 +295,7 @@ func TestAWSCatalogExport(t *testing.T) {
 		SymlinkScriptPath:   "scripts/symlink_exporter.lua",
 		GlueScriptPath:      "scripts/glue_exporter.lua",
 		TableDescriptorPath: "_lakefs_tables/animals.yaml",
-		GlueDB:              "testexport1",
+		GlueDB:              "export-hooks-esti", // TODO(isan) make variable
 		AccessKeyId:         viper.GetString("aws_access_key_id"),
 		SecretAccessKey:     viper.GetString("aws_secret_access_key"),
 		TableSpec: &hiveTableSpec{
