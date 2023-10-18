@@ -125,7 +125,7 @@ func isBlobItemFolder(blobItem *container.BlobItem) bool {
 	if blobItem.Metadata == nil {
 		return false
 	}
-	if blobItem.Properties.ContentLength == nil || *blobItem.Properties.ContentLength != 0 {
+	if blobItem.Properties.ContentLength != nil && *blobItem.Properties.ContentLength != 0 {
 		return false
 	}
 	isFolder, ok := blobItem.Metadata[DirectoryBlobMetadataKey]
