@@ -119,6 +119,8 @@ func (a *BlobWalker) Walk(ctx context.Context, storageURI *url.URL, op block.Wal
 
 // isBlobItemFolder returns true if the blob item is a folder.
 // Make sure that metadata is populated before calling this function.
+// Example: for listing using blob API passing options with `Include: container.ListBlobsInclude{ Metadata: true }`
+// will populate the metadata.
 func isBlobItemFolder(blobItem *container.BlobItem) bool {
 	if blobItem.Metadata == nil {
 		return false
@@ -215,9 +217,6 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 
 			// Skip folders
 			if isBlobItemFolder(blobInfo) {
-				continue
-			}
-			if *blobInfo.Properties.ContentLength == 0 && blobInfo.Properties.ContentMD5 == nil {
 				continue
 			}
 
