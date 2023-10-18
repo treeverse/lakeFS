@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"gopkg.in/yaml.v3"
 )
@@ -282,6 +283,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, table
 }
 
 func TestAWSCatalogExport(t *testing.T) {
+	requireBlockstoreType(t, block.BlockstoreTypeS3)
 	var (
 		glueTable     *types.Table
 		commitID      string
