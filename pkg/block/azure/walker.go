@@ -14,6 +14,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 )
 
+const DirectoryBlobMetadataKey = "hdi_isfolder"
+
 var ErrAzureInvalidURL = errors.New("invalid Azure storage URL")
 
 func NewAzureBlobWalker(svc *service.Client) (*BlobWalker, error) {
@@ -70,6 +72,9 @@ func (a *BlobWalker) Walk(ctx context.Context, storageURI *url.URL, op block.Wal
 	listBlob := containerClient.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
 		Prefix: &prefix,
 		Marker: &op.ContinuationToken,
+		Include: container.ListBlobsInclude{
+			Metadata: true,
+		},
 	})
 
 	for listBlob.More() {
@@ -83,6 +88,11 @@ func (a *BlobWalker) Walk(ctx context.Context, storageURI *url.URL, op block.Wal
 		for _, blobInfo := range resp.Segment.BlobItems {
 			// skipping everything in the page which is before 'After' (without forgetting the possible empty string key!)
 			if op.After != "" && *blobInfo.Name <= op.After {
+				continue
+			}
+
+			// Skip folders
+			if isBlobItemFolder(blobInfo) {
 				continue
 			}
 
@@ -105,6 +115,18 @@ func (a *BlobWalker) Walk(ctx context.Context, storageURI *url.URL, op block.Wal
 	}
 
 	return nil
+}
+
+// isBlobItemFolder returns true if the blob item is a folder
+func isBlobItemFolder(blobItem *container.BlobItem) bool {
+	if blobItem.Metadata == nil {
+		return false
+	}
+	isFolder, found := blobItem.Metadata[DirectoryBlobMetadataKey]
+	if !found || isFolder == nil {
+		return false
+	}
+	return *isFolder == "true"
 }
 
 // extractBlobItemEtag etag set by content md5 with fallback to use Etag value
@@ -147,7 +169,7 @@ type DataLakeWalker struct {
 }
 
 func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
-	// we use bucket as container and prefix as path
+	// we use bucket as container and prefix as a path
 	containerURL, prefix, err := extractAzurePrefix(storageURI)
 	if err != nil {
 		return err
@@ -166,6 +188,9 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 	listBlob := containerClient.NewListBlobsFlatPager(&azblob.ListBlobsFlatOptions{
 		Prefix: &prefix,
 		Marker: &op.ContinuationToken,
+		Include: container.ListBlobsInclude{
+			Metadata: true,
+		},
 	})
 
 	skipCount := 0
@@ -185,6 +210,9 @@ func (a *DataLakeWalker) Walk(ctx context.Context, storageURI *url.URL, op block
 			}
 
 			// Skip folders
+			if isBlobItemFolder(blobInfo) {
+				continue
+			}
 			if *blobInfo.Properties.ContentLength == 0 && blobInfo.Properties.ContentMD5 == nil {
 				continue
 			}
