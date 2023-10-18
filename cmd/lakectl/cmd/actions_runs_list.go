@@ -24,7 +24,7 @@ var actionsRunsListCmd = &cobra.Command{
 		after := Must(cmd.Flags().GetString("after"))
 		commit := Must(cmd.Flags().GetString("commit"))
 		branch := Must(cmd.Flags().GetString("branch"))
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
 		if commit != "" && branch != "" {
 			Die("Can't specify 'commit' and 'branch'", 1)
 		}

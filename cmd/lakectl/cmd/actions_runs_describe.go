@@ -29,7 +29,7 @@ var actionsRunsDescribeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := Must(cmd.Flags().GetInt("amount"))
 		after := Must(cmd.Flags().GetString("after"))
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
 		pagination := apigen.Pagination{HasMore: true}
 
 		fmt.Println("Repository:", u)

@@ -20,7 +20,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("source branch", args[0])
+		u := MustParseBranchURI("Operation requires a valid branch URI with no prefix. e.g. lakefs://<repo>/<branch>", args[0])
 		amount := Must(cmd.Flags().GetInt("amount"))
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
 		prefix := Must(cmd.Flags().GetString("prefix"))

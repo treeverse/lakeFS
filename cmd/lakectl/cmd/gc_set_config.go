@@ -36,7 +36,7 @@ Example configuration file:
 	Example: "lakectl gc set-config <repository uri> -f config.json",
 	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
 		filename := Must(cmd.Flags().GetString(filenameFlagName))
 		var reader io.ReadCloser
 		var err error

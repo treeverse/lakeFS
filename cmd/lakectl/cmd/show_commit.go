@@ -14,7 +14,7 @@ var showCommitCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		commitURI := MustParseRefURI("ref uri", args[0])
+		commitURI := MustParseRefURI("Operation requires a valid reference URI. e.g. lakefs://<repo>/<ref>", args[0])
 		showMetaRangeID := Must(cmd.Flags().GetBool("show-meta-range-id"))
 
 		ctx := cmd.Context()

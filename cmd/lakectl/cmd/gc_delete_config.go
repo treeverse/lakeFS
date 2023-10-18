@@ -15,7 +15,7 @@ var gcDeleteConfigCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(gcDeleteConfigCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
 		client := getClient()
 		resp, err := client.DeleteGCRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)

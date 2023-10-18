@@ -19,7 +19,7 @@ var branchDeleteCmd = &cobra.Command{
 			Die("Delete branch aborted", 1)
 		}
 		client := getClient()
-		u := MustParseBranchURI("branch", args[0])
+		u := MustParseBranchURI("Operation requires a valid branch URI with no prefix. e.g. lakefs://<repo>/<branch>", args[0])
 		fmt.Println("Branch:", u)
 		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)

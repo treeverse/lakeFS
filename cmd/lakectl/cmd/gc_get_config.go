@@ -21,7 +21,7 @@ var gcGetConfigCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(gcSetConfigCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
 		isJSON := Must(cmd.Flags().GetBool(jsonFlagName))
 		client := getClient()
 		resp, err := client.GetGCRulesWithResponse(cmd.Context(), u.Repository)

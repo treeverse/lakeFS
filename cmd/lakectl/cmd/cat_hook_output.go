@@ -17,7 +17,7 @@ var catHookOutputCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(catHookOutputRequiredArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
 		fmt.Println("Repository:", u)
 		runID := args[1]
 		hookRunID := args[2]

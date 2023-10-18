@@ -29,7 +29,7 @@ var annotateCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		pathURI := MustParsePathURI("path", args[0])
+		pathURI := MustParsePathURI("Operation requires a valid path URI. e.g. lakefs://<repo>/<branch>/[prefix]", args[0])
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		firstParent := Must(cmd.Flags().GetBool("first-parent"))
 		client := getClient()

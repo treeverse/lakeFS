@@ -21,7 +21,7 @@ var fsRmCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		concurrency := Must(cmd.Flags().GetInt("concurrency"))
-		pathURI := MustParsePathURI("path", args[0])
+		pathURI := MustParsePathURI("Operation requires a valid path URI. e.g. lakefs://<repo>/<branch>/[prefix]", args[0])
 		client := getClient()
 		if !recursive {
 			// Delete a single object in the main thread

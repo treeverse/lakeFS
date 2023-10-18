@@ -19,7 +19,7 @@ var repoCreateBareCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
 		fmt.Println("Repository:", u)
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {

@@ -16,7 +16,7 @@ var repoDeleteCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
 		fmt.Println("Repository:", u)
 		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete repository: "+u.Repository)
 		if err != nil || !confirmation {

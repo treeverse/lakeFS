@@ -28,7 +28,7 @@ var branchRevertCmd = &cobra.Command{
 		return validRepositoryToComplete(cmd.Context(), toComplete)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseBranchURI("branch", args[0])
+		u := MustParseBranchURI("Operation requires a valid branch URI with no prefix. e.g. lakefs://<repo>/<branch>", args[0])
 		fmt.Println("Branch:", u)
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
 		parentNumber := Must(cmd.Flags().GetInt(ParentNumberFlagName))

@@ -1,2 +1,3 @@
-Invalid branch: not a valid branch uri
+not a valid branch uri
+Operation requires a valid branch URI with no prefix. e.g. lakefs://<repo>/<branch>
 Error executing command.

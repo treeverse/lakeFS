@@ -28,7 +28,7 @@ var branchProtectListCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
@@ -54,7 +54,7 @@ var branchProtectAddCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -78,7 +78,7 @@ var branchProtectDeleteCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		found := false

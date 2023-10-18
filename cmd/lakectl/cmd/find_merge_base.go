@@ -34,8 +34,8 @@ var findMergeBaseCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		sourceRef := MustParseRefURI("source ref", args[0])
-		destinationRef := MustParseRefURI("destination ref", args[1])
+		sourceRef := MustParseRefURI("Operation requires a valid source reference URI. e.g. lakefs://<repo>/<ref>", args[0])
+		destinationRef := MustParseRefURI("Operation requires a valid destination reference URI. e.g. lakefs://<repo>/<ref>", args[1])
 		fmt.Println("Source:", sourceRef)
 		fmt.Println("Destination:", destinationRef)
 		if destinationRef.Repository != sourceRef.Repository {

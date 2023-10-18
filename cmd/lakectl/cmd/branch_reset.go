@@ -21,7 +21,7 @@ var branchResetCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseBranchURI("branch", args[0])
+		u := MustParseBranchURI("Operation requires a valid branch URI with no prefix. e.g. lakefs://<repo>/<branch>", args[0])
 		fmt.Println("Branch:", u)
 		prefix, err := cmd.Flags().GetString("prefix")
 		if err != nil {

@@ -18,7 +18,7 @@ The object location must be outside the repository's storage namespace`,
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := MustParsePathURI("path", args[0])
+		pathURI := MustParsePathURI("Operation requires a valid path URI. e.g. lakefs://<repo>/<branch>/[prefix]", args[0])
 		flags := cmd.Flags()
 		size, _ := flags.GetInt64("size")
 		mtimeSeconds, _ := flags.GetInt64("mtime")

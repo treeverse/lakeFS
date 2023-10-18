@@ -26,8 +26,8 @@ var cherryPick = &cobra.Command{
 		return validRepositoryToComplete(cmd.Context(), toComplete)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		ref := MustParseRefURI("ref", args[0])
-		branch := MustParseBranchURI("branch", args[1])
+		ref := MustParseRefURI("Operation requires a valid reference URI. e.g. lakefs://<repo>/<ref>", args[0])
+		branch := MustParseBranchURI("Operation requires a valid branch URI with no prefix. e.g. lakefs://<repo>/<branch>", args[1])
 		fmt.Println("Branch:", branch)
 
 		if branch.Repository != ref.Repository {
