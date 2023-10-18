@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/glue"
+	"github.com/aws/aws-sdk-go-v2/service/glue/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/spf13/viper"
@@ -23,54 +24,106 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"gopkg.in/yaml.v3"
 )
+
+type schemaField struct {
+	Name       string            `yaml:"name"`
+	Type       string            `yaml:"type"`
+	IsNullable bool              `yaml:"nullable"`
+	Metadata   map[string]string `yaml:"metadata,omitempty"`
+}
+type tableSchema struct {
+	Type   string        `yaml:"type"`
+	Fields []schemaField `yaml:"fields"`
+}
+
+type hiveTableSpec struct {
+	Name             string      `yaml:"name"`
+	Type             string      `yaml:"type"`
+	Path             string      `yaml:"path"`
+	PartitionColumns []string    `yaml:"partition_columns"`
+	Schema           tableSchema `yaml:"schema"`
+}
+
+type exportHooksTestData struct {
+	// Name             string
+	// TablePrefix      string
+	SymlinkScriptPath   string
+	TableDescriptorPath string
+	GlueScriptPath      string
+	Branch              string
+	GlueDB              string
+	AccessKeyId         string
+	SecretAccessKey     string
+	OverrideCommitID    string
+	TableSpec           *hiveTableSpec
+}
+
+const glueExportScript = `
+local aws = require("aws")
+local exporter = require("lakefs/catalogexport/glue_exporter")
+action.commit_id = "{{ .OverrideCommitID }}" -- override commit id to use specific symlink file previously created
+local glue = aws.glue_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_key, args.aws.aws_region)
+exporter.export_glue(glue, args.catalog.db_name, args.table_source, args.catalog.table_input, action, {debug=true})
+`
+
+const glueExporterAction = `
+name: Glue Exporter
+on:
+  post-commit:
+    branches: ["{{ .Branch }}*"]
+hooks:
+  - id: glue_exporter
+    type: lua
+    properties:
+      script_path: "{{ .GlueScriptPath }}"
+      args:
+        aws:
+          aws_access_key_id: "{{ .AccessKeyId }}"
+          aws_secret_access_key: "{{ .SecretAccessKey }}"
+          aws_region: us-east-1
+        table_source: '{{ .TableDescriptorPath }}'
+        catalog:
+          db_name: "{{ .GlueDB }}"
+          table_input:
+            StorageDescriptor: 
+              InputFormat: "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
+              OutputFormat: "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
+              SerdeInfo:
+                SerializationLibrary: "org.apache.hadoop.hive.serde2.OpenCSVSerde"
+                Parameters:
+                  separatorChar: ","
+            Parameters: 
+              classification: "csv"
+              "skip.header.line.count": "1"`
 
 const symlinkExporterScript = `
 local exporter = require("lakefs/catalogexport/symlink_exporter")
 local aws = require("aws")
 local table_path = args.table_source
-local s3 = aws.s3_client(args.s3.aws_access_key_id, args.s3.aws_secret_access_key, args.s3.aws_region)
+local s3 = aws.s3_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_key, args.aws.aws_region)
 exporter.export_s3(s3, table_path, action, {debug=true})
 `
-const animalsTableSpec = `
-name: '{{ .Name }}'
-type: hive
-path: '{{ .TablePrefix }}'
-partition_columns: ['type', 'weight']
-schema:
-  type: struct
-  fields:
-    - name: weight
-      type: integer
-      nullable: false
-    - name: name
-      type: string
-      nullable: false
-      metadata: {}
-    - name: type
-      type: string
-      nullable: true
-      metadata:
-        comment: axolotl, cat, dog, fish etc`
 
 const symlinkExporterAction = `
 name: Symlink S3 Exporter
 on:
   post-commit:
-    branches: ["main*"]
+    branches: ["{{ .Branch }}*"]
 hooks:
   - id: symlink_exporter
     type: lua
     properties:
-      script_path: scripts/symlink_exporter.lua
+      script_path: "{{ .SymlinkScriptPath }}"
       args:
-        s3:
+        aws:
           aws_access_key_id: "{{ .AccessKeyId }}"
           aws_secret_access_key: "{{ .SecretAccessKey }}"
           aws_region: us-east-1
-        table_source: '_lakefs_tables/{{ .Name }}.yaml'`
+        table_source: '{{ .TableDescriptorPath }}'`
 
-func renderTpl(t *testing.T, tplData any, name, content string) string {
+func renderTplAsStr(t *testing.T, tplData any, name, content string) string {
 	t.Helper()
 	tpl, err := template.New(name).Parse(content)
 	require.NoError(t, err, "rendering template")
@@ -91,71 +144,65 @@ func setupGlueClient(ctx context.Context, accessKeyID, secretAccessKey string) (
 	return glue.NewFromConfig(cfg), nil
 }
 
-func uploadAndCommitObjects(t *testing.T, ctx context.Context, repo, branch string, objects map[string]string) {
-	for path, obj := range objects {
-		resp, err := uploadContent(ctx, repo, branch, path, obj)
-		require.NoError(t, err)
-		require.Equal(t, http.StatusCreated, resp.StatusCode())
+func uploadAndCommitObjects(t *testing.T, ctx context.Context, repo, branch string, objectsGroups ...map[string]string) *apigen.Commit {
+	t.Helper()
+	for _, objects := range objectsGroups {
+		for path, obj := range objects {
+			resp, err := uploadContent(ctx, repo, branch, path, obj)
+			require.NoError(t, err)
+			require.Equal(t, http.StatusCreated, resp.StatusCode())
+		}
 	}
+
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Table Data",
 	})
+	require.NoErrorf(t, err, "failed commiting uploaded objects to lakefs://%s/%s", repo, branch)
+	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
+	return commitResp.JSON201
+}
+func genCSVData(cols []string, n int) string {
+	csvBlob := ""
+	// generate header
+	for _, c := range cols {
+		csvBlob += c + ","
+	}
+	csvBlob = strings.TrimSuffix(csvBlob, ",") + "\n"
+	// generate rows
+	for rowNum := 0; rowNum < n; rowNum++ {
+		row := ""
+		for i := range cols {
+			row += fmt.Sprintf("%d,", rowNum+i)
+		}
+		csvBlob += strings.TrimSuffix(row, ",") + "\n"
+	}
+	return csvBlob
 }
 
-func TestSymlinkS3Exporter(t *testing.T) {
-	// setup
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
-	tablePrefix := "tables/animals"
-	tablePaths := map[string]string{
-		// tables/animals
-		tablePrefix + "/type=axolotl/weight=22/a.csv":   "blob",
-		tablePrefix + "/type=axolotl/weight=22/b.csv":   "blob",
-		tablePrefix + "/type=axolotl/weight=22/c.csv":   "blob",
-		tablePrefix + "/type=axolotl/weight=12/a.csv":   "blob",
-		tablePrefix + "/type=axolotl/weight=12/_hidden": "blob",
-		tablePrefix + "/type=cat/weight=33/a.csv":       "blob",
-		tablePrefix + "/type=dog/weight=10/a.csv":       "blob",
-		tablePrefix + "/type=dog/weight=10/b.csv":       "blob",
+func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tablePaths map[string]string, testData *exportHooksTestData) (string, string) {
+	t.Helper()
+
+	tableYaml, err := yaml.Marshal(&testData.TableSpec)
+
+	if err != nil {
+		require.NoError(t, err, "failed marshaling table spec to YAML")
 	}
-	// render actions based on templates
-	actionData := struct {
-		Name                         string
-		TablePrefix                  string
-		AccessKeyId, SecretAccessKey string
-	}{
-		Name:            "animals",
-		TablePrefix:     tablePrefix,
-		AccessKeyId:     viper.GetString("aws_access_key_id"),
-		SecretAccessKey: viper.GetString("aws_secret_access_key"),
-	}
+
 	hookFiles := map[string]string{
-		"scripts/symlink_exporter.lua": symlinkExporterScript,
-		"_lakefs_tables/animals.yaml":  renderTpl(t, actionData, "table", animalsTableSpec),
+		testData.SymlinkScriptPath:   symlinkExporterScript,
+		testData.TableDescriptorPath: renderTplAsStr(t, testData.TableSpec, "table", string(tableYaml)),
 	}
 
-	uploadObjects(t, ctx, repo, mainBranch, hookFiles)
-	// table data
-	uploadObjects(t, ctx, repo, mainBranch, tablePaths)
+	// upload table objects and action script
+	uploadAndCommitObjects(t, ctx, repo, mainBranch, hookFiles, tablePaths)
 
-	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
-		Message: "Table Data",
-	})
-	require.NoError(t, err, "failed to commit table data content")
-	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 	// upload action
-
-	resp, err = uploadContent(ctx, repo, mainBranch, "_lakefs_actions/animals_symlink.yaml", renderTpl(t, actionData, "action", symlinkExporterAction))
-	require.NoError(t, err)
-	require.Equal(t, http.StatusCreated, resp.StatusCode())
-	commitResp, err = client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
-		Message: "Action commit",
+	commit := uploadAndCommitObjects(t, ctx, repo, mainBranch, map[string]string{
+		"_lakefs_actions/animals_symlink.yaml": renderTplAsStr(t, testData, "action", symlinkExporterAction),
 	})
-	require.NoError(t, err, "failed to commit action content")
-	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
 	// wait until actions finish running
-	runs := waitForListRepositoryRunsLen(ctx, t, repo, commitResp.JSON201.Id, 1)
+	runs := waitForListRepositoryRunsLen(ctx, t, repo, commit.Id, 1)
 	require.Equal(t, "completed", runs.Results[0].Status, "action result not finished")
 
 	// list symlink.txt files from blockstore
@@ -165,12 +212,11 @@ func TestSymlinkS3Exporter(t *testing.T) {
 	require.Equal(t, repoResponse.StatusCode(), http.StatusOK, "could not get repository information")
 	namespace := repoResponse.JSON200.StorageNamespace
 
-	//testesti/rand_qtvU6OdSpF/ckei2hn6i1efi86dngh0/testsymlinkexporter/_lakefs/exported/main/9a196e/animals/type=axolotl/weight=22/symlink.tx
-	symlinksPrefix := fmt.Sprintf("%s/_lakefs/exported/%s/%s/animals/", namespace, mainBranch, commitResp.JSON201.Id[:6])
+	symlinksPrefix := fmt.Sprintf("%s/_lakefs/exported/%s/%s/animals/", namespace, mainBranch, commit.Id[:6])
 	storageURL, err := url.Parse(symlinksPrefix)
 	require.NoError(t, err, "failed extracting bucket name")
 
-	s3Client, err := testutil.SetupTestS3Client("https://s3.amazonaws.com", actionData.AccessKeyId, actionData.SecretAccessKey)
+	s3Client, err := testutil.SetupTestS3Client("https://s3.amazonaws.com", testData.AccessKeyId, testData.SecretAccessKey)
 
 	require.NoError(t, err, "failed creating s3 client")
 
@@ -218,9 +264,10 @@ func TestSymlinkS3Exporter(t *testing.T) {
 		}
 	}
 
-	lakeFSObjs, err := client.ListObjectsWithResponse(ctx, repo, commitResp.JSON201.Id, &apigen.ListObjectsParams{
-		Prefix: apiutil.Ptr(apigen.PaginationPrefix(tablePrefix)),
+	lakeFSObjs, err := client.ListObjectsWithResponse(ctx, repo, commit.Id, &apigen.ListObjectsParams{
+		Prefix: apiutil.Ptr(apigen.PaginationPrefix(testData.TableSpec.Path)),
 	})
+
 	require.NoError(t, err, "failed listing lakefs objects")
 
 	// test that all lakeFS entries are exported and represented correctly in symlink files
@@ -233,8 +280,136 @@ func TestSymlinkS3Exporter(t *testing.T) {
 
 	require.Equal(t, lakefsPhysicalAddrs, storagePhysicalAddrs, "mismatch between lakefs exported objects in symlink files")
 
-	// glue test
-	glueClient, err := setupGlueClient(ctx, actionData.AccessKeyId, actionData.SecretAccessKey)
-	require.NoError(t, err, "creating glue client")
-	glueClient.CreateTable()
+	return commit.Id, symlinksPrefix
+}
+
+func TestAWSCatalogExport(t *testing.T) {
+	var (
+		glueTable     *types.Table
+		commitID      string
+		symlinkPrefix string
+	)
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	testData := &exportHooksTestData{
+		Branch:              mainBranch,
+		SymlinkScriptPath:   "scripts/symlink_exporter.lua",
+		GlueScriptPath:      "scripts/glue_exporter.lua",
+		TableDescriptorPath: "_lakefs_tables/animals.yaml",
+		GlueDB:              "testexport1",
+		AccessKeyId:         viper.GetString("aws_access_key_id"),
+		SecretAccessKey:     viper.GetString("aws_secret_access_key"),
+		TableSpec: &hiveTableSpec{
+			Name:             "animals",
+			Type:             "hive",
+			Path:             "tables/animals",
+			PartitionColumns: []string{"type", "weight"},
+			Schema: tableSchema{
+				Type: "struct",
+				Fields: []schemaField{
+					{Name: "type", Type: "string", Metadata: map[string]string{"comment": "axolotl, cat, dog, fish etc"}},
+					{Name: "weight", Type: "integer"},
+					{Name: "name", Type: "string"},
+					{Name: "color", Type: "string", IsNullable: true},
+				},
+			},
+		},
+	}
+
+	t.Run("symlink_exporter", func(t *testing.T) {
+		var columns = []string{"name", "color"}
+		tablePaths := map[string]string{
+			testData.TableSpec.Path + "/type=axolotl/weight=22/a.csv":   genCSVData(columns, 3),
+			testData.TableSpec.Path + "/type=axolotl/weight=22/b.csv":   genCSVData(columns, 3),
+			testData.TableSpec.Path + "/type=axolotl/weight=22/c.csv":   genCSVData(columns, 3),
+			testData.TableSpec.Path + "/type=axolotl/weight=12/a.csv":   genCSVData(columns, 3),
+			testData.TableSpec.Path + "/type=axolotl/weight=12/_hidden": "blob",
+			testData.TableSpec.Path + "/type=cat/weight=33/a.csv":       genCSVData(columns, 3),
+			testData.TableSpec.Path + "/type=dog/weight=10/b.csv":       genCSVData(columns, 3),
+			testData.TableSpec.Path + "/type=dog/weight=10/a.csv":       genCSVData(columns, 3),
+		}
+		commitID, symlinkPrefix = testSymlinkS3Exporter(t, ctx, repo, tablePaths, testData)
+		t.Logf("commit id %s symlinks prefix %s", commitID, symlinkPrefix)
+	})
+	t.Run("glue_exporter", func(t *testing.T) {
+		// override commit ID to make the export table point to the previous commit of data
+		testData.OverrideCommitID = commitID
+		luaScript := renderTplAsStr(t, testData, "export_script", glueExportScript)
+		actionFileBlob := renderTplAsStr(t, testData, "export_action", glueExporterAction)
+
+		headCommit := uploadAndCommitObjects(t, ctx, repo, mainBranch, map[string]string{
+			testData.GlueScriptPath:            luaScript,
+			"_lakefs_actions/glue_export.yaml": actionFileBlob,
+		})
+
+		// wait for action to finish
+		runs := waitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
+		require.Equal(t, "completed", runs.Results[0].Status, "action result not finished")
+
+		// create glue client
+
+		glueClient, err := setupGlueClient(ctx, testData.AccessKeyId, testData.SecretAccessKey)
+		require.NoError(t, err, "creating glue client")
+
+		// wait until table is ready
+		tableName := fmt.Sprintf("%s_%s_%s_%s", testData.TableSpec.Name, repo, mainBranch, commitID[:6])
+		bo := backoff.NewExponentialBackOff()
+		bo.MaxInterval = 5 * time.Second
+		bo.MaxElapsedTime = 30 * time.Second
+		getGlueTable := func() error {
+			t.Logf("[retry] get table %s ", tableName)
+			resp, err := glueClient.GetTable(ctx, &glue.GetTableInput{
+				DatabaseName: aws.String(testData.GlueDB),
+				Name:         aws.String(tableName),
+			})
+			if err != nil {
+				return fmt.Errorf("glue getTable %s/%s: %w", testData.GlueDB, tableName, err)
+			}
+			glueTable = resp.Table
+			return nil
+		}
+		err = backoff.Retry(getGlueTable, bo)
+		require.NoError(t, err, "glue table not created in time")
+
+		// delete table when the test is over
+
+		t.Cleanup(func() {
+			_, err = glueClient.DeleteTable(ctx, &glue.DeleteTableInput{
+				DatabaseName: aws.String(testData.GlueDB),
+				Name:         aws.String(tableName),
+			})
+			if err != nil {
+				t.Errorf("failed cleanup of glue table %s/%s ", testData.GlueDB, tableName)
+			}
+		})
+
+		// verify table partitions
+		require.Equal(t, len(testData.TableSpec.PartitionColumns), len(glueTable.PartitionKeys), "partitions created in glue doesnt match in size")
+		partitionsSet := map[string]bool{}
+		for _, partCol := range glueTable.PartitionKeys {
+			name := aws.ToString(partCol.Name)
+			require.Contains(t, testData.TableSpec.PartitionColumns, name, "glue partition not in table spec")
+			partitionsSet[name] = true
+		}
+
+		// verify table columns
+		glueCols := map[string]bool{}
+		for _, col := range glueTable.StorageDescriptor.Columns {
+			glueCols[aws.ToString(col.Name)] = true
+		}
+		for _, expCol := range testData.TableSpec.Schema.Fields {
+			// if not a partition, regular column compare
+			if !partitionsSet[expCol.Name] {
+				require.Contains(t, glueCols, expCol.Name, "column not found in glue table schema")
+			}
+		}
+
+		// verify table storage properties
+
+		require.Equal(t, "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat", aws.ToString(glueTable.StorageDescriptor.InputFormat), "wrong table input format")
+		require.Equal(t, "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat", aws.ToString(glueTable.StorageDescriptor.OutputFormat), "wrong table output format")
+		require.Equal(t, symlinkPrefix, aws.ToString(glueTable.StorageDescriptor.Location)+"/", "wrong s3 location in glue table")
+		require.Equal(t, "matilda", *glueTable.Name, "not matila yo")
+	})
 }
