@@ -282,6 +282,10 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, table
 	return commit.Id, symlinksPrefix
 }
 
+// TestAWSCatalogExport will verify that symlinks are exported correcrtly and then in a sequential test verify that the glue exporter works well.
+// The setup in this test includes:
+// Symlinks export: lua script, table in _lakefs_tables, action file, mock table data in CSV form
+// Glue export: lua script, table in _lakefs_tables, action file
 func TestAWSCatalogExport(t *testing.T) {
 	requireBlockstoreType(t, block.BlockstoreTypeS3)
 	var (
@@ -297,7 +301,7 @@ func TestAWSCatalogExport(t *testing.T) {
 		SymlinkScriptPath:   "scripts/symlink_exporter.lua",
 		GlueScriptPath:      "scripts/glue_exporter.lua",
 		TableDescriptorPath: "_lakefs_tables/animals.yaml",
-		GlueDB:              "export-hooks-esti", // TODO(isan) make variable
+		GlueDB:              viper.GetString("glue_export_hooks_database"),
 		AccessKeyId:         viper.GetString("aws_access_key_id"),
 		SecretAccessKey:     viper.GetString("aws_secret_access_key"),
 		TableSpec: &hiveTableSpec{
