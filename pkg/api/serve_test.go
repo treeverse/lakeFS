@@ -136,7 +136,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	}
 	viper.Set("database.type", mem.DriverName)
 	// Use 'internal' mode in order to have access to policies
-	viper.Set("auth.ui_config.rbac", "internal")
+	viper.Set("auth.ui_config.rbac", config.AuthRBACInternal)
 
 	collector := &memCollector{}
 

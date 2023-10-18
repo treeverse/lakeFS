@@ -213,6 +213,7 @@ var runCmd = &cobra.Command{
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create remote authenticator")
 			}
+
 			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
 		}
 

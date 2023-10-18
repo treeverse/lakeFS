@@ -517,6 +517,7 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 const (
 	AuthRBACSimplified = "simplified"
 	AuthRBACExternal   = "external"
+	AuthRBACInternal   = "internal"
 )
 
 func (c *Config) IsAuthUISimplified() bool {
