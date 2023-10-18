@@ -47,8 +47,6 @@ type hiveTableSpec struct {
 }
 
 type exportHooksTestData struct {
-	// Name             string
-	// TablePrefix      string
 	SymlinkScriptPath   string
 	TableDescriptorPath string
 	GlueScriptPath      string
@@ -203,7 +201,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, table
 
 	// wait until actions finish running
 	runs := waitForListRepositoryRunsLen(ctx, t, repo, commit.Id, 1)
-	require.Equal(t, "completed", runs.Results[0].Status, "action result not finished")
+	require.Equal(t, "completed", runs.Results[0].Status, "symlink action result not finished")
 
 	// list symlink.txt files from blockstore
 
@@ -345,7 +343,7 @@ func TestAWSCatalogExport(t *testing.T) {
 
 		// wait for action to finish
 		runs := waitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
-		require.Equal(t, "completed", runs.Results[0].Status, "action result not finished")
+		require.Equal(t, "completed", runs.Results[0].Status, "glue action result not finished")
 
 		// create glue client
 
