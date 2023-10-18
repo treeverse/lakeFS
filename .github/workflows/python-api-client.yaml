@@ -13,7 +13,8 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+
       # Extract the version to 'version' based on workflow_dispatch or triggered tag in the published event
     - name: Extract version
       shell: bash
@@ -33,7 +34,7 @@ jobs:
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
-        packages_dir: clients/python/dist/
+        packages-dir: clients/python/dist/
         verbose: true
 
     - name: Extract docs version
@@ -71,11 +72,12 @@ jobs:
         destination_folder: /
         user_email: 'support@treeverse.io'
         user_name: 'python-docs-action'
+
   deploy-legacy:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       # Extract the version to 'version' based on workflow_dispatch or triggered tag in the published event
     - name: Extract version
       shell: bash
@@ -89,12 +91,13 @@ jobs:
 
     - name: Python build and make legacy package
       run: make package-python-client PACKAGE_VERSION=${{ steps.version.outputs.tag }}
+
     - name: Python legacy SDK legacy publish package
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
-        packages_dir: clients/python-legacy/dist/
+        packages-dir: clients/python-legacy/dist/
         verbose: true
 
     - name: Extract docs version
