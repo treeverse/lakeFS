@@ -379,13 +379,13 @@ _lakefs/
 Export Symlink files that represent a table to S3 location.
 
 
-`s3_client`: Configured client.
-`table_src_path(string)`: Path to the table spec YAML file in `_lakefs_tables` (i.e _lakefs_tables/my_table.yaml).
-`action_info(table)`: The global action object.
-`options(table)`:
-- `debug(boolean)`: Print extra info.
-- `export_base_uri(string)`: Override the prefix in S3 i.e `s3://other-bucket/path/`.
-- `writer(function(bucket, key, data))`: If passed then will not use s3 client, helpful for debug.
+- `s3_client`: Configured client.
+- `table_src_path(string)`: Path to the table spec YAML file in `_lakefs_tables` (i.e _lakefs_tables/my_table.yaml).
+- `action_info(table)`: The global action object.
+- `options(table)`:
+  - `debug(boolean)`: Print extra info.
+  - `export_base_uri(string)`: Override the prefix in S3 i.e `s3://other-bucket/path/`.
+  - `writer(function(bucket, key, data))`: If passed then will not use s3 client, helpful for debug.
 
 Example:
 
@@ -423,7 +423,7 @@ by default this function will configure table location and schema.
 `options(Table)`:
 - `table_name(string)`: Override default glue table name
 - `debug(boolean`
-- `export_base_uri(string)``: Override the default prefix in S3 for symlink location i.e s3://other-bucket/path/
+- `export_base_uri(string)`: Override the default prefix in S3 for symlink location i.e s3://other-bucket/path/
 
 When creating a glue table, the final table input will consist of the `create_table_input` input parameter and lakeFS computed defaults that will override it:
 
