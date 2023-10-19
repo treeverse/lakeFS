@@ -414,10 +414,12 @@ A Package for automating the export process from lakeFS stored tables into Glue 
 Represent lakeFS table in Glue Catalog. 
 This function assumes there is a symlink export already created.
 
-`glue`: AWS glue client
-`db(string)`: glue database name
-`table_src_path(string)`: path to table spec (i.e _lakefs_tables/my_table.yaml)
-`create_table_input(Table)`: Input equal mapping to [table_input](https://docs.aws.amazon.com/glue/latest/webapAPI_CreateTable.html#API_CreateTable_RequestSyntax) in AWS, the same as we use for `glue.create_table`.
+Parameters:
+
+- `glue`: AWS glue client
+- `db(string)`: glue database name
+- `table_src_path(string)`: path to table spec (i.e _lakefs_tables/my_table.yaml)
+- `create_table_input(Table)`: Input equal mapping to [table_input](https://docs.aws.amazon.com/glue/latest/webapAPI_CreateTable.html#API_CreateTable_RequestSyntax) in AWS, the same as we use for `glue.create_table`.
 should contain inputs describing the data format (i.e InputFormat, OutputFormat, SerdeInfo) since the exporter is agnostic to this. 
 by default this function will configure table location and schema.
 - `action_info(Table)`: the global action object.
