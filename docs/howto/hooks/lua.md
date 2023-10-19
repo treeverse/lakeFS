@@ -412,7 +412,8 @@ A Package for automating the export process from lakeFS stored tables into Glue 
 ### `lakefs/catalogexport/glue_exporter.export_glue(glue, db, table_src_path, create_table_input, action_info, options)`
 
 Represent lakeFS table in Glue Catalog. 
-This function assumes there is a symlink export already created.
+This function will create a table in Glue based on configuration. 
+It assumes that there is a symlink location that is already created and only configures it by default for the same commit.
 
 Parameters:
 
@@ -460,6 +461,8 @@ exporter.export_glue(glue, "my-db", "_lakefs_tables/animals.yaml", table_input, 
 ### `lakefs/catalogexport/glue_exporter.get_full_table_name(descriptor, action_info)`
 
 Generate glue table name.
+
+Parameters:
 
 - `descriptor(Table)`: Object from (i.e _lakefs_tables/my_table.yaml).
 - `action_info(Table)`: The global action object.
