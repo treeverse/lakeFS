@@ -343,7 +343,7 @@ Hive format partition iterator each result set is a collection of files under th
 
 Example: 
 
-```
+```lua
 local lakefs = require("lakefs")
 local pager = hive.extract_partition_pager(lakefs, repo_id, commit_id, prefix, partitions, 10)
 for part_key, entries in pager do
@@ -406,7 +406,7 @@ The `ref` is deducted from the action event in `action_info` (i.e branch name).
 
 ### `lakefs/catalogexport/glue_exporter`
 
-asdasdasd
+A Package for automating the export process from lakeFS stored tables into Glue catalog.
 
 ### `lakefs/catalogexport/glue_exporter.export_glue(glue, db, table_src_path, create_table_input, action_info, options)`
 
@@ -459,7 +459,7 @@ exporter.export_glue(glue, "my-db", "_lakefs_tables/animals.yaml", table_input, 
 Generate glue table name.
 
 - `descriptor(Table)`: Object from (i.e _lakefs_tables/my_table.yaml).
-`action_info(Table)`: The global action object.
+- `action_info(Table)`: The global action object.
 
 ### `path/parse(path_string)`
 
