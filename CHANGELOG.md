@@ -1,5 +1,17 @@
 # Changelog
 
+# v1.0.0
+
+:new: What's new:
+
+- First major release
+
+:bug: Bugs fixed:
+
+- Increased the maximum attempts for DynamoDB with configuration support (#6804)
+- Amended Azure import to utilize content MD5 instead of entry Etag (#6802)
+- Corrected issue where the UI upload failed due to conversion of undefined or null values (#6818)
+
 # v0.113.0
 
 :new: What's new:
