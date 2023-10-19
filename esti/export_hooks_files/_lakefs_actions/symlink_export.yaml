@@ -1,0 +1,15 @@
+name: Symlink S3 Exporter
+on:
+  post-commit:
+    branches: ["{{ .Branch }}*"]
+hooks:
+  - id: symlink_exporter
+    type: lua
+    properties:
+      script_path: "{{ .SymlinkScriptPath }}"
+      args:
+        aws:
+          aws_access_key_id: "{{ .AccessKeyId }}"
+          aws_secret_access_key: "{{ .SecretAccessKey }}"
+          aws_region: "{{ .Region }}"
+        table_source: '{{ .TableDescriptorPath }}'

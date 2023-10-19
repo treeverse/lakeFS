@@ -54,10 +54,11 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to get CWD")
 	}
+	viper.SetDefault("glue_export_hooks_database", "export-hooks-esti")
+	viper.SetDefault("glue_export_region", "us-east-1")
 	viper.SetDefault("lakectl_dir", filepath.Join(currDir, ".."))
 	viper.SetDefault("azure_storage_account", "")
 	viper.SetDefault("azure_storage_access_key", "")
-
 	err = viper.ReadInConfig()
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
 		logger.WithError(err).Fatal("Failed to read configuration")
