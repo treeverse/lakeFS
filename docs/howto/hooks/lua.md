@@ -323,6 +323,56 @@ Returns 2 values:
 
 Returns an object-wise diff of uncommitted changes on `branch_id`.
 
+### `lakefs/catalogexport/symlink_exporter`
+
+Writes metadata for a table using Hive's [SymlinkTextInputFormat](https://svn.apache.org/repos/infra/websites/production/hive/content/javadocs/r2.1.1/api/org/apache/hadoop/hive/ql/io/SymlinkTextInputFormat.html).
+Currently only `S3` is supported.
+
+The default export paths per commit:
+
+```
+${storageNamespace}
+_lakefs/
+    exported/
+        ${ref}/
+            ${commitId}/
+                ${tableName}/
+                    p1=v1/symlink.txt
+                    p1=v2/symlink.txt
+                    p1=v3/symlink.txt
+                    ...
+```
+
+### `lakefs/catalogexport/symlink_exporter.export_s3(s3_client, table_src_path, action_info [, options])`
+
+Export Symlink files that represent a table to S3 location.
+
+
+`s3_client`: Configured client.
+`table_src_path(string)`: Path to the table spec YAML file in `_lakefs_tables` (i.e _lakefs_tables/my_table.yaml).
+`action_info(table)`: The global action object.
+`options(table)`:
+- `debug(boolean)`: Print extra info.
+- `export_base_uri(string)``: Override the prefix in S3 i.e `s3://other-bucket/path/`.
+- `writer(function(bucket, key, data))`: If passed then will not use s3 client, helpful for debug.
+
+Example:
+
+```lua
+local exporter = require("lakefs/catalogexport/symlink_exporter")
+local aws = require("aws")
+-- args are user inputs from a lakeFS action.
+local s3 = aws.s3_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_key, args.aws.aws_region)
+exporter.export_s3(s3, args.table_descriptor_path, action, {debug=true})
+```
+
+### `lakefs/catalogexport/symlink_exporter.get_storage_uri_prefix(storage_ns, commit_id, action_info)`
+
+Generate prefix for Symlink file(s) structure that represents a `ref` and a `commit` in lakeFS.
+The output pattern `${storage_ns}_lakefs/exported/${ref}/${commit_id}/`.
+The `ref` is deducted from the action event in `action_info` (i.e branch name).
+
+
 ### `path/parse(path_string)`
 
 Returns a table for the given path string with the following structure:
