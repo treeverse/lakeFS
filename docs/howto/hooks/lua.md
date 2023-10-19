@@ -323,6 +323,37 @@ Returns 2 values:
 
 Returns an object-wise diff of uncommitted changes on `branch_id`.
 
+### `lakefs/catalogexport/table_extractor`
+
+Utility package to parse `_lakefs_tables/` descriptors.
+
+### `lakefs/catalogexport/table_extractor.list_table_descriptor_entries(client, repo_id, commit_id)`
+
+List all YAML files under `_lakefs_tables/*` and return a list of type `[{physical_address, path}]`, ignores hidden files. 
+The `client` is `lakefs` client.
+
+### `lakefs/catalogexport/table_extractor.get_table_descriptor(client, repo_id, commit_id, logical_path)`
+
+Read a table descriptor and parse YAML object. Will set `partition_columns` to `{}` if no partitions are defined.
+The `client` is `lakefs` client.
+
+### `lakefs/catalogexport/hive.extract_partition_pager(client, repo_id, commit_id, base_path, partition_cols, page_size)`
+
+Hive format partition iterator each result set is a collection of files under the same partition in lakeFS.
+
+Example: 
+
+```
+local lakefs = require("lakefs")
+local pager = hive.extract_partition_pager(lakefs, repo_id, commit_id, prefix, partitions, 10)
+for part_key, entries in pager do
+    print("partition: " .. part_key)
+    for _, entry in ipairs(entries) do
+        print("path: " .. entry.path .. " physical: " .. entry.physical_address)
+    end
+end
+```
+
 ### `lakefs/catalogexport/symlink_exporter`
 
 Writes metadata for a table using Hive's [SymlinkTextInputFormat](https://svn.apache.org/repos/infra/websites/production/hive/content/javadocs/r2.1.1/api/org/apache/hadoop/hive/ql/io/SymlinkTextInputFormat.html).
@@ -353,7 +384,7 @@ Export Symlink files that represent a table to S3 location.
 `action_info(table)`: The global action object.
 `options(table)`:
 - `debug(boolean)`: Print extra info.
-- `export_base_uri(string)``: Override the prefix in S3 i.e `s3://other-bucket/path/`.
+- `export_base_uri(string)`: Override the prefix in S3 i.e `s3://other-bucket/path/`.
 - `writer(function(bucket, key, data))`: If passed then will not use s3 client, helpful for debug.
 
 Example:
@@ -372,6 +403,63 @@ Generate prefix for Symlink file(s) structure that represents a `ref` and a `com
 The output pattern `${storage_ns}_lakefs/exported/${ref}/${commit_id}/`.
 The `ref` is deducted from the action event in `action_info` (i.e branch name).
 
+
+### `lakefs/catalogexport/glue_exporter`
+
+asdasdasd
+
+### `lakefs/catalogexport/glue_exporter.export_glue(glue, db, table_src_path, create_table_input, action_info, options)`
+
+Represent lakeFS table in Glue Catalog. 
+This function assumes there is a symlink export already created.
+
+`glue`: AWS glue client
+`db(string)`: glue database name
+`table_src_path(string)`: path to table spec (i.e _lakefs_tables/my_table.yaml)
+`create_table_input(Table)`: Input equal mapping to [table_input](https://docs.aws.amazon.com/glue/latest/webapAPI_CreateTable.html#API_CreateTable_RequestSyntax) in AWS, the same as we use for `glue.create_table`.
+should contain inputs describing the data format (i.e InputFormat, OutputFormat, SerdeInfo) since the exporter is agnostic to this. 
+by default this function will configure table location and schema.
+`action_info(Table)``: the global action object.
+`options(Table)`:
+- `table_name(string)`: Override default glue table name
+- `debug(boolean`
+- `export_base_uri(string)``: Override the default prefix in S3 for symlink location i.e s3://other-bucket/path/
+
+When creating a glue table, the final table input will consist of the `create_table_input` input parameter and lakeFS computed defaults that will override it:
+
+- `Name` Gable table name `get_full_table_name(descriptor, action_info)`.
+- `PartitionKeys` Partition columns usually deducted from `_lakefs_tables/${table_src_path}`.
+- `TableType`  ` = "EXTERNAL_TABLE"
+- `StorageDescriptor`: Columns usually deducted from `_lakefs_tables/${table_src_path}`.
+- `StorageDescriptor.Location` = symlink_location
+
+Example: 
+
+```lua
+local aws = require("aws")
+local exporter = require("lakefs/catalogexport/glue_exporter")
+local glue = aws.glue_client(args.aws_access_key_id, args.aws_secret_access_key, args.aws_region)
+-- table_input can be passed as a simple Key-Value object in YAML as an argument from an action, this is inline example:
+local table_input = {
+  StorageDescriptor: 
+    InputFormat: "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
+    OutputFormat: "org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat"
+    SerdeInfo:
+      SerializationLibrary: "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
+  Parameters: 
+    classification: "parquet"
+    EXTERNAL: "TRUE"
+    "parquet.compression": "SNAPPY"
+}
+exporter.export_glue(glue, "my-db", "_lakefs_tables/animals.yaml", table_input, action, {debug=true})
+```
+
+### `lakefs/catalogexport/glue_exporter.get_full_table_name(descriptor, action_info)`
+
+Generate glue table name.
+
+- `descriptor(Table)`: Object from (i.e _lakefs_tables/my_table.yaml).
+`action_info(Table)`: The global action object.
 
 ### `path/parse(path_string)`
 
