@@ -1,0 +1,28 @@
+name: Glue Exporter
+on:
+  post-commit:
+    branches: ["{{ .Branch }}*"]
+hooks:
+  - id: glue_exporter
+    type: lua
+    properties:
+      script_path: "{{ .GlueScriptPath }}"
+      args:
+        aws:
+          aws_access_key_id: "{{ .AccessKeyId }}"
+          aws_secret_access_key: "{{ .SecretAccessKey }}"
+          aws_region: "{{ .Region }}"
+        table_source: '{{ .TableDescriptorPath }}'
+        catalog:
+          db_name: "{{ .GlueDB }}"
+          table_input:
+            StorageDescriptor: 
+              InputFormat: "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
+              OutputFormat: "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
+              SerdeInfo:
+                SerializationLibrary: "org.apache.hadoop.hive.serde2.OpenCSVSerde"
+                Parameters:
+                  separatorChar: ","
+            Parameters: 
+              classification: "csv"
+              "skip.header.line.count": "1"
