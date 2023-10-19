@@ -401,7 +401,7 @@ exporter.export_s3(s3, args.table_descriptor_path, action, {debug=true})
 
 Generate prefix for Symlink file(s) structure that represents a `ref` and a `commit` in lakeFS.
 The output pattern `${storage_ns}_lakefs/exported/${ref}/${commit_id}/`.
-The `ref` is deducted from the action event in `action_info` (i.e branch name).
+The `ref` is deduced from the action event in `action_info` (i.e branch name).
 
 
 ### `lakefs/catalogexport/glue_exporter`
@@ -428,9 +428,9 @@ by default this function will configure table location and schema.
 When creating a glue table, the final table input will consist of the `create_table_input` input parameter and lakeFS computed defaults that will override it:
 
 - `Name` Gable table name `get_full_table_name(descriptor, action_info)`.
-- `PartitionKeys` Partition columns usually deducted from `_lakefs_tables/${table_src_path}`.
-- `TableType`  ` = "EXTERNAL_TABLE"
-- `StorageDescriptor`: Columns usually deducted from `_lakefs_tables/${table_src_path}`.
+- `PartitionKeys` Partition columns usually deduced from `_lakefs_tables/${table_src_path}`.
+- `TableType` = "EXTERNAL_TABLE"
+- `StorageDescriptor`: Columns usually deduced from `_lakefs_tables/${table_src_path}`.
 - `StorageDescriptor.Location` = symlink_location
 
 Example: 
