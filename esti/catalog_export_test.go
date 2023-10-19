@@ -239,10 +239,10 @@ func TestAWSCatalogExport(t *testing.T) {
 	requireBlockstoreType(t, block.BlockstoreTypeS3)
 	// skip of the following args are not provided
 	accessKeyID := viper.GetString("aws_access_key_id")
-	secretKeyID := viper.GetString("aws_secret_access_key")
+	secretAccessKey := viper.GetString("aws_secret_access_key")
 	glueDB := viper.GetString("glue_export_hooks_database")
 	glueRegion := viper.GetString("glue_export_region")
-	requiredArgs := []string{accessKeyID, secretKeyID, glueDB, glueRegion}
+	requiredArgs := []string{accessKeyID, secretAccessKey, glueDB, glueRegion}
 	if slices.Contains(requiredArgs, "") {
 		t.Skip("One of the required Args empty")
 	}
@@ -264,9 +264,9 @@ func TestAWSCatalogExport(t *testing.T) {
 		GlueActionPath:      "_lakefs_actions/glue_export.yaml",
 		TableDescriptorPath: "_lakefs_tables/animals.yaml",
 		GlueDB:              glueDB,
-		Region:              glueDB,
+		Region:              glueRegion,
 		AccessKeyId:         accessKeyID,
-		SecretAccessKey:     secretKeyID,
+		SecretAccessKey:     secretAccessKey,
 		TableSpec: &hiveTableSpec{
 			Name:             "animals",
 			Type:             "hive",
@@ -374,6 +374,5 @@ func TestAWSCatalogExport(t *testing.T) {
 		require.Equal(t, "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat", aws.ToString(glueTable.StorageDescriptor.InputFormat), "wrong table input format")
 		require.Equal(t, "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat", aws.ToString(glueTable.StorageDescriptor.OutputFormat), "wrong table output format")
 		require.Equal(t, symlinkPrefix, aws.ToString(glueTable.StorageDescriptor.Location)+"/", "wrong s3 location in glue table")
-		require.Equal(t, "matilda", *glueTable.Name, "oopsie")
 	})
 }
