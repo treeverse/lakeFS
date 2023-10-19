@@ -608,7 +608,9 @@ export const uploadWithProgress = (url, file, method = 'POST', onProgress = null
         xhr.open(method, url, true);
         xhr.setRequestHeader('Accept', 'application/json');
         xhr.setRequestHeader('X-Lakefs-Client', 'lakefs-webui/__buildVersion');
-        Object.keys(additionalHeaders).map(key => xhr.setRequestHeader(key, additionalHeaders[key]))
+        if (additionalHeaders) {
+            Object.keys(additionalHeaders).map(key => xhr.setRequestHeader(key, additionalHeaders[key]))
+        }
         if (url.startsWith(API_ENDPOINT)) {
             // swagger API requires a form with a "content" field
             const data = new FormData();
