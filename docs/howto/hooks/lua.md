@@ -378,6 +378,7 @@ _lakefs/
 
 Export Symlink files that represent a table to S3 location.
 
+Parameters:
 
 - `s3_client`: Configured client.
 - `table_src_path(string)`: Path to the table spec YAML file in `_lakefs_tables` (i.e _lakefs_tables/my_table.yaml).
@@ -419,11 +420,11 @@ This function assumes there is a symlink export already created.
 `create_table_input(Table)`: Input equal mapping to [table_input](https://docs.aws.amazon.com/glue/latest/webapAPI_CreateTable.html#API_CreateTable_RequestSyntax) in AWS, the same as we use for `glue.create_table`.
 should contain inputs describing the data format (i.e InputFormat, OutputFormat, SerdeInfo) since the exporter is agnostic to this. 
 by default this function will configure table location and schema.
-`action_info(Table)``: the global action object.
-`options(Table)`:
-- `table_name(string)`: Override default glue table name
-- `debug(boolean`
-- `export_base_uri(string)`: Override the default prefix in S3 for symlink location i.e s3://other-bucket/path/
+- `action_info(Table)`: the global action object.
+- `options(Table)`:
+  - `table_name(string)`: Override default glue table name
+  - `debug(boolean`
+  - `export_base_uri(string)`: Override the default prefix in S3 for symlink location i.e s3://other-bucket/path/
 
 When creating a glue table, the final table input will consist of the `create_table_input` input parameter and lakeFS computed defaults that will override it:
 
