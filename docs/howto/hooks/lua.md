@@ -142,6 +142,55 @@ or:
 
 Deletes all objects under the given prefix
 
+### `aws/glue`
+
+AWS Glue Client.
+
+```lua
+local aws = require("aws")
+-- pass valid AWS credentials
+local glue = aws.glue_client("ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "REGION")
+```
+
+### `aws/glue.get_table(database, table [, catalog_id)`
+
+Get Table from Glue Catalog.
+
+Example:
+
+```lua
+local table, exists = glue.get_table(db, table_name)
+if exists then
+  print(json.marshal(table))
+```
+
+### `aws/glue.create_table(database, table_input, [, catalog_id])`
+
+Create a new table in Glue Catalog.
+The `table_input` argument is a JSON that is passed "as is" to AWS and is parallel to the AWS SDK [TableInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html#API_CreateTable_RequestSyntax)
+
+Example: 
+
+```lua
+local json = require("encoding/json")
+local input = {
+    Name = "my-table",
+    PartitionKeys = array(partitions),
+    -- etc...
+}
+local json_input = json.marshal(input)
+glue.create_table("my-db", table_input)
+```
+
+### `aws/glue.update_table(database, table_input, [, catalog_id, version_id, skip_archive])`
+
+Update an existing Table in Glue Catalog.
+The `table_input` is the same as the argument in `glue.create_table` function.
+
+### `aws/glue.delete_table(database, table_input, [, catalog_id])`
+
+Delete an existing Table in Glue Catalog.
+
 ### `crypto/aes/encryptCBC(key, plaintext)`
 
 Returns a ciphertext for the aes encrypted text
