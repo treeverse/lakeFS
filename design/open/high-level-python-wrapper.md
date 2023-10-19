@@ -62,11 +62,13 @@ class Client:
 
 # global default client
 DefaultClient: Optional[Client] = None
+
 try:
     DefaultClient = Client()
 except NoAuthenticationFound:
     # must call init() explicitly
     DefaultClient = None
+
 
 def init(**kwargs):
     global DefaultClient
@@ -74,7 +76,9 @@ def init(**kwargs):
 
 ```
 
-### model driven inteface
+### model driven interface
+
+
 
 ```python
 class Repository:
