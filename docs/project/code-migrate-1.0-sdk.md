@@ -136,7 +136,7 @@ If you are using the SDK for Python, be aware that the current generated SDK is 
 
 1. **Modules change**
    - The previous `model` module was renamed to `models`, meaning that `lakefs_client.model` imports should be replaced with `lakefs_sdk.models` imports.
-   - In case the `LakeFSClient` class is not used (not recommended) and the `apis` module is used directly instead- the previous `apis` module doesn't exist. Instead, use the `api` module, meaning that `lakefs_client.apis` imports should be replaced with `lakefs_sdk.api` imports.
+   - If you chose to use the `apis` module directly without going through the `LakeFSClient` class: the previous `apis` module no longer exists. Instead, use the `api` module, meaning that `lakefs_client.apis` imports should be replaced with `lakefs_sdk.api` imports. We continue to recommend using `lakefs_sdk.LakeFSClient`.
 2. **`upload_object` API call:** The `content` parameter value passed to the `objects_api.upload_object` method call should be either a `string` containing the path to the uploaded file, or `bytes` of data to be uploaded.
 3. **`get_object`** **API call**: The return value of `client.get_object(...)` is a `bytearray` containing the content of the object.
 4. `**client.{operation}_api**`**:** The `lakefs-client` package’s `LakeFSClient` class’s deprecation-marked operations (`client.{operation}`) will no longer be available in the `lakefs-sdk` package’s `LakeFSClient` class. In their place, the `client.{operation}_api` should be used.
