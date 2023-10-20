@@ -37,15 +37,9 @@ While most of the API hasn't changed much, there are a few notable API changes b
 
 The migration path is usually pretty simple and not many code changes are required - but *please read through the list of breaking changes*:
 
-Version 1.0.0 promises API and SDK stability. By "API" we mean any access to a lakeFS REST endpoint. By "SDK" we mean auto-generated lakeFS clients: `lakefs-sdk` for Python and `io.lakefs:sdk` for Java. This guide details the steps to allow you to upgrade your code to enjoy this stability.
+[lakeFS 1.0 - Code Migration Guide](https://docs.lakefs.io/project/code-migrate-1.0-sdk.html)
 
-Avoid using APIs and SDKs labeled as `experimental`, `internal`, or `deprecated`. If you must use them, be prepared to adjust your application to align with any lakeFS server updates.
-
-Your software developed without such APIs should be compatible with all minor version updates of the lakeFS server from the version you originally developed with.
-
-If you rely on a publicly released API and SDK, it will adhere to semantic versioning. Transitioning your application to a minor SDK version update should be smooth.
-
-The operation names and tags from the [`api/swagger.yml`](https://github.com/treeverse/lakeFS/blob/7d9feeb0211a637e2b8a63abaa629efc968d7c9e/api/swagger.yml) specification might differ based on the SDK or coding language in use.
+For more information on the benefits of upgrading to 1.0 and the migration path, please refer to the [lakeFS documentation](https://docs.lakefs.io/understand/towards-1.0-sdk.html) or [reach out on Slack](https://lakefs.io/slack).
 
 :bug: Bugs fixed:
 
