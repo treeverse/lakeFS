@@ -1,5 +1,52 @@
 # Changelog
 
+# v1.0.0
+
+:new: What's new:
+
+After more than 3 years since its initial public release...
+
+🎉 **lakeFS 1.0 is now generally available** 🎉
+
+This is a huge milestone for the lakeFS maintainers, contributors and community and we can't be more excited!
+
+## Benefits
+
+1.0 is more than just a cosmetic change - it includes a few important benefits and guarantees to anyone running or using lakeFS:
+
+* lakeFS 1.x ensures both [backwards]() and [forwards]() compatiblity with any future 1.x release, as per [Semver](https://semver.org/).
+* Not just the [lakeFS Open API](https://docs.lakefs.io/reference/api.html): This is also true for the [new lakeFS Python SDK](https://docs.lakefs.io/integrations/python.html#using-the-lakefs-sdk), the [Java SDK](https://central.sonatype.com/artifact/io.lakefs/sdk?smo=true) and the [lakectl CLI](https://docs.lakefs.io/reference/cli.html) tool.
+* Bug fixes will be released for lakeFS 1.x even after the release of future major version, and at least until October 2024
+* Security fixes will be released (and if needed, backported) ven after the release of future major version, and at least until June 2025(!).
+* While lakeFS is already trusted in production in hunderds of organizations around the world, 1.x ensures a stable API going forward and it is highly recommended for all lakeFS users.
+
+## Feature Highlights
+
+The lakeFS 1.0 release actually doesn't introduce any new capabilities other than the guarantees given above. However,
+for users of slightly older 0.x lakeFS versions, here are a few highlights from the last few months that are included with this version:
+
+- `lakectl local` - Allows syncing a local directory with remote data in lakeFS, including full Git integration ([read announcement](https://lakefs.io/blog/scalable-data-version-control-getting-the-best-of-both-worlds-with-lakefs/))
+- **iceberg catalog** - Making it possible to branch, commit and merge multiple Iceberg tables together and in tandem with other formats ([read announcement](https://lakefs.io/blog/using-lakefs-with-apache-iceberg/))
+- **lua based hooks** - Run your own custom logic when commits, merges and other events occur. No need to host a webhook server or deploy anything! ([read announcement](https://lakefs.io/blog/introducing-lua-hooks/))
+- **enhanced security with pre-signed URLs** - Allows lakeFS to version data it cannot even read! This enhanced security by leveraging pre-signed URLs supported on all common object stores, to allow lakeFS to authorize access to data without having to proxy that data through the lakeFS server ([read more](https://docs.lakefs.io/reference/security/presigned-url.html))
+- **[Many many](https://github.com/treeverse/lakeFS/pulls?q=is%3Apr+is%3Aclosed) bug fixes and performance improvements across the board** 
+
+## Notes on upgrading from lakeFS 0.x
+
+While most of the API hasn't changed much, there are a few notable API changes between 0.x and 1.x.
+
+The migration path is usually pretty simple and not many code changes are required - but *please read through the list of breaking changes*:
+
+[lakeFS 1.0 - Code Migration Guide](https://docs.lakefs.io/project/code-migrate-1.0-sdk.html)
+
+For more information on the benefits of upgrading to 1.0 and the migration path, please refer to the [lakeFS documentation](https://docs.lakefs.io/understand/towards-1.0-sdk.html) or [reach out on Slack](https://lakefs.io/slack).
+
+:bug: Bugs fixed:
+
+- Increased the maximum attempts for DynamoDB with configuration support (#6804)
+- Amended Azure import to utilize content MD5 instead of entry Etag (#6802)
+- Corrected issue where the UI upload failed due to conversion of undefined or null values (#6818)
+
 # v0.113.0
 
 :new: What's new:
