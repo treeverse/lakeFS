@@ -17,7 +17,7 @@ This is a huge milestone for the lakeFS maintainers, contributors and community 
 * lakeFS 1.x ensures both [backwards]() and [forwards]() compatibility with any future 1.x release, as per [Semver](https://semver.org/).
 * Not just the [lakeFS Open API](https://docs.lakefs.io/reference/api.html): This is also true for the [new lakeFS Python SDK](https://docs.lakefs.io/integrations/python.html#using-the-lakefs-sdk), the [Java SDK](https://central.sonatype.com/artifact/io.lakefs/sdk?smo=true) and the [lakectl CLI](https://docs.lakefs.io/reference/cli.html) tool.
 * Bug fixes will be released for lakeFS 1.x even after the release of future major version, and at least until October 2024
-* Security fixes will be released (and if needed, backported) evn after the release of future major version, and at least until June 2025(!).
+* Security fixes will be released (and if needed, backported) even after the release of future major version, and at least until June 2025(!).
 * While lakeFS is already trusted in production in hundreds of organizations around the world, 1.x ensures a stable API going forward and it is highly recommended for all lakeFS users.
 
 ## Feature Highlights
