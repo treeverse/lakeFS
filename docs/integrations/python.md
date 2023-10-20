@@ -25,7 +25,7 @@ Install the Python client using pip:
 
 
 ```shell
-pip install 'lakefs_client==<lakeFS version>'
+pip install 'lakefs_sdk==<lakeFS version>'
 ```
 
 ### Initializing
@@ -33,12 +33,12 @@ pip install 'lakefs_client==<lakeFS version>'
 Here's how to instantiate a client:
 
 ```python
-import lakefs_client
-from lakefs_client import models
-from lakefs_client.client import LakeFSClient
+import lakefs_sdk
+from lakefs_sdk import Configuration
+from lakefs_sdk.client import LakeFSClient
 
 # lakeFS credentials and endpoint
-configuration = lakefs_client.Configuration()
+configuration = lakefs_sdk.Configuration()
 configuration.username = 'AKIAIOSFODNN7EXAMPLE'
 configuration.password = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
 configuration.host = 'http://localhost:8000'
@@ -71,13 +71,14 @@ Now that you have a client object, you can use it to interact with the API.
 #### Creating a repository
 
 ```python
-repo = models.RepositoryCreation(name='example-repo', storage_namespace='s3://storage-bucket/repos/example-repo', default_branch='main')
-client.repositories_api.create_repository(repo)
-# output:
-# {'creation_date': 1617532175,
-#  'default_branch': 'main',
-#  'id': 'example-repo',
-#  'storage_namespace': 's3://storage-bucket/repos/example-repo'}
+from lakefs_sdk.models import RepositoryCreation
+
+repo = client.repositories_api.create_repository(
+    RepositoryCreation(
+        name="example-repo",
+        storage_namespace="s3://storage-bucket/repos/example-repo",
+    )
+)
 ```
 
 #### Creating a branch, uploading files, committing changes
@@ -87,15 +88,14 @@ List the repository branches:
 ```python
 client.branches_api.list_branches('example-repo')
 # output:
-# [{'commit_id': 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656', 'id': 'main'}]
+# [Ref(id='main', commit_id='20a5a613122a414183f7ea7a134473358baf0d4058bc82ddd92495f424dfd52e')]
 ```
 
 Create a new branch:
 
 ```python
+from lakefs_sdk import models
 client.branches_api.create_branch(repository='example-repo', branch_creation=models.BranchCreation(name='experiment-aggregations1', source='main'))
-# output:
-# 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656'
 ```
 
 List again to see your newly created branch:
@@ -103,21 +103,19 @@ List again to see your newly created branch:
 ```python
 client.branches_api.list_branches('example-repo').results
 # output:
-# [{'commit_id': 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656', 'id': 'experiment-aggregations1'}, {'commit_id': 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656', 'id': 'main'}]
+# [Ref(id='experiment-aggregations1', commit_id='20a5a613122a414183f7ea7a134473358baf0d4058bc82ddd92495f424dfd52e'),
+# Ref(id='main', commit_id='20a5a613122a414183f7ea7a134473358baf0d4058bc82ddd92495f424dfd52e')]
 ```
 
 Great. Now, let's upload a file into your new branch:
 
 ```python
 with open('file.csv', 'rb') as f:
-    client.objects_api.upload_object(repository='example-repo', branch='experiment-aggregations1', path='path/to/file.csv', content=f)
-# output:
-# {'checksum': '0d3b39380e2500a0f60fb3c09796fdba',
-#  'mtime': 1617534834,
-#  'path': 'path/to/file.csv',
-#  'path_type': 'object',
-#  'physical_address': 'local://example-repo/1865650a296c42e28183ad08e9b068a3',
-#  'size_bytes': 18}
+    client.objects_api.upload_object(repository=repo.id, 
+                                 branch='experiment-aggregations1', 
+                                 path='path_in_lakefs_repo/file_name_in_repo.csv', 
+                                 content='upload_path/file.csv'
+                                )
 ```
 
 Diffing a single branch will show all the uncommitted changes on that branch:
@@ -125,7 +123,7 @@ Diffing a single branch will show all the uncommitted changes on that branch:
 ```python
 client.branches_api.diff_branch(repository='example-repo', branch='experiment-aggregations1').results
 # output:
-# [{'path': 'path/to/file.csv', 'path_type': 'object', 'type': 'added'}]
+# [Diff(type='added', path='path_in_lakefs_repo/file_name_in_repo.csv', path_type='object', size_bytes=1030)]
 ```
 
 As expected, our change appears here. Let's commit it and attach some arbitrary metadata:
@@ -136,13 +134,7 @@ client.commits_api.commit(
     branch='experiment-aggregations1',
     commit_creation=models.CommitCreation(message='Added a CSV file!', metadata={'using': 'python_api'}))
 # output:
-# {'committer': 'barak',
-#  'creation_date': 1617535120,
-#  'id': 'e80899a5709509c2daf797c69a6118be14733099f5928c14d6b65c9ac2ac841b',
-#  'message': 'Added a CSV file!',
-#  'meta_range_id': '',
-#  'metadata': {'using': 'python_api'},
-#  'parents': ['cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656']}
+# Commit(id='6809335415c0700cdb97f652979bdf443d273066fb3da22f6da0fc72317d7969', parents=['20a5a613122a414183f7ea7a134473358baf0d4058bc82ddd92495f424dfd52e'], committer='auth0|111111111111111111111111', message='Added a CSV file!', creation_date=1697832558, meta_range_id='', metadata={'using': 'python_api'})
 ```
 
 Diffing again, this time there should be no uncommitted files:
@@ -160,7 +152,7 @@ Let's diff between your branch and the main branch:
 ```python
 client.refs_api.diff_refs(repository='example-repo', left_ref='main', right_ref='experiment-aggregations1').results
 # output:
-# [{'path': 'path/to/file.csv', 'path_type': 'object', 'type': 'added'}]
+# [Diff(type='added', path='path_in_lakefs_repo/file_name_in_repo.csv', path_type='object', size_bytes=1030)]
 
 ```
 
@@ -169,8 +161,7 @@ Looks like you have a change. Let's merge it:
 ```python
 client.refs_api.merge_into_branch(repository='example-repo', source_ref='experiment-aggregations1', destination_branch='main')
 # output:
-# {'reference': 'd0414a3311a8c1cef1ef355d6aca40db72abe545e216648fe853e25db788fa2e',
-#  'summary': {'added': 1, 'changed': 0, 'conflict': 0, 'removed': 0}}
+# MergeResult(reference='b62a8d36988400e14e7f9435c0d8cf701fd8180fd58daca3b10b6fe71c0e815c')
 ```
 
 Let's diff again - there should be no changes as all changes are on our main branch already:
