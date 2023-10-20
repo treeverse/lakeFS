@@ -1,5 +1,5 @@
 ---
-title: Code Migration Guide
+title: Migrating to 1.0
 parent: The lakeFS Project
 description: Code migration guide detailing API and SDK upgrades, deprecated and new API operations, and SDK migration processes for both Java/JVM and Python with code refactoring examples for improved stability and compatibility.
 
@@ -31,7 +31,7 @@ The following API operations have been removed:
 
 ### Internal API Operations
 
-The following operations are for `internal` use only and should not be used in your application code. Some deprecated operations have alternatives provided.  
+The following operations are for `internal` use only and should not be used in your application code. Some deprecated operations have alternatives provided.
 
 - `setupCommPrefs`
 - `getSetupState`
@@ -58,7 +58,7 @@ The following operations are for `internal` use only and should not be used in y
 
 ### New/Updated API Operations
 
-Here are the newly added or updated operations:  
+Here are the newly added or updated operations:
 
 - `getConfig` (Retrieve lakeFS version and storage info)
 - `setBranchProtectionRules` (Route updated)
@@ -75,16 +75,16 @@ Here are the newly added or updated operations:
 
 ### Introduction
 
-If you are using the SDK for Java or any other JVM-based language, be aware that the current generated SDK is not stable with respect to minor version upgrades. Transitioning from `io.lakefs:lakefs-client` to `io.lakefs:sdk` will necessitate rewriting your API calls to fit the new design paradigm.
+If you are using the lakeFS client for Java or for any other JVM-based language, be aware that the current package is not stable with respect to minor version upgrades. Transitioning from `io.lakefs:lakefs-client` to `io.lakefs:sdk` will necessitate rewriting your API calls to fit the new design paradigm.
 
 
 ### Problem with the Old Style
 
-Previously, API calls required developers to pass all parameters, including optional ones, in a single function call. As demonstrated in this older style:  
+Previously, API calls required developers to pass all parameters, including optional ones, in a single function call. As demonstrated in this older style:
 
 ```java
-ObjectStats objectStat = objectsApi.statObject(  
-    objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(),  
+ObjectStats objectStat = objectsApi.statObject(
+    objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(),
     false, false);
 ```
 
@@ -95,16 +95,16 @@ This method posed a couple of challenges:
 
 Adopting the Fluent Style
 
-In the revised SDK, API calls adopt a fluent style, making the code more modular and adaptive to changes.  
+In the revised SDK, API calls adopt a fluent style, making the code more modular and adaptive to changes.
 
 Here's an example of the new style:
 
 ```java
-ObjectStats objectStat = objectsApi  
-    .statObject(  
-        objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath()  
-    )  
-    .userMetadata(true)  
+ObjectStats objectStat = objectsApi
+    .statObject(
+        objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath()
+    )
+    .userMetadata(true)
     .execute();
 ```
 
@@ -130,13 +130,13 @@ For an illustrative example of the transition between styles, you can view the c
 
 ### Introduction
 
-If you are using the SDK for Python, be aware that the current generated SDK is not stable with respect to minor version upgrades. Transitioning from `lakefs-client` to `lakefs-sdk` will necessitate rewriting your API calls.
+If you are using the lakeFS client for Python, be aware that the current package is not stable with respect to minor version upgrades. Transitioning from `lakefs-client` to `lakefs-sdk` will necessitate rewriting your API calls.
 
 ### Here's a breakdown of the changes:
 
 1. **Modules change**
    - The previous `model` module was renamed to `models`, meaning that `lakefs_client.model` imports should be replaced with `lakefs_sdk.models` imports.
-   - If you chose to use the `apis` module directly without going through the `LakeFSClient` class: the previous `apis` module no longer exists. Instead, use the `api` module, meaning that `lakefs_client.apis` imports should be replaced with `lakefs_sdk.api` imports. We continue to recommend using `lakefs_sdk.LakeFSClient`.
+   - The `apis` module in `lakefs_client` is deprecated and no longer supported. To migrate to the new `api` module in `lakefs_sdk`, you should replace all imports of `lakefs_client.apis` with imports of `lakefs_sdk.api`. We still recommend using the `lakefs_sdk.LakeFSClient` class instead of using the `api` module directly. The `LakeFSClient` class provides a higher-level interface to the LakeFS API and makes it easier to use LakeFS in your applications.
 2. **`upload_object` API call:** The `content` parameter value passed to the `objects_api.upload_object` method call should be either a `string` containing the path to the uploaded file, or `bytes` of data to be uploaded.
 3. **`get_object`** **API call**: The return value of `client.get_object(...)` is a `bytearray` containing the content of the object.
 4. `**client.{operation}_api**`**:** The `lakefs-client` package’s `LakeFSClient` class’s deprecation-marked operations (`client.{operation}`) will no longer be available in the `lakefs-sdk` package’s `LakeFSClient` class. In their place, the `client.{operation}_api` should be used.
@@ -144,16 +144,15 @@ If you are using the SDK for Python, be aware that the current generated SDK is 
 6. **Fetching results from response objects**: Instead of fetching the required results properties from a dictionary using `response_result.get_property(prop_name)`, the response objects will include domain specific entities, thus referring to the properties in the `results` of the response - `response_result.prop_name`. For example, instead of:
 
 ```python
-response = lakefs_client.branches_api.diff_branch(repository='repo', branch='main')  
-diff = response.results[0] # 'results' is a 'DiffList' object  
+response = lakefs_client.branches_api.diff_branch(repository='repo', branch='main')
+diff = response.results[0] # 'results' is a 'DiffList' object
 path = diff.get_property('path') # 'diff' is a dictionary
 ```
 
 You should use:
 
 ```python
-response = lakefs_client.branches_api.diff_branch(repository='repo', branch='main')  
-diff = response.results[0] # 'results' is a 'DiffList' object  
+response = lakefs_client.branches_api.diff_branch(repository='repo', branch='main')
+diff = response.results[0] # 'results' is a 'DiffList' object
 path = diff.path # 'diff' is a 'Diff' object
 ```
-
