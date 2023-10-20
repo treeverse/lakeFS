@@ -5,7 +5,7 @@ description: Code migration guide detailing API and SDK upgrades, deprecated and
 
 ---
 
-# lakeFS v1 - Code Migration Guide
+# lakeFS 1.0 - Code Migration Guide
 
 Version 1.0.0 promises API and SDK stability. By "API" we mean any access to a lakeFS REST endpoint. By "SDK" we mean auto-generated lakeFS clients: `lakefs-sdk` for Python and `io.lakefs:sdk` for Java. This guide details the steps to allow you to upgrade your code to enjoy this stability.
 
