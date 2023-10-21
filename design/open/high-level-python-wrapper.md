@@ -163,11 +163,10 @@ class ServerConfiguration:
     def storage_config(self) -> ServerStorageConfiguration: ...
 
 
-class ServerStorageConfiguration:
-    def __init__(self, client: Client = DefaultClient): ...
-    def blockstore_type(self) -> str: ...
-    def pre_sign_support(self) -> bool: ...
-    def import_support(self) -> bool: ...
+class ServerStorageConfiguration(NamedTuple):
+    blockstore_type: str
+    pre_sign_support: bool
+    import_support: bool
 
 
 class ImportManager:
@@ -203,6 +202,25 @@ class BranchTransaction(WriteIOBase):
 ```
 
 While this list is fairly exhaustive, it might require a few additional tweaks and additions.
+
+Additionally, we define the following exception hierarchy:
+
+```python
+
+# lakefs.exceptions
+class LakeFSException(Exception):
+    status_code: int
+    message: str
+
+class NotFoundException(LakeFSException): ...
+class NotAuthorizedException(LakeFSException): ...
+class ServerException(LakeFSException): ...
+class UnsupportedOperationException(LakeFSException): ...
+```
+
+Other, more specific exceptions may subclass these, but all errors returned by the lakeFS server should sub-class one of these to make error handling easier for developers.
+
+The only exception should be errors returned by functions that, for compatibility should return specific error types. (this might be true for e.g. `open()` and errors returned by the `TextIO` or `BinaryIO` implementations).
 
 ## Higher Level Utilities
 
