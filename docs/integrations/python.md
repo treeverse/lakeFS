@@ -25,7 +25,7 @@ Install the Python client using pip:
 
 
 ```shell
-pip install 'lakefs_client==<lakeFS version>'
+pip install 'lakefs_sdk~=1.0'
 ```
 
 ### Initializing
@@ -33,16 +33,14 @@ pip install 'lakefs_client==<lakeFS version>'
 Here's how to instantiate a client:
 
 ```python
-import lakefs_client
-from lakefs_client import models
-from lakefs_client.client import LakeFSClient
+import lakefs_sdk
+from lakefs_sdk.client import LakeFSClient
 
-# lakeFS credentials and endpoint
-configuration = lakefs_client.Configuration()
-configuration.username = 'AKIAIOSFODNN7EXAMPLE'
-configuration.password = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
-configuration.host = 'http://localhost:8000'
-
+configuration = lakefs_sdk.Configuration(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+)
 client = LakeFSClient(configuration)
 ``` 
 
@@ -68,89 +66,265 @@ configuration.proxy = <proxy server URL>
 
 Now that you have a client object, you can use it to interact with the API.
 
+
+To shorten the code example, let's create a helper function that will iterate over all paginated API's results:
+
+```python
+def pagination_helper(page_fetcher, **kwargs):
+    """Helper function to iterate over paginated results"""
+    while True:
+        resp = page_fetcher(**kwargs)
+        yield from resp.results
+        if not resp.pagination.has_more:
+            break
+        kwargs['after'] = resp.pagination.next_offset
+```
+
 #### Creating a repository
 
 ```python
-repo = models.RepositoryCreation(name='example-repo', storage_namespace='s3://storage-bucket/repos/example-repo', default_branch='main')
-client.repositories_api.create_repository(repo)
-# output:
-# {'creation_date': 1617532175,
-#  'default_branch': 'main',
-#  'id': 'example-repo',
-#  'storage_namespace': 's3://storage-bucket/repos/example-repo'}
+import lakefs_sdk
+from lakefs_sdk.models import RepositoryCreation
+from lakefs_sdk.client import LakeFSClient
+
+configuration = lakefs_sdk.Configuration(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+)
+client = LakeFSClient(configuration)
+resp = client.repositories_api.create_repository(
+    RepositoryCreation(
+        name="example-repo",
+        storage_namespace="s3://storage-bucket/repos/example-repo",
+    )
+)
+print(resp)
 ```
 
-#### Creating a branch, uploading files, committing changes
+_Output_
+```
+id='example-repo' creation_date=1697815536 default_branch='main' storage_namespace='s3://storage-bucket/repos/example-repo'
+```
 
-List the repository branches:
+#### List repositories
+
 
 ```python
-client.branches_api.list_branches('example-repo')
-# output:
-# [{'commit_id': 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656', 'id': 'main'}]
+import lakefs_sdk
+from lakefs_sdk.client import LakeFSClient
+
+configuration = lakefs_sdk.Configuration(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+)
+client = LakeFSClient(configuration)
+
+print("Listing repositories:")
+for repo in pagination_helper(client.repositories_api.list_repositories):
+    print(repo)
+
 ```
 
-Create a new branch:
+_Output_
+```
+Listing repositories:
+id='example-repo' creation_date=1697815536 default_branch='main' storage_namespace='s3://storage-bucket/repos/example-repo'
+```
+
+#### Creating a branch
 
 ```python
-client.branches_api.create_branch(repository='example-repo', branch_creation=models.BranchCreation(name='experiment-aggregations1', source='main'))
-# output:
-# 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656'
+import lakefs_sdk
+from lakefs_sdk.models import BranchCreation
+from lakefs_sdk.client import LakeFSClient
+
+configuration = lakefs_sdk.Configuration(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+)
+client = LakeFSClient(configuration)
+
+ref1 = client.branches_api.create_branch('example-repo', BranchCreation(name='experiment1', source='main'))
+print("experiment1 ref:", ref1)
+
+ref2 = client.branches_api.create_branch('example-repo', BranchCreation(name='experiment2', source='main'))
+print("experiment2 ref:", ref2)
 ```
 
-List again to see your newly created branch:
+_Output_
+```
+experiment1 ref: 7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859
+experiment2 ref: 7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859
+```
+
+### List branches
 
 ```python
-client.branches_api.list_branches('example-repo').results
-# output:
-# [{'commit_id': 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656', 'id': 'experiment-aggregations1'}, {'commit_id': 'cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656', 'id': 'main'}]
+import lakefs_sdk
+from lakefs_sdk.client import LakeFSClient
+
+configuration = lakefs_sdk.Configuration(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+)
+client = LakeFSClient(configuration)
+
+for branch in pagination_helper(client.branches_api.list_branches, repository='example-repo'):
+    print(branch)
+
 ```
 
-Great. Now, let's upload a file into your new branch:
+_Output_
+```
+id='experiment1' commit_id='7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859'
+id='experiment2' commit_id='7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859'
+id='main' commit_id='7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859'
+```
+
+### Upload
+
+Great. Now, let's upload some data:
+
+_Generate "sample_data.csv" or use your own data_
 
 ```python
-with open('file.csv', 'rb') as f:
-    client.objects_api.upload_object(repository='example-repo', branch='experiment-aggregations1', path='path/to/file.csv', content=f)
-# output:
-# {'checksum': '0d3b39380e2500a0f60fb3c09796fdba',
-#  'mtime': 1617534834,
-#  'path': 'path/to/file.csv',
-#  'path_type': 'object',
-#  'physical_address': 'local://example-repo/1865650a296c42e28183ad08e9b068a3',
-#  'size_bytes': 18}
+import csv
+
+sample_data = [
+    [1, "Alice", "alice@example.com"],
+    [2, "Bob", "bob@example.com"],
+    [3, "Carol", "carol@example.com"],
+]
+
+with open("sample_data.csv", "w", newline="") as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(["ID", "Name", "Email"])
+    for row in sample_data:
+        writer.writerow(row)
 ```
+
+Upload the data file by passing the filename as content:
+
+```python
+import lakefs_sdk
+from lakefs_sdk.client import LakeFSClient
+
+configuration = lakefs_sdk.Configuration(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+)
+client = LakeFSClient(configuration)
+
+resp = client.objects_api.upload_object(repository="example-repo", branch="experiment1", path="csv/sample_data.csv", content="sample_data.csv")
+print(resp)
+```
+
+_Output_
+```
+path='csv/sample_data.csv' path_type='object' physical_address='s3://storage-bucket/repos/example-repo/data/gke0ignnl531fa6k90p0/ckpfk4fnl531fa6k90pg' physical_address_expiry=None checksum='b6b6a1a17ff85291376ae6a5d7fa69d0' size_bytes=92 mtime=1697839635 metadata=None content_type='text/csv'
+```
+
+We can also upload content a bytes:
+
+```python
+import lakefs_sdk
+from lakefs_sdk.client import LakeFSClient
+
+configuration = lakefs_sdk.Configuration(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+)
+client = LakeFSClient(configuration)
+
+resp = client.objects_api.upload_object(repository="example-repo", branch="experiment1", path="raw/file1.data", content=b"Hello Object World")
+print(resp)
+```
+
+_Output_
+```
+path='rawv/file1.data' path_type='object' physical_address='s3://storage-bucket/repos/example-repo/data/gke0ignnl531fa6k90p0/ckpfltvnl531fa6k90q0' physical_address_expiry=None checksum='0ef432f8eb0305f730b0c57bbd7a6b08' size_bytes=18 mtime=1697839863 metadata=None content_type='application/octet-stream
+```
+
+### Uncommitted changes
 
 Diffing a single branch will show all the uncommitted changes on that branch:
 
 ```python
-client.branches_api.diff_branch(repository='example-repo', branch='experiment-aggregations1').results
-# output:
-# [{'path': 'path/to/file.csv', 'path_type': 'object', 'type': 'added'}]
+import lakefs_sdk
+from lakefs_sdk.client import LakeFSClient
+
+configuration = lakefs_sdk.Configuration(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+)
+client = LakeFSClient(configuration)
+
+for diff in pagination_helper(client.branches_api.diff_branch, repository='example-repo', branch='experiment1'):
+    print(diff)
+
+```
+
+_Output_
+
+```
+type='added' path='csv/sample_data.csv' path_type='object' size_bytes=92
+type='added' path='raw/file1.data' path_type='object' size_bytes=18
 ```
 
 As expected, our change appears here. Let's commit it and attach some arbitrary metadata:
 
 ```python
-client.commits_api.commit(
+import lakefs_sdk
+from lakefs_sdk.models import CommitCreation
+from lakefs_sdk.client import LakeFSClient
+
+configuration = lakefs_sdk.Configuration(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+)
+client = LakeFSClient(configuration)
+
+resp = client.commits_api.commit(
     repository='example-repo',
-    branch='experiment-aggregations1',
-    commit_creation=models.CommitCreation(message='Added a CSV file!', metadata={'using': 'python_api'}))
-# output:
-# {'committer': 'barak',
-#  'creation_date': 1617535120,
-#  'id': 'e80899a5709509c2daf797c69a6118be14733099f5928c14d6b65c9ac2ac841b',
-#  'message': 'Added a CSV file!',
-#  'meta_range_id': '',
-#  'metadata': {'using': 'python_api'},
-#  'parents': ['cdd673a4c5f42d33acdf3505ecce08e4d839775485990d231507f586ebe97656']}
+    branch='experiment1',
+    commit_creation=CommitCreation(message='Add some data!', metadata={'using': 'python_api'})
+)
+print(resp)
 ```
 
-Diffing again, this time there should be no uncommitted files:
+_Output_
+```
+id='d51b2428106921fcb893813b1eb668b46284067bb5264d89ed409ccb95676e3d' parents=['7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859'] committer='barak' message='Add some data!' creation_date=1697884139 meta_range_id='' metadata={'using': 'python_api'}
+```
+
+Calling diff again on the same branch, this time there should be no uncommitted files:
 
 ```python
-client.branches_api.diff_branch(repository='example-repo', branch='experiment-aggregations1').results
-# output:
-# []
+import lakefs_sdk
+from lakefs_sdk.client import LakeFSClient
+
+configuration = lakefs_sdk.Configuration(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+)
+client = LakeFSClient(configuration)
+
+resp = client.branches_api.diff_branch(repository='example-repo', branch='experiment1')
+print(resp)
+```
+
+_Output_
+```
+pagination=Pagination(has_more=False, next_offset='', results=0, max_per_page=1000) results=[]
 ```
 
 #### Merging changes from a branch into main 
@@ -158,10 +332,25 @@ client.branches_api.diff_branch(repository='example-repo', branch='experiment-ag
 Let's diff between your branch and the main branch:
 
 ```python
-client.refs_api.diff_refs(repository='example-repo', left_ref='main', right_ref='experiment-aggregations1').results
-# output:
-# [{'path': 'path/to/file.csv', 'path_type': 'object', 'type': 'added'}]
+import lakefs_sdk
+from lakefs_sdk.client import LakeFSClient
 
+configuration = lakefs_sdk.Configuration(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+)
+client = LakeFSClient(configuration)
+
+for diff in pagination_helper(client.refs_api.diff_refs, repository='example-repo', left_ref='main', right_ref='experiment1'):
+        print(diff)
+
+```
+
+_Output_
+```
+type='added' path='csv/sample_data.csv' path_type='object' size_bytes=92
+type='added' path='raw/file1.data' path_type='object' size_bytes=18
 ```
 
 Looks like you have a change. Let's merge it:
@@ -176,14 +365,64 @@ client.refs_api.merge_into_branch(repository='example-repo', source_ref='experim
 Let's diff again - there should be no changes as all changes are on our main branch already:
 
 ```python
-client.refs_api.diff_refs(repository='example-repo', left_ref='main', right_ref='experiment-aggregations1').results
-# output:
-# []
+import lakefs_sdk
+from lakefs_sdk.client import LakeFSClient
+
+configuration = lakefs_sdk.Configuration(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+)
+client = LakeFSClient(configuration)
+
+resp = client.refs_api.merge_into_branch(
+    repository='example-repo',
+    source_ref='experiment1',
+    destination_branch='main')
+print(resp)
+```
+
+_Output_
+```
+reference='a3ea99167a25748cf1d33ba284bda9c1400a8acfae8477562032d2b2435fd37b'
+```
+
+### Read data from main branch
+
+```python
+import csv
+from io import StringIO
+import lakefs_sdk
+from lakefs_sdk.client import LakeFSClient
+
+configuration = lakefs_sdk.Configuration(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+)
+client = LakeFSClient(configuration)
+
+resp = client.objects_api.get_object(
+    repository='example-repo',
+    ref='main',
+    path='csv/sample_data.csv')
+
+data = StringIO(resp.decode('utf-8'))
+for row in csv.reader(data):
+    print(row)
+```
+
+_Output_
+```
+['ID', 'Name', 'Email']
+['1', 'Alice', 'alice@example.com']
+['2', 'Bob', 'bob@example.com']
+['3', 'Carol', 'carol@example.com']
 ```
 
 ### Python Client documentation
 
-For the documentation of lakeFS’s Python package, see [https://pydocs.lakefs.io](https://pydocs.lakefs.io)
+For the documentation of lakeFS’s Python package, see [https://pydocs-sdk.lakefs.io](https://pydocs-sdk.lakefs.io)
 
 
 ### Full API reference
@@ -245,6 +484,7 @@ for obj in list_resp['Contents']:
 #### Get object metadata
 
 Get object metadata using branch and path:
+
 ```python
 s3.head_object(Bucket='example-repo', Key='main/example-file.parquet')
 # output:
@@ -264,3 +504,4 @@ s3.head_object(Bucket='example-repo', Key='main/example-file.parquet')
 # 'ETag': '"2398bc5880e535c61f7624ad6f138d62"',
 # 'Metadata': {}}
 ``` 
+
