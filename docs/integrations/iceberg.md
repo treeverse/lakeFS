@@ -75,7 +75,7 @@ Note that these are your lakeFS endpoint and credentials, not your S3 ones.
 </div>
 
 <div markdown="1" id="conf-sparkshell">
-```bash
+```shell
 spark-shell --conf spark.sql.catalog.lakefs="org.apache.iceberg.spark.SparkCatalog" \
    --conf spark.sql.catalog.lakefs.catalog-impl="io.lakefs.iceberg.LakeFSCatalog" \
    --conf spark.sql.catalog.lakefs.warehouse="lakefs://example-repo" \
@@ -111,13 +111,13 @@ INSERT INTO lakefs.main.table1 VALUES (2, 'data2');
 
 We can now commit the creation of the table to the main branch:
 
-```
+```shell
 lakectl commit lakefs://example-repo/main -m "my first iceberg commit"
 ```
 
 Then, create a branch:
 
-```
+```shell
 lakectl branch create lakefs://example-repo/dev -s lakefs://example-repo/main
 ```
 
