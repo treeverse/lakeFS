@@ -29,8 +29,18 @@ The integration between Glue and lakeFS is based on [Data Catalog Exports](({% l
 - Tables are described via [Hive format in _lakefs_tables/<my_table>.yaml](({% link integrations/catalog_exports.md %}#hive-tables))
 - Currently the data query in Glue metastore is Read-Only operation and mutating data requires writting to lakeFS and letting the export hook run.
 
+### How it works 
+
+There are 5 components: 
+
+1. Table definition at `_lakefs_tables/<your-table>.yaml`
+2. lua script using 
+
+To read more check [Data Catalog Exports](({% link integrations/catalog_exports.md %})).
+
 ### Pre-requisite 
 
 1. Write some lakeFS table data (i.e [Spark]({% link integrations/spark.md %}) or some CSV)
 2. AWS Credentials with permission to manage Glue, Athena Query and S3 access.
 3. lakeFS [Actions]({% link howto/hooks/index.md %}) enabled. 
+
