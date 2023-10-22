@@ -78,7 +78,7 @@ Note: Check the [lua Library reference]({% link howto/hooks/lua.md %}#lua-librar
 #### Running an Exporter  
 
 Exporters are meant to run as [Lua hooks]({% link howto/hooks/lua.md %}).
-Actions trigger can be configured with [events and branches]({% link howto/hooks/#action-file-schema %}), incase custom filtering logic is required it can be achieved in the Lua script itself.
+Actions trigger can be configured with [events and branches]({% link howto/hooks/index.md#action-file-schema %}), incase custom filtering logic is required it can be achieved in the Lua script itself.
 The default table name when exported is `${repository_id}_${_lakefs_tables/TABLE.md(name field)}_${ref_name}_${short_commit}`.
 
 Example of an action that will be triggered when a `post-commit` event happens in the `export_table` branch.
