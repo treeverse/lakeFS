@@ -34,7 +34,7 @@ type URI struct {
 	Path *string
 }
 
-func parseValidRepository(u *URI) error {
+func isValidRepository(u *URI) error {
 	switch {
 	case len(u.Repository) == 0:
 		return fmt.Errorf("missing repository part: %w", ErrInvalidRepoURI)
@@ -46,7 +46,7 @@ func parseValidRepository(u *URI) error {
 }
 
 func (u *URI) ParseRepository() error {
-	err := parseValidRepository(u)
+	err := isValidRepository(u)
 
 	switch {
 	case err != nil:
@@ -60,8 +60,8 @@ func (u *URI) ParseRepository() error {
 	}
 }
 
-func parseValidRef(u *URI) error {
-	err := parseValidRepository(u)
+func isValidRef(u *URI) error {
+	err := isValidRepository(u)
 
 	switch {
 	case err != nil:
@@ -76,7 +76,7 @@ func parseValidRef(u *URI) error {
 }
 
 func (u *URI) ParseRef() error {
-	err := parseValidRef(u)
+	err := isValidRef(u)
 	path := u.GetPath()
 
 	switch {
@@ -90,7 +90,7 @@ func (u *URI) ParseRef() error {
 }
 
 func (u *URI) ParseBranch() error {
-	err := parseValidRef(u)
+	err := isValidRef(u)
 	path := u.GetPath()
 
 	switch {
@@ -106,7 +106,7 @@ func (u *URI) ParseBranch() error {
 }
 
 func (u *URI) ParseFullyQualified() error {
-	err := parseValidRef(u)
+	err := isValidRef(u)
 
 	switch {
 	case err != nil:

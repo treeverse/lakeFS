@@ -14,7 +14,7 @@ const (
 )
 
 var cherryPick = &cobra.Command{
-	Use:   "cherry-pick <commit ref> <branch>",
+	Use:   "cherry-pick <commit URI> <branch>",
 	Short: "Apply the changes introduced by an existing commit",
 	Long:  `Apply the changes from the given commit to the tip of the branch. The changes will be added as a new commit.`,
 	Example: `lakectl cherry-pick lakefs://example-repo/example-ref lakefs://example-repo/main
@@ -25,8 +25,8 @@ var cherryPick = &cobra.Command{
 		return validRepositoryToComplete(cmd.Context(), toComplete)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		ref := MustParseRefURI("Commit", args[0])
-		branch := MustParseBranchURI("Branch", args[1])
+		ref := MustParseRefURI("commit URI", args[0])
+		branch := MustParseBranchURI("branch URI", args[1])
 		fmt.Println("Branch:", branch)
 
 		if branch.Repository != ref.Repository {

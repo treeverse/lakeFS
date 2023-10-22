@@ -55,15 +55,15 @@ var diffCmd = &cobra.Command{
 		client := getClient()
 		if len(args) == diffCmdMinArgs {
 			// got one arg ref: uncommitted changes diff
-			branchURI := MustParseBranchURI("Branch", args[0])
+			branchURI := MustParseBranchURI("branch URI", args[0])
 			fmt.Println("Ref:", branchURI)
 			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
 			return
 		}
 
 		twoWay := Must(cmd.Flags().GetBool(twoWayFlagName))
-		leftRefURI := MustParseRefURI("Left ref", args[0])
-		rightRefURI := MustParseRefURI("Right ref", args[1])
+		leftRefURI := MustParseRefURI("left ref", args[0])
+		rightRefURI := MustParseRefURI("right ref", args[1])
 		fmt.Printf("Left ref: %s\nRight ref: %s\n", leftRefURI, rightRefURI)
 		if leftRefURI.Repository != rightRefURI.Repository {
 			Die("both references must belong to the same repository", 1)

@@ -68,7 +68,7 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 	}
 
 	if specifiedRef != "" {
-		resolvedRef := MustParseRefURI("Ref", specifiedRef)
+		resolvedRef := MustParseRefURI("ref", specifiedRef)
 		if resolvedRef.Repository != remote.Repository {
 			DieFmt("invalid uri, ref repository doesn't match")
 		}

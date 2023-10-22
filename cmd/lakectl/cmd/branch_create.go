@@ -10,13 +10,13 @@ import (
 )
 
 var branchCreateCmd = &cobra.Command{
-	Use:               "create <branch uri> -s <source ref uri>",
+	Use:               "create <branch URI> -s <source ref URI>",
 	Short:             "Create a new branch in a repository",
 	Example:           "lakectl branch create lakefs://example-repo/new-branch -s lakefs://example-repo/main",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseBranchURI("Branch", args[0])
+		u := MustParseBranchURI("branch URI", args[0])
 		client := getClient()
 		sourceRawURI := Must(cmd.Flags().GetString("source"))
 		sourceURI, err := uri.ParseWithBaseURI(sourceRawURI, baseURI)

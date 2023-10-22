@@ -11,12 +11,12 @@ import (
 )
 
 var fsCatCmd = &cobra.Command{
-	Use:               "cat <path uri>",
+	Use:               "cat <path URI>",
 	Short:             "Dump content of object to stdout",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		pathURI := MustParsePathURI("Path", args[0])
+		pathURI := MustParsePathURI("path URI", args[0])
 		client := getClient()
 		preSign := getPresignMode(cmd, client)
 

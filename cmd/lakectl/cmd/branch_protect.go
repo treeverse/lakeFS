@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/go-openapi/swag"
@@ -22,14 +21,14 @@ var branchProtectCmd = &cobra.Command{
 }
 
 var branchProtectListCmd = &cobra.Command{
-	Use:               "list <repository uri>",
+	Use:               "list <repository URI>",
 	Short:             "List all branch protection rules",
-	Example:           fmt.Sprintf("lakectl branch-protect list %s", myRepoExample),
+	Example:           "lakectl branch-protect list " + myRepoExample,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("Repository", args[0])
+		u := MustParseRepoURI("repository URI", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
@@ -47,15 +46,15 @@ var branchProtectListCmd = &cobra.Command{
 }
 
 var branchProtectAddCmd = &cobra.Command{
-	Use:               "add <repository uri> <pattern>",
+	Use:               "add <repository URI> <pattern>",
 	Short:             "Add a branch protection rule",
 	Long:              "Add a branch protection rule for a given branch name pattern",
-	Example:           fmt.Sprintf("lakectl branch-protect add %s 'stable_*'", myRepoExample),
+	Example:           "lakectl branch-protect add " + myRepoExample + " 'stable_*'",
 	Args:              cobra.ExactArgs(branchProtectAddCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("Repository", args[0])
+		u := MustParseRepoURI("repository URI", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -71,15 +70,15 @@ var branchProtectAddCmd = &cobra.Command{
 }
 
 var branchProtectDeleteCmd = &cobra.Command{
-	Use:               "delete <repository uri> <pattern>",
+	Use:               "delete <repository URI> <pattern>",
 	Short:             "Delete a branch protection rule",
 	Long:              "Delete a branch protection rule for a given branch name pattern",
-	Example:           fmt.Sprintf("lakectl branch-protect delete %s stable_*", myRepoExample),
+	Example:           "lakectl branch-protect delete " + myRepoExample + " stable_*",
 	Args:              cobra.ExactArgs(branchProtectDeleteCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("Repository", args[0])
+		u := MustParseRepoURI("repository URI", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		found := false

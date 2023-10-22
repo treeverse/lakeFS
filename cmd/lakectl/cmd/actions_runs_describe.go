@@ -20,16 +20,16 @@ const actionTaskResultTemplate = `{{ $r := . }}{{ range $idx, $val := .Hooks }}{
 const runsShowRequiredArgs = 2
 
 var actionsRunsDescribeCmd = &cobra.Command{
-	Use:               "describe <repository uri> <run_id>",
+	Use:               "describe <repository URI> <run_id>",
 	Short:             "Describe run results",
 	Long:              `Show information about the run and all the hooks that were executed as part of the run`,
-	Example:           fmt.Sprintf("lakectl actions runs describe %s %s", myRepoExample, runIDExample),
+	Example:           "lakectl actions runs describe " + myRepoExample + " " + runIDExample,
 	Args:              cobra.ExactArgs(runsShowRequiredArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := Must(cmd.Flags().GetInt("amount"))
 		after := Must(cmd.Flags().GetString("after"))
-		u := MustParseRepoURI("Repository", args[0])
+		u := MustParseRepoURI("repository URI", args[0])
 		pagination := apigen.Pagination{HasMore: true}
 
 		fmt.Println("Repository:", u)

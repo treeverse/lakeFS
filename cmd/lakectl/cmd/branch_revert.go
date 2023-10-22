@@ -16,7 +16,7 @@ const (
 
 // lakectl branch revert lakefs://myrepo/main commitId
 var branchRevertCmd = &cobra.Command{
-	Use:   "revert <branch uri> <commit ref to revert> [<more commits>...]",
+	Use:   "revert <branch URI> <commit ref to revert> [<more commits>...]",
 	Short: "Given a commit, record a new commit to reverse the effect of this commit",
 	Long:  "The commits will be reverted in left-to-right order",
 	Example: `lakectl branch revert lakefs://example-repo/example-branch commitA
@@ -28,7 +28,7 @@ var branchRevertCmd = &cobra.Command{
 		return validRepositoryToComplete(cmd.Context(), toComplete)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseBranchURI("Branch", args[0])
+		u := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", u)
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
 		parentNumber := Must(cmd.Flags().GetInt(ParentNumberFlagName))

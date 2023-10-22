@@ -10,13 +10,13 @@ const metadataDumpTemplate = `{{ .Response | json }}
 `
 
 var refsDumpCmd = &cobra.Command{
-	Use:               "refs-dump <repository uri>",
+	Use:               "refs-dump <repository URI>",
 	Short:             "Dumps refs (branches, commits, tags) to the underlying object store",
 	Hidden:            true,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		repoURI := MustParseRepoURI("Repository", args[0])
+		repoURI := MustParseRepoURI("repository URI", args[0])
 		client := getClient()
 		resp, err := client.DumpRefsWithResponse(cmd.Context(), repoURI.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)

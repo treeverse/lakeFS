@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -17,7 +16,7 @@ const (
 )
 
 var gcSetConfigCmd = &cobra.Command{
-	Use:   "set-config <repository uri>",
+	Use:   "set-config <repository URI>",
 	Short: "Set garbage collection policy JSON",
 	Long: `Sets the garbage collection policy JSON.
 Example configuration file:
@@ -34,10 +33,10 @@ Example configuration file:
     }
   ]
 }`,
-	Example: fmt.Sprintf("lakectl gc set-config %s -f config.json", myRepoExample),
+	Example: "lakectl gc set-config " + myRepoExample + " -f config.json",
 	Args:    cobra.ExactArgs(gcSetConfigCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRepoURI("Repository", args[0])
+		u := MustParseRepoURI("repository URI", args[0])
 		filename := Must(cmd.Flags().GetString(filenameFlagName))
 		var reader io.ReadCloser
 		var err error

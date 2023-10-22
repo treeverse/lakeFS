@@ -15,13 +15,13 @@ import (
 )
 
 var abuseCreateBranchesCmd = &cobra.Command{
-	Use:               "create-branches <source ref uri>",
+	Use:               "create-branches <source ref URI>",
 	Short:             "Create a lot of branches very quickly.",
 	Hidden:            false,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("Source", args[0])
+		u := MustParseRefURI("source ref URI", args[0])
 		cleanOnly := Must(cmd.Flags().GetBool("clean-only"))
 		branchPrefix := Must(cmd.Flags().GetString("branch-prefix"))
 		amount := Must(cmd.Flags().GetInt("amount"))

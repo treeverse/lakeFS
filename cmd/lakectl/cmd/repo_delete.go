@@ -10,14 +10,14 @@ import (
 // repoDeleteCmd represents the delete repo command
 // lakectl delete lakefs://myrepo
 var repoDeleteCmd = &cobra.Command{
-	Use:               "delete <repository uri>",
+	Use:               "delete <repository URI>",
 	Short:             "Delete existing repository",
-	Example:           fmt.Sprintf("lakectl repo delete %s", myRepoExample),
+	Example:           "lakectl repo delete " + myRepoExample,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseRepoURI("Repository", args[0])
+		u := MustParseRepoURI("repository URI", args[0])
 		fmt.Println("Repository:", u)
 		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete repository: "+u.Repository)
 		if err != nil || !confirmation {

@@ -67,7 +67,7 @@ func (d *dotWriter) Write(commits []apigen.Commit) {
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
-	Use:               "log <branch uri>",
+	Use:               "log <branch URI>",
 	Short:             "Show log of commits",
 	Long:              "Show log of commits for a given branch",
 	Example:           "lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg",
@@ -92,7 +92,7 @@ var logCmd = &cobra.Command{
 		pagination := apigen.Pagination{HasMore: true}
 		showMetaRangeID := Must(cmd.Flags().GetBool("show-meta-range-id"))
 		client := getClient()
-		branchURI := MustParseBranchURI("Branch", args[0])
+		branchURI := MustParseBranchURI("branch URI", args[0])
 		amountForPagination := amount
 		if amountForPagination <= 0 {
 			amountForPagination = internalPageSize

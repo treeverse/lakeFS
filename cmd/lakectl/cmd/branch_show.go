@@ -8,14 +8,14 @@ import (
 )
 
 var branchShowCmd = &cobra.Command{
-	Use:               "show <branch uri>",
-	Example:           fmt.Sprintf("lakectl branch show %s/%s", myRepoExample, myBranchExample),
+	Use:               "show <branch URI>",
+	Example:           "lakectl branch show " + myRepoExample + "/" + myBranchExample,
 	Short:             "Show branch latest commit reference",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseBranchURI("Branch", args[0])
+		u := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", u)
 		resp, err := client.GetBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/spf13/cobra"
@@ -10,15 +9,15 @@ import (
 )
 
 var branchListCmd = &cobra.Command{
-	Use:               "list <repository uri>",
+	Use:               "list <repository URI>",
 	Short:             "List branches in a repository",
-	Example:           fmt.Sprintf("lakectl branch list %s", myRepoExample),
+	Example:           "lakectl branch list " + myRepoExample,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := Must(cmd.Flags().GetInt("amount"))
 		after := Must(cmd.Flags().GetString("after"))
-		u := MustParseRepoURI("Repository", args[0])
+		u := MustParseRepoURI("repository URI", args[0])
 		client := getClient()
 		resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &apigen.ListBranchesParams{
 			After:  apiutil.Ptr(apigen.PaginationAfter(after)),

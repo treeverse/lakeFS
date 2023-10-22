@@ -14,14 +14,14 @@ import (
 )
 
 var fsRmCmd = &cobra.Command{
-	Use:               "rm <path uri>",
+	Use:               "rm <path URI>",
 	Short:             "Delete object",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		concurrency := Must(cmd.Flags().GetInt("concurrency"))
-		pathURI := MustParsePathURI("Path", args[0])
+		pathURI := MustParsePathURI("path URI", args[0])
 		client := getClient()
 		if !recursive {
 			// Delete a single object in the main thread

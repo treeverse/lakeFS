@@ -14,13 +14,13 @@ import (
 )
 
 var abuseListCmd = &cobra.Command{
-	Use:               "list <source ref uri>",
+	Use:               "list <source ref URI>",
 	Short:             "List from the source ref",
 	Hidden:            false,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("Source", args[0])
+		u := MustParseRefURI("source ref URI", args[0])
 		amount := Must(cmd.Flags().GetInt("amount"))
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
 		prefix := Must(cmd.Flags().GetString("prefix"))

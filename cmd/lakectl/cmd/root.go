@@ -185,7 +185,7 @@ func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.
 func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remote *uri.URI, localPath string) {
 	idx := 0
 	if requireRemote {
-		remote = MustParsePathURI("Path", args[0])
+		remote = MustParsePathURI("path URI", args[0])
 		idx += 1
 	}
 

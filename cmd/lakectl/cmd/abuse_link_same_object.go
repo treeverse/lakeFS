@@ -13,13 +13,13 @@ import (
 )
 
 var abuseLinkSameObjectCmd = &cobra.Command{
-	Use:               "link-same-object <branch uri>",
+	Use:               "link-same-object <branch URI>",
 	Short:             "Link the same object in parallel.",
 	Hidden:            false,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseBranchURI("Branch", args[0])
+		u := MustParseBranchURI("branch URI", args[0])
 		amount := Must(cmd.Flags().GetInt("amount"))
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
 		key := Must(cmd.Flags().GetString("key"))

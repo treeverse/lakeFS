@@ -25,14 +25,14 @@ Parents: {{.Commit.Parents|join ", "}}
 `
 
 var importCmd = &cobra.Command{
-	Use:   "import --from <object store URI> --to <lakeFS path URI>",
+	Use:   "import --from <object store URI> --to <lakeFS path uri>",
 	Short: "Import data from external source to a destination branch",
 	Run: func(cmd *cobra.Command, args []string) {
 		flags := cmd.Flags()
 		noProgress := Must(flags.GetBool("no-progress"))
 		from := Must(flags.GetString("from"))
 		to := Must(flags.GetString("to"))
-		toURI := MustParsePathURI("To", to)
+		toURI := MustParsePathURI("lakeFS path URI", to)
 		message := Must(flags.GetString("message"))
 		metadata, err := getKV(cmd, "meta")
 		if err != nil {
