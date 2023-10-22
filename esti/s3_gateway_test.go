@@ -229,8 +229,8 @@ func TestS3ReadObject(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to load aws configuration, %v", err)
 		}
-		s3Client := s3.NewFromConfig(cfg)
 
+		s3UnderlyingClient := s3.NewFromConfig(cfg)
 		s3PhysicalURL, err := url.Parse(physicalAddress)
 		if err != nil {
 			t.Fatalf("failed to parse physical address %s, %v", physicalAddress, err)
@@ -239,22 +239,12 @@ func TestS3ReadObject(t *testing.T) {
 			t.Fatalf("physical address %s is not an s3 address", physicalAddress)
 		}
 		s3PhysicalKey := strings.TrimLeft(s3PhysicalURL.Path, "/")
-		_, err = s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		_, err = s3UnderlyingClient.DeleteObject(ctx, &s3.DeleteObjectInput{
 			Bucket: aws.String(s3PhysicalURL.Host),
 			Key:    aws.String(s3PhysicalKey),
 		})
 		if err != nil {
 			t.Fatalf("DeleteObjects(%s, %s): %s", repo, objPath, err)
-		}
-
-		// wait for object to be gone
-		waiter := s3.NewObjectNotExistsWaiter(s3Client)
-		err = waiter.Wait(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(s3PhysicalURL.Host),
-			Key:    aws.String(s3PhysicalKey),
-		}, time.Minute)
-		if err != nil {
-			t.Fatalf("WaitObjectNotExists(%s, %s): %s", repo, objPath, err)
 		}
 
 		// try to read the object - should fail
