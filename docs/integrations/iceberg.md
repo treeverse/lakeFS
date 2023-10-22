@@ -72,9 +72,9 @@ Note that these are your lakeFS endpoint and credentials, not your S3 ones.
 .config("spark.hadoop.fs.s3a.path.style.access", "true")
 ```
 
-</div>
+  </div>
 
-<div markdown="1" id="conf-sparkshell">
+  <div markdown="1" id="conf-sparkshell">
 ```shell
 spark-shell --conf spark.sql.catalog.lakefs="org.apache.iceberg.spark.SparkCatalog" \
    --conf spark.sql.catalog.lakefs.catalog-impl="io.lakefs.iceberg.LakeFSCatalog" \
@@ -86,7 +86,7 @@ spark-shell --conf spark.sql.catalog.lakefs="org.apache.iceberg.spark.SparkCatal
    --conf spark.hadoop.fs.s3a.secret.key="wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY" \
    --conf spark.hadoop.fs.s3a.path.style.access="true"
 ```
-</div>
+  </div>
 </div>
 
 
