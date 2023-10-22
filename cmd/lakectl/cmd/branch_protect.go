@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-openapi/swag"
@@ -21,14 +22,14 @@ var branchProtectCmd = &cobra.Command{
 }
 
 var branchProtectListCmd = &cobra.Command{
-	Use:               "list <repo uri>",
+	Use:               "list <repository uri>",
 	Short:             "List all branch protection rules",
-	Example:           "lakectl branch-protect list lakefs://<repository>",
+	Example:           fmt.Sprintf("lakectl branch-protect list %s", myRepoExample),
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
+		u := MustParseRepoURI("Repository", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
@@ -46,15 +47,15 @@ var branchProtectListCmd = &cobra.Command{
 }
 
 var branchProtectAddCmd = &cobra.Command{
-	Use:               "add <repo uri> <pattern>",
+	Use:               "add <repository uri> <pattern>",
 	Short:             "Add a branch protection rule",
 	Long:              "Add a branch protection rule for a given branch name pattern",
-	Example:           "lakectl branch-protect add lakefs://<repository> 'stable_*'",
+	Example:           fmt.Sprintf("lakectl branch-protect add %s 'stable_*'", myRepoExample),
 	Args:              cobra.ExactArgs(branchProtectAddCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
+		u := MustParseRepoURI("Repository", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -70,15 +71,15 @@ var branchProtectAddCmd = &cobra.Command{
 }
 
 var branchProtectDeleteCmd = &cobra.Command{
-	Use:               "delete <repo uri> <pattern>",
+	Use:               "delete <repository uri> <pattern>",
 	Short:             "Delete a branch protection rule",
 	Long:              "Delete a branch protection rule for a given branch name pattern",
-	Example:           "lakectl branch-protect delete lakefs://<repository> stable_*",
+	Example:           fmt.Sprintf("lakectl branch-protect delete %s stable_*", myRepoExample),
 	Args:              cobra.ExactArgs(branchProtectDeleteCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
+		u := MustParseRepoURI("Repository", args[0])
 		resp, err := client.GetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		found := false

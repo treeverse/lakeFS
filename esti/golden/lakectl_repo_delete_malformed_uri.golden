@@ -1,3 +1,2 @@
-parsing ${REPO}: malformed lakefs uri
-Operation requires a valid repository URI. e.g. lakefs://<repo>
+Repository malformed lakefs URI
 Error executing command.

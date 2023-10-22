@@ -1,3 +1,2 @@
-[91mparsing ${REPO}: malformed lakefs uri
-Operation requires a valid repository URI. e.g. lakefs://<repo>[0m
+[91mRepository malformed lakefs URI[0m
 Error executing command.

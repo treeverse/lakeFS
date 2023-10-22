@@ -271,46 +271,46 @@ func PrintTable(rows [][]interface{}, headers []interface{}, paginator *apigen.P
 	Write(resourceListTemplate, ctx)
 }
 
-func MustParseRepoURI(msg, s string) *uri.URI {
+func MustParseRepoURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
-		DieFmt("%s\n%s", err, msg)
+		DieFmt("%s %s", name, err)
 	}
-	if !u.IsRepository() {
-		DieFmt("%s\n%s", uri.ErrInvalidRepoURI, msg)
+	if err = u.ParseRepository(); err != nil {
+		DieFmt("%s %s", name, err)
 	}
 	return u
 }
 
-func MustParseRefURI(msg, s string) *uri.URI {
+func MustParseRefURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
-		DieFmt("%s\n%s", err, msg)
+		DieFmt("%s %s", name, err)
 	}
-	if !u.IsRef() {
-		DieFmt("%s\n%s", uri.ErrInvalidRefURI, msg)
+	if err = u.ParseRef(); err != nil {
+		DieFmt("%s %s", name, err)
 	}
 	return u
 }
 
-func MustParseBranchURI(msg, s string) *uri.URI {
+func MustParseBranchURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
-		DieFmt("%s\n%s", err, msg)
+		DieFmt("%s %s", name, err)
 	}
-	if !u.IsBranch() {
-		DieFmt("%s\n%s", uri.ErrInvalidBranchURI, msg)
+	if err = u.ParseBranch(); err != nil {
+		DieFmt("%s %s", name, err)
 	}
 	return u
 }
 
-func MustParsePathURI(msg, s string) *uri.URI {
+func MustParsePathURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
-		DieFmt("%s\n%s", err, msg)
+		DieFmt("%s %s", name, err)
 	}
-	if !u.IsFullyQualified() {
-		DieFmt("%s\n%s", uri.ErrInvalidPathURI, msg)
+	if err = u.ParseFullyQualified(); err != nil {
+		DieFmt("%s %s", name, err)
 	}
 	return u
 }

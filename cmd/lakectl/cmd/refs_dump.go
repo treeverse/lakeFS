@@ -16,7 +16,7 @@ var refsDumpCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		repoURI := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
+		repoURI := MustParseRepoURI("Repository", args[0])
 		client := getClient()
 		resp, err := client.DumpRefsWithResponse(cmd.Context(), repoURI.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)

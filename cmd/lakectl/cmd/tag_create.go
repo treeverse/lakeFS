@@ -22,8 +22,8 @@ var tagCreateCmd = &cobra.Command{
 		return validRepositoryToComplete(cmd.Context(), toComplete)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		tagURI := MustParseRefURI("Operation requires a valid tag URI. e.g. lakefs://<repo>/<tag>", args[0])
-		commitURI := MustParseRefURI("Operation requires a valid commit URI. e.g. lakefs://<repo>/<commit>", args[1])
+		tagURI := MustParseRefURI("Tag", args[0])
+		commitURI := MustParseRefURI("Commit", args[1])
 		fmt.Println("Tag ref:", tagURI)
 
 		client := getClient()

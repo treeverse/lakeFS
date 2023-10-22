@@ -16,11 +16,11 @@ const (
 )
 
 var (
-	ErrMalformedURI     = errors.New("malformed lakefs uri")
-	ErrInvalidRepoURI   = errors.New("not a valid repo uri")
-	ErrInvalidRefURI    = errors.New("not a valid ref uri")
-	ErrInvalidBranchURI = errors.New("not a valid branch uri")
-	ErrInvalidPathURI   = errors.New("not a valid path uri")
+	ErrMalformedURI     = errors.New("malformed lakefs URI")
+	ErrInvalidRepoURI   = errors.New("not a valid repo URI")
+	ErrInvalidRefURI    = errors.New("not a valid ref URI")
+	ErrInvalidBranchURI = errors.New("not a valid branch URI")
+	ErrInvalidPathURI   = errors.New("not a valid path URI")
 )
 
 type URI struct {
@@ -34,20 +34,88 @@ type URI struct {
 	Path *string
 }
 
-func (u *URI) IsRepository() bool {
-	return len(u.Repository) > 0 && len(u.Ref) == 0 && u.Path == nil && validator.ReValidRepositoryID.MatchString(u.Repository)
+func parseValidRepository(u *URI) error {
+	switch {
+	case len(u.Repository) == 0:
+		return fmt.Errorf("missing repository part: %w", ErrInvalidRepoURI)
+	case !validator.ReValidRepositoryID.MatchString(u.Repository):
+		return fmt.Errorf("contains invalid repository name (repo=%s): %w", u.Repository, ErrInvalidRepoURI)
+	default:
+		return nil
+	}
 }
 
-func (u *URI) IsRef() bool {
-	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path == nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidRef.MatchString(u.Ref)
+func (u *URI) ParseRepository() error {
+	err := parseValidRepository(u)
+
+	switch {
+	case err != nil:
+		return err
+	case len(u.Ref) != 0:
+		return fmt.Errorf("repository URI includes a ref part (ref=%s): %w", u.Ref, ErrInvalidRepoURI)
+	case u.Path != nil:
+		return fmt.Errorf("repository URI includes path part (path=%s): %w", u.GetPath(), ErrInvalidRepoURI)
+	default:
+		return nil
+	}
 }
 
-func (u *URI) IsBranch() bool {
-	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path == nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidBranchID.MatchString(u.Ref)
+func parseValidRef(u *URI) error {
+	err := parseValidRepository(u)
+
+	switch {
+	case err != nil:
+		return err
+	case len(u.Ref) == 0:
+		return fmt.Errorf("missing reference part: %w", ErrInvalidRefURI)
+	case !validator.ReValidRef.MatchString(u.Ref):
+		return fmt.Errorf("contains invalid reference name: %w", ErrInvalidRefURI)
+	default:
+		return nil
+	}
 }
 
-func (u *URI) IsFullyQualified() bool {
-	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path != nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidRef.MatchString(u.Ref)
+func (u *URI) ParseRef() error {
+	err := parseValidRef(u)
+	path := u.GetPath()
+
+	switch {
+	case err != nil:
+		return err
+	case len(path) > 0:
+		return fmt.Errorf("ref URI includes a path part (path=%s): %w", path, ErrInvalidRefURI)
+	default:
+		return nil
+	}
+}
+
+func (u *URI) ParseBranch() error {
+	err := parseValidRef(u)
+	path := u.GetPath()
+
+	switch {
+	case err != nil:
+		return err
+	case len(path) > 0 && path != PathSeparator: // Ignore path separator in path part for branch URIs
+		return fmt.Errorf("branch URI includes a path part: %w", ErrInvalidBranchURI)
+	case !validator.ReValidBranchID.MatchString(u.Ref):
+		return fmt.Errorf("contains invalid branch name: %w", ErrInvalidBranchURI)
+	default:
+		return nil
+	}
+}
+
+func (u *URI) ParseFullyQualified() error {
+	err := parseValidRef(u)
+
+	switch {
+	case err != nil:
+		return err
+	case u.Path == nil:
+		return fmt.Errorf("missing path part: %w", ErrInvalidPathURI)
+	default:
+		return nil
+	}
 }
 
 func (u *URI) GetPath() string {
@@ -91,7 +159,7 @@ func ParseWithBaseURI(s string, baseURI string) (*URI, error) {
 	}
 	u, err := Parse(s)
 	if err != nil {
-		return nil, fmt.Errorf("parsing %s: %w", s, err)
+		return nil, err
 	}
 	return u, nil
 }

@@ -50,7 +50,7 @@ var ingestCmd = &cobra.Command{
 		from := Must(cmd.Flags().GetString("from"))
 		to := Must(cmd.Flags().GetString("to"))
 		concurrency := Must(cmd.Flags().GetInt("concurrency"))
-		lakefsURI := MustParsePathURI("Operation requires a valid path URI. e.g. lakefs://<repo>/<branch>/[prefix]", to)
+		lakefsURI := MustParsePathURI("To", to)
 
 		// initialize worker pool
 		client := getClient()

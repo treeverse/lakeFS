@@ -129,6 +129,11 @@ const (
 
 	defaultSyncParallelism = 25
 	defaultSyncPresign     = true
+
+	myRepoExample   = "lakefs://my-repo"
+	myBucketExample = "s3://my-bucket"
+	myBranchExample = "my-branch"
+	runIDExample    = "20230719152411arS0z6I"
 )
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
@@ -180,7 +185,7 @@ func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.
 func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remote *uri.URI, localPath string) {
 	idx := 0
 	if requireRemote {
-		remote = MustParsePathURI("Operation requires a valid path URI. e.g. lakefs://<repo>/<branch>/[prefix]", args[0])
+		remote = MustParsePathURI("Path", args[0])
 		idx += 1
 	}
 

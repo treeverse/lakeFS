@@ -9,17 +9,16 @@ import (
 )
 
 // repoCreateBareCmd represents the create repo command
-// lakectl create-bare lakefs://myrepo s3://my-bucket/
 var repoCreateBareCmd = &cobra.Command{
 	Use:               "create-bare <repository uri> <storage namespace>",
 	Short:             "Create a new repository with no initial branch or commit",
-	Example:           "lakectl create-bare lakefs://some-repo-name s3://some-bucket-name",
+	Example:           fmt.Sprintf("lakectl create-bare %s %s", myRepoExample, myBucketExample),
 	Hidden:            true,
 	Args:              cobra.ExactArgs(repoCreateCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
+		u := MustParseRepoURI("Repository", args[0])
 		fmt.Println("Repository:", u)
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {

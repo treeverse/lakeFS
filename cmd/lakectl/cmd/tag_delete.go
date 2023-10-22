@@ -18,7 +18,7 @@ var tagDeleteCmd = &cobra.Command{
 			Die("Delete tag aborted", 1)
 		}
 		client := getClient()
-		u := MustParseRefURI("Operation requires a valid tag URI. e.g. lakefs://<repo>/<tag>", args[0])
+		u := MustParseRefURI("Tag", args[0])
 		fmt.Println("Tag ref:", u)
 
 		ctx := cmd.Context()

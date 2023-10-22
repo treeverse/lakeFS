@@ -14,7 +14,7 @@ var tagShowCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		u := MustParseRefURI("Operation requires a valid tag URI. e.g. lakefs://<repo>/<tag>", args[0])
+		u := MustParseRefURI("Tag", args[0])
 		fmt.Printf("Tag ref: %s\n", u)
 
 		ctx := cmd.Context()

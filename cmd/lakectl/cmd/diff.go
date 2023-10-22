@@ -55,15 +55,15 @@ var diffCmd = &cobra.Command{
 		client := getClient()
 		if len(args) == diffCmdMinArgs {
 			// got one arg ref: uncommitted changes diff
-			branchURI := MustParseBranchURI("Operation with only single ref requires a valid branch URI with no prefix. e.g. lakefs://<repo>/<branch>", args[0])
+			branchURI := MustParseBranchURI("Branch", args[0])
 			fmt.Println("Ref:", branchURI)
 			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
 			return
 		}
 
 		twoWay := Must(cmd.Flags().GetBool(twoWayFlagName))
-		leftRefURI := MustParseRefURI("Operation requires a valid (left) reference URI. e.g. lakefs://<repo>/<ref>", args[0])
-		rightRefURI := MustParseRefURI("Operation requires a valid (right) reference URI. e.g. lakefs://<repo>/<ref>", args[1])
+		leftRefURI := MustParseRefURI("Left ref", args[0])
+		rightRefURI := MustParseRefURI("Right ref", args[1])
 		fmt.Printf("Left ref: %s\nRight ref: %s\n", leftRefURI, rightRefURI)
 		if leftRefURI.Repository != rightRefURI.Repository {
 			Die("both references must belong to the same repository", 1)

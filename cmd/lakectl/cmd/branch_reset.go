@@ -11,7 +11,7 @@ import (
 // lakectl branch reset lakefs://myrepo/main --commit commitId --prefix path --object path
 var branchResetCmd = &cobra.Command{
 	Use:     "reset <branch uri> [--prefix|--object]",
-	Example: "lakectl branch reset lakefs://example-repo/example-branch",
+	Example: fmt.Sprintf("lakectl branch reset %s/%s", myRepoExample, myBranchExample),
 	Short:   "Reset uncommitted changes - all of them, or by path",
 	Long: `reset changes.  There are four different ways to reset changes:
   1. reset all uncommitted changes - reset lakefs://myrepo/main 
@@ -21,7 +21,7 @@ var branchResetCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseBranchURI("Operation requires a valid branch URI with no prefix. e.g. lakefs://<repo>/<branch>", args[0])
+		u := MustParseBranchURI("Branch", args[0])
 		fmt.Println("Branch:", u)
 		prefix, err := cmd.Flags().GetString("prefix")
 		if err != nil {

@@ -55,7 +55,7 @@ var commitCmd = &cobra.Command{
 			datePtr = nil
 		}
 
-		branchURI := MustParseBranchURI("Operation requires a valid branch URI with no prefix. e.g. lakefs://<repo>/<branch>", args[0])
+		branchURI := MustParseBranchURI("Branch", args[0])
 		fmt.Println("Branch:", branchURI)
 
 		// do commit

@@ -35,8 +35,8 @@ var mergeCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		sourceRef := MustParseBranchURI("Operation requires source to be a branch reference with no prefix. e.g. lakefs://<repo>/<branch>", args[0])
-		destinationRef := MustParseBranchURI("Operation requires destination to be a branch reference with no prefix. e.g. lakefs://<repo>/<branch>", args[1])
+		sourceRef := MustParseBranchURI("Source", args[0])
+		destinationRef := MustParseBranchURI("Destination", args[1])
 		strategy := Must(cmd.Flags().GetString("strategy"))
 		fmt.Println("Source:", sourceRef)
 		fmt.Println("Destination:", destinationRef)

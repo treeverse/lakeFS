@@ -25,7 +25,7 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 	Hidden:  true,
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		repoURI := MustParseRepoURI("Operation requires a valid repository URI. e.g. lakefs://<repo>", args[0])
+		repoURI := MustParseRepoURI("Repository", args[0])
 		fmt.Println("Repository:", repoURI)
 		manifestFileName := Must(cmd.Flags().GetString("manifest"))
 		fp := Must(OpenByPath(manifestFileName))
