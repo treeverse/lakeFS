@@ -11,7 +11,7 @@ redirect_from:
   - /hooks/index.html
   - /hooks/
   - /setup/hooks.html
-  - integrations/catalog_exports.html
+  - /integrations/catalog_exports.html
 ---
 
 # Actions and Hooks in lakeFS
