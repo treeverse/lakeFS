@@ -87,12 +87,8 @@ import lakefs_sdk
 from lakefs_sdk.models import RepositoryCreation
 from lakefs_sdk.client import LakeFSClient
 
-configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000",
-    username="AKIAIOSFODNN7EXAMPLE",
-    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-)
-client = LakeFSClient(configuration)
+# ... client ...
+
 resp = client.repositories_api.create_repository(
     RepositoryCreation(
         name="example-repo",
@@ -102,7 +98,7 @@ resp = client.repositories_api.create_repository(
 print(resp)
 ```
 
-_Output_
+#### Output
 ```
 id='example-repo' creation_date=1697815536 default_branch='main' storage_namespace='s3://storage-bucket/repos/example-repo'
 ```
@@ -114,12 +110,7 @@ id='example-repo' creation_date=1697815536 default_branch='main' storage_namespa
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
-configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000",
-    username="AKIAIOSFODNN7EXAMPLE",
-    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-)
-client = LakeFSClient(configuration)
+# ... client and pagination_helper ...
 
 print("Listing repositories:")
 for repo in pagination_helper(client.repositories_api.list_repositories):
@@ -127,7 +118,7 @@ for repo in pagination_helper(client.repositories_api.list_repositories):
 
 ```
 
-_Output_
+#### Output
 ```
 Listing repositories:
 id='example-repo' creation_date=1697815536 default_branch='main' storage_namespace='s3://storage-bucket/repos/example-repo'
@@ -140,12 +131,7 @@ import lakefs_sdk
 from lakefs_sdk.models import BranchCreation
 from lakefs_sdk.client import LakeFSClient
 
-configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000",
-    username="AKIAIOSFODNN7EXAMPLE",
-    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-)
-client = LakeFSClient(configuration)
+# ... client ...
 
 ref1 = client.branches_api.create_branch('example-repo', BranchCreation(name='experiment1', source='main'))
 print("experiment1 ref:", ref1)
@@ -154,7 +140,7 @@ ref2 = client.branches_api.create_branch('example-repo', BranchCreation(name='ex
 print("experiment2 ref:", ref2)
 ```
 
-_Output_
+#### Output
 ```
 experiment1 ref: 7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859
 experiment2 ref: 7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859
@@ -166,19 +152,14 @@ experiment2 ref: 7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f885
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
-configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000",
-    username="AKIAIOSFODNN7EXAMPLE",
-    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-)
-client = LakeFSClient(configuration)
+# .. client and pagination_helper
 
 for branch in pagination_helper(client.branches_api.list_branches, repository='example-repo'):
     print(branch)
 
 ```
 
-_Output_
+#### Output
 ```
 id='experiment1' commit_id='7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859'
 id='experiment2' commit_id='7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859'
@@ -188,8 +169,7 @@ id='main' commit_id='7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646
 ### Upload
 
 Great. Now, let's upload some data:
-
-_Generate "sample_data.csv" or use your own data_
+Generate "sample_data.csv" or use your own data
 
 ```python
 import csv
@@ -213,18 +193,13 @@ Upload the data file by passing the filename as content:
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
-configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000",
-    username="AKIAIOSFODNN7EXAMPLE",
-    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-)
-client = LakeFSClient(configuration)
+# ... client ...
 
 resp = client.objects_api.upload_object(repository="example-repo", branch="experiment1", path="csv/sample_data.csv", content="sample_data.csv")
 print(resp)
 ```
 
-_Output_
+#### Output
 ```
 path='csv/sample_data.csv' path_type='object' physical_address='s3://storage-bucket/repos/example-repo/data/gke0ignnl531fa6k90p0/ckpfk4fnl531fa6k90pg' physical_address_expiry=None checksum='b6b6a1a17ff85291376ae6a5d7fa69d0' size_bytes=92 mtime=1697839635 metadata=None content_type='text/csv'
 ```
@@ -235,18 +210,13 @@ We can also upload content a bytes:
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
-configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000",
-    username="AKIAIOSFODNN7EXAMPLE",
-    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-)
-client = LakeFSClient(configuration)
+# ... client ...
 
 resp = client.objects_api.upload_object(repository="example-repo", branch="experiment1", path="raw/file1.data", content=b"Hello Object World")
 print(resp)
 ```
 
-_Output_
+#### Output
 ```
 path='rawv/file1.data' path_type='object' physical_address='s3://storage-bucket/repos/example-repo/data/gke0ignnl531fa6k90p0/ckpfltvnl531fa6k90q0' physical_address_expiry=None checksum='0ef432f8eb0305f730b0c57bbd7a6b08' size_bytes=18 mtime=1697839863 metadata=None content_type='application/octet-stream
 ```
@@ -259,19 +229,14 @@ Diffing a single branch will show all the uncommitted changes on that branch:
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
-configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000",
-    username="AKIAIOSFODNN7EXAMPLE",
-    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-)
-client = LakeFSClient(configuration)
+# ... client and pagination_helper ...
 
 for diff in pagination_helper(client.branches_api.diff_branch, repository='example-repo', branch='experiment1'):
     print(diff)
 
 ```
 
-_Output_
+#### Output
 
 ```
 type='added' path='csv/sample_data.csv' path_type='object' size_bytes=92
@@ -285,12 +250,7 @@ import lakefs_sdk
 from lakefs_sdk.models import CommitCreation
 from lakefs_sdk.client import LakeFSClient
 
-configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000",
-    username="AKIAIOSFODNN7EXAMPLE",
-    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-)
-client = LakeFSClient(configuration)
+# ... client ...
 
 resp = client.commits_api.commit(
     repository='example-repo',
@@ -300,7 +260,7 @@ resp = client.commits_api.commit(
 print(resp)
 ```
 
-_Output_
+#### Output
 ```
 id='d51b2428106921fcb893813b1eb668b46284067bb5264d89ed409ccb95676e3d' parents=['7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859'] committer='barak' message='Add some data!' creation_date=1697884139 meta_range_id='' metadata={'using': 'python_api'}
 ```
@@ -311,18 +271,13 @@ Calling diff again on the same branch, this time there should be no uncommitted 
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
-configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000",
-    username="AKIAIOSFODNN7EXAMPLE",
-    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-)
-client = LakeFSClient(configuration)
+# ... client ...
 
 resp = client.branches_api.diff_branch(repository='example-repo', branch='experiment1')
 print(resp)
 ```
 
-_Output_
+#### Output
 ```
 pagination=Pagination(has_more=False, next_offset='', results=0, max_per_page=1000) results=[]
 ```
@@ -335,19 +290,14 @@ Let's diff between your branch and the main branch:
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
-configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000",
-    username="AKIAIOSFODNN7EXAMPLE",
-    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-)
-client = LakeFSClient(configuration)
+# ... client and pagination_helper ...
 
 for diff in pagination_helper(client.refs_api.diff_refs, repository='example-repo', left_ref='main', right_ref='experiment1'):
         print(diff)
 
 ```
 
-_Output_
+#### Output
 ```
 type='added' path='csv/sample_data.csv' path_type='object' size_bytes=92
 type='added' path='raw/file1.data' path_type='object' size_bytes=18
@@ -368,12 +318,7 @@ Let's diff again - there should be no changes as all changes are on our main bra
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
-configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000",
-    username="AKIAIOSFODNN7EXAMPLE",
-    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-)
-client = LakeFSClient(configuration)
+# ... client ...
 
 resp = client.refs_api.merge_into_branch(
     repository='example-repo',
@@ -382,7 +327,7 @@ resp = client.refs_api.merge_into_branch(
 print(resp)
 ```
 
-_Output_
+#### Output
 ```
 reference='a3ea99167a25748cf1d33ba284bda9c1400a8acfae8477562032d2b2435fd37b'
 ```
@@ -395,12 +340,7 @@ from io import StringIO
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
-configuration = lakefs_sdk.Configuration(
-    host="http://localhost:8000",
-    username="AKIAIOSFODNN7EXAMPLE",
-    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-)
-client = LakeFSClient(configuration)
+# ... client ...
 
 resp = client.objects_api.get_object(
     repository='example-repo',
@@ -412,7 +352,7 @@ for row in csv.reader(data):
     print(row)
 ```
 
-_Output_
+#### Output
 ```
 ['ID', 'Name', 'Email']
 ['1', 'Alice', 'alice@example.com']
@@ -440,6 +380,7 @@ lakeFS exposes an S3-compatible API, so you can use Boto to interact with your o
 ### Initializing
 
 Create a Boto3 S3 client with your lakeFS endpoint and key-pair:
+
 ```python
 import boto3
 s3 = boto3.client('s3',
