@@ -656,7 +656,7 @@ const GetStarted = ({ config, onUpload, onImport }) => {
           <DotIcon className="me-1 mt-1" />
           Use&nbsp;
           <a
-            href="https://docs.lakefs.io/integrations/distcp.html"
+            href="https://docs.lakefs.io/howto/copying.html#using-distcp"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -664,7 +664,7 @@ const GetStarted = ({ config, onUpload, onImport }) => {
           </a>
           &nbsp;or&nbsp;
           <a
-            href="https://docs.lakefs.io/integrations/rclone.html"
+            href="https://docs.lakefs.io/howto/copying.html#using-rclone"
             target="_blank"
             rel="noopener noreferrer"
           >
