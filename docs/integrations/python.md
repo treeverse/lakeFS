@@ -67,7 +67,7 @@ configuration.proxy = <proxy server URL>
 Now that you have a client object, you can use it to interact with the API.
 
 
-To shorten the code example, let's create a helper function that will iterate over all paginated API's results:
+To shorten the code example, let's create a helper function that will iterate over all results of a paginated API:
 
 ```python
 def pagination_helper(page_fetcher, **kwargs):
