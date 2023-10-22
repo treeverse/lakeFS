@@ -20,6 +20,18 @@ While different systems support reading directly from lakefs (i.e Gateway endpoi
 
 With Data Catalog Exports, one can leverage the versioning capabilities of lakeFS in external data warehouses and manage tables with branches and commits. 
 
+Once hooks are set up, querying lakeFS data from e.g. Athena, Trino and other catalog-dependant tools looks like this:
+
+```sql
+use main;
+use my_branch; -- any branch
+use v101; -- or tag
+
+SELECT * FROM users 
+INNER JOIN events 
+ON users.id = events.user_id; -- SQL stays the same, branch or tag exist as schema
+```
+
 ## How it works 
 
 There are several well known formats that exist today that could help export existing tables in lakeFS into a "native" object store representation
