@@ -31,16 +31,21 @@ The integration between Glue and lakeFS is based on [Data Catalog Exports](({% l
 
 ### How it works 
 
-There are 5 components: 
+Based on event such post-commit an Action will run a lua package that will create Symlink structures in S3 and then will register a table in Glue.   
 
-1. Table definition at `_lakefs_tables/<your-table>.yaml`
-2. lua script using 
+There are 4 key pieces:
+
+1. Table description at `_lakefs_tables/<your-table>.yaml`
+2. Lua script that will do the export using [symlink_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportsymlink_exporter) and [glue_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportglue_exporter) packages.
+3. [Action Lua Hook](({% link integrations/catalog_exports.md %}#eunning-an-exporter)) to execute the lua hook. 
+4. Write some lakeFS table data (i.e [Spark]({% link integrations/spark.md %}) or some CSV)
 
 To read more check [Data Catalog Exports](({% link integrations/catalog_exports.md %})).
 
 ### Pre-requisite 
 
-1. Write some lakeFS table data (i.e [Spark]({% link integrations/spark.md %}) or some CSV)
+1. Glue Database to use (lakeFS does not create a database).
 2. AWS Credentials with permission to manage Glue, Athena Query and S3 access.
 3. lakeFS [Actions]({% link howto/hooks/index.md %}) enabled. 
 
+### Pre-requisite 

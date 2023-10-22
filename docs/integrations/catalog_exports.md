@@ -47,7 +47,6 @@ Note: only tables of `type: hive` are supported and more are expected to be adde
 #### Hive tables
 
 Hive metadata server tables are essentially just a set of objects that share a prefix, with no table metadata stored on the object store.  You need to configure prefix, partitions, and schema.
-{: .note }
 
 ```yaml
 name: animals
@@ -72,13 +71,14 @@ schema:
         comment: a comment about this column
 ```
 
-Note: Useful types recognized by DataBricks Photon include `integer`, `long`, `short`, `string`, `double`, `float`, `date`, and `timestamp`.
+Note: Useful types recognized by Hive include `integer`, `long`, `short`, `string`, `double`, `float`, `date`, and `timestamp`.
 {: .note }
 
 ### Catalog Exporters 
 
 Exporters are code packages written in lua, each exporter is exposed as a lua function under the package namespace `lakefs/catalogexport`, they are reusable hooks to connect various types of tables to different catalogs.
-[configuration]({% link reference/configuration.md %})
+[configuration]({% link reference/configuration.md %}).
+
 Note: Check the [lua Library reference]({% link howto/hooks/lua.md %}#lua-library-reference) library for code reference, specifically everything under the prefix `lakefs/catalogexport`. 
 {: .note }
 
