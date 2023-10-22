@@ -30,7 +30,7 @@ Use the following Maven dependency to install the lakeFS custom catalog:
 <dependency>
   <groupId>io.lakefs</groupId>
   <artifactId>lakefs-iceberg</artifactId>
-  <version>0.1.3</version>
+  <version>0.1.4</version>
 </dependency>
 ```
 
@@ -39,7 +39,7 @@ Use the following Maven dependency to install the lakeFS custom catalog:
   Include the `lakefs-iceberg` jar in your package list along with Iceberg. For example: 
 
 ```python
-.config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.3.0,io.lakefs:lakefs-iceberg:0.1.3")
+.config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.3.0,io.lakefs:lakefs-iceberg:0.1.4")
 ```  
 </div>
 </div>
