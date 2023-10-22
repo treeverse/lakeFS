@@ -128,10 +128,10 @@ Abuse a running lakeFS instance. See sub commands for more info.
 
 ### lakectl abuse commit
 
-Commits to the source ref repeatedly
+Commits to the source branch repeatedly
 
 ```
-lakectl abuse commit <source ref uri> [flags]
+lakectl abuse commit <branch uri> [flags]
 ```
 
 #### Options
@@ -194,7 +194,7 @@ lakectl abuse help [command] [flags]
 Link the same object in parallel.
 
 ```
-lakectl abuse link-same-object <source ref uri> [flags]
+lakectl abuse link-same-object <branch uri> [flags]
 ```
 
 #### Options
@@ -254,7 +254,7 @@ lakectl abuse random-read <source ref uri> [flags]
 Generate random writes to the source branch
 
 ```
-lakectl abuse random-write <source branch uri> [flags]
+lakectl abuse random-write <branch uri> [flags]
 ```
 
 #### Options
@@ -328,14 +328,14 @@ Describe run results
 Show information about the run and all the hooks that were executed as part of the run
 
 ```
-lakectl actions runs describe [flags]
+lakectl actions runs describe <repository uri> <run_id> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl actions runs describe lakefs://<repository> <run_id>
+lakectl actions runs describe lakefs://my-repo 20230719152411arS0z6I
 ```
 
 #### Options
@@ -382,14 +382,14 @@ List runs
 List all runs on a repository optional filter by branch or commit
 
 ```
-lakectl actions runs list [flags]
+lakectl actions runs list <repository uri> [--branch <branch>] [--commit <commit_id>] [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl actions runs list lakefs://<repository> [--branch <branch>] [--commit <commit_id>]
+lakectl actions runs list lakefs://my-repo my-branch ba323f434
 ```
 
 #### Options
@@ -422,7 +422,7 @@ lakectl actions validate [flags]
 {:.no_toc}
 
 ```
-lakectl actions validate <path>
+lakectl actions validate path/to/my/file
 ```
 
 #### Options
@@ -1572,7 +1572,7 @@ lakectl branch list <repository uri> [flags]
 {:.no_toc}
 
 ```
-lakectl branch list lakefs://<repository>
+lakectl branch list lakefs://my-repo
 ```
 
 #### Options
@@ -1606,7 +1606,7 @@ lakectl branch reset <branch uri> [--prefix|--object] [flags]
 {:.no_toc}
 
 ```
-lakectl branch reset lakefs://example-repo/example-branch
+lakectl branch reset lakefs://my-repo/my-branch
 ```
 
 #### Options
@@ -1667,7 +1667,7 @@ lakectl branch show <branch uri> [flags]
 {:.no_toc}
 
 ```
-lakectl branch show lakefs://example-repo/example-branch
+lakectl branch show lakefs://my-repo/my-branch
 ```
 
 #### Options
@@ -1707,14 +1707,14 @@ Add a branch protection rule
 Add a branch protection rule for a given branch name pattern
 
 ```
-lakectl branch-protect add <repo uri> <pattern> [flags]
+lakectl branch-protect add <repository uri> <pattern> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl branch-protect add lakefs://<repository> 'stable_*'
+lakectl branch-protect add lakefs://my-repo 'stable_*'
 ```
 
 #### Options
@@ -1736,14 +1736,14 @@ Delete a branch protection rule
 Delete a branch protection rule for a given branch name pattern
 
 ```
-lakectl branch-protect delete <repo uri> <pattern> [flags]
+lakectl branch-protect delete <repository uri> <pattern> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl branch-protect delete lakefs://<repository> stable_*
+lakectl branch-protect delete lakefs://my-repo stable_*
 ```
 
 #### Options
@@ -1783,14 +1783,14 @@ lakectl branch-protect help [command] [flags]
 List all branch protection rules
 
 ```
-lakectl branch-protect list <repo uri> [flags]
+lakectl branch-protect list <repository uri> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl branch-protect list lakefs://<repository>
+lakectl branch-protect list lakefs://my-repo
 ```
 
 #### Options
@@ -1810,14 +1810,14 @@ lakectl branch-protect list lakefs://<repository>
 Cat actions hook output
 
 ```
-lakectl cat-hook-output [flags]
+lakectl cat-hook-output <repository uri> <run_id> <hook_id> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl cat-hook-output lakefs://<repository> <run_id> <run_hook_id>
+lakectl cat-hook-output lakefs://my-repo 20230719152411arS0z6I my_hook_name
 ```
 
 #### Options
@@ -2288,14 +2288,14 @@ Manage the garbage collection policy
 Deletes the garbage collection policy for the repository
 
 ```
-lakectl gc delete-config [flags]
+lakectl gc delete-config <repository uri> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl gc delete-config <repository uri>
+lakectl gc delete-config lakefs://my-repo
 ```
 
 #### Options
@@ -2312,14 +2312,14 @@ lakectl gc delete-config <repository uri>
 Show the garbage collection policy for this repository
 
 ```
-lakectl gc get-config [flags]
+lakectl gc get-config <repository uri> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl gc get-config <repository uri>
+lakectl gc get-config lakefs://my-repo
 ```
 
 #### Options
@@ -2379,14 +2379,14 @@ Example configuration file:
 }
 
 ```
-lakectl gc set-config [flags]
+lakectl gc set-config <repository uri> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl gc set-config <repository uri> -f config.json
+lakectl gc set-config lakefs://my-repo -f config.json
 ```
 
 #### Options
@@ -3007,7 +3007,7 @@ lakectl repo create <repository uri> <storage namespace> [flags]
 {:.no_toc}
 
 ```
-lakectl repo create lakefs://some-repo-name s3://some-bucket-name
+lakectl repo create lakefs://my-repo s3://my-bucket
 ```
 
 #### Options
@@ -3035,7 +3035,7 @@ lakectl repo create-bare <repository uri> <storage namespace> [flags]
 {:.no_toc}
 
 ```
-lakectl create-bare lakefs://some-repo-name s3://some-bucket-name
+lakectl create-bare lakefs://my-repo s3://my-bucket
 ```
 
 #### Options
@@ -3054,6 +3054,13 @@ Delete existing repository
 
 ```
 lakectl repo delete <repository uri> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl repo delete lakefs://my-repo
 ```
 
 #### Options
@@ -3257,7 +3264,7 @@ lakectl tag list <repository uri> [flags]
 {:.no_toc}
 
 ```
-lakectl tag list lakefs://<repository>
+lakectl tag list lakefs://my-repo
 ```
 
 #### Options
