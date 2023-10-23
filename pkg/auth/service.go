@@ -1890,7 +1890,7 @@ func (a *APIAuthService) CheckHealth(ctx context.Context, logger logging.Logger,
 		case healthResp.StatusCode() == http.StatusNoContent:
 			return nil
 		default:
-			return fmt.Errorf("health check returned status %s: %w", healthResp.Status, ErrInvalidResponse)
+			return fmt.Errorf("health check returned status %s: %w", healthResp.Status(), ErrInvalidResponse)
 		}
 	}, bo)
 	if err != nil {
