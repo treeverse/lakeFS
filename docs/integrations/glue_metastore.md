@@ -113,7 +113,7 @@ Add some table data to lakeFS for example  `animals` table:
     <li><a href="#spark-parquet">Spark Parquet</a></li>
   </ul> 
   <div markdown="1" id="csv">
-#### CSV
+#### CSV Example
 
 The simplest way would be add a mock CSV table with `lakectl`.
 
@@ -147,11 +147,13 @@ EOF
 
 lakectl commit lakefs://$repo/$branch -m "add table data"
 ```
+The files added to lakeFS should look something like this: 
 
+![lakeFS Uploaded CSV Files]({{ site.baseurl }}/assets/img/csv_export_hooks_data.png)
 
   </div>
   <div markdown="1" id="spark-parquet">
-#### Spark Parquet
+#### Spark Parquet Example
 
 The following example will create the table in spark DF, write to lakeFS via S3 Gateway and commit the data.
 
