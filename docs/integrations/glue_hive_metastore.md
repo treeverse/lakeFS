@@ -9,7 +9,7 @@ redirect_from: /using/glue_hive_metastore.html
 
 {: .warning }
 **Deprecated Feature:** Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.
-You can read more about it [here](https://github.com/treeverse/lakeFS/issues/6461).
+You can read more about it [here]({% link howto/catalog_exports.md %}).
 
 {% include toc_2-3.html %}
 

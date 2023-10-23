@@ -1,8 +1,9 @@
 ---
-title: Catalog Export Hooks
+title: Data Catalog Export
 description: This section explains how lakeFS can integrate with external Data Catalogs via metastore update operations. 
 parent: Integrations
-redirect_from: /using/catalog_exports.html
+redirect_from: 
+  - /howto/catalog_exports.html
 ---
 
 # Data Catalog Exports
