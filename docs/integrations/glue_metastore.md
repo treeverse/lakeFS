@@ -113,7 +113,7 @@ Add some table data to lakeFS for example  `animals` table:
     <li><a href="#spark-parquet">Spark Parquet</a></li>
   </ul> 
   <div markdown="1" id="csv">
-## CSV
+#### CSV
 
 The simplest way would be add a mock CSV table with `lakectl`.
 
@@ -151,7 +151,7 @@ lakectl commit lakefs://$repo/$branch -m "add table data"
 
   </div>
   <div markdown="1" id="spark-parquet">
-## Spark Parquet
+#### Spark Parquet
 
 The following example will create the table in spark DF, write to lakeFS via S3 Gateway and commit the data.
 
@@ -160,18 +160,14 @@ import lakefs_client
 from lakefs_client.models import CommitCreation
 from lakefs_client.client import LakeFSClient
 from pyspark.sql import SparkSession
-
-
 # lakefs config 
 lakefs_endpoint='http://localhost:8000' 
 lakefs_access_key_id='<LAKEFS_KEY_ID<'
 lakefs_secret_access_key='<LAKEFS_SECRET_ACCESS_KEY>'
-
 # init lakeFS client 
 configuration = lakefs_client.Configuration(host=lakefs_endpoint,username=lakefs_access_key_id,password=lakefs_secret_access_key)
 configuration.verify_ssl = False
 lakefsApi = LakeFSClient(configuration)
-
 # init spark session 
 builder = SparkSession.builder.appName("MyApp") \
     .config("spark.hadoop.fs.s3a.access.key", lakefs_access_key_id) \
@@ -179,14 +175,11 @@ builder = SparkSession.builder.appName("MyApp") \
     .config("spark.hadoop.fs.s3a.path.style.access", "true") \
     .config("spark.hadoop.fs.s3a.endpoint", lakefs_endpoint) \
     .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
-
 spark = builder.getOrCreate()
-
 # write table data as parquet files to lakeFS 
 repo="catalogs"
 ref = "main"
 tablePath = f"s3a://{repo}/{ref}/tables/animals"
-
 data=[
     ("axolotl", 10, "jayson"),
     ("axolotl", 10, "john"),
@@ -194,11 +187,9 @@ data=[
     ("turtle", 12, "mrgreen"),
     ("bear", 30, "winnie"),
 ]
-
 columns=["type","weight","name"]
 df=spark.createDataFrame(data,columns)
 df.write.partitionBy("type","weight").mode("overwrite").parquet(f"{tablePath}/data.parquet")
-
 # commit data to lakeFS 
 lakefsApi.commits.commit(repository=repo,branch=ref,commit_creation=CommitCreation(message="data"))
 ```
