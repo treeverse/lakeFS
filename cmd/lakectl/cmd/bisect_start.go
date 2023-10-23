@@ -9,12 +9,12 @@ import (
 
 // bisectStartCmd represents the start command
 var bisectStartCmd = &cobra.Command{
-	Use:   "start <bad ref> <good ref>",
+	Use:   "start <bad ref URI> <good ref URI>",
 	Short: "Start a bisect session",
 	Args:  cobra.ExactArgs(bisectStartCmdArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		badURI := MustParseRefURI("bad ref", args[0])
-		goodURI := MustParseRefURI("good ref", args[1])
+		badURI := MustParseRefURI("bad ref URI", args[0])
+		goodURI := MustParseRefURI("good ref URI", args[1])
 		if goodURI.Repository != badURI.Repository {
 			Die("Two references doesn't use the same repository", 1)
 		}

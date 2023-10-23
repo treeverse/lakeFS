@@ -133,7 +133,8 @@ const (
 	myRepoExample   = "lakefs://my-repo"
 	myBucketExample = "s3://my-bucket"
 	myBranchExample = "my-branch"
-	runIDExample    = "20230719152411arS0z6I"
+	myRunIDExample  = "20230719152411arS0z6I"
+	myDigestExample = "600dc0ffee"
 )
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {

@@ -23,7 +23,7 @@ var actionsRunsDescribeCmd = &cobra.Command{
 	Use:               "describe <repository URI> <run_id>",
 	Short:             "Describe run results",
 	Long:              `Show information about the run and all the hooks that were executed as part of the run`,
-	Example:           "lakectl actions runs describe " + myRepoExample + " " + runIDExample,
+	Example:           "lakectl actions runs describe " + myRepoExample + " " + myRunIDExample,
 	Args:              cobra.ExactArgs(runsShowRequiredArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {

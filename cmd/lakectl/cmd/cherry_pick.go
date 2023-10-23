@@ -14,11 +14,10 @@ const (
 )
 
 var cherryPick = &cobra.Command{
-	Use:   "cherry-pick <commit URI> <branch>",
-	Short: "Apply the changes introduced by an existing commit",
-	Long:  `Apply the changes from the given commit to the tip of the branch. The changes will be added as a new commit.`,
-	Example: `lakectl cherry-pick lakefs://example-repo/example-ref lakefs://example-repo/main
-`,
+	Use:     "cherry-pick <commit URI> <branch>",
+	Short:   "Apply the changes introduced by an existing commit",
+	Long:    `Apply the changes from the given commit to the tip of the branch. The changes will be added as a new commit.`,
+	Example: "lakectl cherry-pick " + myRepoExample + "/" + myDigestExample + " " + myRepoExample + "/" + myBranchExample,
 
 	Args: cobra.ExactArgs(cherryPickCmdArgs),
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

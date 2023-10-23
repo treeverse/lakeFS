@@ -10,7 +10,7 @@ import (
 var branchDeleteCmd = &cobra.Command{
 	Use:               "delete <branch URI>",
 	Short:             "Delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
-	Example:           "lakectl branch delete lakefs://example-repo/example-branch",
+	Example:           "lakectl branch delete " + myRepoExample + "/" + myBranchExample,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {

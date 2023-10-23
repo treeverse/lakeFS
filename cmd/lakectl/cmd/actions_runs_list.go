@@ -16,7 +16,7 @@ var actionsRunsListCmd = &cobra.Command{
 	Use:               "list <repository URI> [--branch <branch>] [--commit <commit_id>]",
 	Short:             "List runs",
 	Long:              `List all runs on a repository optional filter by branch or commit`,
-	Example:           "lakectl actions runs list " + myRepoExample + " " + myBranchExample + " ba323f434",
+	Example:           "lakectl actions runs list " + myRepoExample + " --branch " + myBranchExample + " --commit " + myDigestExample,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
