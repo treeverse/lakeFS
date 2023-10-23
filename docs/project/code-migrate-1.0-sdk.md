@@ -144,7 +144,7 @@ If you are using the lakeFS client for Python, be aware that the current package
 6. **Fetching results from response objects**: Instead of fetching the required results properties from a dictionary using `response_result.get_property(prop_name)`, the response objects will include domain specific entities, thus referring to the properties in the `results` of the response - `response_result.prop_name`. For example, instead of:
 
 ```python
-response = lakefs_client.branches_api.diff_branch(repository='repo', branch='main')
+response = lakefs_client.branches.diff_branch(repository='repo', branch='main')
 diff = response.results[0] # 'results' is a 'DiffList' object
 path = diff.get_property('path') # 'diff' is a dictionary
 ```
