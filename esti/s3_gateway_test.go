@@ -11,16 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	awscredentials "github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/go-openapi/swag"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	gtwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -212,7 +208,7 @@ func TestS3ReadObject(t *testing.T) {
 		}
 		statResp, err := client.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{
 			Path:    objPath,
-			Presign: swag.Bool(false),
+			Presign: apiutil.Ptr(false),
 		})
 		if err != nil {
 			t.Fatalf("StatObject(%s, %s): %s", repo, objPath, err)
@@ -223,14 +219,15 @@ func TestS3ReadObject(t *testing.T) {
 		physicalAddress := statResp.JSON200.PhysicalAddress
 
 		// setup s3 client and delete the physical object
-		cfg, err := config.LoadDefaultConfig(ctx, config.WithCredentialsProvider(
-			awscredentials.NewStaticCredentialsProvider(awsAccessKeyID, awsSecretAccessKey, "")),
-		)
+		s3BlockstoreClient, err := minio.New("s3.amazonaws.com", &minio.Options{
+			Creds:  credentials.NewStaticV4(awsAccessKeyID, awsSecretAccessKey, ""),
+			Secure: true,
+		})
 		if err != nil {
-			t.Fatalf("failed to load aws configuration, %v", err)
+			t.Fatalf("failed to create s3 blockstore client: %s", err)
 		}
 
-		s3UnderlyingClient := s3.NewFromConfig(cfg)
+		// access the underlying storage directly to delete the object
 		s3PhysicalURL, err := url.Parse(physicalAddress)
 		if err != nil {
 			t.Fatalf("failed to parse physical address %s, %v", physicalAddress, err)
@@ -239,12 +236,9 @@ func TestS3ReadObject(t *testing.T) {
 			t.Fatalf("physical address %s is not an s3 address", physicalAddress)
 		}
 		s3PhysicalKey := strings.TrimLeft(s3PhysicalURL.Path, "/")
-		_, err = s3UnderlyingClient.DeleteObject(ctx, &s3.DeleteObjectInput{
-			Bucket: aws.String(s3PhysicalURL.Host),
-			Key:    aws.String(s3PhysicalKey),
-		})
+		err = s3BlockstoreClient.RemoveObject(ctx, s3PhysicalURL.Host, s3PhysicalKey, minio.RemoveObjectOptions{})
 		if err != nil {
-			t.Fatalf("DeleteObjects(%s, %s): %s", repo, objPath, err)
+			t.Fatalf("RemoveObject(%s, %s): %s", repo, objPath, err)
 		}
 
 		// try to read the object - should fail
@@ -350,14 +344,14 @@ func TestS3CopyObject(t *testing.T) {
 	destPath := gatewayTestPrefix + "dest-file"
 
 	// upload data
-	minioClient := newMinioClient(t, credentials.NewStaticV2)
-	_, err := minioClient.PutObject(ctx, repo, srcPath, strings.NewReader(objContent), int64(len(objContent)),
+	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
+	_, err := s3lakefsClient.PutObject(ctx, repo, srcPath, strings.NewReader(objContent), int64(len(objContent)),
 		minio.PutObjectOptions{})
 	require.NoError(t, err)
 
 	t.Run("same_branch", func(t *testing.T) {
 		// copy the object to the same repository
-		_, err = minioClient.CopyObject(ctx,
+		_, err = s3lakefsClient.CopyObject(ctx,
 			minio.CopyDestOptions{
 				Bucket: repo,
 				Object: destPath,
@@ -370,7 +364,7 @@ func TestS3CopyObject(t *testing.T) {
 			t.Fatalf("minio.Client.CopyObject from(%s) to(%s): %s", srcPath, destPath, err)
 		}
 
-		download, err := minioClient.GetObject(ctx, repo, destPath, minio.GetObjectOptions{})
+		download, err := s3lakefsClient.GetObject(ctx, repo, destPath, minio.GetObjectOptions{})
 		if err != nil {
 			t.Fatalf("minio.Client.GetObject(%s): %s", destPath, err)
 		}
@@ -400,7 +394,7 @@ func TestS3CopyObject(t *testing.T) {
 
 	t.Run("different_repo", func(t *testing.T) {
 		// copy the object to different repository. should create another version of the file
-		_, err := minioClient.CopyObject(ctx,
+		_, err := s3lakefsClient.CopyObject(ctx,
 			minio.CopyDestOptions{
 				Bucket: destRepo,
 				Object: destPath,
@@ -413,7 +407,7 @@ func TestS3CopyObject(t *testing.T) {
 			t.Fatalf("minio.Client.CopyObjectFrom(%s)To(%s): %s", srcPath, destPath, err)
 		}
 
-		download, err := minioClient.GetObject(ctx, destRepo, destPath, minio.GetObjectOptions{})
+		download, err := s3lakefsClient.GetObject(ctx, destRepo, destPath, minio.GetObjectOptions{})
 		if err != nil {
 			t.Fatalf("minio.Client.GetObject(%s): %s", destPath, err)
 		}
