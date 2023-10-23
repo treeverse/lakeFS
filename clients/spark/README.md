@@ -26,14 +26,13 @@ io.lakefs:lakefs-spark-client_2.12:${CLIENT_VERSION}
 Replace `<version>` below with the latest version available. See [available versions](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client_2.12).
 
 ```
-CLIENT_VERSION=0.10.0
+CLIENT_VERSION=1.0.0
 spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v1 \
     --conf spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
     --conf spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
     --conf spark.hadoop.lakefs.api.access_key=<LAKEFS_ACCESS_KEY> \
     --conf spark.hadoop.lakefs.api.secret_key=<LAKEFS_SECRET_KEY> \
-    --packages org.apache.hadoop:hadoop-aws:2.7.7,\
-           io.lakefs:lakefs-spark-client_2.12:${CLIENT_VERSION} \
+    --packages org.apache.hadoop:hadoop-aws:2.7.7,io.lakefs:lakefs-spark-client_2.12:${CLIENT_VERSION} \
     --class io.treeverse.clients.Main export-app example-repo s3://example-bucket/exported-data/ \
     --branch=main
 ```
@@ -41,9 +40,9 @@ spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v
 ### Export using spark-submit (uber-jar)
 
 Replace `<version>` below with the latest version available. See [available versions](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client_2.12).
-```
-CLIENT_VERSION=0.10.0
 
+```
+CLIENT_VERSION=1.0.0
 spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v1 \
     --conf spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
 	--conf spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
