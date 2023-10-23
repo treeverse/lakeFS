@@ -1,13 +1,13 @@
 ---
 title: 2️⃣ Query the data
 description: lakeFS quickstart / Query the pre-populated data using DuckDB browser that's built into lakeFS
-parent: ⭐ Quickstart ⭐
+parent: ⭐ Quickstart
 nav_order: 10
 next: ["Create a branch of the data", "./branch.html"]
 previous: ["Launch the quickstart environment", "./launch.html"]
 ---
 
-# Let's Query Something 👀 
+# Let's Query Something 
 
 The lakeFS server has been loaded with a sample parquet datafile. Fittingly enough for a piece of software to help users of data lakes, the `lakes.parquet` file holds data about lakes around the world. 
 
