@@ -1140,6 +1140,11 @@ func (s *AuthService) deleteTokens(ctx context.Context) error {
 	return it.Err()
 }
 
+const (
+	healthCheckMaxInterval     = 5 * time.Second
+	healthCheckInitialInterval = 1 * time.Second
+)
+
 type APIAuthService struct {
 	apiClient   ClientWithResponsesInterface
 	secretStore crypt.SecretStore
@@ -1871,6 +1876,38 @@ func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, e
 	return a.validateResponse(res, http.StatusCreated)
 }
 
+func (a *APIAuthService) CheckHealth(ctx context.Context, logger logging.Logger, timeout time.Duration) error {
+	// Perform health check for API auth service
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxInterval = healthCheckMaxInterval
+	bo.InitialInterval = healthCheckInitialInterval
+	bo.MaxElapsedTime = timeout
+	err := backoff.Retry(func() error {
+		healthResp, err := a.apiClient.HealthCheckWithResponse(ctx)
+		switch {
+		case err != nil:
+			return err
+		case healthResp.StatusCode() == http.StatusNoContent:
+			return nil
+		default:
+			return fmt.Errorf("health check returned status %s: %w", healthResp.Status, ErrInvalidResponse)
+		}
+	}, bo)
+	if err != nil {
+		return err
+	}
+
+	resp, err := a.apiClient.GetVersionWithResponse(ctx)
+	if err != nil {
+		return fmt.Errorf("get version failed: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return fmt.Errorf("get version returned status %s: %w", resp.Status(), ErrInvalidResponse)
+	}
+	logger.Info("auth API server version: ", resp.JSON200.Version)
+	return nil
+}
+
 func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
 	if token == "" {
 		// when no token is provided, generate one.
@@ -1903,44 +1940,13 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 	} else {
 		cache = &DummyCache{}
 	}
-	healthRes := &APIAuthService{
+	res := &APIAuthService{
 		apiClient:   client,
 		secretStore: secretStore,
 		logger:      logger,
 		cache:       cache,
 	}
-
-	// Perform health check for API auth service
-	bo := backoff.NewExponentialBackOff()
-	bo.MaxInterval = 5 * time.Second
-	bo.InitialInterval = 1 * time.Second
-	bo.MaxElapsedTime = 20 * time.Second
-	ctx := context.Background()
-	err = backoff.Retry(func() error {
-		healtResp, err := client.HealthCheck(ctx)
-		switch {
-		case err != nil:
-			return err
-		case healtResp.StatusCode == http.StatusNoContent:
-			return nil
-		default:
-			return fmt.Errorf("health check returned status %s: %w", healtResp.Status, ErrInvalidResponse)
-		}
-	}, bo)
-	if err != nil {
-		return nil, fmt.Errorf("health check failed: %w", err)
-	}
-
-	resp, err := client.GetVersionWithResponse(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("get version failed: %w", err)
-	}
-	if resp.JSON200 == nil {
-		return nil, fmt.Errorf("get version returned status %s: %w", resp.Status(), ErrInvalidResponse)
-	}
-	logger.Info("auth API server version: ", resp.JSON200.Version)
-
-	return healthRes, nil
+	return res, nil
 }
 
 // generateAuthAPIJWT generates a new auth api jwt token

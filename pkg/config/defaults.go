@@ -7,13 +7,14 @@ import (
 )
 
 const (
-	DefaultListenAddress        = "0.0.0.0:8000"
-	DefaultLoggingLevel         = "INFO"
-	DefaultLoggingAuditLogLevel = "DEBUG"
-	BlockstoreTypeKey           = "blockstore.type"
-	DefaultQuickstartUsername   = "quickstart"
-	DefaultQuickstartKeyID      = "AKIAIOSFOLQUICKSTART"
-	DefaultQuickstartSecretKey  = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" // nolint:gosec
+	DefaultListenAddress             = "0.0.0.0:8000"
+	DefaultLoggingLevel              = "INFO"
+	DefaultLoggingAuditLogLevel      = "DEBUG"
+	BlockstoreTypeKey                = "blockstore.type"
+	DefaultQuickstartUsername        = "quickstart"
+	DefaultQuickstartKeyID           = "AKIAIOSFOLQUICKSTART"
+	DefaultQuickstartSecretKey       = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" // nolint:gosec
+	DefaultAuthAPIHealthCheckTimeout = 20 * time.Second
 )
 
 //nolint:gomnd
@@ -59,6 +60,8 @@ func setDefaults(cfgType string) {
 
 	viper.SetDefault("auth.remote_authenticator.default_user_group", "Viewers")
 	viper.SetDefault("auth.remote_authenticator.request_timeout", 10*time.Second)
+
+	viper.SetDefault("auth.api.health_check_timeout", DefaultAuthAPIHealthCheckTimeout)
 
 	viper.SetDefault("blockstore.local.path", "~/lakefs/data/block")
 	viper.SetDefault("blockstore.s3.region", "us-east-1")

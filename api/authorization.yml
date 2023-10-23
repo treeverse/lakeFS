@@ -1097,7 +1097,7 @@ paths:
       description: get server version
       responses:
         200:
-          description: server version information
+          description: external authorization API server version
           content:
             application/json:
               schema:
