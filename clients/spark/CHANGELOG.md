@@ -2,6 +2,7 @@
 
 ## v1.0.0 - 2023-10-23
 * Bump lakeFS SDK v1.0 and publish v1 (first major release)
+* **Breaking:** drop support for lakeFS server < v0.108.0
 
 ## v0.10.0 - 2023-08-15
 * Bug fixes and improvements.
