@@ -94,7 +94,8 @@ schema:
 
 ### Write some table data
 
-Add some table data to lakeFS for example  `animals` table: 
+Add some table data. 
+For an easy quickstart use the `animals` table in path `tables/animals` (defined in the table descriptor): 
 
 |type   |weight|name   |
 |-------|------|-------|
@@ -198,3 +199,35 @@ lakefsApi.commits.commit(repository=repo,branch=ref,commit_creation=CommitCreati
   </div>
 
 </div>
+
+### Add Glue exporter script
+
+For the simple strategy of creating a glue table per repo / branch / commit we can simply copy-paste the following script. 
+
+
+[symlink_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportsymlink_exporter)
+[glue_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportglue_exporter)
+
+{: .note}
+> Check the Lua library reference to learn more about symlink_exporter and glue_exporter.
+
+[glue input]({% link howto/hooks/lua.md %}#lakefscatalogexportglue_exporterexport_glueglue-db-table_src_path-create_table_input-action_info-options)
+
+```lua 
+local aws = require("aws")
+local symlink_exporter = require("lakefs/catalogexport/symlink_exporter")
+local glue_exporter = require("lakefs/catalogexport/glue_exporter")
+-- settings 
+local access_key = args.aws.aws_access_key_id
+local secret_key = args.aws.aws_secret_access_key
+local region = args.aws.aws_region
+local table_path = args.table_source -- table descriptor 
+local db = args.catalog.db_name -- glue db
+local table_input = args.catalog.table_input -- table input (AWS input spec) for Glue
+-- export symlinks 
+local s3 = aws.s3_client(access_key, secret_key, region)
+local result = symlink_exporter.export_s3(s3, table_path, action, {debug=true})
+-- register glue table
+local glue = aws.glue_client(access_key, secret_key, region)
+local res = glue_exporter.export_glue(glue, db, table_path, table_input, action, {debug=true})
+```
