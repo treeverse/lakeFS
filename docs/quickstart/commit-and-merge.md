@@ -47,7 +47,7 @@ We can confirm that this has worked by returning to the same object view of `lak
 
 <img src="{{ site.baseurl }}/assets/img/quickstart/duckdb-main-03.png" alt="The lakeFS object browser with a DuckDB query on lakes.parquet showing that there is only data for Denmark." class="quickstart"/>
 
-**But…oh no!** A slow chill creeps down your spine, and the bottom drops out of your stomach. What have you done! 😱 *You were supposed to create **a separate file** of Denmark's lakes - not replace the original one* 🤦🏻🤦🏻‍♀️ 
+**But…oh no!** A slow chill creeps down your spine, and the bottom drops out of your stomach. What have you done! 😱 *You were supposed to create **a separate file** of Denmark's lakes - not replace the original one*
 
 Is all lost? Will our hero overcome the obstacles? No, and yes respectively!
 
