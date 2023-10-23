@@ -100,7 +100,11 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		data, err = o.BlockStore.GetRange(ctx, objectPointer, rng.StartOffset, rng.EndOffset)
 	}
 	if err != nil {
-		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		code := gatewayerrors.ErrInternalError
+		if errors.Is(err, block.ErrDataNotFound) {
+			code = gatewayerrors.ErrNoSuchVersion
+		}
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(code))
 		return
 	}
 
