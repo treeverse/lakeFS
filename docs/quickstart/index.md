@@ -1,5 +1,5 @@
 ---
-title: ⭐ Quickstart ⭐
+title: ⭐ Quickstart
 description: A hands-on quickstart for lakeFS that introduces key concepts including branching, merging, and rollback. 
 nav_order: 1
 has_children: true
@@ -18,7 +18,7 @@ redirect_from:
 
 # lakeFS Quickstart
 
-**Welcome to lakeFS 👋🏻**
+**Welcome to lakeFS**
 
 lakeFS provides a "Git for data" platform enabling you to implement best practices from software engineering on your data lake, including branching and merging, CI/CD, and production-like dev/test environments. 
 
