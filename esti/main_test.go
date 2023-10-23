@@ -45,11 +45,6 @@ var (
 	policiesToKeep     arrayFlags
 )
 
-var (
-	azureStorageAccount   string
-	azureStorageAccessKey string
-)
-
 func (bs *Booleans) String() string {
 	ret := make([]string, len(*bs))
 	for i, b := range *bs {
@@ -275,9 +270,6 @@ func TestMain(m *testing.M) {
 	}
 
 	logger, client, svc, endpointURL = testutil.SetupTestingEnv(&params)
-
-	azureStorageAccount = viper.GetString("azure_storage_account")
-	azureStorageAccessKey = viper.GetString("azure_storage_access_key")
 
 	setupLakeFS := viper.GetBool("setup_lakefs")
 	if !setupLakeFS && *cleanupEnv {

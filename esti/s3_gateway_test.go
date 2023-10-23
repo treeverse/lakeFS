@@ -16,22 +16,12 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	gtwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 type GetCredentials = func(id, secret, token string) *credentials.Credentials
-
-var (
-	sigV2 = credentials.NewStaticV2
-	sigV4 = credentials.NewStaticV4
-	sigs  = []struct {
-		Name           string
-		GetCredentials GetCredentials
-	}{
-		{"V2", sigV2},
-		{"V4", sigV4},
-	}
-)
 
 const (
 	numUploads           = 100
@@ -39,7 +29,7 @@ const (
 	gatewayTestPrefix    = "main/data/"
 )
 
-func newClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
+func newMinioClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
 	t.Helper()
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
@@ -63,11 +53,17 @@ func TestS3UploadAndDownload(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	opts := minio.PutObjectOptions{}
+	sigs := []struct {
+		Name           string
+		GetCredentials GetCredentials
+	}{
+		{Name: "V2", GetCredentials: credentials.NewStaticV2},
+		{Name: "V4", GetCredentials: credentials.NewStaticV4},
+	}
 
 	for _, sig := range sigs {
 		t.Run("Sig"+sig.Name, func(t *testing.T) {
-			// Use same sequence of pathnames to test each sig.
+			// Use the same sequence of path names to test each sig.
 			r := rand.New(rand.NewSource(17))
 
 			type Object struct {
@@ -80,13 +76,13 @@ func TestS3UploadAndDownload(t *testing.T) {
 			)
 
 			for i := 0; i < parallelism; i++ {
-				client := newClient(t, sig.GetCredentials)
+				client := newMinioClient(t, sig.GetCredentials)
 
 				wg.Add(1)
 				go func() {
 					for o := range objects {
 						_, err := client.PutObject(
-							ctx, repo, o.Path, strings.NewReader(o.Content), int64(len(o.Content)), opts)
+							ctx, repo, o.Path, strings.NewReader(o.Content), int64(len(o.Content)), minio.PutObjectOptions{})
 						if err != nil {
 							t.Errorf("minio.Client.PutObject(%s): %s", o.Path, err)
 						}
@@ -144,90 +140,161 @@ func TestS3ReadObject(t *testing.T) {
 	defer tearDownTest(repo)
 
 	// Upload an object
-	client := newClient(t, sigV2)
+	minioClient := newMinioClient(t, credentials.NewStaticV2)
 
-	_, err := client.PutObject(ctx, repo, goodPath, strings.NewReader(contents), int64(len(contents)), minio.PutObjectOptions{})
+	_, err := minioClient.PutObject(ctx, repo, goodPath, strings.NewReader(contents), int64(len(contents)), minio.PutObjectOptions{})
 	if err != nil {
-		t.Errorf("client.PutObject(%s, %s): %s", repo, goodPath, err)
+		t.Errorf("PutObject(%s, %s): %s", repo, goodPath, err)
 	}
 
-	t.Run("GetObject", func(t *testing.T) {
-		t.Run("Exists", func(t *testing.T) {
-			res, err := client.GetObject(ctx, repo, goodPath, minio.GetObjectOptions{})
-			if err != nil {
-				t.Errorf("client.GetObject(%s, %s): %s", repo, goodPath, err)
-			}
-			defer func() { _ = res.Close() }()
-			info, err := res.Stat()
-			if err != nil {
-				t.Errorf("client.GetObject(%s, %s) get: %s", repo, goodPath, err)
-			}
-			verifyObjectInfo(t, info, len(contents))
-			got, err := io.ReadAll(res)
-			if err != nil {
-				t.Errorf("client.Read: %s", err)
-			}
-			if string(got) != contents {
-				t.Errorf("Got contents \"%s\" but expected \"%s\"", string(got), contents)
-			}
-		})
-		t.Run("ExistsPreSigned", func(t *testing.T) {
-			// using presigned URL so we can check the headers
-			// We expect the Content-Length header to be set
-			preSignedURL, err := client.Presign(ctx, http.MethodGet, repo, goodPath, time.Second*60, url.Values{})
-			if err != nil {
-				t.Fatalf("client.Presign(%s, %s): %s", repo, goodPath, err)
-			}
-
-			resp, err := http.Get(preSignedURL.String())
-			if err != nil {
-				t.Fatalf("http.Get %s: %s", preSignedURL.String(), err)
-			}
-			defer func() { _ = resp.Body.Close() }()
-			contentLength := resp.Header.Get("Content-Length")
-			if contentLength == "" {
-				t.Errorf("Expected Content-Length header to be set")
-			}
-		})
-
-		t.Run("Doesn't exist", func(t *testing.T) {
-			res, err := client.GetObject(ctx, repo, badPath, minio.GetObjectOptions{})
-			if err != nil {
-				t.Errorf("client.GetObject(%s, %s): %s", repo, badPath, err)
-			}
-			defer func() { _ = res.Close() }()
-			got, err := io.ReadAll(res)
-			if err == nil {
-				t.Errorf("Successfully read \"%s\" from nonexistent path %s", got, badPath)
-			}
-			s3ErrorResponse := minio.ToErrorResponse(err)
-			if s3ErrorResponse.StatusCode != 404 {
-				t.Errorf("Got %+v [%d] on reading when expecting Not Found [404]",
-					s3ErrorResponse, s3ErrorResponse.StatusCode)
-			}
-		})
+	t.Run("get_exists", func(t *testing.T) {
+		res, err := minioClient.GetObject(ctx, repo, goodPath, minio.GetObjectOptions{})
+		if err != nil {
+			t.Errorf("GetObject(%s, %s): %s", repo, goodPath, err)
+		}
+		defer func() { _ = res.Close() }()
+		info, err := res.Stat()
+		if err != nil {
+			t.Errorf("GetObject(%s, %s) get: %s", repo, goodPath, err)
+		}
+		verifyObjectInfo(t, info, len(contents))
+		got, err := io.ReadAll(res)
+		if err != nil {
+			t.Errorf("Read: %s", err)
+		}
+		if string(got) != contents {
+			t.Errorf("Got contents \"%s\" but expected \"%s\"", string(got), contents)
+		}
 	})
 
-	t.Run("HeadObject", func(t *testing.T) {
-		t.Run("Exists", func(t *testing.T) {
-			info, err := client.StatObject(ctx, repo, goodPath, minio.StatObjectOptions{})
-			if err != nil {
-				t.Errorf("client.StatObject(%s, %s): %s", repo, goodPath, err)
-			}
-			verifyObjectInfo(t, info, len(contents))
-		})
-		t.Run("Doesn't exist", func(t *testing.T) {
-			info, err := client.StatObject(ctx, repo, badPath, minio.StatObjectOptions{})
-			if err == nil {
-				t.Errorf("client.StatObject(%s, %s): expected an error but got %+v", repo, badPath, info)
-			}
+	t.Run("get_exists_presigned", func(t *testing.T) {
+		// using presigned URL, so we can check the headers
+		// We expect the Content-Length header to be set
+		preSignedURL, err := minioClient.Presign(ctx, http.MethodGet, repo, goodPath, time.Second*60, url.Values{})
+		if err != nil {
+			t.Fatalf("minioClientPresign(%s, %s): %s", repo, goodPath, err)
+		}
 
-			s3ErrorResponse := minio.ToErrorResponse(err)
-			if s3ErrorResponse.StatusCode != 404 {
-				t.Errorf("Got %+v [%d] on reading when expecting Not Found [404]",
-					s3ErrorResponse, s3ErrorResponse.StatusCode)
-			}
+		resp, err := http.Get(preSignedURL.String())
+		if err != nil {
+			t.Fatalf("http.Get %s: %s", preSignedURL.String(), err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+		contentLength := resp.Header.Get("Content-Length")
+		if contentLength == "" {
+			t.Errorf("Expected Content-Length header to be set")
+		}
+	})
+
+	t.Run("get_no_physical_object", func(t *testing.T) {
+		blockStoreType := viper.GetString("blockstore_type")
+		if blockStoreType != "s3" {
+			t.Skip("Skipping test - blockstore type is not s3")
+		}
+		awsAccessKeyID := viper.GetString("aws_access_key_id")
+		awsSecretAccessKey := viper.GetString("aws_secret_access_key")
+		if awsAccessKeyID == "" || awsSecretAccessKey == "" {
+			t.Skip("Skipping test - AWS credentials not set")
+		}
+
+		// prepare entry with no physical object under it
+		const (
+			objPath   = "no-physical-object"
+			objS3Path = "main/" + objPath
+		)
+		_, err = minioClient.PutObject(ctx, repo, objS3Path, strings.NewReader(""), int64(0), minio.PutObjectOptions{})
+		if err != nil {
+			t.Errorf("PutObject(%s, %s): %s", repo, objS3Path, err)
+		}
+		statResp, err := client.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{
+			Path:    objPath,
+			Presign: apiutil.Ptr(false),
 		})
+		if err != nil {
+			t.Fatalf("StatObject(%s, %s): %s", repo, objPath, err)
+		}
+		if statResp.JSON200 == nil {
+			t.Fatalf("StatObject(%s, %s): got nil response, status: %s", repo, objPath, statResp.Status())
+		}
+		physicalAddress := statResp.JSON200.PhysicalAddress
+
+		// setup s3 client and delete the physical object
+		s3BlockstoreClient, err := minio.New("s3.amazonaws.com", &minio.Options{
+			Creds:  credentials.NewStaticV4(awsAccessKeyID, awsSecretAccessKey, ""),
+			Secure: true,
+		})
+		if err != nil {
+			t.Fatalf("failed to create s3 blockstore client: %s", err)
+		}
+
+		// access the underlying storage directly to delete the object
+		s3PhysicalURL, err := url.Parse(physicalAddress)
+		if err != nil {
+			t.Fatalf("failed to parse physical address %s, %v", physicalAddress, err)
+		}
+		if s3PhysicalURL.Scheme != "s3" {
+			t.Fatalf("physical address %s is not an s3 address", physicalAddress)
+		}
+		s3PhysicalKey := strings.TrimLeft(s3PhysicalURL.Path, "/")
+		err = s3BlockstoreClient.RemoveObject(ctx, s3PhysicalURL.Host, s3PhysicalKey, minio.RemoveObjectOptions{})
+		if err != nil {
+			t.Fatalf("RemoveObject(%s, %s): %s", repo, objPath, err)
+		}
+
+		// try to read the object - should fail
+		const s3ObjPath = "main/" + objPath
+		res, err := minioClient.GetObject(ctx, repo, s3ObjPath, minio.GetObjectOptions{})
+		if err != nil {
+			t.Fatalf("GetObject(%s, %s): %s", repo, s3ObjPath, err)
+		}
+		defer func() { _ = res.Close() }()
+		got, err := io.ReadAll(res)
+		if err == nil {
+			t.Fatalf("Successfully read \"%s\" from nonexistent path %s", got, s3ObjPath)
+		}
+		s3ErrorResponse := minio.ToErrorResponse(err)
+		expectedErrorCode := gtwerrors.Codes[gtwerrors.ErrNoSuchVersion].Code
+		if s3ErrorResponse.Code != expectedErrorCode {
+			t.Errorf("Got %+v [%d] on reading when expecting code %s", s3ErrorResponse, s3ErrorResponse.StatusCode, expectedErrorCode)
+		}
+	})
+
+	t.Run("get_not_exists", func(t *testing.T) {
+		res, err := minioClient.GetObject(ctx, repo, badPath, minio.GetObjectOptions{})
+		if err != nil {
+			t.Errorf("GetObject(%s, %s): %s", repo, badPath, err)
+		}
+		defer func() { _ = res.Close() }()
+		got, err := io.ReadAll(res)
+		if err == nil {
+			t.Errorf("Successfully read \"%s\" from nonexistent path %s", got, badPath)
+		}
+		s3ErrorResponse := minio.ToErrorResponse(err)
+		if s3ErrorResponse.StatusCode != 404 {
+			t.Errorf("Got %+v [%d] on reading when expecting Not Found [404]",
+				s3ErrorResponse, s3ErrorResponse.StatusCode)
+		}
+	})
+
+	t.Run("head_exists", func(t *testing.T) {
+		info, err := minioClient.StatObject(ctx, repo, goodPath, minio.StatObjectOptions{})
+		if err != nil {
+			t.Errorf("StatObject(%s, %s): %s", repo, goodPath, err)
+		}
+		verifyObjectInfo(t, info, len(contents))
+	})
+
+	t.Run("head_not_exists", func(t *testing.T) {
+		info, err := minioClient.StatObject(ctx, repo, badPath, minio.StatObjectOptions{})
+		if err == nil {
+			t.Errorf("StatObject(%s, %s): expected an error but got %+v", repo, badPath, info)
+		}
+
+		s3ErrorResponse := minio.ToErrorResponse(err)
+		if s3ErrorResponse.StatusCode != 404 {
+			t.Errorf("Got %+v [%d] on reading when expecting Not Found [404]",
+				s3ErrorResponse, s3ErrorResponse.StatusCode)
+		}
 	})
 }
 
@@ -238,7 +305,7 @@ func TestS3HeadBucket(t *testing.T) {
 	badRepo := repo + "-nonexistent"
 
 	// Upload an object
-	client := newClient(t, sigV2)
+	client := newMinioClient(t, credentials.NewStaticV2)
 
 	t.Run("existing", func(t *testing.T) {
 		ok, err := client.BucketExists(ctx, repo)
@@ -277,14 +344,14 @@ func TestS3CopyObject(t *testing.T) {
 	destPath := gatewayTestPrefix + "dest-file"
 
 	// upload data
-	minioClient := newClient(t, sigV2)
-	_, err := minioClient.PutObject(ctx, repo, srcPath, strings.NewReader(objContent), int64(len(objContent)),
+	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
+	_, err := s3lakefsClient.PutObject(ctx, repo, srcPath, strings.NewReader(objContent), int64(len(objContent)),
 		minio.PutObjectOptions{})
 	require.NoError(t, err)
 
 	t.Run("same_branch", func(t *testing.T) {
-		// copy object to the same repository
-		_, err = minioClient.CopyObject(ctx,
+		// copy the object to the same repository
+		_, err = s3lakefsClient.CopyObject(ctx,
 			minio.CopyDestOptions{
 				Bucket: repo,
 				Object: destPath,
@@ -297,7 +364,7 @@ func TestS3CopyObject(t *testing.T) {
 			t.Fatalf("minio.Client.CopyObject from(%s) to(%s): %s", srcPath, destPath, err)
 		}
 
-		download, err := minioClient.GetObject(ctx, repo, destPath, minio.GetObjectOptions{})
+		download, err := s3lakefsClient.GetObject(ctx, repo, destPath, minio.GetObjectOptions{})
 		if err != nil {
 			t.Fatalf("minio.Client.GetObject(%s): %s", destPath, err)
 		}
@@ -326,8 +393,8 @@ func TestS3CopyObject(t *testing.T) {
 	})
 
 	t.Run("different_repo", func(t *testing.T) {
-		// copy object to different repository. should create another version of the file
-		_, err := minioClient.CopyObject(ctx,
+		// copy the object to different repository. should create another version of the file
+		_, err := s3lakefsClient.CopyObject(ctx,
 			minio.CopyDestOptions{
 				Bucket: destRepo,
 				Object: destPath,
@@ -340,7 +407,7 @@ func TestS3CopyObject(t *testing.T) {
 			t.Fatalf("minio.Client.CopyObjectFrom(%s)To(%s): %s", srcPath, destPath, err)
 		}
 
-		download, err := minioClient.GetObject(ctx, destRepo, destPath, minio.GetObjectOptions{})
+		download, err := s3lakefsClient.GetObject(ctx, destRepo, destPath, minio.GetObjectOptions{})
 		if err != nil {
 			t.Fatalf("minio.Client.GetObject(%s): %s", destPath, err)
 		}
