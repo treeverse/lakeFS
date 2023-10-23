@@ -85,6 +85,7 @@ Note: Check the [lua Library reference]({% link howto/hooks/lua.md %}#lua-librar
 
 - Symlink Exporter: Writes metadata for the table using Hive's [SymlinkTextInputFormat](https://svn.apache.org/repos/infra/websites/production/hive/content/javadocs/r2.1.1/api/org/apache/hadoop/hive/ql/io/SymlinkTextInputFormat.html)
 - AWS Glue Catalog (+ Athena) Exporter: Creates a table in Glue using Hive's format and updates the location to symlink files (reuses Symlink Exporter).
+- See a step by step guide on how to integrate with [Glue Exporter]({% link integrations/glue_metastore.md %})
 
 #### Running an Exporter  
 

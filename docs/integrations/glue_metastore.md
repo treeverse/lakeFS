@@ -372,10 +372,10 @@ Once the action finished running we can see the logs the result.
 
 ### Use Athena 
 
-We can use the exported Glue table in with any tool that supports Glue Catalog (or Hive compatible) such as Athena, Trino, Spark and others.
+We can use the exported Glue table with any tool that supports Glue Catalog (or Hive compatible) such as Athena, Trino, Spark and others.
 To use Athena we can simply run `MSCK REPAIR TABLE` and then query the tables.
 
-In Athena Run (Make sure the correct database is configured in the UI): 
+In Athena Run (Make sure the correct database is configured): 
 
 ```sql
 MSCK REPAIR TABLE `animals_catalogs_main_9255e5`; -- load partitions for the first time 
@@ -386,7 +386,7 @@ SELECT * FROM `animals_catalogs_main_9255e5` limit 50;
 
 ### Cleanup
 
-User's can use additional hooks / actions to implement a cleanup strategy to delete the symlink in S3 and Glue Tables. 
+Users can use additional hooks / actions to implement a custom cleanup logic to delete the symlink in S3 and Glue Tables. 
 
 ```lua
 glue.delete_table(db, '<glue table name>')
