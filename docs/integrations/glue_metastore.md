@@ -8,7 +8,6 @@ redirect_from: /using/glue_metastore.html
 
 # Using lakeFS with the Glue Catalog
 
-
 {% include toc_2-3.html %}
 
 ## About Glue Metastore
@@ -29,7 +28,7 @@ The integration between Glue and lakeFS is based on [Data Catalog Exports]({% li
 
 ### How it works 
 
-Based on event such post-commit an Action will run a script that will create Symlink structures in S3 and then will register a table in Glue.
+Based on event lakeFS events such as `post-commit` an Action will run a script that will create Symlink structures in S3 and then will register a table in Glue.
 The Table data location will be the generated Symlinks root path.
 
 There are 4 key pieces:
@@ -63,7 +62,7 @@ Save the YAML below as `animals.yaml` and upload it to lakeFS.
 
 ```bash
 lakectl fs upload lakefs://catalogs/main/_lakefs_tables/animals.yaml -s ./animals.yaml && \
-lakectl commit lakefs://lua/main -m "added table"
+lakectl commit lakefs://catalogs/main -m "added table"
 ```
 
 ```yaml 
@@ -216,6 +215,7 @@ The current step requires 2 things:
 ##### 1. Create Lua script:
   
 For the simple strategy of creating a glue table per repo / branch / commit we can simply copy-paste the following script and re-use it.
+Upload the script to `scripts/animals_exporter.lua` (could be any path).
 
 ```lua 
 local aws = require("aws")
@@ -234,11 +234,6 @@ local result = symlink_exporter.export_s3(s3, table_path, action, {debug=true})
 -- register glue table
 local glue = aws.glue_client(access_key, secret_key, region)
 local res = glue_exporter.export_glue(glue, db, table_path, table_input, action, {debug=true})
-```
-Upload the script to `scripts/animals_exporter.lua` (could be any path).
-
-```bash
-lakectl fs upload lakefs://catalogs/main/scripts/animals_exporter.lua -s ./animals_exporter.lua
 ```
 
 ##### 2. Configure Action Hooks:
@@ -362,3 +357,38 @@ hooks:
 
   </div>
 </div>
+
+Once we are adding the script and the action file we can commit it and since the action is configured to `post-commit` it will run after the commit! 
+
+```bash
+lakectl fs upload lakefs://catalogs/main/scripts/animals_exporter.lua -s ./animals_exporter.lua
+lakectl fs upload lakefs://catalogs/main/_lakefs_actions/animals_glue.yaml -s ./animals_glue.yaml
+lakectl commit lakefs://catalogs/main -m "trigger first export hook"
+```
+
+Once the action finished running we can see the logs the result.
+
+![Hooks log result in lakeFS UI]({{ site.baseurl }}/assets/img/glue_export_hook_result_log.png)
+
+### Use Athena 
+
+We can use the exported Glue table in with any tool that supports Glue Catalog (or Hive compatible) such as Athena, Trino, Spark and others.
+To use Athena we can simply run `MSCK REPAIR TABLE` and then query the tables.
+
+In Athena Run (Make sure the correct database is configured in the UI): 
+
+```sql
+MSCK REPAIR TABLE `animals_catalogs_main_9255e5`; -- load partitions for the first time 
+SELECT * FROM `animals_catalogs_main_9255e5` limit 50;
+```
+
+![Athena SQL Result]({{ site.baseurl }}/assets/img/catalog_export_athena_aws_ui_sql.png)
+
+### Cleanup
+
+User's can use additional hooks / actions to implement a cleanup strategy to delete the symlink in S3 and Glue Tables. 
+
+```lua
+glue.delete_table(db, '<glue table name>')
+s3.delete_recursive('bucket', 'path/to/symlinks/of/a/commit/')
+```
