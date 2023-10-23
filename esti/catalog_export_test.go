@@ -286,15 +286,16 @@ func TestAWSCatalogExport(t *testing.T) {
 
 	t.Run("symlink_exporter", func(t *testing.T) {
 		var columns = []string{"name", "color"}
+		csvData := genCSVData(columns, 3)
 		tablePaths := map[string]string{
-			testData.TableSpec.Path + "/type=axolotl/weight=22/a.csv":   genCSVData(columns, 3),
-			testData.TableSpec.Path + "/type=axolotl/weight=22/b.csv":   genCSVData(columns, 3),
-			testData.TableSpec.Path + "/type=axolotl/weight=22/c.csv":   genCSVData(columns, 3),
-			testData.TableSpec.Path + "/type=axolotl/weight=12/a.csv":   genCSVData(columns, 3),
+			testData.TableSpec.Path + "/type=axolotl/weight=22/b.csv":   csvData,
+			testData.TableSpec.Path + "/type=axolotl/weight=22/a.csv":   csvData,
+			testData.TableSpec.Path + "/type=axolotl/weight=22/c.csv":   csvData,
+			testData.TableSpec.Path + "/type=axolotl/weight=12/a.csv":   csvData,
 			testData.TableSpec.Path + "/type=axolotl/weight=12/_hidden": "blob",
-			testData.TableSpec.Path + "/type=cat/weight=33/a.csv":       genCSVData(columns, 3),
-			testData.TableSpec.Path + "/type=dog/weight=10/b.csv":       genCSVData(columns, 3),
-			testData.TableSpec.Path + "/type=dog/weight=10/a.csv":       genCSVData(columns, 3),
+			testData.TableSpec.Path + "/type=cat/weight=33/a.csv":       csvData,
+			testData.TableSpec.Path + "/type=dog/weight=10/b.csv":       csvData,
+			testData.TableSpec.Path + "/type=dog/weight=10/a.csv":       csvData,
 		}
 		commitID, symlinkPrefix = testSymlinkS3Exporter(t, ctx, repo, tmplDir, tablePaths, testData)
 		t.Logf("commit id %s symlinks prefix %s", commitID, symlinkPrefix)
