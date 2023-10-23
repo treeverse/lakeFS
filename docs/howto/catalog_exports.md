@@ -1,14 +1,14 @@
 ---
-title: Data Catalog Export
+title: Data Catalogs Export
 description: This section explains how lakeFS can integrate with external Data Catalogs via metastore update operations. 
 parent: How-To
 ---
 
-# Data Catalog Exports
+# Data Catalogs Export
 
 {% include toc_2-3.html %}
 
-## About Data Catalog Exports
+## About Data Catalogs Export
 
 Data Catalog Export is all about integrating external Data Warehouses (i.e AWS Athena) with lakeFS.
 

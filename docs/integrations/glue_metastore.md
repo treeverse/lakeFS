@@ -6,12 +6,12 @@ redirect_from: /using/glue_metastore.html
 ---
 
 
-# Using lakeFS with the Glue Metastore
+# Using lakeFS with the Glue Catalog
 
 
 {% include toc_2-3.html %}
 
-## About Glue Metastore 
+## About Glue Metastore
 
 [AWS Glue](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) has a metastore that can store metadata related to Hive and other services (such as Spark and Trino). It has metadata such as the location of the table, information about columns, partitions and much more.
 
@@ -200,18 +200,22 @@ lakefsApi.commits.commit(repository=repo,branch=ref,commit_creation=CommitCreati
 
 </div>
 
-### Add Glue exporter script
+### Add Glue Exporter
 
-For the simple strategy of creating a glue table per repo / branch / commit we can simply copy-paste the following script. 
+The current step requires 2 things: 
+1. Lua script.
+2. Action to trigger the script.
 
+#### Lua packages (Exporters)
 
-[symlink_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportsymlink_exporter)
-[glue_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportglue_exporter)
+- [symlink_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportsymlink_exporter)
+- [glue_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportglue_exporter)
 
-{: .note}
-> Check the Lua library reference to learn more about symlink_exporter and glue_exporter.
+#### Exporter Script 
 
-[glue input]({% link howto/hooks/lua.md %}#lakefscatalogexportglue_exporterexport_glueglue-db-table_src_path-create_table_input-action_info-options)
+##### 1. Create Lua script:
+  
+For the simple strategy of creating a glue table per repo / branch / commit we can simply copy-paste the following script and re-use it.
 
 ```lua 
 local aws = require("aws")
@@ -231,3 +235,130 @@ local result = symlink_exporter.export_s3(s3, table_path, action, {debug=true})
 local glue = aws.glue_client(access_key, secret_key, region)
 local res = glue_exporter.export_glue(glue, db, table_path, table_input, action, {debug=true})
 ```
+Upload the script to `scripts/animals_exporter.lua` (could be any path).
+
+```bash
+lakectl fs upload lakefs://catalogs/main/scripts/animals_exporter.lua -s ./animals_exporter.lua
+```
+
+##### 2. Configure Action Hooks:
+
+The hooks are the mechanism that will trigger exporter execution.
+To learn more about how to configure exporter hooks read [Running an Exporter]({% link howto/catalog_exports.md %}#running-an-exporter).
+
+{: .note}
+> The `args.catalog.table_input` argument in the Lua script is assumed to be passed from the action arguments, that way the same script can be reused for different tables. Check the [example]({% link howto/hooks/lua.md %}#lakefscatalogexportglue_exporterexport_glueglue-db-table_src_path-create_table_input-action_info-options) to construct the table input in the lua code.
+
+
+<div class="tabs">
+  <ul>
+    <li><a href="#single-hook-csv">Hook CSV Glue Table</a></li>
+    <li><a href="#single-hook">Hook Parquet Glue Table</a></li>
+    <li><a href="#multiple-hooks">Multiple Hooks / Inline script</a></li>
+  </ul> 
+  <div markdown="1" id="single-hook-csv">
+
+##### Single hook with CSV Table
+
+Upload to `_lakefs_actions/animals_glue.yaml`: 
+
+```yaml
+name: Glue Exporter
+on:
+  post-commit:
+    branches: ["main"]
+hooks:
+  - id: animals_table_glue_exporter
+    type: lua
+    properties:
+      script_path: "scripts/animals_exporter.lua"
+      args:
+        aws:
+          aws_access_key_id: "<AWS_ACCESS_KEY_ID>"
+          aws_secret_access_key: "<AWS_SECRET_ACCESS_KEY>"
+          aws_region: "<AWS_REGION>"
+        table_source: '_lakefs_tables/animals.yaml'
+        catalog:
+          db_name: "my-glue-db"
+          table_input:
+            StorageDescriptor: 
+              InputFormat: "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
+              OutputFormat: "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
+              SerdeInfo:
+                SerializationLibrary: "org.apache.hadoop.hive.serde2.OpenCSVSerde"
+                Parameters:
+                  separatorChar: ","
+            Parameters: 
+              classification: "csv"
+              "skip.header.line.count": "1"
+```
+
+  </div>
+  <div markdown="1" id="single-hook">
+##### Spark Parquet Example
+
+The following snippet is a reference example of a table in parquet format input that can be used as `table_input`. 
+
+```yaml
+catalog:
+  table_input:
+    StorageDescriptor: 
+      InputFormat: "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
+      OutputFormat: "org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat"
+      SerdeInfo:
+          SerializationLibrary: "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
+    Parameters: 
+      classification: "parquet"
+      EXTERNAL: "TRUE"
+      "parquet.compression": "SNAPPY"
+```
+
+  </div>
+  <div markdown="1" id="multiple-hooks">
+##### Multiple Hooks / Inline script
+
+The following example demonstrates how to separate the symlink and glue exporter into building blocks running in separate hooks.
+It also shows how to run the lua script inline instead of a file, depending on user preference.
+
+```yaml
+name: Animal Table Exporter
+on:
+  post-commit:
+    branches: ["main"]
+hooks:
+  - id: symlink_exporter
+    type: lua
+    properties:
+      args:
+        aws:
+          aws_access_key_id: "<AWS_ACCESS_KEY_ID>"
+          aws_secret_access_key: "<AWS_SECRET_ACCESS_KEY>"
+          aws_region: "<AWS_REGION>"
+        table_source: '_lakefs_tables/animals.yaml'
+      script: |
+        local exporter = require("lakefs/catalogexport/symlink_exporter")
+        local aws = require("aws")
+        local table_path = args.table_source
+        local s3 = aws.s3_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_key, args.aws.aws_region)
+        exporter.export_s3(s3, table_path, action, {debug=true})
+  - id: glue_exporter
+    type: lua
+    properties:
+      args:
+        aws:
+          aws_access_key_id: "<AWS_ACCESS_KEY_ID>"
+          aws_secret_access_key: "<AWS_SECRET_ACCESS_KEY>"
+          aws_region: "<AWS_REGION>"
+        table_source: '_lakefs_tables/animals.yaml'
+        catalog:
+          db_name: "my-glue-db"
+          table_input: # add glue table input here 
+      script: |
+        local aws = require("aws")
+        local exporter = require("lakefs/catalogexport/glue_exporter")
+        local glue = aws.glue_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_key, args.aws.aws_region)
+        exporter.export_glue(glue, args.catalog.db_name, args.table_source, args.catalog.table_input, action, {debug=true})  
+```
+
+  </div>
+</div>
