@@ -110,20 +110,23 @@ func uploadAndCommitObjects(t *testing.T, ctx context.Context, repo, branch stri
 }
 
 // genCSVData will create n+rows (with header) each cell value is rowNum+colNum
-func genCSVData(columns []string, n int) string {
+func genCSVData(t *testing.T, columns []string, n int) string {
+	t.Helper()
 	// Create a new CSV writer.
 	buf := new(bytes.Buffer)
 	writer := csv.NewWriter(buf)
 	// Write the header row.
 	headerRow := columns
-	writer.Write(headerRow)
+	err := writer.Write(headerRow)
+	require.NoError(t, err, "failed writing CSV headers to buffer")
 
 	for rowNum := 0; rowNum < n; rowNum++ {
 		dataRow := []string{}
 		for colNum := range columns {
 			dataRow = append(dataRow, fmt.Sprintf("%d", rowNum+colNum))
 		}
-		writer.Write(dataRow)
+		err = writer.Write(dataRow)
+		require.NoError(t, err, "failed writing CSV row to buffer")
 	}
 	writer.Flush()
 	csvContent := buf.String()
@@ -286,7 +289,7 @@ func TestAWSCatalogExport(t *testing.T) {
 
 	t.Run("symlink_exporter", func(t *testing.T) {
 		var columns = []string{"name", "color"}
-		csvData := genCSVData(columns, 3)
+		csvData := genCSVData(t, columns, 3)
 		tablePaths := map[string]string{
 			testData.TableSpec.Path + "/type=axolotl/weight=22/b.csv":   csvData,
 			testData.TableSpec.Path + "/type=axolotl/weight=22/a.csv":   csvData,
