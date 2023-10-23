@@ -14,6 +14,7 @@ OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.0.0
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
 GOLANGCI_LINT_VERSION=v1.53.3
+BUF_CLI_VERSION=v1.27.1
 
 ifndef PACKAGE_VERSION
 	PACKAGE_VERSION=0.1.0-SNAPSHOT
@@ -104,6 +105,7 @@ gen-metastore: ## Run Metastore Code generation
 
 tools: ## Install tools
 	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	$(GOCMD) install github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION)
 
 client-python: sdk-python-legacy sdk-python
 
@@ -179,10 +181,7 @@ package: package-python
 
 .PHONY: gen-api
 gen-api: docs/assets/js/swagger.yml ## Run the swagger code generator
-	rm -f pkg/api/lakefs.gen.go
-	$(GOGENERATE) \
-		./pkg/api/apigen \
-		./pkg/auth
+	$(GOGENERATE) ./pkg/api/apigen ./pkg/auth
 
 .PHONY: gen-code
 gen-code: gen-api ## Run the generator for inline commands
@@ -296,7 +295,7 @@ gen-ui: $(UI_DIR)/node_modules  ## Build UI web app
 	cd $(UI_DIR) && $(NPM) run build
 
 gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
-	buf generate
+	go run github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION) generate
 
 publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
 	cd clients/spark && sbt assembly && sbt s3Upload && sbt "project root" publishSigned
