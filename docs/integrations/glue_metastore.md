@@ -78,6 +78,11 @@ schema:
   type: struct
   # all the columns spec
   fields:
+    - name: type
+      type: string
+      nullable: true
+      metadata:
+        comment: axolotl, cat, dog, fish etc
     - name: weight
       type: integer
       nullable: false
@@ -86,14 +91,11 @@ schema:
       type: string
       nullable: false
       metadata: {}
-    - name: type
-      type: string
-      nullable: true
-      metadata:
-        comment: axolotl, cat, dog, fish etc
 ```
 
-### Write some table data 
+### Write some table data
+
+
 
 ```
 
