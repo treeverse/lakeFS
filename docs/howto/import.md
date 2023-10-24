@@ -30,7 +30,7 @@ and the source bucket must be in the same region of your destination bucket.
 
 1. In your repository's main page, click the _Import_ button to open the import dialog:
 
-   ![img.png]({% link assets/img/UI-Import-Dialog.png %})
+   ![lakeFS UI import dialog]({% link assets/img/UI-Import-Dialog.png %})
 
 2. Under _Import from_, fill in the location on your object store you would like to import from.
 3. Fill in the import destination in lakeFS 
@@ -82,8 +82,7 @@ lakectl import \
 2. For security reasons, if you are using lakeFS on top of your local disk, you need to enable the import feature explicitly. 
    To do so, set the `blockstore.local.import_enabled` to `true` and specify the allowed import paths in `blockstore.local.allowed_external_prefixes` (see [configuration reference]({% link reference/configuration.md %})).
    Since there are some differences between object-stores and file-systems in the way directories/prefixes are treated, local import is allowed only for directories. 
-3. lakeFS cannot manage your metadata if you make changes to data in the original bucket.
-   Making changes to data in the original bucket will not be reflected in lakeFS, and may cause inconsistencies.
+3. Making changes to data in the original bucket will not be reflected in lakeFS, and may cause inconsistencies. 
 
 ### Permissions required to import data
 
