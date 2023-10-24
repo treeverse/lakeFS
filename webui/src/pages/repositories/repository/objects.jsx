@@ -187,6 +187,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                             sourceRef={sourceRef}
                             destRef={destRef}
                             updateSrcValidity={(isValid) => setIsImportEnabled(isValid)}
+                            path={path}
                             commitMsgRef={commitMsgRef}
                             metadataFields={metadataFields}
                             setMetadataFields={setMetadataFields}

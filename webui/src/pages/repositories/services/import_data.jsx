@@ -87,6 +87,7 @@ const ImportForm = ({
                         pathStyle,
                         sourceRef,
                         destRef,
+                        path,
                         commitMsgRef,
                         repo,
                         branch,
@@ -139,7 +140,7 @@ const ImportForm = ({
                     <div className={"input-group-prepend"}>
                         <InputGroup.Text className={"text-muted"}>lakefs://{repo}/{branch}/</InputGroup.Text>
                     </div>
-                    <Form.Control type="text" name="destination" ref={destRef}/>
+                    <Form.Control type="text" name="destination" ref={destRef} defaultValue={path}/>
                 </InputGroup>
                 <Form.Text style={{color: 'grey'}} md={{offset: 2, span: 10000}}>
                     Leave empty to import to the repository&apos;s root.
