@@ -114,7 +114,7 @@ var logCmd = &cobra.Command{
 		if since != "" {
 			sinceParsed, err := time.Parse(time.RFC3339, since)
 			if err != nil {
-				Die("Failed to parse 'since' as date-time", 1)
+				DieFmt("Failed to parse 'since' - %s", err)
 			}
 			logCommitsParams.Since = &sinceParsed
 		}
@@ -178,4 +178,5 @@ func init() {
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 	logCmd.Flags().StringSlice("objects", nil, "show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together")
 	logCmd.Flags().StringSlice("prefixes", nil, "show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together")
+	logCmd.Flags().String("since", "", "show results since this date-time (RFC3339 format)")
 }

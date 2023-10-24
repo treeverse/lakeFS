@@ -2673,6 +2673,7 @@ lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg
       --objects strings      show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together
       --prefixes strings     show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together
       --show-meta-range-id   also show meta range ID
+      --since string         show results since this date-time (RFC3339 format)
 ```
 
 
