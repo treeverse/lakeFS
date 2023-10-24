@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
@@ -421,7 +422,7 @@ func (m *RefsFake) FindMergeBase(context.Context, *graveler.RepositoryRecord, ..
 	return &graveler.Commit{}, nil
 }
 
-func (m *RefsFake) Log(context.Context, *graveler.RepositoryRecord, graveler.CommitID, bool) (graveler.CommitIterator, error) {
+func (m *RefsFake) Log(context.Context, *graveler.RepositoryRecord, graveler.CommitID, bool, *time.Time) (graveler.CommitIterator, error) {
 	return m.CommitIter, nil
 }
 

@@ -3506,6 +3506,7 @@ func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, reposito
 		Amount:        paginationAmount(params.Amount),
 		Limit:         swag.BoolValue(params.Limit),
 		FirstParent:   swag.BoolValue(params.FirstParent),
+		Since:         params.Since,
 	})
 	if c.handleAPIError(ctx, w, r, err) {
 		return

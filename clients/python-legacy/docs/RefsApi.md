@@ -330,6 +330,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     ] # [str] | list of paths, each element is a path of a prefix (optional)
     limit = True # bool | limit the number of items in return to 'amount'. Without further indication on actual number of items. (optional)
     first_parent = True # bool | if set to true, follow only the first parent upon reaching a merge commit (optional)
+    since = dateutil_parser('1970-01-01T00:00:00.00Z') # datetime | Show commits more recent than a specific date-time (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -343,7 +344,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # get commit log from ref. If both objects and prefixes are empty, return all commits.
-        api_response = api_instance.log_commits(repository, ref, after=after, amount=amount, objects=objects, prefixes=prefixes, limit=limit, first_parent=first_parent)
+        api_response = api_instance.log_commits(repository, ref, after=after, amount=amount, objects=objects, prefixes=prefixes, limit=limit, first_parent=first_parent, since=since)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling RefsApi->log_commits: %s\n" % e)
@@ -362,6 +363,7 @@ Name | Type | Description  | Notes
  **prefixes** | **[str]**| list of paths, each element is a path of a prefix | [optional]
  **limit** | **bool**| limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. | [optional]
  **first_parent** | **bool**| if set to true, follow only the first parent upon reaching a merge commit | [optional]
+ **since** | **datetime**| Show commits more recent than a specific date-time | [optional]
 
 ### Return type
 
