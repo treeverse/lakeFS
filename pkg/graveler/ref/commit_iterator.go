@@ -111,7 +111,7 @@ func (ci *CommitIterator) Next() bool {
 			return false
 		}
 		// skip commits that are older than since time
-		if !(ci.since != nil && rec.Commit.CreationDate.Before(*ci.since)) {
+		if ci.since == nil || !rec.Commit.CreationDate.Before(*ci.since) {
 			ci.queue.Push(rec)
 		}
 	}
