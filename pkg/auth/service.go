@@ -198,6 +198,7 @@ func NewAuthService(store kv.Store, secretStore crypt.SecretStore, cacheConf par
 		cache:       cache,
 		log:         logger,
 	}
+	logger.WithField("trace_flow", true).Info("post authservice creation at Auth service")
 	return res
 }
 

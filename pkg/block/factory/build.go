@@ -26,6 +26,10 @@ const (
 )
 
 func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
+	logging.ContextUnavailable().Infof("head build block adapter trace_flow true")
+	lg := logging.FromContext(ctx).WithField("trace_flow", true)
+	lg.Info("starting build of block adapter")
+	lg.Infof("blockstore type: %s", c.BlockstoreType())
 	blockstore := c.BlockstoreType()
 	logging.FromContext(ctx).
 		WithField("type", blockstore).

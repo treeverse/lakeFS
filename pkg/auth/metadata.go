@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const (
@@ -239,6 +240,8 @@ func getInstrumentationMetadata() string {
 }
 
 func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string, error) {
+	lg := logging.FromContext(ctx).WithField("trace_flow", true).WithField("method", "KVMetadataManager.GetMetadata")
+	lg.Info("KV: start fetching md")
 	metadata := make(map[string]string)
 	metadata["lakefs_version"] = m.version
 	metadata["lakefs_kv_type"] = m.kvType
@@ -248,18 +251,21 @@ func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string,
 	metadata["is_k8s"] = inK8sMetadata()
 	metadata["is_docker"] = inDockerMetadata()
 	metadata["instrumentation"] = getInstrumentationMetadata()
-
+	lg.Info("KV: writting md")
 	err := m.writeMetadata(ctx, metadata)
 	if err != nil {
+		lg.Info("KV: failed writting md")
 		return nil, err
 	}
+	lg.Info("KV: inserting install id")
 	// write installation id
 	m.installationID, err = m.insertOrGetInstallationID(ctx, m.installationID)
 	if err == nil {
 		metadata["installation_id"] = m.installationID
 	}
-
+	lg.Info("KV: done inserting install id")
 	setupTS, err := m.getSetupTimestamp(ctx)
+	lg.Info("KV: setup finished")
 	if err == nil {
 		metadata[SetupTimestampKeyName] = setupTS.UTC().Format(time.RFC3339)
 	}

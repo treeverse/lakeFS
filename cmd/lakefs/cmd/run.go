@@ -113,7 +113,7 @@ var runCmd = &cobra.Command{
 
 		// initialize auth service
 		var authService auth.Service
-
+		lg := logger.WithField("trace_flow", true)
 		if err := checkAuthModeSupport(cfg); err != nil {
 			logger.WithError(err).Fatal("Unsupported auth mode")
 		}
@@ -139,29 +139,34 @@ var runCmd = &cobra.Command{
 				authparams.ServiceCache(cfg.Auth.Cache),
 				logger.WithField("service", "auth_service"),
 			)
+			lg.Infof("post NewAuthService; blockstore %s; kv type: %s", cfg.Blockstore.Type, kvParams.Type)
 		}
 
+		lg.Infof("starting init of metadata provider ; blockstore %s; kv type: %s", cfg.Blockstore.Type, kvParams.Type)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
+		lg.Info("done with building md provider")
 		blockstoreType := cfg.Blockstore.Type
 		if blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
-
+		lg.Infof("pre NewMetadata; blockstore %s", blockstoreType)
 		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
+		lg.Info("post NewMetadata, pre NewBufferedCollector")
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(cfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
-
+		lg.Info("post NewBufferedCollector, starting BuildBlockAdapter")
 		// init block store
 		blockStore, err := factory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
-
+		lg.Info("finished block adapter build, starting runtime collector")
 		bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
+		lg.Info("post SetRuntimeCollector")
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
-
+		lg.Info("post CollectMetadata, initiating catalog")
 		c, err := catalog.New(ctx, catalog.Config{
 			Config:       cfg,
 			KVStore:      kvStore,
@@ -170,13 +175,15 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create catalog")
 		}
+		lg.Info("Post Catalog Initialization")
 		defer func() { _ = c.Close() }()
-
+		lg.Info("Pre scheduler")
 		deleteScheduler := getScheduler()
 		err = scheduleCleanupJobs(ctx, deleteScheduler, c)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to schedule cleanup jobs")
 		}
+		lg.Info("Pre scheduler: deleteScheduler.StartAsync")
 		deleteScheduler.StartAsync()
 
 		// initial setup - support only when a local database is configured.
@@ -192,7 +199,7 @@ var runCmd = &cobra.Command{
 				logger.WithField("admin", cfg.Installation.UserName).Info("Initial setup completed successfully")
 			}
 		}
-
+		lg.Info("Pre new actions service")
 		actionsService := actions.NewService(
 			ctx,
 			actionsStore,
@@ -202,15 +209,16 @@ var runCmd = &cobra.Command{
 			bufferedCollector,
 			actions.Config(cfg.Actions),
 		)
-
+		lg.Info("Post new actions service")
 		// wire actions into entry catalog
 		defer actionsService.Stop()
 		c.SetHooksHandler(actionsService)
 
+		lg.Info("pre middlewareAuthenticator")
 		middlewareAuthenticator := auth.ChainAuthenticator{
 			auth.NewBuiltinAuthenticator(authService),
 		}
-
+		lg.Info("post middlewareAuthenticator")
 		// remote authenticator setup
 		if cfg.Auth.RemoteAuthenticator.Enabled {
 			remoteAuthenticator, err := authremote.NewAuthenticator(authremote.AuthenticatorConfig(cfg.Auth.RemoteAuthenticator), authService, logger)
@@ -220,9 +228,11 @@ var runCmd = &cobra.Command{
 
 			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
 		}
+		lg.Info("pre NewDefaultAuditChecker")
 
 		auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(cfg.Security.CheckLatestVersionCache))
 		defer auditChecker.Close()
+		lg.Info("post NewDefaultAuditChecker")
 		if !version.IsVersionUnreleased() {
 			auditChecker.StartPeriodicCheck(ctx, cfg.Security.AuditCheckInterval, logger)
 		}
@@ -232,15 +242,17 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal(mismatchedReposFlagName)
 		}
 		if !allowForeign {
+			lg.Info("pre checkRepos")
 			checkRepos(ctx, logger, authMetadataManager, blockStore, c)
+			lg.Info("post checkRepos")
 		}
-
+		lg.Info("pre: updating SetHealthHandlerInfo")
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
-
+		lg.Info("post: updating SetHealthHandlerInfo")
 		otfDiffService, closeOtfService := tablediff.NewService(cfg.Diff, cfg.Plugins)
 		defer closeOtfService()
-
+		lg.Info("pre: init api.Serve")
 		// start API server
 		apiHandler := api.Serve(
 			cfg,
@@ -260,16 +272,17 @@ var runCmd = &cobra.Command{
 			upload.DefaultPathProvider,
 			otfDiffService,
 		)
-
+		lg.Info("post: init api.Serve")
 		// init gateway server
 		var s3FallbackURL *url.URL
 		if cfg.Gateways.S3.FallbackURL != "" {
+			lg.Infof("s3 fallback URL %s", cfg.Gateways.S3.FallbackURL)
 			s3FallbackURL, err = url.Parse(cfg.Gateways.S3.FallbackURL)
 			if err != nil {
 				logger.WithError(err).Fatal("Failed to parse s3 fallback URL")
 			}
 		}
-
+		lg.Info("pre SSO auth middlewares")
 		// setup authenticator for s3 gateway to also support swagger auth
 		oidcConfig := api.OIDCConfig(cfg.Auth.OIDC)
 		cookieAuthConfig := api.CookieAuthConfig(cfg.Auth.CookieAuthVerification)
@@ -280,10 +293,11 @@ var runCmd = &cobra.Command{
 			&oidcConfig,
 			&cookieAuthConfig,
 		)
+
 		if err != nil {
 			logger.WithError(err).Fatal("could not initialize authenticator for S3 gateway")
 		}
-
+		lg.Info("post SSO auth middlewares")
 		s3gatewayHandler := gateway.NewHandler(
 			cfg.Gateways.S3.Region,
 			c,
@@ -297,8 +311,9 @@ var runCmd = &cobra.Command{
 			cfg.Logging.AuditLogLevel,
 			cfg.Logging.TraceRequestHeaders,
 		)
+		lg.Info("pre apiAuthenticator")
 		s3gatewayHandler = apiAuthenticator(s3gatewayHandler)
-
+		lg.Info("post apiAuthenticator")
 		bufferedCollector.Start(ctx)
 		defer bufferedCollector.Close()
 
