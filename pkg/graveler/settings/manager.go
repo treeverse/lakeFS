@@ -116,10 +116,12 @@ func computeChecksum(value []byte) (*string, error) {
 // The checksum of a non-existent setting is the empty string.
 func (m *Manager) GetLatest(ctx context.Context, repository *graveler.RepositoryRecord, key string, dst proto.Message) (*string, error) {
 	settings, err := m.store.Get(ctx, []byte(graveler.RepoPartition(repository)), []byte(graveler.SettingsPath(key)))
+	if errors.Is(err, kv.ErrNotFound) {
+		// return empty list and do not consider this an error
+		proto.Reset(dst)
+		return swag.String(""), nil
+	}
 	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			err = graveler.ErrNotFound
-		}
 		return nil, err
 	}
 	checksum, err := computeChecksum(settings.Value)
@@ -146,7 +148,7 @@ func (m *Manager) Get(ctx context.Context, repository *graveler.RepositoryRecord
 		_, err = m.GetLatest(ctx, repository, key, tmp)
 		if errors.Is(err, graveler.ErrNotFound) {
 			// do not return this error here, so that empty settings are cached
-			return nil, nil
+			return tmp, nil
 		}
 		return tmp, err
 	})
