@@ -25,7 +25,7 @@ const (
 )
 
 var diffCmd = &cobra.Command{
-	Use:   `diff <ref uri> [ref uri]`,
+	Use:   `diff <ref URI> [ref URI]`,
 	Short: "Show changes between two commits, or the currently uncommitted changes",
 	Example: fmt.Sprintf(`
 	lakectl diff lakefs://example-repo/example-branch
@@ -55,7 +55,7 @@ var diffCmd = &cobra.Command{
 		client := getClient()
 		if len(args) == diffCmdMinArgs {
 			// got one arg ref: uncommitted changes diff
-			branchURI := MustParseRefURI("ref", args[0])
+			branchURI := MustParseBranchURI("branch URI", args[0])
 			fmt.Println("Ref:", branchURI)
 			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
 			return

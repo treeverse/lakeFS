@@ -15,16 +15,15 @@ const (
 )
 
 // repoCreateCmd represents the create repo command
-// lakectl create lakefs://myrepo s3://my-bucket/
 var repoCreateCmd = &cobra.Command{
-	Use:               "create <repository uri> <storage namespace>",
+	Use:               "create <repository URI> <storage namespace>",
 	Short:             "Create a new repository",
-	Example:           "lakectl repo create lakefs://some-repo-name s3://some-bucket-name",
+	Example:           "lakectl repo create " + myRepoExample + " " + myBucketExample,
 	Args:              cobra.ExactArgs(repoCreateCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("repository URI", args[0])
 		fmt.Println("Repository:", u)
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {

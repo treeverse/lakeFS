@@ -15,7 +15,7 @@ const refsRestoreSuccess = `
 `
 
 var refsRestoreCmd = &cobra.Command{
-	Use:   "refs-restore <repository uri>",
+	Use:   "refs-restore <repository URI>",
 	Short: "Restores refs (branches, commits, tags) from the underlying object store to a bare repository",
 	Long: `restores refs (branches, commits, tags) from the underlying object store to a bare repository.
 
@@ -25,7 +25,7 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 	Hidden:  true,
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		repoURI := MustParseRepoURI("repository", args[0])
+		repoURI := MustParseRepoURI("repository URI", args[0])
 		fmt.Println("Repository:", repoURI)
 		manifestFileName := Must(cmd.Flags().GetString("manifest"))
 		fp := Must(OpenByPath(manifestFileName))

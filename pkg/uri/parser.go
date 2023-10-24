@@ -16,11 +16,11 @@ const (
 )
 
 var (
-	ErrMalformedURI     = errors.New("malformed lakefs uri")
-	ErrInvalidRepoURI   = errors.New("not a valid repo uri")
-	ErrInvalidRefURI    = errors.New("not a valid ref uri")
-	ErrInvalidBranchURI = errors.New("not a valid branch uri")
-	ErrInvalidPathURI   = errors.New("not a valid path uri")
+	ErrMalformedURI     = errors.New("malformed lakefs URI")
+	ErrInvalidRepoURI   = errors.New("not a valid repo URI")
+	ErrInvalidRefURI    = errors.New("not a valid ref URI")
+	ErrInvalidBranchURI = errors.New("not a valid branch URI")
+	ErrInvalidPathURI   = errors.New("not a valid path URI")
 )
 
 type URI struct {
@@ -34,20 +34,92 @@ type URI struct {
 	Path *string
 }
 
-func (u *URI) IsRepository() bool {
-	return len(u.Repository) > 0 && len(u.Ref) == 0 && u.Path == nil && validator.ReValidRepositoryID.MatchString(u.Repository)
+func isValidRepository(u *URI) error {
+	switch {
+	case len(u.Repository) == 0:
+		return fmt.Errorf("missing repository part: %w", ErrInvalidRepoURI)
+	case !validator.ReValidRepositoryID.MatchString(u.Repository):
+		return fmt.Errorf("contains invalid repository name (repo=%s): %w", u.Repository, ErrInvalidRepoURI)
+	default:
+		return nil
+	}
 }
 
-func (u *URI) IsRef() bool {
-	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path == nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidRef.MatchString(u.Ref)
+func (u *URI) ValidateRepository() error {
+	err := isValidRepository(u)
+
+	switch {
+	case err != nil:
+		return err
+	case len(u.Ref) != 0:
+		return fmt.Errorf("repository URI includes a ref part (ref=%s): %w", u.Ref, ErrInvalidRepoURI)
+	case u.Path != nil:
+		return fmt.Errorf("repository URI includes path part (path=%s): %w", u.GetPath(), ErrInvalidRepoURI)
+	default:
+		return nil
+	}
 }
 
-func (u *URI) IsBranch() bool {
-	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path == nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidBranchID.MatchString(u.Ref)
+func isValidRef(u *URI) error {
+	switch {
+	case len(u.Ref) == 0:
+		return fmt.Errorf("missing reference part: %w", ErrInvalidRefURI)
+	case !validator.ReValidRef.MatchString(u.Ref):
+		return fmt.Errorf("contains invalid reference name: %w", ErrInvalidRefURI)
+	default:
+		return nil
+	}
 }
 
-func (u *URI) IsFullyQualified() bool {
-	return len(u.Repository) > 0 && len(u.Ref) > 0 && u.Path != nil && validator.ReValidRepositoryID.MatchString(u.Repository) && validator.ReValidRef.MatchString(u.Ref)
+func (u *URI) ValidateRef() error {
+	if err := isValidRepository(u); err != nil {
+		return err
+	}
+	err := isValidRef(u)
+
+	switch {
+	case err != nil:
+		return err
+	case len(u.GetPath()) > 0:
+		return fmt.Errorf("ref URI includes a path part (path=%s): %w", u.GetPath(), ErrInvalidRefURI)
+	default:
+		return nil
+	}
+}
+
+func (u *URI) ValidateBranch() error {
+	path := u.GetPath()
+	if err := isValidRepository(u); err != nil {
+		return err
+	}
+	err := isValidRef(u)
+
+	switch {
+	case err != nil:
+		return err
+	case len(path) > 0 && path != PathSeparator: // Ignore path separator in path part for branch URIs
+		return fmt.Errorf("branch URI includes a path part: %w", ErrInvalidBranchURI)
+	case !validator.ReValidBranchID.MatchString(u.Ref):
+		return fmt.Errorf("contains invalid branch name: %w", ErrInvalidBranchURI)
+	default:
+		return nil
+	}
+}
+
+func (u *URI) ValidateFullyQualified() error {
+	if err := isValidRepository(u); err != nil {
+		return err
+	}
+	err := isValidRef(u)
+
+	switch {
+	case err != nil:
+		return err
+	case u.Path == nil:
+		return fmt.Errorf("missing path part: %w", ErrInvalidPathURI)
+	default:
+		return nil
+	}
 }
 
 func (u *URI) GetPath() string {
@@ -89,11 +161,7 @@ func ParseWithBaseURI(s string, baseURI string) (*URI, error) {
 	if len(baseURI) > 0 && !strings.HasPrefix(s, LakeFSSchema+LakeFSSchemaSeparator) {
 		s = baseURI + s
 	}
-	u, err := Parse(s)
-	if err != nil {
-		return nil, fmt.Errorf("parsing %s: %w", s, err)
-	}
-	return u, nil
+	return Parse(s)
 }
 
 func Parse(s string) (*URI, error) {

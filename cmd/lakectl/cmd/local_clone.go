@@ -22,7 +22,7 @@ const (
 )
 
 var localCloneCmd = &cobra.Command{
-	Use:   "clone <path uri> [directory]",
+	Use:   "clone <path URI> [directory]",
 	Short: "Clone a path from a lakeFS repository into a new directory.",
 	Args:  cobra.RangeArgs(localCloneMinArgs, localCloneMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {

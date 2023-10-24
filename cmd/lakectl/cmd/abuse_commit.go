@@ -15,13 +15,13 @@ import (
 )
 
 var abuseCommitCmd = &cobra.Command{
-	Use:               "commit <source ref uri>",
-	Short:             "Commits to the source ref repeatedly",
+	Use:               "commit <branch URI>",
+	Short:             "Commits to the source branch repeatedly",
 	Hidden:            false,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("source ref", args[0])
+		u := MustParseBranchURI("branch URI", args[0])
 		amount := Must(cmd.Flags().GetInt("amount"))
 		gapDuration := Must(cmd.Flags().GetDuration("gap"))
 

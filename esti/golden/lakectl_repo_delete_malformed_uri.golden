@@ -1,2 +1,2 @@
-Invalid 'repository': parsing ${REPO}: malformed lakefs uri
+repository URI malformed lakefs URI
 Error executing command.

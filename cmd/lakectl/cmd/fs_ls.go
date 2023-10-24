@@ -10,13 +10,13 @@ import (
 )
 
 var fsLsCmd = &cobra.Command{
-	Use:               "ls <path uri>",
+	Use:               "ls <path URI>",
 	Short:             "List entries under a given tree",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := MustParsePathURI("path", args[0])
+		pathURI := MustParsePathURI("path URI", args[0])
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		prefix := *pathURI.Path
 

@@ -23,13 +23,13 @@ type objectCommitData struct {
 }
 
 var annotateCmd = &cobra.Command{
-	Use:               "annotate <path uri>",
+	Use:               "annotate <path URI>",
 	Short:             "List entries under a given path, annotating each with the latest modifying commit",
 	Aliases:           []string{"blame"},
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		pathURI := MustParsePathURI("path", args[0])
+		pathURI := MustParsePathURI("path URI", args[0])
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		firstParent := Must(cmd.Flags().GetBool("first-parent"))
 		client := getClient()

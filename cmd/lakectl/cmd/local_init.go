@@ -88,7 +88,7 @@ func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIg
 }
 
 var localInitCmd = &cobra.Command{
-	Use:   "init <path uri> [directory]",
+	Use:   "init <path URI> [directory]",
 	Short: "set a local directory to sync with a lakeFS path.",
 	Args:  cobra.RangeArgs(localInitMinArgs, localInitMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {

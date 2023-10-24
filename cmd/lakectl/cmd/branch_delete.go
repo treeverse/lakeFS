@@ -8,9 +8,9 @@ import (
 )
 
 var branchDeleteCmd = &cobra.Command{
-	Use:               "delete <branch uri>",
+	Use:               "delete <branch URI>",
 	Short:             "Delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
-	Example:           "lakectl branch delete lakefs://example-repo/example-branch",
+	Example:           "lakectl branch delete " + myRepoExample + "/" + myBranchExample,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -19,7 +19,7 @@ var branchDeleteCmd = &cobra.Command{
 			Die("Delete branch aborted", 1)
 		}
 		client := getClient()
-		u := MustParseBranchURI("branch", args[0])
+		u := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", u)
 		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
