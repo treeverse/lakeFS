@@ -36,6 +36,7 @@ remote_theme: pmarsceill/just-the-docs@v0.6.0
 plugins:
   - jekyll-redirect-from
   - jekyll-seo-tag
+  - jekyll-sitemap
 
 exclude: 
   - howto/deploy/includes
