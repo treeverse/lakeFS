@@ -28,6 +28,7 @@ func GetDynamoDBInstance() (string, func(), error) {
 	if err != nil {
 		return "", nil, fmt.Errorf("could not connect to Docker: %w", err)
 	}
+	dockerPool.MaxWait = dbContainerTimeoutSeconds
 
 	dynamodbDockerRunOptions := &dockertest.RunOptions{
 		Repository: "amazon/dynamodb-local",
