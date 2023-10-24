@@ -19,7 +19,7 @@ While different systems support reading directly from lakefs (i.e Gateway endpoi
 
 With Data Catalog Exports, one can leverage the versioning capabilities of lakeFS in external data warehouses and manage tables with branches and commits. 
 
-Once hooks are set up, querying lakeFS data from e.g. Athena, Trino and other catalog-dependant tools looks like this:
+At the end of this guide, you will be able to query lakeFS data from Athena, Trino and other catalog-dependent tools:
 
 ```sql
 use main;
