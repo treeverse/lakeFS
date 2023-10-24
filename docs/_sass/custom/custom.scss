@@ -507,6 +507,12 @@ body {
 	}
 }
 
+.label {
+	text-transform: none !important;
+	margin-left: 0 !important;
+	margin-right: 0 !important;
+}
+
 //Search Fixes
 .search-active .main {
 	position: inherit;

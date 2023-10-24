@@ -8,7 +8,6 @@ redirect_from:
 
 # Import data into lakeFS
 
-
 The simplest way to bring data into lakeFS is by [copying it](#copying-data-into-a-lakefs-repository), but this approach may not be suitable when a lot of data is involved.
 To avoid copying the data, lakeFS offers [Zero-copy import](#zero-copy-import). With this approach, lakeFS only creates pointers to your existing objects in your new repository.
 
@@ -16,15 +15,14 @@ To avoid copying the data, lakeFS offers [Zero-copy import](#zero-copy-import). 
 
 ## Zero-copy import
 
+Mirror an existing object store location into a lakeFS repository, without copying the data.
+
 ### Prerequisites
 
-#### Which lakeFS users can import data?
-By default, users in the Supers (ACL) group or the SuperUsers (RBAC) group have all the required permissions to import data.
-See [below](#permissions-required-to-import-data) for the exact permissions required.
-
-#### Permissions to the storage provider
-The _lakeFS server_ must have permissions to list the objects in the source object store,
-and the source bucket must be in the same region of your destination bucket.
+* Importing is permitted for users in the Supers (lakeFS open-source) group or the SuperUsers (lakeFS Cloud/Enterprise) group.
+   To learn how lakeFS Cloud and lakeFS Enterprise users can fine-tune import permissions, see [Fine-grained permissions](#fine-grained-permissions) below.
+* The lakeFS _server_ must have permissions to list the objects in the source bucket.
+* The source bucket must be in the same region as your repository.
 
 ### Using the lakeFS UI
 
@@ -79,20 +77,28 @@ lakectl import \
 ### Limitations
 
 1. Importing is only possible from the object storage service in which your installation stores its data. For example, if lakeFS is configured to use S3, you cannot import data from Azure.
-2. For security reasons, if you are using lakeFS on top of your local disk, you need to enable the import feature explicitly. 
+2. For security reasons, if you are using lakeFS on top of your local disk (`blockstore.type=local`), you need to enable the import feature explicitly. 
    To do so, set the `blockstore.local.import_enabled` to `true` and specify the allowed import paths in `blockstore.local.allowed_external_prefixes` (see [configuration reference]({% link reference/configuration.md %})).
    Since there are some differences between object-stores and file-systems in the way directories/prefixes are treated, local import is allowed only for directories. 
 3. Making changes to data in the original bucket will not be reflected in lakeFS, and may cause inconsistencies. 
 
-### Permissions required to import data
+### Fine-grained permissions
+{:.no_toc}
+{: .d-inline-block }
+lakeFS Cloud
+{: .label .label-green }
+lakeFS Enterprise
+{: .label .label-purple }
 
-The lakeFS user running the import command should have the following permissions in lakeFS:
+With RBAC support, The lakeFS user running the import command should have the following permissions in lakeFS:
 `fs:WriteObject`, `fs:CreateMetaRange`, `fs:CreateCommit`, `fs:ImportFromStorage` and `fs:ImportCancel`.
-The first three permissions above are available by default to the Developers group ([RBAC]({% link reference/security/rbac.md %})) or the
-Writers group ([ACL]({% link reference/security/access-control-lists.md %})).
-The `fs:Import*` permissions are only available to the Supers (ACL) group or the SuperUsers (RBAC) group.
 
-In addition, see the following for provider-specific permissions:
+As mentioned above, all of these permissions are available by default to the Supers (lakeFS open-source) group or the SuperUsers (lakeFS Cloud/Enterprise).
+
+### Provider-specific permissions
+{:.no_toc}
+
+In addition, the following for provider-specific permissions may be required:
 
 <div class="tabs">
 <ul>
