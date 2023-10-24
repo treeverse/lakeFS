@@ -261,11 +261,8 @@ PLATFORMS
 
 DEPENDENCIES
   github-pages
-<<<<<<< Updated upstream
-  jekyll-sitemap
-=======
   jekyll-seo-tag
->>>>>>> Stashed changes
+  jekyll-sitemap
   just-the-docs
   webrick (~> 1.8)
 
