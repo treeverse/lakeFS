@@ -178,20 +178,21 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                 </Modal.Header>
                 <Modal.Body>
                     {
-                        (importPhase === ImportPhase.NotStarted ||
-                            importPhase === ImportPhase.Failed) &&
+
                         <ImportForm
                             config={config}
+                            repo={repoId}
+                            branch={branchId}
                             pathStyle={pathStyle}
                             sourceRef={sourceRef}
                             destRef={destRef}
                             updateSrcValidity={(isValid) => setIsImportEnabled(isValid)}
                             path={path}
                             commitMsgRef={commitMsgRef}
-                            shouldAddPath={true}
                             metadataFields={metadataFields}
                             setMetadataFields={setMetadataFields}
                             err={importError}
+                            className={importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed ? '' : 'd-none'}
                         />
                     }
                     {
