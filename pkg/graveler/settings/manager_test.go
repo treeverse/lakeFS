@@ -41,14 +41,18 @@ func (m *mockCache) GetOrSet(k interface{}, setFn cache.SetFn) (v interface{}, e
 	m.c[k] = val
 	return val, nil
 }
+
 func TestNonExistent(t *testing.T) {
 	ctx := context.Background()
 	m, _ := prepareTest(t, ctx, nil, nil)
 	setting := &settings.ExampleSettings{}
 	err := m.Get(ctx, repository, "settingKey", setting)
-	require.ErrorIs(t, err, graveler.ErrNotFound)
-	_, err = m.GetLatest(ctx, repository, "settingKey", setting)
-	require.ErrorIs(t, err, graveler.ErrNotFound)
+	require.NoError(t, err)
+	// should return empty string as checksum without an error
+	checksum, err := m.GetLatest(ctx, repository, "settingKey", setting)
+	require.NoError(t, err)
+	require.NotNil(t, checksum)
+	require.Equal(t, "", *checksum)
 }
 
 func TestSaveAndGet(t *testing.T) {
@@ -85,6 +89,7 @@ func TestSaveAndGet(t *testing.T) {
 		t.Fatal("got unexpected settings:", diff)
 	}
 }
+
 func TestGetLatest(t *testing.T) {
 	ctx := context.Background()
 	m, _ := prepareTest(t, ctx, nil, nil)
