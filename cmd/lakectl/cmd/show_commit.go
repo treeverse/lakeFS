@@ -9,12 +9,12 @@ import (
 
 // showCommitCmd represents the show command
 var showCommitCmd = &cobra.Command{
-	Use:               "commit <ref uri>",
+	Use:               "commit <commit URI>",
 	Short:             "See detailed information about a commit",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		commitURI := MustParseRefURI("ref uri", args[0])
+		commitURI := MustParseRefURI("commit URI", args[0])
 		showMetaRangeID := Must(cmd.Flags().GetBool("show-meta-range-id"))
 
 		ctx := cmd.Context()

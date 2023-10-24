@@ -9,16 +9,16 @@ import (
 )
 
 var tagListCmd = &cobra.Command{
-	Use:               "list <repository uri>",
+	Use:               "list <repository URI>",
 	Short:             "List tags in a repository",
-	Example:           "lakectl tag list lakefs://<repository>",
+	Example:           "lakectl tag list " + myRepoExample,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := Must(cmd.Flags().GetInt("amount"))
 		after := Must(cmd.Flags().GetString("after"))
 
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("repository URI", args[0])
 
 		ctx := cmd.Context()
 		client := getClient()

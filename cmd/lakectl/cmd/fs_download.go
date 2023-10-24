@@ -17,7 +17,7 @@ const (
 )
 
 var fsDownloadCmd = &cobra.Command{
-	Use:   "download <path uri> [<destination path>]",
+	Use:   "download <path URI> [<destination path>]",
 	Short: "Download object(s) from a given repository path",
 	Args:  cobra.RangeArgs(fsDownloadCmdMinArgs, fsDownloadCmdMaxArgs),
 	Run: func(cmd *cobra.Command, args []string) {

@@ -35,8 +35,8 @@ var mergeCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		sourceRef := MustParseRefURI("source ref", args[0])
-		destinationRef := MustParseRefURI("destination ref", args[1])
+		sourceRef := MustParseBranchURI("source ref", args[0])
+		destinationRef := MustParseBranchURI("destination ref", args[1])
 		strategy := Must(cmd.Flags().GetString("strategy"))
 		fmt.Println("Source:", sourceRef)
 		fmt.Println("Destination:", destinationRef)

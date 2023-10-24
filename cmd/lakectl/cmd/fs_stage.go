@@ -9,7 +9,7 @@ import (
 )
 
 var fsStageCmd = &cobra.Command{
-	Use:   "stage <path uri>",
+	Use:   "stage <path URI>",
 	Short: "Link an external object with a path in a repository",
 	Long: `Link an external object with a path in a repository, creating an uncommitted change.
 The object location must be outside the repository's storage namespace`,
@@ -18,7 +18,7 @@ The object location must be outside the repository's storage namespace`,
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := MustParsePathURI("path", args[0])
+		pathURI := MustParsePathURI("path URI", args[0])
 		flags := cmd.Flags()
 		size, _ := flags.GetInt64("size")
 		mtimeSeconds, _ := flags.GetInt64("mtime")

@@ -23,7 +23,7 @@ type FromToBase struct {
 
 var findMergeBaseCmd = &cobra.Command{
 	Hidden: true,
-	Use:    "find-merge-base <source ref> <destination ref>",
+	Use:    "find-merge-base <source ref URI> <destination ref URI>",
 	Short:  "Find the commits for the merge operation",
 	Args:   cobra.ExactArgs(findMergeBaseCmdExactArgs),
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -34,8 +34,8 @@ var findMergeBaseCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		sourceRef := MustParseRefURI("source ref", args[0])
-		destinationRef := MustParseRefURI("destination ref", args[1])
+		sourceRef := MustParseRefURI("source ref URI", args[0])
+		destinationRef := MustParseRefURI("destination ref URI", args[1])
 		fmt.Println("Source:", sourceRef)
 		fmt.Println("Destination:", destinationRef)
 		if destinationRef.Repository != sourceRef.Repository {

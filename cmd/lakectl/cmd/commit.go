@@ -31,7 +31,7 @@ Parents: {{.Commit.Parents|join ", "}}
 )
 
 var commitCmd = &cobra.Command{
-	Use:               "commit <branch uri>",
+	Use:               "commit <branch URI>",
 	Short:             "Commit changes on a given branch",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
@@ -55,7 +55,7 @@ var commitCmd = &cobra.Command{
 			datePtr = nil
 		}
 
-		branchURI := MustParseRefURI("branch", args[0])
+		branchURI := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", branchURI)
 
 		// do commit

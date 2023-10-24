@@ -15,13 +15,13 @@ Branch Rules: {{ range $branch := .Branches }}
 const jsonFlagName = "json"
 
 var gcGetConfigCmd = &cobra.Command{
-	Use:               "get-config",
+	Use:               "get-config <repository URI>",
 	Short:             "Show the garbage collection policy for this repository",
-	Example:           "lakectl gc get-config <repository uri>",
+	Example:           "lakectl gc get-config " + myRepoExample,
 	Args:              cobra.ExactArgs(gcSetConfigCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("repository URI", args[0])
 		isJSON := Must(cmd.Flags().GetBool(jsonFlagName))
 		client := getClient()
 		resp, err := client.GetGCRulesWithResponse(cmd.Context(), u.Repository)
