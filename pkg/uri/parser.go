@@ -45,7 +45,7 @@ func isValidRepository(u *URI) error {
 	}
 }
 
-func (u *URI) ParseRepository() error {
+func (u *URI) ValidateRepository() error {
 	err := isValidRepository(u)
 
 	switch {
@@ -61,11 +61,7 @@ func (u *URI) ParseRepository() error {
 }
 
 func isValidRef(u *URI) error {
-	err := isValidRepository(u)
-
 	switch {
-	case err != nil:
-		return err
 	case len(u.Ref) == 0:
 		return fmt.Errorf("missing reference part: %w", ErrInvalidRefURI)
 	case !validator.ReValidRef.MatchString(u.Ref):
@@ -75,9 +71,12 @@ func isValidRef(u *URI) error {
 	}
 }
 
-func (u *URI) ParseRef() error {
-	err := isValidRef(u)
+func (u *URI) ValidateRef() error {
 	path := u.GetPath()
+	if err := isValidRepository(u); err != nil {
+		return err
+	}
+	err := isValidRef(u)
 
 	switch {
 	case err != nil:
@@ -89,9 +88,12 @@ func (u *URI) ParseRef() error {
 	}
 }
 
-func (u *URI) ParseBranch() error {
-	err := isValidRef(u)
+func (u *URI) ValidateBranch() error {
 	path := u.GetPath()
+	if err := isValidRepository(u); err != nil {
+		return err
+	}
+	err := isValidRef(u)
 
 	switch {
 	case err != nil:
@@ -105,7 +107,10 @@ func (u *URI) ParseBranch() error {
 	}
 }
 
-func (u *URI) ParseFullyQualified() error {
+func (u *URI) ValidateFullyQualified() error {
+	if err := isValidRepository(u); err != nil {
+		return err
+	}
 	err := isValidRef(u)
 
 	switch {

@@ -31,7 +31,7 @@ var entryCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
-		if err := u.ParseRef(); err != nil {
+		if err := u.ValidateRef(); err != nil {
 			fmt.Printf("Invalid 'ref': %s", err)
 			os.Exit(1)
 		}

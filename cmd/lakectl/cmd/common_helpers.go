@@ -276,7 +276,7 @@ func MustParseRepoURI(name, s string) *uri.URI {
 	if err != nil {
 		DieFmt("%s %s", name, err)
 	}
-	if err = u.ParseRepository(); err != nil {
+	if err = u.ValidateRepository(); err != nil {
 		DieFmt("%s %s", name, err)
 	}
 	return u
@@ -287,7 +287,7 @@ func MustParseRefURI(name, s string) *uri.URI {
 	if err != nil {
 		DieFmt("%s %s", name, err)
 	}
-	if err = u.ParseRef(); err != nil {
+	if err = u.ValidateRef(); err != nil {
 		DieFmt("%s %s", name, err)
 	}
 	return u
@@ -298,7 +298,7 @@ func MustParseBranchURI(name, s string) *uri.URI {
 	if err != nil {
 		DieFmt("%s %s", name, err)
 	}
-	if err = u.ParseBranch(); err != nil {
+	if err = u.ValidateBranch(); err != nil {
 		DieFmt("%s %s", name, err)
 	}
 	return u
@@ -309,7 +309,7 @@ func MustParsePathURI(name, s string) *uri.URI {
 	if err != nil {
 		DieFmt("%s %s", name, err)
 	}
-	if err = u.ParseFullyQualified(); err != nil {
+	if err = u.ValidateFullyQualified(); err != nil {
 		DieFmt("%s %s", name, err)
 	}
 	return u
