@@ -30,7 +30,9 @@ func TestSetAndGet(t *testing.T) {
 	ctx := context.Background()
 	bpm := prepareTest(t, ctx)
 	_, eTag, err := bpm.GetRules(ctx, repository)
-	require.ErrorIs(t, err, graveler.ErrNotFound)
+	require.NoError(t, err)
+	require.NotNil(t, eTag)
+	require.Equal(t, "", *eTag)
 
 	err = bpm.SetRules(ctx, repository, &graveler.BranchProtectionRules{
 		BranchPatternToBlockedActions: map[string]*graveler.BranchProtectionBlockedActions{
