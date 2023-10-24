@@ -389,7 +389,7 @@ lakectl actions runs list <repository URI> [--branch <branch>] [--commit <commit
 {:.no_toc}
 
 ```
-lakectl actions runs list lakefs://my-repo my-branch ba323f434
+lakectl actions runs list lakefs://my-repo --branch my-branch --commit 600dc0ffee
 ```
 
 #### Options
@@ -1440,7 +1440,7 @@ lakectl bisect run <command> [flags]
 Start a bisect session
 
 ```
-lakectl bisect start <bad ref> <good ref> [flags]
+lakectl bisect start <bad ref URI> <good ref URI> [flags]
 ```
 
 #### Options
@@ -1524,7 +1524,7 @@ lakectl branch delete <branch URI> [flags]
 {:.no_toc}
 
 ```
-lakectl branch delete lakefs://example-repo/example-branch
+lakectl branch delete lakefs://my-repo/my-branch
 ```
 
 #### Options
@@ -1868,8 +1868,7 @@ lakectl cherry-pick <commit URI> <branch> [flags]
 {:.no_toc}
 
 ```
-lakectl cherry-pick lakefs://example-repo/example-ref lakefs://example-repo/main
-
+lakectl cherry-pick lakefs://my-repo/600dc0ffee lakefs://my-repo/my-branch
 ```
 
 #### Options
@@ -1995,7 +1994,7 @@ lakectl config [flags]
 Show changes between two commits, or the currently uncommitted changes
 
 ```
-lakectl diff <ref uri> [ref uri] [flags]
+lakectl diff <ref URI> [ref URI] [flags]
 ```
 
 #### Examples
@@ -2075,7 +2074,7 @@ lakectl doctor [flags]
 Find the commits for the merge operation
 
 ```
-lakectl find-merge-base <source ref> <destination ref> [flags]
+lakectl find-merge-base <source ref URI> <destination ref URI> [flags]
 ```
 
 #### Options
@@ -2427,7 +2426,7 @@ lakectl help [command] [flags]
 Import data from external source to a destination branch
 
 ```
-lakectl import --from <object store URI> --to <lakeFS path uri> [flags]
+lakectl import --from <object store URI> --to <lakeFS path URI> [flags]
 ```
 
 #### Options
