@@ -118,7 +118,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Unsupported auth mode")
 		}
 		if cfg.IsAuthTypeAPI() {
-			authService, err = auth.NewAPIAuthService(
+			apiService, err := auth.NewAPIAuthService(
 				cfg.Auth.API.Endpoint,
 				cfg.Auth.API.Token.SecureValue(),
 				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
@@ -127,6 +127,10 @@ var runCmd = &cobra.Command{
 			)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
+			}
+			authService = apiService
+			if err := apiService.CheckHealth(ctx, logger, cfg.Auth.API.HealthCheckTimeout); err != nil {
+				logger.WithError(err).Fatal("Auth API health check failed")
 			}
 		} else {
 			authService = auth.NewAuthService(
@@ -213,6 +217,7 @@ var runCmd = &cobra.Command{
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create remote authenticator")
 			}
+
 			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
 		}
 

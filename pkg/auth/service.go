@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-openapi/swag"
@@ -1139,6 +1140,11 @@ func (s *AuthService) deleteTokens(ctx context.Context) error {
 	return it.Err()
 }
 
+const (
+	healthCheckMaxInterval     = 5 * time.Second
+	healthCheckInitialInterval = 1 * time.Second
+)
+
 type APIAuthService struct {
 	apiClient   ClientWithResponsesInterface
 	secretStore crypt.SecretStore
@@ -1868,6 +1874,38 @@ func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, e
 		return ErrInvalidToken
 	}
 	return a.validateResponse(res, http.StatusCreated)
+}
+
+func (a *APIAuthService) CheckHealth(ctx context.Context, logger logging.Logger, timeout time.Duration) error {
+	// Perform health check for API auth service
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxInterval = healthCheckMaxInterval
+	bo.InitialInterval = healthCheckInitialInterval
+	bo.MaxElapsedTime = timeout
+	err := backoff.Retry(func() error {
+		healthResp, err := a.apiClient.HealthCheckWithResponse(ctx)
+		switch {
+		case err != nil:
+			return err
+		case healthResp.StatusCode() == http.StatusNoContent:
+			return nil
+		default:
+			return fmt.Errorf("health check returned status %s: %w", healthResp.Status(), ErrInvalidResponse)
+		}
+	}, bo)
+	if err != nil {
+		return err
+	}
+
+	resp, err := a.apiClient.GetVersionWithResponse(ctx)
+	if err != nil {
+		return fmt.Errorf("get version failed: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return fmt.Errorf("get version returned status %s: %w", resp.Status(), ErrInvalidResponse)
+	}
+	logger.Info("auth API server version: ", resp.JSON200.Version)
+	return nil
 }
 
 func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {

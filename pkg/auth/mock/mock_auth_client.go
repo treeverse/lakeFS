@@ -516,6 +516,26 @@ func (mr *MockClientWithResponsesInterfaceMockRecorder) GetUserWithResponse(arg0
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).GetUserWithResponse), varargs...)
 }
 
+// GetVersionWithResponse mocks base method.
+func (m *MockClientWithResponsesInterface) GetVersionWithResponse(arg0 context.Context, arg1 ...auth.RequestEditorFn) (*auth.GetVersionResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetVersionWithResponse", varargs...)
+	ret0, _ := ret[0].(*auth.GetVersionResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVersionWithResponse indicates an expected call of GetVersionWithResponse.
+func (mr *MockClientWithResponsesInterfaceMockRecorder) GetVersionWithResponse(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVersionWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).GetVersionWithResponse), varargs...)
+}
+
 // HealthCheckWithResponse mocks base method.
 func (m *MockClientWithResponsesInterface) HealthCheckWithResponse(arg0 context.Context, arg1 ...auth.RequestEditorFn) (*auth.HealthCheckResponse, error) {
 	m.ctrl.T.Helper()
