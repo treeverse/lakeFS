@@ -244,7 +244,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **log_commits**
-> CommitList log_commits(repository, ref, after=after, amount=amount, objects=objects, prefixes=prefixes, limit=limit, first_parent=first_parent)
+> CommitList log_commits(repository, ref, after=after, amount=amount, objects=objects, prefixes=prefixes, limit=limit, first_parent=first_parent, since=since)
 
 get commit log from ref. If both objects and prefixes are empty, return all commits.
 
@@ -315,10 +315,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     prefixes = ['prefixes_example'] # List[str] | list of paths, each element is a path of a prefix (optional)
     limit = True # bool | limit the number of items in return to 'amount'. Without further indication on actual number of items. (optional)
     first_parent = True # bool | if set to true, follow only the first parent upon reaching a merge commit (optional)
+    since = '2013-10-20T19:20:30+01:00' # datetime | Show commits more recent than a specific date-time (optional)
 
     try:
         # get commit log from ref. If both objects and prefixes are empty, return all commits.
-        api_response = api_instance.log_commits(repository, ref, after=after, amount=amount, objects=objects, prefixes=prefixes, limit=limit, first_parent=first_parent)
+        api_response = api_instance.log_commits(repository, ref, after=after, amount=amount, objects=objects, prefixes=prefixes, limit=limit, first_parent=first_parent, since=since)
         print("The response of RefsApi->log_commits:\n")
         pprint(api_response)
     except Exception as e:
@@ -339,6 +340,7 @@ Name | Type | Description  | Notes
  **prefixes** | [**List[str]**](str.md)| list of paths, each element is a path of a prefix | [optional] 
  **limit** | **bool**| limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. | [optional] 
  **first_parent** | **bool**| if set to true, follow only the first parent upon reaching a merge commit | [optional] 
+ **since** | **datetime**| Show commits more recent than a specific date-time | [optional] 
 
 ### Return type
 

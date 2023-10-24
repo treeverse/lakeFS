@@ -31,7 +31,7 @@ func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, external
 
 func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
 	ctx := context.Background()
-	contents := "test_file"
+	const contents = "test_file"
 	size := int64(len(contents))
 
 	cases := []struct {

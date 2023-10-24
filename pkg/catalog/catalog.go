@@ -160,6 +160,7 @@ type LogParams struct {
 	Amount        int
 	Limit         bool
 	FirstParent   bool
+	Since         *time.Time
 }
 
 type ExpireResult struct {
@@ -1196,7 +1197,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	if err != nil {
 		return nil, false, fmt.Errorf("branch ref: %w", err)
 	}
-	it, err := c.Store.Log(ctx, repository, commitID, params.FirstParent)
+	it, err := c.Store.Log(ctx, repository, commitID, params.FirstParent, params.Since)
 	if err != nil {
 		return nil, false, err
 	}

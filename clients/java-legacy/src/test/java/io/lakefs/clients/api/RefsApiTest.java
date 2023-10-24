@@ -20,6 +20,7 @@ import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.FindMergeBaseResult;
 import io.lakefs.clients.api.model.Merge;
 import io.lakefs.clients.api.model.MergeResult;
+import org.threeten.bp.OffsetDateTime;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -94,7 +95,8 @@ public class RefsApiTest {
         List<String> prefixes = null;
         Boolean limit = null;
         Boolean firstParent = null;
-                CommitList response = api.logCommits(repository, ref, after, amount, objects, prefixes, limit, firstParent);
+        OffsetDateTime since = null;
+                CommitList response = api.logCommits(repository, ref, after, amount, objects, prefixes, limit, firstParent, since);
         // TODO: test validations
     }
     
