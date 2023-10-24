@@ -10,7 +10,7 @@ parent: How-To
 
 ## About Data Catalogs Export
 
-Data Catalog Export is all about integrating external Data Warehouses (i.e AWS Athena) with lakeFS.
+Data Catalog Export is all about integrating query engines (like Spark, AWS Athena, Presto, etc.) with lakeFS.
 
 Data Catalogs (such as Hive Metastore or AWS Glue) store metadata for services (such as Spark, Trino and Athena). They contain metadata such as the location of the table, information about columns, partitions and much more.
 Given the native integration between Spark and SQL, it’s most common that you’ll interact with tables in Spark environment.
