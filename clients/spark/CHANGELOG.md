@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.11.0 - 2023-10-23
+* Bump lakeFS SDK to v1.0
+* **Breaking:** drop support for lakeFS server < v0.108.0
+
 ## v0.10.0 - 2023-08-15
 * Bug fixes and improvements.
 * Seperated flows of committs and uncommitted GC are no longer supported. Use the [new GC job](https://docs.lakefs.io/howto/garbage-collection/).
