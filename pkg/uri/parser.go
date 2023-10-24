@@ -72,7 +72,6 @@ func isValidRef(u *URI) error {
 }
 
 func (u *URI) ValidateRef() error {
-	path := u.GetPath()
 	if err := isValidRepository(u); err != nil {
 		return err
 	}
@@ -81,8 +80,8 @@ func (u *URI) ValidateRef() error {
 	switch {
 	case err != nil:
 		return err
-	case len(path) > 0:
-		return fmt.Errorf("ref URI includes a path part (path=%s): %w", path, ErrInvalidRefURI)
+	case len(u.GetPath()) > 0:
+		return fmt.Errorf("ref URI includes a path part (path=%s): %w", u.GetPath(), ErrInvalidRefURI)
 	default:
 		return nil
 	}
@@ -162,11 +161,7 @@ func ParseWithBaseURI(s string, baseURI string) (*URI, error) {
 	if len(baseURI) > 0 && !strings.HasPrefix(s, LakeFSSchema+LakeFSSchemaSeparator) {
 		s = baseURI + s
 	}
-	u, err := Parse(s)
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
+	return Parse(s)
 }
 
 func Parse(s string) (*URI, error) {
