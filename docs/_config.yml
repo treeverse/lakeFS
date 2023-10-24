@@ -28,7 +28,7 @@ defaults:
     values:
       image: https://docs.lakefs.io/assets/img/docs_logo.png
   - scope:
-      path: "assets/**"
+      path: "assets"
     values:
       sitemap: false
 
