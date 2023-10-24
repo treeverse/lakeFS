@@ -2901,6 +2901,12 @@ paths:
           description: if set to true, follow only the first parent upon reaching a merge commit
           schema:
             type: boolean
+        - in: query
+          name: since
+          description: Show commits more recent than a specific date-time
+          schema:
+            type: string
+            format: date-time
       responses:
         200:
           description: commit log

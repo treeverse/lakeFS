@@ -3,6 +3,7 @@ package ref
 import (
 	"container/heap"
 	"context"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
@@ -17,6 +18,7 @@ type CommitIterator struct {
 	queue       commitsPriorityQueue
 	visit       map[graveler.CommitID]struct{}
 	state       commitIteratorState
+	since       *time.Time
 	err         error
 }
 
@@ -65,6 +67,7 @@ type CommitIteratorConfig struct {
 	start       graveler.CommitID
 	firstParent bool
 	manager     graveler.RefManager
+	since       *time.Time
 }
 
 // NewCommitIterator returns an iterator over all commits in the given repository.
@@ -78,6 +81,7 @@ func NewCommitIterator(ctx context.Context, config *CommitIteratorConfig) *Commi
 		visit:       make(map[graveler.CommitID]struct{}),
 		manager:     config.manager,
 		firstParent: config.firstParent,
+		since:       config.since,
 	}
 }
 
@@ -106,10 +110,12 @@ func (ci *CommitIterator) Next() bool {
 			ci.err = err
 			return false
 		}
-		ci.queue.Push(rec)
+		// skip commits that are older than since time
+		if !(ci.since != nil && rec.Commit.CreationDate.Before(*ci.since)) {
+			ci.queue.Push(rec)
+		}
 	}
 
-	// nothing in our queue - work is done
 	if ci.queue.Len() == 0 {
 		ci.value = nil
 		ci.state = commitIteratorStateDone
@@ -128,6 +134,7 @@ func (ci *CommitIterator) Next() bool {
 		if _, visited := ci.visit[p]; visited {
 			continue
 		}
+
 		rec, err := ci.getCommitRecord(p)
 		if err != nil {
 			ci.value = nil
@@ -135,6 +142,12 @@ func (ci *CommitIterator) Next() bool {
 			return false
 		}
 		ci.visit[rec.CommitID] = struct{}{}
+
+		// skip commits that are older than since time
+		if ci.since != nil && rec.Commit.CreationDate.Before(*ci.since) {
+			continue
+		}
+
 		heap.Push(&ci.queue, rec)
 	}
 	return true

@@ -7,6 +7,7 @@ package mock
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 	graveler "github.com/treeverse/lakefs/pkg/graveler"
@@ -677,18 +678,18 @@ func (mr *MockVersionControllerMockRecorder) ListTags(ctx, repository interface{
 }
 
 // Log mocks base method.
-func (m *MockVersionController) Log(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, firstParent bool) (graveler.CommitIterator, error) {
+func (m *MockVersionController) Log(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, firstParent bool, since *time.Time) (graveler.CommitIterator, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Log", ctx, repository, commitID, firstParent)
+	ret := m.ctrl.Call(m, "Log", ctx, repository, commitID, firstParent, since)
 	ret0, _ := ret[0].(graveler.CommitIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Log indicates an expected call of Log.
-func (mr *MockVersionControllerMockRecorder) Log(ctx, repository, commitID, firstParent interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) Log(ctx, repository, commitID, firstParent, since interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockVersionController)(nil).Log), ctx, repository, commitID, firstParent)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockVersionController)(nil).Log), ctx, repository, commitID, firstParent, since)
 }
 
 // Merge mocks base method.
@@ -2170,18 +2171,18 @@ func (mr *MockRefManagerMockRecorder) ListTags(ctx, repository interface{}) *gom
 }
 
 // Log mocks base method.
-func (m *MockRefManager) Log(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, firstParent bool) (graveler.CommitIterator, error) {
+func (m *MockRefManager) Log(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, firstParent bool, since *time.Time) (graveler.CommitIterator, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Log", ctx, repository, commitID, firstParent)
+	ret := m.ctrl.Call(m, "Log", ctx, repository, commitID, firstParent, since)
 	ret0, _ := ret[0].(graveler.CommitIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Log indicates an expected call of Log.
-func (mr *MockRefManagerMockRecorder) Log(ctx, repository, commitID, firstParent interface{}) *gomock.Call {
+func (mr *MockRefManagerMockRecorder) Log(ctx, repository, commitID, firstParent, since interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockRefManager)(nil).Log), ctx, repository, commitID, firstParent)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockRefManager)(nil).Log), ctx, repository, commitID, firstParent, since)
 }
 
 // ParseRef mocks base method.

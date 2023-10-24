@@ -20,6 +20,7 @@ import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.FindMergeBaseResult;
 import io.lakefs.clients.sdk.model.Merge;
 import io.lakefs.clients.sdk.model.MergeResult;
+import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -91,6 +92,7 @@ public class RefsApiTest {
         List<String> prefixes = null;
         Boolean limit = null;
         Boolean firstParent = null;
+        OffsetDateTime since = null;
         CommitList response = api.logCommits(repository, ref)
                 .after(after)
                 .amount(amount)
@@ -98,6 +100,7 @@ public class RefsApiTest {
                 .prefixes(prefixes)
                 .limit(limit)
                 .firstParent(firstParent)
+                .since(since)
                 .execute();
         // TODO: test validations
     }

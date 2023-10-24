@@ -718,7 +718,8 @@ func TestManager_AddCommit(t *testing.T) {
 
 func TestManager_Log(t *testing.T) {
 	r, _ := testRefManager(t)
-	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+	ctx := context.Background()
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -739,7 +740,7 @@ func TestManager_Log(t *testing.T) {
 		if previous != "" {
 			c.Parents = append(c.Parents, previous)
 		}
-		cid, err := r.AddCommit(context.Background(), repository, c)
+		cid, err := r.AddCommit(ctx, repository, c)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -747,7 +748,7 @@ func TestManager_Log(t *testing.T) {
 		ts = ts.Add(time.Second)
 	}
 
-	iter, err := r.Log(context.Background(), repository, previous, false)
+	iter, err := r.Log(ctx, repository, previous, false, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -812,6 +813,7 @@ func TestManager_LogGraph(t *testing.T) {
 		firstParent bool
 		seek        string
 		start       string
+		since       time.Time
 		expected    []string
 	}{
 		/*
@@ -843,10 +845,15 @@ func TestManager_LogGraph(t *testing.T) {
 			start:    "c7",
 			expected: []string{"c7", "c4", "c2", "c1"},
 		},
+		"since": {
+			start:    "c8",
+			since:    time.Date(2020, time.December, 1, 15, 5, 0, 0, time.UTC),
+			expected: []string{"c8", "c7", "c6", "c5"},
+		},
 	}
 	for name, tst := range tests {
 		t.Run(name, func(t *testing.T) {
-			nextCommitTS, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
+			nextCommitTS := time.Date(2020, time.December, 1, 15, 0, 0, 0, time.UTC)
 			commitNameToID := map[string]graveler.CommitID{}
 			addCommit := func(commitName string, parentNames ...string) graveler.CommitID {
 				nextCommitTS = nextCommitTS.Add(time.Minute)
@@ -875,7 +882,14 @@ func TestManager_LogGraph(t *testing.T) {
 			for _, commitName := range commitNames {
 				addCommit(commitName, dag[commitName]...)
 			}
-			it, err := r.Log(ctx, repository, commitNameToID[tst.start], tst.firstParent)
+
+			// setup time since
+			var since *time.Time
+			if !tst.since.IsZero() {
+				since = &tst.since
+			}
+
+			it, err := r.Log(ctx, repository, commitNameToID[tst.start], tst.firstParent, since)
 			if err != nil {
 				t.Fatal("Error during create Log iterator", err)
 			}
