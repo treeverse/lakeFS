@@ -440,6 +440,11 @@ textarea.form-control.policy-document:focus {
   padding: 10px;
 }
 
+.input-group>.input-group-prepend>.input-group-text {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
 td .form-group {
   margin-bottom: 0;
 }
