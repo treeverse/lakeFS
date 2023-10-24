@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/ory/dockertest/v3"
@@ -28,7 +29,7 @@ func GetDynamoDBInstance() (string, func(), error) {
 	if err != nil {
 		return "", nil, fmt.Errorf("could not connect to Docker: %w", err)
 	}
-	dockerPool.MaxWait = dbContainerTimeoutSeconds
+	dockerPool.MaxWait = dbContainerTimeoutSeconds * time.Second
 
 	dynamodbDockerRunOptions := &dockertest.RunOptions{
 		Repository: "amazon/dynamodb-local",
