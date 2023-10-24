@@ -263,7 +263,7 @@ const onTableDiffExpansion = (entry, setTableDiffState, setIsTableMerge) => () =
     }
 }
 
-export const MetadataFields = ({ metadataFields, setMetadataFields}) => {
+export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest}) => {
     const onChangeKey = useCallback((i) => {
         return e => {
             const key = e.currentTarget.value;
@@ -288,7 +288,7 @@ export const MetadataFields = ({ metadataFields, setMetadataFields}) => {
     }, [setMetadataFields])
 
     return (
-        <div className="mt-3 mb-3">
+        <div className="mt-3 mb-3" {...rest}>
             {metadataFields.map((f, i) => {
                 return (
                     <Form.Group key={`commit-metadata-field-${i}`} className="mb-3">
