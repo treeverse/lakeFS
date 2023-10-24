@@ -35,15 +35,14 @@ Mirror an existing object store location into a lakeFS repository, without copyi
 4. Add a commit message, and optionally metadata.
 5. Press _Import_
 
-Once the import is complete, the changes are merged into the destination branch.
+Once the import is complete, a new commit containing the imported objects will be created in the destination branch.
 
 #### Notes
 * Any previously existing objects under the destination prefix will be deleted.
 * The import duration depends on the amount of imported objects, but will roughly be a few thousand objects per second.
 
 ### Using the CLI: _lakectl import_
-The _lakectl import_ command acts the same as the UI import wizard. It commits the changes to a dedicated branch, with an optional
-flag to merge the changes to a selected branch.
+The _lakectl import_ command acts the same as the UI import wizard. It commits the changes to the selected branch.
 
 <div class="tabs">
 <ul>
