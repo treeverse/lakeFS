@@ -1,4 +1,4 @@
-lazy val projectVersion = "0.10.0"
+lazy val projectVersion = "0.11.0"
 version := projectVersion
 lazy val hadoopVersion = "3.2.1"
 ThisBuild / isSnapshot := false
@@ -42,7 +42,7 @@ buildInfoPackage := "io.treeverse.clients"
 enablePlugins(S3Plugin, BuildInfoPlugin)
 
 libraryDependencies ++= Seq(
-  "io.lakefs" % "sdk" % "0.112.1",
+  "io.lakefs" % "sdk" % "1.0.0",
   "org.apache.spark" %% "spark-sql" % "3.1.2" % "provided",
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
   "org.apache.hadoop" % "hadoop-aws" % hadoopVersion % "provided",
