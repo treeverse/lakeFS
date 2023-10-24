@@ -1,7 +1,7 @@
 ---
 title: 4️⃣ Commit and Merge
 description: lakeFS quickstart / Commit the change and merge it back into the main branhch
-parent: ⭐ Quickstart ⭐
+parent: ⭐ Quickstart
 nav_order: 20
 next: ["Rollback the changes", "./rollback.html"]
 previous: ["Create a branch of the data", "./branch.html"]
@@ -9,7 +9,7 @@ previous: ["Create a branch of the data", "./branch.html"]
 
 _In the previous step we branched our data from `main` into a new `denmark-lakes` branch, and overwrote the `lakes.parquet` to hold solely information about lakes in Denmark. Now we're going to commit that change (just like Git) and merge it back to main (just like git)._
 
-# Committing Changes in lakeFS 🤝🏻
+# Committing Changes in lakeFS
 
 Having make the change to the datafile in the `denmark-lakes` branch, we now want to commit it. There are various options for interacting with the lakeFS API, including the web interface, [a Python client](https://pydocs.lakefs.io/), and `lakectl` which is what we'll use here. Run the following from a terminal window:
 
@@ -47,7 +47,7 @@ We can confirm that this has worked by returning to the same object view of `lak
 
 <img src="{{ site.baseurl }}/assets/img/quickstart/duckdb-main-03.png" alt="The lakeFS object browser with a DuckDB query on lakes.parquet showing that there is only data for Denmark." class="quickstart"/>
 
-**But…oh no!** 😬 A slow chill creeps down your spine, and the bottom drops out of your stomach. What have you done! 😱 *You were supposed to create **a separate file** of Denmark's lakes - not replace the original one* 🤦🏻🤦🏻‍♀️ 
+**But…oh no!** A slow chill creeps down your spine, and the bottom drops out of your stomach. What have you done! 😱 *You were supposed to create **a separate file** of Denmark's lakes - not replace the original one*
 
 Is all lost? Will our hero overcome the obstacles? No, and yes respectively!
 

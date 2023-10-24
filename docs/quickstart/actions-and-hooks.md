@@ -1,13 +1,13 @@
 ---
 title: 6️⃣ Using Actions and Hooks in lakeFS
 description: lakeFS quickstart / Use Actions and Hooks to enforce conditions when committing and merging changes
-parent: ⭐ Quickstart ⭐
+parent: ⭐ Quickstart
 nav_order: 30
 next: ["Resources for learning more about lakeFS", "./learning-more-lakefs.html"]
 previous: ["Rollback the changes", "./rollback.html"]
 ---
 
-# Actions and Hooks in lakeFS 🪝
+# Actions and Hooks in lakeFS
 
 When we interact with lakeFS it can be useful to have certain checks performed at stages along the way. Let's see how [actions in lakeFS]({% link howto/hooks/index.md %}) can be of benefit here. 
 

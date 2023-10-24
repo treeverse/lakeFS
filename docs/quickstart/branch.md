@@ -1,13 +1,13 @@
 ---
 title: 3️⃣ Create a branch
 description: lakeFS quickstart / Create a branch in lakeFS without copying data on disk, make a change to the branch, see that the original version of the data is unchanged. 
-parent: ⭐ Quickstart ⭐
+parent: ⭐ Quickstart
 nav_order: 15
 next: ["Merge the branch back into main", "./commit-and-merge.html"]
 previous: ["Query the pre-populated data", "./query.html"]
 ---
 
-# Create a Branch 🪓
+# Create a Branch
 
 lakeFS uses branches in a similar way to Git. It's a great way to isolate changes until, or if, we are ready to re-integrate them. lakeFS uses a copy-on-write technique which means that it's very efficient to create branches of your data. 
 

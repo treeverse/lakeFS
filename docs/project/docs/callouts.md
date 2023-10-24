@@ -44,7 +44,7 @@ callouts:
   note:
     color: blue
   warning:
-    title: ⚠️ Warning ⚠️
+    title: ⚠️ Warning
     color: red
   tip:
     color: green
