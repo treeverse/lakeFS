@@ -33,7 +33,7 @@ ON users.id = events.user_id; -- SQL stays the same, branch or tag exist as sche
 Several well known formats exist today let you export existing tables in lakeFS into a "native" object store representation
 which does not require copying the data outside of lakeFS.
 
-Since these are metadata representations, they are applied using hooks to automate the process.
+These are metadata representations and can be applied automatically through hooks.
 
 ### Table Decleration 
 
