@@ -195,10 +195,11 @@ type Config struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
 		} `mapstructure:"encrypt"`
 		API struct {
-			Endpoint           string        `mapstructure:"endpoint"`
-			Token              SecureString  `mapstructure:"token"`
-			SupportsInvites    bool          `mapstructure:"supports_invites"`
-			HealthCheckTimeout time.Duration `mapstructure:"health_check_timeout"`
+			Endpoint            string        `mapstructure:"endpoint"`
+			Token               SecureString  `mapstructure:"token"`
+			SupportsInvites     bool          `mapstructure:"supports_invites"`
+			HealthCheckTimeout  time.Duration `mapstructure:"health_check_timeout"`
+			HealthCheckRequired bool          `mapstructure:"health_check_required"`
 		} `mapstructure:"api"`
 		RemoteAuthenticator struct {
 			// Enabled if set true will enable remote authentication

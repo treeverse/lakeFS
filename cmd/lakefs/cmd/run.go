@@ -130,7 +130,10 @@ var runCmd = &cobra.Command{
 			}
 			authService = apiService
 			if err := apiService.CheckHealth(ctx, logger, cfg.Auth.API.HealthCheckTimeout); err != nil {
-				logger.WithError(err).Fatal("Auth API health check failed")
+				if cfg.Auth.API.HealthCheckRequired {
+					logger.WithError(err).Fatal("Auth API health check failed")
+				}
+				logger.WithError(err).Errorf("Auth API health check failed")
 			}
 		} else {
 			authService = auth.NewAuthService(
