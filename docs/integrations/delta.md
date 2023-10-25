@@ -105,7 +105,7 @@ If you are trying to achieve that, please reach out on Slack and the community w
 
 ## Further Reading
 
-See [Guaranteeing Consistency in Your Delta Lake Tables With lakeFS](https://lakefs.io/guarantee-consistency-in-your-delta-lake-tables-with-lakefs/) post on the lakeFS blog to learn how to 
+See [Guaranteeing Consistency in Your Delta Lake Tables With lakeFS](https://lakefs.io/blog/guarantee-consistency-in-your-delta-lake-tables-with-lakefs/) post on the lakeFS blog to learn how to 
 guarantee data quality in a Delta table by utilizing lakeFS branches.
 
 
