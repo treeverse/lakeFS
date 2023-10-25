@@ -62,7 +62,6 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("auth.remote_authenticator.request_timeout", 10*time.Second)
 
 	viper.SetDefault("auth.api.health_check_timeout", DefaultAuthAPIHealthCheckTimeout)
-	viper.SetDefault("auth.api.health_check_required", true)
 
 	viper.SetDefault("blockstore.local.path", "~/lakefs/data/block")
 	viper.SetDefault("blockstore.s3.region", "us-east-1")
