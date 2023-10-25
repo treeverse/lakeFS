@@ -23,13 +23,13 @@ Start Spark Shell / PySpark with the `--packages` flag:
 
 This client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but can work for other Spark
 versions and higher Hadoop versions.
-  
+
 ```bash
-spark-shell --packages io.lakefs:lakefs-spark-client_2.12:0.10.0
+spark-shell --packages io.lakefs:lakefs-spark-client_2.12:0.11.0
 ```
 
 Alternatively an assembled jar is available on S3, at
-`s3://treeverse-clients-us-east/lakefs-spark-client/0.10.0/lakefs-spark-client-assembly-0.10.0.jar`
+`s3://treeverse-clients-us-east/lakefs-spark-client/0.11.0/lakefs-spark-client-assembly-0.11.0.jar`
 </div>
 
 ## Configuration
