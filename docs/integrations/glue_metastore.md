@@ -366,7 +366,7 @@ lakectl fs upload lakefs://catalogs/main/_lakefs_actions/animals_glue.yaml -s ./
 lakectl commit lakefs://catalogs/main -m "trigger first export hook"
 ```
 
-Once the action finished running we can see the logs the result.
+After the action finishes running we can see the result in the action logs.
 
 ![Hooks log result in lakeFS UI]({{ site.baseurl }}/assets/img/glue_export_hook_result_log.png)
 
