@@ -19,9 +19,9 @@ With Data Catalog Exports, one can leverage the versioning capabilities of lakeF
 At the end of this guide, you will be able to query lakeFS data from Athena, Trino and other catalog-dependent tools:
 
 ```sql
-use main;
-use my_branch; -- any branch
-use v101; -- or tag
+USE main;
+USE my_branch; -- any branch
+USE v101; -- or tag
 
 SELECT * FROM users 
 INNER JOIN events 
