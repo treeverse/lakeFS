@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -77,6 +78,7 @@ var logCmd = &cobra.Command{
 		amount := Must(cmd.Flags().GetInt("amount"))
 		after := Must(cmd.Flags().GetString("after"))
 		limit := Must(cmd.Flags().GetBool("limit"))
+		since := Must(cmd.Flags().GetString("since"))
 		dot := Must(cmd.Flags().GetBool("dot"))
 		firstParent := Must(cmd.Flags().GetBool("first-parent"))
 		objects := Must(cmd.Flags().GetStringSlice("objects"))
@@ -108,6 +110,13 @@ var logCmd = &cobra.Command{
 		}
 		if len(prefixes) > 0 {
 			logCommitsParams.Prefixes = &prefixes
+		}
+		if since != "" {
+			sinceParsed, err := time.Parse(time.RFC3339, since)
+			if err != nil {
+				DieFmt("Failed to parse 'since' - %s", err)
+			}
+			logCommitsParams.Since = &sinceParsed
 		}
 
 		graph := &dotWriter{
@@ -169,4 +178,5 @@ func init() {
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 	logCmd.Flags().StringSlice("objects", nil, "show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together")
 	logCmd.Flags().StringSlice("prefixes", nil, "show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together")
+	logCmd.Flags().String("since", "", "show results since this date-time (RFC3339 format)")
 }
