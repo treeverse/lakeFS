@@ -21,7 +21,7 @@ The integration between Glue and lakeFS is based on [Data Catalog Exports]({% li
 
 ### What is supported 
 
-- Creating a uniqueue table in Glue Catalog per lakeFS repository / ref / commit. 
+- Creating a unique table in Glue Catalog per lakeFS repository / ref / commit. 
 - No data copying is required, the table location is a path to a symlinks structure in S3 based on Hive's [SymlinkTextInputFormat](https://svn.apache.org/repos/infra/websites/production/hive/content/javadocs/r2.1.1/api/org/apache/hadoop/hive/ql/io/SymlinkTextInputFormat.html) and the [table partitions](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html#tables-partition) are maintained.
 - Tables are described via [Hive format in `_lakefs_tables/<my_table>.yaml`]({% link howto/catalog_exports.md %}#hive-tables).
 - Currently the data query in Glue metastore is Read-Only operation and mutating data requires writting to lakeFS and letting the export hook run.
