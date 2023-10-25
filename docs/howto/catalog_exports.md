@@ -37,8 +37,8 @@ Since these are metadata representations, they are applied using hooks to automa
 
 ### Table Decleration 
 
-Once a a lakeFS repository is created, the tables should be configured as a table descriptor object on the repository on the path `_lakefs_tables/TABLE.yaml`.
-Note: only tables of `type: hive` are supported and more are expected to be added. 
+After creating a lakeFS repository, configure tables as table descriptor objects on the repository on the path `_lakefs_tables/TABLE.yaml`.
+Note: the Glue exporter can currently only export tables of `type: hive`.  We expect to add more.
 
 #### Hive tables
 
