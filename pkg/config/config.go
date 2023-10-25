@@ -199,6 +199,7 @@ type Config struct {
 			Token              SecureString  `mapstructure:"token"`
 			SupportsInvites    bool          `mapstructure:"supports_invites"`
 			HealthCheckTimeout time.Duration `mapstructure:"health_check_timeout"`
+			SkipHealthCheck    bool          `mapstructure:"skip_health_check"`
 		} `mapstructure:"api"`
 		RemoteAuthenticator struct {
 			// Enabled if set true will enable remote authentication
