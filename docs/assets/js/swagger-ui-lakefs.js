@@ -12,7 +12,14 @@ window.onload = function() {
             SwaggerUIStandalonePreset
         ],
         plugins: [],
-        layout: "BaseLayout"
+        layout: "BaseLayout",
+        onComplete: () => {
+            const operationId = window.location.hash.replace(/\//g, '-').replace('#', '');
+            const elem = operationId && document.getElementById('operations' + operationId);
+            if (elem) {
+                setTimeout(function () { elem.scrollIntoView(); }, 100);
+            }
+        }
     })
     // End Swagger UI call region
 
