@@ -24,7 +24,7 @@ If you are interested in copying data into lakeFS, see [Copying data to/from lak
 
 ## Using the lakeFS UI
 
-1. In your repository's main page, click the _Import_ button to open the import dialog:
+1. In your repository's main page, click the _Import_ button to open the import dialog.
 2. Under _Import from_, fill in the location on your object store you would like to import from.
 3. Fill in the import destination in lakeFS. This should be a path under the current branch.
 4. Add a commit message, and optionally commit metadata.
