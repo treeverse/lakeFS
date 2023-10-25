@@ -67,16 +67,12 @@ schema:
         comment: a comment about this column
 ```
 
-Note: Useful types recognized by Hive include `integer`, `long`, `short`, `string`, `double`, `float`, `date`, and `timestamp`.
+Useful types recognized by Hive include `integer`, `long`, `short`, `string`, `double`, `float`, `date`, and `timestamp`.
 {: .note }
 
 ### Catalog Exporters 
 
-Exporters are code packages written in lua, each exporter is exposed as a lua function under the package namespace `lakefs/catalogexport`, they are reusable hooks to connect various types of tables to different catalogs.
-[configuration]({% link reference/configuration.md %}).
-
-Note: Check the [lua Library reference]({% link howto/hooks/lua.md %}#lua-library-reference) library for code reference, specifically everything under the prefix `lakefs/catalogexport`. 
-{: .note }
+Exporters are code packages accessible through [Lua integration]({% link howto/hooks/lua.md %}#lua-library-reference). Each exporter is exposed as a Lua function under the package namespace `lakefs/catalogexport`.  Call them from hooks to connect lakeFS tables to various catalogs.
 
 #### Currently supported exporters
 
@@ -88,7 +84,7 @@ Note: Check the [lua Library reference]({% link howto/hooks/lua.md %}#lua-librar
 
 Exporters are meant to run as [Lua hooks]({% link howto/hooks/lua.md %}).
                                                                                          
-Actions trigger can be configured with [events and branches]({% link howto/hooks/index.md %}#action-file-schema), incase custom filtering logic is required it can be achieved in the Lua script itself.
+Configure the actions trigger by using [events and branches]({% link howto/hooks/index.md %}#action-file-schema).  Of course, you can add additional custom filtering logic to the Lua script if needed.
 The default table name when exported is `${repository_id}_${_lakefs_tables/TABLE.md(name field)}_${ref_name}_${short_commit}`.
 
 Example of an action that will be triggered when a `post-commit` event happens in the `export_table` branch.

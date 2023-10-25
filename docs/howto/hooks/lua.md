@@ -144,7 +144,7 @@ Deletes all objects under the given prefix
 
 ### `aws/glue`
 
-AWS Glue Client.
+Glue client library.
 
 ```lua
 local aws = require("aws")
@@ -154,7 +154,7 @@ local glue = aws.glue_client("ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "REGION")
 
 ### `aws/glue.get_table(database, table [, catalog_id)`
 
-Get Table from Glue Catalog.
+Describe a table from the Glue catalog.
 
 Example:
 
