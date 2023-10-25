@@ -1877,7 +1877,7 @@ func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, e
 }
 
 func (a *APIAuthService) CheckHealth(ctx context.Context, logger logging.Logger, timeout time.Duration) error {
-	// Perform health check for API auth service
+	logger.Info("perform health check, this can take up to ", timeout)
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxInterval = healthCheckMaxInterval
 	bo.InitialInterval = healthCheckInitialInterval
