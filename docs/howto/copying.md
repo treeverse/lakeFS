@@ -7,6 +7,8 @@ redirect_from:
   - /integrations/rclone.html
 ---
 
+# Copying data to/from lakeFS
+
 {% include toc.html %}
 
 ## Using DistCp
