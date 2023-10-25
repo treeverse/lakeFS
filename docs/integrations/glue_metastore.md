@@ -199,16 +199,12 @@ lakefsApi.commits.commit(repository=repo,branch=ref,commit_creation=CommitCreati
 
 </div>
 
-### Add Glue Exporter
+### The exporter script
 
-The current step requires 2 things: 
-1. Lua script.
-2. Action to trigger the script.
+Upload the following script to your main branch under `scripts/animals_exporter.lua` (or a path of your choice).
 
-#### Lua packages (Exporters)
-
-- [symlink_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportsymlink_exporter)
-- [glue_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportglue_exporter)
+{: .note}
+> For code references check [symlink_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportsymlink_exporter) and [glue_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportglue_exporter) docs.
 
 #### Exporter Script 
 
