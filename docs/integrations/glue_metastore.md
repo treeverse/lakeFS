@@ -42,19 +42,12 @@ To learn more check [Data Catalog Exports]({% link howto/catalog_exports.md %}).
 
 ## Example: Using Athena to query lakeFS data
 
-### Pre-requisite 
+### Prerequisites
 
-1. Glue Database to use (lakeFS does not create a database).
-2. AWS Credentials with permission to manage Glue, Athena Query and S3 access.
-3. lakeFS [Actions]({% link howto/hooks/index.md %}) enabled and configured with S3 blockstore.
-
-### Create lakeFS repository 
-
-Let's create a repository named `catalogs`. 
-
-```bash
-lakectl repo create lakefs://catalogs s3://<lakefs-bucket>/<repo-prefix>
-```
+Before starting, make sure you have:
+1. An active lakeFS installation with S3 as the backing storage, and a repository in this installation.
+2. A database in Glue Data Catalog (lakeFS does not create one).
+3. AWS Credentials with permission to manage Glue, Athena Query and S3 access.
 ### Add table descriptor
 
 Let's define a table and commit to lakeFS. 
