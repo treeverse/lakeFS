@@ -261,6 +261,8 @@ PLATFORMS
 
 DEPENDENCIES
   github-pages
+  jekyll-seo-tag
+  jekyll-sitemap
   just-the-docs
   webrick (~> 1.8)
 

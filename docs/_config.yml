@@ -27,6 +27,10 @@ defaults:
       path: ""
     values:
       image: https://docs.lakefs.io/assets/img/docs_logo.png
+  - scope:
+      path: "assets"
+    values:
+      sitemap: false
 
 # general config
 repository: treeverse/lakeFS
@@ -36,6 +40,7 @@ remote_theme: pmarsceill/just-the-docs@v0.6.0
 plugins:
   - jekyll-redirect-from
   - jekyll-seo-tag
+  - jekyll-sitemap
 
 exclude: 
   - howto/deploy/includes
