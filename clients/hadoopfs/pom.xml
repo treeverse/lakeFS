@@ -278,7 +278,7 @@ To export to S3:
             <groupId>io.lakefs</groupId>
             <!-- TODO(ariels): Publish an actual sdk-client version and use *that*! -->
             <artifactId>sdk</artifactId>
-            <version>0.112.1</version>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>

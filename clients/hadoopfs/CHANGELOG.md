@@ -2,6 +2,10 @@
 
 ## _Upcoming_
 
+## 0.2.1
+
+* Update lakeFS SDK to 1.0.0
+
 ## 0.2.0
 
 ### Breaking changes
