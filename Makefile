@@ -312,7 +312,7 @@ proto: tools ## Build proto (Protocol Buffers) files
 	$(PROTOC) --proto_path=pkg/kv/kvtest --go_out=pkg/kv/kvtest --go_opt=paths=source_relative test_model.proto
 
 publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
-	cd clients/spark && sbt assembly && sbt s3Upload && sbt "project root" publishSigned
+	cd clients/spark && sbt assembly && sbt s3Upload && sbt publishSigned
 	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
 
 publish-lakefsfs-test: ## sbt publish spark lakefsfs test jars to s3 bucket
