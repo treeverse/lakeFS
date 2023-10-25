@@ -78,7 +78,7 @@ Exporters are code packages written in lua, each exporter is exposed as a lua fu
 Note: Check the [lua Library reference]({% link howto/hooks/lua.md %}#lua-library-reference) library for code reference, specifically everything under the prefix `lakefs/catalogexport`. 
 {: .note }
 
-#### Currently supported Exporters: 
+#### Currently supported exporters
 
 - Symlink Exporter: Writes metadata for the table using Hive's [SymlinkTextInputFormat](https://svn.apache.org/repos/infra/websites/production/hive/content/javadocs/r2.1.1/api/org/apache/hadoop/hive/ql/io/SymlinkTextInputFormat.html)
 - AWS Glue Catalog (+ Athena) Exporter: Creates a table in Glue using Hive's format and updates the location to symlink files (reuses Symlink Exporter).
