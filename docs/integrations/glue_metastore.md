@@ -358,7 +358,7 @@ hooks:
   </div>
 </div>
 
-Once we are adding the script and the action file we can commit it and since the action is configured to `post-commit` it will run after the commit! 
+Adding the script and the action file to the repository and commit it.  This is a post-commit action - it will run after the commit! 
 
 ```bash
 lakectl fs upload lakefs://catalogs/main/scripts/animals_exporter.lua -s ./animals_exporter.lua
