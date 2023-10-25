@@ -8,7 +8,7 @@ jobs:
     environment: Treeverse signing
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: actions/setup-java@v3
         with:

@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Restore cache
         uses: actions/cache@v3
@@ -43,7 +43,7 @@ jobs:
 
       - name: Setup Go
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: "1.20.6"
         id: go
@@ -71,7 +71,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Retrieve generated code
         uses: actions/download-artifact@v3
@@ -184,10 +184,10 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: "1.20.6"
         id: go
@@ -237,7 +237,7 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v3
@@ -273,7 +273,7 @@ jobs:
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Start lakeFS for contract tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -321,7 +321,7 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: actions/setup-java@v3
         with:
@@ -375,7 +375,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: actions/setup-java@v3
         with:
@@ -397,7 +397,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: actions/setup-java@v3
         with:
@@ -431,7 +431,7 @@ jobs:
       SPARK_TAG: ${{ matrix.spark.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download lakeFS HadoopFS
         uses: actions/download-artifact@v3
@@ -522,7 +522,7 @@ jobs:
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Start lakeFS for export tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -569,7 +569,7 @@ jobs:
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Generate uniquifying value
         id: unique
@@ -627,7 +627,7 @@ jobs:
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Restore cache
         uses: actions/cache@v3
         id: restore-cache
@@ -668,7 +668,7 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Restore cache
         uses: actions/cache@v3
         id: restore-cache
@@ -730,7 +730,7 @@ jobs:
       LAKEFS_DATABASE_CONNECTION_STRING: "" # Override lakeFS docker compose settings
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Generate uniquifying value
         id: unique
@@ -785,7 +785,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Generate uniquifying value
         id: unique
@@ -838,7 +838,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Generate uniquifying value
         id: unique
@@ -877,7 +877,7 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Generate uniquifying value
         id: unique
@@ -928,7 +928,7 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
         
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Generate uniquifying value
         id: unique
