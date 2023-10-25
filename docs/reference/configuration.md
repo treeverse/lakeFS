@@ -85,6 +85,8 @@ This reference uses `.` to denote the nesting of values.
 * `auth.cookie_domain` `(string : "")` - [Domain attribute](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define_where_cookies_are_sent) to set the access_token cookie on (the default is an empty string which defaults to the same host that sets the cookie)
 * `auth.api.endpoint` `(string: https://external.service/api/v1)` - URL to external Authorization Service described at [authorization.yml](https://github.com/treeverse/lakeFS/blob/master/api/authorization.yml);
 * `auth.api.token` `(string: eyJhbGciOiJIUzI1NiIsInR5...)` - API token used to authenticate requests to api endpoint
+* `auth.api.health_check_timeout` `(time duration : "20s")` - Timeout duration for external auth API health check
+* `auth.api.skip_health_check` `(bool : false)` - Skip external auth API health check
 
    **Note:** It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
    {: .note }
