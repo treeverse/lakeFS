@@ -1,5 +1,18 @@
 # Changelog
 
+# v1.1.0
+
+:new: What's new:
+
+- API: Added optional since parameter to commit log request (#6851)
+- lakectl: supported log 'since' flag (#6854)
+- Improved lakectl validation error messages (#6816)
+
+:bug: Bugs fixed:
+
+- Fixed S3 gateway error on no underlying object (#6822)
+- Fixed branch protection 'not found' error (#6846)
+
 # v1.0.0
 
 :new: What's new:
