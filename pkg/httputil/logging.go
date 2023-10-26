@@ -15,8 +15,10 @@ import (
 type contextKey string
 
 const (
-	RequestIDContextKey contextKey = "request_id"
-	AuditLogEndMessage  string     = "HTTP call ended"
+	RequestIDContextKey   contextKey = "request_id"
+	SessionIDContextKey   contextKey = "session_id"
+	UIRequestIDContextKey contextKey = "ui_request_id"
+	AuditLogEndMessage    string     = "HTTP call ended"
 )
 
 type ResponseRecordingWriter struct {
@@ -54,6 +56,30 @@ func RequestID(r *http.Request) (*http.Request, string) {
 	return r, reqID
 }
 
+func UIRequestID(r *http.Request) string {
+	ctx := r.Context()
+	resp := ctx.Value(UIRequestIDContextKey)
+	UIReqID := ""
+	if resp != nil {
+		UIReqID = resp.(string)
+	}
+	return UIReqID
+}
+
+func SessionID(r *http.Request) (*http.Request, string) {
+	ctx := r.Context()
+	resp := ctx.Value(SessionIDContextKey)
+	var sessionID string
+	if resp == nil {
+		// assign a session ID for this request
+		sessionID = uuid.New().String()
+		r = r.WithContext(context.WithValue(ctx, SessionIDContextKey, sessionID))
+	} else {
+		sessionID = resp.(string)
+	}
+	return r, sessionID
+}
+
 func SourceIP(r *http.Request) string {
 	sourceIP, sourcePort, err := net.SplitHostPort(r.RemoteAddr)
 
@@ -69,15 +95,19 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			startTime := time.Now()
 			writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
 			r, reqID := RequestID(r)
+			r, sessionID := SessionID(r)
+			uiReqID := UIRequestID(r)
 			client := GetRequestLakeFSClient(r)
 			sourceIP := SourceIP(r)
 
 			// add default fields to context
 			requestFields := logging.Fields{
-				logging.PathFieldKey:      r.RequestURI,
-				logging.MethodFieldKey:    r.Method,
-				logging.HostFieldKey:      r.Host,
-				logging.RequestIDFieldKey: reqID,
+				logging.PathFieldKey:        r.RequestURI,
+				logging.MethodFieldKey:      r.Method,
+				logging.HostFieldKey:        r.Host,
+				logging.RequestIDFieldKey:   reqID,
+				logging.SessionIDFieldKey:   sessionID,
+				logging.UIRequestIDFieldKey: uiReqID,
 			}
 			for k, v := range fields {
 				requestFields[k] = v

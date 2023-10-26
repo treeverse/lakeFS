@@ -113,13 +113,16 @@ func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, traceR
 			startTime := time.Now()
 			responseWriter := newResponseTracingWriter(w, RequestTracingMaxResponseBodySize)
 			r, reqID := RequestID(r)
-
+			r, sessionID := SessionID(r)
+			uiReqID := UIRequestID(r)
 			// add default fields to context
 			requestFields := logging.Fields{
-				logging.PathFieldKey:      r.RequestURI,
-				logging.MethodFieldKey:    r.Method,
-				logging.HostFieldKey:      r.Host,
-				logging.RequestIDFieldKey: reqID,
+				logging.PathFieldKey:        r.RequestURI,
+				logging.MethodFieldKey:      r.Method,
+				logging.HostFieldKey:        r.Host,
+				logging.RequestIDFieldKey:   reqID,
+				logging.SessionIDFieldKey:   sessionID,
+				logging.UIRequestIDFieldKey: uiReqID,
 			}
 			for k, v := range fields {
 				requestFields[k] = v

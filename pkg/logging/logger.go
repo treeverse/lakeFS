@@ -42,6 +42,10 @@ const (
 	PartNumberFieldKey = "part_number"
 	// RequestIDFieldKey request ID (string) based on the request ID found on context
 	RequestIDFieldKey = "request_id"
+	// SessionIDFieldKey session ID (string) based on the session ID found on context
+	SessionIDFieldKey = "session_id"
+	// UIRequestIDFieldKey UI request ID (string) based on the UI request ID found on context
+	UIRequestIDFieldKey = "ui_request_id"
 	// HostFieldKey request's host (string)
 	HostFieldKey = "host"
 	// MethodFieldKey request's method (string)
