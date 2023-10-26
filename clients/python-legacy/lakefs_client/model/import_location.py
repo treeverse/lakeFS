@@ -114,8 +114,8 @@ class ImportLocation(ModelNormal):
 
         Args:
             type (str): Path type, can either be 'common_prefix' or 'object'
-            path (str): A source location to import path or to a single object. Must match the lakeFS installation blockstore type.
-            destination (str): Destination for the imported objects on the branch
+            path (str): A source location to a prefix or to a single object. Must match the lakeFS installation blockstore type.
+            destination (str): Destination for the imported objects on the branch. Must be a relative path to the branch. If the type is 'object', the destination is the exact object name under the branch. If the type is 'common_prefix', the destination is the prefix under the branch. 
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -203,8 +203,8 @@ class ImportLocation(ModelNormal):
 
         Args:
             type (str): Path type, can either be 'common_prefix' or 'object'
-            path (str): A source location to import path or to a single object. Must match the lakeFS installation blockstore type.
-            destination (str): Destination for the imported objects on the branch
+            path (str): A source location to a prefix or to a single object. Must match the lakeFS installation blockstore type.
+            destination (str): Destination for the imported objects on the branch. Must be a relative path to the branch. If the type is 'object', the destination is the exact object name under the branch. If the type is 'common_prefix', the destination is the prefix under the branch. 
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
