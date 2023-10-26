@@ -22,7 +22,7 @@ const (
 	heartbeatInterval = time.Hour
 )
 
-type CommPrefsEventData struct {
+type CommPrefs struct {
 	Email           string
 	InstallationID  string
 	FeatureUpdates  bool
@@ -34,7 +34,7 @@ type Collector interface {
 	CollectEvent(ev Event)
 	CollectEvents(ev Event, count uint64)
 	CollectMetadata(accountMetadata *Metadata)
-	CollectCommPrefs(commPrefsEventData CommPrefsEventData)
+	CollectCommPrefs(commPrefsEventData CommPrefs)
 	SetInstallationID(installationID string)
 
 	// Close must be called to ensure the delivery of pending stats
@@ -407,7 +407,7 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 	}
 }
 
-func (s *BufferedCollector) CollectCommPrefs(commPrefsEventData CommPrefsEventData) {
+func (s *BufferedCollector) CollectCommPrefs(commPrefsEventData CommPrefs) {
 	commPrefs := &CommPrefsData{
 		Email:           commPrefsEventData.Email,
 		InstallationID:  commPrefsEventData.InstallationID,

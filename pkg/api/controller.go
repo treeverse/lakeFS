@@ -4207,7 +4207,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		return
 	}
 
-	commPrefsED := stats.CommPrefsEventData{
+	commPrefsED := stats.CommPrefs{
 		Email:           commPrefs.UserEmail,
 		InstallationID:  installationID,
 		FeatureUpdates:  commPrefs.FeatureUpdates,

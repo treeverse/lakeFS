@@ -10,6 +10,6 @@ func (m *NullCollector) CollectEvents(_ Event, _ uint64) {}
 
 func (m *NullCollector) SetInstallationID(_ string) {}
 
-func (m *NullCollector) CollectCommPrefs(_ CommPrefsEventData) {}
+func (m *NullCollector) CollectCommPrefs(_ CommPrefs) {}
 
 func (m *NullCollector) Close() {}
