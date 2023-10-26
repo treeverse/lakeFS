@@ -1,0 +1,8 @@
+version: v1
+plugins:
+  - plugin: go
+    path: ["go", "run", "google.golang.org/protobuf/cmd/protoc-gen-go"]
+    out: pkg
+    opt:
+      - paths=source_relative
+
