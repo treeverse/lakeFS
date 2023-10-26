@@ -32,8 +32,9 @@ REQUIRES = [
 
 with open('README.md') as f:
     import re
-    long_description = re.sub(r'(\[\*\*[a-z_]*\*\*\]\()docs/',
-                              r'\1https://github.com/treeverse/lakeFS/tree/master/docs/', f.read())
+    # replace relative links to docs with github links:
+    long_description = re.sub(r'(\[\*\*[a-z_]*\*\*]\()docs/',
+                              r'\1https://github.com/treeverse/lakeFS/tree/master/clients/python/docs/', f.read())
 
 setup(
     name=NAME,
