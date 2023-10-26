@@ -142,6 +142,55 @@ or:
 
 Deletes all objects under the given prefix
 
+### `aws/glue`
+
+Glue client library.
+
+```lua
+local aws = require("aws")
+-- pass valid AWS credentials
+local glue = aws.glue_client("ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "REGION")
+```
+
+### `aws/glue.get_table(database, table [, catalog_id)`
+
+Describe a table from the Glue catalog.
+
+Example:
+
+```lua
+local table, exists = glue.get_table(db, table_name)
+if exists then
+  print(json.marshal(table))
+```
+
+### `aws/glue.create_table(database, table_input, [, catalog_id])`
+
+Create a new table in Glue Catalog.
+The `table_input` argument is a JSON that is passed "as is" to AWS and is parallel to the AWS SDK [TableInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html#API_CreateTable_RequestSyntax)
+
+Example: 
+
+```lua
+local json = require("encoding/json")
+local input = {
+    Name = "my-table",
+    PartitionKeys = array(partitions),
+    -- etc...
+}
+local json_input = json.marshal(input)
+glue.create_table("my-db", table_input)
+```
+
+### `aws/glue.update_table(database, table_input, [, catalog_id, version_id, skip_archive])`
+
+Update an existing Table in Glue Catalog.
+The `table_input` is the same as the argument in `glue.create_table` function.
+
+### `aws/glue.delete_table(database, table_input, [, catalog_id])`
+
+Delete an existing Table in Glue Catalog.
+
 ### `crypto/aes/encryptCBC(key, plaintext)`
 
 Returns a ciphertext for the aes encrypted text
@@ -273,6 +322,150 @@ Returns 2 values:
 ### `lakefs/diff_branch(repository_id, branch_id [, after, amount, prefix, delimiter])`
 
 Returns an object-wise diff of uncommitted changes on `branch_id`.
+
+### `lakefs/catalogexport/table_extractor`
+
+Utility package to parse `_lakefs_tables/` descriptors.
+
+### `lakefs/catalogexport/table_extractor.list_table_descriptor_entries(client, repo_id, commit_id)`
+
+List all YAML files under `_lakefs_tables/*` and return a list of type `[{physical_address, path}]`, ignores hidden files. 
+The `client` is `lakefs` client.
+
+### `lakefs/catalogexport/table_extractor.get_table_descriptor(client, repo_id, commit_id, logical_path)`
+
+Read a table descriptor and parse YAML object. Will set `partition_columns` to `{}` if no partitions are defined.
+The `client` is `lakefs` client.
+
+### `lakefs/catalogexport/hive.extract_partition_pager(client, repo_id, commit_id, base_path, partition_cols, page_size)`
+
+Hive format partition iterator each result set is a collection of files under the same partition in lakeFS.
+
+Example: 
+
+```lua
+local lakefs = require("lakefs")
+local pager = hive.extract_partition_pager(lakefs, repo_id, commit_id, prefix, partitions, 10)
+for part_key, entries in pager do
+    print("partition: " .. part_key)
+    for _, entry in ipairs(entries) do
+        print("path: " .. entry.path .. " physical: " .. entry.physical_address)
+    end
+end
+```
+
+### `lakefs/catalogexport/symlink_exporter`
+
+Writes metadata for a table using Hive's [SymlinkTextInputFormat](https://svn.apache.org/repos/infra/websites/production/hive/content/javadocs/r2.1.1/api/org/apache/hadoop/hive/ql/io/SymlinkTextInputFormat.html).
+Currently only `S3` is supported.
+
+The default export paths per commit:
+
+```
+${storageNamespace}
+_lakefs/
+    exported/
+        ${ref}/
+            ${commitId}/
+                ${tableName}/
+                    p1=v1/symlink.txt
+                    p1=v2/symlink.txt
+                    p1=v3/symlink.txt
+                    ...
+```
+
+### `lakefs/catalogexport/symlink_exporter.export_s3(s3_client, table_src_path, action_info [, options])`
+
+Export Symlink files that represent a table to S3 location.
+
+Parameters:
+
+- `s3_client`: Configured client.
+- `table_src_path(string)`: Path to the table spec YAML file in `_lakefs_tables` (i.e _lakefs_tables/my_table.yaml).
+- `action_info(table)`: The global action object.
+- `options(table)`:
+  - `debug(boolean)`: Print extra info.
+  - `export_base_uri(string)`: Override the prefix in S3 i.e `s3://other-bucket/path/`.
+  - `writer(function(bucket, key, data))`: If passed then will not use s3 client, helpful for debug.
+
+Example:
+
+```lua
+local exporter = require("lakefs/catalogexport/symlink_exporter")
+local aws = require("aws")
+-- args are user inputs from a lakeFS action.
+local s3 = aws.s3_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_key, args.aws.aws_region)
+exporter.export_s3(s3, args.table_descriptor_path, action, {debug=true})
+```
+
+### `lakefs/catalogexport/symlink_exporter.get_storage_uri_prefix(storage_ns, commit_id, action_info)`
+
+Generate prefix for Symlink file(s) structure that represents a `ref` and a `commit` in lakeFS.
+The output pattern `${storage_ns}_lakefs/exported/${ref}/${commit_id}/`.
+The `ref` is deduced from the action event in `action_info` (i.e branch name).
+
+
+### `lakefs/catalogexport/glue_exporter`
+
+A Package for automating the export process from lakeFS stored tables into Glue catalog.
+
+### `lakefs/catalogexport/glue_exporter.export_glue(glue, db, table_src_path, create_table_input, action_info, options)`
+
+Represent lakeFS table in Glue Catalog. 
+This function will create a table in Glue based on configuration. 
+It assumes that there is a symlink location that is already created and only configures it by default for the same commit.
+
+Parameters:
+
+- `glue`: AWS glue client
+- `db(string)`: glue database name
+- `table_src_path(string)`: path to table spec (i.e _lakefs_tables/my_table.yaml)
+- `create_table_input(Table)`: Input equal mapping to [table_input](https://docs.aws.amazon.com/glue/latest/webapAPI_CreateTable.html#API_CreateTable_RequestSyntax) in AWS, the same as we use for `glue.create_table`.
+should contain inputs describing the data format (i.e InputFormat, OutputFormat, SerdeInfo) since the exporter is agnostic to this. 
+by default this function will configure table location and schema.
+- `action_info(Table)`: the global action object.
+- `options(Table)`:
+  - `table_name(string)`: Override default glue table name
+  - `debug(boolean`
+  - `export_base_uri(string)`: Override the default prefix in S3 for symlink location i.e s3://other-bucket/path/
+
+When creating a glue table, the final table input will consist of the `create_table_input` input parameter and lakeFS computed defaults that will override it:
+
+- `Name` Gable table name `get_full_table_name(descriptor, action_info)`.
+- `PartitionKeys` Partition columns usually deduced from `_lakefs_tables/${table_src_path}`.
+- `TableType` = "EXTERNAL_TABLE"
+- `StorageDescriptor`: Columns usually deduced from `_lakefs_tables/${table_src_path}`.
+- `StorageDescriptor.Location` = symlink_location
+
+Example: 
+
+```lua
+local aws = require("aws")
+local exporter = require("lakefs/catalogexport/glue_exporter")
+local glue = aws.glue_client(args.aws_access_key_id, args.aws_secret_access_key, args.aws_region)
+-- table_input can be passed as a simple Key-Value object in YAML as an argument from an action, this is inline example:
+local table_input = {
+  StorageDescriptor: 
+    InputFormat: "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
+    OutputFormat: "org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat"
+    SerdeInfo:
+      SerializationLibrary: "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
+  Parameters: 
+    classification: "parquet"
+    EXTERNAL: "TRUE"
+    "parquet.compression": "SNAPPY"
+}
+exporter.export_glue(glue, "my-db", "_lakefs_tables/animals.yaml", table_input, action, {debug=true})
+```
+
+### `lakefs/catalogexport/glue_exporter.get_full_table_name(descriptor, action_info)`
+
+Generate glue table name.
+
+Parameters:
+
+- `descriptor(Table)`: Object from (i.e _lakefs_tables/my_table.yaml).
+- `action_info(Table)`: The global action object.
 
 ### `path/parse(path_string)`
 
