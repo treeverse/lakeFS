@@ -22,11 +22,19 @@ const (
 	heartbeatInterval = time.Hour
 )
 
+type CommPrefsEventData struct {
+	Email           string
+	InstallationID  string
+	FeatureUpdates  bool
+	SecurityUpdates bool
+	BlockstoreType  string
+}
+
 type Collector interface {
 	CollectEvent(ev Event)
 	CollectEvents(ev Event, count uint64)
 	CollectMetadata(accountMetadata *Metadata)
-	CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool, blockstoreType string)
+	CollectCommPrefs(commPrefsEventData CommPrefsEventData)
 	SetInstallationID(installationID string)
 
 	// Close must be called to ensure the delivery of pending stats
@@ -399,13 +407,13 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 	}
 }
 
-func (s *BufferedCollector) CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool, blockstoreType string) {
+func (s *BufferedCollector) CollectCommPrefs(commPrefsEventData CommPrefsEventData) {
 	commPrefs := &CommPrefsData{
-		Email:           email,
-		InstallationID:  installationID,
-		FeatureUpdates:  featureUpdates,
-		SecurityUpdates: securityUpdates,
-		BlockstoreType:  blockstoreType,
+		Email:           commPrefsEventData.Email,
+		InstallationID:  commPrefsEventData.InstallationID,
+		FeatureUpdates:  commPrefsEventData.FeatureUpdates,
+		SecurityUpdates: commPrefsEventData.SecurityUpdates,
+		BlockstoreType:  commPrefsEventData.BlockstoreType,
 	}
 	ctx := context.Background()
 	err := s.sender.UpdateCommPrefs(ctx, commPrefs)
