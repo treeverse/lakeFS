@@ -29,6 +29,7 @@ import (
 
 const (
 	RequestIDHeaderName = "X-Request-ID"
+	SessionIDHeaderName = "X-Session-ID"
 	LoggerServiceName   = "rest_api"
 
 	extensionValidationExcludeBody = "x-validation-exclude-body"
@@ -50,6 +51,7 @@ func Serve(cfg *config.Config, catalog *catalog.Catalog, middlewareAuthenticator
 		}),
 		httputil.LoggingMiddleware(
 			RequestIDHeaderName,
+			SessionIDHeaderName,
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
 			cfg.Logging.AuditLogLevel,
 			cfg.Logging.TraceRequestHeaders),

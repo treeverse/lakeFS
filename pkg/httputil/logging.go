@@ -89,7 +89,7 @@ func SourceIP(r *http.Request) string {
 	return sourceIP + ":" + sourcePort
 }
 
-func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields, middlewareLogLevel string) func(next http.Handler) http.Handler {
+func DefaultLoggingMiddleware(requestIDHeaderName, sessionIDHeaderName string, fields logging.Fields, middlewareLogLevel string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			startTime := time.Now()
@@ -114,6 +114,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			}
 			r = r.WithContext(logging.AddFields(r.Context(), requestFields))
 			writer.Header().Set(requestIDHeaderName, reqID)
+			writer.Header().Set(sessionIDHeaderName, sessionID)
 			next.ServeHTTP(writer, r) // handle the request
 
 			loggingFields := logging.Fields{
@@ -136,9 +137,9 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 	}
 }
 
-func LoggingMiddleware(requestIDHeaderName string, fields logging.Fields, loggingMiddlewareLevel string, traceRequestHeaders bool) func(next http.Handler) http.Handler {
+func LoggingMiddleware(requestIDHeaderName, sessionIDHeaderName string, fields logging.Fields, loggingMiddlewareLevel string, traceRequestHeaders bool) func(next http.Handler) http.Handler {
 	if strings.ToLower(loggingMiddlewareLevel) == "trace" {
-		return TracingMiddleware(requestIDHeaderName, fields, traceRequestHeaders)
+		return TracingMiddleware(requestIDHeaderName, sessionIDHeaderName, fields, traceRequestHeaders)
 	}
-	return DefaultLoggingMiddleware(requestIDHeaderName, fields, loggingMiddlewareLevel)
+	return DefaultLoggingMiddleware(requestIDHeaderName, sessionIDHeaderName, fields, loggingMiddlewareLevel)
 }
