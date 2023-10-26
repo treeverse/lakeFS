@@ -135,6 +135,11 @@ const (
 	myBranchExample = "my-branch"
 	myRunIDExample  = "20230719152411arS0z6I"
 	myDigestExample = "600dc0ffee"
+
+	commitMsgFlagName     = "message"
+	allowEmptyMsgFlagName = "allow-empty-message"
+	fmtErrEmptyMsg        = `commit with no message without specifying the "--allow-empty-message" flag`
+	metaFlagName          = "meta"
 )
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
@@ -206,6 +211,52 @@ func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remot
 		}
 	}
 	return
+}
+
+func withMessageFlags(cmd *cobra.Command, defaultMsg string, allowEmpty bool) {
+	cmd.Flags().StringP(commitMsgFlagName, "m", defaultMsg, "commit message")
+	cmd.Flags().Bool(allowEmptyMsgFlagName, allowEmpty, "allow an empty commit message")
+}
+
+func withMetadataFlag(cmd *cobra.Command) {
+	cmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")
+}
+
+func withCommitFlags(cmd *cobra.Command, defaultMsg string, allowEmptyMessage bool) {
+	withMessageFlags(cmd, defaultMsg, allowEmptyMessage)
+	withMetadataFlag(cmd)
+}
+
+func getCommitFlags(cmd *cobra.Command) (string, map[string]string) {
+	message := Must(cmd.Flags().GetString(commitMsgFlagName))
+	emptyMessageBool := Must(cmd.Flags().GetBool(allowEmptyMsgFlagName))
+	if strings.TrimSpace(message) == "" && !emptyMessageBool {
+		DieFmt(fmtErrEmptyMsg)
+	}
+
+	kvPairs, err := getKV(cmd, metaFlagName)
+	if err != nil {
+		DieErr(err)
+	}
+
+	return message, kvPairs
+}
+
+func getKV(cmd *cobra.Command, name string) (map[string]string, error) { //nolint:unparam
+	kvList, err := cmd.Flags().GetStringSlice(name)
+	if err != nil {
+		return nil, err
+	}
+
+	kv := make(map[string]string)
+	for _, pair := range kvList {
+		key, value, found := strings.Cut(pair, "=")
+		if !found {
+			return nil, errInvalidKeyValueFormat
+		}
+		kv[key] = value
+	}
+	return kv, nil
 }
 
 // rootCmd represents the base command when called without any sub-commands

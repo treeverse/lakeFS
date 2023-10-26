@@ -15,11 +15,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const (
-	localCommitAllowEmptyMessage = "allow-empty-message"
-	localCommitMessageFlagName   = "message"
-)
-
 func findConflicts(changes local.Changes) (conflicts []string) {
 	for _, c := range changes {
 		if c.Type == local.ChangeTypeConflict {
@@ -37,11 +32,8 @@ var localCommitCmd = &cobra.Command{
 		client := getClient()
 		_, localPath := getSyncArgs(args, false, false)
 		syncFlags := getSyncFlags(cmd, client)
-		message := Must(cmd.Flags().GetString(localCommitMessageFlagName))
-		allowEmptyMessage := Must(cmd.Flags().GetBool(localCommitAllowEmptyMessage))
-		if message == "" && !allowEmptyMessage {
-			DieFmt("Commit message empty! To commit with empty message pass --%s flag", localCommitAllowEmptyMessage)
-		}
+		message, kvPairs := getCommitFlags(cmd)
+
 		idx, err := local.ReadIndex(localPath)
 		if err != nil {
 			DieErr(err)
@@ -132,11 +124,6 @@ var localCommitCmd = &cobra.Command{
 			Tasks:     s.Summary(),
 		})
 		fmt.Printf("Finished syncing changes. Perform commit on branch...\n")
-		// add kv pairs if any
-		kvPairs, err := getKV(cmd, metaFlagName)
-		if err != nil {
-			DieErr(err)
-		}
 		// add git context to kv pairs, if any
 		if git.IsRepository(idx.LocalPath()) {
 			gitRef, err := git.CurrentCommit(idx.LocalPath())
@@ -183,10 +170,7 @@ var localCommitCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	localCommitCmd.Flags().StringP(localCommitMessageFlagName, "m", "", "Commit message")
-	localCommitCmd.Flags().Bool(localCommitAllowEmptyMessage, false, "Allow commit with empty message")
-	localCommitCmd.MarkFlagsMutuallyExclusive(localCommitMessageFlagName, localCommitAllowEmptyMessage)
-	localCommitCmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")
+	withCommitFlags(localCommitCmd, "", false)
 	withSyncFlags(localCommitCmd)
 	localCmd.AddCommand(localCommitCmd)
 }
