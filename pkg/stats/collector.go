@@ -23,8 +23,8 @@ const (
 )
 
 type CommPrefs struct {
-	Email           string
 	InstallationID  string
+	Email           string
 	FeatureUpdates  bool
 	SecurityUpdates bool
 	BlockstoreType  string
@@ -408,15 +408,9 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 }
 
 func (s *BufferedCollector) CollectCommPrefs(commPrefsEventData CommPrefs) {
-	commPrefs := &CommPrefsData{
-		Email:           commPrefsEventData.Email,
-		InstallationID:  commPrefsEventData.InstallationID,
-		FeatureUpdates:  commPrefsEventData.FeatureUpdates,
-		SecurityUpdates: commPrefsEventData.SecurityUpdates,
-		BlockstoreType:  commPrefsEventData.BlockstoreType,
-	}
 	ctx := context.Background()
-	err := s.sender.UpdateCommPrefs(ctx, commPrefs)
+	commPrefs := CommPrefsData(commPrefsEventData)
+	err := s.sender.UpdateCommPrefs(ctx, &commPrefs)
 	ev := Event{
 		Class: "global",
 	}
