@@ -10,13 +10,9 @@ redirect_from: /using/glue_metastore.html
 
 {% include toc_2-3.html %}
 
-## About Glue Metastore
+## Glue Metastore support in lakeFS
 
-[AWS Glue](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) has a metastore that can store metadata related to Hive and other services (such as Spark and Trino). It has metadata such as the location of the table, information about columns, partitions and much more.
-
-
-## Support in lakeFS
-
+[AWS Glue](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) has a metastore that stores metadata metadata such as the location of a table, information about columns, partitions and much more.
 The integration between Glue and lakeFS is based on [Data Catalog Exports]({% link howto/catalog_exports.md %}).
 
 ### What is supported 
@@ -199,12 +195,6 @@ Upload the following script to your main branch under `scripts/animals_exporter.
 {: .note}
 > For code references check [symlink_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportsymlink_exporter) and [glue_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportglue_exporter) docs.
 
-#### Exporter Script 
-
-##### 1. Create Lua script:
-  
-For the simple strategy of creating a glue table per repo / branch / commit we can simply copy-paste the following script and re-use it.
-Upload the script to `scripts/animals_exporter.lua` (could be any path).
 
 ```lua 
 local aws = require("aws")
@@ -225,7 +215,7 @@ local glue = aws.glue_client(access_key, secret_key, region)
 local res = glue_exporter.export_glue(glue, db, table_path, table_input, action, {debug=true})
 ```
 
-##### 2. Configure Action Hooks:
+### Configure Action Hooks
 
 The hooks are the mechanism that will trigger exporter execution.
 To learn more about how to configure exporter hooks read [Running an Exporter]({% link howto/catalog_exports.md %}#running-an-exporter).
