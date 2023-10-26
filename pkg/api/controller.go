@@ -4208,7 +4208,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 	}
 
 	// collect comm prefs
-	go c.Collector.CollectCommPrefs(commPrefs.UserEmail, installationID, commPrefs.FeatureUpdates, commPrefs.SecurityUpdates)
+	go c.Collector.CollectCommPrefs(commPrefs.UserEmail, installationID, commPrefs.FeatureUpdates, commPrefs.SecurityUpdates, c.Config.BlockstoreType())
 
 	writeResponse(w, r, http.StatusOK, nil)
 }

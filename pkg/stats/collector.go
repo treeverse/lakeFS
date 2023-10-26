@@ -26,7 +26,7 @@ type Collector interface {
 	CollectEvent(ev Event)
 	CollectEvents(ev Event, count uint64)
 	CollectMetadata(accountMetadata *Metadata)
-	CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool)
+	CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool, blockstoreType string)
 	SetInstallationID(installationID string)
 
 	// Close must be called to ensure the delivery of pending stats
@@ -82,6 +82,7 @@ type CommPrefsData struct {
 	Email           string `json:"email"`
 	FeatureUpdates  bool   `json:"featureUpdates"`
 	SecurityUpdates bool   `json:"securityUpdates"`
+	BlockstoreType  string `json:"blockstoreType"`
 }
 
 type keyIndex map[Event]uint64
@@ -398,12 +399,13 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 	}
 }
 
-func (s *BufferedCollector) CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool) {
+func (s *BufferedCollector) CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool, blockstoreType string) {
 	commPrefs := &CommPrefsData{
 		Email:           email,
 		InstallationID:  installationID,
 		FeatureUpdates:  featureUpdates,
 		SecurityUpdates: securityUpdates,
+		BlockstoreType:  blockstoreType,
 	}
 	ctx := context.Background()
 	err := s.sender.UpdateCommPrefs(ctx, commPrefs)
