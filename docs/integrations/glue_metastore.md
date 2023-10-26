@@ -10,32 +10,20 @@ redirect_from: /using/glue_metastore.html
 
 {% include toc_2-3.html %}
 
-## Glue Metastore support in lakeFS
+## Overview
 
-[AWS Glue](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html) has a metastore that stores metadata metadata such as the location of a table, information about columns, partitions and much more.
 The integration between Glue and lakeFS is based on [Data Catalog Exports]({% link howto/catalog_exports.md %}).
 
-### What is supported 
-
-- Creating a unique table in Glue Catalog per lakeFS repository / ref / commit. 
-- No data copying is required, the table location is a path to a symlinks structure in S3 based on Hive's [SymlinkTextInputFormat](https://svn.apache.org/repos/infra/websites/production/hive/content/javadocs/r2.1.1/api/org/apache/hadoop/hive/ql/io/SymlinkTextInputFormat.html) and the [table partitions](https://docs.aws.amazon.com/glue/latest/dg/tables-described.html#tables-partition) are maintained.
-- Tables are described via [Hive format in `_lakefs_tables/<my_table>.yaml`]({% link howto/catalog_exports.md %}#hive-tables).
-- Currently the data query in Glue metastore is Read-Only operation and mutating data requires writting to lakeFS and letting the export hook run.
-
-### How it works 
-
-Based on event lakeFS events such as `post-commit` an Action will run a script that will create Symlink structures in S3 and then will register a table in Glue.
-The Table data location will be the generated Symlinks root path.
-
-There are 4 key pieces:
-
-1. Table description at `_lakefs_tables/<your-table>.yaml`
-2. Lua script that will do the export using [symlink_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportsymlink_exporter) and [glue_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportglue_exporter) packages.
-3. [Action Lua Hook]({% link howto/catalog_exports.md %}#running-an-exporter) to execute the lua hook.
-4. Write some lakeFS table data ([Spark]({% link integrations/spark.md %}), CSV, etc)
-
-To learn more check [Data Catalog Exports]({% link howto/catalog_exports.md %}).
-
+This guide will show you how to use lakeFS with the Glue Data Catalog.
+You'll be able to query your lakeFS data by specifying the repository, branch and commit in your SQL query.
+Currently, only read operations are supported on the tables.
+You will set up the automation required to work with lakeFS on top of the Glue Data Catalog, including:
+1. Create a table descriptor under `_lakefs_tables/<your-table>.yaml`. This will represent your table schema.
+2. Write an exporter script that will:
+   * Mirror your branch's state into [Hive Symlink](https://svn.apache.org/repos/infra/websites/production/hive/content/javadocs/r2.1.1/api/org/apache/hadoop/hive/ql/io/SymlinkTextInputFormat.html) files readable by Athena.
+   * Export the table descriptors from your branch to the Glue Catalog.
+3. Set up lakeFS [hooks]({% link howto/catalog_exports.md %}#running-an-exporter) that will run the above script when specific events occur.
+  
 ## Example: Using Athena to query lakeFS data
 
 ### Prerequisites
