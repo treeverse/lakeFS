@@ -18,33 +18,34 @@ Any operation that calls out to lakeFS will try to authenticate using the follow
 1. All models receive an optional `client` kwarg with explicit credentials
 1. Otherwise, if `lakefs.init(...)` is called with parameters (`access_key_id`, `jwt_token`, ...) - these will be set on a `lakefs.DefaultClient` object
 1. If `lakefs.init()` is called with no parameters, or `init` is not called:
-    1. use `LAKECTL_ACCESS_KEY_ID` and `LAKECTL_ACCESS_SECRET_KEY` if set
+    1. use `LAKECTL_SERVER_ENDPOINT_URL`, `LAKECTL_ACCESS_KEY_ID` and `LAKECTL_ACCESS_SECRET_KEY` if set
     1. Otherwise, use `~/.lakectl.yaml` if exists
     1. Otherwise, try and use IAM role from current machine (using AWS IAM role (will only work with enterprise/cloud))
 1. If init is not called, it will be lazily called on the first use of `DefaultClient`, deferring authentication to the first API call.
 
 ## API wrapper interface
 
-the higher lavel SDK will be resource-class based. performing API operations will be
+the higher level SDK will be resource-class based. performing API operations will be
 done by calling the methods on their parent object. Examples:
 
 ```python
 import lakefs
 
-repo = lakefs.repository('example')
-branch = repo.branch('main')
-for item in branch.list_objects(prefix='foo/'):
+repo = lakefs.Repository('example')
+branch = repo.Branch('main')
+
+for item in branch.objects.list(prefix='foo/'):
     if item.path.endswith('.parquet'):
         print(item.path)
 
-data: bytes = branch.download('datasets/foo/1.parquet')
-branch.upload(data, 'foo/bar/baz.parquet')
+data: bytes = branch.Object('datasets/foo/1.parquet').open().read()
+branch.Object('datasets/foo/1.parquet').upload(data)
 
 # this will work:
-data: bytes = lakefs.repository('example').commit('abc123').download('a/b.txt')
+data: bytes = lakefs.Repository('example').Commit('abc123').Object('a/b.txt').open().read()
 
-# since commits are immutable, this method will not exist:
-lakefs.repository('example').commit('abc123').upload(data, 'a/b.txt')
+# since commits are immutable, create() will not exist:
+lakefs.Repository('example').Commit('abc123').Object('a/b.txt'). create(data)
 ```
 
 ## Partial interface definition
@@ -79,63 +80,88 @@ def init(**kwargs):
 ### model driven interface
 
 
-
 ```python
 class Repository:
     def __init__(self, repository_id: str, client: Client = DefaultClient): ...
-    def get_or_create(self, storage_namespace: str, default_branch_id: str = 'main', include_samples: bool = False) -> Repository: ...
-    def branch(self, branch_id: str) -> Branch: ...
-    def list_branches(self, max_amount: Optional[int], after: str ='', prefix: str ='') -> Generator[Branch]: ...
-    def commit(self, commit_id: str) -> Reference: ...
-    def tag(self, tag_id: str) -> Tag: ...
-    def list_tags(self, max_amount: Optional[int], after: str ='', prefix: str ='') -> Generator[Tag]: ...
+    def create(self, storage_namespace: str, default_branch_id: str = 'main', include_samples: bool = False, exist_ok: bool = False) -> Repository: ...
     def metadata(self) -> dict[str, str]: ...
+    def Branch(self, branch_id: str) -> Branch: ...
+    def Commit(self, commit_id: str) -> Reference: ...
+    def Ref(self, ref_id: str) -> Reference | Branch: ...  # can take a branch, tag or commit ID
+    def Tag(self, tag_id: str) -> Tag: ...
+    
+    @property
+    def branches(self) -> BranchManager: ...
+    
+    @property
+    def tags(self) -> TagManager: ...
 
 
-class ReadIOBase:
-    def download(self, path: str) -> bytes: ...
-    def list_objects(self, max_amount: Optional[int], after: str ='', prefix: str ='', delimiter: str = '/') -> Generator[ObjectInfo | CommonPrefix]: ...
-    def stat_object(self, path: str) -> ObjectInfo: ...
-    def open(self, path, mode: Literal['r', 'rb'], pre_signed: Optional[bool] = None) -> TextIO | BinaryIO: ...
+class BranchManager:
+    def __init__(self, repository_id: str, client: Client = DefaultClient): ...
+    def list(max_amount: Optional[int], after: str ='', prefix: str ='') -> Generator[Branch]: ...
 
 
-class Reference(ReadIOBase):
+class TagManager:
+    def __init__(self, repository_id: str, client: Client = DefaultClient): ...
+    def list(max_amount: Optional[int], after: str ='', prefix: str ='') -> Generator[Tag]: ...
+
+
+class Object:
+    def __init__(self, repository_id: str, reference_id: str, path: str, client: Client = DefaultClient): ...
+    def open(self, pre_signed: Optional[bool] = None) -> TextIO | BinaryIO: ...
+    def stat(self) -> ObjectInfo: ...
+
+
+class WritableObject(Object):
+    def create(self, data: bytes | str | TextIO | BinaryIO, path: str, pre_signed: Optional[bool] = None) -> ObjectInfo: ...
+    def delete(self, object_paths: str | Iterable[str]): ...
+    def copy(self, to_reference: str, to_path: str): ...
+
+
+class ObjectManager:
+    def __init__(self, repository_id: str, reference_id: str, client: Client = DefaultClient): ...
+    def list(self, max_amount: Optional[int], after: str ='', prefix: str ='', delimiter: str = '/') -> Generator[ObjectInfo | CommonPrefix]: ...
+
+
+class WritableObjectManager(ObjectManager):
+    def uncommitted(self, max_amount: Optional[int], after: str ='', prefix: str ='') -> Generator[Change]: ...
+    def import(self, commit_message: str) -> ImportManager: ...
+    def delete(self, object_paths: str | Iterable[str]): ...
+    def transact(self, commit_message: str) -> Transaction: ...
+    def reset_changes(self, path: Optional[str] = None): ...
+
+
+class Reference:
     def __init__(self, repository_id: str, reference_id: str, client: Client = DefaultClient): ...
     def log(self, max_amount: Optional[int]) -> Generator[Reference]: ...
     def metadata(self) -> dict[str, str]: ...
     def commit_message(self) -> str: ...
     def diff(self, other_ref: str | Reference, max_amount: Optional[int], after: str ='', prefix: str ='', delimiter: str = '/') -> Generator[Change]: ...
     def merge_into(self, destination_branch_id: str | Branch): ...
+    def Object(self, path: str) -> Object: ...
+    @property
+    def objects(self) -> ObjectManager: ...
 
 
-class WriteIOBase:
-    def upload(self, data: bytes | str | TextIO | BinaryIO, path: str) -> ObjectInfo: ...
-    def import_from(self, object_store_uri: str, destination: str, commit_message: str) -> ImportManager: ...
-    def delete_objects(self, object_paths: str | Iterable[str]): ...
-    def copy_object(self, from_reference: str, from_path: str): ...
-    def open(self, path, mode: Literal['r', 'rb', 'w', 'wb'], pre_signed: Optional[bool] = None) -> TextIO | BinaryIO: ...
-
-
-class Branch(Reference, WriteIOBase):
-    def create(self, source_reference_id: str) -> Branch: ...
+class Branch(Reference):
+    def create(self, source_reference_id: str, exist_ok: bool = False) -> Branch: ...
     def head(self) -> Reference: ...
-    def commit_changes(self, message: str, metadata: dict[str, str]) -> Reference: ...
-    def reset(self, path: Optional[str] = None): ...
-    def reverse(self, reference_id: str): ...
-    def list_uncommitted(self, max_amount: Optional[int], after: str ='', prefix: str ='') -> Generator[Change]: ...
+    def commit(self, message: str, metadata: dict[str, str]) -> Reference: ...
     def delete(self): ...
-    def transaction(self, commit_message: str) -> BranchTransaction: ...
-    # override
-    def open(self, path, mode: Literal['r', 'rb', 'w', 'wb'], pre_signed: Optional[bool] = None) -> TextIO | BinaryIO: ...
-
+    def reverse(self, reference_id: str): ...
+    def Object(self, path: str) -> WritableObject: ...
+    @property
+    def objects(self) -> WritableObjectManager: ...
+    
 
 class Tag(Reference):
-    def delete(self): ...
+    def create(self, source_reference_id: str, exist_ok: bool = False) -> Tag: ...
+    def delete(self, exist_ok: bool = False): ...
 
 
 class CommonPrefix:
     def __init__(self, repository_id: str, reference_id: str, path: str, client: Client = DefaultClient): ...
-    def path(self) -> self: ...
     def exists(self) -> bool: ...
 
 
@@ -171,6 +197,8 @@ class ServerStorageConfiguration(NamedTuple):
 
 class ImportManager:
     def __init__(self, repository_id: str, reference_id: str, client: Client = DefaultClient): ...
+    def prefix(self, object_store_uri: str, destination: str) -> ImportManager: ...
+    def object(self, object_store_uri: str, destination: str) -> ImportManager: ...
     def start(self) -> str:
         'start import, reporting back (and storing) a process id'
         ...
@@ -186,17 +214,25 @@ class ImportResult(NamedTuple):
     commit: Commit
     ingested_objects: int
 
-class BranchTransaction(WriteIOBase):
-    def __init__(self, repository_id: str, source_branch_id: str, client: Client = DefaultClient): ...
-    
-    def __enter__(self):
+class Transaction(Branch):
+    def __init__(self, repository_id: str, branch_id: str, client: Client = DefaultClient): ...
+    def begin() -> None:
         'Create ephemeral branch from the source branch (e.g. <source_branch_id>-txn-<uuid>'
         ...
 
+    def commit() -> Commit:
+        'commit, merge, delete ephemeral branch'
+        ...
+
+    def rollback(delete_temp_branch: bool = True) -> None:
+        'if delete_temp_branch = True, delete the ephemeral branch createds'
+
+    def __enter__(self):
+        'calls begin()'
+        ...
+
     def __exit__(self, type, value, traceback):
-        """if successful: commit, merge, delete ephemeral branch
-           otherwise, leave branch and report with a meaningful error
-        """
+        'if successful, commit(), otherwise rollback() and report a meaningful error'
         ...
 
 ```
@@ -226,34 +262,28 @@ The only exception should be errors returned by functions that, for compatibilit
 
 ### I/O - reading/writing objects
 
-Provide a pythonic `open()` method that returns a "file-like object", passable to other frameworks or libraries
-that can deal with one.
+Provide a pythonic `open()` method that returns a "file-like object" (read-only)
 
 ```python
 import lakefs
 
-repo = lakefs.repository('example')
-branch = repo.branch('main')
+repo = lakefs.Repository('example')
+branch = repo.Branch('main')
 
-data: bytes = b'hello world\n'
-with branch.open('foo/bar.txt', 'w') as f:
-    # Will check the underlying client for pre-signed URL support
-    #  if supported, will do the whole get_physical_address, http upload, link address dance
-    #  Otherwise, direct upload.
-    #  *In the future*, we can accept a stream/file-like object, sniff for its size/content type
-    #  opt for multi-part, etc.
-    f.write(data)
-    f.write(another_thing)  # fail this, we can only write once.
+# Will check the underlying client for pre-signed URL support
+# if supported, will do get_physical_address->http upload->link address 
+# Otherwise, will try a direct upload.
+# *In the future*, we can accept a stream/file-like object, sniff for its size/content type
+# opt for multi-part, etc.
+branch.Object('foo/bar.txt').create(data=b'hello world!\n')
 
-with repo.commit('abc123').open('foo/bar.txt', 'r') as f:
-    # same thing - check client for pre-signed support
-    # fall back to direct read if not supported
-    f.read()
-    # or
-    f.read(1024)  # range request
+with branch.Object('foo/bar.txt').open() as f:
+    data = f.read()
 
-# 
-# 
+with repo.Commit('abc123').Object('foo/bar.txt').open() as f:
+    f.read() # read all
+    f.read(1024)  # or a range request
+
 ```
 
 `open()` will also accept an explicit `pre_signed: Optional[bool] = None` argument.
@@ -267,16 +297,15 @@ Provide a utility to run
 import lakefs
 
 main = lakefs.repository('example').branch('main')
-task = main.import_from(
-    's3://bucket/path', 
-    destination='some/path/',
-    commit_message='imported stuff!'
-)
+task = main.objects.import(commit_message='imported stuff!'). \
+    .prefix('s3://bucket/path', destination='some/path/'). \
+    .prefix('s3://bucket2/other/path', destination='other/path/')
+
 task.start()  # will not block, run the import API
 task.wait()  # Block, polling in the background
 
 # or just run(), same as start() & wait()
-main.import_from(object_store_uri='s3://bucket/path', destination='datasets/', commit_message='sync datasets').run()
+main.objects.import('sync datasets').prefix('s3://bucket/path/', destination='datasets/').run()
 ```
 
 ### Transaction Manager
@@ -284,19 +313,17 @@ main.import_from(object_store_uri='s3://bucket/path', destination='datasets/', c
 ```python
 import lakefs
 
-dev = lakefs.repository('example').branch('dev')
+dev = lakefs.Repository('example').Branch('dev')
 
 # Will create an ephemeral branch from `dev` (e.g. `tx-dev-343829f89`)
 # uploads and downloads will apply to that ephemeral branch
 # on success, commit with provided message, merge and delete ephemeral branch
 # on exception or failure, leave branch as is and report it in a wrapping exception
 # for easy troubleshooting
-with dev.transaction(commit_message='do things') as tx:
-    tx.upload('...')
-    tx.download()
-    # or with I/O wrapper
-    tx.open('foo/bar.txt', 'w') as f:
-        f.write('hello world')
+with dev.transaction('do things') as tx:
+    tx.Object('foo').create(data)
+    tx.Object('foo').open() as f:
+        data = f.read()
 
 ```
 
@@ -307,8 +334,8 @@ Small helper for writing succint examples/samples:
 ```python
 import lakefs
 
-repo = lakefs.repository('example').get_or_create(storage_namespace='s3://bucket/path')
+repo = lakefs.Repository('example').create(storage_namespace='s3://bucket/path/', exist_ok=True)
 
 # From here, proceed as usual..
-main = repo.branch('main')
+main = repo.Branch('main')
 ```
