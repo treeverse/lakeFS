@@ -24,6 +24,7 @@ components:
       in: query
       name: prefix
       description: return items prefixed with this value
+      allowEmptyValue: true
       schema:
         type: string
 
@@ -31,6 +32,7 @@ components:
       in: query
       name: after
       description: return items after this value
+      allowEmptyValue: true
       schema:
         type: string
 
