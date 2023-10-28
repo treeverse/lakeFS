@@ -355,11 +355,13 @@ paths:
         - $ref: "#/components/parameters/PaginationAmount"
         - in: query
           name: id
+          allowEmptyValue: true
           schema:
             type: integer
             format: int64
         - in: query
           name: email
+          allowEmptyValue: true
           schema:
             type: string
         - in: query
