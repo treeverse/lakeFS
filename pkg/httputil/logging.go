@@ -15,10 +15,10 @@ import (
 type contextKey string
 
 const (
-	RequestIDContextKey   contextKey = "request_id"
-	SessionIDContextKey   contextKey = "session_id"
-	UIRequestIDContextKey contextKey = "ui_request_id"
-	AuditLogEndMessage    string     = "HTTP call ended"
+	RequestIDContextKey contextKey = "request_id"
+	SessionIDContextKey contextKey = "session_id"
+	ClientActionNameKey contextKey = "client_action_name"
+	AuditLogEndMessage  string     = "HTTP call ended"
 )
 
 type ResponseRecordingWriter struct {
@@ -56,9 +56,9 @@ func RequestID(r *http.Request) (*http.Request, string) {
 	return r, reqID
 }
 
-func UIRequestID(r *http.Request) string {
+func ClientActionName(r *http.Request) string {
 	ctx := r.Context()
-	resp := ctx.Value(UIRequestIDContextKey)
+	resp := ctx.Value(ClientActionNameKey)
 	UIReqID := ""
 	if resp != nil {
 		UIReqID = resp.(string)
@@ -96,7 +96,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName, sessionIDHeaderName string, f
 			writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
 			r, reqID := RequestID(r)
 			r, sessionID := SessionID(r)
-			uiReqID := UIRequestID(r)
+			clientActionName := ClientActionName(r)
 			client := GetRequestLakeFSClient(r)
 			sourceIP := SourceIP(r)
 
@@ -107,7 +107,7 @@ func DefaultLoggingMiddleware(requestIDHeaderName, sessionIDHeaderName string, f
 				logging.HostFieldKey:        r.Host,
 				logging.RequestIDFieldKey:   reqID,
 				logging.SessionIDFieldKey:   sessionID,
-				logging.UIRequestIDFieldKey: uiReqID,
+				logging.ClientActionNameKey: clientActionName,
 			}
 			for k, v := range fields {
 				requestFields[k] = v

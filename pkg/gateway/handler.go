@@ -106,7 +106,7 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 	}
 	loggingMiddleware := httputil.LoggingMiddleware(
 		"X-Amz-Request-Id",
-		"X-Amz-Session-Id",
+		"X-Session-Id",
 		logging.Fields{"service_name": "s3_gateway"},
 		auditLogLevel,
 		traceRequestHeaders)
