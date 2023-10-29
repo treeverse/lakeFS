@@ -12,12 +12,11 @@ jobs:
         - name: Close stale issues and PRs
           uses: actions/stale@v8
           with:
-          stale-issue-message: 'Marking this issue as stale after 30 days of inactivity, please comment or this will be closed.'
           stale-pr-message: 'Marking this pull request as stale after 30 days of inactivity, please comment or this will be closed.'
-          close-issue-message: 'This issue was closed because it has been stale for 7 days with no activity.'
           close-pr-message: 'This pull request was closed because it has been stale for 7 days with no activity.'
-          days-before-stale: 30
-          days-before-close: 7
-          stale-issue-label: stale
+          days-before-stale: -1
+          days-before-close: -1
+          days-before-pr-stale: 30
+          days-before-pr-close: 7
           stale-pr-label: stale
           repo-token: ${{ secrets.GITHUB_TOKEN }}
