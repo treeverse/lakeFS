@@ -14,7 +14,7 @@ redirect_from: /using/glue_metastore.html
 
 The integration between Glue and lakeFS is based on [Data Catalog Exports]({% link howto/catalog_exports.md %}).
 
-This guide will show you how to use lakeFS with the Glue Data Catalog.
+This guide describes how to use lakeFS with the Glue Data Catalog.
 You'll be able to query your lakeFS data by specifying the repository, branch and commit in your SQL query.
 Currently, only read operations are supported on the tables.
 You will set up the automation required to work with lakeFS on top of the Glue Data Catalog, including:
@@ -22,7 +22,7 @@ You will set up the automation required to work with lakeFS on top of the Glue D
 2. Write an exporter script that will:
    * Mirror your branch's state into [Hive Symlink](https://svn.apache.org/repos/infra/websites/production/hive/content/javadocs/r2.1.1/api/org/apache/hadoop/hive/ql/io/SymlinkTextInputFormat.html) files readable by Athena.
    * Export the table descriptors from your branch to the Glue Catalog.
-3. Set up lakeFS [hooks]({% link howto/catalog_exports.md %}#running-an-exporter) that will run the above script when specific events occur.
+3. Set up lakeFS [hooks]({% link howto/catalog_exports.md %}#running-an-exporter) to trigger the above script when specific events occur.
   
 ## Example: Using Athena to query lakeFS data
 
@@ -32,9 +32,10 @@ Before starting, make sure you have:
 1. An active lakeFS installation with S3 as the backing storage, and a repository in this installation.
 2. A database in Glue Data Catalog (lakeFS does not create one).
 3. AWS Credentials with permission to manage Glue, Athena Query and S3 access.
+
 ### Add table descriptor
 
-Let's define a table and commit to lakeFS. 
+Let's define a table, and commit it to lakeFS. 
 Save the YAML below as `animals.yaml` and upload it to lakeFS. 
 
 ```bash
@@ -70,8 +71,8 @@ schema:
 
 ### Write some table data
 
-Insert data under the table path, using your preferred method (i.e [Spark]({% link integrations/spark.md %})) and commit the data when done.. 
-In this example we used CSV and the files added to lakeFS should look something like this:
+Insert data into the table path, using your preferred method (e.g. [Spark]({% link integrations/spark.md %})), and commit upon completion.
+This example uses CSV files, and the files added to lakeFS should look like this:
 
 ![lakeFS Uploaded CSV Files]({{ site.baseurl }}/assets/img/csv_export_hooks_data.png)
 
@@ -104,8 +105,8 @@ local res = glue_exporter.export_glue(glue, db, table_path, table_input, action,
 
 ### Configure Action Hooks
 
-The hooks are the mechanism that will trigger exporter execution.
-To learn more about how to configure exporter hooks read [Running an Exporter]({% link howto/catalog_exports.md %}#running-an-exporter).
+Hooks serve as the mechanism that triggers the execution of the exporter.
+For more detailed information on how to configure exporter hooks, you can refer to [Running an Exporter]({% link howto/catalog_exports.md %}#running-an-exporter).
 
 {: .note}
 > The `args.catalog.table_input` argument in the Lua script is assumed to be passed from the action arguments, that way the same script can be reused for different tables. Check the [example]({% link howto/hooks/lua.md %}#lakefscatalogexportglue_exporterexport_glueglue-db-table_src_path-create_table_input-action_info-options) to construct the table input in the lua code.
@@ -119,7 +120,7 @@ To learn more about how to configure exporter hooks read [Running an Exporter]({
   </ul> 
   <div markdown="1" id="single-hook-csv">
 
-##### Single hook with CSV Table
+#### Single hook with CSV Table
 
 Upload to `_lakefs_actions/animals_glue.yaml`: 
 
@@ -156,27 +157,43 @@ hooks:
 
   </div>
   <div markdown="1" id="single-hook">
-##### Spark Parquet Example
+#### Spark Parquet Example
 
-The following snippet is a reference example of a table in parquet format input that can be used as `table_input`. 
+When working with Parquet files, upload the following to `_lakefs_actions/animals_glue.yaml`:
 
 ```yaml
-catalog:
-  table_input:
-    StorageDescriptor: 
-      InputFormat: "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
-      OutputFormat: "org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat"
-      SerdeInfo:
-          SerializationLibrary: "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
-    Parameters: 
-      classification: "parquet"
-      EXTERNAL: "TRUE"
-      "parquet.compression": "SNAPPY"
+name: Glue Exporter
+on:
+   post-commit:
+      branches: ["main"]
+hooks:
+   - id: animals_table_glue_exporter
+     type: lua
+     properties:
+        script_path: "scripts/animals_exporter.lua"
+        args:
+           aws:
+              aws_access_key_id: "<AWS_ACCESS_KEY_ID>"
+              aws_secret_access_key: "<AWS_SECRET_ACCESS_KEY>"
+              aws_region: "<AWS_REGION>"
+           table_source: '_lakefs_tables/animals.yaml'
+           catalog:
+              db_name: "my-glue-db"
+              table_input:
+                 StorageDescriptor:
+                   InputFormat: "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
+                   OutputFormat: "org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat"
+                   SerdeInfo:
+                       SerializationLibrary: "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
+                 Parameters:
+                   classification: "parquet"
+                   EXTERNAL: "TRUE"
+                   "parquet.compression": "SNAPPY"
 ```
 
   </div>
   <div markdown="1" id="multiple-hooks">
-##### Multiple Hooks / Inline script
+#### Multiple Hooks / Inline script
 
 The following example demonstrates how to separate the symlink and glue exporter into building blocks running in separate hooks.
 It also shows how to run the lua script inline instead of a file, depending on user preference.
@@ -224,7 +241,7 @@ hooks:
   </div>
 </div>
 
-Adding the script and the action file to the repository and commit it.  This is a post-commit action - it will run after the commit! 
+Adding the script and the action files to the repository and commit it. This is a post-commit action, meaning it will be executed after the commit operation has taken place. 
 
 ```bash
 lakectl fs upload lakefs://catalogs/main/scripts/animals_exporter.lua -s ./animals_exporter.lua
@@ -232,7 +249,7 @@ lakectl fs upload lakefs://catalogs/main/_lakefs_actions/animals_glue.yaml -s ./
 lakectl commit lakefs://catalogs/main -m "trigger first export hook"
 ```
 
-After the action finishes running we can see the result in the action logs.
+Once the action has completed its execution, you can review the results in the action logs.
 
 ![Hooks log result in lakeFS UI]({{ site.baseurl }}/assets/img/glue_export_hook_result_log.png)
 
@@ -241,7 +258,7 @@ After the action finishes running we can see the result in the action logs.
 We can use the exported Glue table with any tool that supports Glue Catalog (or Hive compatible) such as Athena, Trino, Spark and others.
 To use Athena we can simply run `MSCK REPAIR TABLE` and then query the tables.
 
-In Athena Run (Make sure the correct database is configured): 
+In Athena, make sure that the correct database (`my-glue-db` in the example above) is configured, then run: 
 
 ```sql
 MSCK REPAIR TABLE `animals_catalogs_main_9255e5`; -- load partitions for the first time 
