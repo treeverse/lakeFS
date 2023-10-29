@@ -27,8 +27,8 @@ with open('README.md') as f:
     # replace relative links with links to the docs:
     doc_version = '.'.join(f'v{VERSION}'.split('.')[:-1])
     long_description = re.sub(r'(\[[*a-zA-Z_]*]\()docs/',
-                              rf'\1https://github.com/treeverse/lakeFS/tree/{doc_version}/clients/python/docs/',
-                              f.read())
+                       rf'\1https://pydocs.lakefs.io/{doc_version}',
+                       f.read())
 
 setup(
     name=NAME,
