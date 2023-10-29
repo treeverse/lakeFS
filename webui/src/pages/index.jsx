@@ -31,7 +31,7 @@ import PoliciesIndexPage from "./auth/policies";
 import LoginPage from "./auth/login";
 import ActivateInvitedUserPage from "./auth/users/create-user-with-password";
 import Setup from "./setup";
-import {AuthLayout} from "../lib/components/auth/layout";
+import { AuthLayout } from "../lib/components/auth/layout";
 
 export const IndexPage = () => {
   return (
@@ -39,7 +39,7 @@ export const IndexPage = () => {
       <WithLoginConfigContext>
         <Routes>
           <Route index element={<Navigate to="/repositories" />} />
-          <Route path="repositories" element={<Layout />}>
+          <Route path="repositories" element={<Layout logged={true} />}>
             <Route index element={<RepositoriesPage />} />
             <Route path=":repoId/*" element={<RepositoryPageLayout />}>
               <Route path="objects/*" element={<RepositoryObjectsPage />} />
@@ -75,14 +75,14 @@ export const IndexPage = () => {
             </Route>
           </Route>
           <Route path="auth" element={<Layout logged={false} />}>
-            <Route index element={<Navigate to="credentials"/>} />
-            <Route path="login" element={<LoginPage/>} />
-            <Route path="users/create" element={<ActivateInvitedUserPage/>} />
-            <Route element={<AuthLayout/>}>
-              <Route path="credentials" element={<CredentialsPage/>} />
-              <Route path="users/*" element={<UsersIndexPage/>} />
-              <Route path="groups/*" element={<GroupsIndexPage/>} />
-              <Route path="policies/*" element={<PoliciesIndexPage/>} />
+            <Route index element={<Navigate to="credentials" />} />
+            <Route path="login" element={<LoginPage />} />
+            <Route path="users/create" element={<ActivateInvitedUserPage />} />
+            <Route element={<AuthLayout />}>
+              <Route path="credentials" element={<CredentialsPage />} />
+              <Route path="users/*" element={<UsersIndexPage />} />
+              <Route path="groups/*" element={<GroupsIndexPage />} />
+              <Route path="policies/*" element={<PoliciesIndexPage />} />
             </Route>
           </Route>
           <Route path="/setup" element={<Layout logged={false} />}>
