@@ -10,7 +10,7 @@ import (
 
 const (
 	mergeCmdMinArgs = 2
-	mergeCmdMaxArgs = 2
+	mergeCmdMaxArgs = 5
 
 	mergeCreateTemplate = `Merged "{{.Merge.FromRef|yellow}}" into "{{.Merge.ToRef|yellow}}" to get "{{.Result.Reference|green}}".
 `
@@ -34,6 +34,7 @@ var mergeCmd = &cobra.Command{
 		return validRepositoryToComplete(cmd.Context(), toComplete)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		message, kvPairs := getCommitFlags(cmd)
 		client := getClient()
 		sourceRef := MustParseBranchURI("source ref", args[0])
 		destinationRef := MustParseBranchURI("destination ref", args[1])
@@ -48,7 +49,12 @@ var mergeCmd = &cobra.Command{
 			Die("Invalid strategy value. Expected \"dest-wins\" or \"source-wins\"", 1)
 		}
 
-		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, apigen.MergeIntoBranchJSONRequestBody{Strategy: &strategy})
+		body := apigen.MergeIntoBranchJSONRequestBody{
+			Message:  &message,
+			Metadata: &apigen.Merge_Metadata{AdditionalProperties: kvPairs},
+			Strategy: &strategy,
+		}
+		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, body)
 		if resp != nil && resp.JSON409 != nil {
 			Die("Conflict found.", 1)
 		}
@@ -72,6 +78,7 @@ var mergeCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	rootCmd.AddCommand(mergeCmd)
 	mergeCmd.Flags().String("strategy", "", "In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch (\"dest-wins\") or from the source branch(\"source-wins\"). In case no selection is made, the merge process will fail in case of a conflict")
+	withCommitFlags(mergeCmd, true)
+	rootCmd.AddCommand(mergeCmd)
 }

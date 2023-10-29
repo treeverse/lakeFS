@@ -33,11 +33,7 @@ var importCmd = &cobra.Command{
 		from := Must(flags.GetString("from"))
 		to := Must(flags.GetString("to"))
 		toURI := MustParsePathURI("lakeFS path URI", to)
-		message := Must(flags.GetString("message"))
-		metadata, err := getKV(cmd, "meta")
-		if err != nil {
-			DieErr(err)
-		}
+		message, metadata := getCommitFlags(cmd)
 
 		ctx := cmd.Context()
 		client := getClient()
@@ -205,7 +201,6 @@ func init() {
 	importCmd.Flags().Bool("merge", false, "merge imported branch into target branch")
 	_ = importCmd.Flags().MarkDeprecated("merge", "import is done directly into target branch")
 	importCmd.Flags().Bool("no-progress", false, "switch off the progress output")
-	importCmd.Flags().StringP("message", "m", "Import objects", "commit message")
-	importCmd.Flags().StringSlice("meta", []string{}, "key value pair in the form of key=value")
+	withCommitFlags(importCmd, true)
 	rootCmd.AddCommand(importCmd)
 }
