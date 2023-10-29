@@ -118,7 +118,7 @@ class StoredObject:
 class WritableObject(StoredObject):
     def create(self, data: bytes | str | TextIO | BinaryIO, path: str, pre_signed: Optional[bool] = None,
         content_type: Optional[str] = None, metadata: Optional[dict[str, str]] = None, 
-        exist_ok: bool = False) -> ObjectInfo: ...
+        mode: Literal['x', 'xb', 'w', 'wb'] = 'wb') -> ObjectInfo: ...
     def delete(self): ...
     def copy(self, to_reference: str, to_path: str): ...
 
@@ -252,16 +252,37 @@ class LakeFSException(Exception):
     status_code: int
     message: str
 
+# More specific "not found"s can inherit from this:
 class NotFoundException(LakeFSException): ...
 class NotAuthorizedException(LakeFSException): ...
 class ServerException(LakeFSException): ...
 class UnsupportedOperationException(LakeFSException): ...
 class ObjectNotFoundException(NotFoundException, FileNotFoundError): ...
+
+# raised when Object('...').create(mode='x') and object exists
+class ObjectExistsException(LakeFSException, FileExistsError): ...
+
+# Retured by Object.open() and Object.create() for compatibility with python
+class PermissionException(NotAuthorizedException, PermissionError)
+
 ```
 
 Other, more specific exceptions may subclass these, but all errors returned by the lakeFS server should sub-class one of these to make error handling easier for developers.
 
-The only exception should be errors returned by functions that, for compatibility should return specific error types. (this might be true for e.g. `open()` and errors returned by the `TextIO` or `BinaryIO` implementations).
+Hierarchy:
+
+```text
+LakeFSException
+ ├── NotFoundException
+ │    └── ObjectNotFoundException
+ ├── NotAuthorizedException
+ │    └── PermissionException
+ ├── ServerException
+ ├── UnsupportedOperationException
+ └── ObjectExistsException
+
+```
+
 
 ## Higher Level Utilities
 
