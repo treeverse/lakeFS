@@ -2433,12 +2433,13 @@ lakectl import --from <object store URI> --to <lakeFS path URI> [flags]
 {:.no_toc}
 
 ```
-      --from string      prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
-  -h, --help             help for import
-  -m, --message string   commit message (default "Import objects")
-      --meta strings     key value pair in the form of key=value
-      --no-progress      switch off the progress output
-      --to string        lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
+      --allow-empty-message   allow an empty commit message (default true)
+      --from string           prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
+  -h, --help                  help for import
+  -m, --message string        commit message
+      --meta strings          key value pair in the form of key=value
+      --no-progress           switch off the progress output
+      --to string             lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
 ```
 
 
@@ -2533,9 +2534,9 @@ lakectl local commit [directory] [flags]
 {:.no_toc}
 
 ```
-      --allow-empty-message   Allow commit with empty message
+      --allow-empty-message   allow an empty commit message
   -h, --help                  help for commit
-  -m, --message string        Commit message
+  -m, --message string        commit message
       --meta strings          key value pair in the form of key=value
   -p, --parallelism int       Max concurrent operations to perform (default 25)
       --pre-sign              Use pre-signed URLs when downloading/uploading data (recommended) (default true)
@@ -2695,8 +2696,11 @@ lakectl merge <source ref> <destination ref> [flags]
 {:.no_toc}
 
 ```
-  -h, --help              help for merge
-      --strategy string   In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ("dest-wins") or from the source branch("source-wins"). In case no selection is made, the merge process will fail in case of a conflict
+      --allow-empty-message   allow an empty commit message (default true)
+  -h, --help                  help for merge
+  -m, --message string        commit message
+      --meta strings          key value pair in the form of key=value
+      --strategy string       In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ("dest-wins") or from the source branch("source-wins"). In case no selection is made, the merge process will fail in case of a conflict
 ```
 
 
