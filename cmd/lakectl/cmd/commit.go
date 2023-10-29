@@ -69,6 +69,6 @@ func init() {
 	if err := commitCmd.Flags().MarkHidden(dateFlagName); err != nil {
 		DieErr(err)
 	}
-	withCommitFlags(commitCmd, "", false)
+	withCommitFlags(commitCmd, false)
 	rootCmd.AddCommand(commitCmd)
 }

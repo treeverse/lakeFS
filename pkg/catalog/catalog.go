@@ -1971,6 +1971,10 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 	for _, ip := range params.Paths {
 		prefixes = append(prefixes, graveler.Prefix(ip.Destination))
 	}
+
+	if params.Commit.CommitMessage == "" {
+		params.Commit.CommitMessage = "Import objects"
+	}
 	commitID, err := c.Store.Import(ctx, repository, graveler.BranchID(branchID), metarange.ID, graveler.CommitParams{
 		Committer: params.Commit.Committer,
 		Message:   params.Commit.CommitMessage,

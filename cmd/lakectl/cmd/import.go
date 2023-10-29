@@ -201,6 +201,6 @@ func init() {
 	importCmd.Flags().Bool("merge", false, "merge imported branch into target branch")
 	_ = importCmd.Flags().MarkDeprecated("merge", "import is done directly into target branch")
 	importCmd.Flags().Bool("no-progress", false, "switch off the progress output")
-	withCommitFlags(importCmd, "Import objects", false)
+	withCommitFlags(importCmd, true)
 	rootCmd.AddCommand(importCmd)
 }

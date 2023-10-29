@@ -213,8 +213,8 @@ func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remot
 	return
 }
 
-func withMessageFlags(cmd *cobra.Command, defaultMsg string, allowEmpty bool) {
-	cmd.Flags().StringP(commitMsgFlagName, "m", defaultMsg, "commit message")
+func withMessageFlags(cmd *cobra.Command, allowEmpty bool) {
+	cmd.Flags().StringP(commitMsgFlagName, "m", "", "commit message")
 	cmd.Flags().Bool(allowEmptyMsgFlagName, allowEmpty, "allow an empty commit message")
 }
 
@@ -222,8 +222,8 @@ func withMetadataFlag(cmd *cobra.Command) {
 	cmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")
 }
 
-func withCommitFlags(cmd *cobra.Command, defaultMsg string, allowEmptyMessage bool) {
-	withMessageFlags(cmd, defaultMsg, allowEmptyMessage)
+func withCommitFlags(cmd *cobra.Command, allowEmptyMessage bool) {
+	withMessageFlags(cmd, allowEmptyMessage)
 	withMetadataFlag(cmd)
 }
 

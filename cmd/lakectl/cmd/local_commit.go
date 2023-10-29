@@ -170,7 +170,7 @@ var localCommitCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	withCommitFlags(localCommitCmd, "", false)
+	withCommitFlags(localCommitCmd, false)
 	withSyncFlags(localCommitCmd)
 	localCmd.AddCommand(localCommitCmd)
 }
