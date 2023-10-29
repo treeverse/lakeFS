@@ -79,6 +79,6 @@ var mergeCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	mergeCmd.Flags().String("strategy", "", "In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch (\"dest-wins\") or from the source branch(\"source-wins\"). In case no selection is made, the merge process will fail in case of a conflict")
-	withCommitFlags(mergeCmd, true) // Added default msg to allow backwards compatibility
+	withCommitFlags(mergeCmd, true)
 	rootCmd.AddCommand(mergeCmd)
 }
