@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	RemoteRegex     = regexp.MustCompile(`(?P<server>[\w.:]+)[/:](?P<owner>[\w.]+)/(?P<project>[\w.]+)\.git$`)
+	RemoteRegex     = regexp.MustCompile(`(?P<server>[\w.:]+)[/:](?P<owner>[\w.-]+)/(?P<project>[\w.-]+)\.git$`)
 	CommitTemplates = map[string]string{
 		"github.com":    "https://github.com/{{ .Owner }}/{{ .Project }}/commit/{{ .Ref }}",
 		"gitlab.com":    "https://gitlab.com/{{ .Owner }}/{{ .Project }}/-/commit/{{ .Ref }}",

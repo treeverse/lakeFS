@@ -215,6 +215,14 @@ func TestParseURL(t *testing.T) {
 			},
 		},
 		{
+			Url: "git://git@github.com:Hyphened-Owner/Hyphened-Project.git",
+			ExpectedUrl: &git.URL{
+				Server:  "github.com",
+				Owner:   "Hyphened-Owner",
+				Project: "Hyphened-Project",
+			},
+		},
+		{
 			Url:         "bad_url",
 			ExpectedUrl: nil,
 		},
