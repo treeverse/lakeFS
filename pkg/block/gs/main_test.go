@@ -29,6 +29,7 @@ func TestMain(m *testing.M) {
 	// External port required for '-public-host' configuration in docker cmd
 	endpoint := fmt.Sprintf("%s:%s", emulatorTestEndpoint, emulatorTestPort)
 	pool, err := dockertest.NewPool("")
+
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
@@ -80,6 +81,15 @@ func TestMain(m *testing.M) {
 	}
 
 	code := m.Run()
+	if code > 0 {
+		_ = pool.Client.Logs(docker.LogsOptions{
+			Container:    resource.Container.ID,
+			OutputStream: os.Stdout,
+			ErrorStream:  os.Stderr,
+			Stdout:       true,
+			Stderr:       true,
+		})
+	}
 	closer()
 	os.Exit(code)
 }
