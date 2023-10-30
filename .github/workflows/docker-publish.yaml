@@ -80,7 +80,9 @@ jobs:
         id: lakectl_meta
         uses: docker/metadata-action@v5
         with:
-          images: treeverse/lakectl,${{ steps.login-ecr.outputs.registry }}/lakectl
+          images: |
+            treeverse/lakectl
+            ${{ steps.login-ecr.outputs.registry }}/lakectl
           tags: |
             type=semver,pattern={{version}},value=${{ steps.version.outputs.tag }}
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.tag }}
@@ -89,7 +91,9 @@ jobs:
         id: lakefs_meta
         uses: docker/metadata-action@v5
         with:
-          images: treeverse/lakefs,${{ steps.login-ecr.outputs.registry }}/lakefs
+          images: |
+            treeverse/lakefs
+            ${{ steps.login-ecr.outputs.registry }}/lakefs
           tags: |
             type=semver,pattern={{version}},value=${{ steps.version.outputs.tag }}
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.tag }}
