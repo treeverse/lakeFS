@@ -3939,13 +3939,12 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 }
 
 func getCommitter(user *model.User) string {
-	committer := user.Username
 	if user.Email != nil {
 		if _, err := mail.ParseAddress(*user.Email); err == nil {
-			committer = *user.Email
+			return *user.Email
 		}
 	}
-	return committer
+	return user.Username
 }
 
 func (c *Controller) FindMergeBase(w http.ResponseWriter, r *http.Request, repository string, sourceRef string, destinationRef string) {
