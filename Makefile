@@ -1,4 +1,3 @@
-
 GOCMD=$(or $(shell which go), $(error "Missing dependency - no go in PATH"))
 DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PATH"))
 GOBINPATH=$(shell $(GOCMD) env GOPATH)/bin
