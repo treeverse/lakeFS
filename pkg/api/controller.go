@@ -2382,12 +2382,11 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ap
 		})
 	}
 
-	committer := user.Username
 	importID, err := c.Catalog.Import(r.Context(), repository, branch, catalog.ImportRequest{
 		Paths: paths,
 		Commit: catalog.ImportCommit{
 			CommitMessage: body.Commit.Message,
-			Committer:     committer,
+			Committer:     getCommitter(user),
 			Metadata:      metadata,
 		},
 	})
@@ -2488,8 +2487,8 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 	if body.Metadata != nil {
 		metadata = body.Metadata.AdditionalProperties
 	}
-	committer := user.Username
-	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, committer, metadata, body.Date, params.SourceMetarange)
+
+	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, getCommitter(user), metadata, body.Date, params.SourceMetarange)
 	var hookAbortErr *graveler.HookAbortError
 	if errors.As(err, &hookAbortErr) {
 		c.Logger.
@@ -2916,10 +2915,9 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body a
 		writeError(w, r, http.StatusUnauthorized, "user not found")
 		return
 	}
-	committer := user.Username
 	err = c.Catalog.Revert(ctx, repository, branch, catalog.RevertParams{
 		Reference:    body.Ref,
-		Committer:    committer,
+		Committer:    getCommitter(user),
 		ParentNumber: body.ParentNumber,
 	})
 	if c.handleAPIError(ctx, w, r, err) {
@@ -2955,10 +2953,9 @@ func (c *Controller) CherryPick(w http.ResponseWriter, r *http.Request, body api
 		writeError(w, r, http.StatusUnauthorized, "user not found")
 		return
 	}
-	committer := user.Username
 	newCommit, err := c.Catalog.CherryPick(ctx, repository, branch, catalog.CherryPickParams{
 		Reference:    body.Ref,
-		Committer:    committer,
+		Committer:    getCommitter(user),
 		ParentNumber: body.ParentNumber,
 	})
 	if c.handleAPIError(ctx, w, r, err) {
@@ -3916,7 +3913,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 
 	reference, err := c.Catalog.Merge(ctx,
 		repository, destinationBranch, sourceRef,
-		user.Username,
+		getCommitter(user),
 		swag.StringValue(body.Message),
 		metadata,
 		swag.StringValue(body.Strategy))
@@ -3939,6 +3936,16 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	writeResponse(w, r, http.StatusOK, apigen.MergeResult{
 		Reference: reference,
 	})
+}
+
+func getCommitter(user *model.User) string {
+	committer := user.Username
+	if user.Email != nil {
+		if _, err := mail.ParseAddress(*user.Email); err == nil {
+			committer = *user.Email
+		}
+	}
+	return committer
 }
 
 func (c *Controller) FindMergeBase(w http.ResponseWriter, r *http.Request, repository string, sourceRef string, destinationRef string) {
