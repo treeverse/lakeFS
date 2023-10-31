@@ -123,7 +123,7 @@ type User struct {
 }
 
 func (u *User) Committer() string {
-	if u.Email != nil {
+	if u.Email != nil && *u.Email != "" {
 		return *u.Email
 	}
 	return u.Username
