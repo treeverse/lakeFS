@@ -122,6 +122,13 @@ type User struct {
 	ExternalID        *string `db:"external_id" json:"external_id"`
 }
 
+func (u *User) Committer() string {
+	if u.Email != nil {
+		return *u.Email
+	}
+	return u.Username
+}
+
 type DBUser struct {
 	ID int64 `db:"id"`
 	User
