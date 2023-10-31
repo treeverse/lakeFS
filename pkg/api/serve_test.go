@@ -80,7 +80,7 @@ func (m *memCollector) SetInstallationID(installationID string) {
 	m.InstallationID = installationID
 }
 
-func (m *memCollector) CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool) {
+func (m *memCollector) CollectCommPrefs(_ stats.CommPrefs) {
 }
 
 func (m *memCollector) Close() {}

@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from "react";
+import React, {useCallback, useRef, useState} from "react";
 
 import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {ActionGroup, ActionsBar, AlertError, Loading, RefreshButton} from "../../../lib/components/controls";
@@ -8,7 +8,7 @@ import {ArrowLeftIcon, ArrowSwitchIcon, GitMergeIcon} from "@primer/octicons-rea
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {refs, statistics} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
-import {ChangesTreeContainer, defaultGetMoreChanges} from "../../../lib/components/repository/changes";
+import {ChangesTreeContainer, defaultGetMoreChanges, MetadataFields} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
@@ -20,6 +20,7 @@ import {RepoError} from "./error";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 import {ComingSoonModal} from "../../../lib/components/modals";
+import Form from "react-bootstrap/Form";
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
@@ -178,6 +179,8 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
 };
 
 const MergeButton = ({repo, onDone, source, dest, disabled = false, isTableMerge}) => {
+    const textRef = useRef(null);
+    const [metadataFields, setMetadataFields] = useState([])
     const initialMerge = {
         merging: false,
         show: false,
@@ -213,16 +216,21 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false, isTableMerge
     const hide = () => {
         if (mergeState.merging) return;
         setMergeState(initialMerge);
+        setMetadataFields([])
     }
 
     const onSubmit = async () => {
+        const message = textRef.current.value;
+        const metadata = {};
+        metadataFields.forEach(pair => metadata[pair.key] = pair.value)
+
         let strategy = mergeState.strategy;
         if (strategy === "none") {
             strategy = "";
         }
         setMergeState({merging: true, show: mergeState.show, err: mergeState.err, strategy: mergeState.strategy})
         try {
-            await refs.merge(repo.id, source, dest, strategy);
+            await refs.merge(repo.id, source, dest, strategy, message, metadata);
             setMergeState({merging: mergeState.merging, show: mergeState.show, err: null, strategy: mergeState.strategy})
             onDone();
             hide();
@@ -238,6 +246,13 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false, isTableMerge
                     <Modal.Title>Merge branch {source} into {dest}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
+                    <Form className="mb-2">
+                        <Form.Group controlId="message" className="mb-3">
+                            <Form.Control type="text" placeholder="Commit Message (Optional)" ref={textRef}/>
+                        </Form.Group>
+
+                        <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields}/>
+                    </Form>
                     <FormControl sx={{ m: 1, minWidth: 120 }}>
                         <InputLabel id="demo-select-small">Strategy</InputLabel>
                         <Select

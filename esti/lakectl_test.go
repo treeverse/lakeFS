@@ -201,6 +201,51 @@ func TestLakectlBranchAndTagValidation(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag show lakefs://"+repoName+"/"+vars["TAG"], false, "lakectl_tag_show", vars)
 }
 
+func TestLakectlMerge(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	filePath1 := "file1"
+
+	// create repo with 'main' branch
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	// upload 'file1' and commit
+	vars["FILE_PATH"] = filePath1
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath1, false, "lakectl_fs_upload", vars)
+	commitMessage := "first commit to main"
+	vars["MESSAGE"] = commitMessage
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
+	featureBranch := "feature"
+	branchVars := map[string]string{
+		"REPO":          repoName,
+		"STORAGE":       storage,
+		"SOURCE_BRANCH": mainBranch,
+		"DEST_BRANCH":   featureBranch,
+	}
+
+	t.Run("merge with commit message and meta", func(t *testing.T) {
+		// create new branch 'feature'
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+featureBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", branchVars)
+
+		// update 'file1' on 'main' and commit
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k_other lakefs://"+repoName+"/"+mainBranch+"/"+filePath1, false, "lakectl_fs_upload", vars)
+		commitMessage = "file update on main branch"
+		vars["MESSAGE"] = commitMessage
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
+
+		commitMessage = "merge commit"
+		vars["MESSAGE"] = commitMessage
+		meta := "key1=value1,key2=value2"
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+mainBranch+" lakefs://"+repoName+"/"+featureBranch+" -m '"+commitMessage+"' --meta "+meta, false, "lakectl_merge_success", branchVars)
+
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log --amount 1 lakefs://"+repoName+"/"+featureBranch, false, "lakectl_merge_with_commit", vars)
+	})
+}
+
 func TestLakectlMergeAndStrategies(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
@@ -260,7 +305,7 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+featureBranch+"/", false, "lakectl_fs_ls_1_file", vars)
 
 	// merge with strategy 'source-wins' - updated 'file1' from main is added to 'feature'
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+mainBranch+" lakefs://"+repoName+"/"+featureBranch+" --strategy source-wins", false, "lakectl_merge_source_wins", branchVars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+mainBranch+" lakefs://"+repoName+"/"+featureBranch+" --strategy source-wins", false, "lakectl_merge_success", branchVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+featureBranch+"/", false, "lakectl_fs_ls_2_file", lsVars)
 
 	// update 'file1' again on 'main' and commit
@@ -284,7 +329,7 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+featureBranch+"/", false, "lakectl_fs_ls_1_file", vars)
 
 	// merge with strategy 'dest-wins' - 'file1' is not added to 'feature'
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+mainBranch+" lakefs://"+repoName+"/"+featureBranch+" --strategy dest-wins", false, "lakectl_merge_source_wins", branchVars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+mainBranch+" lakefs://"+repoName+"/"+featureBranch+" --strategy dest-wins", false, "lakectl_merge_success", branchVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+featureBranch+"/", false, "lakectl_fs_ls_1_file", vars)
 }
 

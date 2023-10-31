@@ -43,6 +43,8 @@ jobs:
           go-version: "1.20.6"
         id: go
 
+      - uses: bufbuild/buf-setup-action@v1.27.1
+
       - name: Extract version
         shell: bash
         run: echo "tag=$(echo $(git describe --abbrev=1 --tags)-$(echo ${{ inputs.name }}))" >> $GITHUB_OUTPUT
