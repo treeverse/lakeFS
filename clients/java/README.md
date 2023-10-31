@@ -1,7 +1,7 @@
 # sdk
 
 lakeFS API
-- API version: 0.1.0
+- API version: 1.0.0
 
 lakeFS HTTP API
 

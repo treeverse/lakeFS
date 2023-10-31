@@ -5,7 +5,7 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   title: lakeFS API
-  version: 0.1.0
+  version: 1.0.0
 servers:
 - description: lakeFS server endpoint
   url: /api/v1
