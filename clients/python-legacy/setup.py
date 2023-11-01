@@ -28,7 +28,7 @@ REQUIRES = [
 with open('README.md') as f:
     import re
     # replace relative links with links to the docs:
-    doc_version = '.'.join(f'v{VERSION}'.split('.')[:-1])
+    doc_version = '.'.join(f'v{VERSION}'.split('.')[:2])
     long_description = re.sub(r'(\[[*a-zA-Z_]*]\()docs/([A-Za-z0-9]*)\.md',
                               rf'\1https://pydocs.lakefs.io/{doc_version}/docs/\2.html',
                               f.read())
