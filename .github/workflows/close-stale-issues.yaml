@@ -21,6 +21,6 @@ jobs:
         days-before-close: 7
         stale-pr-label: stale
         stale-issue-label: stale
-        exempt-pr-label: 'no stale'
-        exempt-issue-label: 'no stale'
+        exempt-pr-labels: 'no stale'
+        exempt-issue-labels: 'no stale'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
