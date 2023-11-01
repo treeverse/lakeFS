@@ -134,35 +134,24 @@ func LuaRun(l *lua.State, code, name string) error {
 }
 
 func (h *LuaHook) collectStats(l *lua.State) {
-	// TODO(isan) delete it ! always appear no matter what even on empty scripts
-	// 	>>> encoding/json: 1
-	// >>> encoding/yaml: 1
-	// >>> crypto/hmac: 1
-	// >>> aws: 1
-	// >>> lakefs: 1
+	// TODO(isan) how to configure?
 	packagesToReport := map[string]bool{
 		"lakefs/catalogexport/hive":             true,
 		"lakefs/catalogexport/symlink_exporter": true,
 		"lakefs/catalogexport/glue_exporter":    true,
 	}
 
-	counters := map[string]int{}
-
 	if l.IsTable(lua.RegistryIndex) {
-		///////////////// CHATGPT ####################
 		l.Field(lua.RegistryIndex, "_LOADED")
-		l.PushNil() // Start iterating over the table
+		l.PushNil()
 		for l.Next(-2) {
 			// Key is at index -2, value is at index -1
 			key := lua.CheckString(l, -2)
 			t := l.TypeOf(-1)
-			value := l.ToValue(-1)
-
-			// Process the key and value as needed
-			fmt.Printf("\t $%s: (type=%s) %v\n", key, t, value)
+			// value := l.ToValue(-1)
 			if t == lua.TypeTable {
 				if packagesToReport[key] {
-					counters[key] = counters[key] + 1
+					h.stats.CollectEvent(stats.Event{Class: "lua_hook_run", Name: key})
 				}
 			}
 			// Pop the value, but keep the key for the next iteration
@@ -170,15 +159,7 @@ func (h *LuaHook) collectStats(l *lua.State) {
 		}
 		// Pop the _LOADED table from the stack
 		l.Pop(1)
-		///////////////// CHATGPT ####################
 	}
-	fmt.Println("Stats reporting")
-
-	for packageName, v := range counters {
-		fmt.Printf(">>> %s: %d\n", packageName, v)
-		h.stats.CollectEvent(stats.Event{Class: "lua_hook_run", Name: packageName})
-	}
-	// h.stats.CollectEvent(stats.Event{Class: "actions_service", Name: string(record.EventType)})
 }
 func DescendArgs(args interface{}) (interface{}, error) {
 	var err error
