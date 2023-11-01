@@ -24,6 +24,4 @@ jobs:
         exempt-pr-labels: 'no stale'
         exempt-issue-labels: 'no stale'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
-        ascending: true
-        start-date: "2023-07-04"
         operations-per-run: 300
