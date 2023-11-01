@@ -18,10 +18,6 @@
 		<img src="https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg" alt="code of conduct"></a>
 </p>
 
-## ⚠️ An update on Hacktoberfest ⚠️
-
-We are always happy to review your lakeFS PRs!  Unfortunately however this year we are unable to allocate resources to support these efforts _in the context of Hacktoberfest_.
-
 ## lakeFS is Data Version Control (Git for Data)
 
 lakeFS is an open-source tool that transforms your object storage into a Git-like repository. It enables you to manage your data lake the way you manage your code.
