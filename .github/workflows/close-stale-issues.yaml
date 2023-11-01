@@ -25,3 +25,4 @@ jobs:
         exempt-issue-labels: 'no stale'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         ascending: true
+        start-date: "2021-07-31"
