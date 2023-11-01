@@ -16,6 +16,7 @@ check that the API server is up and running
 
 ### Example
 
+
 ```python
 import time
 import os
@@ -44,6 +45,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 
 ### Parameters
+
 This endpoint does not need any parameter.
 
 ### Return type
@@ -60,6 +62,7 @@ No authorization required
  - **Accept**: Not defined
 
 ### HTTP response details
+
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | NoContent |  -  |

@@ -2,6 +2,7 @@
 
 
 ## Properties
+
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **events** | [**List[StatsEvent]**](StatsEvent.md) |  | 
