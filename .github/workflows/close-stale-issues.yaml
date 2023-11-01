@@ -24,3 +24,4 @@ jobs:
         exempt-pr-labels: 'no stale'
         exempt-issue-labels: 'no stale'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
+        ascending: true
