@@ -19,9 +19,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 type LuaHook struct {
+	stats stats.Collector
 	HookBase
 	Script     string
 	ScriptPath string
@@ -118,7 +120,7 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 	}
 	err = LuaRun(l, code, "lua")
 	if err == nil {
-		collectStats(l)
+		h.collectStats(l)
 	}
 	return err
 }
@@ -131,22 +133,17 @@ func LuaRun(l *lua.State, code, name string) error {
 	return l.ProtectedCall(0, lua.MultipleReturns, 0)
 }
 
-func collectStats(l *lua.State) {
-	// TODO(isan) delete it ! always appear no matter what
+func (h *LuaHook) collectStats(l *lua.State) {
+	// TODO(isan) delete it ! always appear no matter what even on empty scripts
 	// 	>>> encoding/json: 1
 	// >>> encoding/yaml: 1
 	// >>> crypto/hmac: 1
 	// >>> aws: 1
 	// >>> lakefs: 1
 	packagesToReport := map[string]bool{
-		"aws":                                   true,
-		"encoding/json":                         true,
-		"crypto/hmac":                           true,
 		"lakefs/catalogexport/hive":             true,
 		"lakefs/catalogexport/symlink_exporter": true,
 		"lakefs/catalogexport/glue_exporter":    true,
-		"lakefs":                                true,
-		"encoding/yaml":                         true,
 	}
 
 	counters := map[string]int{}
@@ -176,9 +173,12 @@ func collectStats(l *lua.State) {
 		///////////////// CHATGPT ####################
 	}
 	fmt.Println("Stats reporting")
-	for k, v := range counters {
-		fmt.Printf(">>> %s: %d\n", k, v)
+
+	for packageName, v := range counters {
+		fmt.Printf(">>> %s: %d\n", packageName, v)
+		h.stats.CollectEvent(stats.Event{Class: "lua_hook_run", Name: packageName})
 	}
+	// h.stats.CollectEvent(stats.Event{Class: "actions_service", Name: string(record.EventType)})
 }
 func DescendArgs(args interface{}) (interface{}, error) {
 	var err error
@@ -222,7 +222,7 @@ func DescendArgs(args interface{}) (interface{}, error) {
 	}
 }
 
-func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server) (Hook, error) {
+func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, stats stats.Collector) (Hook, error) {
 	// optional args
 	args := make(map[string]interface{})
 	argsVal, hasArgs := h.Properties["args"]
@@ -259,6 +259,7 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server) (Hook,
 			},
 			Script: script,
 			Args:   args,
+			stats:  stats,
 		}, nil
 	} else if !errors.Is(err, errMissingKey) {
 		// 'script' was provided but is empty or of the wrong type.
