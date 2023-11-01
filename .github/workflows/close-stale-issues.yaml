@@ -25,5 +25,5 @@ jobs:
         exempt-issue-labels: 'no stale'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         ascending: true
-        start-date: "2021-06-21"
+        start-date: "2021-09-30"
         operations-per-run: 150
