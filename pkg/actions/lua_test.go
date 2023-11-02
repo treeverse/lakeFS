@@ -22,6 +22,7 @@ import (
 )
 
 func TestNewLuaHook(t *testing.T) {
+	mockStatsCollector := NewActionStatsMockCollector()
 	_, err := actions.NewLuaHook(
 		actions.ActionHook{
 			ID:          "myHook",
@@ -45,13 +46,14 @@ func TestNewLuaHook(t *testing.T) {
 				NetHTTPEnabled: true,
 			},
 		},
-		nil)
+		nil, &mockStatsCollector)
 	if err != nil {
 		t.Errorf("unexpedcted error: %v", err)
 	}
 }
 
 func TestLuaRun(t *testing.T) {
+	mockStatsCollector := NewActionStatsMockCollector()
 	h, err := actions.NewLuaHook(
 		actions.ActionHook{
 			ID:          "myHook",
@@ -75,7 +77,7 @@ func TestLuaRun(t *testing.T) {
 				NetHTTPEnabled: true,
 			},
 		},
-		nil)
+		nil, &mockStatsCollector)
 	if err != nil {
 		t.Errorf("unexpedcted error: %v", err)
 	}
@@ -111,6 +113,7 @@ func TestLuaRun(t *testing.T) {
 }
 
 func TestLuaRun_NetHttpDisabled(t *testing.T) {
+	mockStatsCollector := NewActionStatsMockCollector()
 	h, err := actions.NewLuaHook(
 		actions.ActionHook{
 			ID:          "myHook",
@@ -127,7 +130,7 @@ func TestLuaRun_NetHttpDisabled(t *testing.T) {
 			Hooks:       nil,
 		},
 		actions.Config{Enabled: true},
-		nil)
+		nil, &mockStatsCollector)
 	if err != nil {
 		t.Errorf("unexpedcted error: %v", err)
 	}
@@ -260,6 +263,7 @@ print(code .. " " .. body .. " " .. status)
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
+			mockStatsCollector := NewActionStatsMockCollector()
 			h, err := actions.NewLuaHook(
 				actions.ActionHook{
 					ID:   "myLuaHook",
@@ -277,7 +281,7 @@ print(code .. " " .. body .. " " .. status)
 						NetHTTPEnabled: true,
 					},
 				},
-				nil)
+				nil, &mockStatsCollector)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -373,6 +377,7 @@ func TestLuaRunTable(t *testing.T) {
 		script := string(data)
 
 		t.Run(testCase.Name, func(t *testing.T) {
+			mockStatsCollector := NewActionStatsMockCollector()
 			h, err := actions.NewLuaHook(
 				actions.ActionHook{
 					ID:   "myHook",
@@ -395,7 +400,7 @@ func TestLuaRunTable(t *testing.T) {
 						NetHTTPEnabled: true,
 					},
 				},
-				nil)
+				nil, &mockStatsCollector)
 			if err != nil {
 				t.Errorf("unexpedcted error: %v", err)
 			}
