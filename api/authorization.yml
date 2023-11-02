@@ -122,18 +122,14 @@ components:
     User:
       type: object
       required:
-        - id
         - name
         - username
         - creation_date
         - encryptedPassword
       properties:
-        id:
-          type: integer
-          format: int64
         username:
           type: string
-          description: a unique identifier for the user. In password-based authentication, this is the email.
+          description: a unique identifier for the user
         creation_date:
           type: integer
           format: int64
