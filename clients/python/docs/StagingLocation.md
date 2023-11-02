@@ -3,6 +3,7 @@
 location for placing an object when staging it
 
 ## Properties
+
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **physical_address** | **str** |  | [optional] 

@@ -2,6 +2,7 @@
 
 
 ## Properties
+
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **ranges** | [**List[RangeMetadata]**](RangeMetadata.md) |  | 
