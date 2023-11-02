@@ -310,7 +310,7 @@ func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task
 	for actionIdx, action := range actions {
 		var actionTasks []*Task
 		for hookIdx, hook := range action.Hooks {
-			h, err := NewHook(hook, action, s.cfg, s.endpoint)
+			h, err := NewHook(hook, action, s.cfg, s.endpoint, s.stats)
 			if err != nil {
 				return nil, err
 			}

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/Shopify/go-lua"
@@ -19,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 type LuaHook struct {
@@ -26,6 +28,7 @@ type LuaHook struct {
 	Script     string
 	ScriptPath string
 	Args       map[string]interface{}
+	collector  stats.Collector
 }
 
 func applyRecord(l *lua.State, actionName, hookID string, record graveler.HookRecord) {
@@ -117,6 +120,9 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 		code = rr.Body.String()
 	}
 	err = LuaRun(l, code, "lua")
+	if err == nil {
+		h.collectMetrics(l)
+	}
 	return err
 }
 
@@ -126,6 +132,20 @@ func LuaRun(l *lua.State, code, name string) error {
 		return err
 	}
 	return l.ProtectedCall(0, lua.MultipleReturns, 0)
+}
+
+func (h *LuaHook) collectMetrics(l *lua.State) {
+	const packagePrefix = "lakefs/"
+	l.Field(lua.RegistryIndex, "_LOADED")
+	l.PushNil()
+	for l.Next(-2) {
+		key := lua.CheckString(l, -2)
+		if strings.HasPrefix(key, packagePrefix) {
+			h.collector.CollectEvent(stats.Event{Class: "lua_hooks", Name: key})
+		}
+		l.Pop(1)
+	}
+	l.Pop(1) // Pop the _LOADED table from the stack
 }
 
 func DescendArgs(args interface{}) (interface{}, error) {
@@ -170,7 +190,7 @@ func DescendArgs(args interface{}) (interface{}, error) {
 	}
 }
 
-func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server) (Hook, error) {
+func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, collector stats.Collector) (Hook, error) {
 	// optional args
 	args := make(map[string]interface{})
 	argsVal, hasArgs := h.Properties["args"]
@@ -205,8 +225,9 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server) (Hook,
 				Config:     cfg,
 				Endpoint:   e,
 			},
-			Script: script,
-			Args:   args,
+			Script:    script,
+			Args:      args,
+			collector: collector,
 		}, nil
 	} else if !errors.Is(err, errMissingKey) {
 		// 'script' was provided but is empty or of the wrong type.
@@ -230,5 +251,6 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server) (Hook,
 		},
 		ScriptPath: scriptFile,
 		Args:       args,
+		collector:  collector,
 	}, nil
 }
