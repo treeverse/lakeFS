@@ -10,9 +10,10 @@ import (
 	"net/url"
 	"path"
 	"time"
-	"github.com/treeverse/lakefs/pkg/stats"
+
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 type Airflow struct {
@@ -55,7 +56,7 @@ var (
 	errAirflowHookDAGFailed     = errors.New("airflow hook DAG failed")
 )
 
-func NewAirflowHook(h ActionHook, action *Action, cfg Config, endpoint *http.Server, stats.Collector) (Hook, error) {
+func NewAirflowHook(h ActionHook, action *Action, cfg Config, endpoint *http.Server, collector stats.Collector) (Hook, error) {
 	airflowHook := Airflow{
 		HookBase: HookBase{
 			ID:         h.ID,

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/Shopify/go-lua"
@@ -23,7 +24,7 @@ import (
 )
 
 type LuaHook struct {
-	stats stats.Collector
+	collector stats.Collector
 	HookBase
 	Script     string
 	ScriptPath string
@@ -120,7 +121,7 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 	}
 	err = LuaRun(l, code, "lua")
 	if err == nil {
-		h.collectStats(l)
+		h.collectMetrics(l)
 	}
 	return err
 }
@@ -133,34 +134,20 @@ func LuaRun(l *lua.State, code, name string) error {
 	return l.ProtectedCall(0, lua.MultipleReturns, 0)
 }
 
-func (h *LuaHook) collectStats(l *lua.State) {
-	// TODO(isan) how to configure?
-	packagesToReport := map[string]bool{
-		"lakefs/catalogexport/hive":             true,
-		"lakefs/catalogexport/symlink_exporter": true,
-		"lakefs/catalogexport/glue_exporter":    true,
-	}
-
-	if l.IsTable(lua.RegistryIndex) {
-		l.Field(lua.RegistryIndex, "_LOADED")
-		l.PushNil()
-		for l.Next(-2) {
-			// Key is at index -2, value is at index -1
-			key := lua.CheckString(l, -2)
-			t := l.TypeOf(-1)
-			// value := l.ToValue(-1)
-			if t == lua.TypeTable {
-				if packagesToReport[key] {
-					h.stats.CollectEvent(stats.Event{Class: "lua_hook_run", Name: key})
-				}
-			}
-			// Pop the value, but keep the key for the next iteration
-			l.Pop(1)
+func (h *LuaHook) collectMetrics(l *lua.State) {
+	const packagePrefix = "lakefs/"
+	l.Field(lua.RegistryIndex, "_LOADED")
+	l.PushNil()
+	for l.Next(-2) {
+		key := lua.CheckString(l, -2)
+		if strings.HasPrefix(key, packagePrefix) {
+			h.collector.CollectEvent(stats.Event{Class: "lua_hook_run", Name: key})
 		}
-		// Pop the _LOADED table from the stack
 		l.Pop(1)
 	}
+	l.Pop(1) // Pop the _LOADED table from the stack
 }
+
 func DescendArgs(args interface{}) (interface{}, error) {
 	var err error
 	switch t := args.(type) {
@@ -203,7 +190,7 @@ func DescendArgs(args interface{}) (interface{}, error) {
 	}
 }
 
-func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, stats stats.Collector) (Hook, error) {
+func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, collector stats.Collector) (Hook, error) {
 	// optional args
 	args := make(map[string]interface{})
 	argsVal, hasArgs := h.Properties["args"]
@@ -238,9 +225,9 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, stats 
 				Config:     cfg,
 				Endpoint:   e,
 			},
-			Script: script,
-			Args:   args,
-			stats:  stats,
+			Script:    script,
+			Args:      args,
+			collector: collector,
 		}, nil
 	} else if !errors.Is(err, errMissingKey) {
 		// 'script' was provided but is empty or of the wrong type.
@@ -264,5 +251,6 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, stats 
 		},
 		ScriptPath: scriptFile,
 		Args:       args,
+		collector:  collector,
 	}, nil
 }
