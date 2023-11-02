@@ -141,7 +141,7 @@ func (h *LuaHook) collectMetrics(l *lua.State) {
 	for l.Next(-2) {
 		key := lua.CheckString(l, -2)
 		if strings.HasPrefix(key, packagePrefix) {
-			h.collector.CollectEvent(stats.Event{Class: "lua_hook_run", Name: key})
+			h.collector.CollectEvent(stats.Event{Class: "lua_hooks", Name: key})
 		}
 		l.Pop(1)
 	}
