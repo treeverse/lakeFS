@@ -474,13 +474,9 @@ func (e *EntriesIterator) runQuery() {
 		e.err = fmt.Errorf("query: %w", err)
 		return
 	}
-
-	var ConsumedCapacity float64 = 0
-	if nil != queryResult.ConsumedCapacity {
-		ConsumedCapacity = *queryResult.ConsumedCapacity.CapacityUnits
+	if queryResult.ConsumedCapacity != nil {
+		dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryResult.ConsumedCapacity.CapacityUnits)
 	}
-
-	dynamoConsumedCapacity.WithLabelValues(operation).Add(ConsumedCapacity)
 	e.queryResult = queryResult
 	e.currEntryIdx = 0
 }
