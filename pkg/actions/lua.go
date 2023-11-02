@@ -24,11 +24,11 @@ import (
 )
 
 type LuaHook struct {
-	collector stats.Collector
 	HookBase
 	Script     string
 	ScriptPath string
 	Args       map[string]interface{}
+	collector  stats.Collector
 }
 
 func applyRecord(l *lua.State, actionName, hookID string, record graveler.HookRecord) {
