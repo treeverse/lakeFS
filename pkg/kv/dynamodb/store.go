@@ -19,7 +19,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -148,13 +147,14 @@ func isTableExist(ctx context.Context, svc *dynamodb.Client, table string) (bool
 
 // setupKeyValueDatabase setup everything required to enable kv over postgres
 func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.Client, params *kvparams.DynamoDB) error {
-	// main kv table
-	exist, err := isTableExist(ctx, svc, params.TableName)
-	if exist || err != nil {
-		return err
-	}
+	log := logging.FromContext(ctx).WithField("table_name", params.TableName)
+	start := time.Now()
+	defer func() {
+		log.WithField("took", fmt.Sprint(time.Since(start))).Info("Setup time")
+	}()
 
-	table, err := svc.CreateTable(ctx, &dynamodb.CreateTableInput{
+	// main kv table
+	_, err := svc.CreateTable(ctx, &dynamodb.CreateTableInput{
 		TableName:   aws.String(params.TableName),
 		BillingMode: types.BillingModePayPerRequest, // On-Demand
 		AttributeDefinitions: []types.AttributeDefinition{
@@ -181,31 +181,29 @@ func setupKeyValueDatabase(ctx context.Context, svc *dynamodb.Client, params *kv
 	if err != nil {
 		var errResInUse *types.ResourceInUseException
 		if errors.As(err, &errResInUse) {
+			log.Info("KV table exists")
 			return nil
 		}
+		log.WithError(err).Warn("Failed to create or detect KV table")
 		return err
 	}
-	bo := backoff.NewExponentialBackOff()
+
 	const (
-		maxInterval = 5
-		maxElapsed  = 30
+		// Wait for ~30 seconds, at a nearly constant rate
+		minDelay = 750 * time.Millisecond
+		maxDelay = 3 * time.Second
+		maxWait  = 30 * time.Second
 	)
 
-	bo.MaxInterval = maxInterval * time.Second
-	bo.MaxElapsedTime = maxElapsed * time.Second
-	err = backoff.Retry(func() error {
-		desc, err := svc.DescribeTable(ctx, &dynamodb.DescribeTableInput{
-			TableName: table.TableDescription.TableName,
-		})
-		if err != nil {
-			// we shouldn't retry on anything but kv.ErrTableNotActive
-			return backoff.Permanent(err)
-		}
-		if desc.Table.TableStatus != types.TableStatusActive {
-			return fmt.Errorf("table status(%s): %w", desc.Table.TableStatus, kv.ErrTableNotActive)
-		}
-		return nil
-	}, bo)
+	waiter := dynamodb.NewTableExistsWaiter(svc, func(o *dynamodb.TableExistsWaiterOptions) {
+		// override minimum delay to 10 seconds
+		o.MinDelay = minDelay
+		o.MaxDelay = maxDelay
+	})
+
+	input := &dynamodb.DescribeTableInput{TableName: aws.String(params.TableName)}
+	err = waiter.Wait(ctx, input, maxWait)
+
 	return err
 }
 
