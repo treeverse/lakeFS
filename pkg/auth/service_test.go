@@ -214,7 +214,7 @@ func TestAuthService_DeleteUserWithRelations(t *testing.T) {
 	ctx := context.Background()
 	authService, _ := authtestutil.SetupService(t, ctx, someSecret)
 
-	// create initial data set and verify users groups and policies are create and related as expected
+	// create initial data set and verify users groups and policies are created and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
 	users, _, err := authService.ListUsers(ctx, &model.PaginationParams{Amount: 100})
 	require.NoError(t, err)
@@ -366,7 +366,7 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 	ctx := context.Background()
 	authService, _ := authtestutil.SetupService(t, ctx, someSecret)
 
-	// create initial data set and verify users groups and policies are create and related as expected
+	// create initial data set and verify users groups and policies are created and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
 	policies, _, err := authService.ListPolicies(ctx, &model.PaginationParams{Amount: 100})
 	require.NoError(t, err)
@@ -397,7 +397,7 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 		require.Equal(t, len(policyNames), len(policies))
 	}
 
-	// delete a user policy (beginning of the names list)
+	// delete a user policy (beginning of the name list)
 	err = authService.DeletePolicy(ctx, policyNames[0])
 	require.NoError(t, err)
 
@@ -486,8 +486,8 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 
 // createInitialDataSet -
 // Creates K users with 2 credentials each, L groups and M policies
-// Adds all users to all groups
-// Attaches M/2 of the policies to all K users and the other M-M/2 policies to all L groups
+// Add all users to all groups
+// Attach M/2 of the policies to all K users and the other M-M/2 policies to all L groups
 func createInitialDataSet(t *testing.T, ctx context.Context, svc auth.Service, userNames, groupNames, policyNames []string) {
 	for _, userName := range userNames {
 		if _, err := svc.CreateUser(ctx, &model.User{Username: userName}); err != nil {
@@ -592,7 +592,7 @@ func TestACL(t *testing.T) {
 		// Name is an identifier for this test case.
 		Name string
 		// ACL is the ACL to test.  ACL.Permission will be tested
-		// with each of hierarchy.
+		// with each of the hierarchies.
 		ACL model.ACL
 		// PermissionFrom holds permissions that must hold starting
 		// at the ACLPermission key in the hierarchy.
@@ -823,14 +823,12 @@ func TestAuthApiGetUserCache(t *testing.T) {
 	ctx := context.Background()
 	mockClient, s := NewTestApiService(t, true)
 	const userID = "123"
-	const uid = int64(123)
 
 	const username = "foo"
 	userMail := "foo@test.com"
 	externalId := "1234"
 	userResult := auth.User{
 		Username:   username,
-		Id:         uid,
 		Email:      &userMail,
 		ExternalId: &externalId,
 	}
@@ -917,7 +915,6 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 		friendlyName       string
 		source             string
 		responseStatusCode int
-		responseID         int64
 		expectedResponseID string
 		expectedErr        error
 	}{
@@ -927,9 +924,8 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 			email:              "foo@gmail.com",
 			friendlyName:       "friendly foo",
 			source:             "internal",
-			responseID:         1,
 			responseStatusCode: http.StatusCreated,
-			expectedResponseID: "1",
+			expectedResponseID: "foo",
 			expectedErr:        nil,
 		},
 		{
@@ -969,7 +965,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 					StatusCode: tt.responseStatusCode,
 				},
 				JSON201: &auth.User{
-					Id: tt.responseID,
+					Username: tt.userName,
 				},
 			}
 			mockClient.EXPECT().CreateUserWithResponse(gomock.Any(), auth.CreateUserJSONRequestBody{

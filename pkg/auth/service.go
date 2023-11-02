@@ -1189,7 +1189,7 @@ func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (stri
 		return InvalidUserID, err
 	}
 
-	return fmt.Sprint(resp.JSON201.Id), nil
+	return resp.JSON201.Username, nil
 }
 
 func (a *APIAuthService) DeleteUser(ctx context.Context, username string) error {
