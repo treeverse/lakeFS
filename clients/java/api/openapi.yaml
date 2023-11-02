@@ -7450,15 +7450,15 @@ components:
           - object
           type: string
         path:
-          description: A source location to a prefix or to a single object. Must match
-            the lakeFS installation blockstore type.
+          description: A source location to a 'common_prefix' or to a single object.
+            Must match the lakeFS installation blockstore type.
           example: s3://my-bucket/production/collections/
           type: string
         destination:
           description: |
             Destination for the imported objects on the branch. Must be a relative path to the branch.
-            If the type is 'object', the destination is the exact object name under the branch.
-            If the type is 'common_prefix', the destination is the prefix under the branch.
+            If the type is an 'object', the destination is the exact object name under the branch.
+            If the type is a 'common_prefix', the destination is the prefix under the branch.
           example: collections/
           type: string
       required:
