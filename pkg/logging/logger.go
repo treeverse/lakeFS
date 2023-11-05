@@ -121,9 +121,11 @@ func CloseWriters() error {
 	return nil
 }
 
-func SetOutputs(outputs []string, fileMaxSizeMB, filesKeep int) {
+func SetOutputs(outputs []string, fileMaxSizeMB, filesKeep int) error {
 	var writers []io.Writer
-	CloseWriters()
+	if err := CloseWriters(); err != nil {
+		return fmt.Errorf("close previous log writers: %w", err)
+	}
 	for _, output := range outputs {
 		var w io.Writer
 		switch output {
@@ -149,6 +151,7 @@ func SetOutputs(outputs []string, fileMaxSizeMB, filesKeep int) {
 	} else if len(writers) > 1 {
 		defaultLogger.SetOutput(io.MultiWriter(writers...))
 	}
+	return nil
 }
 
 type OutputFormatOptions struct {

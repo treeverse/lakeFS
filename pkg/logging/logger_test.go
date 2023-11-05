@@ -13,21 +13,30 @@ import (
 func TestSetOutputs(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		currentOut := defaultLogger.Out
-		SetOutputs(nil, 0, 0)
+		err := SetOutputs(nil, 0, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if defaultLogger.Out != currentOut {
 			t.Error("Logger output should not change by default")
 		}
 	})
 
 	t.Run("stdout", func(t *testing.T) {
-		SetOutputs([]string{"-"}, 0, 0)
+		err := SetOutputs([]string{"-"}, 0, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if defaultLogger.Out != os.Stdout {
 			t.Error("Logger output should be stdout")
 		}
 	})
 
 	t.Run("stderr", func(t *testing.T) {
-		SetOutputs([]string{"="}, 0, 0)
+		err := SetOutputs([]string{"="}, 0, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if defaultLogger.Out != os.Stderr {
 			t.Error("Logger output should be stderr")
 		}
@@ -37,9 +46,12 @@ func TestSetOutputs(t *testing.T) {
 		logDir := t.TempDir()
 		log1 := filepath.Join(logDir, "file1.log")
 		log2 := filepath.Join(logDir, "file2.log")
-		SetOutputs([]string{log1, log2}, 0, 0)
+		err := SetOutputs([]string{log1, log2}, 0, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
 		const content = "hello log"
-		_, err := io.WriteString(defaultLogger.Out, content)
+		_, err = io.WriteString(defaultLogger.Out, content)
 		if err != nil {
 			t.Fatal("Failed to write to log output with two outputs", err)
 		}
@@ -93,11 +105,14 @@ func TestDurationFormatting(t *testing.T) {
 		t.Run(tc.OutputFormat, func(t *testing.T) {
 			logDir := t.TempDir()
 			log := filepath.Join(logDir, "file.log")
-			SetOutputs([]string{log}, 0, 0)
+			err := SetOutputs([]string{log}, 0, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
 			SetOutputFormat(tc.OutputFormat)
 
 			ContextUnavailable().WithField("xyzzy", duration).Info("log")
-			err := CloseWriters()
+			err = CloseWriters()
 			if err != nil {
 				t.Fatalf("Close writers: %s", err)
 			}
