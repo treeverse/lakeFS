@@ -6,6 +6,7 @@ on:
       - "docs/**"
     branches:
       - master
+  workflow_dispatch:
 
 jobs:
   docs-latest:
