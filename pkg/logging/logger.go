@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -20,6 +22,13 @@ const (
 
 	ProjectDirectoryName = "lakefs"
 	ModuleName           = "github.com/treeverse/lakefs"
+
+	// durationNsecs is the suffix for the field holding a Duration as
+	// an int.
+	durationNsecs = "_nsecs"
+	// durationStr is the suffix for the field holding a Duration as a
+	// string.
+	durationStr = "_str"
 )
 
 // log_fields keys
@@ -56,7 +65,11 @@ const (
 
 var (
 	formatterInitOnce sync.Once
-	defaultLogger     = logrus.New()
+	// durationFormattedAsInt is set if logrus will format time.Duration
+	// as a string, or clear if as an int.
+	durationFormattedAsInt bool
+	defaultLogger          = logrus.New()
+	openLoggers            []io.Closer
 )
 
 func Level() string {
@@ -98,8 +111,19 @@ func SetLevel(level string) {
 	}
 }
 
+func CloseWriters() error {
+	for _, c := range openLoggers {
+		if err := c.Close(); err != nil {
+			return fmt.Errorf("close log writer: %w", err)
+		}
+	}
+	openLoggers = nil
+	return nil
+}
+
 func SetOutputs(outputs []string, fileMaxSizeMB, filesKeep int) {
 	var writers []io.Writer
+	CloseWriters()
 	for _, output := range outputs {
 		var w io.Writer
 		switch output {
@@ -110,11 +134,13 @@ func SetOutputs(outputs []string, fileMaxSizeMB, filesKeep int) {
 		case "=":
 			w = os.Stderr
 		default:
-			w = &lumberjack.Logger{
+			l := &lumberjack.Logger{
 				Filename:   output,
 				MaxSize:    fileMaxSizeMB,
 				MaxBackups: filesKeep,
 			}
+			w = l
+			openLoggers = append(openLoggers, l)
 		}
 		writers = append(writers, w)
 	}
@@ -158,11 +184,13 @@ func SetOutputFormat(format string, opts ...OutputFormatOptionFunc) {
 			CallerPrettyfier:       options.CallerPrettyfier,
 			DisableColors:          disableColors,
 		}
+		durationFormattedAsInt = false
 	case "json":
 		formatter = &logrus.JSONFormatter{
 			CallerPrettyfier: options.CallerPrettyfier,
 			PrettyPrint:      false,
 		}
+		durationFormattedAsInt = true
 	default:
 		return // no known formatter found
 	}
@@ -212,7 +240,21 @@ func (l *logrusEntryWrapper) WithContext(ctx context.Context) Logger {
 	)
 }
 
+var durationType = reflect.TypeOf(time.Duration(0))
+
 func (l *logrusEntryWrapper) WithField(key string, value interface{}) Logger {
+	if reflect.TypeOf(value).AssignableTo(durationType) {
+		// Log value field twice, once as an int and again as a
+		// string.
+		duration := value.(time.Duration)
+		if durationFormattedAsInt {
+			return &logrusEntryWrapper{l.e.WithField(key+durationNsecs, duration).
+				WithField(key+durationStr, duration.String())}
+		} else {
+			return &logrusEntryWrapper{l.e.WithField(key+durationNsecs, duration.Nanoseconds()).
+				WithField(key+durationStr, duration)}
+		}
+	}
 	return &logrusEntryWrapper{l.e.WithField(key, value)}
 }
 

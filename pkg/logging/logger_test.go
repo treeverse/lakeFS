@@ -1,10 +1,13 @@
 package logging
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestSetOutputs(t *testing.T) {
@@ -57,4 +60,62 @@ func TestSetOutputs(t *testing.T) {
 			t.Fatalf("Log1 content '%s', is not as expected: '%s'", string(log2Content), content)
 		}
 	})
+}
+
+func TestDurationFormatting(t *testing.T) {
+	type TestCase struct {
+		// OutputFormat is passed to SetOutputFormat.
+		OutputFormat string
+		// FormatDurations returns a list of substrings that will
+		// appear in the output file when logging duration.
+		FormatDurations func(label string, duration time.Duration) []string
+	}
+	cases := []TestCase{{
+		OutputFormat: "text",
+		FormatDurations: func(label string, duration time.Duration) []string {
+			return []string{fmt.Sprint(label, "_str", "=", duration.String()),
+				fmt.Sprint(label, "_nsecs", "=", int64(duration)),
+			}
+		},
+	}, {
+		OutputFormat: "json",
+		FormatDurations: func(label string, duration time.Duration) []string {
+			// Useful only inside this test.  Does not protect
+			// special chars in label.
+			return []string{fmt.Sprintf("\"%s_str\":\"%s\"", label, duration.String()),
+				fmt.Sprintf("\"%s_nsecs\":%d", label, duration),
+			}
+		},
+	}}
+
+	for _, tc := range cases {
+		duration := 17*time.Hour + 19*time.Minute
+		t.Run(tc.OutputFormat, func(t *testing.T) {
+			logDir := t.TempDir()
+			log := filepath.Join(logDir, "file.log")
+			SetOutputs([]string{log}, 0, 0)
+			SetOutputFormat(tc.OutputFormat)
+
+			ContextUnavailable().WithField("xyzzy", duration).Info("log")
+			err := CloseWriters()
+			if err != nil {
+				t.Fatalf("Close writers: %s", err)
+			}
+
+			r, err := os.Open(log)
+			if err != nil {
+				t.Fatalf("Open %s to read contents: %s", log, err)
+			}
+			contents, err := io.ReadAll(r)
+			if err != nil {
+				t.Fatalf("Read %s contents: %s", log, err)
+			}
+
+			for _, expected := range tc.FormatDurations("xyzzy", duration) {
+				if !bytes.Contains(contents, []byte(expected)) {
+					t.Errorf("Log contents do not contain expected substring %s:\n%s", expected, string(contents))
+				}
+			}
+		})
+	}
 }
