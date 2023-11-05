@@ -293,7 +293,7 @@ var rootCmd = &cobra.Command{
 			DieFmt("error reading configuration file: %v", cfgErr)
 		}
 
-		err := viper.UnmarshalExact(&cfg, viper.DecodeHook(
+		err = viper.UnmarshalExact(&cfg, viper.DecodeHook(
 			mapstructure.ComposeDecodeHookFunc(
 				lakefsconfig.DecodeOnlyString,
 				mapstructure.StringToTimeDurationHookFunc())))
