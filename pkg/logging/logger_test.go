@@ -81,6 +81,9 @@ func TestDurationFormatting(t *testing.T) {
 		// FormatDurations returns a list of substrings that will
 		// appear in the output file when logging duration.
 		FormatDurations func(label string, duration time.Duration) []string
+		// FormatInt returns a substring that will appear in the
+		// output file when logging number.
+		FormatInt func(label string, value int) string
 	}
 	cases := []TestCase{{
 		OutputFormat: "text",
@@ -88,6 +91,9 @@ func TestDurationFormatting(t *testing.T) {
 			return []string{fmt.Sprint(label, "_str", "=", duration.String()),
 				fmt.Sprint(label, "_nsecs", "=", int64(duration)),
 			}
+		},
+		FormatInt: func(label string, value int) string {
+			return fmt.Sprint(label, "=", value)
 		},
 	}, {
 		OutputFormat: "json",
@@ -97,6 +103,11 @@ func TestDurationFormatting(t *testing.T) {
 			return []string{fmt.Sprintf("\"%s_str\":\"%s\"", label, duration.String()),
 				fmt.Sprintf("\"%s_nsecs\":%d", label, duration),
 			}
+		},
+		FormatInt: func(label string, value int) string {
+			// Useful only inside this test.  Does not protect
+			// special characters in label.
+			return fmt.Sprintf("\"%s\":%d", label, value)
 		},
 	}}
 
@@ -111,7 +122,14 @@ func TestDurationFormatting(t *testing.T) {
 			}
 			SetOutputFormat(tc.OutputFormat)
 
-			ContextUnavailable().WithField("xyzzy", duration).Info("log")
+			// Tests both WithField and WithFields
+			ContextUnavailable().
+				WithField("xyzzy", duration).
+				WithFields(Fields{"bar": duration,
+					"scalar": 17,
+					"baz":    duration,
+				}).
+				Info("log")
 			err = CloseWriters()
 			if err != nil {
 				t.Fatalf("Close writers: %s", err)
@@ -126,10 +144,16 @@ func TestDurationFormatting(t *testing.T) {
 				t.Fatalf("Read %s contents: %s", log, err)
 			}
 
-			for _, expected := range tc.FormatDurations("xyzzy", duration) {
-				if !bytes.Contains(contents, []byte(expected)) {
-					t.Errorf("Log contents do not contain expected substring %s:\n%s", expected, string(contents))
+			for _, base := range []string{"xyzzy", "bar", "baz"} {
+				for _, expected := range tc.FormatDurations(base, duration) {
+					if !bytes.Contains(contents, []byte(expected)) {
+						t.Errorf("Log contents do not contain expected substring %s:\n%s", expected, string(contents))
+					}
 				}
+			}
+			expected := tc.FormatInt("scalar", 17)
+			if !bytes.Contains(contents, []byte(expected)) {
+				t.Errorf("Log contents do not contain expected substring %s:\n%s", expected, string(contents))
 			}
 		})
 	}

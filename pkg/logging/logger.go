@@ -65,11 +65,8 @@ const (
 
 var (
 	formatterInitOnce sync.Once
-	// durationFormattedAsInt is set if logrus will format time.Duration
-	// as a string, or clear if as an int.
-	durationFormattedAsInt bool
-	defaultLogger          = logrus.New()
-	openLoggers            []io.Closer
+	defaultLogger     = logrus.New()
+	openLoggers       []io.Closer
 )
 
 func Level() string {
@@ -187,13 +184,11 @@ func SetOutputFormat(format string, opts ...OutputFormatOptionFunc) {
 			CallerPrettyfier:       options.CallerPrettyfier,
 			DisableColors:          disableColors,
 		}
-		durationFormattedAsInt = false
 	case "json":
 		formatter = &logrus.JSONFormatter{
 			CallerPrettyfier: options.CallerPrettyfier,
 			PrettyPrint:      false,
 		}
-		durationFormattedAsInt = true
 	default:
 		return // no known formatter found
 	}
@@ -245,24 +240,28 @@ func (l *logrusEntryWrapper) WithContext(ctx context.Context) Logger {
 
 var durationType = reflect.TypeOf(time.Duration(0))
 
-func (l *logrusEntryWrapper) WithField(key string, value interface{}) Logger {
-	if reflect.TypeOf(value).AssignableTo(durationType) {
-		// Log value field twice, once as an int and again as a
-		// string.
-		duration := value.(time.Duration)
-		if durationFormattedAsInt {
-			return &logrusEntryWrapper{l.e.WithField(key+durationNsecs, duration).
-				WithField(key+durationStr, duration.String())}
-		} else {
-			return &logrusEntryWrapper{l.e.WithField(key+durationNsecs, duration.Nanoseconds()).
-				WithField(key+durationStr, duration)}
+// splitDurationFields modifies fields to split every field of type
+// time.Duration into 2 fields, one "_nsecs" and one "_str".
+func (l *logrusEntryWrapper) WithFields(fields Fields) Logger {
+	var durationKeys []string
+	for key, value := range fields {
+		if reflect.TypeOf(value).AssignableTo(durationType) {
+			durationKeys = append(durationKeys, key)
 		}
 	}
-	return &logrusEntryWrapper{l.e.WithField(key, value)}
+
+	for _, key := range durationKeys {
+		duration := fields[key].(time.Duration)
+		delete(fields, key)
+		fields[key+durationNsecs] = duration.Nanoseconds()
+		fields[key+durationStr] = duration.String()
+	}
+
+	return &logrusEntryWrapper{l.e.WithFields(logrus.Fields(fields))}
 }
 
-func (l *logrusEntryWrapper) WithFields(fields Fields) Logger {
-	return &logrusEntryWrapper{l.e.WithFields(logrus.Fields(fields))}
+func (l *logrusEntryWrapper) WithField(key string, value interface{}) Logger {
+	return l.WithFields(Fields{key: value})
 }
 
 func (l *logrusEntryWrapper) WithError(err error) Logger {
