@@ -4,7 +4,6 @@ description: Import existing data into a lakeFS repository
 parent: How-To
 redirect_from: 
   - /setup/import.html
-next:  ["Read our blog about real-world use cases", "https://lakefs.io/blog/import-data-lakefs/"]
 ---
 
 _This section describes how to import existing data into a lakeFS repository, without copying it.
