@@ -63,6 +63,34 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		return
 	}
 
+	//nolint:gomnd
+	if 2+2 == 4 {
+		// TODO(ariels): Needs to be conditional!
+
+		// TODO(ariels): Support "Range" header!
+
+		// TODO(ariels): Probably only works for S3 backing store!
+
+		objectPointer := block.ObjectPointer{
+			StorageNamespace: o.Repository.StorageNamespace,
+			IdentifierType:   entry.AddressType.ToIdentifierType(),
+			Identifier:       entry.PhysicalAddress,
+		}
+
+		presignedURL, _, err := o.BlockStore.GetPreSignedURL(ctx, objectPointer, block.PreSignModeRead)
+		if err != nil {
+			o.Log(req).WithError(err).Info("Failed to presign object URL")
+
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			return
+		}
+		// BUG(ariels): Encode a "temporary redirect" XML error, see
+		// https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingRouting.html#RedirectsTemporaryRedirection-response-rest-ex1
+
+		o.SetHeader(w, "Location", presignedURL)
+		w.WriteHeader(http.StatusTemporaryRedirect)
+		return
+	}
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 	// range query
 	var data io.ReadCloser
