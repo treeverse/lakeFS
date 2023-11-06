@@ -10,6 +10,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -73,7 +74,7 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 			resp, err := client.RestoreRefsStatusWithResponse(ctx, repoURI.Repository, taskID)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			if resp.JSON200 == nil {
-				err := fmt.Errorf("restore status %w: %s", ErrRequestFailed, resp.Status())
+				err := fmt.Errorf("restore status %w: %s", helpers.ErrRequestFailed, resp.Status())
 				return nil, backoff.Permanent(err)
 			}
 			if resp.JSON200.Completed {
