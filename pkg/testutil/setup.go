@@ -134,13 +134,51 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	return logger, client, svc, endpointURL
 }
 
+var awsSigningHeadersToDelete = []string{
+	"Authorization",
+	"X-Amz-Algorithm",
+	"X-Amz-Content-Sha256",
+	"X-Amz-Signature",
+}
+
 func SetupTestS3Client(endpoint, key, secret string) (*s3.Client, error) {
 	if !strings.HasPrefix(endpoint, "http") {
 		endpoint = "http://" + endpoint
 	}
+	httpClient := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			// TODO(ariels): Only strip AWS authorization
+			//     headers if on first redirect the host has
+			//     changed, and appropriately configured.
+			//
+			//     This means that lakeFS itself redirected to a
+			//     presigned URL.
+			if len(via) != 1 {
+				return nil
+			}
+			last := via[0]
+			reqHost := req.Host
+			if reqHost == "" && req.URL != nil {
+				reqHost = req.URL.Host
+			}
+			lastHost := last.Host
+			if lastHost == "" && last.URL != nil {
+				lastHost = last.URL.Host
+			}
+			if reqHost == lastHost {
+				return nil
+			}
+			// Strip some signature headers!
+			for _, key := range awsSigningHeadersToDelete {
+				req.Header.Del(key)
+			}
+			return nil
+		},
+	}
 	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
 		awsconfig.WithRegion("us-east-1"),
 		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(key, secret, "")),
+		awsconfig.WithHTTPClient(httpClient),
 	)
 	if err != nil {
 		return nil, err
