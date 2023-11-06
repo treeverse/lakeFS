@@ -245,7 +245,7 @@ var durationType = reflect.TypeOf(time.Duration(0))
 func (l *logrusEntryWrapper) WithFields(fields Fields) Logger {
 	var durationKeys []string
 	for key, value := range fields {
-		if reflect.TypeOf(value).AssignableTo(durationType) {
+		if value != nil && reflect.TypeOf(value).AssignableTo(durationType) {
 			durationKeys = append(durationKeys, key)
 		}
 	}
