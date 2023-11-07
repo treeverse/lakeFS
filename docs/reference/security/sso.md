@@ -103,8 +103,6 @@ Important: new app registrations are hidden to users by default. When you are re
 ### Add a secret
 Sometimes called an application password, a client secret is a string value your app can use in place of a certificate to identity itself.
 
-Client secrets are considered less secure than certificate credentials. Application developers sometimes use client secrets during local app development because of their ease of use. However, you should use certificate credentials for any of your applications that are running in production.
-
 Steps:
 1. In the Azure portal, in App registrations, select your application.
 2. Select Certificates & secrets > Client secrets > New client secret.
@@ -131,7 +129,11 @@ Steps:
 4. Under Configure platforms, select the web option.
 5. Select Configure to complete the platform configuration.
 
-Once you finish registering lakeFS Cloud with Azure AD, save the **Application (Client) ID**, **Application Secret Value** and send this to Treeverse's team to finish the integration.
+Once you finish registering lakeFS Cloud with Azure AD send the following items to the Treeverse's team:
+- **Client ID**
+- **Client Secret**
+- **Azure AD Domain**
+
   </div>
 </div>
 
