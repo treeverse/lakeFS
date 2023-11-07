@@ -39,7 +39,8 @@ class Client:
         self._http_client = httpx.Client(headers=headers, auth=auth)
 
     def __del__(self):
-        self._http_client.close()
+        if self._http_client is not None:
+            self._http_client.close()
 
     @property
     def config(self):

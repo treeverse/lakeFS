@@ -48,7 +48,7 @@ class ReadableObject:
             raise ObjectNotFoundException
         if self._pos >= stat.size_bytes:
             raise EOFError
-        read_bytes = read_bytes or stat.size_bytes
+        read_bytes = read_bytes if read_bytes is not None else stat.size_bytes
         new_pos = min(self._pos + read_bytes, stat.size_bytes)
         read_range = _range_str_tmpl.format(start=self._pos, end=new_pos - 1)
         contents = self._client.sdk_client.objects_api.get_object(self._repo,
@@ -103,7 +103,7 @@ class WriteableObject(ReadableObject):
         elif not binary_mode and isinstance(data, bytes):
             content = data.decode('utf-8')
         # TODO: handle streams
-        is_presign = pre_sign or self._pre_sign
+        is_presign = pre_sign if pre_sign is not None else self._pre_sign
         stats = self._client.upload(self._repo, self._ref, self._path, content, is_presign, content_type, metadata)
         # reset pos after create
         self._pos = 0

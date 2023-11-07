@@ -20,7 +20,7 @@ class ClientConfig:
     3. Try to read ~/.lakectl.yaml if exists
     4. TBD: try and use IAM role from current machine (using AWS IAM role will work only with enterprise/cloud)
 
-    This class also encapsulates the required lakectl configuration for authentication and used to unmarshall the 
+    This class also encapsulates the required lakectl configuration for authentication and used to unmarshall the
     lakectl yaml file.
     """
 
@@ -54,9 +54,9 @@ class ClientConfig:
         key_env = os.getenv(_LAKECTL_ACCESS_KEY_ID_ENV)
         secret_env = os.getenv(_LAKECTL_SECRET_ACCESS_KEY_ENV)
 
-        self._configuration.host = endpoint_env or self.server.endpoint_url
-        self._configuration.username = key_env or self.credentials.access_key_id
-        self._configuration.password = secret_env or self.credentials.secret_access_key
+        self._configuration.host = endpoint_env if endpoint_env is not None else self.server.endpoint_url
+        self._configuration.username = key_env if key_env is not None else self.credentials.access_key_id
+        self._configuration.password = secret_env if secret_env is not None else self.credentials.secret_access_key
         if len(self._configuration.username) > 0 and len(self._configuration.password) > 0:
             found = True
 

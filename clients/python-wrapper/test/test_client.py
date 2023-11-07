@@ -58,6 +58,8 @@ def lakectl_test_config_context(monkey, tmp_path):
 class TestClient:
     def test_client_no_config(self, monkeypatch):
         with lakectl_no_config_context(monkeypatch) as client:
+            client.DefaultClient = None
+            client = importlib.reload(client)
             assert client.DefaultClient is None
 
     def test_client_no_kwargs(self, monkeypatch, tmp_path):

@@ -2,19 +2,17 @@ import httpx
 from contextlib import contextmanager
 import lakefs_sdk.api
 
-from pylotl.client import Client
-from pylotl.object_io import ReadableObject, WriteableObject
 from test.test_client import lakectl_test_config_context
 
 
-class TestObjectKWargs:
+class ObjectTestKWargs:
     def __init__(self) -> None:
         self.repository = "test_repo"
         self.reference = "test_reference"
         self.path = "test_path"
 
 
-class TestStorageConfig(lakefs_sdk.StorageConfig):
+class StorageTestConfig(lakefs_sdk.StorageConfig):
 
     def __init__(self) -> None:
         super().__init__(blockstore_type="s3",
@@ -26,7 +24,7 @@ class TestStorageConfig(lakefs_sdk.StorageConfig):
                          import_validity_regex="")
 
 
-class TestObjectStats(lakefs_sdk.ObjectStats):
+class ObjectTestStats(lakefs_sdk.ObjectStats):
     def __init__(self) -> None:
         super().__init__(path="",
                          path_type="object",
@@ -35,41 +33,45 @@ class TestObjectStats(lakefs_sdk.ObjectStats):
                          mtime=0)
 
 
-class TestStagingLocation(lakefs_sdk.StagingLocation):
+class StagingTestLocation(lakefs_sdk.StagingLocation):
     def __init__(self) -> None:
         super().__init__(physical_address="physical_address")
 
 
 @contextmanager
-def client_context(monkey) -> Client:
+def client_context(monkey):
     with monkey.context():
+        from pylotl.client import Client
         clt = Client()
-        storage_config = TestStorageConfig()
+        storage_config = StorageTestConfig()
         monkey.setattr(clt, "_storage_conf", storage_config)
         yield clt
 
 
 @contextmanager
-def readable_object_context(monkey, tmp_path, **kwargs) -> ReadableObject:
+def readable_object_context(monkey, tmp_path, **kwargs):
     with lakectl_test_config_context(monkey, tmp_path):
         with client_context(monkey) as clt:
+            from pylotl.object_io import ReadableObject
             read_obj = ReadableObject(client=clt, **kwargs)
             yield read_obj
 
 
 @contextmanager
-def writeable_object_context(monkey, tmp_path, **kwargs) -> WriteableObject:
+def writeable_object_context(monkey, tmp_path, **kwargs):
     with lakectl_test_config_context(monkey, tmp_path):
         with client_context(monkey) as clt:
             monkey.setattr(lakefs_sdk.api.BranchesApi, "get_branch", lambda *args: None)
+            from pylotl.object_io import WriteableObject
             read_obj = WriteableObject(client=clt, **kwargs)
             yield read_obj
 
 
 class TestReadableObject:
     def test_seek(self, monkeypatch):
-        test_kwargs = TestObjectKWargs()
+        test_kwargs = ObjectTestKWargs()
         with client_context(monkeypatch) as clt:
+            from pylotl.object_io import ReadableObject
             obj = ReadableObject(client=clt, **test_kwargs.__dict__)
             assert obj.pos == 0
             obj.seek(30)
@@ -81,9 +83,9 @@ class TestReadableObject:
                 pass
 
     def test_read(self, monkeypatch, tmp_path):
-        test_kwargs = TestObjectKWargs()
+        test_kwargs = ObjectTestKWargs()
         with readable_object_context(monkeypatch, tmp_path, **test_kwargs.__dict__) as obj:
-            object_stats = TestObjectStats()
+            object_stats = ObjectTestStats()
             object_stats.path = test_kwargs.path
             object_stats.size_bytes = 3000
             monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "stat_object", lambda *args: object_stats)
@@ -134,11 +136,13 @@ class TestReadableObject:
                 pass
 
     def test_exists(self, monkeypatch):
-        test_kwargs = TestObjectKWargs()
+        test_kwargs = ObjectTestKWargs()
         with client_context(monkeypatch):
-            storage_config = TestStorageConfig()
+            from pylotl.client import Client
+            storage_config = StorageTestConfig()
             clt = Client()
             monkeypatch.setattr(clt, "_storage_conf", storage_config)
+            from pylotl.object_io import ReadableObject
             obj = ReadableObject(client=clt, **test_kwargs.__dict__)
             # Object exists
             monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "head_object", lambda *args: None)
@@ -160,9 +164,9 @@ class TestReadableObject:
 
 class TestWriteableObject:
     def test_create(self, monkeypatch, tmp_path):
-        test_kwargs = TestObjectKWargs()
+        test_kwargs = ObjectTestKWargs()
         with writeable_object_context(monkeypatch, tmp_path, **test_kwargs.__dict__) as obj:
-            staging_location = TestStagingLocation()
+            staging_location = StagingTestLocation()
             monkeypatch.setattr(lakefs_sdk.api.StagingApi, "get_physical_address", lambda *args: staging_location)
             req = httpx.Request(method="put", url=staging_location.physical_address)
             http_response = httpx.Response(httpx.codes.OK, request=req)
