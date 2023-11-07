@@ -37,6 +37,10 @@ jobs:
         working-directory: docs
         run: bundle exec jekyll build --config _config.yml -d _site/${{ steps.version.outputs.tag }} -b /${{ steps.version.outputs.tag }}
 
+      - name: Update robots.txt
+        working-directory: docs/_site
+        run: "sed -i 's/^Sitemap: /Sitemap: https:\/\/docs.lakefs.io' robots.txt"
+
       - name: Update published version
         env:
           API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
