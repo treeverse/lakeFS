@@ -386,7 +386,10 @@ func newConfig(cfgType string) (*Config, error) {
 
 	// setup logging package
 	logging.SetOutputFormat(c.Logging.Format)
-	logging.SetOutputs(c.Logging.Output, c.Logging.FileMaxSizeMB, c.Logging.FilesKeep)
+	err = logging.SetOutputs(c.Logging.Output, c.Logging.FileMaxSizeMB, c.Logging.FilesKeep)
+	if err != nil {
+		return nil, err
+	}
 	logging.SetLevel(c.Logging.Level)
 	return c, nil
 }
