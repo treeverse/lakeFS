@@ -20,7 +20,7 @@ class TestStorageConfig(lakefs_sdk.StorageConfig):
         super().__init__(blockstore_type="s3",
                          blockstore_namespace_example="",
                          blockstore_namespace_ValidityRegex="",
-                         pre_sign_support=False,
+                         pre_sign_support=True,
                          pre_sign_support_ui=False,
                          import_support=False,
                          import_validity_regex="")
@@ -104,7 +104,7 @@ class TestReadableObject:
                 assert ref == test_kwargs.reference
                 assert path == test_kwargs.path
                 assert range == f"bytes={start_pos}-{end_pos}"
-                assert not presign
+                assert presign
                 return b"test"
 
             monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "get_object", monkey_get_object)
