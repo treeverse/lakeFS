@@ -267,7 +267,10 @@ var rootCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		logging.SetLevel(logLevel)
 		logging.SetOutputFormat(logFormat)
-		logging.SetOutputs(logOutputs, 0, 0)
+		err := logging.SetOutputs(logOutputs, 0, 0)
+		if err != nil {
+			DieFmt("Failed to setup logging: %s", err)
+		}
 		if noColorRequested {
 			DisableColors()
 		}
@@ -290,7 +293,7 @@ var rootCmd = &cobra.Command{
 			DieFmt("error reading configuration file: %v", cfgErr)
 		}
 
-		err := viper.UnmarshalExact(&cfg, viper.DecodeHook(
+		err = viper.UnmarshalExact(&cfg, viper.DecodeHook(
 			mapstructure.ComposeDecodeHookFunc(
 				lakefsconfig.DecodeOnlyString,
 				mapstructure.StringToTimeDurationHookFunc())))
