@@ -9,28 +9,19 @@ VERSION = "0.1.0-alpha"
 # prerequisite: setuptools
 # http://pypi.python.org/pypi/setuptools
 
-PYTHON_REQUIRES = ">=3.7"
+PYTHON_REQUIRES = ">=3.10"
 REQUIRES = [
-    "urllib3 >= 1.25.3, < 2.1.0",
     "python-dateutil",
     "pydantic >= 1.10.5, < 2",
-    "aenum"
 ]
 
-# TODO: autogenerate docs
-# with open('README.md') as f:
-#     import re
-#
-#     # replace relative links with links to the docs:
-#     doc_version = '.'.join(f'v{VERSION}'.split('.')[:2])
-#     long_description = re.sub(r'(\[[*a-zA-Z_]*]\()docs/([A-Za-z0-9]*)\.md',
-#                               rf'\1https://pydocs-sdk.lakefs.io/{doc_version}/docs/\2.html',
-#                               f.read())
+# TODO: autogenerate docs and grab long description from docs
+long_description = "Some long description"
 
 setup(
     name=NAME,
     version=VERSION,
-    description="lakeFS API",
+    description="lakeFS Python SDK Wrapper",
     author="Treeverse",
     author_email="services@treeverse.io",
     url="https://github.com/treeverse/lakeFS/tree/master/clients/python-wrapper",
@@ -42,6 +33,6 @@ setup(
     packages=find_packages(exclude=["test", "tests"]),
     include_package_data=True,
     license="Apache 2.0",
-    # long_description=long_description,
+    long_description=long_description,
     long_description_content_type='text/markdown'
 )

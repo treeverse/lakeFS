@@ -4,7 +4,7 @@ from lakefs_sdk.exceptions import NotFoundException
 from pylotl.client import Client
 from pylotl.exceptions import ObjectExistsException, UnsupportedOperationException, ObjectNotFoundException
 
-_range_str_tmpl = "bytes={start}-{end}"
+_RANGE_STR_TMPL = "bytes={start}-{end}"
 
 # Type to support both strings and bytes in addition to streams (reference: httpx._types.RequestContent)
 UploadContentType = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
@@ -50,7 +50,7 @@ class ReadableObject:
             raise EOFError
         read_bytes = read_bytes if read_bytes is not None else stat.size_bytes
         new_pos = min(self._pos + read_bytes, stat.size_bytes)
-        read_range = _range_str_tmpl.format(start=self._pos, end=new_pos - 1)
+        read_range = _RANGE_STR_TMPL.format(start=self._pos, end=new_pos - 1)
         contents = self._client.sdk_client.objects_api.get_object(self._repo,
                                                                   self._ref,
                                                                   self._path,
