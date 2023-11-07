@@ -89,7 +89,7 @@ func TestDurationFormatting(t *testing.T) {
 		OutputFormat: "text",
 		FormatDurations: func(label string, duration time.Duration) []string {
 			return []string{fmt.Sprint(label, "_str", "=", duration.String()),
-				fmt.Sprint(label, "_nsecs", "=", int64(duration)),
+				fmt.Sprint(label, "=", int64(duration)),
 			}
 		},
 		FormatInt: func(label string, value int) string {
@@ -101,7 +101,7 @@ func TestDurationFormatting(t *testing.T) {
 			// Useful only inside this test.  Does not protect
 			// special chars in label.
 			return []string{fmt.Sprintf("\"%s_str\":\"%s\"", label, duration.String()),
-				fmt.Sprintf("\"%s_nsecs\":%d", label, duration),
+				fmt.Sprintf("\"%s\":%d", label, duration),
 			}
 		},
 		FormatInt: func(label string, value int) string {

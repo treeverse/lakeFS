@@ -23,9 +23,6 @@ const (
 	ProjectDirectoryName = "lakefs"
 	ModuleName           = "github.com/treeverse/lakefs"
 
-	// durationNsecs is the suffix for the field holding a Duration as
-	// an int.
-	durationNsecs = "_nsecs"
 	// durationStr is the suffix for the field holding a Duration as a
 	// string.
 	durationStr = "_str"
@@ -252,8 +249,7 @@ func (l *logrusEntryWrapper) WithFields(fields Fields) Logger {
 
 	for _, key := range durationKeys {
 		duration := fields[key].(time.Duration)
-		delete(fields, key)
-		fields[key+durationNsecs] = duration.Nanoseconds()
+		fields[key] = duration.Nanoseconds()
 		fields[key+durationStr] = duration.String()
 	}
 
