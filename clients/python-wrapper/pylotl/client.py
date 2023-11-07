@@ -17,9 +17,9 @@ class Client:
     Takes care of instantiating it from the environment
     """
 
-    _client: LakeFSClient
-    _http_client: httpx.Client
-    _conf: ClientConfig
+    _client: LakeFSClient = None
+    _http_client: httpx.Client = None
+    _conf: ClientConfig = None
     _storage_conf: lakefs_sdk.StorageConfig = None
 
     def __init__(self, **kwargs):
