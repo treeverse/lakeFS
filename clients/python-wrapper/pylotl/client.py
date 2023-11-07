@@ -6,7 +6,8 @@ import httpx
 
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
-from pylotl.config import Config
+
+from pylotl.config import ClientConfig
 from pylotl.exceptions import NoAuthenticationFound, UnsupportedOperationException
 
 
@@ -18,11 +19,11 @@ class Client:
 
     _client: LakeFSClient
     _http_client: httpx.Client
-    _conf: Config
+    _conf: ClientConfig
     _storage_conf: lakefs_sdk.StorageConfig = None
 
     def __init__(self, **kwargs):
-        self._conf = Config(**kwargs)
+        self._conf = ClientConfig(**kwargs)
         self._client = LakeFSClient(self._conf.get_config())
 
         # Set up http client
