@@ -5,19 +5,19 @@ from contextlib import contextmanager
 
 from lakefs import config as client_config
 
-test_server = "https://test_server/api/v1"
-test_access_key_id = "test_access_key_id"
-test_secret_access_key = "test_secret_access_key"
-test_config = f'''
+TEST_SERVER = "https://test_server/api/v1"
+TEST_ACCESS_KEY_ID = "test_access_key_id"
+TEST_SECRET_ACCESS_KEY = "test_secret_access_key"
+TEST_CONFIG = f'''
 server:
-  endpoint_url: {test_server}
+  endpoint_url: {TEST_SERVER}
 
 credentials:
-    access_key_id: {test_access_key_id}
-    secret_access_key: {test_secret_access_key}
+    access_key_id: {TEST_ACCESS_KEY_ID}
+    secret_access_key: {TEST_SECRET_ACCESS_KEY}
 '''
 
-test_config_kwargs = {
+TEST_CONFIG_KWARGS = {
     "username": "my_username",
     "password": "my_password",
     "host": "http://my_host/api/v1",
@@ -45,7 +45,7 @@ def lakectl_no_config_context(monkey):
 @contextmanager
 def lakectl_test_config_context(monkey, tmp_path):
     cfg_file = tmp_path / "test.yaml"
-    cfg_file.write_bytes(test_config.encode())
+    cfg_file.write_bytes(TEST_CONFIG.encode())
     with monkey.context():
         monkey.setattr(client_config, "_LAKECTL_YAML_PATH", cfg_file)
         from lakefs import client  # Must be imported after the monkey patching
@@ -67,9 +67,9 @@ class TestClient:
         with lakectl_test_config_context(monkeypatch, tmp_path) as client:
             assert client.DefaultClient is not None
             config = client.DefaultClient.config
-            assert config.host == test_server
-            assert config.username == test_access_key_id
-            assert config.password == test_secret_access_key
+            assert config.host == TEST_SERVER
+            assert config.username == TEST_ACCESS_KEY_ID
+            assert config.password == TEST_SECRET_ACCESS_KEY
 
             with env_var_context():
                 # Create a new client with env vars
@@ -81,27 +81,27 @@ class TestClient:
                 assert clt is not client.DefaultClient
                 config = clt.config
                 assert config.host == env_endpoint
-                assert config.username == test_access_key_id
+                assert config.username == TEST_ACCESS_KEY_ID
                 assert config.password == env_secret
 
     def test_client_kwargs(self, monkeypatch, tmp_path):
         # Use lakectl yaml file and ensure it is not being read in case kwargs are provided
         with lakectl_test_config_context(monkeypatch, tmp_path) as client:
-            clt = client.Client(**test_config_kwargs)
+            clt = client.Client(**TEST_CONFIG_KWARGS)
             config = clt.config
-            assert config.host == test_config_kwargs["host"]
-            assert config.username == test_config_kwargs["username"]
-            assert config.password == test_config_kwargs["password"]
-            assert config.access_token == test_config_kwargs["access_token"]
+            assert config.host == TEST_CONFIG_KWARGS["host"]
+            assert config.username == TEST_CONFIG_KWARGS["username"]
+            assert config.password == TEST_CONFIG_KWARGS["password"]
+            assert config.access_token == TEST_CONFIG_KWARGS["access_token"]
 
     def test_client_init(self, monkeypatch, tmp_path):
         with lakectl_no_config_context(monkeypatch) as client:
             assert client.DefaultClient is None
             from lakefs.client import init
-            init(**test_config_kwargs)
+            init(**TEST_CONFIG_KWARGS)
             assert client.DefaultClient is not None
             config = client.DefaultClient.config
-            assert config.host == test_config_kwargs["host"]
-            assert config.username == test_config_kwargs["username"]
-            assert config.password == test_config_kwargs["password"]
-            assert config.access_token == test_config_kwargs["access_token"]
+            assert config.host == TEST_CONFIG_KWARGS["host"]
+            assert config.username == TEST_CONFIG_KWARGS["username"]
+            assert config.password == TEST_CONFIG_KWARGS["password"]
+            assert config.access_token == TEST_CONFIG_KWARGS["access_token"]

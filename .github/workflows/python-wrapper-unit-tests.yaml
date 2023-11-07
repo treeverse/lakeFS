@@ -1,0 +1,42 @@
+name: Unit Test Python SDK Wrapper      
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    paths:
+      - "clients/python-wrapper/**"
+jobs:
+  unit-tests:
+    name: Unit Test Python SDK Wrapper
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python 3.10.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10.12
+      
+      - name: Install dependencies
+        working-directory: ./clients/python-wrapper
+        run: pip install -r requirements.txt pylint pytest pytest-md pytest-emoji
+
+      - name: Run Pylint
+        working-directory: ./clients/python-wrapper
+        run: |
+          pylint utests --rc=utests/.pylintrc
+          pylint lakefs --rc=lakefs/.pylintrc
+          pylint tests --rc=utests/.pylintrc
+        continue-on-error: true  # TODO: remove once pylint errors are fixed in lakefs package
+      
+      - name: Run Unit Tests 
+        uses: pavelzw/pytest-action@v2
+        with:
+          verbose: true
+          emoji: true
+          job-summary: true
+          custom-arguments: './clients/python-wrapper/utests -q'
+          click-to-expand: true
+          report-title: 'Python Wrapper Unit Tests Report'

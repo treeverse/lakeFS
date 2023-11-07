@@ -926,7 +926,7 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-        
+
       - name: Check-out code
         uses: actions/checkout@v4
 
@@ -964,3 +964,57 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+
+  python-wrapper:
+    name: Test lakeFS against the python wrapper client
+    needs: deploy-image
+    runs-on: ubuntu-22.04
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+
+      - name: Test lakeFS with Python Wrapper
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-directory: test/python_wrapper
+        env:
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_TYPE: postgres
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-python-wrapper/${{ steps.unique.outputs.value }}
+          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+
+      - name: Setup lakeFS for tests
+        working-directory: test/python_wrapper
+        env:
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-python-wrapper/${{ steps.unique.outputs.value }}
+        run: ./setup-test.sh
+      - name: Set up Python 3.10.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10.12
+
+      - name: Install dependencies
+        working-directory: ./clients/python-wrapper
+        run: pip install -r requirements.txt pytest pytest-md pytest-emoji
+        
+      - name: Run Python Wrapper Tests
+        uses: pavelzw/pytest-action@v2
+        env:
+          LAKECTL_CREDENTIALS_ACCESS_KEY_ID: AKIAIOSFDNN7EXAMPLEQ
+          LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          LAKECTL_SERVER_ENDPOINT_URL: http://localhost:8000/api/v1
+        with:
+          verbose: true
+          emoji: true
+          job-summary: true
+          custom-arguments: './clients/python-wrapper/tests -rP'
+          click-to-expand: true
+          report-title: 'Python Wrapper System Tests Report'
