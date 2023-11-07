@@ -94,7 +94,6 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.4
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jackc/pgx/v5 v5.4.3
-	github.com/karrick/godirwalk v0.0.0-00010101000000-000000000000
 	github.com/puzpuzpuz/xsync v1.5.2
 	go.uber.org/ratelimit v0.3.0
 )
@@ -233,5 +232,3 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
-
-replace github.com/karrick/godirwalk => github.com/treeverse/godirwalk v1.17.3

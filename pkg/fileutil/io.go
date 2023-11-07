@@ -3,12 +3,11 @@ package fileutil
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/karrick/godirwalk"
 )
 
 const (
@@ -64,56 +63,70 @@ func FindInParents(dir, filename string) (string, error) {
 	return "", nil
 }
 
-func IsDirEmpty(dir string) (bool, error) {
-	s, err := godirwalk.NewScanner(dir)
+func IsDirEmpty(name string) (bool, error) {
+	f, err := os.Open(name)
 	if err != nil {
 		return false, err
 	}
-	defer func() {
-		_ = s.Close()
-	}()
-	// Attempt to read only the first directory entry. Note that Scan skips both "." and ".." entries.
-	hasAtLeastOneChild := s.Scan()
-	if err = s.Err(); err != nil {
-		return false, err
-	}
+	defer func() { _ = f.Close() }()
 
-	if hasAtLeastOneChild {
-		return false, nil
+	_, err = f.Readdir(1)
+	if err == io.EOF {
+		return true, nil
 	}
-	return true, nil
+	return false, err
 }
 
 // PruneEmptyDirectories iterates through the directory tree, removing empty directories, and directories that only
 // contain empty directories.
-func PruneEmptyDirectories(dir string) ([]string, error) {
+func PruneEmptyDirectories(dirPath string) ([]string, error) {
+	// Check if the directory exists
+	info, err := os.Stat(dirPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Skip if it's not a directory
+	if !info.IsDir() {
+		return nil, nil
+	}
+
+	// Read the directory contents
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Recurse through the directory entries
 	var pruned []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
 
-	err := godirwalk.Walk(dir, &godirwalk.Options{
-		Unsorted: true,
-		Callback: func(_ string, _ *godirwalk.Dirent) error {
-			// no-op while diving in; all the fun happens in PostChildrenCallback
-			return nil
-		},
-		PostChildrenCallback: func(d string, _ *godirwalk.Dirent) error {
-			empty, err := IsDirEmpty(d)
+		subDirPath := filepath.Join(dirPath, entry.Name())
+		prunedDirs, err := PruneEmptyDirectories(subDirPath)
+		if err != nil {
+			return nil, err
+		}
+		// Collect the pruned directories
+		pruned = append(pruned, prunedDirs...)
+
+		// Re-read the directory contents to check if it's empty now
+		empty, err := IsDirEmpty(subDirPath)
+		if err != nil {
+			return nil, err
+		}
+		if empty {
+			err = os.Remove(subDirPath)
 			if err != nil {
-				return err
+				return nil, err
 			}
+			pruned = append(pruned, subDirPath)
+		}
+	}
 
-			if d == dir || !empty { // do not remove top level directory or a directory with at least one child
-				return nil
-			}
-
-			err = os.Remove(d)
-			if err == nil {
-				pruned = append(pruned, d)
-			}
-			return err
-		},
-	})
-
-	return pruned, err
+	return pruned, nil
 }
 
 func RemoveFile(p string) error {
