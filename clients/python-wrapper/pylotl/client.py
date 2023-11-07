@@ -2,12 +2,12 @@ import base64
 import binascii
 import copy
 from typing import Optional
-
 import httpx
+
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 from pylotl.config import Config
-from pylotl.exceptions import NoAuthenticationFound
+from pylotl.exceptions import NoAuthenticationFound, UnsupportedOperationException
 
 
 class Client:
@@ -32,7 +32,6 @@ class Client:
         if config.access_token is not None:
             headers["Authorization"] = f"Bearer {config.access_token}"
 
-        self._http_client = httpx.Client(headers=headers)
         if config.username is not None and config.password is not None:
             auth = httpx.BasicAuth(config.username, config.password)
 
@@ -56,9 +55,9 @@ class Client:
         return copy.deepcopy(self._storage_conf)
 
     @staticmethod
-    def _extract_etag_from_response(resp) -> str:
+    def _extract_etag_from_response(headers) -> str:
         # prefer Content-MD5 if exists
-        content_md5 = resp.headers.get("Content-MD5")
+        content_md5 = headers.get("Content-MD5")
         if content_md5 is not None and len(content_md5) > 0:
             try:  # decode base64, return as hex
                 decode_md5 = base64.b64decode(content_md5)
@@ -67,32 +66,34 @@ class Client:
                 pass
 
         # fallback to ETag
-        etag = resp.headers.get("ETag", "").strip(' "')
+        etag = headers.get("ETag", "").strip(' "')
         return etag
 
-    def upload(self, repo, ref, path, data, pre_sign, content_type: Optional[str] = None,
+    # TODO: Consider moving under WriteableObject
+    def upload(self, repo, ref, path, content, pre_sign, content_type: Optional[str] = None,
                metadata: Optional[dict[str, str]] = None) -> lakefs_sdk.ObjectStats:
-        staging_location = self._client.staging_api.get_physical_address(repo, ref, path, pre_sign)
+        if not pre_sign:
+            raise UnsupportedOperationException("Upload currently supported only in pre-sign mode")
+
         headers = {}
-        auth = httpx.USE_CLIENT_DEFAULT
         if content_type is not None:
             headers["Content-Type"] = content_type
-        url = staging_location.physical_address
 
-        if pre_sign:
-            auth = None
-            url = staging_location.presigned_url
-            if self.storage_config.blockstore_type == "azure":
-                headers["x-ms-blob-type"] = "BlockBlob"
+        staging_location = self._client.staging_api.get_physical_address(repo, ref, path, pre_sign)
+        url = staging_location.presigned_url
+        if self.storage_config.blockstore_type == "azure":
+            headers["x-ms-blob-type"] = "BlockBlob"
 
-        resp = self._http_client.put(url, content=data, headers=headers, auth=auth)
-        etag = Client._extract_etag_from_response(resp)
+        resp = self._http_client.put(url,
+                                     content=content,
+                                     headers=headers,
+                                     auth=None)  # Explicitly remove default client authentication
+        resp.raise_for_status()
+        etag = Client._extract_etag_from_response(resp.headers)
         staging_metadata = lakefs_sdk.StagingMetadata(staging=staging_location,
-                                                      size_bytes=len(data),
+                                                      size_bytes=len(content),
                                                       checksum=etag,
                                                       user_metadata=metadata)
-        resp.raise_for_status()
-
         return self._client.staging_api.link_physical_address(repo, ref, path, staging_metadata=staging_metadata)
 
 
