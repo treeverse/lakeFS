@@ -31,7 +31,7 @@ jobs:
 
       - name: Update robots.txt
         working-directory: docs/_site
-        run: "sed -i 's/^Sitemap: /Sitemap: https:\/\/docs.lakefs.io/' robots.txt"
+        run: "sed -i 's/^Sitemap: /Sitemap: https:\/\/docs.lakefs.io' robots.txt"
 
       - name: Publish to docs repository
         uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
