@@ -133,6 +133,8 @@ Once you finish registering lakeFS Cloud with Azure AD send the following items 
 - **Client ID**
 - **Client Secret**
 - **Azure AD Domain**
+- **Identity API Version** (v1 for Azure AD or v2 for Microsoft Identity Platform/Entra) 
+
 
 
   </div>
