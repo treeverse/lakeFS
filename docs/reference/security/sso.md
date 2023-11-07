@@ -118,7 +118,7 @@ A redirect URI is the location where the Microsoft identity platform redirects a
 
 You add and modify redirect URIs for your registered applications by configuring their platform settings.
 
-Enter https://lakefs-cloud.us.auth0.com/login/callback or https://lakefs-cloud.eu.auth0.com/login/callback (depends on your organization data location) as your redirect URI.
+Enter https://lakefs-cloud.us.auth0.com/login/callback as your redirect URI.
 
 Settings for each application type, including redirect URIs, are configured in Platform configurations in the Azure portal. Some platforms, like Web and Single-page applications, require you to manually specify a redirect URI. For other platforms, like mobile and desktop, you can select from redirect URIs generated for you when you configure their other settings.
 
@@ -133,6 +133,7 @@ Once you finish registering lakeFS Cloud with Azure AD send the following items 
 - **Client ID**
 - **Client Secret**
 - **Azure AD Domain**
+
 
   </div>
 </div>
