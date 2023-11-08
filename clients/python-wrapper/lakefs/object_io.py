@@ -1,5 +1,8 @@
+import base64
+import binascii
 from typing import Optional, Literal, Union, Iterable, AsyncIterable
 
+from lakefs_sdk import ObjectStats, StagingMetadata
 from lakefs_sdk.exceptions import NotFoundException
 from lakefs.client import Client, DefaultClient
 from lakefs.exceptions import ObjectExistsException, UnsupportedOperationException, ObjectNotFoundException
@@ -106,7 +109,7 @@ class WriteableObject(ReadableObject):
             content = data.decode('utf-8')
         # TODO: handle streams
         is_presign = pre_sign if pre_sign is not None else self._pre_sign
-        stats = self._client.upload(self._repo, self._ref, self._path, content, is_presign, content_type, metadata)
+        stats = self._upload(content, is_presign, content_type, metadata)
         # reset pos after create
         self._pos = 0
         return stats
@@ -114,3 +117,48 @@ class WriteableObject(ReadableObject):
     def delete(self):
         # TODO: Implement
         raise NotImplementedError
+
+    @staticmethod
+    def _extract_etag_from_response(headers) -> str:
+        # prefer Content-MD5 if exists
+        content_md5 = headers.get("Content-MD5")
+        if content_md5 is not None and len(content_md5) > 0:
+            try:  # decode base64, return as hex
+                decode_md5 = base64.b64decode(content_md5)
+                return binascii.hexlify(decode_md5).decode("utf-8")
+            except binascii.Error:
+                pass
+
+        # fallback to ETag
+        etag = headers.get("ETag", "").strip(' "')
+        return etag
+
+    def _upload(self, content, pre_sign, content_type: Optional[str] = None,
+                metadata: Optional[dict[str, str]] = None) -> ObjectStats:
+        if not pre_sign:
+            raise UnsupportedOperationException("Upload currently supported only in pre-sign mode")
+
+        headers = {}
+        if content_type is not None:
+            headers["Content-Type"] = content_type
+
+        staging_location = self._client.sdk_client.staging_api.get_physical_address(self._repo,
+                                                                                    self._ref,
+                                                                                    self._path,
+                                                                                    pre_sign)
+        url = staging_location.presigned_url
+        if self._client.storage_config.blockstore_type == "azure":
+            headers["x-ms-blob-type"] = "BlockBlob"
+
+        resp = self._client.http_client.put(url,
+                                            data=content,
+                                            headers=headers,
+                                            auth=None)  # Explicitly remove default client authentication
+        resp.raise_for_status()
+        etag = WriteableObject._extract_etag_from_response(resp.headers)
+        staging_metadata = StagingMetadata(staging=staging_location,
+                                           size_bytes=len(content),
+                                           checksum=etag,
+                                           user_metadata=metadata)
+        return self._client.sdk_client.staging_api.link_physical_address(self._repo, self._ref, self._path,
+                                                                         staging_metadata=staging_metadata)

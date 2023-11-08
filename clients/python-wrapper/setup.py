@@ -26,7 +26,7 @@ setup(
     author_email="services@treeverse.io",
     url="https://github.com/treeverse/lakeFS/tree/master/clients/python-wrapper",
     keywords=["OpenAPI", "OpenAPI-Generator", "lakeFS API", "Python Wrapper"],
-    python_requires=">=3.10",
+    python_requires=">=3.9",
     install_requires=REQUIRES,
     tests_require={
         "dev": ["pytest ~= 7.4.3", "pytest-mock ~= 3.12.0"]},

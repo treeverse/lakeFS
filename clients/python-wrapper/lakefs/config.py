@@ -1,5 +1,6 @@
 import os
 import yaml
+from pathlib import Path
 from typing import NamedTuple
 
 from lakefs_sdk import (
@@ -7,7 +8,7 @@ from lakefs_sdk import (
 )
 from lakefs.exceptions import NoAuthenticationFound
 
-_LAKECTL_YAML_PATH = os.path.expanduser(os.path.join("~", ".lakectl.yaml"))
+_LAKECTL_YAML_PATH = os.path.join(Path.home(), ".lakectl.yaml")
 _LAKECTL_ENDPOINT_ENV = "LAKECTL_SERVER_ENDPOINT_URL"
 _LAKECTL_ACCESS_KEY_ID_ENV = "LAKECTL_CREDENTIALS_ACCESS_KEY_ID"
 _LAKECTL_SECRET_ACCESS_KEY_ENV = "LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY"
@@ -33,12 +34,12 @@ class ClientConfig:
         access_key_id: str = ""
         secret_access_key: str = ""
 
-    _configuration: Configuration
+    configuration: Configuration
     server: Server = Server()
     credentials: Credentials = Credentials()
 
     def __init__(self, **kwargs):
-        self._configuration = Configuration(**kwargs)
+        self.configuration = Configuration(**kwargs)
         if kwargs:
             return
 
@@ -58,15 +59,12 @@ class ClientConfig:
         key_env = os.getenv(_LAKECTL_ACCESS_KEY_ID_ENV)
         secret_env = os.getenv(_LAKECTL_SECRET_ACCESS_KEY_ENV)
 
-        self._configuration.host = endpoint_env if endpoint_env is not None else self.server.endpoint_url
-        self._configuration.username = key_env if key_env is not None else self.credentials.access_key_id
-        self._configuration.password = secret_env if secret_env is not None else self.credentials.secret_access_key
-        if len(self._configuration.username) > 0 and len(self._configuration.password) > 0:
+        self.configuration.host = endpoint_env if endpoint_env is not None else self.server.endpoint_url
+        self.configuration.username = key_env if key_env is not None else self.credentials.access_key_id
+        self.configuration.password = secret_env if secret_env is not None else self.credentials.secret_access_key
+        if len(self.configuration.username) > 0 and len(self.configuration.password) > 0:
             found = True
 
         # TODO: authentication via IAM Role
         if not found:
             raise NoAuthenticationFound
-
-    def get_config(self):
-        return self._configuration
