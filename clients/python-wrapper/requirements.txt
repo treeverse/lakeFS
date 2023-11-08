@@ -1,2 +1,3 @@
 setuptools==68.2.2
-lakefs-sdk ~= 1.1.0
+lakefs-sdk~=1.1.0
+requests~=2.31.0
