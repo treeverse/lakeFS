@@ -130,12 +130,10 @@ Steps:
 5. Select Configure to complete the platform configuration.
 
 Once you finish registering lakeFS Cloud with Azure AD send the following items to the Treeverse's team:
-- **Client ID**
-- **Client Secret**
-- **Azure AD Domain**
-- **Identity API Version** (v1 for Azure AD or v2 for Microsoft Identity Platform/Entra) 
-
-
+1. **Client ID**
+2. **Client Secret**
+3. **Azure AD Domain**
+4. **Identity API Version** (v1 for Azure AD or v2 for Microsoft Identity Platform/Entra) 
 
   </div>
 </div>
