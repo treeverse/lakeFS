@@ -23,7 +23,7 @@ class ReadableObject:
     _ref: str
     _path: str
     _pos: int
-    _pre_sign: bool
+    _pre_sign: Optional[bool] = None
 
     def __init__(self, repository: str, reference: str, path: str,
                  pre_sign: Optional[bool] = None, client: Optional[Client] = DefaultClient) -> None:
@@ -31,12 +31,19 @@ class ReadableObject:
         self._repo = repository
         self._ref = reference
         self._path = path
-        self._pre_sign = pre_sign if pre_sign is not None else client.storage_config.pre_sign_support
+        self._pre_sign = pre_sign
         self._pos = 0
 
     @property
     def pos(self):
         return self._pos
+
+    @property
+    def pre_sign(self):
+        if self._pre_sign is None:
+            self._pre_sign = self._client.storage_config.pre_sign_support
+
+        return self._pre_sign
 
     def seek(self, pos):
         if pos < 0:
@@ -59,7 +66,7 @@ class ReadableObject:
                                                                   self._ref,
                                                                   self._path,
                                                                   range=read_range,
-                                                                  presign=self._pre_sign)
+                                                                  presign=self.pre_sign)
         self._pos = new_pos  # Update pointer position
         return contents
 
@@ -76,19 +83,13 @@ class ReadableObject:
 
 class WriteableObject(ReadableObject):
     """
-    WriteableObject inherits from ReadableObject and provides read/write functionality for lakeFS objects 
+    WriteableObject inherits from ReadableObject and provides read/write functionality for lakeFS objects
     using IO semantics.
     This Object is instantiated and returned upon invoking open() on Branch reference type.
     """
 
     def __init__(self, repository: str, reference: str, path: str,
                  pre_sign: Optional[bool] = None, client: Optional[Client] = DefaultClient) -> None:
-        # Verify that reference is a branch, otherwise throws exception
-        try:
-            client.sdk_client.branches_api.get_branch(repository, reference)
-        except NotFoundException:
-            raise UnsupportedOperationException("reference is not an existing branch")
-
         super().__init__(repository, reference, path, pre_sign, client=client)
 
     def create(self,
@@ -107,7 +108,7 @@ class WriteableObject(ReadableObject):
         elif not binary_mode and isinstance(data, bytes):
             content = data.decode('utf-8')
         # TODO: handle streams
-        is_presign = pre_sign if pre_sign is not None else self._pre_sign
+        is_presign = pre_sign if pre_sign is not None else self.pre_sign
         stats = self._upload(content, is_presign, content_type, metadata)
         # reset pos after create
         self._pos = 0
