@@ -1,7 +1,7 @@
 from typing import Optional, Literal, Union, Iterable, AsyncIterable
 
 from lakefs_sdk.exceptions import NotFoundException
-from lakefs.client import Client
+from lakefs.client import Client, DefaultClient
 from lakefs.exceptions import ObjectExistsException, UnsupportedOperationException, ObjectNotFoundException
 
 _RANGE_STR_TMPL = "bytes={start}-{end}"
@@ -23,7 +23,7 @@ class ReadableObject:
     _pre_sign: bool
 
     def __init__(self, repository: str, reference: str, path: str,
-                 pre_sign: Optional[bool] = None, client: Optional[Client] = None) -> None:
+                 pre_sign: Optional[bool] = None, client: Optional[Client] = DefaultClient) -> None:
         self._client = client
         self._repo = repository
         self._ref = reference
@@ -79,7 +79,7 @@ class WriteableObject(ReadableObject):
     """
 
     def __init__(self, repository: str, reference: str, path: str,
-                 pre_sign: Optional[bool] = None, client: Optional[Client] = None) -> None:
+                 pre_sign: Optional[bool] = None, client: Optional[Client] = DefaultClient) -> None:
         # Verify that reference is a branch, otherwise throws exception
         client = client
         try:

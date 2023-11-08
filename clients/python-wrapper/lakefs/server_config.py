@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 import lakefs_sdk
 
@@ -15,7 +15,7 @@ class ServerConfiguration:
     _conf: lakefs_sdk.Config
     _storage_conf: ServerStorageConfiguration
 
-    def __init__(self, client: Client = DefaultClient):
+    def __init__(self, client: Optional[Client] = DefaultClient):
         self._conf = client.sdk_client.config_api.get_config()
         self._storage_conf = ServerStorageConfiguration(blockstore_type=self._conf.storage_config.blockstore_type,
                                                         pre_sign_support=self._conf.storage_config.pre_sign_support,
