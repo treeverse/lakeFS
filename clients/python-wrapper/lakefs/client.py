@@ -41,7 +41,7 @@ class Client:
         self._http_client.headers = headers
         self._http_client.auth = auth
 
-    def __del__(self):
+    def close(self):
         if self._http_client is not None:
             self._http_client.close()
 
