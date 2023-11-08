@@ -1,4 +1,2 @@
 setuptools==68.2.2
 lakefs-sdk ~= 1.1.0
-py-viper >= 0.1.0-dev
-httpx ~= 0.25.0

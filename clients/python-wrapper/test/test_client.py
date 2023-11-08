@@ -2,7 +2,8 @@ import os
 import importlib
 from copy import deepcopy
 from contextlib import contextmanager
-from pylotl import config as client_config
+
+from lakefs import config as client_config
 
 test_server = "https://test_server/api/v1"
 test_access_key_id = "test_access_key_id"
@@ -37,7 +38,7 @@ def env_var_context():
 def lakectl_no_config_context(monkey):
     with monkey.context():
         monkey.setattr(client_config, "_LAKECTL_YAML_PATH", "file_not_found")
-        from pylotl import client  # Must be imported after the monkey patching
+        from lakefs import client  # Must be imported after the monkey patching
         yield client
 
 
@@ -47,7 +48,7 @@ def lakectl_test_config_context(monkey, tmp_path):
     cfg_file.write_bytes(test_config.encode())
     with monkey.context():
         monkey.setattr(client_config, "_LAKECTL_YAML_PATH", cfg_file)
-        from pylotl import client  # Must be imported after the monkey patching
+        from lakefs import client  # Must be imported after the monkey patching
         client = importlib.reload(client)
         try:
             yield client
@@ -96,7 +97,7 @@ class TestClient:
     def test_client_init(self, monkeypatch, tmp_path):
         with lakectl_no_config_context(monkeypatch) as client:
             assert client.DefaultClient is None
-            from pylotl.client import init
+            from lakefs.client import init
             init(**test_config_kwargs)
             assert client.DefaultClient is not None
             config = client.DefaultClient.config

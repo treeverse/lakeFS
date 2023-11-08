@@ -1,8 +1,8 @@
 from typing import Optional, Literal, Union, Iterable, AsyncIterable
 
 from lakefs_sdk.exceptions import NotFoundException
-from pylotl.client import Client
-from pylotl.exceptions import ObjectExistsException, UnsupportedOperationException, ObjectNotFoundException
+from lakefs.client import Client
+from lakefs.exceptions import ObjectExistsException, UnsupportedOperationException, ObjectNotFoundException
 
 _RANGE_STR_TMPL = "bytes={start}-{end}"
 
@@ -22,7 +22,8 @@ class ReadableObject:
     _pos: int
     _pre_sign: bool
 
-    def __init__(self, client: Client, repository: str, reference: str, path: str, pre_sign: bool = None) -> None:
+    def __init__(self, repository: str, reference: str, path: str,
+                 pre_sign: Optional[bool] = None, client: Optional[Client] = None) -> None:
         self._client = client
         self._repo = repository
         self._ref = reference
@@ -77,7 +78,8 @@ class WriteableObject(ReadableObject):
     This Object is instantiated and returned upon invoking open() on Branch reference type.
     """
 
-    def __init__(self, client: Client, repository: str, reference: str, path: str, pre_sign: bool = None) -> None:
+    def __init__(self, repository: str, reference: str, path: str,
+                 pre_sign: Optional[bool] = None, client: Optional[Client] = None) -> None:
         # Verify that reference is a branch, otherwise throws exception
         client = client
         try:
@@ -85,7 +87,7 @@ class WriteableObject(ReadableObject):
         except NotFoundException:
             raise UnsupportedOperationException("reference is not an existing branch")
 
-        super().__init__(client, repository, reference, path, pre_sign)
+        super().__init__(repository, reference, path, pre_sign, client=client)
 
     def create(self,
                data: UploadContentType,

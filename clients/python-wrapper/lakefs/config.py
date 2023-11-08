@@ -1,9 +1,11 @@
 import os
-import viper
+import yaml
+from typing import NamedTuple
+
 from lakefs_sdk import (
     Configuration,
 )
-from pylotl.exceptions import NoAuthenticationFound
+from lakefs.exceptions import NoAuthenticationFound
 
 _LAKECTL_YAML_PATH = os.path.expanduser(os.path.join("~", ".lakectl.yaml"))
 _LAKECTL_ENDPOINT_ENV = "LAKECTL_SERVER_ENDPOINT_URL"
@@ -24,16 +26,16 @@ class ClientConfig:
     lakectl yaml file.
     """
 
-    class Server:
-        endpoint_url = ""
+    class Server(NamedTuple):
+        endpoint_url: str = ""
 
-    class Credentials:
-        access_key_id = ""
-        secret_access_key = ""
+    class Credentials(NamedTuple):
+        access_key_id: str = ""
+        secret_access_key: str = ""
 
     _configuration: Configuration
-    server = Server
-    credentials = Credentials
+    server: Server = Server()
+    credentials: Credentials = Credentials()
 
     def __init__(self, **kwargs):
         self._configuration = Configuration(**kwargs)
@@ -41,11 +43,13 @@ class ClientConfig:
             return
 
         found = False
+
         # Get credentials from lakectl
-        viper.set_config_path(_LAKECTL_YAML_PATH)
         try:
-            viper.read_config()
-            viper.unmarshal(self)
+            with open(_LAKECTL_YAML_PATH) as fd:
+                data = yaml.load(fd, Loader=yaml.Loader)
+                self.server = ClientConfig.Server(**data["server"])
+                self.credentials = ClientConfig.Credentials(**data["credentials"])
             found = True
         except FileNotFoundError:  # File not found, fallback to env variables
             pass

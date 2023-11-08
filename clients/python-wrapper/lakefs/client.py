@@ -1,14 +1,14 @@
 import base64
 import binascii
-import copy
 from typing import Optional
-import httpx
+import requests
+from requests.auth import HTTPBasicAuth
 
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
-from pylotl.config import ClientConfig
-from pylotl.exceptions import NoAuthenticationFound, UnsupportedOperationException
+from lakefs.config import ClientConfig
+from lakefs.exceptions import NoAuthenticationFound, UnsupportedOperationException
 
 
 class Client:
@@ -17,8 +17,8 @@ class Client:
     Takes care of instantiating it from the environment
     """
 
-    _client: LakeFSClient = None
-    _http_client: httpx.Client = None
+    _client: Optional[LakeFSClient] = None
+    _http_client: requests.Session = None
     _conf: ClientConfig = None
     _storage_conf: lakefs_sdk.StorageConfig = None
 
@@ -31,12 +31,15 @@ class Client:
         headers = {}
         auth = None
         if config.access_token is not None:
+            # TODO: Create custom auth class and inherit from BaseAuth
             headers["Authorization"] = f"Bearer {config.access_token}"
 
         if config.username is not None and config.password is not None:
-            auth = httpx.BasicAuth(config.username, config.password)
+            auth = HTTPBasicAuth(config.username, config.password)
 
-        self._http_client = httpx.Client(headers=headers, auth=auth)
+        self._http_client = requests.Session()
+        self._http_client.headers = headers
+        self._http_client.auth = auth
 
     def __del__(self):
         if self._http_client is not None:
@@ -44,7 +47,7 @@ class Client:
 
     @property
     def config(self):
-        return copy.deepcopy(self._conf.get_config())
+        return self._conf.get_config()
 
     @property
     def sdk_client(self):
@@ -54,7 +57,7 @@ class Client:
     def storage_config(self):
         if self._storage_conf is None:
             self._storage_conf = self._client.internal_api.get_storage_config()
-        return copy.deepcopy(self._storage_conf)
+        return lakefs_sdk.StorageConfig(**self._storage_conf.__dict__)
 
     @staticmethod
     def _extract_etag_from_response(headers) -> str:
@@ -87,7 +90,7 @@ class Client:
             headers["x-ms-blob-type"] = "BlockBlob"
 
         resp = self._http_client.put(url,
-                                     content=content,
+                                     data=content,
                                      headers=headers,
                                      auth=None)  # Explicitly remove default client authentication
         resp.raise_for_status()

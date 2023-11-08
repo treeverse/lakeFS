@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-NAME = "pylotl"
+NAME = "lakefs"
 VERSION = "0.1.0-alpha"
 # To install the library, run the following
 #
@@ -9,7 +9,7 @@ VERSION = "0.1.0-alpha"
 # prerequisite: setuptools
 # http://pypi.python.org/pypi/setuptools
 
-PYTHON_REQUIRES = ">=3.10"
+PYTHON_REQUIRES = ">=3.9"
 REQUIRES = [
     "python-dateutil",
     "pydantic >= 1.10.5, < 2",

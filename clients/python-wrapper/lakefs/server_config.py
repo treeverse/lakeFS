@@ -2,7 +2,7 @@ from typing import NamedTuple
 
 import lakefs_sdk
 
-from pylotl.client import Client, DefaultClient
+from lakefs.client import Client, DefaultClient
 
 
 class ServerStorageConfiguration(NamedTuple):
