@@ -21,11 +21,11 @@ in an existing `catalog.schema` within the Unity catalog, using the Databricks A
 
 1. Execute the Delta Lake catalog exporter procedure and retrieve the path to the exported data.
 2. Utilizing the table names configured for this hook, such as `['my-table', 'my-other-table']`, establish or replace external
-tables within the Unity catalog and schema (both of which are provided in the hook's configuration). Ensure that you use
+tables within the Unity catalog (which is provided in the hook's configuration) and schema (which will be the branch). Ensure that you use
 the field names and data types as specified in the `_lakefs_tables/my-table.yaml` and `_lakefs_tables/my-other-table.yaml` files.
 
 Once the above hook's run completed successfully, the tables could be read form the Databricks Unity catalog backed service.
 
 - Authentication with Databricks will require a [service principle](https://docs.databricks.com/en/dev-tools/service-principals.html)
 and an associated token to be provided to the hook's configurations.
-- The users will supply existing catalog and schema under which the table will be created using the [Databricks Go SDK](https://docs.databricks.com/en/dev-tools/sdk-go.html).
+- The users will supply an existing catalog under which the schema and table will be created using the [Databricks Go SDK](https://docs.databricks.com/en/dev-tools/sdk-go.html).
