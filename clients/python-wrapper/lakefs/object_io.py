@@ -84,7 +84,6 @@ class WriteableObject(ReadableObject):
     def __init__(self, repository: str, reference: str, path: str,
                  pre_sign: Optional[bool] = None, client: Optional[Client] = DefaultClient) -> None:
         # Verify that reference is a branch, otherwise throws exception
-        client = client
         try:
             client.sdk_client.branches_api.get_branch(repository, reference)
         except NotFoundException:
