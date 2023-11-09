@@ -1542,7 +1542,10 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	}
 	ctx := r.Context()
 
-	// verify first if there is a repository definition
+	// Verify first if there is a repository definition.
+	// Return conflict if definition already exists, before
+	// creating the repository itself and ensuring (optional) storage namespace holds an object.
+	// Example will be by restoring a repository from a backup or previous bare repository.
 	_, err := c.Catalog.GetRepository(ctx, body.Name)
 	if err == nil {
 		writeError(w, r, http.StatusConflict, "repository already exists")
