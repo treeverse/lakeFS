@@ -1003,19 +1003,22 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
-			DefaultBranch:    apiutil.Ptr("main"),
-			Name:             repo,
-			StorageNamespace: onBlock(deps, "foo-bucket-2"),
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if resp == nil {
-			t.Fatal("CreateRepository missing response")
-		}
-		if resp.JSON409 == nil {
-			t.Fatal("expected status code 409 creating duplicate repo, got ", resp.StatusCode())
+		const times = 3 // try to create the same repo multiple times
+		for i := 0; i < times; i++ {
+			resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+				DefaultBranch:    apiutil.Ptr("main"),
+				Name:             repo,
+				StorageNamespace: onBlock(deps, "foo-bucket-2"),
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if resp == nil {
+				t.Fatal("CreateRepository missing response")
+			}
+			if resp.JSON409 == nil {
+				t.Fatal("expected status code 409 creating duplicate repo, got ", resp.StatusCode())
+			}
 		}
 	})
 

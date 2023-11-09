@@ -1541,6 +1541,17 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 	ctx := r.Context()
+
+	// Verify first if there is a repository definition.
+	// Return conflict if definition already exists, before
+	// creating the repository itself and ensuring (optional) storage namespace holds an object.
+	// Example will be by restoring a repository from a backup or previous bare repository.
+	_, err := c.Catalog.GetRepository(ctx, body.Name)
+	if err == nil {
+		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", graveler.ErrNotUnique))
+		return
+	}
+
 	sampleData := swag.BoolValue(body.SampleData)
 	c.LogAction(ctx, "create_repo", r, body.Name, "", "")
 	if sampleData {
