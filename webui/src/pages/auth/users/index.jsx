@@ -84,8 +84,8 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
                         setRefresh(!refresh);
                     });
                 }}
-                title={canInviteUsers ? "Create Integration User" : "Create User"}
-                placeholder={canInviteUsers ? "Integration Name (e.g. Spark)" : "Username (e.g. 'jane.doe')"}
+                title={canInviteUsers ? "Create API User" : "Create User"}
+                placeholder={canInviteUsers ? "Name (e.g. Spark)" : "Username (e.g. 'jane.doe')"}
                 actionName={"Create"}
                 validationFunction={disallowPercentSign(INVALID_USER_NAME_ERROR_MESSAGE)}
             />
@@ -147,7 +147,7 @@ const UserActionsActionGroup = ({canInviteUsers, selected, onClickInvite, onClic
             <Button
                 variant="success"
                 onClick={onClickCreate}>
-                {canInviteUsers ? "Create Integration User" : "Create User"}
+                {canInviteUsers ? "Create API User" : "Create User"}
             </Button>
             <ConfirmationButton
                 onConfirm={onConfirmDelete}
