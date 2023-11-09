@@ -375,13 +375,14 @@ type EntriesIterator struct {
 	startKey     []byte
 	limit        int
 
-	entry        *kv.Entry
-	err          error
-	currEntryIdx int
-	queryPager   *runtime.Pager[azcosmos.QueryItemsResponse]
-	queryCtx     context.Context
-	currPage     azcosmos.QueryItemsResponse
-	encoding     *base32.Encoding
+	entry          *kv.Entry
+	err            error
+	currEntryIdx   int
+	queryPager     *runtime.Pager[azcosmos.QueryItemsResponse]
+	queryCtx       context.Context
+	currPage       azcosmos.QueryItemsResponse
+	encoding           *base32.Encoding
+	minKeyWithNoResult []byte
 }
 
 func (e *EntriesIterator) getKeyValue(i int) ([]byte, []byte) {
@@ -441,6 +442,11 @@ func (e *EntriesIterator) Next() bool {
 
 func (e *EntriesIterator) SeekGE(key []byte) {
 	e.startKey = key
+	// optimization: if the key is greater than the min key that returned no results, we can skip the query
+	if e.minKeyWithNoResult != nil && bytes.Compare(key, e.minKeyWithNoResult) >= 0 {
+		e.currEntryIdx = -1
+		return
+	}
 	if !e.isInRange() {
 		if err := e.runQuery(); err != nil {
 			e.err = convertError(err)
@@ -484,6 +490,9 @@ func (e *EntriesIterator) runQuery() error {
 	}
 	e.currEntryIdx = -1
 	e.entry = nil
+	if len(currPage.Items) == 0 && (e.minKeyWithNoResult == nil || (bytes.Compare(e.startKey, e.minKeyWithNoResult) <= 0)) {
+		e.minKeyWithNoResult = e.startKey
+	}
 	e.currPage = currPage
 	return nil
 }
@@ -494,5 +503,5 @@ func (e *EntriesIterator) isInRange() bool {
 	}
 	minKey, _ := e.getKeyValue(0)
 	maxKey, _ := e.getKeyValue(len(e.currPage.Items) - 1)
-	return minKey != nil && maxKey != nil && bytes.Compare(e.startKey, minKey) >= 0 && bytes.Compare(e.startKey, maxKey) <= 0
+	return minKey != nil && maxKey != nil && bytes.Compare(e.startKey, minKey) >= 0 && (bytes.Compare(e.startKey, maxKey) <= 0)
 }

@@ -39,13 +39,14 @@ type EntriesIterator struct {
 	startKey          []byte
 	exclusiveStartKey map[string]types.AttributeValue
 
-	scanCtx      context.Context
-	entry        *kv.Entry
-	err          error
-	store        *Store
-	queryResult  *dynamodb.QueryOutput
-	currEntryIdx int
-	limit        int64
+	scanCtx            context.Context
+	entry              *kv.Entry
+	err                error
+	store              *Store
+	queryResult        *dynamodb.QueryOutput
+	currEntryIdx       int
+	limit              int64
+	minKeyWithNoResult []byte
 }
 
 type DynKVItem struct {
@@ -386,6 +387,11 @@ func (s *Store) DropTable() error {
 }
 
 func (e *EntriesIterator) SeekGE(key []byte) {
+	// optimization: if the key is greater than the min key that returned no results, we can skip the query
+	if e.minKeyWithNoResult != nil && bytes.Compare(key, e.minKeyWithNoResult) >= 0 {
+		e.currEntryIdx = -1
+		return
+	}
 	if !e.isInRange(key) {
 		e.startKey = key
 		e.exclusiveStartKey = nil
@@ -474,6 +480,9 @@ func (e *EntriesIterator) runQuery() {
 	}
 	if queryResult.ConsumedCapacity != nil {
 		dynamoConsumedCapacity.WithLabelValues(operation).Add(*queryResult.ConsumedCapacity.CapacityUnits)
+	}
+	if queryResult.Count == 0 && (e.minKeyWithNoResult == nil || (bytes.Compare(e.startKey, e.minKeyWithNoResult) <= 0)) {
+		e.minKeyWithNoResult = e.startKey
 	}
 	e.queryResult = queryResult
 	e.currEntryIdx = 0
