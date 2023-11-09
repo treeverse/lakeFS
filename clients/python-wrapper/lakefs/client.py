@@ -1,3 +1,13 @@
+"""
+lakeFS Client module
+Handles authentication against the lakeFS server and wraps the underlying lakefs_sdk client
+
+The client module holds a DefaultClient which will attempt to initialize on module loading using
+environment credentials.
+In case no credentials exist, a call to init() will be required or a Client object must be created explicitly
+
+"""
+
 from typing import Optional
 import requests
 from requests.auth import HTTPBasicAuth
@@ -40,25 +50,40 @@ class Client:
         self.http_client.auth = auth
 
     def close(self):
+        """
+        Closes any open connections
+        """
         if self.http_client is not None:
             self.http_client.close()
 
     @property
     def config(self):
+        """
+        Return the underlying lakefs_sdk configuration
+        """
         return self._conf.configuration
 
     @property
     def sdk_client(self):
+        """
+        Return the underlying lakefs_sdk client
+        """
         return self._client
 
     @property
     def storage_config(self):
+        """
+        lakeFS SDK storage config object, lazy evaluated.
+        """
         if self._server_conf is None:
             self._server_conf = self._client.config_api.get_config()
         return lakefs_sdk.StorageConfig(**self._server_conf.storage_config.__dict__)
 
     @property
-    def version_config(self):
+    def version_config(self) -> lakefs_sdk.VersionConfig:
+        """
+        lakeFS SDK version config object, lazy evaluated.
+        """
         if self._server_conf is None:
             self._server_conf = self._client.config_api.get_config()
         return lakefs_sdk.VersionConfig(**self._server_conf.version_config.__dict__)
@@ -71,9 +96,12 @@ try:
     DefaultClient = Client()
 except NoAuthenticationFound:
     # must call init() explicitly
-    DefaultClient = None
+    DefaultClient = None  # pylint: disable=C0103
 
 
-def init(**kwargs):
-    global DefaultClient
+def init(**kwargs) -> None:
+    """
+    Initialize DefaultClient using the provided parameters
+    """
+    global DefaultClient  # pylint: disable=W0603
     DefaultClient = Client(**kwargs)

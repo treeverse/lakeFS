@@ -12,6 +12,12 @@ LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=<your_lakefs_secret_access_key>
 LAKECTL_SERVER_ENDPOINT_URL=<your_lakefs_endpoint>
 ```
 
+## Export test environment variables
+```
+STORAGE_NAMESPACE: <base storage namespace for your tests>
+TAG: <lakeFS server version (dev)>
+```
+
 ## Create a venv and install dependencies
 
 From the clients/python-wrapper directory:

@@ -1,11 +1,17 @@
+"""
+Basic object IO implementation providing a filesystem like behavior over lakeFS 
+"""
+
 import base64
 import binascii
 from typing import Optional, Literal, Union, Iterable, AsyncIterable
 
+import lakefs_sdk
 from lakefs_sdk import ObjectStats, StagingMetadata
 from lakefs_sdk.exceptions import NotFoundException
 from lakefs.client import Client, DefaultClient
-from lakefs.exceptions import ObjectExistsException, UnsupportedOperationException, ObjectNotFoundException
+from lakefs.exceptions import ObjectExistsException, UnsupportedOperationException, ObjectNotFoundException, \
+    PermissionException, ServerException
 
 _RANGE_STR_TMPL = "bytes={start}-{end}"
 
@@ -35,28 +41,49 @@ class ReadableObject:
         self._pos = 0
 
     @property
-    def pos(self):
+    def pos(self) -> int:
+        """
+        Object's read position. If position is past object byte size, trying to read the object will return EOF
+        """
         return self._pos
 
     @property
-    def pre_sign(self):
+    def pre_sign(self) -> bool:
+        """
+        Returns the default pre_sign mode for this object. If pre_sign was not defined during initialization, will
+        take the server pre_sign capability.
+        """
         if self._pre_sign is None:
             self._pre_sign = self._client.storage_config.pre_sign_support
 
         return self._pre_sign
 
-    def seek(self, pos):
+    def seek(self, pos) -> None:
+        """
+        Move the object's reading position
+        :param pos: The position (in bytes) to move to
+        :raises ValueError if provided position is negative
+        """
         if pos < 0:
             raise ValueError("position must be a non-negative integer")
         self._pos = pos
 
     def read(self, read_bytes: int = None) -> bytes:
+        """
+        Read object data
+        :param read_bytes: How many bytes to read. If read_bytes is None, will read from current position to end.
+        If current position + read_bytes > object size.
+        :return: The bytes read
+        :raises
+            EOFError if current position is after object size
+            ValueError if read_bytes is non-positive
+        """
         if read_bytes and read_bytes <= 0:
             raise ValueError("read_bytes must be a positive integer")
         try:
             stat = self._client.sdk_client.objects_api.stat_object(self._repo, self._ref, self._path)
-        except NotFoundException:
-            raise ObjectNotFoundException
+        except NotFoundException as e:
+            raise ObjectNotFoundException from e
         if self._pos >= stat.size_bytes:
             raise EOFError
         read_bytes = read_bytes if read_bytes is not None else stat.size_bytes
@@ -70,10 +97,16 @@ class ReadableObject:
         self._pos = new_pos  # Update pointer position
         return contents
 
-    def stat(self):
+    def stat(self) -> lakefs_sdk.ObjectStats:
+        """
+        Return the Stat object representing this object
+        """
         return self._client.sdk_client.objects_api.stat_object(self._repo, self._ref, self._path)
 
-    def exists(self):
+    def exists(self) -> bool:
+        """
+        Returns True if object exists in lakeFS, False otherwise
+        """
         try:
             self._client.sdk_client.objects_api.head_object(self._repo, self._ref, self._path)
             return True
@@ -97,7 +130,23 @@ class WriteableObject(ReadableObject):
                mode: Literal['x', 'xb', 'w', 'wb'] = 'wb',
                pre_sign: Optional[bool] = None,
                content_type: Optional[str] = None,
-               metadata: Optional[dict[str, str]] = None):
+               metadata: Optional[dict[str, str]] = None) -> lakefs_sdk.ObjectStats:
+        """
+        Creates a new object or overwrites an existing object
+        :param data: The contents of the object to write (can be bytes or string)
+        :param mode: Write mode:
+            'x'     - Open for exclusive creation
+            'xb'    - Open for exclusive creation in binary mode
+            'w'     - Create a new object or truncate if exists
+            'wb'    - Create or truncate in binary mode
+        :param pre_sign: (Optional) Explicitly state whether to use pre_sign mode when uploading the object.
+        If None, will be taken from pre_sign property.
+        :param content_type: (Optional) Explicitly set the object Content-Type
+        :param metadata: (Optional) User metadata
+        :return: The Stat object representing the newly created object
+        :raises
+            ObjectExistsException if object exists and mode is exclusive ('x')
+        """
         content = data
         if mode.startswith('x') and self.exists():  # Requires explicit create
             raise ObjectExistsException
@@ -109,12 +158,25 @@ class WriteableObject(ReadableObject):
             content = data.decode('utf-8')
         # TODO: handle streams
         is_presign = pre_sign if pre_sign is not None else self.pre_sign
-        stats = self._upload(content, is_presign, content_type, metadata)
+        try:
+            stats = self._upload(content, is_presign, content_type, metadata)
+        except lakefs_sdk.exceptions.ApiException as e:
+            match e:
+                case lakefs_sdk.exceptions.UnauthorizedException:
+                    raise PermissionException from e
+                case lakefs_sdk.exceptions.ForbiddenException:
+                    raise PermissionException from e
+                case _:
+                    raise ServerException from e
+
         # reset pos after create
         self._pos = 0
         return stats
 
-    def delete(self):
+    def delete(self) -> None:
+        """
+        Delete object from lakeFS
+        """
         # TODO: Implement
         raise NotImplementedError
 

@@ -1,61 +1,17 @@
 import os
 import importlib
-from copy import deepcopy
-from contextlib import contextmanager
 
 from lakefs import config as client_config
 
-TEST_SERVER = "https://test_server"
-TEST_ACCESS_KEY_ID = "test_access_key_id"
-TEST_SECRET_ACCESS_KEY = "test_secret_access_key"
-TEST_CONFIG = f'''
-server:
-  endpoint_url: {TEST_SERVER}
-
-credentials:
-    access_key_id: {TEST_ACCESS_KEY_ID}
-    secret_access_key: {TEST_SECRET_ACCESS_KEY}
-'''
-
-TEST_ENDPOINT_PATH = "/api/v1"
-
-TEST_CONFIG_KWARGS = {
-    "username": "my_username",
-    "password": "my_password",
-    "host": "http://my_host",
-    "access_token": "my_jwt_token"
-}
-
-
-@contextmanager
-def env_var_context():
-    old_env = deepcopy(os.environ)
-    try:
-        yield
-    finally:
-        os.environ = old_env
-
-
-@contextmanager
-def lakectl_no_config_context(monkey):
-    with monkey.context():
-        monkey.setattr(client_config, "_LAKECTL_YAML_PATH", "file_not_found")
-        from lakefs import client  # Must be imported after the monkey patching
-        yield client
-
-
-@contextmanager
-def lakectl_test_config_context(monkey, tmp_path):
-    cfg_file = tmp_path / "test.yaml"
-    cfg_file.write_bytes(TEST_CONFIG.encode())
-    with monkey.context():
-        monkey.setattr(client_config, "_LAKECTL_YAML_PATH", cfg_file)
-        from lakefs import client  # Must be imported after the monkey patching
-        client = importlib.reload(client)
-        try:
-            yield client
-        finally:
-            client.DefaultClient = None
+from tests.utests.common import (
+    lakectl_test_config_context,
+    lakectl_no_config_context,
+    env_var_context, TEST_SERVER,
+    TEST_ACCESS_KEY_ID,
+    TEST_SECRET_ACCESS_KEY,
+    TEST_CONFIG_KWARGS,
+    TEST_ENDPOINT_PATH
+)
 
 
 class TestClient:

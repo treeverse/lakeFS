@@ -1,12 +1,13 @@
 import http
 from contextlib import contextmanager
 import requests
+
 import lakefs_sdk.api
 
-from tests.utests.test_client import lakectl_test_config_context
+from tests.utests.common import lakectl_test_config_context
 
 
-class ObjectTestKWargs:
+class ObjectTestKWArgs:
     def __init__(self) -> None:
         self.repository = "test_repo"
         self.reference = "test_reference"
@@ -62,7 +63,7 @@ def writeable_object_context(monkey, tmp_path, **kwargs):
 
 class TestReadableObject:
     def test_seek(self, monkeypatch, tmp_path):
-        test_kwargs = ObjectTestKWargs()
+        test_kwargs = ObjectTestKWArgs()
         with readable_object_context(monkeypatch, tmp_path, **test_kwargs.__dict__) as obj:
             assert obj.pos == 0
             obj.seek(30)
@@ -74,7 +75,7 @@ class TestReadableObject:
                 pass
 
     def test_read(self, monkeypatch, tmp_path):
-        test_kwargs = ObjectTestKWargs()
+        test_kwargs = ObjectTestKWArgs()
         with readable_object_context(monkeypatch, tmp_path, **test_kwargs.__dict__) as obj:
             object_stats = ObjectTestStats()
             object_stats.path = test_kwargs.path
@@ -92,7 +93,7 @@ class TestReadableObject:
             start_pos = 0
             end_pos = object_stats.size_bytes - 1
 
-            def monkey_get_object(_, repository, ref, path, range, presign, **kwargs):  # pylint: disable=W0622
+            def monkey_get_object(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
                 assert repository == test_kwargs.repository
                 assert ref == test_kwargs.reference
                 assert path == test_kwargs.path
@@ -127,7 +128,7 @@ class TestReadableObject:
                 pass
 
     def test_exists(self, monkeypatch, tmp_path):
-        test_kwargs = ObjectTestKWargs()
+        test_kwargs = ObjectTestKWArgs()
         with readable_object_context(monkeypatch, tmp_path, **test_kwargs.__dict__) as obj:
             # Object exists
             monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "head_object", lambda *args: None)
@@ -149,7 +150,7 @@ class TestReadableObject:
 
 class TestWriteableObject:
     def test_create(self, monkeypatch, tmp_path):
-        test_kwargs = ObjectTestKWargs()
+        test_kwargs = ObjectTestKWArgs()
         with writeable_object_context(monkeypatch, tmp_path, **test_kwargs.__dict__) as obj:
             staging_location = StagingTestLocation()
             monkeypatch.setattr(lakefs_sdk.api.StagingApi, "get_physical_address", lambda *args: staging_location)
@@ -157,7 +158,7 @@ class TestWriteableObject:
             resp.status_code = http.HTTPStatus.OK.value
             monkeypatch.setattr(requests.Session, "put", lambda *args, **kwargs: resp)
 
-            def monkey_link_physical_address(*args, staging_metadata: lakefs_sdk.StagingMetadata, **kwargs):
+            def monkey_link_physical_address(*_, staging_metadata: lakefs_sdk.StagingMetadata, **__):
                 assert staging_metadata.size_bytes == len(data)
                 assert staging_metadata.staging == staging_location
 
