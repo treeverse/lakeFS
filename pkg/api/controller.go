@@ -1541,6 +1541,14 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 	ctx := r.Context()
+
+	// verify first if there is a repository definition
+	_, err := c.Catalog.GetRepository(ctx, body.Name)
+	if err == nil {
+		writeError(w, r, http.StatusConflict, "repository already exists")
+		return
+	}
+
 	sampleData := swag.BoolValue(body.SampleData)
 	c.LogAction(ctx, "create_repo", r, body.Name, "", "")
 	if sampleData {
