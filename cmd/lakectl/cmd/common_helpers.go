@@ -39,11 +39,17 @@ const (
 const (
 	internalPageSize           = 1000 // when retrieving all records, use this page size under the hood
 	defaultAmountArgumentValue = 100  // when no amount is specified, use this value for the argument
+
+	defaultPullInterval = 3 * time.Second // default interval while pulling task's status
+	minimumPullInterval = time.Second     // minimum interval while pulling task's status
+	defaultPullExpiry   = time.Hour       // default expiry for pull status with no update
 )
 
 const resourceListTemplate = `{{.Table | table -}}
 {{.Pagination | paginate }}
 `
+
+var ErrTaskNotCompleted = errors.New("task not completed")
 
 //nolint:gochecknoinits
 func init() {
@@ -400,7 +406,7 @@ func OpenByPath(path string) (io.ReadSeekCloser, error) {
 	return temp, nil
 }
 
-// Must return the call value or die with err if err is not nil
+// Must return the call value or die with error if err is not nil
 func Must[T any](v T, err error) T {
 	if err != nil {
 		DieErr(err)

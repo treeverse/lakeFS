@@ -430,6 +430,7 @@ func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Ca
 		{
 			name:     "delete expired tasks",
 			interval: deleteExpiredTaskInterval,
+			fn:       c.DeleteExpiredTasks,
 		},
 	}
 

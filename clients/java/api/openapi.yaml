@@ -2303,6 +2303,213 @@ paths:
       - internal
       x-content-type: application/json
       x-accepts: application/json
+  /repositories/{repository}/dump:
+    get:
+      operationId: dumpStatus
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: task_id
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryDumpStatus'
+          description: dump task status
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: "Dump repository (tags, commits, branches) to object store"
+      tags:
+      - repositories
+      x-accepts: application/json
+    post:
+      operationId: dumpSubmit
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskInfo'
+          description: dump task information
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: "Dump repository refs (tags, commits, branches) to object store"
+      tags:
+      - repositories
+      x-accepts: application/json
+  /repositories/{repository}/restore:
+    get:
+      operationId: restoreStatus
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: task_id
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryRestoreStatus'
+          description: restore task status
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: "Restore repository (tags, commits, branches) from object store"
+      tags:
+      - repositories
+      x-accepts: application/json
+    post:
+      operationId: restoreSubmit
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefsDump'
+        required: true
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskInfo'
+          description: restore task created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: "Restore repository (tags, commits, branches) from object store"
+      tags:
+      - repositories
+      x-content-type: application/json
+      x-accepts: application/json
   /repositories/{repository}/tags:
     get:
       operationId: listTags
@@ -6519,6 +6726,66 @@ components:
       required:
       - id
       - ref
+      type: object
+    TaskInfo:
+      example:
+        id: id
+      properties:
+        id:
+          description: ID of the task
+          type: string
+      required:
+      - id
+      type: object
+    RepositoryDumpStatus:
+      example:
+        update_time: 2000-01-23T04:56:07.000+00:00
+        refs:
+          tags_meta_range_id: tags_meta_range_id
+          branches_meta_range_id: branches_meta_range_id
+          commits_meta_range_id: commits_meta_range_id
+        id: id
+        completed: true
+        error: error
+      properties:
+        id:
+          description: ID of the task
+          type: string
+        completed:
+          type: boolean
+        update_time:
+          format: date-time
+          type: string
+        error:
+          type: string
+        refs:
+          $ref: '#/components/schemas/RefsDump'
+      required:
+      - completed
+      - id
+      - update_time
+      type: object
+    RepositoryRestoreStatus:
+      example:
+        update_time: 2000-01-23T04:56:07.000+00:00
+        id: id
+        completed: true
+        error: error
+      properties:
+        id:
+          description: ID of the task
+          type: string
+        completed:
+          type: boolean
+        update_time:
+          format: date-time
+          type: string
+        error:
+          type: string
+      required:
+      - completed
+      - id
+      - update_time
       type: object
     RefsDump:
       example:

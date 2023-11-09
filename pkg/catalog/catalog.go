@@ -2593,6 +2593,21 @@ func (c *Catalog) DeleteExpiredImports(ctx context.Context) {
 	}
 }
 
+func (c *Catalog) DeleteExpiredTasks(ctx context.Context) {
+	repos, err := c.listRepositoriesHelper(ctx)
+	if err != nil {
+		c.log(ctx).WithError(err).Warn("Delete expired tasks, failed to list repositories")
+		return
+	}
+
+	for _, repo := range repos {
+		err := c.deleteRepositoryExpiredTasks(ctx, repo)
+		if err != nil {
+			c.log(ctx).WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired tasks failed")
+		}
+	}
+}
+
 func (c *Catalog) listRepositoriesHelper(ctx context.Context) ([]*graveler.RepositoryRecord, error) {
 	it, err := c.Store.ListRepositories(ctx)
 	if err != nil {
