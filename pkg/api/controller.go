@@ -1548,7 +1548,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	// Example will be by restoring a repository from a backup or previous bare repository.
 	_, err := c.Catalog.GetRepository(ctx, body.Name)
 	if err == nil {
-		writeError(w, r, http.StatusConflict, "repository already exists")
+		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", graveler.ErrNotUnique))
 		return
 	}
 
