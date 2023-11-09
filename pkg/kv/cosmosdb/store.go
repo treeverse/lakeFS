@@ -375,12 +375,12 @@ type EntriesIterator struct {
 	startKey     []byte
 	limit        int
 
-	entry          *kv.Entry
-	err            error
-	currEntryIdx   int
-	queryPager     *runtime.Pager[azcosmos.QueryItemsResponse]
-	queryCtx       context.Context
-	currPage       azcosmos.QueryItemsResponse
+	entry              *kv.Entry
+	err                error
+	currEntryIdx       int
+	queryPager         *runtime.Pager[azcosmos.QueryItemsResponse]
+	queryCtx           context.Context
+	currPage           azcosmos.QueryItemsResponse
 	encoding           *base32.Encoding
 	minKeyWithNoResult []byte
 }
