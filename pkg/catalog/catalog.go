@@ -1969,6 +1969,8 @@ func (c *Catalog) runBackgroundTaskSteps(ctx context.Context, repository *gravel
 
 	logger := c.log(ctx).WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID})
 	c.workPool.Submit(func() {
+		// make sure we use background context as work is done in the background
+		ctx := context.Background()
 		for stepIdx, step := range steps {
 			// call the step function
 			err := step.Func()
