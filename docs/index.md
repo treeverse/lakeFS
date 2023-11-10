@@ -138,7 +138,7 @@ Being able to look at data as it was at a given point is particularly useful in 
 
 Human error, misconfiguration, or wide-ranging systematic effects are
 unavoidable. When they do happen, erroneous data may make it into
-production or critical data assets might accidentally by deleted.
+production or critical data assets might accidentally be deleted.
 
 By their nature, backups are a wrong tool for recovering from such events.
 Backups are periodic events that are usually not tied to performing
