@@ -18,5 +18,4 @@ var (
 	ErrItClosed = errors.New("iterator closed")
 
 	ErrFeatureNotSupported = errors.New("feature not supported")
-	ErrInvalidTaskStatus   = errors.New("invalid task status message type")
 )

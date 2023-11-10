@@ -1841,7 +1841,9 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 				if err != nil {
 					return err
 				}
-				taskStatus.Info.CommitsMetarangeId = string(*commitsMetaRangeID)
+				taskStatus.Info = &RepositoryDumpInfo{
+					CommitsMetarangeId: string(*commitsMetaRangeID),
+				}
 				return nil
 			},
 		},
@@ -1951,16 +1953,16 @@ func (c *Catalog) RestoreRepositoryStatus(ctx context.Context, repositoryID stri
 // the task status is updated after each step, and the task is marked as completed if the step is the last one.
 // initial update if the task is done before running the steps.
 func (c *Catalog) runBackgroundTaskSteps(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, steps []taskStep, taskStatus protoreflect.ProtoMessage) error {
-	// Reference task status's 'Task' field.
+	// Allocate Task and set if on the taskStatus's 'Task' field.
+	// We continue to update this field while running each step.
 	// If the task field in the common Protobuf message is changed, we need to update the field name here as well.
-	task := reflect.ValueOf(taskStatus).Elem().FieldByName("Task").Addr().Interface().(*Task)
-	if task == nil {
-		return ErrInvalidTaskStatus
+	task := &Task{
+		Id:        taskID,
+		UpdatedAt: timestamppb.Now(),
 	}
+	reflect.ValueOf(taskStatus).Elem().FieldByName("Task").Set(reflect.ValueOf(task))
 
 	// initial task update done before we run each step in the background task
-	task.Id = taskID
-	task.UpdatedAt = timestamppb.Now()
 	if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
 		return err
 	}
