@@ -3433,8 +3433,9 @@ func (c *Controller) DumpStatus(w http.ResponseWriter, r *http.Request, reposito
 
 	// build response based on status
 	response := &apigen.RepositoryDumpStatus{
-		Id:        params.TaskId,
-		Completed: status.Task.Completed,
+		Id:         params.TaskId,
+		Completed:  status.Task.Completed,
+		UpdateTime: status.Task.UpdatedAt.AsTime(),
 	}
 	if status.Task.Error != "" {
 		response.Error = apiutil.Ptr(status.Task.Error)
@@ -3529,8 +3530,9 @@ func (c *Controller) RestoreStatus(w http.ResponseWriter, r *http.Request, repos
 
 	// build response based on status
 	response := &apigen.RepositoryRestoreStatus{
-		Id:        params.TaskId,
-		Completed: status.Task.Completed,
+		Id:         params.TaskId,
+		Completed:  status.Task.Completed,
+		UpdateTime: status.Task.UpdatedAt.AsTime(),
 	}
 	if status.Task.Error != "" {
 		response.Error = apiutil.Ptr(status.Task.Error)
