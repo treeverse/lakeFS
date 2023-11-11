@@ -4629,8 +4629,11 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 		if restoreStatus == nil {
 			t.Fatal("Expected restore to complete (timed-out)")
 		}
-		if restoreStatus.Error != nil {
-			t.Fatalf("Failed to restore repository refs: %s", *restoreStatus.Error)
+		if restoreStatus.Error == nil {
+			t.Fatal("Expected restore to fail, got nil Error")
+		}
+		if !strings.Contains(*restoreStatus.Error, graveler.ErrNotFound.Error()) {
+			t.Fatal("Expected restore to fail with not found error")
 		}
 	})
 
