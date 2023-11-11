@@ -1,5 +1,5 @@
 # Build lakeFS
-FROM --platform=$BUILDPLATFORM golang:1.20.6-alpine3.18 AS build
+FROM --platform=$BUILDPLATFORM golang:1.21.3-alpine3.18 AS build
 
 ARG VERSION=dev
 
