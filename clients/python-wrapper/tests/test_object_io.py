@@ -1,5 +1,6 @@
-import requests
+import http
 from contextlib import contextmanager
+import requests
 import lakefs_sdk.api
 
 from tests.test_client import lakectl_test_config_context
@@ -153,7 +154,7 @@ class TestWriteableObject:
             staging_location = StagingTestLocation()
             monkeypatch.setattr(lakefs_sdk.api.StagingApi, "get_physical_address", lambda *args: staging_location)
             resp = requests.Response()
-            resp.status_code = requests.codes.OK
+            resp.status_code = http.HTTPStatus.OK.value
             monkeypatch.setattr(requests.Session, "put", lambda *args, **kwargs: resp)
 
             def monkey_link_physical_address(*args, staging_metadata: lakefs_sdk.StagingMetadata, **kwargs):

@@ -996,6 +996,7 @@ jobs:
         env:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-python-wrapper/${{ steps.unique.outputs.value }}
         run: ./setup-test.sh
+
       - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
