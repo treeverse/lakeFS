@@ -18,7 +18,7 @@ class Client:
     _client: Optional[LakeFSClient] = None
     http_client: Optional[requests.Session] = None
     _conf: Optional[ClientConfig] = None
-    _storage_conf: Optional[lakefs_sdk.StorageConfig] = None
+    _server_conf: Optional[lakefs_sdk.Config] = None
 
     def __init__(self, **kwargs):
         self._conf = ClientConfig(**kwargs)
@@ -53,9 +53,15 @@ class Client:
 
     @property
     def storage_config(self):
-        if self._storage_conf is None:
-            self._storage_conf = self._client.internal_api.get_storage_config()
-        return lakefs_sdk.StorageConfig(**self._storage_conf.__dict__)
+        if self._server_conf is None:
+            self._server_conf = self._client.config_api.get_config()
+        return lakefs_sdk.StorageConfig(**self._server_conf.storage_config.__dict__)
+
+    @property
+    def version_config(self):
+        if self._server_conf is None:
+            self._server_conf = self._client.config_api.get_config()
+        return lakefs_sdk.VersionConfig(**self._server_conf.version_config.__dict__)
 
 
 # global default client
