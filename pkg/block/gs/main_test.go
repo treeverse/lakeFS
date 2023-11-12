@@ -2,14 +2,17 @@ package gs_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"testing"
 
 	"cloud.google.com/go/storage"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
+	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
@@ -34,19 +37,16 @@ func TestMain(m *testing.M) {
 	}
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "fsouza/fake-gcs-server",
-		Tag:        "1.47.4",
+		Tag:        "1.47.6",
 		Cmd: []string{
-			"-scheme",
-			"http",
-			"-backend",
-			"memory",
-			"-public-host",
-			endpoint,
+			"-scheme", "http",
+			"-backend", "memory",
+			"-public-host", endpoint,
 		},
 		ExposedPorts: []string{emulatorTestPort},
 		PortBindings: map[docker.Port][]docker.PortBinding{
-			docker.Port(fmt.Sprintf("%s/tcp", emulatorTestPort)): {
-				{HostIP: emulatorTestPort, HostPort: fmt.Sprintf("%s/tcp", emulatorTestPort)},
+			docker.Port(emulatorTestPort + "/tcp"): {
+				{HostIP: emulatorTestPort, HostPort: emulatorTestPort + "/tcp"},
 			},
 		},
 	})
@@ -69,10 +69,24 @@ func TestMain(m *testing.M) {
 	}
 
 	// Create the test client and bucket
-	blockURL := fmt.Sprintf("http://%s/storage/v1/", endpoint)
+	blockURL := fmt.Sprintf("http://%s/storage/v1/", url.PathEscape(endpoint))
 	client, err = storage.NewClient(ctx, option.WithEndpoint(blockURL), option.WithoutAuthentication())
 	if err != nil {
 		log.Fatalf("Could not create gs client: %s", err)
+	}
+
+	// Wait for the container to be ready by listing buckets
+	if err := pool.Retry(func() error {
+		it := client.Buckets(ctx, gcsProjectID)
+		for {
+			_, err := it.Next()
+			if errors.Is(err, iterator.Done) {
+				return nil
+			}
+			return err
+		}
+	}); err != nil {
+		log.Fatalf("Could not connect to fake-gcs-server while trying to list buckets: %s", err)
 	}
 
 	if err := client.Bucket(bucketName).Create(ctx, gcsProjectID, nil); err != nil {
