@@ -967,7 +967,7 @@ jobs:
 
   python-wrapper:
     name: Test lakeFS against the python wrapper client
-    needs: deploy-image
+    needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

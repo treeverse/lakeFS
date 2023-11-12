@@ -5,7 +5,7 @@ from contextlib import contextmanager
 
 from lakefs import config as client_config
 
-TEST_SERVER = "https://test_server/api/v1"
+TEST_SERVER = "https://test_server"
 TEST_ACCESS_KEY_ID = "test_access_key_id"
 TEST_SECRET_ACCESS_KEY = "test_secret_access_key"
 TEST_CONFIG = f'''
@@ -17,10 +17,12 @@ credentials:
     secret_access_key: {TEST_SECRET_ACCESS_KEY}
 '''
 
+TEST_ENDPOINT_PATH = "/api/v1"
+
 TEST_CONFIG_KWARGS = {
     "username": "my_username",
     "password": "my_password",
-    "host": "http://my_host/api/v1",
+    "host": "http://my_host",
     "access_token": "my_jwt_token"
 }
 
@@ -67,7 +69,7 @@ class TestClient:
         with lakectl_test_config_context(monkeypatch, tmp_path) as client:
             assert client.DefaultClient is not None
             config = client.DefaultClient.config
-            assert config.host == TEST_SERVER
+            assert config.host == TEST_SERVER + TEST_ENDPOINT_PATH
             assert config.username == TEST_ACCESS_KEY_ID
             assert config.password == TEST_SECRET_ACCESS_KEY
 
@@ -89,7 +91,7 @@ class TestClient:
         with lakectl_test_config_context(monkeypatch, tmp_path) as client:
             clt = client.Client(**TEST_CONFIG_KWARGS)
             config = clt.config
-            assert config.host == TEST_CONFIG_KWARGS["host"]
+            assert config.host == TEST_CONFIG_KWARGS["host"] + TEST_ENDPOINT_PATH
             assert config.username == TEST_CONFIG_KWARGS["username"]
             assert config.password == TEST_CONFIG_KWARGS["password"]
             assert config.access_token == TEST_CONFIG_KWARGS["access_token"]
@@ -101,7 +103,7 @@ class TestClient:
             init(**TEST_CONFIG_KWARGS)
             assert client.DefaultClient is not None
             config = client.DefaultClient.config
-            assert config.host == TEST_CONFIG_KWARGS["host"]
+            assert config.host == TEST_CONFIG_KWARGS["host"] + TEST_ENDPOINT_PATH
             assert config.username == TEST_CONFIG_KWARGS["username"]
             assert config.password == TEST_CONFIG_KWARGS["password"]
             assert config.access_token == TEST_CONFIG_KWARGS["access_token"]
