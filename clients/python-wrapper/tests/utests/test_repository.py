@@ -2,7 +2,7 @@ import http
 import time
 
 import lakefs_sdk
-from lakefs.exceptions import ServerException, NotAuthorizedException, RepositoryNotFoundException
+from lakefs.exceptions import ServerException, NotAuthorizedException, NotFoundException, ConflictException
 from lakefs.repository import RepositoryProperties
 
 from tests.utests.common import get_test_repo, TEST_REPO_ARGS
@@ -61,11 +61,11 @@ def test_repository_creation_already_exists(monkeypatch):
                     default_branch=TEST_REPO_ARGS.default_branch,
                     include_samples=TEST_REPO_ARGS.sample_data)
         assert 0, "Exception expected"
-    except ServerException:
+    except ConflictException:
         pass
 
     # Expect fail on exists
-    ex = lakefs_sdk.exceptions.UnauthorizedException()
+    ex = lakefs_sdk.exceptions.UnauthorizedException(http.HTTPStatus.UNAUTHORIZED)
     try:
         repo.create(storage_namespace=TEST_REPO_ARGS.storage_namespace,
                     default_branch=TEST_REPO_ARGS.default_branch,
@@ -88,14 +88,14 @@ def test_delete_repository(monkeypatch):
 
         monkeypatch.setattr(lakefs_sdk.RepositoriesApi, "delete_repository", monkey_delete_repository)
         # Not found
-        ex = lakefs_sdk.exceptions.NotFoundException()
+        ex = lakefs_sdk.exceptions.NotFoundException(status=http.HTTPStatus.NOT_FOUND)
         try:
             repo.delete()
             assert 0, "Exception expected"
-        except RepositoryNotFoundException:
+        except NotFoundException:
             pass
         # Unauthorized
-        ex = lakefs_sdk.exceptions.UnauthorizedException()
+        ex = lakefs_sdk.exceptions.UnauthorizedException(status=http.HTTPStatus.UNAUTHORIZED)
         try:
             repo.delete()
             assert 0, "Exception expected"
