@@ -10,7 +10,7 @@ def test_sanity_client():
     host = os.getenv("LAKECTL_SERVER_ENDPOINT_URL")
     assert clt.config.username == key
     assert clt.config.password == secret
-    assert clt.config.host == host
+    assert clt.config.host == host + "/api/v1"
 
     version = os.getenv("TAG")
     assert clt.version_config.version == version
