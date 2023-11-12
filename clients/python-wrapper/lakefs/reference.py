@@ -7,8 +7,7 @@ from lakefs.client import Client
 
 class Reference:
     """
-    Class representing a reference in lakeFS. This class should not be instantiated on its own. It should be created
-    in the context of a Repository object.
+    Class representing a reference in lakeFS.
     """
     _client: Client
     repo_id: str
