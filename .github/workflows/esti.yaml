@@ -975,28 +975,23 @@ jobs:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
 
-    steps:
-      - name: Check-out code
-        uses: actions/checkout@v4
-
-      - name: Test lakeFS with Python Wrapper
-        uses: ./.github/actions/bootstrap-test-lakefs
-        with:
-          compose-directory: test/python_wrapper
+    services:
+      lakefs:
+        image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
+        credentials:
+          username: ${{ needs.login-to-amazon-ecr.outputs.docker_username }}
+          password: ${{ needs.login-to-amazon-ecr.outputs.docker_password }}
+        ports:
+          - '8000:8000'
         env:
+          LAKEFS_DATABASE_TYPE: local
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          LAKEFS_DATABASE_TYPE: postgres
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-python-wrapper/${{ steps.unique.outputs.value }}
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
+          LAKEFS_STATS_ENABLED: false
 
-      - name: Setup lakeFS for tests
-        working-directory: test/python_wrapper
-        env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-python-wrapper/${{ steps.unique.outputs.value }}
-        run: ./setup-test.sh
-
+    steps:
       - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
@@ -1011,7 +1006,7 @@ jobs:
         env:
           LAKECTL_CREDENTIALS_ACCESS_KEY_ID: AKIAIOSFDNN7EXAMPLEQ
           LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-          LAKECTL_SERVER_ENDPOINT_URL: http://localhost:8000/api/v1
+          LAKECTL_SERVER_ENDPOINT_URL: http://localhost:8000
         with:
           verbose: true
           emoji: true
