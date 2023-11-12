@@ -970,8 +970,6 @@ jobs:
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
 
@@ -992,6 +990,9 @@ jobs:
           LAKEFS_STATS_ENABLED: false
 
     steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+
       - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
