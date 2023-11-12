@@ -2,7 +2,7 @@ import requests
 from contextlib import contextmanager
 import lakefs_sdk.api
 
-from utests.test_client import lakectl_test_config_context
+from tests.test_client import lakectl_test_config_context
 
 
 class ObjectTestKWargs:
