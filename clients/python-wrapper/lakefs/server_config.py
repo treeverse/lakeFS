@@ -5,6 +5,7 @@ Module containing lakeFS ServerConfiguration implementation
 from typing import NamedTuple, Optional
 
 import lakefs_sdk
+from pydantic import StrictBool
 
 from lakefs.client import Client, DefaultClient
 
@@ -14,8 +15,8 @@ class ServerStorageConfiguration(NamedTuple):
     Represent lakeFS's server storage configuration
     """
     blockstore_type: str
-    pre_sign_support: bool
-    import_support: bool
+    pre_sign_support: StrictBool
+    import_support: StrictBool
 
 
 class ServerConfiguration:

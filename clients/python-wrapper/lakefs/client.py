@@ -9,8 +9,6 @@ In case no credentials exist, a call to init() will be required or a Client obje
 """
 
 from typing import Optional
-import requests
-from requests.auth import HTTPBasicAuth
 
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
@@ -26,35 +24,12 @@ class Client:
     """
 
     _client: Optional[LakeFSClient] = None
-    http_client: Optional[requests.Session] = None
     _conf: Optional[ClientConfig] = None
     _server_conf: Optional[lakefs_sdk.Config] = None
 
     def __init__(self, **kwargs):
         self._conf = ClientConfig(**kwargs)
         self._client = LakeFSClient(self._conf.configuration)
-
-        # Set up http client
-        config = self._conf.configuration
-        headers = {}
-        auth = None
-        if config.access_token is not None:
-            # TODO: Create custom auth class and inherit from BaseAuth
-            headers["Authorization"] = f"Bearer {config.access_token}"
-
-        if config.username is not None and config.password is not None:
-            auth = HTTPBasicAuth(config.username, config.password)
-
-        self.http_client = requests.Session()
-        self.http_client.headers = headers
-        self.http_client.auth = auth
-
-    def close(self):
-        """
-        Closes any open connections
-        """
-        if self.http_client is not None:
-            self.http_client.close()
 
     @property
     def config(self):
