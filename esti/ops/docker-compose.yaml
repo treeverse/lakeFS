@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
   lakefs:
     image: "${REPO:-treeverse}/lakefs:${TAG:-dev}"
@@ -37,7 +37,7 @@ services:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
   esti:
-    image: "golang:1.20.6-alpine3.18"
+    image: "golang:1.21.3-alpine3.18"
     links:
       - lakefs:s3.local.lakefs.io
       - lakefs:testmultipartupload.s3.local.lakefs.io
@@ -81,4 +81,3 @@ volumes:
       type: none
       device: ${LAKEFS_ROOT:-.}
   lakefs-app:
-
