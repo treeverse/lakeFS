@@ -1,5 +1,4 @@
 from lakefs.repository import Repository
-from lakefs.tag import Tag
 from tests.utests.common import get_test_client
 
 
@@ -9,9 +8,6 @@ def test_tag_creation():
     """
     client = get_test_client()
     repo = Repository(repository_id="test_repo", client=client)
-    repo.Tag("test_tag")
-    try:
-        Tag()
-        assert 0
-    except NotImplementedError:
-        pass
+    tag = repo.Tag("test_tag")
+    assert tag.repo_id == "test_repo"
+    assert tag.id == "test_tag"

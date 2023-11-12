@@ -25,30 +25,6 @@ class Repository:
     _client: Client
     _id: str
 
-    class _Reference(Reference):
-        """
-        Internal class which enables instantiation of the Reference class
-        """
-
-        def __init__(self, client: Client, repo_id: str, ref_id: str) -> None:
-            super()._init_base(client, repo_id, ref_id)
-
-    class _Tag(lakefs.tag.Tag):
-        """
-        Internal class which enables instantiation of the Tag class
-        """
-
-        def __init__(self, client: Client, repo_id: str, tag_id: str) -> None:
-            super()._init_base(client, repo_id, tag_id)
-
-    class _Branch(lakefs.branch.Branch):
-        """
-        Internal class which enables instantiation of the Branch class
-        """
-
-        def __init__(self, client: Client, repo_id: str, branch_id: str) -> None:
-            super()._init_base(client, repo_id, branch_id)
-
     def __init__(self, repository_id: str, client: Optional[Client] = DefaultClient) -> None:
         self._id = repository_id
         self._client = client
@@ -106,28 +82,28 @@ class Repository:
         Return a branch object using the current repository id and client
         :param branch_id: name of the branch
         """
-        return Repository._Branch(self._client, self._id, branch_id)
+        return lakefs.branch.Branch(self._client, self._id, branch_id)
 
     def Commit(self, commit_id: str) -> Reference:  # pylint: disable=C0103
         """
         Return a reference object using the current repository id and client
         :param commit_id: id of the commit reference
         """
-        return Repository._Reference(self._client, self._id, commit_id)
+        return lakefs.reference.Reference(self._client, self._id, commit_id)
 
     def Ref(self, ref_id: str) -> Reference:  # pylint: disable=C0103
         """
         Return a reference object using the current repository id and client
         :param ref_id: branch name, commit id or tag id
         """
-        return Repository._Reference(self._client, self._id, ref_id)
+        return lakefs.reference.Reference(self._client, self._id, ref_id)
 
     def Tag(self, tag_id: str) -> lakefs.tag.Tag:  # pylint: disable=C0103
         """
         Return a tag object using the current repository id and client
         :param tag_id: name of the tag
         """
-        return Repository._Tag(self._client, self._id, tag_id)
+        return lakefs.tag.Tag(self._client, self._id, tag_id)
 
     @property
     def metadata(self) -> dict[str, str]:

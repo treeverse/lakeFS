@@ -1,5 +1,4 @@
 from lakefs.repository import Repository
-from lakefs.reference import Reference
 
 from tests.utests.common import get_test_client
 
@@ -10,9 +9,6 @@ def test_reference_creation():
     """
     client = get_test_client()
     repo = Repository(repository_id="test_repo", client=client)
-    repo.Ref("test_reference")
-    try:
-        Reference()
-        assert 0
-    except NotImplementedError:
-        pass
+    ref = repo.Ref("test_reference")
+    assert ref.repo_id == "test_repo"
+    assert ref.id == "test_reference"

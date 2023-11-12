@@ -1,5 +1,4 @@
 from lakefs.repository import Repository
-from lakefs.branch import Branch
 
 from tests.utests.common import get_test_client
 
@@ -10,9 +9,6 @@ def test_branch_creation():
     """
     client = get_test_client()
     repo = Repository(repository_id="test_repo", client=client)
-    repo.Branch("test_branch")
-    try:
-        Branch()
-        assert 0
-    except NotImplementedError:
-        pass
+    branch = repo.Branch("test_branch")
+    assert branch.repo_id == "test_repo"
+    assert branch.id == "test_branch"
