@@ -926,7 +926,7 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-        
+
       - name: Check-out code
         uses: actions/checkout@v4
 
@@ -964,3 +964,59 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+
+  python-wrapper:
+    name: Test lakeFS against the python wrapper client
+    needs: [deploy-image, login-to-amazon-ecr]
+    runs-on: ubuntu-22.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      LAKEFS_INSTALLATION_ACCESS_KEY_ID: AKIAIOSFDNN7EXAMPLEQ
+      LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+    services:
+      lakefs:
+        image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
+        credentials:
+          username: ${{ needs.login-to-amazon-ecr.outputs.docker_username }}
+          password: ${{ needs.login-to-amazon-ecr.outputs.docker_password }}
+        ports:
+          - '8000:8000'
+        env:
+          LAKEFS_DATABASE_TYPE: local
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_INSTALLATION_USER_NAME: admin
+          LAKEFS_INSTALLATION_ACCESS_KEY_ID: ${{ env.LAKEFS_INSTALLATION_ACCESS_KEY_ID }}
+          LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: ${{env.LAKEFS_INSTALLATION_SECRET_ACCESS_KEY }}
+          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
+          LAKEFS_STATS_ENABLED: false
+
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        working-directory: ./clients/python-wrapper
+        run: pip install -r requirements.txt pytest pytest-md pytest-emoji
+        
+      - name: Run Python Wrapper Tests
+        uses: pavelzw/pytest-action@v2
+        env:
+          LAKECTL_CREDENTIALS_ACCESS_KEY_ID: ${{ env.LAKEFS_INSTALLATION_ACCESS_KEY_ID }}
+          LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY: ${{env.LAKEFS_INSTALLATION_SECRET_ACCESS_KEY }}
+          LAKECTL_SERVER_ENDPOINT_URL: http://localhost:8000
+        with:
+          verbose: true
+          emoji: true
+          job-summary: true
+          custom-arguments: './clients/python-wrapper/tests/system_tests -rP'
+          click-to-expand: true
+          report-title: 'Python Wrapper System Tests Report'
