@@ -3,7 +3,7 @@ from contextlib import contextmanager
 import requests
 import lakefs_sdk.api
 
-from tests.test_client import lakectl_test_config_context
+from tests.utests.test_client import lakectl_test_config_context
 
 
 class ObjectTestKWargs:

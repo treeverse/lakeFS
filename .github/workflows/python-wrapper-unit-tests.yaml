@@ -28,7 +28,6 @@ jobs:
         run: |
           pylint tests --rc=tests/.pylintrc
           pylint lakefs --rc=lakefs/.pylintrc
-          pylint system-tests --rc=tests/.pylintrc
         continue-on-error: true  # TODO: remove once pylint errors are fixed in lakefs package
       
       - name: Run Unit Tests 
@@ -37,6 +36,6 @@ jobs:
           verbose: true
           emoji: true
           job-summary: true
-          custom-arguments: './clients/python-wrapper/tests -q'
+          custom-arguments: './clients/python-wrapper/tests/utests -q'
           click-to-expand: true
           report-title: 'Python Wrapper Unit Tests Report'
