@@ -381,7 +381,11 @@ type EntriesIterator struct {
 	queryPager   *runtime.Pager[azcosmos.QueryItemsResponse]
 	queryCtx     context.Context
 	currPage     azcosmos.QueryItemsResponse
-	encoding     *base32.Encoding
+	// currPageSeekedKey is the key we seeked to get this page, will be nil if this page wasn't returned by the query
+	currPageSeekedKey []byte
+	// currPageHasMore is true if the current page has more after it
+	currPageHasMore bool
+	encoding        *base32.Encoding
 }
 
 func (e *EntriesIterator) getKeyValue(i int) ([]byte, []byte) {
@@ -423,7 +427,8 @@ func (e *EntriesIterator) Next() bool {
 			// returned page is empty, no more items
 			return false
 		}
-
+		e.currPageSeekedKey = nil
+		e.currPageHasMore = e.queryPager.More()
 		e.currEntryIdx = -1
 	}
 	e.currEntryIdx++
@@ -485,14 +490,27 @@ func (e *EntriesIterator) runQuery() error {
 	e.currEntryIdx = -1
 	e.entry = nil
 	e.currPage = currPage
+	e.currPageSeekedKey = e.startKey
+	e.currPageHasMore = e.queryPager.More()
 	return nil
 }
 
+// isInRange checks if e.startKey falls within the range of keys on the current page.
+// To optimize range checking:
+// - If the current page is a result of a seek operation, the seeked key is used as the minimum key.
+// - If the current page is the last page, all keys greater than the minimum key are considered in range.
+// This function returns true if e.startKey is within these defined range criteria.
 func (e *EntriesIterator) isInRange() bool {
 	if len(e.currPage.Items) == 0 {
 		return false
 	}
-	minKey, _ := e.getKeyValue(0)
+	var minKey []byte
+	if e.currPageSeekedKey != nil {
+		minKey = e.currPageSeekedKey
+	} else {
+		minKey, _ = e.getKeyValue(0)
+	}
 	maxKey, _ := e.getKeyValue(len(e.currPage.Items) - 1)
-	return minKey != nil && maxKey != nil && bytes.Compare(e.startKey, minKey) >= 0 && bytes.Compare(e.startKey, maxKey) <= 0
+	return minKey != nil && maxKey != nil && bytes.Compare(e.startKey, minKey) >= 0 &&
+		(!e.currPageHasMore || bytes.Compare(e.startKey, maxKey) <= 0)
 }

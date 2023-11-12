@@ -479,20 +479,34 @@ func (e *EntriesIterator) runQuery() {
 	e.currEntryIdx = 0
 }
 
+// isInRange checks if key falls within the range of keys on the queryResult.
+// To optimize range checking:
+// - If the current queryResult is a result of a seek operation with exclusiveStartKey use exclusiveStartKey as the minKey otherwise use e.startKey as the minKey.
+// - Use LastEvaluatedKey as the Max value, in case LastEvaluatedKey is nil  all keys greater than the minimum key are considered in range.
+// This function returns true if e.startKey is within these defined range criteria.
 func (e *EntriesIterator) isInRange(key []byte) bool {
-	if len(e.queryResult.Items) == 0 {
+	minKey := e.startKey
+	if e.exclusiveStartKey != nil {
+		var minItem DynKVItem
+		e.err = attributevalue.UnmarshalMap(e.exclusiveStartKey, &minItem)
+		if e.err != nil {
+			return false
+		}
+		minKey = minItem.ItemKey
+	}
+	if bytes.Compare(key, minKey) < 0 {
 		return false
 	}
-	var maxItem, minItem DynKVItem
-	e.err = attributevalue.UnmarshalMap(e.queryResult.Items[0], &minItem)
+	if e.queryResult.LastEvaluatedKey == nil {
+		// evaluated all -> all keys greater than minKey are in range
+		return true
+	}
+	var maxItem DynKVItem
+	e.err = attributevalue.UnmarshalMap(e.queryResult.LastEvaluatedKey, &maxItem)
 	if e.err != nil {
 		return false
 	}
-	e.err = attributevalue.UnmarshalMap(e.queryResult.Items[len(e.queryResult.Items)-1], &maxItem)
-	if e.err != nil {
-		return false
-	}
-	return bytes.Compare(key, minItem.ItemKey) >= 0 && bytes.Compare(key, maxItem.ItemKey) <= 0
+	return bytes.Compare(key, maxItem.ItemKey) <= 0
 }
 
 // StartPeriodicCheck performs one check and continues every 'interval' in the background
