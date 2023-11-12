@@ -18,7 +18,7 @@ const (
 
 type taskStep struct {
 	Name string
-	Func func() error
+	Func func(ctx context.Context) error
 }
 
 func TaskPath(key string) string {

@@ -1836,7 +1836,7 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 	taskSteps := []taskStep{
 		{
 			Name: "dump commits",
-			Func: func() error {
+			Func: func(ctx context.Context) error {
 				commitsMetaRangeID, err := c.Store.DumpCommits(ctx, repository)
 				if err != nil {
 					return err
@@ -1849,7 +1849,7 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 		},
 		{
 			Name: "dump branches",
-			Func: func() error {
+			Func: func(ctx context.Context) error {
 				branchesMetaRangeID, err := c.Store.DumpBranches(ctx, repository)
 				if err != nil {
 					return err
@@ -1860,7 +1860,7 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 		},
 		{
 			Name: "dump tags",
-			Func: func() error {
+			Func: func(ctx context.Context) error {
 				tagsMetaRangeID, err := c.Store.DumpTags(ctx, repository)
 				if err != nil {
 					return err
@@ -1871,9 +1871,9 @@ func (c *Catalog) DumpRepositorySubmit(ctx context.Context, repositoryID string)
 		},
 	}
 
-	// create refs dump task and update initial status
+	// create refs dump task and update initial status.
 	taskID := NewTaskID(DumpRefsTaskIDPrefix)
-	err = c.runBackgroundTaskSteps(ctx, repository, taskID, taskSteps, taskStatus)
+	err = c.runBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus)
 	if err != nil {
 		return "", err
 	}
@@ -1908,25 +1908,25 @@ func (c *Catalog) RestoreRepositorySubmit(ctx context.Context, repositoryID stri
 	taskSteps := []taskStep{
 		{
 			Name: "load commits",
-			Func: func() error {
+			Func: func(ctx context.Context) error {
 				return c.Store.LoadCommits(ctx, repository, graveler.MetaRangeID(info.CommitsMetarangeId))
 			},
 		},
 		{
 			Name: "load branches",
-			Func: func() error {
+			Func: func(ctx context.Context) error {
 				return c.Store.LoadBranches(ctx, repository, graveler.MetaRangeID(info.BranchesMetarangeId))
 			},
 		},
 		{
 			Name: "load tags",
-			Func: func() error {
+			Func: func(ctx context.Context) error {
 				return c.Store.LoadTags(ctx, repository, graveler.MetaRangeID(info.TagsMetarangeId))
 			},
 		},
 	}
 	taskID := NewTaskID(RestoreRefsTaskIDPrefix)
-	if err := c.runBackgroundTaskSteps(ctx, repository, taskID, taskSteps, taskStatus); err != nil {
+	if err := c.runBackgroundTaskSteps(repository, taskID, taskSteps, taskStatus); err != nil {
 		return "", err
 	}
 	return taskID, nil
@@ -1952,7 +1952,7 @@ func (c *Catalog) RestoreRepositoryStatus(ctx context.Context, repositoryID stri
 // runBackgroundTaskSteps update task status provided after filling the 'Task' field and update for each step provided.
 // the task status is updated after each step, and the task is marked as completed if the step is the last one.
 // initial update if the task is done before running the steps.
-func (c *Catalog) runBackgroundTaskSteps(ctx context.Context, repository *graveler.RepositoryRecord, taskID string, steps []taskStep, taskStatus protoreflect.ProtoMessage) error {
+func (c *Catalog) runBackgroundTaskSteps(repository *graveler.RepositoryRecord, taskID string, steps []taskStep, taskStatus protoreflect.ProtoMessage) error {
 	// Allocate Task and set if on the taskStatus's 'Task' field.
 	// We continue to update this field while running each step.
 	// If the task field in the common Protobuf message is changed, we need to update the field name here as well.
@@ -1962,6 +1962,9 @@ func (c *Catalog) runBackgroundTaskSteps(ctx context.Context, repository *gravel
 	}
 	reflect.ValueOf(taskStatus).Elem().FieldByName("Task").Set(reflect.ValueOf(task))
 
+	// make sure we use background context as soon as we submit the task the request is done
+	ctx := context.Background()
+
 	// initial task update done before we run each step in the background task
 	if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
 		return err
@@ -1969,11 +1972,9 @@ func (c *Catalog) runBackgroundTaskSteps(ctx context.Context, repository *gravel
 
 	logger := c.log(ctx).WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID})
 	c.workPool.Submit(func() {
-		// make sure we use background context as work is done in the background
-		ctx := context.Background()
 		for stepIdx, step := range steps {
 			// call the step function
-			err := step.Func()
+			err := step.Func(ctx)
 			// update task part
 			task.UpdatedAt = timestamppb.Now()
 			if err != nil {
