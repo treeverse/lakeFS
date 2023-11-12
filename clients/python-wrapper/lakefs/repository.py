@@ -78,13 +78,11 @@ class Repository:
         try:
             return self._client.sdk_client.repositories_api.create_repository(repository_creation, **kwargs)
         except lakefs_sdk.exceptions.ApiException as e:
-            match e.__class__:
-                case lakefs_sdk.exceptions.UnauthorizedException:
-                    raise NotAuthorizedException(e.status, e.reason) from e
-                case _:
-                    if e.status == http.HTTPStatus.CONFLICT.value and exist_ok:  # Handle conflict 409
-                        return self._client.sdk_client.repositories_api.get_repository(self._id)
-                    raise ServerException(e.status, e.reason) from e
+            if isinstance(e, lakefs_sdk.exceptions.UnauthorizedException):
+                raise NotAuthorizedException(e.status, e.reason) from e
+            if e.status == http.HTTPStatus.CONFLICT.value and exist_ok:  # Handle conflict 409
+                return self._client.sdk_client.repositories_api.get_repository(self._id)
+            raise ServerException(e.status, e.reason) from e
 
     def delete(self) -> None:
         """
@@ -97,13 +95,11 @@ class Repository:
         try:
             self._client.sdk_client.repositories_api.delete_repository(self._id)
         except lakefs_sdk.exceptions.ApiException as e:
-            match e.__class__:
-                case lakefs_sdk.exceptions.NotFoundException:
-                    raise RepositoryNotFoundException(e.status, e.reason) from e
-                case lakefs_sdk.exceptions.UnauthorizedException:
-                    raise NotAuthorizedException(e.status, e.reason) from e
-                case _:
-                    raise ServerException(e.status, e.reason) from e
+            if isinstance(e, lakefs_sdk.exceptions.NotFoundException):
+                raise RepositoryNotFoundException(e.status, e.reason) from e
+            if isinstance(e, lakefs_sdk.exceptions.UnauthorizedException):
+                raise NotAuthorizedException(e.status, e.reason) from e
+            raise ServerException(e.status, e.reason) from e
 
     def Branch(self, branch_id: str) -> lakefs.branch.Branch:  # pylint: disable=C0103
         """

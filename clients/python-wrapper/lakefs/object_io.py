@@ -161,13 +161,12 @@ class WriteableObject(ReadableObject):
         try:
             stats = self._upload(content, is_presign, content_type, metadata)
         except lakefs_sdk.exceptions.ApiException as e:
-            match e:
-                case lakefs_sdk.exceptions.UnauthorizedException:
-                    raise PermissionException from e
-                case lakefs_sdk.exceptions.ForbiddenException:
-                    raise PermissionException from e
-                case _:
-                    raise ServerException from e
+            if isinstance(e, lakefs_sdk.exceptions.UnauthorizedException):
+                raise PermissionException from e
+            if isinstance(e, lakefs_sdk.exceptions.ForbiddenException):
+                raise PermissionException from e
+
+            raise ServerException from e
 
         # reset pos after create
         self._pos = 0
