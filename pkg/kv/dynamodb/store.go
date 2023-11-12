@@ -399,12 +399,17 @@ func (e *EntriesIterator) SeekGE(key []byte) {
 		}
 		return bytes.Compare(key, item.ItemKey) <= 0
 	})
+	if e.currEntryIdx == -1 {
+		// not found, set to the end
+		e.currEntryIdx = len(e.queryResult.Items)
+	}
 }
 
 func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
+	// check if we reached the end of the current queryResult, this can be called twice in case runQuery returned an empty result
 	for e.currEntryIdx == len(e.queryResult.Items) {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
