@@ -384,8 +384,7 @@ type EntriesIterator struct {
 	// currPageSeekedKey is the key we seeked to get this page, will be nil if this page wasn't returned by the query
 	currPageSeekedKey []byte
 	// currPageHasMore is true if the current page has more after it
-	currPageHasMore bool
-	encoding        *base32.Encoding
+	encoding *base32.Encoding
 }
 
 func (e *EntriesIterator) getKeyValue(i int) ([]byte, []byte) {
@@ -428,7 +427,6 @@ func (e *EntriesIterator) Next() bool {
 			return false
 		}
 		e.currPageSeekedKey = nil
-		e.currPageHasMore = e.queryPager.More()
 		e.currEntryIdx = -1
 	}
 	e.currEntryIdx++
@@ -452,17 +450,18 @@ func (e *EntriesIterator) SeekGE(key []byte) {
 		}
 		return
 	}
-	e.currEntryIdx = sort.Search(len(e.currPage.Items), func(i int) bool {
+	idx := sort.Search(len(e.currPage.Items), func(i int) bool {
 		currentKey, _ := e.getKeyValue(i)
 		if e.err != nil {
 			return false
 		}
 		return bytes.Compare(key, currentKey) <= 0
-	}) - 1
-	if e.currEntryIdx == -1 {
+	})
+	if idx == -1 {
 		// not found, set to the end
 		e.currEntryIdx = len(e.currPage.Items)
 	}
+	e.currEntryIdx = idx - 1
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {
@@ -495,7 +494,6 @@ func (e *EntriesIterator) runQuery() error {
 	e.entry = nil
 	e.currPage = currPage
 	e.currPageSeekedKey = e.startKey
-	e.currPageHasMore = e.queryPager.More()
 	return nil
 }
 
@@ -505,6 +503,9 @@ func (e *EntriesIterator) runQuery() error {
 // - If the current page is the last page, all keys greater than the minimum key are considered in range.
 // This function returns true if e.startKey is within these defined range criteria.
 func (e *EntriesIterator) isInRange() bool {
+	if e.err != nil {
+		return false
+	}
 	var minKey []byte
 	if e.currPageSeekedKey != nil {
 		minKey = e.currPageSeekedKey
@@ -513,11 +514,14 @@ func (e *EntriesIterator) isInRange() bool {
 			return false
 		}
 		minKey, _ = e.getKeyValue(0)
+		if minKey == nil {
+			return false
+		}
 	}
-	if minKey == nil || bytes.Compare(e.startKey, minKey) < 0 {
+	if  bytes.Compare(e.startKey, minKey) < 0 {
 		return false
 	}
-	if !e.currPageHasMore {
+	if !e.queryPager.More() {
 		// last page, all keys greater than minKey are in range
 		return true
 	}
