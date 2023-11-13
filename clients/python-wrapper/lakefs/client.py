@@ -15,7 +15,7 @@ import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
 from lakefs.config import ClientConfig
-from lakefs.exceptions import NoAuthenticationFound
+from lakefs.exceptions import NoAuthenticationFound, NotAuthorizedException, ServerException
 
 # global default client
 DefaultClient: Optional[Client] = None
@@ -37,9 +37,13 @@ class ServerConfiguration:
     _storage_conf: ServerStorageConfiguration
 
     def __init__(self, client: Optional[Client] = DefaultClient):
-        # TODO: try
-        self._conf = client.sdk_client.config_api.get_config()
-        self._storage_conf = ServerStorageConfiguration(**self._conf.storage_config.__dict__)
+        try:
+            self._conf = client.sdk_client.config_api.get_config()
+            self._storage_conf = ServerStorageConfiguration(**self._conf.storage_config.__dict__)
+        except lakefs_sdk.exceptions.ApiException as e:
+            if isinstance(e, lakefs_sdk.exceptions.ApiException):
+                raise NotAuthorizedException(e.status, e.reason) from e
+            raise ServerException(e.status, e.reason) from e
 
     @property
     def version(self) -> str:
