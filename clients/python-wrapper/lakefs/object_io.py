@@ -163,6 +163,7 @@ class WriteableObject(ReadableObject):
                pre_sign: Optional[bool] = None,
                content_type: Optional[str] = None,
                metadata: Optional[dict[str, str]] = None) -> ObjectStats:
+        # TODO: handle streams
         """
         Creates a new object or overwrites an existing object
         :param data: The contents of the object to write (can be bytes or string)
@@ -188,7 +189,6 @@ class WriteableObject(ReadableObject):
             content = data.encode('utf-8')
         elif not binary_mode and isinstance(data, bytes):
             content = data.decode('utf-8')
-        # TODO: handle streams
         is_presign = pre_sign if pre_sign is not None else self.pre_sign
         try:
             stats = self._upload_presign(content, content_type, metadata) if is_presign \
