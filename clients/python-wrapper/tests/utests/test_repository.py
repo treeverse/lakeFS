@@ -1,7 +1,9 @@
 import http
+import time
 
 import lakefs_sdk
 from lakefs.exceptions import ServerException, NotAuthorizedException, RepositoryNotFoundException
+from lakefs.repository import RepositoryProperties
 
 from tests.utests.common import get_test_repo, TEST_REPO_ARGS
 
@@ -14,6 +16,10 @@ def test_repository_creation(monkeypatch):
             assert repository_creation.storage_namespace == TEST_REPO_ARGS.storage_namespace
             assert repository_creation.default_branch == TEST_REPO_ARGS.default_branch
             assert repository_creation.sample_data == TEST_REPO_ARGS.sample_data
+            return lakefs_sdk.Repository(id=TEST_REPO_ARGS.name,
+                                         creation_date=int(time.time()),
+                                         storage_namespace=TEST_REPO_ARGS.storage_namespace,
+                                         default_branch=TEST_REPO_ARGS.default_branch)
 
         monkeypatch.setattr(lakefs_sdk.RepositoriesApi, "create_repository", monkey_create_repository)
         repo.create(storage_namespace=TEST_REPO_ARGS.storage_namespace,
@@ -47,7 +53,7 @@ def test_repository_creation_already_exists(monkeypatch):
                           include_samples=TEST_REPO_ARGS.sample_data,
                           exist_ok=True)
 
-        assert res == existing
+        assert res.properties == RepositoryProperties(**existing.__dict__)
 
     # Expect fail on exists
     try:

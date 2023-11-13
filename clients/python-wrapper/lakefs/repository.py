@@ -70,6 +70,7 @@ class Repository:
                 try:
                     repo = self._client.sdk_client.repositories_api.get_repository(self._id)
                     self._properties = RepositoryProperties(**repo.__dict__)
+                    return self
                 except lakefs_sdk.exceptions.ApiException as ex:
                     _handle_api_exception(ex)
             _handle_api_exception(e)
