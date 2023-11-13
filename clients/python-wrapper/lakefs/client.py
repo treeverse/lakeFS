@@ -8,13 +8,46 @@ In case no credentials exist, a call to init() will be required or a Client obje
 
 """
 
-from typing import Optional
+from __future__ import annotations
+from typing import Optional, NamedTuple
 
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
 from lakefs.config import ClientConfig
 from lakefs.exceptions import NoAuthenticationFound
+
+# global default client
+DefaultClient: Optional[Client] = None
+
+
+class ServerStorageConfiguration(NamedTuple):
+    blockstore_type: str
+    pre_sign_support: bool
+    import_support: bool
+    blockstore_namespace_example: str
+    blockstore_namespace_validity_regex: str
+    pre_sign_support_ui: bool
+    import_validity_regex: str
+    default_namespace_prefix: Optional[str] = None
+
+
+class ServerConfiguration:
+    _conf: lakefs_sdk.Config
+    _storage_conf: ServerStorageConfiguration
+
+    def __init__(self, client: Optional[Client] = DefaultClient):
+        # TODO: try
+        self._conf = client.sdk_client.config_api.get_config()
+        self._storage_conf = ServerStorageConfiguration(**self._conf.storage_config.__dict__)
+
+    @property
+    def version(self) -> str:
+        return self._conf.version_config.version
+
+    @property
+    def storage_config(self) -> ServerStorageConfiguration:
+        return self._storage_conf
 
 
 class Client:
@@ -25,7 +58,7 @@ class Client:
 
     _client: Optional[LakeFSClient] = None
     _conf: Optional[ClientConfig] = None
-    _server_conf: Optional[lakefs_sdk.Config] = None
+    _server_conf: Optional[ServerConfiguration] = None
 
     def __init__(self, **kwargs):
         self._conf = ClientConfig(**kwargs)
@@ -51,21 +84,18 @@ class Client:
         lakeFS SDK storage config object, lazy evaluated.
         """
         if self._server_conf is None:
-            self._server_conf = self._client.config_api.get_config()
-        return lakefs_sdk.StorageConfig(**self._server_conf.storage_config.__dict__)
+            self._server_conf = ServerConfiguration(self)
+        return self._server_conf.storage_config
 
     @property
-    def version_config(self) -> lakefs_sdk.VersionConfig:
+    def version(self) -> str:
         """
-        lakeFS SDK version config object, lazy evaluated.
+        lakeFS Server version, lazy evaluated.
         """
         if self._server_conf is None:
-            self._server_conf = self._client.config_api.get_config()
-        return lakefs_sdk.VersionConfig(**self._server_conf.version_config.__dict__)
+            self._server_conf = ServerConfiguration(self)
+        return self._server_conf.version
 
-
-# global default client
-DefaultClient: Optional[Client] = None
 
 try:
     DefaultClient = Client()
