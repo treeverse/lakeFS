@@ -459,6 +459,10 @@ func (e *EntriesIterator) SeekGE(key []byte) {
 		}
 		return bytes.Compare(key, currentKey) <= 0
 	}) - 1
+	if e.currEntryIdx == -1 {
+		// not found, set to the end
+		e.currEntryIdx = len(e.currPage.Items)
+	}
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {
@@ -510,7 +514,17 @@ func (e *EntriesIterator) isInRange() bool {
 		}
 		minKey, _ = e.getKeyValue(0)
 	}
+	if minKey == nil || bytes.Compare(e.startKey, minKey) < 0 {
+		return false
+	}
+	if !e.currPageHasMore {
+		// last page, all keys greater than minKey are in range
+		return true
+	}
+	if len(e.currPage.Items) == 0 {
+		// cosmosdb returned empty page but has more results, should not happen
+		return false
+	}
 	maxKey, _ := e.getKeyValue(len(e.currPage.Items) - 1)
-	return minKey != nil && maxKey != nil && bytes.Compare(e.startKey, minKey) >= 0 &&
-		(!e.currPageHasMore || bytes.Compare(e.startKey, maxKey) <= 0)
+	return maxKey != nil && bytes.Compare(e.startKey, maxKey) <= 0
 }
