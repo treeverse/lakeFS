@@ -501,13 +501,13 @@ func (e *EntriesIterator) runQuery() error {
 // - If the current page is the last page, all keys greater than the minimum key are considered in range.
 // This function returns true if e.startKey is within these defined range criteria.
 func (e *EntriesIterator) isInRange() bool {
-	if len(e.currPage.Items) == 0 {
-		return false
-	}
 	var minKey []byte
 	if e.currPageSeekedKey != nil {
 		minKey = e.currPageSeekedKey
 	} else {
+		if len(e.currPage.Items) == 0 {
+			return false
+		}
 		minKey, _ = e.getKeyValue(0)
 	}
 	maxKey, _ := e.getKeyValue(len(e.currPage.Items) - 1)
