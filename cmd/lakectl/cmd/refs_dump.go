@@ -26,10 +26,10 @@ var refsDumpCmd = &cobra.Command{
 		client := getClient()
 		output := Must(cmd.Flags().GetString("output"))
 		pollInterval := Must(cmd.Flags().GetDuration("poll-interval"))
-		if pollInterval < minimumPullInterval {
-			DieFmt("Pull interval must be at least %s", minimumPullInterval)
+		if pollInterval < minimumPollInterval {
+			DieFmt("Poll interval must be at least %s", minimumPollInterval)
 		}
-		pollExpiry := Must(cmd.Flags().GetDuration("poll-expiry"))
+		timeoutDuration := Must(cmd.Flags().GetDuration("timeout"))
 
 		// request refs dump
 		ctx := cmd.Context()
@@ -58,7 +58,7 @@ var refsDumpCmd = &cobra.Command{
 			if resp.JSON200.Completed {
 				return resp.JSON200, nil
 			}
-			if pollExpiry >= 0 && time.Since(resp.JSON200.UpdateTime) > pollExpiry {
+			if timeoutDuration >= 0 && time.Since(resp.JSON200.UpdateTime) > timeoutDuration {
 				return nil, backoff.Permanent(ErrTaskNotCompleted)
 			}
 			return nil, ErrTaskNotCompleted
@@ -111,7 +111,7 @@ func printRefs(output string, refs *apigen.RefsDump) error {
 //nolint:gochecknoinits
 func init() {
 	refsDumpCmd.Flags().StringP("output", "o", "", "output filename (default stdout)")
-	refsDumpCmd.Flags().Duration("poll-interval", defaultPullInterval, "poll status check interval")
-	refsDumpCmd.Flags().Duration("poll-expiry", defaultPullExpiry, "poll status check expiry")
+	refsDumpCmd.Flags().Duration("poll-interval", defaultPollInterval, "poll status check interval")
+	refsDumpCmd.Flags().Duration("timeout", defaultPollTimeout, "timeout for polling status checks")
 	rootCmd.AddCommand(refsDumpCmd)
 }

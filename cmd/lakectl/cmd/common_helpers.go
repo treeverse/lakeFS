@@ -40,9 +40,9 @@ const (
 	internalPageSize           = 1000 // when retrieving all records, use this page size under the hood
 	defaultAmountArgumentValue = 100  // when no amount is specified, use this value for the argument
 
-	defaultPullInterval = 3 * time.Second // default interval while pulling task's status
-	minimumPullInterval = time.Second     // minimum interval while pulling task's status
-	defaultPullExpiry   = time.Hour       // default expiry for pull status with no update
+	defaultPollInterval = 3 * time.Second // default interval while pulling task's status
+	minimumPollInterval = time.Second     // minimum interval while pulling task's status
+	defaultPollTimeout  = time.Hour       // default expiry for pull status with no update
 )
 
 const resourceListTemplate = `{{.Table | table -}}
