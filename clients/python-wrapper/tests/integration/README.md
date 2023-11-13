@@ -1,6 +1,6 @@
 # Python SDK Wrapper System Tests
 
-This package consists of the system tests for the python SDK wrapper.
+This package consists of the integration tests for the python SDK wrapper.
 Please make sure to add / modify tests whenever pushing new code to the SDK wrapper.
 
 These tests can be run against a lakeFS instance with the following environment configuration:
@@ -10,6 +10,12 @@ These tests can be run against a lakeFS instance with the following environment 
 LAKECTL_CREDENTIALS_ACCESS_KEY_ID=<your_lakefs_access_key_id>
 LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=<your_lakefs_secret_access_key>
 LAKECTL_SERVER_ENDPOINT_URL=<your_lakefs_endpoint>
+```
+
+## Export test environment variables
+```
+STORAGE_NAMESPACE: <base storage namespace for your tests>
+TAG: <lakeFS server version (dev)>
 ```
 
 ## Create a venv and install dependencies
