@@ -25,6 +25,9 @@ UploadContentType = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 
 
 class ObjectStats(NamedTuple):
+    """
+    Represent a lakeFS object's stats
+    """
     path: str
     path_type: str
     physical_address: str
@@ -60,6 +63,9 @@ class ReadableObject:
 
     @property
     def path(self) -> str:
+        """
+        Returns the object's path relative to repository and reference ids 
+        """
         return self._path
 
     @property

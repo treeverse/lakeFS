@@ -17,6 +17,9 @@ from lakefs.tag_manager import TagManager
 
 
 class RepositoryProperties(NamedTuple):
+    """
+    Represent a lakeFS repository's properties
+    """
     id: str
     creation_date: int
     default_branch: str
@@ -62,16 +65,15 @@ class Repository:
         try:
             repo = self._client.sdk_client.repositories_api.create_repository(repository_creation, **kwargs)
             self._properties = RepositoryProperties(**repo.__dict__)
-            return self
         except lakefs_sdk.exceptions.ApiException as e:
             if e.status == http.HTTPStatus.CONFLICT.value and exist_ok:  # Handle conflict 409
                 try:
                     repo = self._client.sdk_client.repositories_api.get_repository(self._id)
                     self._properties = RepositoryProperties(**repo.__dict__)
-                    return self
                 except lakefs_sdk.exceptions.ApiException as ex:
                     _handle_api_exception(ex)
             _handle_api_exception(e)
+        return self
 
     def delete(self) -> None:
         """
@@ -123,6 +125,7 @@ class Repository:
             return self._client.sdk_client.repositories_api.get_repository_metadata(repository=self._id)
         except lakefs_sdk.exceptions.ApiException as ex:
             _handle_api_exception(ex)
+        return {}  # pylint R1710: should not reach
 
     @property
     def branches(self) -> BranchManager:
@@ -140,12 +143,17 @@ class Repository:
 
     @property
     def properties(self) -> RepositoryProperties:
+        """
+        Return the repositories properties object
+        """
         if self._properties is None:
             try:
                 repo = self._client.sdk_client.repositories_api.get_repository(self._id)
                 self._properties = RepositoryProperties(**repo.__dict__)
+                return self._properties
             except lakefs_sdk.exceptions.ApiException as ex:
                 _handle_api_exception(ex)
+
         return self._properties
 
 
