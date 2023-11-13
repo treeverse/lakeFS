@@ -2765,7 +2765,7 @@ paths:
       tags:
         - repositories
       operationId: dumpStatus
-      summary: Dump repository (tags, commits, branches) to object store
+      summary: Status of a repository dump task
       parameters:
         - in: query
           name: task_id
