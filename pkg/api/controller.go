@@ -3456,19 +3456,19 @@ func (c *Controller) RestoreSubmit(w http.ResponseWriter, r *http.Request, body 
 		Nodes: []permissions.Node{
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.ListTagsAction,
+					Action:   permissions.CreateTagAction,
 					Resource: permissions.RepoArn(repository),
 				},
 			},
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.ListBranchesAction,
+					Action:   permissions.CreateBranchAction,
 					Resource: permissions.RepoArn(repository),
 				},
 			},
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.ListCommitsAction,
+					Action:   permissions.CreateCommitAction,
 					Resource: permissions.RepoArn(repository),
 				},
 			},
@@ -3500,19 +3500,19 @@ func (c *Controller) RestoreStatus(w http.ResponseWriter, r *http.Request, repos
 		Nodes: []permissions.Node{
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.ListTagsAction,
+					Action:   permissions.CreateTagAction,
 					Resource: permissions.RepoArn(repository),
 				},
 			},
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.ListBranchesAction,
+					Action:   permissions.CreateBranchAction,
 					Resource: permissions.RepoArn(repository),
 				},
 			},
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.ListCommitsAction,
+					Action:   permissions.CreateCommitAction,
 					Resource: permissions.RepoArn(repository),
 				},
 			},
