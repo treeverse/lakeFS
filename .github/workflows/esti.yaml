@@ -1013,10 +1013,11 @@ jobs:
           LAKECTL_CREDENTIALS_ACCESS_KEY_ID: ${{ env.LAKEFS_INSTALLATION_ACCESS_KEY_ID }}
           LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY: ${{env.LAKEFS_INSTALLATION_SECRET_ACCESS_KEY }}
           LAKECTL_SERVER_ENDPOINT_URL: http://localhost:8000
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-python-wrapper/${{ steps.unique.outputs.value }}
         with:
           verbose: true
           emoji: true
           job-summary: true
-          custom-arguments: './clients/python-wrapper/tests/system_tests -rP'
+          custom-arguments: './clients/python-wrapper/tests/integration -rP'
           click-to-expand: true
           report-title: 'Python Wrapper System Tests Report'

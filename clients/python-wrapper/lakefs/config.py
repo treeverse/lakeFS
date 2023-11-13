@@ -1,8 +1,12 @@
+"""
+Client configuration module
+"""
+
 import os
-import yaml
 from pathlib import Path
 from typing import NamedTuple
 
+import yaml
 from lakefs_sdk import (
     Configuration,
 )
@@ -28,9 +32,15 @@ class ClientConfig:
     """
 
     class Server(NamedTuple):
+        """
+        lakectl configuration's server block
+        """
         endpoint_url: str = ""
 
     class Credentials(NamedTuple):
+        """
+        lakectl configuration's credentials block
+        """
         access_key_id: str = ""
         secret_access_key: str = ""
 
@@ -47,7 +57,7 @@ class ClientConfig:
 
         # Get credentials from lakectl
         try:
-            with open(_LAKECTL_YAML_PATH) as fd:
+            with open(_LAKECTL_YAML_PATH, encoding="utf-8") as fd:
                 data = yaml.load(fd, Loader=yaml.Loader)
                 self.server = ClientConfig.Server(**data["server"])
                 self.credentials = ClientConfig.Credentials(**data["credentials"])

@@ -1,16 +1,42 @@
+"""
+Basic object IO implementation providing a filesystem like behavior over lakeFS 
+"""
+
 import base64
 import binascii
-from typing import Optional, Literal, Union, Iterable, AsyncIterable
+from typing import Optional, Literal, Union, Iterable, AsyncIterable, NamedTuple
 
-from lakefs_sdk import ObjectStats, StagingMetadata
+import lakefs_sdk
+from lakefs_sdk import StagingMetadata
 from lakefs_sdk.exceptions import NotFoundException
 from lakefs.client import Client, DefaultClient
-from lakefs.exceptions import ObjectExistsException, UnsupportedOperationException, ObjectNotFoundException
+from lakefs.exceptions import (
+    ObjectExistsException,
+    UnsupportedOperationException,
+    ObjectNotFoundException,
+    PermissionException,
+    ServerException
+)
 
 _RANGE_STR_TMPL = "bytes={start}-{end}"
 
 # Type to support both strings and bytes in addition to streams (reference: httpx._types.RequestContent)
 UploadContentType = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+
+
+class ObjectStats(NamedTuple):
+    """
+    Represent a lakeFS object's stats
+    """
+    path: str
+    path_type: str
+    physical_address: str
+    checksum: str
+    mtime: int
+    physical_address_expiry: Optional[int] = None
+    size_bytes: Optional[int] = None
+    metadata: Optional[dict[str, str]] = None
+    content_type: Optional[str] = None
 
 
 class ReadableObject:
@@ -24,6 +50,7 @@ class ReadableObject:
     _path: str
     _pos: int
     _pre_sign: Optional[bool] = None
+    _stat: Optional[ObjectStats] = None
 
     def __init__(self, repository: str, reference: str, path: str,
                  pre_sign: Optional[bool] = None, client: Optional[Client] = DefaultClient) -> None:
@@ -35,28 +62,53 @@ class ReadableObject:
         self._pos = 0
 
     @property
-    def pos(self):
-        return self._pos
+    def path(self) -> str:
+        """
+        Returns the object's path relative to repository and reference ids 
+        """
+        return self._path
 
     @property
-    def pre_sign(self):
+    def pre_sign(self) -> bool:
+        """
+        Returns the default pre_sign mode for this object. If pre_sign was not defined during initialization, will
+        take the server pre_sign capability.
+        """
         if self._pre_sign is None:
             self._pre_sign = self._client.storage_config.pre_sign_support
 
         return self._pre_sign
 
-    def seek(self, pos):
+    def tell(self) -> int:
+        """
+        Object's read position. If position is past object byte size, trying to read the object will return EOF
+        """
+        return self._pos
+
+    def seek(self, pos) -> None:
+        """
+        Move the object's reading position
+        :param pos: The position (in bytes) to move to
+        :raises OSError if provided position is negative
+        """
         if pos < 0:
-            raise ValueError("position must be a non-negative integer")
+            raise OSError("position must be a non-negative integer")
         self._pos = pos
 
     def read(self, read_bytes: int = None) -> bytes:
+        """
+        Read object data
+        :param read_bytes: How many bytes to read. If read_bytes is None, will read from current position to end.
+        If current position + read_bytes > object size.
+        :return: The bytes read
+        :raises
+            EOFError if current position is after object size
+            OSError if read_bytes is non-positive
+        """
         if read_bytes and read_bytes <= 0:
-            raise ValueError("read_bytes must be a positive integer")
-        try:
-            stat = self._client.sdk_client.objects_api.stat_object(self._repo, self._ref, self._path)
-        except NotFoundException:
-            raise ObjectNotFoundException
+            raise OSError("read_bytes must be a positive integer")
+
+        stat = self.stat()
         if self._pos >= stat.size_bytes:
             raise EOFError
         read_bytes = read_bytes if read_bytes is not None else stat.size_bytes
@@ -70,10 +122,22 @@ class ReadableObject:
         self._pos = new_pos  # Update pointer position
         return contents
 
-    def stat(self):
-        return self._client.sdk_client.objects_api.stat_object(self._repo, self._ref, self._path)
+    def stat(self) -> ObjectStats:
+        """
+        Return the Stat object representing this object
+        """
+        if self._stat is None:
+            try:
+                stat = self._client.sdk_client.objects_api.stat_object(self._repo, self._ref, self._path)
+                self._stat = ObjectStats(**stat.__dict__)
+            except lakefs_sdk.exceptions.ApiException as e:
+                _handle_api_exception(e)
+        return self._stat
 
-    def exists(self):
+    def exists(self) -> bool:
+        """
+        Returns True if object exists in lakeFS, False otherwise
+        """
         try:
             self._client.sdk_client.objects_api.head_object(self._repo, self._ref, self._path)
             return True
@@ -97,24 +161,48 @@ class WriteableObject(ReadableObject):
                mode: Literal['x', 'xb', 'w', 'wb'] = 'wb',
                pre_sign: Optional[bool] = None,
                content_type: Optional[str] = None,
-               metadata: Optional[dict[str, str]] = None):
+               metadata: Optional[dict[str, str]] = None) -> ObjectStats:
+        """
+        Creates a new object or overwrites an existing object
+        :param data: The contents of the object to write (can be bytes or string)
+        :param mode: Write mode:
+            'x'     - Open for exclusive creation
+            'xb'    - Open for exclusive creation in binary mode
+            'w'     - Create a new object or truncate if exists
+            'wb'    - Create or truncate in binary mode
+        :param pre_sign: (Optional) Explicitly state whether to use pre_sign mode when uploading the object.
+        If None, will be taken from pre_sign property.
+        :param content_type: (Optional) Explicitly set the object Content-Type
+        :param metadata: (Optional) User metadata
+        :return: The Stat object representing the newly created object
+        :raises
+            ObjectExistsException if object exists and mode is exclusive ('x')
+        """
         content = data
-        if mode.startswith('x') and self.exists():  # Requires explicit create
+        if 'x' in mode and self.exists():  # Requires explicit create
             raise ObjectExistsException
 
-        binary_mode = mode.endswith('b')
+        binary_mode = 'b' in mode
         if binary_mode and isinstance(data, str):
             content = data.encode('utf-8')
         elif not binary_mode and isinstance(data, bytes):
             content = data.decode('utf-8')
         # TODO: handle streams
         is_presign = pre_sign if pre_sign is not None else self.pre_sign
-        stats = self._upload(content, is_presign, content_type, metadata)
+        try:
+            stats = self._upload(content, is_presign, content_type, metadata)
+            self._stat = ObjectStats(**stats.__dict__)
+        except lakefs_sdk.exceptions.ApiException as e:
+            _handle_api_exception(e)
+
         # reset pos after create
         self._pos = 0
-        return stats
+        return self._stat
 
-    def delete(self):
+    def delete(self) -> None:
+        """
+        Delete object from lakeFS
+        """
         # TODO: Implement
         raise NotImplementedError
 
@@ -162,3 +250,13 @@ class WriteableObject(ReadableObject):
                                            user_metadata=metadata)
         return self._client.sdk_client.staging_api.link_physical_address(self._repo, self._ref, self._path,
                                                                          staging_metadata=staging_metadata)
+
+
+def _handle_api_exception(e: lakefs_sdk.exceptions.ApiException):
+    if isinstance(e, lakefs_sdk.exceptions.NotFoundException):
+        raise ObjectNotFoundException(e.status, e.reason) from e
+    if isinstance(e, lakefs_sdk.exceptions.UnauthorizedException):
+        raise PermissionException from e
+    if isinstance(e, lakefs_sdk.exceptions.ForbiddenException):
+        raise PermissionException from e
+    raise ServerException(e.status, e.reason) from e

@@ -1,39 +1,69 @@
-# lakefs.exceptions
+"""
+Exceptions module
+"""
+
+
 class LakeFSException(Exception):
+    """
+    Base exception for all SDK Wrapper exceptions
+    """
     status_code: int
-    message: str
+    reason: str
+
+    def __init__(self, status=None, reason=None):
+        self.status_code = status
+        self.message = reason
 
 
-# More specific "not found"s can inherit from this:
 class NotFoundException(LakeFSException):
-    pass
+    """
+    Base class for NotFound exceptions. More specific "not found"s can inherit from this
+    """
 
 
 class NoAuthenticationFound(LakeFSException):
-    pass
+    """
+    Raised when no authentication method could be found on Client instantiation
+    """
 
 
 class NotAuthorizedException(LakeFSException):
-    pass
+    """
+    User not authorized to perform operation
+    """
 
 
 class ServerException(LakeFSException):
-    pass
+    """
+    Generic exception when no other exception is applicable
+    """
 
 
 class UnsupportedOperationException(LakeFSException):
-    pass
+    """
+    Operation not supported by lakeFS server or SDK wrapper
+    """
 
 
 class ObjectNotFoundException(NotFoundException, FileNotFoundError):
-    pass
+    """
+    Raised when the currently used object no longer exist in the lakeFS server
+    """
 
 
-# raised when Object('...').create(mode='x') and object exists
 class ObjectExistsException(LakeFSException, FileExistsError):
-    pass
+    """
+    Raised when Object('...').create(mode='x') and object exists
+    """
 
 
-# Returned by Object.open() and Object.create() for compatibility with python
 class PermissionException(NotAuthorizedException, PermissionError):
-    pass
+    """
+    Raised by Object.open() and Object.create() for compatibility with python
+    """
+
+
+class RepositoryNotFoundException(NotFoundException):
+    """
+    Raised when the currently used repository object no longer exists in the lakeFS server
+    """
