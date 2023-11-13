@@ -28,8 +28,8 @@ _See the [Action configuration](./index.md#action-file) for overall configuratio
 | Property      | Description                               | Data Type  | Required                                       | Default Value |
 |---------------|-------------------------------------------|------------|------------------------------------------------|---------------|
 | `args`        | One or more arguments to pass to the hook | Dictionary | false                                          |               |
-| `script`      | An inline Lua script                      | String     | either this or `script_file` must be specified |               |
-| `script_file` | The lakeFS path to a Lua script           | String     | either this or `script` must be specified      |               |
+| `script`      | An inline Lua script                      | String     | either this or `script_path` must be specified |               |
+| `script_path` | The path in lakeFS to a Lua script        | String     | either this or `script` must be specified      |               |
 
 
 ## Example Lua Hooks
@@ -74,17 +74,22 @@ hooks:
       args:
         notebook_url: {"pattern": "my-jupyter.example.com/.*"}
         spark_version:  {}
-      script: |
-        regexp = require("regexp")
-        for k, props in pairs(args) do
-          current_value = action.commit.metadata[k]
-          if current_value == nil then
-            error("missing mandatory metadata field: " .. k)
-          end
-          if props.pattern and not regexp.match(props.pattern, current_value) then
-            error("current value for commit metadata field " .. k .. " does not match pattern: " .. props.pattern .. " - got: " .. current_value)
-          end
-        end
+      script_path: lua_hooks/ensure_metadata_field.lua
+```
+
+Lua code at `lakefs://repo/main/lua_hooks/ensure_metadata_field.lua`:
+
+```lua
+regexp = require("regexp")
+for k, props in pairs(args) do
+  current_value = action.commit.metadata[k]
+  if current_value == nil then
+    error("missing mandatory metadata field: " .. k)
+  end
+  if props.pattern and not regexp.match(props.pattern, current_value) then
+    error("current value for commit metadata field " .. k .. " does not match pattern: " .. props.pattern .. " - got: " .. current_value)
+  end
+end
 ```
 
 For more examples and configuration samples, check out the [examples/hooks/](https://github.com/treeverse/lakeFS/tree/master/examples/hooks) directory in the lakeFS repository.
