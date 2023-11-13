@@ -2801,7 +2801,7 @@ paths:
       tags:
         - repositories
       operationId: restoreSubmit
-      summary: Restore repository (tags, commits, branches) from object store
+      summary: Restore repository from a dump in the object store
       requestBody:
         required: true
         content:
