@@ -4,7 +4,7 @@ import requests
 
 import lakefs_sdk.api
 
-from tests.utests.common import lakectl_test_config_context
+from tests.utests.common import get_test_client
 
 
 class ObjectTestKWArgs:
@@ -41,30 +41,32 @@ class StagingTestLocation(lakefs_sdk.StagingLocation):
 
 
 @contextmanager
-def readable_object_context(monkey, tmp_path, **kwargs):
-    with lakectl_test_config_context(monkey, tmp_path) as client:
+def readable_object_context(monkey, **kwargs):
+    with monkey.context():
         from lakefs.object_io import ReadableObject
+        clt = get_test_client()
         conf = lakefs_sdk.Config(version_config=lakefs_sdk.VersionConfig(), storage_config=StorageTestConfig())
-        monkey.setattr(client.DefaultClient, "_server_conf", conf)
-        read_obj = ReadableObject(client=client.DefaultClient, **kwargs)
+        monkey.setattr(clt, "_server_conf", conf)
+        read_obj = ReadableObject(client=clt, **kwargs)
         yield read_obj
 
 
 @contextmanager
-def writeable_object_context(monkey, tmp_path, **kwargs):
-    with lakectl_test_config_context(monkey, tmp_path) as client:
+def writeable_object_context(monkey, **kwargs):
+    with monkey.context():
         monkey.setattr(lakefs_sdk.api.BranchesApi, "get_branch", lambda *args: None)
         from lakefs.object_io import WriteableObject
         conf = lakefs_sdk.Config(version_config=lakefs_sdk.VersionConfig(), storage_config=StorageTestConfig())
-        monkey.setattr(client.DefaultClient, "_server_conf", conf)
-        obj = WriteableObject(client=client.DefaultClient, **kwargs)
+        clt = get_test_client()
+        monkey.setattr(clt, "_server_conf", conf)
+        obj = WriteableObject(client=clt, **kwargs)
         yield obj
 
 
 class TestReadableObject:
     def test_seek(self, monkeypatch, tmp_path):
         test_kwargs = ObjectTestKWArgs()
-        with readable_object_context(monkeypatch, tmp_path, **test_kwargs.__dict__) as obj:
+        with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             assert obj.tell() == 0
             obj.seek(30)
             assert obj.tell() == 30
@@ -76,7 +78,7 @@ class TestReadableObject:
 
     def test_read(self, monkeypatch, tmp_path):
         test_kwargs = ObjectTestKWArgs()
-        with readable_object_context(monkeypatch, tmp_path, **test_kwargs.__dict__) as obj:
+        with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             object_stats = ObjectTestStats()
             object_stats.path = test_kwargs.path
             object_stats.size_bytes = 3000
@@ -129,7 +131,7 @@ class TestReadableObject:
 
     def test_exists(self, monkeypatch, tmp_path):
         test_kwargs = ObjectTestKWArgs()
-        with readable_object_context(monkeypatch, tmp_path, **test_kwargs.__dict__) as obj:
+        with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             # Object exists
             monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "head_object", lambda *args: None)
             assert obj.exists()
@@ -151,7 +153,7 @@ class TestReadableObject:
 class TestWriteableObject:
     def test_create(self, monkeypatch, tmp_path):
         test_kwargs = ObjectTestKWArgs()
-        with writeable_object_context(monkeypatch, tmp_path, **test_kwargs.__dict__) as obj:
+        with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             staging_location = StagingTestLocation()
             monkeypatch.setattr(lakefs_sdk.api.StagingApi, "get_physical_address", lambda *args: staging_location)
             resp = requests.Response()
