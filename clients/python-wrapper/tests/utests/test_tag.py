@@ -8,6 +8,6 @@ def test_tag_creation():
     """
     client = get_test_client()
     repo = Repository(repository_id="test_repo", client=client)
-    tag = repo.Tag("test_tag")
+    tag = repo.tag("test_tag")
     assert tag.repo_id == "test_repo"
     assert tag.id == "test_tag"

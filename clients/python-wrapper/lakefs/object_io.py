@@ -4,19 +4,36 @@ Basic object IO implementation providing a filesystem like behavior over lakeFS
 
 import base64
 import binascii
-from typing import Optional, Literal, Union, Iterable, AsyncIterable
+from typing import Optional, Literal, Union, Iterable, AsyncIterable, NamedTuple
 
 import lakefs_sdk
-from lakefs_sdk import ObjectStats, StagingMetadata
+from lakefs_sdk import StagingMetadata
 from lakefs_sdk.exceptions import NotFoundException
 from lakefs.client import Client, DefaultClient
-from lakefs.exceptions import ObjectExistsException, UnsupportedOperationException, ObjectNotFoundException, \
-    PermissionException, ServerException
+from lakefs.exceptions import (
+    ObjectExistsException,
+    UnsupportedOperationException,
+    ObjectNotFoundException,
+    PermissionException,
+    ServerException
+)
 
 _RANGE_STR_TMPL = "bytes={start}-{end}"
 
 # Type to support both strings and bytes in addition to streams (reference: httpx._types.RequestContent)
 UploadContentType = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+
+
+class ObjectStats(NamedTuple):
+    path: str
+    path_type: str
+    physical_address: str
+    checksum: str
+    mtime: int
+    physical_address_expiry: Optional[int] = None
+    size_bytes: Optional[int] = None
+    metadata: Optional[dict[str, str]] = None
+    content_type: Optional[str] = None
 
 
 class ReadableObject:
@@ -30,6 +47,7 @@ class ReadableObject:
     _path: str
     _pos: int
     _pre_sign: Optional[bool] = None
+    _stat: Optional[ObjectStats] = None
 
     def __init__(self, repository: str, reference: str, path: str,
                  pre_sign: Optional[bool] = None, client: Optional[Client] = DefaultClient) -> None:
@@ -41,11 +59,8 @@ class ReadableObject:
         self._pos = 0
 
     @property
-    def pos(self) -> int:
-        """
-        Object's read position. If position is past object byte size, trying to read the object will return EOF
-        """
-        return self._pos
+    def path(self) -> str:
+        return self._path
 
     @property
     def pre_sign(self) -> bool:
@@ -58,14 +73,20 @@ class ReadableObject:
 
         return self._pre_sign
 
+    def tell(self) -> int:
+        """
+        Object's read position. If position is past object byte size, trying to read the object will return EOF
+        """
+        return self._pos
+
     def seek(self, pos) -> None:
         """
         Move the object's reading position
         :param pos: The position (in bytes) to move to
-        :raises ValueError if provided position is negative
+        :raises OSError if provided position is negative
         """
         if pos < 0:
-            raise ValueError("position must be a non-negative integer")
+            raise OSError("position must be a non-negative integer")
         self._pos = pos
 
     def read(self, read_bytes: int = None) -> bytes:
@@ -76,14 +97,12 @@ class ReadableObject:
         :return: The bytes read
         :raises
             EOFError if current position is after object size
-            ValueError if read_bytes is non-positive
+            OSError if read_bytes is non-positive
         """
         if read_bytes and read_bytes <= 0:
-            raise ValueError("read_bytes must be a positive integer")
-        try:
-            stat = self._client.sdk_client.objects_api.stat_object(self._repo, self._ref, self._path)
-        except NotFoundException as e:
-            raise ObjectNotFoundException from e
+            raise OSError("read_bytes must be a positive integer")
+
+        stat = self.stat()
         if self._pos >= stat.size_bytes:
             raise EOFError
         read_bytes = read_bytes if read_bytes is not None else stat.size_bytes
@@ -97,11 +116,17 @@ class ReadableObject:
         self._pos = new_pos  # Update pointer position
         return contents
 
-    def stat(self) -> lakefs_sdk.ObjectStats:
+    def stat(self) -> ObjectStats:
         """
         Return the Stat object representing this object
         """
-        return self._client.sdk_client.objects_api.stat_object(self._repo, self._ref, self._path)
+        if self._stat is None:
+            try:
+                stat = self._client.sdk_client.objects_api.stat_object(self._repo, self._ref, self._path)
+                self._stat = ObjectStats(**stat.__dict__)
+            except lakefs_sdk.exceptions.ApiException as e:
+                _handle_api_exception(e)
+        return self._stat
 
     def exists(self) -> bool:
         """
@@ -130,7 +155,7 @@ class WriteableObject(ReadableObject):
                mode: Literal['x', 'xb', 'w', 'wb'] = 'wb',
                pre_sign: Optional[bool] = None,
                content_type: Optional[str] = None,
-               metadata: Optional[dict[str, str]] = None) -> lakefs_sdk.ObjectStats:
+               metadata: Optional[dict[str, str]] = None) -> ObjectStats:
         """
         Creates a new object or overwrites an existing object
         :param data: The contents of the object to write (can be bytes or string)
@@ -148,10 +173,10 @@ class WriteableObject(ReadableObject):
             ObjectExistsException if object exists and mode is exclusive ('x')
         """
         content = data
-        if mode.startswith('x') and self.exists():  # Requires explicit create
+        if 'x' in mode and self.exists():  # Requires explicit create
             raise ObjectExistsException
 
-        binary_mode = mode.endswith('b')
+        binary_mode = 'b' in mode
         if binary_mode and isinstance(data, str):
             content = data.encode('utf-8')
         elif not binary_mode and isinstance(data, bytes):
@@ -160,17 +185,13 @@ class WriteableObject(ReadableObject):
         is_presign = pre_sign if pre_sign is not None else self.pre_sign
         try:
             stats = self._upload(content, is_presign, content_type, metadata)
+            self._stat = ObjectStats(**stats.__dict__)
         except lakefs_sdk.exceptions.ApiException as e:
-            if isinstance(e, lakefs_sdk.exceptions.UnauthorizedException):
-                raise PermissionException from e
-            if isinstance(e, lakefs_sdk.exceptions.ForbiddenException):
-                raise PermissionException from e
-
-            raise ServerException from e
+            _handle_api_exception(e)
 
         # reset pos after create
         self._pos = 0
-        return stats
+        return self._stat
 
     def delete(self) -> None:
         """
@@ -223,3 +244,13 @@ class WriteableObject(ReadableObject):
                                            user_metadata=metadata)
         return self._client.sdk_client.staging_api.link_physical_address(self._repo, self._ref, self._path,
                                                                          staging_metadata=staging_metadata)
+
+
+def _handle_api_exception(e: lakefs_sdk.exceptions.ApiException):
+    if isinstance(e, lakefs_sdk.exceptions.NotFoundException):
+        raise ObjectNotFoundException(e.status, e.reason) from e
+    if isinstance(e, lakefs_sdk.exceptions.UnauthorizedException):
+        raise PermissionException from e
+    if isinstance(e, lakefs_sdk.exceptions.ForbiddenException):
+        raise PermissionException from e
+    raise ServerException(e.status, e.reason) from e

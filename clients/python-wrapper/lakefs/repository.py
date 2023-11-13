@@ -1,9 +1,9 @@
 """
 Module containing lakeFS repository implementation
 """
-
+from __future__ import annotations
 import http
-from typing import Optional
+from typing import Optional, NamedTuple
 
 import lakefs_sdk
 
@@ -16,6 +16,13 @@ from lakefs.reference import Reference
 from lakefs.tag_manager import TagManager
 
 
+class RepositoryProperties(NamedTuple):
+    id: str
+    creation_date: int
+    default_branch: str
+    storage_namespace: str
+
+
 class Repository:
     """
     Class representing a Repository in lakeFS.
@@ -24,6 +31,7 @@ class Repository:
     """
     _client: Client
     _id: str
+    _properties: RepositoryProperties = None
 
     def __init__(self, repository_id: str, client: Optional[Client] = DefaultClient) -> None:
         self._id = repository_id
@@ -34,7 +42,7 @@ class Repository:
                default_branch: str = "main",
                include_samples: bool = False,
                exist_ok: bool = False,
-               **kwargs) -> lakefs_sdk.Repository:
+               **kwargs) -> Repository:
         """
         Create a new repository in lakeFS from this object
         :param storage_namespace: Repository's storage namespace
@@ -42,7 +50,7 @@ class Repository:
         :param include_samples: Whether to include sample data in repository creation
         :param exist_ok: If False will throw an exception if a repository by this name already exists. Otherwise,
          return the existing repository without creating a new one
-        :return: The lakefs SDK object representing the repository
+        :return: The lakeFS SDK object representing the repository
         :raises
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
@@ -52,11 +60,15 @@ class Repository:
                                                             default_branch=default_branch,
                                                             sample_data=include_samples)
         try:
-            return self._client.sdk_client.repositories_api.create_repository(repository_creation, **kwargs)
+            repo = self._client.sdk_client.repositories_api.create_repository(repository_creation, **kwargs)
+            self._properties = RepositoryProperties(**repo.__dict__)
+            return self
         except lakefs_sdk.exceptions.ApiException as e:
             if e.status == http.HTTPStatus.CONFLICT.value and exist_ok:  # Handle conflict 409
                 try:
-                    return self._client.sdk_client.repositories_api.get_repository(self._id)
+                    repo = self._client.sdk_client.repositories_api.get_repository(self._id)
+                    self._properties = RepositoryProperties(**repo.__dict__)
+                    return self
                 except lakefs_sdk.exceptions.ApiException as ex:
                     _handle_api_exception(ex)
             _handle_api_exception(e)
@@ -65,7 +77,7 @@ class Repository:
         """
         Delete repository from lakeFS server
         :raises
-            NotFoundException if repository by this id does not exist
+            RepositoryNotFoundException if repository by this id does not exist
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
@@ -74,40 +86,43 @@ class Repository:
         except lakefs_sdk.exceptions.ApiException as e:
             _handle_api_exception(e)
 
-    def Branch(self, branch_id: str) -> lakefs.branch.Branch:  # pylint: disable=C0103
+    def branch(self, branch_id: str) -> lakefs.branch.Branch:
         """
         Return a branch object using the current repository id and client
         :param branch_id: name of the branch
         """
-        return lakefs.branch.Branch(self._client, self._id, branch_id)
+        return lakefs.branch.Branch(self._id, branch_id, self._client)
 
-    def Commit(self, commit_id: str) -> Reference:  # pylint: disable=C0103
+    def commit(self, commit_id: str) -> Reference:
         """
         Return a reference object using the current repository id and client
         :param commit_id: id of the commit reference
         """
-        return lakefs.reference.Reference(self._client, self._id, commit_id)
+        return lakefs.reference.Reference(self._id, commit_id, self._client)
 
-    def Ref(self, ref_id: str) -> Reference:  # pylint: disable=C0103
+    def ref(self, ref_id: str) -> Reference:
         """
         Return a reference object using the current repository id and client
         :param ref_id: branch name, commit id or tag id
         """
-        return lakefs.reference.Reference(self._client, self._id, ref_id)
+        return lakefs.reference.Reference(self._id, ref_id, self._client)
 
-    def Tag(self, tag_id: str) -> lakefs.tag.Tag:  # pylint: disable=C0103
+    def tag(self, tag_id: str) -> lakefs.tag.Tag:
         """
         Return a tag object using the current repository id and client
         :param tag_id: name of the tag
         """
-        return lakefs.tag.Tag(self._client, self._id, tag_id)
+        return lakefs.tag.Tag(self._id, tag_id, self._client)
 
     @property
     def metadata(self) -> dict[str, str]:
         """
         Returns the repository metadata
         """
-        return self._client.sdk_client.repositories_api.get_repository_metadata(repository=self._id)
+        try:
+            return self._client.sdk_client.repositories_api.get_repository_metadata(repository=self._id)
+        except lakefs_sdk.exceptions.ApiException as ex:
+            _handle_api_exception(ex)
 
     @property
     def branches(self) -> BranchManager:
@@ -122,6 +137,16 @@ class Repository:
         Returns a TagManager object for this repository
         """
         return TagManager()
+
+    @property
+    def properties(self) -> RepositoryProperties:
+        if self._properties is None:
+            try:
+                repo = self._client.sdk_client.repositories_api.get_repository(self._id)
+                self._properties = RepositoryProperties(**repo.__dict__)
+            except lakefs_sdk.exceptions.ApiException as ex:
+                _handle_api_exception(ex)
+        return self._properties
 
 
 def _handle_api_exception(e: lakefs_sdk.exceptions.ApiException):

@@ -9,6 +9,6 @@ def test_branch_creation():
     """
     client = get_test_client()
     repo = Repository(repository_id="test_repo", client=client)
-    branch = repo.Branch("test_branch")
+    branch = repo.branch("test_branch")
     assert branch.repo_id == "test_repo"
     assert branch.id == "test_branch"
