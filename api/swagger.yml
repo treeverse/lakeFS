@@ -2745,7 +2745,7 @@ paths:
       tags:
         - repositories
       operationId: dumpSubmit
-      summary: Dump repository refs (tags, commits, branches) to object store
+      summary: Backup the repository metadata (tags, commits, branches) and save the backup to the object store.
       responses:
         202:
           description: dump task information
