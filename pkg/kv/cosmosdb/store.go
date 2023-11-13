@@ -518,11 +518,11 @@ func (e *EntriesIterator) isInRange() bool {
 			return false
 		}
 	}
-	if  bytes.Compare(e.startKey, minKey) < 0 {
+	if bytes.Compare(e.startKey, minKey) < 0 {
 		return false
 	}
 	if !e.queryPager.More() {
-		// last page, all keys greater than minKey are in range
+		// last page, all keys greater than minKey are considered in range (in order to avoid unnecessary queries)
 		return true
 	}
 	if len(e.currPage.Items) == 0 {
