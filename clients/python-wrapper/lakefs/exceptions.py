@@ -1,5 +1,5 @@
 """
-SDK Wrapper exceptions module
+Exceptions module
 """
 
 

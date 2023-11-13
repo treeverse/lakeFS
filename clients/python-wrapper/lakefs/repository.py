@@ -54,11 +54,12 @@ class Repository:
         try:
             return self._client.sdk_client.repositories_api.create_repository(repository_creation, **kwargs)
         except lakefs_sdk.exceptions.ApiException as e:
-            if isinstance(e, lakefs_sdk.exceptions.UnauthorizedException):
-                raise NotAuthorizedException(e.status, e.reason) from e
             if e.status == http.HTTPStatus.CONFLICT.value and exist_ok:  # Handle conflict 409
-                return self._client.sdk_client.repositories_api.get_repository(self._id)
-            raise ServerException(e.status, e.reason) from e
+                try:
+                    return self._client.sdk_client.repositories_api.get_repository(self._id)
+                except lakefs_sdk.exceptions.ApiException as ex:
+                    _handle_api_exception(ex)
+            _handle_api_exception(e)
 
     def delete(self) -> None:
         """
@@ -71,11 +72,7 @@ class Repository:
         try:
             self._client.sdk_client.repositories_api.delete_repository(self._id)
         except lakefs_sdk.exceptions.ApiException as e:
-            if isinstance(e, lakefs_sdk.exceptions.NotFoundException):
-                raise RepositoryNotFoundException(e.status, e.reason) from e
-            if isinstance(e, lakefs_sdk.exceptions.UnauthorizedException):
-                raise NotAuthorizedException(e.status, e.reason) from e
-            raise ServerException(e.status, e.reason) from e
+            _handle_api_exception(e)
 
     def Branch(self, branch_id: str) -> lakefs.branch.Branch:  # pylint: disable=C0103
         """
@@ -125,3 +122,11 @@ class Repository:
         Returns a TagManager object for this repository
         """
         return TagManager()
+
+
+def _handle_api_exception(e: lakefs_sdk.exceptions.ApiException):
+    if isinstance(e, lakefs_sdk.exceptions.NotFoundException):
+        raise RepositoryNotFoundException(e.status, e.reason) from e
+    if isinstance(e, lakefs_sdk.exceptions.UnauthorizedException):
+        raise NotAuthorizedException(e.status, e.reason) from e
+    raise ServerException(e.status, e.reason) from e

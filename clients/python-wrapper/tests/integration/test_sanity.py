@@ -4,7 +4,7 @@ import time
 from lakefs import client
 from lakefs.exceptions import ServerException, RepositoryNotFoundException
 from lakefs.repository import Repository
-from tests.system_tests.conftest import expect_exception_context
+from tests.integration.conftest import expect_exception_context
 
 
 def test_repository_sanity(storage_namespace):

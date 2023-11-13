@@ -19,13 +19,6 @@ credentials:
     secret_access_key: {TEST_SECRET_ACCESS_KEY}
 '''
 
-TEST_CONFIG_KWARGS: dict[str, str] = {
-    "username": "my_username",
-    "password": "my_password",
-    "host": "http://my_host",
-    "access_token": "my_jwt_token"
-}
-
 TEST_ENDPOINT_PATH = "/api/v1"
 
 TEST_REPO_ARGS = lakefs_sdk.RepositoryCreation(name="test-repo",

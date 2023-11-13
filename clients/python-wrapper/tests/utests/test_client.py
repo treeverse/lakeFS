@@ -9,9 +9,15 @@ from tests.utests.common import (
     env_var_context, TEST_SERVER,
     TEST_ACCESS_KEY_ID,
     TEST_SECRET_ACCESS_KEY,
-    TEST_CONFIG_KWARGS,
     TEST_ENDPOINT_PATH
 )
+
+TEST_CONFIG_KWARGS: dict[str, str] = {
+    "username": "my_username",
+    "password": "my_password",
+    "host": "http://my_host",
+    "access_token": "my_jwt_token"
+}
 
 
 class TestClient:
