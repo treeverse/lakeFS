@@ -1077,7 +1077,7 @@ class RepositoriesApi(object):
         task_id,
         **kwargs
     ):
-        """Dump repository (tags, commits, branches) to object store  # noqa: E501
+        """Status of a repository dump task  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
@@ -1145,7 +1145,7 @@ class RepositoriesApi(object):
         repository,
         **kwargs
     ):
-        """Dump repository refs (tags, commits, branches) to object store  # noqa: E501
+        """Backup the repository metadata (tags, commits, branches) and save the backup to the object store.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
@@ -1603,7 +1603,7 @@ class RepositoriesApi(object):
         refs_dump,
         **kwargs
     ):
-        """Restore repository (tags, commits, branches) from object store  # noqa: E501
+        """Restore repository from a dump in the object store  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True

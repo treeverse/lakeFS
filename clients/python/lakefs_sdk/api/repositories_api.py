@@ -482,7 +482,7 @@ class RepositoriesApi(object):
 
     @validate_arguments
     def dump_status(self, repository : StrictStr, task_id : StrictStr, **kwargs) -> RepositoryDumpStatus:  # noqa: E501
-        """Dump repository (tags, commits, branches) to object store  # noqa: E501
+        """Status of a repository dump task  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
@@ -512,7 +512,7 @@ class RepositoriesApi(object):
 
     @validate_arguments
     def dump_status_with_http_info(self, repository : StrictStr, task_id : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
-        """Dump repository (tags, commits, branches) to object store  # noqa: E501
+        """Status of a repository dump task  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
@@ -631,7 +631,7 @@ class RepositoriesApi(object):
 
     @validate_arguments
     def dump_submit(self, repository : StrictStr, **kwargs) -> TaskInfo:  # noqa: E501
-        """Dump repository refs (tags, commits, branches) to object store  # noqa: E501
+        """Backup the repository metadata (tags, commits, branches) and save the backup to the object store.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
@@ -659,7 +659,7 @@ class RepositoriesApi(object):
 
     @validate_arguments
     def dump_submit_with_http_info(self, repository : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
-        """Dump repository refs (tags, commits, branches) to object store  # noqa: E501
+        """Backup the repository metadata (tags, commits, branches) and save the backup to the object store.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
@@ -1635,7 +1635,7 @@ class RepositoriesApi(object):
 
     @validate_arguments
     def restore_submit(self, repository : StrictStr, refs_dump : RefsDump, **kwargs) -> TaskInfo:  # noqa: E501
-        """Restore repository (tags, commits, branches) from object store  # noqa: E501
+        """Restore repository from a dump in the object store  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
@@ -1665,7 +1665,7 @@ class RepositoriesApi(object):
 
     @validate_arguments
     def restore_submit_with_http_info(self, repository : StrictStr, refs_dump : RefsDump, **kwargs) -> ApiResponse:  # noqa: E501
-        """Restore repository (tags, commits, branches) from object store  # noqa: E501
+        """Restore repository from a dump in the object store  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True

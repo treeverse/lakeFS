@@ -2354,7 +2354,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: Dump repository (tags, commits, branches) to object store
+      summary: Status of a repository dump task
       tags:
       - repositories
       x-accepts: application/json
@@ -2399,7 +2399,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: Dump repository refs (tags, commits, branches) to object store
+      summary: Backup the repository metadata (tags, commits, branches) and save the
+        backup to the object store.
       tags:
       - repositories
       x-accepts: application/json
@@ -2505,7 +2506,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: Restore repository (tags, commits, branches) from object store
+      summary: Restore repository from a dump in the object store
       tags:
       - repositories
       x-contentType: application/json

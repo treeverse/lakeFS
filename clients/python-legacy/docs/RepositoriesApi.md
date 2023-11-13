@@ -7,15 +7,15 @@ Method | HTTP request | Description
 [**create_repository**](RepositoriesApi.md#create_repository) | **POST** /repositories | create repository
 [**delete_gc_rules**](RepositoriesApi.md#delete_gc_rules) | **DELETE** /repositories/{repository}/settings/gc_rules | 
 [**delete_repository**](RepositoriesApi.md#delete_repository) | **DELETE** /repositories/{repository} | delete repository
-[**dump_status**](RepositoriesApi.md#dump_status) | **GET** /repositories/{repository}/dump | Dump repository (tags, commits, branches) to object store
-[**dump_submit**](RepositoriesApi.md#dump_submit) | **POST** /repositories/{repository}/dump | Dump repository refs (tags, commits, branches) to object store
+[**dump_status**](RepositoriesApi.md#dump_status) | **GET** /repositories/{repository}/dump | Status of a repository dump task
+[**dump_submit**](RepositoriesApi.md#dump_submit) | **POST** /repositories/{repository}/dump | Backup the repository metadata (tags, commits, branches) and save the backup to the object store.
 [**get_branch_protection_rules**](RepositoriesApi.md#get_branch_protection_rules) | **GET** /repositories/{repository}/settings/branch_protection | get branch protection rules
 [**get_gc_rules**](RepositoriesApi.md#get_gc_rules) | **GET** /repositories/{repository}/settings/gc_rules | get repository GC rules
 [**get_repository**](RepositoriesApi.md#get_repository) | **GET** /repositories/{repository} | get repository
 [**get_repository_metadata**](RepositoriesApi.md#get_repository_metadata) | **GET** /repositories/{repository}/metadata | get repository metadata
 [**list_repositories**](RepositoriesApi.md#list_repositories) | **GET** /repositories | list repositories
 [**restore_status**](RepositoriesApi.md#restore_status) | **GET** /repositories/{repository}/restore | Restore repository (tags, commits, branches) from object store
-[**restore_submit**](RepositoriesApi.md#restore_submit) | **POST** /repositories/{repository}/restore | Restore repository (tags, commits, branches) from object store
+[**restore_submit**](RepositoriesApi.md#restore_submit) | **POST** /repositories/{repository}/restore | Restore repository from a dump in the object store
 [**set_branch_protection_rules**](RepositoriesApi.md#set_branch_protection_rules) | **PUT** /repositories/{repository}/settings/branch_protection | 
 [**set_gc_rules**](RepositoriesApi.md#set_gc_rules) | **PUT** /repositories/{repository}/settings/gc_rules | 
 
@@ -360,7 +360,7 @@ void (empty response body)
 # **dump_status**
 > RepositoryDumpStatus dump_status(repository, task_id)
 
-Dump repository (tags, commits, branches) to object store
+Status of a repository dump task
 
 ### Example
 
@@ -426,7 +426,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        # Dump repository (tags, commits, branches) to object store
+        # Status of a repository dump task
         api_response = api_instance.dump_status(repository, task_id)
         pprint(api_response)
     except lakefs_client.ApiException as e:
@@ -471,7 +471,7 @@ Name | Type | Description  | Notes
 # **dump_submit**
 > TaskInfo dump_submit(repository)
 
-Dump repository refs (tags, commits, branches) to object store
+Backup the repository metadata (tags, commits, branches) and save the backup to the object store.
 
 ### Example
 
@@ -536,7 +536,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        # Dump repository refs (tags, commits, branches) to object store
+        # Backup the repository metadata (tags, commits, branches) and save the backup to the object store.
         api_response = api_instance.dump_submit(repository)
         pprint(api_response)
     except lakefs_client.ApiException as e:
@@ -1234,7 +1234,7 @@ Name | Type | Description  | Notes
 # **restore_submit**
 > TaskInfo restore_submit(repository, refs_dump)
 
-Restore repository (tags, commits, branches) from object store
+Restore repository from a dump in the object store
 
 ### Example
 
@@ -1305,7 +1305,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        # Restore repository (tags, commits, branches) from object store
+        # Restore repository from a dump in the object store
         api_response = api_instance.restore_submit(repository, refs_dump)
         pprint(api_response)
     except lakefs_client.ApiException as e:

@@ -7,15 +7,15 @@ Method | HTTP request | Description
 [**createRepository**](RepositoriesApi.md#createRepository) | **POST** /repositories | create repository
 [**deleteGCRules**](RepositoriesApi.md#deleteGCRules) | **DELETE** /repositories/{repository}/settings/gc_rules | 
 [**deleteRepository**](RepositoriesApi.md#deleteRepository) | **DELETE** /repositories/{repository} | delete repository
-[**dumpStatus**](RepositoriesApi.md#dumpStatus) | **GET** /repositories/{repository}/dump | Dump repository (tags, commits, branches) to object store
-[**dumpSubmit**](RepositoriesApi.md#dumpSubmit) | **POST** /repositories/{repository}/dump | Dump repository refs (tags, commits, branches) to object store
+[**dumpStatus**](RepositoriesApi.md#dumpStatus) | **GET** /repositories/{repository}/dump | Status of a repository dump task
+[**dumpSubmit**](RepositoriesApi.md#dumpSubmit) | **POST** /repositories/{repository}/dump | Backup the repository metadata (tags, commits, branches) and save the backup to the object store.
 [**getBranchProtectionRules**](RepositoriesApi.md#getBranchProtectionRules) | **GET** /repositories/{repository}/settings/branch_protection | get branch protection rules
 [**getGCRules**](RepositoriesApi.md#getGCRules) | **GET** /repositories/{repository}/settings/gc_rules | get repository GC rules
 [**getRepository**](RepositoriesApi.md#getRepository) | **GET** /repositories/{repository} | get repository
 [**getRepositoryMetadata**](RepositoriesApi.md#getRepositoryMetadata) | **GET** /repositories/{repository}/metadata | get repository metadata
 [**listRepositories**](RepositoriesApi.md#listRepositories) | **GET** /repositories | list repositories
 [**restoreStatus**](RepositoriesApi.md#restoreStatus) | **GET** /repositories/{repository}/restore | Restore repository (tags, commits, branches) from object store
-[**restoreSubmit**](RepositoriesApi.md#restoreSubmit) | **POST** /repositories/{repository}/restore | Restore repository (tags, commits, branches) from object store
+[**restoreSubmit**](RepositoriesApi.md#restoreSubmit) | **POST** /repositories/{repository}/restore | Restore repository from a dump in the object store
 [**setBranchProtectionRules**](RepositoriesApi.md#setBranchProtectionRules) | **PUT** /repositories/{repository}/settings/branch_protection | 
 [**setGCRules**](RepositoriesApi.md#setGCRules) | **PUT** /repositories/{repository}/settings/gc_rules | 
 
@@ -301,7 +301,7 @@ null (empty response body)
 # **dumpStatus**
 > RepositoryDumpStatus dumpStatus(repository, taskId)
 
-Dump repository (tags, commits, branches) to object store
+Status of a repository dump task
 
 ### Example
 ```java
@@ -396,7 +396,7 @@ Name | Type | Description  | Notes
 # **dumpSubmit**
 > TaskInfo dumpSubmit(repository)
 
-Dump repository refs (tags, commits, branches) to object store
+Backup the repository metadata (tags, commits, branches) and save the backup to the object store.
 
 ### Example
 ```java
@@ -1046,7 +1046,7 @@ Name | Type | Description  | Notes
 # **restoreSubmit**
 > TaskInfo restoreSubmit(repository, refsDump)
 
-Restore repository (tags, commits, branches) from object store
+Restore repository from a dump in the object store
 
 ### Example
 ```java

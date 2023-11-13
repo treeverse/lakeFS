@@ -88,7 +88,7 @@ public class RepositoriesApiTest {
     }
     
     /**
-     * Dump repository (tags, commits, branches) to object store
+     * Status of a repository dump task
      *
      * 
      *
@@ -104,7 +104,7 @@ public class RepositoriesApiTest {
     }
     
     /**
-     * Dump repository refs (tags, commits, branches) to object store
+     * Backup the repository metadata (tags, commits, branches) and save the backup to the object store.
      *
      * 
      *
@@ -212,7 +212,7 @@ public class RepositoriesApiTest {
     }
     
     /**
-     * Restore repository (tags, commits, branches) from object store
+     * Restore repository from a dump in the object store
      *
      * 
      *

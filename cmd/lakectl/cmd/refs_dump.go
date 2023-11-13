@@ -25,11 +25,11 @@ var refsDumpCmd = &cobra.Command{
 		repoURI := MustParseRepoURI("repository URI", args[0])
 		client := getClient()
 		output := Must(cmd.Flags().GetString("output"))
-		pullInterval := Must(cmd.Flags().GetDuration("pull-interval"))
-		if pullInterval < minimumPullInterval {
+		pollInterval := Must(cmd.Flags().GetDuration("poll-interval"))
+		if pollInterval < minimumPullInterval {
 			DieFmt("Pull interval must be at least %s", minimumPullInterval)
 		}
-		pullExpiry := Must(cmd.Flags().GetDuration("pull-expiry"))
+		pollExpiry := Must(cmd.Flags().GetDuration("poll-expiry"))
 
 		// request refs dump
 		ctx := cmd.Context()
@@ -58,12 +58,12 @@ var refsDumpCmd = &cobra.Command{
 			if resp.JSON200.Completed {
 				return resp.JSON200, nil
 			}
-			if pullExpiry >= 0 && time.Since(resp.JSON200.UpdateTime) > pullExpiry {
+			if pollExpiry >= 0 && time.Since(resp.JSON200.UpdateTime) > pollExpiry {
 				return nil, backoff.Permanent(ErrTaskNotCompleted)
 			}
 			return nil, ErrTaskNotCompleted
 		}, backoff.WithContext(
-			backoff.NewConstantBackOff(pullInterval), ctx),
+			backoff.NewConstantBackOff(pollInterval), ctx),
 		)
 
 		switch {
@@ -111,7 +111,7 @@ func printRefs(output string, refs *apigen.RefsDump) error {
 //nolint:gochecknoinits
 func init() {
 	refsDumpCmd.Flags().StringP("output", "o", "", "output filename (default stdout)")
-	refsDumpCmd.Flags().Duration("pull-interval", defaultPullInterval, "pull status check interval")
-	refsDumpCmd.Flags().Duration("pull-expiry", defaultPullExpiry, "pull status check expiry")
+	refsDumpCmd.Flags().Duration("poll-interval", defaultPullInterval, "poll status check interval")
+	refsDumpCmd.Flags().Duration("poll-expiry", defaultPullExpiry, "poll status check expiry")
 	rootCmd.AddCommand(refsDumpCmd)
 }

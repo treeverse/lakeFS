@@ -779,7 +779,7 @@ public class RepositoriesApi {
     }
 
     /**
-     * Dump repository (tags, commits, branches) to object store
+     * Status of a repository dump task
      * 
      * @param repository  (required)
      * @param taskId  (required)
@@ -953,7 +953,7 @@ public class RepositoriesApi {
     }
 
     /**
-     * Dump repository refs (tags, commits, branches) to object store
+     * Backup the repository metadata (tags, commits, branches) and save the backup to the object store.
      * 
      * @param repository  (required)
      * @return APIdumpSubmitRequest
@@ -2213,7 +2213,7 @@ public class RepositoriesApi {
     }
 
     /**
-     * Restore repository (tags, commits, branches) from object store
+     * Restore repository from a dump in the object store
      * 
      * @param repository  (required)
      * @param refsDump  (required)
