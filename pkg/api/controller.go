@@ -3486,6 +3486,10 @@ func (c *Controller) RestoreSubmit(w http.ResponseWriter, r *http.Request, body 
 		BranchesMetarangeId: body.BranchesMetaRangeId,
 	}
 	taskID, err := c.Catalog.RestoreRepositorySubmit(ctx, repository, info)
+	if errors.Is(err, catalog.ErrNonEmptyRepository) {
+		writeError(w, r, http.StatusBadRequest, "can only restore into a bare repository")
+		return
+	}
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

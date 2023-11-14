@@ -1903,6 +1903,15 @@ func (c *Catalog) RestoreRepositorySubmit(ctx context.Context, repositoryID stri
 		return "", err
 	}
 
+	// verify bare repository - no commits
+	_, _, err = c.ListCommits(ctx, repository.RepositoryID.String(), repository.DefaultBranchID.String(), LogParams{
+		Amount: 1,
+		Limit:  true,
+	})
+	if !errors.Is(err, graveler.ErrNotFound) {
+		return "", ErrNonEmptyRepository
+	}
+
 	// create refs restore task and update initial status
 	taskStatus := &RepositoryRestoreStatus{}
 	taskSteps := []taskStep{
@@ -1970,7 +1979,7 @@ func (c *Catalog) runBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 		return err
 	}
 
-	logger := c.log(ctx).WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID})
+	log := c.log(ctx).WithFields(logging.Fields{"task_id": taskID, "repository": repository.RepositoryID})
 	c.workPool.Submit(func() {
 		for stepIdx, step := range steps {
 			// call the step function
@@ -1978,7 +1987,7 @@ func (c *Catalog) runBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 			// update task part
 			task.UpdatedAt = timestamppb.Now()
 			if err != nil {
-				logger.WithError(err).WithField("step", step.Name).Errorf("Catalog background task step failed")
+				log.WithError(err).WithField("step", step.Name).Errorf("Catalog background task step failed")
 				task.Completed = true
 				task.Error = err.Error()
 			} else if stepIdx == len(steps)-1 {
@@ -1987,7 +1996,7 @@ func (c *Catalog) runBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 
 			// update task status
 			if err := UpdateTaskStatus(ctx, c.KVStore, repository, taskID, taskStatus); err != nil {
-				logger.WithError(err).WithField("step", step.Name).Error("failed to update task status")
+				log.WithError(err).WithField("step", step.Name).Error("Catalog failed to update task status")
 			}
 
 			// make sure we stop based on task completed status, as we may fail

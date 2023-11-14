@@ -18,4 +18,5 @@ var (
 	ErrItClosed = errors.New("iterator closed")
 
 	ErrFeatureNotSupported = errors.New("feature not supported")
+	ErrNonEmptyRepository  = errors.New("non empty repository")
 )

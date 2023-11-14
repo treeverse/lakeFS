@@ -4557,7 +4557,7 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 		}
 
 		taskID := dumpResp.JSON202.Id
-		ticker := time.NewTicker(2 * time.Second)
+		ticker := time.NewTicker(500 * time.Millisecond)
 		started := time.Now()
 		for range ticker.C {
 			statusResp, err := clt.DumpStatusWithResponse(ctx, repo, &apigen.DumpStatusParams{TaskId: taskID})
@@ -4595,17 +4595,22 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 		if dumpStatus == nil || dumpStatus.Refs == nil {
 			t.Skip("Skipping restore test, dump failed")
 		}
-		submitResponse, err := clt.RestoreSubmitWithResponse(ctx, repo, apigen.RestoreSubmitJSONRequestBody{
+
+		newRepo := testUniqueRepoName()
+		_, err = deps.catalog.CreateBareRepository(ctx, newRepo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, "create bare repository", err)
+
+		submitResponse, err := clt.RestoreSubmitWithResponse(ctx, newRepo, apigen.RestoreSubmitJSONRequestBody{
 			BranchesMetaRangeId: dumpStatus.Refs.BranchesMetaRangeId,
 			CommitsMetaRangeId:  dumpStatus.Refs.CommitsMetaRangeId,
 			TagsMetaRangeId:     dumpStatus.Refs.TagsMetaRangeId,
 		})
 		testutil.MustDo(t, "restore submit", err)
 		if submitResponse.JSON202 == nil {
-			t.Fatal("Expected 202 response")
+			t.Fatalf("Expected 202 response, got: %s", submitResponse.Status())
 		}
 
-		restoreStatus := pullRestoreStatus(t, clt, repo, submitResponse.JSON202.Id)
+		restoreStatus := pullRestoreStatus(t, clt, newRepo, submitResponse.JSON202.Id)
 		if restoreStatus == nil {
 			t.Fatal("Expected restore to complete (timed-out)")
 		}
@@ -4615,17 +4620,22 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 	})
 
 	t.Run("restore_invalid_refs", func(t *testing.T) {
-		submitResponse, err := clt.RestoreSubmitWithResponse(ctx, repo, apigen.RestoreSubmitJSONRequestBody{
+		// delete and recreate repository as bare for restore
+		newRepo := testUniqueRepoName()
+		_, err = deps.catalog.CreateBareRepository(ctx, newRepo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, "create bare repository", err)
+
+		submitResponse, err := clt.RestoreSubmitWithResponse(ctx, newRepo, apigen.RestoreSubmitJSONRequestBody{
 			BranchesMetaRangeId: "invalid",
 			CommitsMetaRangeId:  "invalid",
 			TagsMetaRangeId:     "invalid",
 		})
 		testutil.MustDo(t, "restore submit", err)
 		if submitResponse.JSON202 == nil {
-			t.Fatal("Expected 202 response")
+			t.Fatalf("Expected 202 response, got: %s", submitResponse.Status())
 		}
 
-		restoreStatus := pullRestoreStatus(t, clt, repo, submitResponse.JSON202.Id)
+		restoreStatus := pullRestoreStatus(t, clt, newRepo, submitResponse.JSON202.Id)
 		if restoreStatus == nil {
 			t.Fatal("Expected restore to complete (timed-out)")
 		}
@@ -4651,14 +4661,14 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 // will return nil in case of timeout.
 func pullRestoreStatus(t *testing.T, clt apigen.ClientWithResponsesInterface, repo string, taskID string) *apigen.RepositoryRestoreStatus {
 	t.Helper()
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 	started := time.Now()
 	for range ticker.C {
 		statusResponse, err := clt.RestoreStatusWithResponse(context.Background(), repo, &apigen.RestoreStatusParams{TaskId: taskID})
 		testutil.MustDo(t, "restore status", err)
 		if statusResponse.JSON200 == nil {
-			t.Fatal("Expected 200 response")
+			t.Fatalf("Expected 200 response, got: %s", statusResponse.Status())
 		}
 		if statusResponse.JSON200.Completed {
 			return statusResponse.JSON200
