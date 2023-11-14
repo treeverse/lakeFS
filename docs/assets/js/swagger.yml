@@ -2827,7 +2827,7 @@ paths:
       tags:
         - repositories
       operationId: restoreStatus
-      summary: Restore repository (tags, commits, branches) from object store
+      summary: Status of a restore request
       parameters:
         - in: query
           name: task_id

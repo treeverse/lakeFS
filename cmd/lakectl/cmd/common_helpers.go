@@ -40,8 +40,8 @@ const (
 	internalPageSize           = 1000 // when retrieving all records, use this page size under the hood
 	defaultAmountArgumentValue = 100  // when no amount is specified, use this value for the argument
 
-	defaultPollInterval = 3 * time.Second // default interval while pulling task's status
-	minimumPollInterval = time.Second     // minimum interval while pulling task's status
+	defaultPollInterval = 3 * time.Second // default interval while pulling tasks status
+	minimumPollInterval = time.Second     // minimum interval while pulling tasks status
 	defaultPollTimeout  = time.Hour       // default expiry for pull status with no update
 )
 

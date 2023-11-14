@@ -4565,7 +4565,7 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 			if statusResp.JSON200 == nil {
 				t.Fatal("Expected 200 response")
 			}
-			if statusResp.JSON200.Completed {
+			if statusResp.JSON200.Done {
 				dumpStatus = statusResp.JSON200
 				break
 			}
@@ -4610,7 +4610,7 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 			t.Fatalf("Expected 202 response, got: %s", submitResponse.Status())
 		}
 
-		restoreStatus := pullRestoreStatus(t, clt, newRepo, submitResponse.JSON202.Id)
+		restoreStatus := pollRestoreStatus(t, clt, newRepo, submitResponse.JSON202.Id)
 		if restoreStatus == nil {
 			t.Fatal("Expected restore to complete (timed-out)")
 		}
@@ -4635,7 +4635,7 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 			t.Fatalf("Expected 202 response, got: %s", submitResponse.Status())
 		}
 
-		restoreStatus := pullRestoreStatus(t, clt, newRepo, submitResponse.JSON202.Id)
+		restoreStatus := pollRestoreStatus(t, clt, newRepo, submitResponse.JSON202.Id)
 		if restoreStatus == nil {
 			t.Fatal("Expected restore to complete (timed-out)")
 		}
@@ -4656,10 +4656,10 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 	})
 }
 
-// pullRestoreStatus polls the restore status endpoint until the restore is complete or times out.
+// pollRestoreStatus polls the restore status endpoint until the restore is complete or times out.
 // test will fail in case of error.
 // will return nil in case of timeout.
-func pullRestoreStatus(t *testing.T, clt apigen.ClientWithResponsesInterface, repo string, taskID string) *apigen.RepositoryRestoreStatus {
+func pollRestoreStatus(t *testing.T, clt apigen.ClientWithResponsesInterface, repo string, taskID string) *apigen.RepositoryRestoreStatus {
 	t.Helper()
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
@@ -4670,7 +4670,7 @@ func pullRestoreStatus(t *testing.T, clt apigen.ClientWithResponsesInterface, re
 		if statusResponse.JSON200 == nil {
 			t.Fatalf("Expected 200 response, got: %s", statusResponse.Status())
 		}
-		if statusResponse.JSON200.Completed {
+		if statusResponse.JSON200.Done {
 			return statusResponse.JSON200
 		}
 		if time.Since(started) > 30*time.Second {
