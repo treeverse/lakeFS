@@ -116,7 +116,7 @@ const UserGroupsContainer = () => {
 };
 
 const UserGroupsPage = () => {
-    const [setActiveTab] = useOutletContext();
+    const {setActiveTab} = useOutletContext();
     useEffect(() => setActiveTab("users"), [setActiveTab]);
     return <UserGroupsContainer />;
 };

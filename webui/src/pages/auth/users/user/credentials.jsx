@@ -94,7 +94,7 @@ const UserCredentialsContainer = () => {
 };
 
 const UserCredentialsPage = () => {
-    const [setActiveTab] = useOutletContext();
+    const {setActiveTab} = useOutletContext();
     useEffect(() => setActiveTab("users"), [setActiveTab]);
     return <UserCredentialsContainer/>;
 };

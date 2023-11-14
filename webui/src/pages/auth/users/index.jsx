@@ -1,5 +1,5 @@
 import React, {createContext, useCallback, useEffect, useState} from "react";
-import {Route, Routes} from "react-router-dom";
+import {Outlet} from "react-router-dom";
 import { useOutletContext } from "react-router-dom";
 
 import Button from "react-bootstrap/Button";
@@ -22,7 +22,6 @@ import {
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
-import UserPage from "./user";
 import validator from "validator/es";
 import { disallowPercentSign, INVALID_USER_NAME_ERROR_MESSAGE } from "../validation";
 
@@ -160,8 +159,8 @@ const UserActionsActionGroup = ({canInviteUsers, selected, onClickInvite, onClic
     );
 }
 
-const UsersPage = ({nextPage, refresh, setRefresh, error, loading, userListResults}) => {
-    const [setActiveTab] = useOutletContext();
+export const UsersPage = () => {
+    const { setActiveTab, refresh, loading, error, nextPage, setRefresh, usersList } = useOutletContext();
     useEffect(() => setActiveTab("users"), [setActiveTab]);
     return (
         <UsersContainer
@@ -170,12 +169,13 @@ const UsersPage = ({nextPage, refresh, setRefresh, error, loading, userListResul
             error={error}
             nextPage={nextPage}
             setRefresh={setRefresh}
-            userListResults={userListResults}
+            userListResults={usersList}
         />
     );
 };
 
 const UsersIndexPage = () => {
+    const [setActiveTab] = useOutletContext();
     const [refresh, setRefresh] = useState(false);
     const [usersList, setUsersList] = useState([]);
     const router = useRouter();
@@ -201,19 +201,7 @@ const UsersIndexPage = () => {
 
     return (
         <GetUserEmailByIdContext.Provider value={getUserEmailById}>
-            <Routes>
-                <Route path=":userId/*" element={<UserPage getUserEmailById={getUserEmailById} />} />
-                <Route path="" element={
-                    <UsersPage 
-                        refresh={refresh}
-                        loading={loading}
-                        error={error}
-                        nextPage={nextPage}
-                        setRefresh={setRefresh}
-                        userListResults={usersList}
-                    />
-                } />
-            </Routes>
+            <Outlet context={{setActiveTab, refresh, loading, error, nextPage, setRefresh, usersList, getUserEmailById}} />
         </GetUserEmailByIdContext.Provider>
     )
 }

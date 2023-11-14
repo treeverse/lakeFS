@@ -21,8 +21,6 @@ import {
 import {useRouter} from "../../../lib/hooks/router";
 import {useLoginConfigContext} from "../../../lib/hooks/conf";
 import {Link} from "../../../lib/components/nav";
-import {Route, Routes} from "react-router-dom";
-import PolicyPage from "./policy";
 import { disallowPercentSign, INVALID_POLICY_ID_ERROR_MESSAGE } from "../validation";
 
 
@@ -139,13 +137,4 @@ const PoliciesPage = () => {
     return <PoliciesContainer/>;
 };
 
-const PoliciesIndexPage = () => {
-    return (
-        <Routes>
-            <Route exact path="" element={<PoliciesPage/>} />
-            <Route path=":policyId" element={<PolicyPage/>} />
-        </Routes>
-    )
-}
-
-export default PoliciesIndexPage;
+export default PoliciesPage;

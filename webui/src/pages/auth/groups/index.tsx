@@ -17,10 +17,8 @@ import {
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
-import {Route, Routes} from "react-router-dom";
 import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
-import GroupPage from "./group";
 import {EntityActionModal} from "../../../lib/components/auth/forms";
 import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from "../validation";
 import {useLoginConfigContext} from "../../../lib/hooks/conf";
@@ -183,19 +181,10 @@ const GroupsContainer = () => {
     );
 };
 
-const GroupsPage = () => {
+export const GroupsPage = () => {
     const [setActiveTab] = useOutletContext();
     useEffect(() => setActiveTab('groups'), [setActiveTab]);
     return <GroupsContainer/>;
 };
 
-const GroupsIndexPage = () => {
-    return (
-        <Routes>
-            <Route path=":groupId/*" element={<GroupPage/>} />
-            <Route index element={<GroupsPage/>} />
-        </Routes>
-    )
-}
-
-export default GroupsIndexPage;
+export default GroupsPage;

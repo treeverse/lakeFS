@@ -22,8 +22,6 @@ import {Paginator} from "../../../../lib/components/pagination";
 import RefDropdown from "../../../../lib/components/repository/refDropdown";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
-import {Route, Routes} from "react-router-dom";
-import RepositoryCommitPage from "./commit";
 import {RepoError} from "../error";
 
 
@@ -163,13 +161,4 @@ const RepositoryCommitsPage = () => {
   return <CommitsContainer />;
 };
 
-const RepositoryCommitsIndexPage = () => {
-    return (
-        <Routes>
-            <Route path="" element={<RepositoryCommitsPage/>} />
-            <Route path=":commitId" element={<RepositoryCommitPage/>} />
-        </Routes>
-    )
-}
-
-export default RepositoryCommitsIndexPage;
+export default RepositoryCommitsPage;
