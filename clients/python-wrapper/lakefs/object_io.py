@@ -12,7 +12,6 @@ from lakefs_sdk.exceptions import NotFoundException
 from lakefs.client import Client, DefaultClient
 from lakefs.exceptions import (
     ObjectExistsException,
-    UnsupportedOperationException,
     ObjectNotFoundException,
     PermissionException,
     ServerException
@@ -163,7 +162,6 @@ class WriteableObject(ReadableObject):
                pre_sign: Optional[bool] = None,
                content_type: Optional[str] = None,
                metadata: Optional[dict[str, str]] = None) -> ObjectStats:
-        # TODO: handle streams
         """
         Creates a new object or overwrites an existing object
         :param data: The contents of the object to write (can be bytes or string)
@@ -184,6 +182,7 @@ class WriteableObject(ReadableObject):
         if 'x' in mode and self.exists():  # Requires explicit create
             raise ObjectExistsException
 
+        # TODO: handle streams
         binary_mode = 'b' in mode
         if binary_mode and isinstance(data, str):
             content = data.encode('utf-8')
@@ -223,12 +222,13 @@ class WriteableObject(ReadableObject):
         etag = headers.get("ETag", "").strip(' "')
         return etag
 
-    def _upload_raw(self, content, content_type, metadata):
+    def _upload_raw(self, content: UploadContentType, content_type: Optional[str] = None,
+                    metadata: Optional[dict[str, str]] = None) -> ObjectStats:
         """
-        Preform upload api using raw api call to bypass validation of content parameter
+        Use raw upload API call to bypass validation of content parameter
         """
         headers = {
-            "Accept": self._client.sdk_client.objects_api.api_client.select_header_accept(['application/json']),
+            "Accept": "application/json",
             "Content-Type": content_type if content_type is not None else "application/octet-stream"
         }
 
@@ -259,7 +259,7 @@ class WriteableObject(ReadableObject):
             _return_http_data_only=True
         )
 
-    def _upload_presign(self, content, content_type: Optional[str] = None,
+    def _upload_presign(self, content: UploadContentType, content_type: Optional[str] = None,
                         metadata: Optional[dict[str, str]] = None) -> ObjectStats:
         headers = {
             "Accept": self._client.sdk_client.objects_api.api_client.select_header_accept(['application/json']),
