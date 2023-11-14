@@ -47,11 +47,11 @@ public class RepositoryRestoreStatusTest {
     }
 
     /**
-     * Test the property 'completed'
+     * Test the property 'done'
      */
     @Test
-    public void completedTest() {
-        // TODO: test completed
+    public void doneTest() {
+        // TODO: test done
     }
 
     /**

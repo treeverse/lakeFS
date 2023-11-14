@@ -28,11 +28,11 @@ class RepositoryDumpStatus(BaseModel):
     RepositoryDumpStatus
     """
     id: StrictStr = Field(..., description="ID of the task")
-    completed: StrictBool = Field(...)
+    done: StrictBool = Field(...)
     update_time: datetime = Field(...)
     error: Optional[StrictStr] = None
     refs: Optional[RefsDump] = None
-    __properties = ["id", "completed", "update_time", "error", "refs"]
+    __properties = ["id", "done", "update_time", "error", "refs"]
 
     class Config:
         """Pydantic configuration"""
@@ -74,7 +74,7 @@ class RepositoryDumpStatus(BaseModel):
 
         _obj = RepositoryDumpStatus.parse_obj({
             "id": obj.get("id"),
-            "completed": obj.get("completed"),
+            "done": obj.get("done"),
             "update_time": obj.get("update_time"),
             "error": obj.get("error"),
             "refs": RefsDump.from_dict(obj.get("refs")) if obj.get("refs") is not None else None

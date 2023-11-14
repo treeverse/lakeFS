@@ -58,9 +58,9 @@ public class RepositoryDumpStatus {
   @SerializedName(SERIALIZED_NAME_ID)
   private String id;
 
-  public static final String SERIALIZED_NAME_COMPLETED = "completed";
-  @SerializedName(SERIALIZED_NAME_COMPLETED)
-  private Boolean completed;
+  public static final String SERIALIZED_NAME_DONE = "done";
+  @SerializedName(SERIALIZED_NAME_DONE)
+  private Boolean done;
 
   public static final String SERIALIZED_NAME_UPDATE_TIME = "update_time";
   @SerializedName(SERIALIZED_NAME_UPDATE_TIME)
@@ -98,24 +98,24 @@ public class RepositoryDumpStatus {
   }
 
 
-  public RepositoryDumpStatus completed(Boolean completed) {
+  public RepositoryDumpStatus done(Boolean done) {
     
-    this.completed = completed;
+    this.done = done;
     return this;
   }
 
    /**
-   * Get completed
-   * @return completed
+   * Get done
+   * @return done
   **/
   @javax.annotation.Nonnull
-  public Boolean getCompleted() {
-    return completed;
+  public Boolean getDone() {
+    return done;
   }
 
 
-  public void setCompleted(Boolean completed) {
-    this.completed = completed;
+  public void setDone(Boolean done) {
+    this.done = done;
   }
 
 
@@ -237,7 +237,7 @@ public class RepositoryDumpStatus {
     }
     RepositoryDumpStatus repositoryDumpStatus = (RepositoryDumpStatus) o;
     return Objects.equals(this.id, repositoryDumpStatus.id) &&
-        Objects.equals(this.completed, repositoryDumpStatus.completed) &&
+        Objects.equals(this.done, repositoryDumpStatus.done) &&
         Objects.equals(this.updateTime, repositoryDumpStatus.updateTime) &&
         Objects.equals(this.error, repositoryDumpStatus.error) &&
         Objects.equals(this.refs, repositoryDumpStatus.refs)&&
@@ -246,7 +246,7 @@ public class RepositoryDumpStatus {
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, completed, updateTime, error, refs, additionalProperties);
+    return Objects.hash(id, done, updateTime, error, refs, additionalProperties);
   }
 
   @Override
@@ -254,7 +254,7 @@ public class RepositoryDumpStatus {
     StringBuilder sb = new StringBuilder();
     sb.append("class RepositoryDumpStatus {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
-    sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
+    sb.append("    done: ").append(toIndentedString(done)).append("\n");
     sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
     sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("    refs: ").append(toIndentedString(refs)).append("\n");
@@ -282,7 +282,7 @@ public class RepositoryDumpStatus {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
     openapiFields.add("id");
-    openapiFields.add("completed");
+    openapiFields.add("done");
     openapiFields.add("update_time");
     openapiFields.add("error");
     openapiFields.add("refs");
@@ -290,7 +290,7 @@ public class RepositoryDumpStatus {
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
     openapiRequiredFields.add("id");
-    openapiRequiredFields.add("completed");
+    openapiRequiredFields.add("done");
     openapiRequiredFields.add("update_time");
   }
 

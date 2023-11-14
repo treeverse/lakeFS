@@ -607,13 +607,13 @@ components:
       type: object
       required:
         - id
-        - completed
+        - done
         - update_time
       properties:
         id:
           type: string
           description: ID of the task
-        completed:
+        done:
           type: boolean
         update_time:
           type: string
@@ -627,13 +627,13 @@ components:
       type: object
       required:
         - id
-        - completed
+        - done
         - update_time
       properties:
         id:
           type: string
           description: ID of the task
-        completed:
+        done:
           type: boolean
         update_time:
           type: string

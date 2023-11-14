@@ -8,7 +8,7 @@
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
 |**id** | **String** | ID of the task |  |
-|**completed** | **Boolean** |  |  |
+|**done** | **Boolean** |  |  |
 |**updateTime** | **OffsetDateTime** |  |  |
 |**error** | **String** |  |  [optional] |
 |**refs** | [**RefsDump**](RefsDump.md) |  |  [optional] |

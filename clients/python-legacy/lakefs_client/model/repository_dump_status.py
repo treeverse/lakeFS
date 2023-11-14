@@ -89,7 +89,7 @@ class RepositoryDumpStatus(ModelNormal):
         lazy_import()
         return {
             'id': (str,),  # noqa: E501
-            'completed': (bool,),  # noqa: E501
+            'done': (bool,),  # noqa: E501
             'update_time': (datetime,),  # noqa: E501
             'error': (str,),  # noqa: E501
             'refs': (RefsDump,),  # noqa: E501
@@ -102,7 +102,7 @@ class RepositoryDumpStatus(ModelNormal):
 
     attribute_map = {
         'id': 'id',  # noqa: E501
-        'completed': 'completed',  # noqa: E501
+        'done': 'done',  # noqa: E501
         'update_time': 'update_time',  # noqa: E501
         'error': 'error',  # noqa: E501
         'refs': 'refs',  # noqa: E501
@@ -115,12 +115,12 @@ class RepositoryDumpStatus(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, id, completed, update_time, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, id, done, update_time, *args, **kwargs):  # noqa: E501
         """RepositoryDumpStatus - a model defined in OpenAPI
 
         Args:
             id (str): ID of the task
-            completed (bool):
+            done (bool):
             update_time (datetime):
 
         Keyword Args:
@@ -184,7 +184,7 @@ class RepositoryDumpStatus(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.id = id
-        self.completed = completed
+        self.done = done
         self.update_time = update_time
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
@@ -206,12 +206,12 @@ class RepositoryDumpStatus(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, id, completed, update_time, *args, **kwargs):  # noqa: E501
+    def __init__(self, id, done, update_time, *args, **kwargs):  # noqa: E501
         """RepositoryDumpStatus - a model defined in OpenAPI
 
         Args:
             id (str): ID of the task
-            completed (bool):
+            done (bool):
             update_time (datetime):
 
         Keyword Args:
@@ -273,7 +273,7 @@ class RepositoryDumpStatus(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.id = id
-        self.completed = completed
+        self.done = done
         self.update_time = update_time
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \

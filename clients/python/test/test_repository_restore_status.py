@@ -40,14 +40,14 @@ class TestRepositoryRestoreStatus(unittest.TestCase):
         if include_optional :
             return RepositoryRestoreStatus(
                 id = '', 
-                completed = True, 
+                done = True, 
                 update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                 error = ''
             )
         else :
             return RepositoryRestoreStatus(
                 id = '',
-                completed = True,
+                done = True,
                 update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
         )
         """

@@ -6746,13 +6746,13 @@ components:
           branches_meta_range_id: branches_meta_range_id
           commits_meta_range_id: commits_meta_range_id
         id: id
-        completed: true
         error: error
+        done: true
       properties:
         id:
           description: ID of the task
           type: string
-        completed:
+        done:
           type: boolean
         update_time:
           format: date-time
@@ -6762,7 +6762,7 @@ components:
         refs:
           $ref: '#/components/schemas/RefsDump'
       required:
-      - completed
+      - done
       - id
       - update_time
       type: object
@@ -6770,13 +6770,13 @@ components:
       example:
         update_time: 2000-01-23T04:56:07.000+00:00
         id: id
-        completed: true
         error: error
+        done: true
       properties:
         id:
           description: ID of the task
           type: string
-        completed:
+        done:
           type: boolean
         update_time:
           format: date-time
@@ -6784,7 +6784,7 @@ components:
         error:
           type: string
       required:
-      - completed
+      - done
       - id
       - update_time
       type: object

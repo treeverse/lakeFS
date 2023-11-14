@@ -55,7 +55,7 @@ var refsDumpCmd = &cobra.Command{
 				err := fmt.Errorf("dump status %w: %s", helpers.ErrRequestFailed, resp.Status())
 				return nil, backoff.Permanent(err)
 			}
-			if resp.JSON200.Completed {
+			if resp.JSON200.Done {
 				return resp.JSON200, nil
 			}
 			if timeoutDuration >= 0 && time.Since(resp.JSON200.UpdateTime) > timeoutDuration {

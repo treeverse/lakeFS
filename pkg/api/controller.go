@@ -3434,13 +3434,13 @@ func (c *Controller) DumpStatus(w http.ResponseWriter, r *http.Request, reposito
 	// build response based on status
 	response := &apigen.RepositoryDumpStatus{
 		Id:         params.TaskId,
-		Completed:  status.Task.Completed,
+		Done:       status.Task.Done,
 		UpdateTime: status.Task.UpdatedAt.AsTime(),
 	}
 	if status.Task.Error != "" {
 		response.Error = apiutil.Ptr(status.Task.Error)
 	}
-	if status.Task.Completed && status.Info != nil {
+	if status.Task.Done && status.Info != nil {
 		response.Refs = &apigen.RefsDump{
 			CommitsMetaRangeId:  status.Info.CommitsMetarangeId,
 			TagsMetaRangeId:     status.Info.TagsMetarangeId,
@@ -3535,7 +3535,7 @@ func (c *Controller) RestoreStatus(w http.ResponseWriter, r *http.Request, repos
 	// build response based on status
 	response := &apigen.RepositoryRestoreStatus{
 		Id:         params.TaskId,
-		Completed:  status.Task.Completed,
+		Done:       status.Task.Done,
 		UpdateTime: status.Task.UpdatedAt.AsTime(),
 	}
 	if status.Task.Error != "" {
@@ -4292,8 +4292,9 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		LoginConfig: newLoginConfig(c.Config),
 	}
 
-	// if email subscription is disabled in the config, set missing flag to false.
-	// otherwise, check if the comm prefs are set. if they are, set missing flag to false.
+	// if email subscription is disabled in the config, set the missing flag to false.
+	// otherwise, check if the comm prefs are set.
+	// if they are, set the missing flag to false.
 	if !c.Config.EmailSubscription.Enabled {
 		response.CommPrefsMissing = swag.Bool(false)
 		writeResponse(w, r, http.StatusOK, response)

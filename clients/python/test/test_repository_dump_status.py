@@ -40,7 +40,7 @@ class TestRepositoryDumpStatus(unittest.TestCase):
         if include_optional :
             return RepositoryDumpStatus(
                 id = '', 
-                completed = True, 
+                done = True, 
                 update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                 error = '', 
                 refs = lakefs_sdk.models.refs_dump.RefsDump(
@@ -51,7 +51,7 @@ class TestRepositoryDumpStatus(unittest.TestCase):
         else :
             return RepositoryDumpStatus(
                 id = '',
-                completed = True,
+                done = True,
                 update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
         )
         """

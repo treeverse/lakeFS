@@ -607,13 +607,13 @@ components:
       type: object
       required:
         - id
-        - completed
+        - done
         - update_time
       properties:
         id:
           type: string
           description: ID of the task
-        completed:
+        done:
           type: boolean
         update_time:
           type: string
@@ -627,13 +627,13 @@ components:
       type: object
       required:
         - id
-        - completed
+        - done
         - update_time
       properties:
         id:
           type: string
           description: ID of the task
-        completed:
+        done:
           type: boolean
         update_time:
           type: string
@@ -2745,7 +2745,7 @@ paths:
       tags:
         - repositories
       operationId: dumpSubmit
-      summary: Dump repository refs (tags, commits, branches) to object store
+      summary: Backup the repository metadata (tags, commits, branches) and save the backup to the object store.
       responses:
         202:
           description: dump task information
@@ -2765,7 +2765,7 @@ paths:
       tags:
         - repositories
       operationId: dumpStatus
-      summary: Dump repository (tags, commits, branches) to object store
+      summary: Status of a repository dump task
       parameters:
         - in: query
           name: task_id
@@ -2801,7 +2801,7 @@ paths:
       tags:
         - repositories
       operationId: restoreSubmit
-      summary: Restore repository (tags, commits, branches) from object store
+      summary: Restore repository from a dump in the object store
       requestBody:
         required: true
         content:

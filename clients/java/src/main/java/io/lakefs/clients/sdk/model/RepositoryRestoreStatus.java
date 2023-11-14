@@ -57,9 +57,9 @@ public class RepositoryRestoreStatus {
   @SerializedName(SERIALIZED_NAME_ID)
   private String id;
 
-  public static final String SERIALIZED_NAME_COMPLETED = "completed";
-  @SerializedName(SERIALIZED_NAME_COMPLETED)
-  private Boolean completed;
+  public static final String SERIALIZED_NAME_DONE = "done";
+  @SerializedName(SERIALIZED_NAME_DONE)
+  private Boolean done;
 
   public static final String SERIALIZED_NAME_UPDATE_TIME = "update_time";
   @SerializedName(SERIALIZED_NAME_UPDATE_TIME)
@@ -93,24 +93,24 @@ public class RepositoryRestoreStatus {
   }
 
 
-  public RepositoryRestoreStatus completed(Boolean completed) {
+  public RepositoryRestoreStatus done(Boolean done) {
     
-    this.completed = completed;
+    this.done = done;
     return this;
   }
 
    /**
-   * Get completed
-   * @return completed
+   * Get done
+   * @return done
   **/
   @javax.annotation.Nonnull
-  public Boolean getCompleted() {
-    return completed;
+  public Boolean getDone() {
+    return done;
   }
 
 
-  public void setCompleted(Boolean completed) {
-    this.completed = completed;
+  public void setDone(Boolean done) {
+    this.done = done;
   }
 
 
@@ -211,7 +211,7 @@ public class RepositoryRestoreStatus {
     }
     RepositoryRestoreStatus repositoryRestoreStatus = (RepositoryRestoreStatus) o;
     return Objects.equals(this.id, repositoryRestoreStatus.id) &&
-        Objects.equals(this.completed, repositoryRestoreStatus.completed) &&
+        Objects.equals(this.done, repositoryRestoreStatus.done) &&
         Objects.equals(this.updateTime, repositoryRestoreStatus.updateTime) &&
         Objects.equals(this.error, repositoryRestoreStatus.error)&&
         Objects.equals(this.additionalProperties, repositoryRestoreStatus.additionalProperties);
@@ -219,7 +219,7 @@ public class RepositoryRestoreStatus {
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, completed, updateTime, error, additionalProperties);
+    return Objects.hash(id, done, updateTime, error, additionalProperties);
   }
 
   @Override
@@ -227,7 +227,7 @@ public class RepositoryRestoreStatus {
     StringBuilder sb = new StringBuilder();
     sb.append("class RepositoryRestoreStatus {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
-    sb.append("    completed: ").append(toIndentedString(completed)).append("\n");
+    sb.append("    done: ").append(toIndentedString(done)).append("\n");
     sb.append("    updateTime: ").append(toIndentedString(updateTime)).append("\n");
     sb.append("    error: ").append(toIndentedString(error)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
@@ -254,14 +254,14 @@ public class RepositoryRestoreStatus {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
     openapiFields.add("id");
-    openapiFields.add("completed");
+    openapiFields.add("done");
     openapiFields.add("update_time");
     openapiFields.add("error");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
     openapiRequiredFields.add("id");
-    openapiRequiredFields.add("completed");
+    openapiRequiredFields.add("done");
     openapiRequiredFields.add("update_time");
   }
 

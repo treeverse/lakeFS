@@ -26,7 +26,7 @@ message Entry {
 // Task is a generic task status message
 message Task {
 	string id = 1;
-	bool completed = 2;
+	bool done = 2;
 	google.protobuf.Timestamp updated_at = 3;
 	int64 progress = 4;
 	string error = 5;

@@ -27,10 +27,10 @@ class RepositoryRestoreStatus(BaseModel):
     RepositoryRestoreStatus
     """
     id: StrictStr = Field(..., description="ID of the task")
-    completed: StrictBool = Field(...)
+    done: StrictBool = Field(...)
     update_time: datetime = Field(...)
     error: Optional[StrictStr] = None
-    __properties = ["id", "completed", "update_time", "error"]
+    __properties = ["id", "done", "update_time", "error"]
 
     class Config:
         """Pydantic configuration"""
@@ -69,7 +69,7 @@ class RepositoryRestoreStatus(BaseModel):
 
         _obj = RepositoryRestoreStatus.parse_obj({
             "id": obj.get("id"),
-            "completed": obj.get("completed"),
+            "done": obj.get("done"),
             "update_time": obj.get("update_time"),
             "error": obj.get("error")
         })

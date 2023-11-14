@@ -1988,10 +1988,10 @@ func (c *Catalog) runBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 			task.UpdatedAt = timestamppb.Now()
 			if err != nil {
 				log.WithError(err).WithField("step", step.Name).Errorf("Catalog background task step failed")
-				task.Completed = true
+				task.Done = true
 				task.Error = err.Error()
 			} else if stepIdx == len(steps)-1 {
-				task.Completed = true
+				task.Done = true
 			}
 
 			// update task status
@@ -2000,7 +2000,7 @@ func (c *Catalog) runBackgroundTaskSteps(repository *graveler.RepositoryRecord, 
 			}
 
 			// make sure we stop based on task completed status, as we may fail
-			if task.Completed {
+			if task.Done {
 				break
 			}
 		}
