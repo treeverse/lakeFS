@@ -204,7 +204,7 @@ class WriteableObject(ReadableObject):
         Delete object from lakeFS
         """
         try:
-            self._client.sdk_client.objects_api.delete_object(self._repo, self._ref, self._path)
+            return self._client.sdk_client.objects_api.delete_object(self._repo, self._ref, self._path)
         except lakefs_sdk.exceptions.ApiException as e:
             _handle_api_exception(e)
 
