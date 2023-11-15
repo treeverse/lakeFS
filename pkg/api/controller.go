@@ -655,7 +655,7 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body ap
 		Permission: model.ACLPermission(body.Permission),
 	}
 
-	err := acl.WriteGroupACL(ctx, c.Auth, groupID, newACL, time.Now(), true)
+	err := acl.WriteGroupACL(ctx, c.Auth, groupID, newACL, time.Now(), false)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
