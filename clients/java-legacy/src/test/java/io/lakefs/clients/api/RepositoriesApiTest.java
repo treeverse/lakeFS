@@ -17,9 +17,13 @@ import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.BranchProtectionRule;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionRules;
+import io.lakefs.clients.api.model.RefsDump;
 import io.lakefs.clients.api.model.Repository;
 import io.lakefs.clients.api.model.RepositoryCreation;
+import io.lakefs.clients.api.model.RepositoryDumpStatus;
 import io.lakefs.clients.api.model.RepositoryList;
+import io.lakefs.clients.api.model.RepositoryRestoreStatus;
+import io.lakefs.clients.api.model.TaskInfo;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -80,6 +84,37 @@ public class RepositoriesApiTest {
     public void deleteRepositoryTest() throws ApiException {
         String repository = null;
                 api.deleteRepository(repository);
+        // TODO: test validations
+    }
+    
+    /**
+     * Status of a repository dump task
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void dumpStatusTest() throws ApiException {
+        String repository = null;
+        String taskId = null;
+                RepositoryDumpStatus response = api.dumpStatus(repository, taskId);
+        // TODO: test validations
+    }
+    
+    /**
+     * Backup the repository metadata (tags, commits, branches) and save the backup to the object store.
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void dumpSubmitTest() throws ApiException {
+        String repository = null;
+                TaskInfo response = api.dumpSubmit(repository);
         // TODO: test validations
     }
     
@@ -157,6 +192,38 @@ public class RepositoriesApiTest {
         String after = null;
         Integer amount = null;
                 RepositoryList response = api.listRepositories(prefix, after, amount);
+        // TODO: test validations
+    }
+    
+    /**
+     * Status of a restore request
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void restoreStatusTest() throws ApiException {
+        String repository = null;
+        String taskId = null;
+                RepositoryRestoreStatus response = api.restoreStatus(repository, taskId);
+        // TODO: test validations
+    }
+    
+    /**
+     * Restore repository from a dump in the object store
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void restoreSubmitTest() throws ApiException {
+        String repository = null;
+        RefsDump refsDump = null;
+                TaskInfo response = api.restoreSubmit(repository, refsDump);
         // TODO: test validations
     }
     
