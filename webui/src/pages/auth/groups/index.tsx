@@ -1,9 +1,8 @@
 import React, {useEffect, useState} from "react";
-
+import { useOutletContext } from "react-router-dom";
 import Button from "react-bootstrap/Button";
 import Dropdown from "react-bootstrap/Dropdown";
 
-import {AuthLayout} from "../../../lib/components/auth/layout";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {auth} from "../../../lib/api";
 import {ConfirmationButton} from "../../../lib/components/modals";
@@ -18,10 +17,8 @@ import {
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
-import {Route, Routes} from "react-router-dom";
 import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
-import GroupPage from "./group";
 import {EntityActionModal} from "../../../lib/components/auth/forms";
 import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from "../validation";
 import {useLoginConfigContext} from "../../../lib/hooks/conf";
@@ -184,21 +181,10 @@ const GroupsContainer = () => {
     );
 };
 
-const GroupsPage = () => {
-    return (
-        <AuthLayout activeTab="groups">
-            <GroupsContainer/>
-        </AuthLayout>
-    );
+export const GroupsPage = () => {
+    const [setActiveTab] = useOutletContext();
+    useEffect(() => setActiveTab('groups'), [setActiveTab]);
+    return <GroupsContainer/>;
 };
 
-const GroupsIndexPage = () => {
-    return (
-        <Routes>
-            <Route path=":groupId/*" element={<GroupPage/>} />
-            <Route path="" element={<GroupsPage/>} />
-        </Routes>
-    )
-}
-
-export default GroupsIndexPage;
+export default GroupsPage;

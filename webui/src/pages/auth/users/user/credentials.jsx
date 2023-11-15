@@ -1,6 +1,5 @@
-import React, {useState} from "react";
-
-import {AuthLayout} from "../../../../lib/components/auth/layout";
+import React, {useEffect, useState} from "react";
+import { useOutletContext } from "react-router-dom";
 import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {auth} from "../../../../lib/api";
 import {CredentialsShowModal, CredentialsTable} from "../../../../lib/components/auth/credentials";
@@ -95,11 +94,9 @@ const UserCredentialsContainer = () => {
 };
 
 const UserCredentialsPage = () => {
-    return (
-        <AuthLayout activeTab="users">
-            <UserCredentialsContainer/>
-        </AuthLayout>
-    );
+    const {setActiveTab} = useOutletContext();
+    useEffect(() => setActiveTab("users"), [setActiveTab]);
+    return <UserCredentialsContainer/>;
 };
 
 export default UserCredentialsPage;

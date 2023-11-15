@@ -1,10 +1,9 @@
 import React, {useEffect, useState} from "react";
-
+import { useOutletContext } from "react-router-dom";
 import Button from "react-bootstrap/Button";
 
 import {auth} from "../../../lib/api";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
-import {AuthLayout} from "../../../lib/components/auth/layout";
 import {ConfirmationButton} from "../../../lib/components/modals";
 import {Paginator} from "../../../lib/components/pagination";
 import {PolicyEditor} from "../../../lib/components/policy";
@@ -22,8 +21,6 @@ import {
 import {useRouter} from "../../../lib/hooks/router";
 import {useLoginConfigContext} from "../../../lib/hooks/conf";
 import {Link} from "../../../lib/components/nav";
-import {Route, Routes} from "react-router-dom";
-import PolicyPage from "./policy";
 import { disallowPercentSign, INVALID_POLICY_ID_ERROR_MESSAGE } from "../validation";
 
 
@@ -135,20 +132,9 @@ const PoliciesContainer = () => {
 
 
 const PoliciesPage = () => {
-    return (
-        <AuthLayout activeTab="policies">
-            <PoliciesContainer/>
-        </AuthLayout>
-    );
+    const [setActiveTab] = useOutletContext();
+    useEffect(() => setActiveTab("policies"), [setActiveTab]);
+    return <PoliciesContainer/>;
 };
 
-const PoliciesIndexPage = () => {
-    return (
-        <Routes>
-            <Route exact path="" element={<PoliciesPage/>} />
-            <Route path=":policyId" element={<PolicyPage/>} />
-        </Routes>
-    )
-}
-
-export default PoliciesIndexPage;
+export default PoliciesPage;

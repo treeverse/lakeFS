@@ -1,5 +1,5 @@
-import React, {useMemo, useRef, useState} from "react";
-
+import React, {useEffect, useMemo, useRef, useState} from "react";
+import { useOutletContext } from "react-router-dom";
 import {
     GitBranchIcon,
     LinkIcon,
@@ -19,7 +19,6 @@ import {
     AlertError, LinkButton,
     Loading, PrefixSearchWidget, RefreshButton
 } from "../../../lib/components/controls";
-import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {useRefs} from "../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {Paginator} from "../../../lib/components/pagination";
@@ -278,11 +277,9 @@ const BranchesContainer = () => {
 
 
 const RepositoryBranchesPage = () => {
-    return (
-            <RepositoryPageLayout activePage={'branches'}>
-                <BranchesContainer/>
-            </RepositoryPageLayout>
-    )
+  const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage("branches"), [setActivePage]);
+  return <BranchesContainer />;
 }
 
 export default RepositoryBranchesPage;
