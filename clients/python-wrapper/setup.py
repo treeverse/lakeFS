@@ -29,8 +29,8 @@ setup(
     python_requires=">=3.9",
     install_requires=REQUIRES,
     tests_require={
-        "dev": ["pytest ~= 7.4.3", "pytest-mock ~= 3.12.0"]},
-    packages=find_packages(exclude=["tests", "system-tests"]),
+        "dev": ["pytest ~= 7.4.3"]},
+    packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     license="Apache 2.0",
     long_description=long_description,

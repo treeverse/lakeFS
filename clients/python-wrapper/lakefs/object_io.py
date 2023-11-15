@@ -12,13 +12,13 @@ from lakefs_sdk.exceptions import NotFoundException
 from lakefs.client import Client, DefaultClient
 from lakefs.exceptions import (
     ObjectExistsException,
-    UnsupportedOperationException,
     ObjectNotFoundException,
     PermissionException,
     ServerException
 )
 
 _RANGE_STR_TMPL = "bytes={start}-{end}"
+_LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
 
 # Type to support both strings and bytes in addition to streams (reference: httpx._types.RequestContent)
 UploadContentType = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
@@ -182,15 +182,16 @@ class WriteableObject(ReadableObject):
         if 'x' in mode and self.exists():  # Requires explicit create
             raise ObjectExistsException
 
+        # TODO: handle streams
         binary_mode = 'b' in mode
         if binary_mode and isinstance(data, str):
             content = data.encode('utf-8')
         elif not binary_mode and isinstance(data, bytes):
             content = data.decode('utf-8')
-        # TODO: handle streams
         is_presign = pre_sign if pre_sign is not None else self.pre_sign
         try:
-            stats = self._upload(content, is_presign, content_type, metadata)
+            stats = self._upload_presign(content, content_type, metadata) if is_presign \
+                else self._upload_raw(content, content_type, metadata)
             self._stat = ObjectStats(**stats.__dict__)
         except lakefs_sdk.exceptions.ApiException as e:
             _handle_api_exception(e)
@@ -223,29 +224,66 @@ class WriteableObject(ReadableObject):
         etag = headers.get("ETag", "").strip(' "')
         return etag
 
-    def _upload(self, content, pre_sign, content_type: Optional[str] = None,
-                metadata: Optional[dict[str, str]] = None) -> ObjectStats:
-        if not pre_sign:
-            raise UnsupportedOperationException("Upload currently supported only in pre-sign mode")
+    def _upload_raw(self, content: UploadContentType, content_type: Optional[str] = None,
+                    metadata: Optional[dict[str, str]] = None) -> ObjectStats:
+        """
+        Use raw upload API call to bypass validation of content parameter
+        """
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": content_type if content_type is not None else "application/octet-stream"
+        }
 
-        headers = {}
-        if content_type is not None:
-            headers["Content-Type"] = content_type
+        # Create user metadata headers
+        for k, v in metadata.items():
+            headers[_LAKEFS_METADATA_PREFIX + k] = v
+
+        _response_types_map = {
+            '201': "ObjectStats",
+            '400': "Error",
+            '401': "Error",
+            '403': "Error",
+            '404': "Error",
+            '412': "Error",
+            '420': None,
+        }
+        # authentication setting
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']
+        return self._client.sdk_client.objects_api.api_client.call_api(
+            resource_path='/repositories/{repository}/branches/{branch}/objects',
+            method='POST',
+            path_params={"repository": self._repo, "branch": self._ref},
+            query_params={"path": self._path},
+            header_params=headers,
+            body=content,
+            response_types_map=_response_types_map,
+            auth_settings=_auth_settings,
+            _return_http_data_only=True
+        )
+
+    def _upload_presign(self, content: UploadContentType, content_type: Optional[str] = None,
+                        metadata: Optional[dict[str, str]] = None) -> ObjectStats:
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": content_type if content_type is not None else "application/octet-stream"
+        }
 
         staging_location = self._client.sdk_client.staging_api.get_physical_address(self._repo,
                                                                                     self._ref,
                                                                                     self._path,
-                                                                                    pre_sign)
+                                                                                    True)
         url = staging_location.presigned_url
         if self._client.storage_config.blockstore_type == "azure":
             headers["x-ms-blob-type"] = "BlockBlob"
 
-        resp = self._client.http_client.put(url,
-                                            data=content,
-                                            headers=headers,
-                                            auth=None)  # Explicitly remove default client authentication
-        resp.raise_for_status()
-        etag = WriteableObject._extract_etag_from_response(resp.headers)
+        resp = self._client.sdk_client.objects_api.api_client.request(
+            method="PUT",
+            url=url,
+            body=content,
+            headers=headers
+        )
+
+        etag = WriteableObject._extract_etag_from_response(resp.getheaders())
         staging_metadata = StagingMetadata(staging=staging_location,
                                            size_bytes=len(content),
                                            checksum=etag,

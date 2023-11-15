@@ -8,15 +8,50 @@ In case no credentials exist, a call to init() will be required or a Client obje
 
 """
 
-from typing import Optional
-import requests
-from requests.auth import HTTPBasicAuth
+from __future__ import annotations
+from typing import Optional, NamedTuple
 
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
 from lakefs.config import ClientConfig
-from lakefs.exceptions import NoAuthenticationFound
+from lakefs.exceptions import NoAuthenticationFound, NotAuthorizedException, ServerException
+
+# global default client
+DefaultClient: Optional[Client] = None
+
+
+class ServerStorageConfiguration(NamedTuple):
+    blockstore_type: str
+    pre_sign_support: bool
+    import_support: bool
+    blockstore_namespace_example: str
+    blockstore_namespace_validity_regex: str
+    pre_sign_support_ui: bool
+    import_validity_regex: str
+    default_namespace_prefix: Optional[str] = None
+
+
+class ServerConfiguration:
+    _conf: lakefs_sdk.Config
+    _storage_conf: ServerStorageConfiguration
+
+    def __init__(self, client: Optional[Client] = DefaultClient):
+        try:
+            self._conf = client.sdk_client.config_api.get_config()
+            self._storage_conf = ServerStorageConfiguration(**self._conf.storage_config.__dict__)
+        except lakefs_sdk.exceptions.ApiException as e:
+            if isinstance(e, lakefs_sdk.exceptions.ApiException):
+                raise NotAuthorizedException(e.status, e.reason) from e
+            raise ServerException(e.status, e.reason) from e
+
+    @property
+    def version(self) -> str:
+        return self._conf.version_config.version
+
+    @property
+    def storage_config(self) -> ServerStorageConfiguration:
+        return self._storage_conf
 
 
 class Client:
@@ -26,35 +61,12 @@ class Client:
     """
 
     _client: Optional[LakeFSClient] = None
-    http_client: Optional[requests.Session] = None
     _conf: Optional[ClientConfig] = None
-    _server_conf: Optional[lakefs_sdk.Config] = None
+    _server_conf: Optional[ServerConfiguration] = None
 
     def __init__(self, **kwargs):
         self._conf = ClientConfig(**kwargs)
         self._client = LakeFSClient(self._conf.configuration)
-
-        # Set up http client
-        config = self._conf.configuration
-        headers = {}
-        auth = None
-        if config.access_token is not None:
-            # TODO: Create custom auth class and inherit from BaseAuth
-            headers["Authorization"] = f"Bearer {config.access_token}"
-
-        if config.username is not None and config.password is not None:
-            auth = HTTPBasicAuth(config.username, config.password)
-
-        self.http_client = requests.Session()
-        self.http_client.headers = headers
-        self.http_client.auth = auth
-
-    def close(self):
-        """
-        Closes any open connections
-        """
-        if self.http_client is not None:
-            self.http_client.close()
 
     @property
     def config(self):
@@ -76,21 +88,18 @@ class Client:
         lakeFS SDK storage config object, lazy evaluated.
         """
         if self._server_conf is None:
-            self._server_conf = self._client.config_api.get_config()
-        return lakefs_sdk.StorageConfig(**self._server_conf.storage_config.__dict__)
+            self._server_conf = ServerConfiguration(self)
+        return self._server_conf.storage_config
 
     @property
-    def version_config(self) -> lakefs_sdk.VersionConfig:
+    def version(self) -> str:
         """
-        lakeFS SDK version config object, lazy evaluated.
+        lakeFS Server version, lazy evaluated.
         """
         if self._server_conf is None:
-            self._server_conf = self._client.config_api.get_config()
-        return lakefs_sdk.VersionConfig(**self._server_conf.version_config.__dict__)
+            self._server_conf = ServerConfiguration(self)
+        return self._server_conf.version
 
-
-# global default client
-DefaultClient: Optional[Client] = None
 
 try:
     DefaultClient = Client()
