@@ -1446,7 +1446,7 @@ public class RepositoriesApi {
     }
 
     /**
-     * Restore repository (tags, commits, branches) from object store
+     * Status of a restore request
      * 
      * @param repository  (required)
      * @param taskId  (required)
@@ -1469,7 +1469,7 @@ public class RepositoriesApi {
     }
 
     /**
-     * Restore repository (tags, commits, branches) from object store
+     * Status of a restore request
      * 
      * @param repository  (required)
      * @param taskId  (required)
@@ -1493,7 +1493,7 @@ public class RepositoriesApi {
     }
 
     /**
-     * Restore repository (tags, commits, branches) from object store (asynchronously)
+     * Status of a restore request (asynchronously)
      * 
      * @param repository  (required)
      * @param taskId  (required)

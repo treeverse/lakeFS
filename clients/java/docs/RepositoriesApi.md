@@ -14,7 +14,7 @@ All URIs are relative to */api/v1*
 | [**getRepository**](RepositoriesApi.md#getRepository) | **GET** /repositories/{repository} | get repository |
 | [**getRepositoryMetadata**](RepositoriesApi.md#getRepositoryMetadata) | **GET** /repositories/{repository}/metadata | get repository metadata |
 | [**listRepositories**](RepositoriesApi.md#listRepositories) | **GET** /repositories | list repositories |
-| [**restoreStatus**](RepositoriesApi.md#restoreStatus) | **GET** /repositories/{repository}/restore | Restore repository (tags, commits, branches) from object store |
+| [**restoreStatus**](RepositoriesApi.md#restoreStatus) | **GET** /repositories/{repository}/restore | Status of a restore request |
 | [**restoreSubmit**](RepositoriesApi.md#restoreSubmit) | **POST** /repositories/{repository}/restore | Restore repository from a dump in the object store |
 | [**setBranchProtectionRules**](RepositoriesApi.md#setBranchProtectionRules) | **PUT** /repositories/{repository}/settings/branch_protection |  |
 | [**setGCRules**](RepositoriesApi.md#setGCRules) | **PUT** /repositories/{repository}/settings/gc_rules |  |
@@ -965,7 +965,7 @@ public class Example {
 # **restoreStatus**
 > RepositoryRestoreStatus restoreStatus(repository, taskId).execute();
 
-Restore repository (tags, commits, branches) from object store
+Status of a restore request
 
 ### Example
 ```java

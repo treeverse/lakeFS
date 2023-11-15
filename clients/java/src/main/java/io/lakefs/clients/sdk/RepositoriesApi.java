@@ -2031,7 +2031,7 @@ public class RepositoriesApi {
     }
 
     /**
-     * Restore repository (tags, commits, branches) from object store
+     * Status of a restore request
      * 
      * @param repository  (required)
      * @param taskId  (required)

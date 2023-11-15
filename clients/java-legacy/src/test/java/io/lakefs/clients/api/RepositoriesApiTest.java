@@ -196,7 +196,7 @@ public class RepositoriesApiTest {
     }
     
     /**
-     * Restore repository (tags, commits, branches) from object store
+     * Status of a restore request
      *
      * 
      *

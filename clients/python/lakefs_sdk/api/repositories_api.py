@@ -1486,7 +1486,7 @@ class RepositoriesApi(object):
 
     @validate_arguments
     def restore_status(self, repository : StrictStr, task_id : StrictStr, **kwargs) -> RepositoryRestoreStatus:  # noqa: E501
-        """Restore repository (tags, commits, branches) from object store  # noqa: E501
+        """Status of a restore request  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
@@ -1516,7 +1516,7 @@ class RepositoriesApi(object):
 
     @validate_arguments
     def restore_status_with_http_info(self, repository : StrictStr, task_id : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
-        """Restore repository (tags, commits, branches) from object store  # noqa: E501
+        """Status of a restore request  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True

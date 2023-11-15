@@ -101,7 +101,7 @@ class TestRepositoriesApi(unittest.TestCase):
     def test_restore_status(self):
         """Test case for restore_status
 
-        Restore repository (tags, commits, branches) from object store  # noqa: E501
+        Status of a restore request  # noqa: E501
         """
         pass
 

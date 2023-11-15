@@ -14,7 +14,7 @@ Method | HTTP request | Description
 [**get_repository**](RepositoriesApi.md#get_repository) | **GET** /repositories/{repository} | get repository
 [**get_repository_metadata**](RepositoriesApi.md#get_repository_metadata) | **GET** /repositories/{repository}/metadata | get repository metadata
 [**list_repositories**](RepositoriesApi.md#list_repositories) | **GET** /repositories | list repositories
-[**restore_status**](RepositoriesApi.md#restore_status) | **GET** /repositories/{repository}/restore | Restore repository (tags, commits, branches) from object store
+[**restore_status**](RepositoriesApi.md#restore_status) | **GET** /repositories/{repository}/restore | Status of a restore request
 [**restore_submit**](RepositoriesApi.md#restore_submit) | **POST** /repositories/{repository}/restore | Restore repository from a dump in the object store
 [**set_branch_protection_rules**](RepositoriesApi.md#set_branch_protection_rules) | **PUT** /repositories/{repository}/settings/branch_protection | 
 [**set_gc_rules**](RepositoriesApi.md#set_gc_rules) | **PUT** /repositories/{repository}/settings/gc_rules | 
@@ -1123,7 +1123,7 @@ Name | Type | Description  | Notes
 # **restore_status**
 > RepositoryRestoreStatus restore_status(repository, task_id)
 
-Restore repository (tags, commits, branches) from object store
+Status of a restore request
 
 ### Example
 
@@ -1189,7 +1189,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        # Restore repository (tags, commits, branches) from object store
+        # Status of a restore request
         api_response = api_instance.restore_status(repository, task_id)
         pprint(api_response)
     except lakefs_client.ApiException as e:

@@ -1534,7 +1534,7 @@ class RepositoriesApi(object):
         task_id,
         **kwargs
     ):
-        """Restore repository (tags, commits, branches) from object store  # noqa: E501
+        """Status of a restore request  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True

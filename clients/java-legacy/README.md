@@ -235,7 +235,7 @@ Class | Method | HTTP request | Description
 *RepositoriesApi* | [**getRepository**](docs/RepositoriesApi.md#getRepository) | **GET** /repositories/{repository} | get repository
 *RepositoriesApi* | [**getRepositoryMetadata**](docs/RepositoriesApi.md#getRepositoryMetadata) | **GET** /repositories/{repository}/metadata | get repository metadata
 *RepositoriesApi* | [**listRepositories**](docs/RepositoriesApi.md#listRepositories) | **GET** /repositories | list repositories
-*RepositoriesApi* | [**restoreStatus**](docs/RepositoriesApi.md#restoreStatus) | **GET** /repositories/{repository}/restore | Restore repository (tags, commits, branches) from object store
+*RepositoriesApi* | [**restoreStatus**](docs/RepositoriesApi.md#restoreStatus) | **GET** /repositories/{repository}/restore | Status of a restore request
 *RepositoriesApi* | [**restoreSubmit**](docs/RepositoriesApi.md#restoreSubmit) | **POST** /repositories/{repository}/restore | Restore repository from a dump in the object store
 *RepositoriesApi* | [**setBranchProtectionRules**](docs/RepositoriesApi.md#setBranchProtectionRules) | **PUT** /repositories/{repository}/settings/branch_protection | 
 *RepositoriesApi* | [**setGCRules**](docs/RepositoriesApi.md#setGCRules) | **PUT** /repositories/{repository}/settings/gc_rules | 

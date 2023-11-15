@@ -2455,7 +2455,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: Restore repository (tags, commits, branches) from object store
+      summary: Status of a restore request
       tags:
       - repositories
       x-accepts: application/json

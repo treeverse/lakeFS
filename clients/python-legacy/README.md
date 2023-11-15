@@ -216,7 +216,7 @@ Class | Method | HTTP request | Description
 *RepositoriesApi* | [**get_repository**](docs/RepositoriesApi.md#get_repository) | **GET** /repositories/{repository} | get repository
 *RepositoriesApi* | [**get_repository_metadata**](docs/RepositoriesApi.md#get_repository_metadata) | **GET** /repositories/{repository}/metadata | get repository metadata
 *RepositoriesApi* | [**list_repositories**](docs/RepositoriesApi.md#list_repositories) | **GET** /repositories | list repositories
-*RepositoriesApi* | [**restore_status**](docs/RepositoriesApi.md#restore_status) | **GET** /repositories/{repository}/restore | Restore repository (tags, commits, branches) from object store
+*RepositoriesApi* | [**restore_status**](docs/RepositoriesApi.md#restore_status) | **GET** /repositories/{repository}/restore | Status of a restore request
 *RepositoriesApi* | [**restore_submit**](docs/RepositoriesApi.md#restore_submit) | **POST** /repositories/{repository}/restore | Restore repository from a dump in the object store
 *RepositoriesApi* | [**set_branch_protection_rules**](docs/RepositoriesApi.md#set_branch_protection_rules) | **PUT** /repositories/{repository}/settings/branch_protection | 
 *RepositoriesApi* | [**set_gc_rules**](docs/RepositoriesApi.md#set_gc_rules) | **PUT** /repositories/{repository}/settings/gc_rules | 
