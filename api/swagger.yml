@@ -594,6 +594,53 @@ components:
         ref:
           type: string
 
+    TaskInfo:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: ID of the task
+
+    RepositoryDumpStatus:
+      type: object
+      required:
+        - id
+        - done
+        - update_time
+      properties:
+        id:
+          type: string
+          description: ID of the task
+        done:
+          type: boolean
+        update_time:
+          type: string
+          format: date-time
+        error:
+          type: string
+        refs:
+            $ref: "#/components/schemas/RefsDump"
+
+    RepositoryRestoreStatus:
+      type: object
+      required:
+        - id
+        - done
+        - update_time
+      properties:
+        id:
+          type: string
+          description: ID of the task
+        done:
+          type: boolean
+        update_time:
+          type: string
+          format: date-time
+        error:
+          type: string   
+
     RefsDump:
       type: object
       required:
@@ -2675,6 +2722,125 @@ paths:
       responses:
         200:
           description: refs successfully loaded
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+
+  /repositories/{repository}/dump:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - repositories
+      operationId: dumpSubmit
+      summary: Backup the repository metadata (tags, commits, branches) and save the backup to the object store.
+      responses:
+        202:
+          description: dump task information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskInfo"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    get:
+      tags:
+        - repositories
+      operationId: dumpStatus
+      summary: Status of a repository dump task
+      parameters:
+        - in: query
+          name: task_id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: dump task status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepositoryDumpStatus"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/restore:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - repositories
+      operationId: restoreSubmit
+      summary: Restore repository from a dump in the object store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefsDump"
+      responses:
+        202:
+          description: restore task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskInfo"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    get:
+      tags:
+        - repositories
+      operationId: restoreStatus
+      summary: Status of a restore request
+      parameters:
+        - in: query
+          name: task_id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: restore task status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepositoryRestoreStatus"
         400:
           $ref: "#/components/responses/ValidationError"
         401:

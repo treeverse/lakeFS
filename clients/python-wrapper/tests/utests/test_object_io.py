@@ -1,8 +1,8 @@
-import http
 from contextlib import contextmanager
-import requests
+import urllib3
 
 import lakefs_sdk.api
+from lakefs_sdk.rest import RESTResponse
 
 from tests.utests.common import get_test_client
 
@@ -157,9 +157,8 @@ class TestWriteableObject:
         with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             staging_location = StagingTestLocation()
             monkeypatch.setattr(lakefs_sdk.api.StagingApi, "get_physical_address", lambda *args: staging_location)
-            resp = requests.Response()
-            resp.status_code = http.HTTPStatus.OK.value
-            monkeypatch.setattr(requests.Session, "put", lambda *args, **kwargs: resp)
+            monkeypatch.setattr(obj._client.sdk_client.objects_api.api_client, "request",
+                                lambda *args, **kwargs: RESTResponse(urllib3.response.HTTPResponse()))
 
             def monkey_link_physical_address(*_, staging_metadata: lakefs_sdk.StagingMetadata, **__):
                 assert staging_metadata.size_bytes == len(data)

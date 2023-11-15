@@ -1,8 +1,8 @@
 ---
 title: Single Sign On (SSO)
 description: How to configure Single Sign On (SSO) for lakeFS Cloud and lakeFS Enterprise.
+grand_parent: Reference
 parent: Security
-grant_parent: Reference
 redirect_from:
   - /cloud/sso.html
   - /enterprise/sso.html
@@ -81,7 +81,7 @@ Once you finish registering lakeFS Cloud with AD FS, save the **AD FS URL** and 
 Prerequisites:
 * Azure account with permissions to manage applications in Azure Active Directory
 
-**Note**: If you've already set uplakeFS Cloud with your Azure account, you can skip the [Register lakeFS Cloud with Azure](#register-lakefs-cloud-with-azure) and [Add client secret](#add-a-secret) and go directly to [Add a redirect URI](#add-a-redirect-uri).
+**Note**: If you've already set up lakeFS Cloud with your Azure account, you can skip the [Register lakeFS Cloud with Azure](#register-lakefs-cloud-with-azure) and [Add client secret](#add-a-secret) and go directly to [Add a redirect URI](#add-a-redirect-uri).
 
 ### Register lakeFS Cloud with Azure
 

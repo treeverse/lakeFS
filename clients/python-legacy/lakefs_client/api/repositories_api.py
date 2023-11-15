@@ -25,10 +25,14 @@ from lakefs_client.model_utils import (  # noqa: F401
 from lakefs_client.model.branch_protection_rule import BranchProtectionRule
 from lakefs_client.model.error import Error
 from lakefs_client.model.garbage_collection_rules import GarbageCollectionRules
+from lakefs_client.model.refs_dump import RefsDump
 from lakefs_client.model.repository import Repository
 from lakefs_client.model.repository_creation import RepositoryCreation
+from lakefs_client.model.repository_dump_status import RepositoryDumpStatus
 from lakefs_client.model.repository_list import RepositoryList
 from lakefs_client.model.repository_metadata import RepositoryMetadata
+from lakefs_client.model.repository_restore_status import RepositoryRestoreStatus
+from lakefs_client.model.task_info import TaskInfo
 
 
 class RepositoriesApi(object):
@@ -171,6 +175,122 @@ class RepositoriesApi(object):
                 'endpoint_path': '/repositories/{repository}',
                 'operation_id': 'delete_repository',
                 'http_method': 'DELETE',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'repository',
+                ],
+                'required': [
+                    'repository',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'repository':
+                        (str,),
+                },
+                'attribute_map': {
+                    'repository': 'repository',
+                },
+                'location_map': {
+                    'repository': 'path',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client
+        )
+        self.dump_status_endpoint = _Endpoint(
+            settings={
+                'response_type': (RepositoryDumpStatus,),
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth',
+                    'saml_auth'
+                ],
+                'endpoint_path': '/repositories/{repository}/dump',
+                'operation_id': 'dump_status',
+                'http_method': 'GET',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'repository',
+                    'task_id',
+                ],
+                'required': [
+                    'repository',
+                    'task_id',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'repository':
+                        (str,),
+                    'task_id':
+                        (str,),
+                },
+                'attribute_map': {
+                    'repository': 'repository',
+                    'task_id': 'task_id',
+                },
+                'location_map': {
+                    'repository': 'path',
+                    'task_id': 'query',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client
+        )
+        self.dump_submit_endpoint = _Endpoint(
+            settings={
+                'response_type': (TaskInfo,),
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth',
+                    'saml_auth'
+                ],
+                'endpoint_path': '/repositories/{repository}/dump',
+                'operation_id': 'dump_submit',
+                'http_method': 'POST',
                 'servers': None,
             },
             params_map={
@@ -502,6 +622,129 @@ class RepositoriesApi(object):
             },
             api_client=api_client
         )
+        self.restore_status_endpoint = _Endpoint(
+            settings={
+                'response_type': (RepositoryRestoreStatus,),
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth',
+                    'saml_auth'
+                ],
+                'endpoint_path': '/repositories/{repository}/restore',
+                'operation_id': 'restore_status',
+                'http_method': 'GET',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'repository',
+                    'task_id',
+                ],
+                'required': [
+                    'repository',
+                    'task_id',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'repository':
+                        (str,),
+                    'task_id':
+                        (str,),
+                },
+                'attribute_map': {
+                    'repository': 'repository',
+                    'task_id': 'task_id',
+                },
+                'location_map': {
+                    'repository': 'path',
+                    'task_id': 'query',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client
+        )
+        self.restore_submit_endpoint = _Endpoint(
+            settings={
+                'response_type': (TaskInfo,),
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth',
+                    'saml_auth'
+                ],
+                'endpoint_path': '/repositories/{repository}/restore',
+                'operation_id': 'restore_submit',
+                'http_method': 'POST',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'repository',
+                    'refs_dump',
+                ],
+                'required': [
+                    'repository',
+                    'refs_dump',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'repository':
+                        (str,),
+                    'refs_dump':
+                        (RefsDump,),
+                },
+                'attribute_map': {
+                    'repository': 'repository',
+                },
+                'location_map': {
+                    'repository': 'path',
+                    'refs_dump': 'body',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [
+                    'application/json'
+                ]
+            },
+            api_client=api_client
+        )
         self.set_branch_protection_rules_endpoint = _Endpoint(
             settings={
                 'response_type': None,
@@ -828,6 +1071,140 @@ class RepositoriesApi(object):
             repository
         return self.delete_repository_endpoint.call_with_http_info(**kwargs)
 
+    def dump_status(
+        self,
+        repository,
+        task_id,
+        **kwargs
+    ):
+        """Status of a repository dump task  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.dump_status(repository, task_id, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            repository (str):
+            task_id (str):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            RepositoryDumpStatus
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['repository'] = \
+            repository
+        kwargs['task_id'] = \
+            task_id
+        return self.dump_status_endpoint.call_with_http_info(**kwargs)
+
+    def dump_submit(
+        self,
+        repository,
+        **kwargs
+    ):
+        """Backup the repository metadata (tags, commits, branches) and save the backup to the object store.  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.dump_submit(repository, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            repository (str):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            TaskInfo
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['repository'] = \
+            repository
+        return self.dump_submit_endpoint.call_with_http_info(**kwargs)
+
     def get_branch_protection_rules(
         self,
         repository,
@@ -1150,6 +1527,144 @@ class RepositoriesApi(object):
         )
         kwargs['_host_index'] = kwargs.get('_host_index')
         return self.list_repositories_endpoint.call_with_http_info(**kwargs)
+
+    def restore_status(
+        self,
+        repository,
+        task_id,
+        **kwargs
+    ):
+        """Status of a restore request  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.restore_status(repository, task_id, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            repository (str):
+            task_id (str):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            RepositoryRestoreStatus
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['repository'] = \
+            repository
+        kwargs['task_id'] = \
+            task_id
+        return self.restore_status_endpoint.call_with_http_info(**kwargs)
+
+    def restore_submit(
+        self,
+        repository,
+        refs_dump,
+        **kwargs
+    ):
+        """Restore repository from a dump in the object store  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.restore_submit(repository, refs_dump, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            repository (str):
+            refs_dump (RefsDump):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            TaskInfo
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['repository'] = \
+            repository
+        kwargs['refs_dump'] = \
+            refs_dump
+        return self.restore_submit_endpoint.call_with_http_info(**kwargs)
 
     def set_branch_protection_rules(
         self,

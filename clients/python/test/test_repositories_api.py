@@ -49,6 +49,20 @@ class TestRepositoriesApi(unittest.TestCase):
         """
         pass
 
+    def test_dump_status(self):
+        """Test case for dump_status
+
+        Status of a repository dump task  # noqa: E501
+        """
+        pass
+
+    def test_dump_submit(self):
+        """Test case for dump_submit
+
+        Backup the repository metadata (tags, commits, branches) and save the backup to the object store.  # noqa: E501
+        """
+        pass
+
     def test_get_branch_protection_rules(self):
         """Test case for get_branch_protection_rules
 
@@ -81,6 +95,20 @@ class TestRepositoriesApi(unittest.TestCase):
         """Test case for list_repositories
 
         list repositories  # noqa: E501
+        """
+        pass
+
+    def test_restore_status(self):
+        """Test case for restore_status
+
+        Status of a restore request  # noqa: E501
+        """
+        pass
+
+    def test_restore_submit(self):
+        """Test case for restore_submit
+
+        Restore repository from a dump in the object store  # noqa: E501
         """
         pass
 

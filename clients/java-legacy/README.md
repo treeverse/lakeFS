@@ -228,11 +228,15 @@ Class | Method | HTTP request | Description
 *RepositoriesApi* | [**createRepository**](docs/RepositoriesApi.md#createRepository) | **POST** /repositories | create repository
 *RepositoriesApi* | [**deleteGCRules**](docs/RepositoriesApi.md#deleteGCRules) | **DELETE** /repositories/{repository}/settings/gc_rules | 
 *RepositoriesApi* | [**deleteRepository**](docs/RepositoriesApi.md#deleteRepository) | **DELETE** /repositories/{repository} | delete repository
+*RepositoriesApi* | [**dumpStatus**](docs/RepositoriesApi.md#dumpStatus) | **GET** /repositories/{repository}/dump | Status of a repository dump task
+*RepositoriesApi* | [**dumpSubmit**](docs/RepositoriesApi.md#dumpSubmit) | **POST** /repositories/{repository}/dump | Backup the repository metadata (tags, commits, branches) and save the backup to the object store.
 *RepositoriesApi* | [**getBranchProtectionRules**](docs/RepositoriesApi.md#getBranchProtectionRules) | **GET** /repositories/{repository}/settings/branch_protection | get branch protection rules
 *RepositoriesApi* | [**getGCRules**](docs/RepositoriesApi.md#getGCRules) | **GET** /repositories/{repository}/settings/gc_rules | get repository GC rules
 *RepositoriesApi* | [**getRepository**](docs/RepositoriesApi.md#getRepository) | **GET** /repositories/{repository} | get repository
 *RepositoriesApi* | [**getRepositoryMetadata**](docs/RepositoriesApi.md#getRepositoryMetadata) | **GET** /repositories/{repository}/metadata | get repository metadata
 *RepositoriesApi* | [**listRepositories**](docs/RepositoriesApi.md#listRepositories) | **GET** /repositories | list repositories
+*RepositoriesApi* | [**restoreStatus**](docs/RepositoriesApi.md#restoreStatus) | **GET** /repositories/{repository}/restore | Status of a restore request
+*RepositoriesApi* | [**restoreSubmit**](docs/RepositoriesApi.md#restoreSubmit) | **POST** /repositories/{repository}/restore | Restore repository from a dump in the object store
 *RepositoriesApi* | [**setBranchProtectionRules**](docs/RepositoriesApi.md#setBranchProtectionRules) | **PUT** /repositories/{repository}/settings/branch_protection | 
 *RepositoriesApi* | [**setGCRules**](docs/RepositoriesApi.md#setGCRules) | **PUT** /repositories/{repository}/settings/gc_rules | 
 *StagingApi* | [**getPhysicalAddress**](docs/StagingApi.md#getPhysicalAddress) | **GET** /repositories/{repository}/branches/{branch}/staging/backing | generate an address to which the client can upload an object
@@ -311,7 +315,9 @@ Class | Method | HTTP request | Description
  - [RefsDump](docs/RefsDump.md)
  - [Repository](docs/Repository.md)
  - [RepositoryCreation](docs/RepositoryCreation.md)
+ - [RepositoryDumpStatus](docs/RepositoryDumpStatus.md)
  - [RepositoryList](docs/RepositoryList.md)
+ - [RepositoryRestoreStatus](docs/RepositoryRestoreStatus.md)
  - [ResetCreation](docs/ResetCreation.md)
  - [RevertCreation](docs/RevertCreation.md)
  - [Setup](docs/Setup.md)
@@ -324,6 +330,7 @@ Class | Method | HTTP request | Description
  - [StorageConfig](docs/StorageConfig.md)
  - [StorageURI](docs/StorageURI.md)
  - [TagCreation](docs/TagCreation.md)
+ - [TaskInfo](docs/TaskInfo.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)
  - [UpdateToken](docs/UpdateToken.md)
  - [User](docs/User.md)
