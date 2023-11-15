@@ -61,12 +61,12 @@ def test_reference_log(monkeypatch):
         # Test log with limit
         idx = 0
         max_amount = 123
-        assert sum(1 for _ in ref.log(max_amount=max_amount)) == max_amount
+        assert len(list(ref.log(max_amount=max_amount))) == max_amount
 
         # Test limit more than amount
         idx = 0
         max_amount = pages * items_per_page * 2
-        assert sum(1 for _ in ref.log(max_amount=max_amount)) == pages * items_per_page
+        assert len(list(ref.log(max_amount=max_amount))) == pages * items_per_page
 
 
 def test_reference_diff(monkeypatch):
@@ -112,9 +112,9 @@ def test_reference_diff(monkeypatch):
         # Test log with limit
         idx = 0
         max_amount = 123
-        assert sum(1 for _ in ref.diff(other_ref="other_ref", max_amount=max_amount)) == max_amount
+        assert len(list(ref.diff(other_ref="other_ref", max_amount=max_amount))) == max_amount
 
         # Test limit more than amount
         idx = 0
         max_amount = pages * items_per_page * 2
-        assert sum(1 for _ in ref.diff(other_ref="other_ref", max_amount=max_amount)) == pages * items_per_page
+        assert len(list(ref.diff(other_ref="other_ref", max_amount=max_amount))) == pages * items_per_page

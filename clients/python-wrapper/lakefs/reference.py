@@ -75,8 +75,8 @@ class Reference:
     def _get_generator(func, *args, max_amount: Optional[int] = None, **kwargs):
         count = 0
         has_more = True
-        while has_more:
-            with api_exception_handler():
+        with api_exception_handler():
+            while has_more:
                 page = func(*args, **kwargs)
                 has_more = page.pagination.has_more
                 for res in page.results:
