@@ -1,13 +1,18 @@
-import React from "react";
+import React, {useState} from "react";
+import { Outlet } from "react-router-dom";
+import { StorageConfigProvider } from "../hooks/storageConfig";
 
 import TopNav from './navbar';
 
-const Layout = ({ logged = true, children }) => {
+const Layout = ({ logged }) => {
+    const [isLogged, setIsLogged] = useState(logged ?? true);
     return (
         <>
-            <TopNav logged={logged}/>
+            <TopNav logged={isLogged}/>
             <div className="main-app">
-                {children}
+                <StorageConfigProvider>
+                    <Outlet context={[setIsLogged]} />
+                </StorageConfigProvider>
             </div>
         </>
     );

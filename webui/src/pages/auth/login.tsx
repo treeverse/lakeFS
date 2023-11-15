@@ -1,5 +1,4 @@
 import React, {useState} from "react";
-import Layout from "../../lib/components/layout";
 import Row from "react-bootstrap/Row";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
@@ -100,9 +99,7 @@ const LoginPage = () => {
         router.push({pathname: '/auth/login', query: router.query})
     }
     return (
-        <Layout logged={false}>
-            <LoginForm loginConfig={loginConfig}/>
-        </Layout>
+        <LoginForm loginConfig={loginConfig}/>
     );
 };
 
