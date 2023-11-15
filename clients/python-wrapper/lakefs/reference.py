@@ -118,6 +118,12 @@ class Reference:
         """
         return self._get_commit().message
 
+    def commit_id(self) -> str:
+        """
+        Return commit id for this reference id
+        """
+        return self._get_commit().id
+
     def diff(self,
              other_ref: str | Reference,
              max_amount: Optional[int] = None,
@@ -173,7 +179,7 @@ class Reference:
         return Object(self._repo_id, self._id, path)
 
     def __str__(self) -> str:
-        return self.id
+        return self._id
 
     def __repr__(self):
-        return f"lakefs://{self._repo_id}/{self.id}"
+        return f"lakefs://{self._repo_id}/{self._id}"
