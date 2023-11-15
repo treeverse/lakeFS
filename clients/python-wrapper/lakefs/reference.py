@@ -3,17 +3,19 @@ Module containing lakeFS reference implementation
 """
 
 from __future__ import annotations
-from typing import Optional, Generator, NamedTuple, Literal
+
+from typing import Optional, Generator, Literal
 
 import lakefs_sdk
 
 from lakefs.client import Client, DefaultClient
 from lakefs.exceptions import api_exception_handler
+from lakefs.namedtuple import LenientNamedTuple
 from lakefs.object import Object
 from lakefs.object_manager import ObjectManager
 
 
-class Commit(NamedTuple):
+class Commit(LenientNamedTuple):
     """
     NamedTuple representing a lakeFS commit's properties
     """
@@ -26,7 +28,7 @@ class Commit(NamedTuple):
     metadata: Optional[dict[str, str]] = None
 
 
-class Change(NamedTuple):
+class Change(LenientNamedTuple):
     """
     NamedTuple representing a diff change between to refs in lakeFS
     """

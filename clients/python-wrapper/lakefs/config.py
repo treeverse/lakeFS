@@ -4,13 +4,13 @@ Client configuration module
 
 import os
 from pathlib import Path
-from typing import NamedTuple
 
 import yaml
 from lakefs_sdk import (
     Configuration,
 )
 from lakefs.exceptions import NoAuthenticationFound
+from lakefs.namedtuple import LenientNamedTuple
 
 _LAKECTL_YAML_PATH = os.path.join(Path.home(), ".lakectl.yaml")
 _LAKECTL_ENDPOINT_ENV = "LAKECTL_SERVER_ENDPOINT_URL"
@@ -31,22 +31,22 @@ class ClientConfig:
     lakectl yaml file.
     """
 
-    class Server(NamedTuple):
+    class Server(LenientNamedTuple):
         """
         lakectl configuration's server block
         """
-        endpoint_url: str = ""
+        endpoint_url: str
 
-    class Credentials(NamedTuple):
+    class Credentials(LenientNamedTuple):
         """
         lakectl configuration's credentials block
         """
-        access_key_id: str = ""
-        secret_access_key: str = ""
+        access_key_id: str
+        secret_access_key: str
 
     configuration: Configuration
-    server: Server = Server()
-    credentials: Credentials = Credentials()
+    server: Server
+    credentials: Credentials
 
     def __init__(self, **kwargs):
         self.configuration = Configuration(**kwargs)
@@ -63,7 +63,8 @@ class ClientConfig:
                 self.credentials = ClientConfig.Credentials(**data["credentials"])
             found = True
         except FileNotFoundError:  # File not found, fallback to env variables
-            pass
+            self.server = ClientConfig.Server(endpoint_url="")
+            self.credentials = ClientConfig.Credentials(access_key_id="", secret_access_key="")
 
         endpoint_env = os.getenv(_LAKECTL_ENDPOINT_ENV)
         key_env = os.getenv(_LAKECTL_ACCESS_KEY_ID_ENV)

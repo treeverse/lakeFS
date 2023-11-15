@@ -9,19 +9,21 @@ In case no credentials exist, a call to init() will be required or a Client obje
 """
 
 from __future__ import annotations
-from typing import Optional, NamedTuple
+
+from typing import Optional
 
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
 from lakefs.config import ClientConfig
 from lakefs.exceptions import NoAuthenticationFound, NotAuthorizedException, ServerException
+from lakefs.namedtuple import LenientNamedTuple
 
 # global default client
 DefaultClient: Optional[Client] = None
 
 
-class ServerStorageConfiguration(NamedTuple):
+class ServerStorageConfiguration(LenientNamedTuple):
     """
     Represent a lakeFS server's storage configuration
     """

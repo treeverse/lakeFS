@@ -1,10 +1,10 @@
 """
-Basic object IO implementation providing a filesystem like behavior over lakeFS 
+Basic object IO implementation providing a filesystem like behavior over lakeFS
 """
 
 import base64
 import binascii
-from typing import Optional, Literal, Union, Iterable, AsyncIterable, NamedTuple
+from typing import Optional, Literal, Union, Iterable, AsyncIterable
 
 from lakefs_sdk import StagingMetadata
 from lakefs.client import Client, DefaultClient
@@ -18,6 +18,7 @@ from lakefs.exceptions import (
     NotAuthorizedException,
     ForbiddenException
 )
+from lakefs.namedtuple import LenientNamedTuple
 
 _RANGE_STR_TMPL = "bytes={start}-{end}"
 _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
@@ -26,7 +27,7 @@ _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
 UploadContentType = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
 
 
-class ObjectStats(NamedTuple):
+class ObjectStats(LenientNamedTuple):
     """
     Represent a lakeFS object's stats
     """
