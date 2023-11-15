@@ -203,8 +203,10 @@ class WriteableObject(ReadableObject):
         """
         Delete object from lakeFS
         """
-        # TODO: Implement
-        raise NotImplementedError
+        try:
+            self._client.sdk_client.objects_api.delete_object(self._repo, self._ref, self._path)
+        except lakefs_sdk.exceptions.ApiException as e:
+            _handle_api_exception(e)
 
     @staticmethod
     def _extract_etag_from_response(headers) -> str:
