@@ -262,7 +262,7 @@ class WriteableObject(ReadableObject):
     def _upload_presign(self, content: UploadContentType, content_type: Optional[str] = None,
                         metadata: Optional[dict[str, str]] = None) -> ObjectStats:
         headers = {
-            "Accept": self._client.sdk_client.objects_api.api_client.select_header_accept(['application/json']),
+            "Accept": "application/json",
             "Content-Type": content_type if content_type is not None else "application/octet-stream"
         }
 
