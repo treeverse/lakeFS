@@ -33,6 +33,8 @@ nav_order: 20
 - [Role-Based Access Control (RBAC)]({% link reference/security/rbac.md %})
 - [Presigned URL]({% link reference/security/presigned-url.md %})
 - [Access Control Lists (ACLs)]({% link reference/security/access-control-lists.md %})
+- [Single Sign On (SSO)]({% link reference/security/sso.md %})
+
 
 ## Other Reference Documentation
 
