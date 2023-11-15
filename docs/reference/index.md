@@ -35,7 +35,6 @@ nav_order: 20
 - [Access Control Lists (ACLs)]({% link reference/security/access-control-lists.md %})
 - [Single Sign On (SSO)]({% link reference/security/sso.md %})
 
-
 ## Other Reference Documentation
 
 - [Monitoring using Prometheus]({% link reference/monitor.md %})
