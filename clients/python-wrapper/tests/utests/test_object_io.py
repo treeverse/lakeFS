@@ -1,3 +1,4 @@
+import http
 from contextlib import contextmanager
 import urllib3
 
