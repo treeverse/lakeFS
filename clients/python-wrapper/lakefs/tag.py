@@ -31,7 +31,8 @@ class Tag(Reference):
 
         def handle_conflict(e: LakeFSException):
             if not (isinstance(e, ConflictException) and exist_ok):
-                raise e
+                return e
+            return None
 
         with api_exception_handler(handle_conflict):
             self._client.sdk_client.tags_api.create_tag(self._repo_id, tag_creation)

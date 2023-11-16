@@ -96,16 +96,19 @@ _STATUS_CODE_TO_EXCEPTION = {
 
 
 @contextmanager
-def api_exception_handler(custom_handler: Optional[Callable[[LakeFSException], None]] = None):
+def api_exception_handler(custom_handler: Optional[Callable[[LakeFSException], LakeFSException]] = None):
     """
-    Contexts which converts lakefs_sdk API exceptions to LakeFS exceptions and handles them
-    :param custom_handler: Optional handler which can be used to provide custom behavior for specific exceptions
+    Contexts which converts lakefs_sdk API exceptions to LakeFS exceptions and handles them.
+    :param custom_handler: Optional handler which can be used to provide custom behavior for specific exceptions.
+    If custom_handler returns an exception, this function will raise the exception at the end of the 
+    custom_handler invocation.
     """
     try:
         yield
     except lakefs_sdk.ApiException as e:
         lakefs_ex = _STATUS_CODE_TO_EXCEPTION.get(e.status, ServerException)(e.status, e.reason)
-        if custom_handler is None:
-            raise lakefs_ex from e
+        if custom_handler is not None:
+            lakefs_ex = custom_handler(lakefs_ex)
 
-        custom_handler(lakefs_ex)
+        if lakefs_ex is not None:
+            raise lakefs_ex from e

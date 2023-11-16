@@ -67,8 +67,8 @@ class Repository:
                 with api_exception_handler():
                     repo = self._client.sdk_client.repositories_api.get_repository(self._id)
                     self._properties = RepositoryProperties(**repo.__dict__)
-            else:
-                raise e
+                    return None
+            return e
 
         with api_exception_handler(handle_conflict):
             repo = self._client.sdk_client.repositories_api.create_repository(repository_creation, **kwargs)

@@ -142,8 +142,8 @@ class ReadableObject:
 
         def exist_handler(e: LakeFSException):
             if isinstance(e, NotFoundException):
-                return  # exists = False
-            _io_exception_handler(e)
+                return None  # exists = False
+            return _io_exception_handler(e)
 
         with api_exception_handler(exist_handler):
             self._client.sdk_client.objects_api.head_object(self._repo, self._ref, self._path)
@@ -298,7 +298,7 @@ class WriteableObject(ReadableObject):
 
 def _io_exception_handler(e: LakeFSException):
     if isinstance(e, NotFoundException):
-        raise ObjectNotFoundException(e.status_code, e.reason) from e
+        return ObjectNotFoundException(e.status_code, e.reason)
     if isinstance(e, (NotAuthorizedException, ForbiddenException)):
-        raise PermissionException(e.status_code, e.reason) from e
-    raise e
+        return PermissionException(e.status_code, e.reason)
+    return e

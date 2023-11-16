@@ -95,9 +95,11 @@ class Reference:
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
-        limit = max_amount is not None
+        if max_amount is not None:
+            kwargs["limit"] = True
+
         return self._get_generator(self._client.sdk_client.refs_api.log_commits,
-                                   self._repo_id, self._id, max_amount=max_amount, limit=limit, **kwargs)
+                                   self._repo_id, self._id, max_amount=max_amount, **kwargs)
 
     def _get_commit(self):
         if self._commit is None:
