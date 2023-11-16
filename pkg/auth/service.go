@@ -540,7 +540,7 @@ func (s *AuthService) CreateGroup(ctx context.Context, group *model.Group) error
 		}
 		return fmt.Errorf("save group (groupKey %s): %w", groupKey, err)
 	}
-	return err
+	return nil
 }
 
 func (s *AuthService) DeleteGroup(ctx context.Context, groupDisplayName string) error {
@@ -590,7 +590,7 @@ func (s *AuthService) DeleteGroup(ctx context.Context, groupDisplayName string) 
 	if err != nil {
 		return fmt.Errorf("delete user (userKey %s): %w", groupPath, err)
 	}
-	return err
+	return nil
 }
 
 func (s *AuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
@@ -634,7 +634,7 @@ func (s *AuthService) AddUserToGroup(ctx context.Context, username, groupDisplay
 		}
 		return fmt.Errorf("add user to group: (key %s): %w", gu, err)
 	}
-	return err
+	return nil
 }
 
 func (s *AuthService) removeUserFromGroupNoValidation(ctx context.Context, username, groupDisplayName string) error {
@@ -643,7 +643,7 @@ func (s *AuthService) removeUserFromGroupNoValidation(ctx context.Context, usern
 	if err != nil {
 		return fmt.Errorf("remove user from group: (key %s): %w", gu, err)
 	}
-	return err
+	return nil
 }
 
 func (s *AuthService) RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error {
@@ -813,7 +813,7 @@ func (s *AuthService) DeletePolicy(ctx context.Context, policyDisplayName string
 	if err != nil {
 		return fmt.Errorf("delete policy (policyKey %s): %w", policyPath, err)
 	}
-	return err
+	return nil
 }
 
 func (s *AuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
@@ -868,7 +868,7 @@ func (s *AuthService) AddCredentials(ctx context.Context, username, accessKeyID,
 		return nil, fmt.Errorf("save credentials (credentialsKey %s): %w", credentialsKey, err)
 	}
 
-	return c, err
+	return c, nil
 }
 
 func IsValidAccessKeyID(key string) bool {
@@ -889,7 +889,7 @@ func (s *AuthService) DeleteCredentials(ctx context.Context, username, accessKey
 	if err != nil {
 		return fmt.Errorf("delete credentials (credentialsKey %s): %w", credPath, err)
 	}
-	return err
+	return nil
 }
 
 func (s *AuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
@@ -910,7 +910,7 @@ func (s *AuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName
 		}
 		return fmt.Errorf("policy attachment to group: (key %s): %w", pg, err)
 	}
-	return err
+	return nil
 }
 
 func (s *AuthService) DetachPolicyFromGroupNoValidation(ctx context.Context, policyDisplayName, groupDisplayName string) error {
@@ -919,7 +919,7 @@ func (s *AuthService) DetachPolicyFromGroupNoValidation(ctx context.Context, pol
 	if err != nil {
 		return fmt.Errorf("policy detachment to group: (key %s): %w", pg, err)
 	}
-	return err
+	return nil
 }
 
 func (s *AuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
