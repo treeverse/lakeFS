@@ -22,12 +22,14 @@ jobs:
         verbose: true
         repository-url: https://test.pypi.org/legacy/
 
-#    - name: Python SDK publish package
-#      uses: pypa/gh-action-pypi-publish@release/v1
-#      with:
-#        user: __token__
-#        password: ${{ secrets.PYPI_API_TOKEN }}
-#        packages-dir: clients/python-wrapper/dist/
-#        verbose: true
+    # TODO: Enable once we're ready for production
+    - name: Publish distribution 📦 to PyPI
+      if: false
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        packages-dir: clients/python-wrapper/dist/
+        verbose: true
 
 # TODO: Publish docs once we decide on documentation process
