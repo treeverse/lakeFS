@@ -397,7 +397,7 @@ A SQL warehouse is a compute resource that lets you run SQL commands on data obj
 If you use Databricks SQL warehouse, you can take advantage of the lakeFS 
 S3-compatible API with the S3A FileSystem. 
 
-Define your FileSystem configurations in the following way:
+Define your SQL Warehouse configurations in the following way:
 
 1. In the top right, select `Admin Settings` and then `SQL warehouse settings`.
 
