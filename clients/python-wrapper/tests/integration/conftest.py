@@ -35,5 +35,5 @@ def setup_repo(storage_namespace, test_name, default_branch="main"):
     clt = client.DefaultClient
     repo_name = test_name + str(int(time.time()))
     repo = Repository(repo_name, clt)
-    repo.create(storage_namespace, default_branch, True)
+    repo.create(storage_namespace=storage_namespace, default_branch=default_branch, include_samples=True)
     return clt, repo
