@@ -7,9 +7,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 import yaml
-from lakefs_sdk import (
-    Configuration,
-)
+from lakefs_sdk import Configuration
 from lakefs.exceptions import NoAuthenticationFound
 
 _LAKECTL_YAML_PATH = os.path.join(Path.home(), ".lakectl.yaml")
