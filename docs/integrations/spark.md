@@ -390,6 +390,28 @@ spark.hadoop.fs.lakefs.endpoint=‘https://example-org.us-east-1.lakefscloud.io�
 
 For more details about [Mounting cloud object storage on Databricks](https://docs.databricks.com/dbfs/mounts.html).
 
+### Configuring Databricks SQL Warehouse with the S3-compatible API
+
+A SQL warehouse is a compute resource that lets you run SQL commands on data objects within Databricks SQL
+
+If you use Databricks SQL warehouse, you can take advantage of the lakeFS 
+S3-compatible API with the S3A FileSystem. 
+
+Define your FileSystem configurations in the following way:
+
+1. In the top right, select `Admin Settings` and then `SQL warehouse settings`.
+
+2. Under `Data Access Configuration` add the following key-value pairs:
+```
+spark.hadoop.fs.lakefs.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+spark.hadoop.fs.lakefs.access.key=‘AKIAlakefs12345EXAMPLE’                   // The access key to your lakeFS server
+spark.hadoop.fs.lakefs.secret.key=‘abc/lakefs/1234567bPxRfiCYEXAMPLEKEY’     // The secret key to your lakeFS server
+spark.hadoop.fs.lakefs.path.style.access=true
+spark.hadoop.fs.lakefs.endpoint=‘https://example-org.us-east-1.lakefscloud.io’                 // The endpoint of your lakeFS server
+```
+
+3. Changes are applied automatically after the SQL Warehouse restarts.
+
 ## lakeFS Hadoop FileSystem
 
 If you're using lakeFS on top of S3, this mode will enhance your application's performance.
