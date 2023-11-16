@@ -1,3 +1,4 @@
+import http
 from contextlib import contextmanager
 import urllib3
 
@@ -137,7 +138,8 @@ class TestReadableObject:
             assert obj.exists()
             # Object doesn't exist
             monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "head_object",
-                                lambda *args: (_ for _ in ()).throw(lakefs_sdk.exceptions.NotFoundException))
+                                lambda *args: (_ for _ in ()).throw(lakefs_sdk.exceptions.NotFoundException(
+                                    status=http.HTTPStatus.NOT_FOUND)))
             assert not obj.exists()
 
             # Other exception

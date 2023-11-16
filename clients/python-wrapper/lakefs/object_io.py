@@ -6,15 +6,17 @@ import base64
 import binascii
 from typing import Optional, Literal, Union, Iterable, AsyncIterable, NamedTuple
 
-import lakefs_sdk
 from lakefs_sdk import StagingMetadata
-from lakefs_sdk.exceptions import NotFoundException
 from lakefs.client import Client, DefaultClient
 from lakefs.exceptions import (
     ObjectExistsException,
     ObjectNotFoundException,
     PermissionException,
-    ServerException
+    LakeFSException,
+    api_exception_handler,
+    NotFoundException,
+    NotAuthorizedException,
+    ForbiddenException
 )
 
 _RANGE_STR_TMPL = "bytes={start}-{end}"
@@ -127,22 +129,27 @@ class ReadableObject:
         Return the Stat object representing this object
         """
         if self._stat is None:
-            try:
+            with api_exception_handler(_io_exception_handler):
                 stat = self._client.sdk_client.objects_api.stat_object(self._repo, self._ref, self._path)
                 self._stat = ObjectStats(**stat.__dict__)
-            except lakefs_sdk.exceptions.ApiException as e:
-                _handle_api_exception(e)
         return self._stat
 
     def exists(self) -> bool:
         """
         Returns True if object exists in lakeFS, False otherwise
         """
-        try:
+        exists = False
+
+        def exist_handler(e: LakeFSException):
+            if isinstance(e, NotFoundException):
+                return None  # exists = False
+            return _io_exception_handler(e)
+
+        with api_exception_handler(exist_handler):
             self._client.sdk_client.objects_api.head_object(self._repo, self._ref, self._path)
-            return True
-        except NotFoundException:
-            return False
+            exists = True
+
+        return exists
 
 
 class WriteableObject(ReadableObject):
@@ -189,12 +196,11 @@ class WriteableObject(ReadableObject):
         elif not binary_mode and isinstance(data, bytes):
             content = data.decode('utf-8')
         is_presign = pre_sign if pre_sign is not None else self.pre_sign
-        try:
+
+        with api_exception_handler(_io_exception_handler):
             stats = self._upload_presign(content, content_type, metadata) if is_presign \
                 else self._upload_raw(content, content_type, metadata)
             self._stat = ObjectStats(**stats.__dict__)
-        except lakefs_sdk.exceptions.ApiException as e:
-            _handle_api_exception(e)
 
         # reset pos after create
         self._pos = 0
@@ -204,10 +210,8 @@ class WriteableObject(ReadableObject):
         """
         Delete object from lakeFS
         """
-        try:
+        with api_exception_handler(_io_exception_handler):
             return self._client.sdk_client.objects_api.delete_object(self._repo, self._ref, self._path)
-        except lakefs_sdk.exceptions.ApiException as e:
-            _handle_api_exception(e)
 
     @staticmethod
     def _extract_etag_from_response(headers) -> str:
@@ -292,11 +296,9 @@ class WriteableObject(ReadableObject):
                                                                          staging_metadata=staging_metadata)
 
 
-def _handle_api_exception(e: lakefs_sdk.exceptions.ApiException):
-    if isinstance(e, lakefs_sdk.exceptions.NotFoundException):
-        raise ObjectNotFoundException(e.status, e.reason) from e
-    if isinstance(e, lakefs_sdk.exceptions.UnauthorizedException):
-        raise PermissionException from e
-    if isinstance(e, lakefs_sdk.exceptions.ForbiddenException):
-        raise PermissionException from e
-    raise ServerException(e.status, e.reason) from e
+def _io_exception_handler(e: LakeFSException):
+    if isinstance(e, NotFoundException):
+        return ObjectNotFoundException(e.status_code, e.reason)
+    if isinstance(e, (NotAuthorizedException, ForbiddenException)):
+        return PermissionException(e.status_code, e.reason)
+    return e

@@ -1,6 +1,11 @@
 """
 Exceptions module
 """
+import http
+from contextlib import contextmanager
+from typing import Optional, Callable
+
+import lakefs_sdk.exceptions
 
 
 class LakeFSException(Exception):
@@ -17,7 +22,13 @@ class LakeFSException(Exception):
 
 class NotFoundException(LakeFSException):
     """
-    Base class for NotFound exceptions. More specific "not found"s can inherit from this
+    Resource could not be found on lakeFS server
+    """
+
+
+class ForbiddenException(LakeFSException):
+    """
+    Operation not permitted
     """
 
 
@@ -45,6 +56,12 @@ class UnsupportedOperationException(LakeFSException):
     """
 
 
+class ConflictException(LakeFSException):
+    """
+     Resource / request conflict
+    """
+
+
 class ObjectNotFoundException(NotFoundException, FileNotFoundError):
     """
     Raised when the currently used object no longer exist in the lakeFS server
@@ -63,7 +80,35 @@ class PermissionException(NotAuthorizedException, PermissionError):
     """
 
 
-class RepositoryNotFoundException(NotFoundException):
+class RefNotFoundException(NotFoundException):
     """
-    Raised when the currently used repository object no longer exists in the lakeFS server
+    Raised when the reference could not be found in the lakeFS server
     """
+
+
+_STATUS_CODE_TO_EXCEPTION = {
+    http.HTTPStatus.UNAUTHORIZED.value: NotAuthorizedException,
+    http.HTTPStatus.FORBIDDEN.value: ForbiddenException,
+    http.HTTPStatus.NOT_FOUND.value: NotFoundException,
+    http.HTTPStatus.METHOD_NOT_ALLOWED.value: UnsupportedOperationException,
+    http.HTTPStatus.CONFLICT.value: ConflictException,
+}
+
+
+@contextmanager
+def api_exception_handler(custom_handler: Optional[Callable[[LakeFSException], LakeFSException]] = None):
+    """
+    Contexts which converts lakefs_sdk API exceptions to LakeFS exceptions and handles them.
+    :param custom_handler: Optional handler which can be used to provide custom behavior for specific exceptions.
+    If custom_handler returns an exception, this function will raise the exception at the end of the 
+    custom_handler invocation.
+    """
+    try:
+        yield
+    except lakefs_sdk.ApiException as e:
+        lakefs_ex = _STATUS_CODE_TO_EXCEPTION.get(e.status, ServerException)(e.status, e.reason)
+        if custom_handler is not None:
+            lakefs_ex = custom_handler(lakefs_ex)
+
+        if lakefs_ex is not None:
+            raise lakefs_ex from e

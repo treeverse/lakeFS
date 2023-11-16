@@ -22,6 +22,9 @@ DefaultClient: Optional[Client] = None
 
 
 class ServerStorageConfiguration(NamedTuple):
+    """
+    Represent a lakeFS server's storage configuration
+    """
     blockstore_type: str
     pre_sign_support: bool
     import_support: bool
@@ -33,6 +36,9 @@ class ServerStorageConfiguration(NamedTuple):
 
 
 class ServerConfiguration:
+    """
+    Represent a lakeFS server's configuration
+    """
     _conf: lakefs_sdk.Config
     _storage_conf: ServerStorageConfiguration
 
@@ -47,10 +53,16 @@ class ServerConfiguration:
 
     @property
     def version(self) -> str:
+        """
+        Return the lakeFS server version
+        """
         return self._conf.version_config.version
 
     @property
     def storage_config(self) -> ServerStorageConfiguration:
+        """
+        Returns the lakeFS server storage configuration
+        """
         return self._storage_conf
 
 
