@@ -12,6 +12,7 @@ disable=
     missing-function-docstring,
     missing-module-docstring,
     too-few-public-methods,
+    pointless-statement,
     fixme,
 
 [MISCELLANEOUS]

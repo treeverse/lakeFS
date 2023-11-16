@@ -35,6 +35,17 @@ def test_namedtuple():
     assert nt.field1 == "test"
     assert nt.field2 == 2
     assert not nt.field3
+    try:
+        nt.field4
+        assert 0, "Expected exception"
+    except AttributeError:
+        pass
+
+    try:
+        nt.field5
+        assert 0, "Expected exception"
+    except AttributeError:
+        pass
 
     # Missing args
     try:
