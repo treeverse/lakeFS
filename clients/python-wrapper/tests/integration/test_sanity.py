@@ -1,29 +1,23 @@
-import http
-
-from lakefs import client
-from lakefs.exceptions import ServerException, RepositoryNotFoundException
-from lakefs.repository import Repository, RepositoryProperties
+from lakefs.exceptions import NotFoundException, ConflictException
+from lakefs.repository import RepositoryProperties
 from tests.integration.conftest import expect_exception_context
 
 
-def test_repository_sanity(storage_namespace):
-    clt = client.DefaultClient
-    repo_name = "my-repo"
+def test_repository_sanity(storage_namespace, setup_repo):
+    _, repo = setup_repo
     default_branch = "main"
-    repo = Repository(repo_name, clt)
-    repo_data = repo.create(storage_namespace, default_branch, True)
-    expected_properties = RepositoryProperties(id=repo_name,
+    expected_properties = RepositoryProperties(id=repo.properties.id,
                                                default_branch=default_branch,
                                                storage_namespace=storage_namespace,
-                                               creation_date=repo_data.properties.creation_date)
-    assert repo_data.properties == expected_properties
+                                               creation_date=repo.properties.creation_date)
+    assert repo.properties == expected_properties
 
     # Create with allow exists
     new_data = repo.create(storage_namespace, default_branch, True, exist_ok=True)
-    assert new_data.properties == repo_data.properties
+    assert new_data.properties == repo.properties
 
     # Try to create twice and expect conflict
-    with expect_exception_context(ServerException, http.HTTPStatus.CONFLICT.value):
+    with expect_exception_context(ConflictException):
         repo.create(storage_namespace, default_branch, True)
 
     # Get metadata
@@ -33,5 +27,51 @@ def test_repository_sanity(storage_namespace):
     repo.delete()
 
     # Delete non existent
-    with expect_exception_context(RepositoryNotFoundException):
+    with expect_exception_context(NotFoundException):
         repo.delete()
+
+
+def test_ref_sanity(setup_repo):
+    _, repo = setup_repo
+    ref_id = "main"
+    ref = repo.ref(ref_id)
+    assert ref.repo_id == repo.properties.id
+    assert ref.id == ref_id
+    assert ref.metadata() == {}
+    assert ref.commit_message() == "Add sample data"
+
+
+def test_tag_sanity(setup_repo):
+    _, repo = setup_repo
+    tag_name = "test_tag"
+    tag = repo.tag(tag_name)
+
+    # expect not found
+    with expect_exception_context(NotFoundException):
+        tag.commit_message()
+
+    commit = repo.commit("main")
+    res = tag.create(commit.id)
+    assert res == tag
+    assert tag.id == tag_name
+    assert tag.metadata() == commit.metadata()
+    assert tag.commit_message() == commit.commit_message()
+
+    # Create again
+    with expect_exception_context(ConflictException):
+        tag.create(tag_name)
+
+    # Create again with exist_ok
+    tag2 = tag.create(tag_name, True)
+    assert tag2 == tag
+
+    # Delete tag
+    tag.delete()
+
+    # expect not found
+    with expect_exception_context(NotFoundException):
+        tag.metadata()
+
+    # Delete twice
+    with expect_exception_context(NotFoundException):
+        tag.delete()

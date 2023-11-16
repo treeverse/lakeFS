@@ -2,7 +2,6 @@
 Module containing lakeFS repository implementation
 """
 from __future__ import annotations
-import http
 from typing import Optional, NamedTuple
 
 import lakefs_sdk
@@ -11,7 +10,7 @@ import lakefs.tag
 import lakefs.branch
 from lakefs.branch_manager import BranchManager
 from lakefs.client import Client, DefaultClient
-from lakefs.exceptions import RepositoryNotFoundException, NotAuthorizedException, ServerException
+from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 from lakefs.reference import Reference
 from lakefs.tag_manager import TagManager
 
@@ -62,32 +61,30 @@ class Repository:
                                                             storage_namespace=storage_namespace,
                                                             default_branch=default_branch,
                                                             sample_data=include_samples)
-        try:
-            repo = self._client.sdk_client.repositories_api.create_repository(repository_creation, **kwargs)
-            self._properties = RepositoryProperties(**repo.__dict__)
-        except lakefs_sdk.exceptions.ApiException as e:
-            if e.status == http.HTTPStatus.CONFLICT.value and exist_ok:  # Handle conflict 409
-                try:
+
+        def handle_conflict(e: LakeFSException):
+            if isinstance(e, ConflictException) and exist_ok:
+                with api_exception_handler():
                     repo = self._client.sdk_client.repositories_api.get_repository(self._id)
                     self._properties = RepositoryProperties(**repo.__dict__)
-                    return self
-                except lakefs_sdk.exceptions.ApiException as ex:
-                    _handle_api_exception(ex)
-            _handle_api_exception(e)
+                    return None
+            return e
+
+        with api_exception_handler(handle_conflict):
+            repo = self._client.sdk_client.repositories_api.create_repository(repository_creation, **kwargs)
+            self._properties = RepositoryProperties(**repo.__dict__)
         return self
 
     def delete(self) -> None:
         """
         Delete repository from lakeFS server
         :raises
-            RepositoryNotFoundException if repository by this id does not exist
+            NotFoundException if repository by this id does not exist
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
-        try:
+        with api_exception_handler():
             self._client.sdk_client.repositories_api.delete_repository(self._id)
-        except lakefs_sdk.exceptions.ApiException as e:
-            _handle_api_exception(e)
 
     def branch(self, branch_id: str) -> lakefs.branch.Branch:
         """
@@ -122,11 +119,8 @@ class Repository:
         """
         Returns the repository metadata
         """
-        try:
+        with api_exception_handler():
             return self._client.sdk_client.repositories_api.get_repository_metadata(repository=self._id)
-        except lakefs_sdk.exceptions.ApiException as ex:
-            _handle_api_exception(ex)
-        return {}  # pylint R1710: should not reach
 
     @property
     def branches(self) -> BranchManager:
@@ -148,19 +142,9 @@ class Repository:
         Return the repositories properties object
         """
         if self._properties is None:
-            try:
+            with api_exception_handler():
                 repo = self._client.sdk_client.repositories_api.get_repository(self._id)
                 self._properties = RepositoryProperties(**repo.__dict__)
                 return self._properties
-            except lakefs_sdk.exceptions.ApiException as ex:
-                _handle_api_exception(ex)
 
         return self._properties
-
-
-def _handle_api_exception(e: lakefs_sdk.exceptions.ApiException):
-    if isinstance(e, lakefs_sdk.exceptions.NotFoundException):
-        raise RepositoryNotFoundException(e.status, e.reason) from e
-    if isinstance(e, lakefs_sdk.exceptions.UnauthorizedException):
-        raise NotAuthorizedException(e.status, e.reason) from e
-    raise ServerException(e.status, e.reason) from e
