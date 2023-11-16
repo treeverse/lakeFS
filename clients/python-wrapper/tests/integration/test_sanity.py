@@ -1,5 +1,6 @@
 from lakefs.exceptions import NotFoundException, ConflictException
 from lakefs.repository import RepositoryProperties
+from lakefs.object_io import WriteableObject
 from tests.integration.conftest import expect_exception_context
 
 
@@ -29,6 +30,23 @@ def test_repository_sanity(storage_namespace, setup_repo):
     # Delete non existent
     with expect_exception_context(NotFoundException):
         repo.delete()
+
+
+def test_branch_sanity(storage_namespace, setup_repo):
+    _, repo = setup_repo
+    branch_name = "test_branch"
+
+    main_branch = repo.branch("main")
+    new_branch = repo.branch(branch_name).create("main")
+    assert new_branch.repo_id == repo.properties.id
+    assert new_branch.id == branch_name
+    assert new_branch.head().id == main_branch.head().id
+    # TODO(Guys): add steps for creating an object, committing, heading and reverting
+
+    new_branch.delete()
+
+    with expect_exception_context(NotFoundException):
+        new_branch.head()
 
 
 def test_ref_sanity(setup_repo):
