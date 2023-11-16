@@ -9,7 +9,7 @@ import lakefs_sdk
 
 from lakefs.client import Client, DefaultClient
 from lakefs.exceptions import api_exception_handler
-from lakefs.object import Object
+from lakefs.object import StoredObject
 from lakefs.object_manager import ObjectManager
 
 
@@ -173,12 +173,12 @@ class Reference:
                                                                      **kwargs)
             return res.reference
 
-    def object(self, path: str) -> Object:  # pylint: disable=C0103
+    def object(self, path: str) -> StoredObject:  # pylint: disable=C0103
         """
         Returns an Object class representing a lakeFS object with this repo id, reference id and path
         :param path: The object's path
         """
-        return Object(self._repo_id, self._id, path)
+        return StoredObject(self._repo_id, self._id, path)
 
     def __str__(self) -> str:
         return self._id

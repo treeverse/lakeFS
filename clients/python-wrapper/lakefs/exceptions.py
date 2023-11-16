@@ -25,6 +25,11 @@ class NotFoundException(LakeFSException):
     Resource could not be found on lakeFS server
     """
 
+    def __init__(self, status=None, reason=None):
+        self.status_code = status
+        self.reason = reason
+        super().__init__(status, reason)
+
 
 class ForbiddenException(LakeFSException):
     """

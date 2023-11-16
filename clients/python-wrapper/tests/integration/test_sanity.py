@@ -1,4 +1,7 @@
-from lakefs.exceptions import NotFoundException, ConflictException
+import time
+
+from lakefs.exceptions import NotFoundException, ConflictException, ObjectNotFoundException
+from lakefs.object import WriteableObject
 from lakefs.repository import RepositoryProperties
 from tests.integration.conftest import expect_exception_context
 
@@ -75,3 +78,26 @@ def test_tag_sanity(setup_repo):
     # Delete twice
     with expect_exception_context(NotFoundException):
         tag.delete()
+
+
+def test_object_sanity(setup_repo):
+    clt, repo = setup_repo
+    data = "test_data"
+    path = "test_obj"
+    metadata = {"foo": "bar"}
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path=path, client=clt).create(
+        data=data, metadata=metadata)
+    with obj.open() as fd:
+        assert fd.read() == data
+
+    stats = obj.stat()
+    assert stats.path == path == obj.path
+    assert stats.path_type == "object"
+    assert stats.mtime <= time.time()
+    assert stats.size_bytes == len(data)
+    assert stats.metadata == metadata
+    assert stats.content_type == "application/octet-stream"
+
+    obj.delete()
+    with expect_exception_context(ObjectNotFoundException):
+        obj.stat()

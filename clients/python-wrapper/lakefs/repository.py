@@ -1,7 +1,9 @@
 """
 Module containing lakeFS repository implementation
 """
+
 from __future__ import annotations
+
 from typing import Optional, NamedTuple
 
 import lakefs_sdk

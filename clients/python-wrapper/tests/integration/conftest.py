@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import uuid
 from contextlib import contextmanager
@@ -22,7 +23,7 @@ def expect_exception_context(ex, status_code=None):
 
 @pytest.fixture(name="test_name", autouse=True)
 def fixture_test_name(request):
-    return request.node.name.replace("_", "-")
+    return re.sub(r'[_\[\]]', "-", request.node.name.lower())
 
 
 @pytest.fixture(name="storage_namespace")
@@ -35,5 +36,5 @@ def setup_repo(storage_namespace, test_name, default_branch="main"):
     clt = client.DefaultClient
     repo_name = test_name + str(int(time.time()))
     repo = Repository(repo_name, clt)
-    repo.create(storage_namespace=storage_namespace, default_branch=default_branch, include_samples=True)
+    repo.create(storage_namespace=storage_namespace, default_branch=default_branch)
     return clt, repo
