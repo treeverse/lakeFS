@@ -214,7 +214,7 @@ class ObjectReader:
                                                                       self._obj.path,
                                                                       range=read_range,
                                                                       presign=self._pre_sign)
-        self._pos += new_pos  # Update pointer position
+        self._pos = new_pos  # Update pointer position
         if 'b' not in self._mode:
             return contents.decode('utf-8')
 
