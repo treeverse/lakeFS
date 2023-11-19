@@ -214,7 +214,7 @@ class ObjectReader:
                                                                       self._obj.path,
                                                                       range=read_range,
                                                                       presign=self._pre_sign)
-        self._pos = new_pos  # Update pointer position
+        self._pos += new_pos  # Update pointer position
         if 'b' not in self._mode:
             return contents.decode('utf-8')
 
@@ -259,7 +259,6 @@ class WriteableObject(StoredObject):
         if mode not in get_args(WriteModes):
             raise ValueError(f"invalid write mode: '{mode}'. WriteModes: {WriteModes}")
 
-        content = data
         if 'x' in mode and self.exists():  # Requires explicit create
             raise ObjectExistsException
 
@@ -269,6 +268,8 @@ class WriteableObject(StoredObject):
             content = data.encode('utf-8')
         elif not binary_mode and isinstance(data, bytes):
             content = data.decode('utf-8')
+        else:
+            content = data
 
         is_presign = pre_sign if pre_sign is not None else self._client.storage_config.pre_sign_support
         with api_exception_handler(_io_exception_handler):

@@ -86,7 +86,7 @@ class TestStoredObject:
                                 lambda *args: 1 / 0)
             try:
                 obj.exists()
-                assert 0, "Exception not raised"
+                assert False, "Exception not raised"
             except ZeroDivisionError:
                 pass
 
@@ -101,7 +101,7 @@ class TestObjectReader:
                 assert fd.tell() == 30
                 try:
                     fd.seek(-1)
-                    assert 0, "expected ValueError exception"
+                    assert False, "expected ValueError exception"
                 except OSError:
                     pass
 
@@ -121,7 +121,7 @@ class TestObjectReader:
                 # read negative
                 try:
                     fd.read(-1)
-                    assert 0, "Expected ValueError"
+                    assert False, "Expected ValueError"
                 except OSError:
                     pass
 
@@ -160,7 +160,7 @@ class TestObjectReader:
                 # Read again and expect EOF
                 try:
                     fd.read()
-                    assert 0, "Expected EOF error"
+                    assert False, "Expected EOF error"
                 except EOFError:
                     pass
 
@@ -201,7 +201,7 @@ class TestObjectReader:
         with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             try:
                 with obj.open(mode="invalid"):
-                    assert 0, "Exception expected"
+                    assert False, "Exception expected"
             except ValueError:
                 pass
 
@@ -234,6 +234,6 @@ class TestWriteableObject:
         with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             try:
                 obj.create(data="", mode="invalid")
-                assert 0, "Exception expected"
+                assert False, "Exception expected"
             except ValueError:
                 pass
