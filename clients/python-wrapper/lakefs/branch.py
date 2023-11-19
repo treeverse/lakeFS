@@ -42,6 +42,7 @@ class Branch(Reference):
         Get the commit reference this branch is pointing to
         :return: The commit reference this branch is pointing to
         :raises
+            NotFoundException if branch by this id does not exist
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
@@ -56,6 +57,7 @@ class Branch(Reference):
         :param metadata: Metadata to attach to the commit
         :return: The new reference after the commit
         :raises
+            NotFoundException if branch by this id does not exist
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
@@ -69,7 +71,7 @@ class Branch(Reference):
         """
         Delete branch from lakeFS server
         :raises
-            BranchNotFoundException if branch by this id does not exist
+            NotFoundException if branch by this id does not exist
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
@@ -83,6 +85,7 @@ class Branch(Reference):
         :param reference_id: the reference to revert
         :return: The new reference after the revert
         :raises
+            NotFoundException if branch by this id does not exist
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
