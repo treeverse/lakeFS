@@ -13,6 +13,7 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/minio/minio-go/v7/pkg/tags"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -435,4 +436,22 @@ func TestS3CopyObject(t *testing.T) {
 		// assert that the physical addresses of the objects are not the same
 		require.NotEqual(t, sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
 	})
+}
+
+func TestS3PutObjectTagging(t *testing.T) {
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	srcPath := gatewayTestPrefix + "source-file"
+	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
+
+	tag, err := tags.NewTags(map[string]string{"tag1": "value1"}, true)
+	require.NoError(t, err)
+
+	err = s3lakefsClient.PutObjectTagging(ctx, repo, srcPath, tag, minio.PutObjectTaggingOptions{})
+	require.Error(t, err)
+
+	errResponse := minio.ToErrorResponse(err)
+	require.Equal(t, "NotImplemented", errResponse.Code)
+	require.Equal(t, "This operation is not supported in LakeFS", errResponse.Message)
 }
