@@ -41,7 +41,7 @@ def test_ref_sanity(setup_repo):
     assert ref.repo_id == repo.properties.id
     assert ref.id == ref_id
     assert ref.metadata() == {}
-    assert ref.commit_message() == "Add sample data"
+    assert ref.commit_message() == "Repository created"
 
 
 def test_tag_sanity(setup_repo):
