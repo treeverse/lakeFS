@@ -28,7 +28,7 @@ class Commit(NamedTuple):
 
 class Change(NamedTuple):
     """
-    NamedTuple representing a diff change between to refs in lakeFS
+    NamedTuple representing a diff change between two refs in lakeFS
     """
     type: Literal["added", "removed", "changed", "conflict", "prefix_changed"]
     path: str
@@ -88,9 +88,10 @@ class Reference:
     def log(self, max_amount: Optional[int] = None, **kwargs) -> Generator[lakefs_sdk.Commit]:
         """
         Returns a generator of commits starting with this reference id
+
         :param max_amount: (Optional) limits the amount of results to return from the server
         :param kwargs: Additional keyword arguments
-        :raises
+        :raises:
             NotFoundException if reference by this id does not exist
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
@@ -135,12 +136,13 @@ class Reference:
              **kwargs) -> Generator[Change]:
         """
         Returns a diff generator of changes between this reference and other_ref
+
         :param other_ref: The other ref to diff against
         :param max_amount: Stop showing changes after this amount
         :param after: Return items after this value
         :param prefix: Return items prefixed with this value
         :param delimiter: Group common prefixes by this delimiter
-        :raises
+        :raises:
             NotFoundException if this reference or other_ref does not exist
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
@@ -159,9 +161,10 @@ class Reference:
     def merge_into(self, destination_branch_id: str | Reference, **kwargs) -> str:
         """
         Merge this reference into destination branch
+
         :param destination_branch_id: The ID of the merge destination
-        :return The reference id of the merge commit
-        :raises
+        :return: The reference id of the merge commit
+        :raises:
             NotFoundException if reference by this id does not exist, or branch doesn't exist
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
@@ -176,6 +179,7 @@ class Reference:
     def object(self, path: str) -> Object:  # pylint: disable=C0103
         """
         Returns an Object class representing a lakeFS object with this repo id, reference id and path
+
         :param path: The object's path
         """
         return Object(self._repo_id, self._id, path)

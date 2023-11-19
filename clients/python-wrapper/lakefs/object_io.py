@@ -90,8 +90,9 @@ class ReadableObject:
     def seek(self, pos) -> None:
         """
         Move the object's reading position
+
         :param pos: The position (in bytes) to move to
-        :raises OSError if provided position is negative
+        :raises OSError: If provided position is negative
         """
         if pos < 0:
             raise OSError("position must be a non-negative integer")
@@ -100,10 +101,11 @@ class ReadableObject:
     def read(self, read_bytes: int = None) -> bytes:
         """
         Read object data
+
         :param read_bytes: How many bytes to read. If read_bytes is None, will read from current position to end.
-        If current position + read_bytes > object size.
+            If current position + read_bytes > object size.
         :return: The bytes read
-        :raises
+        :raises:
             EOFError if current position is after object size
             OSError if read_bytes is non-positive
         """
@@ -171,18 +173,19 @@ class WriteableObject(ReadableObject):
                metadata: Optional[dict[str, str]] = None) -> ObjectStats:
         """
         Creates a new object or overwrites an existing object
+
         :param data: The contents of the object to write (can be bytes or string)
-        :param mode: Write mode:
+        :param mode: Write modes:
             'x'     - Open for exclusive creation
             'xb'    - Open for exclusive creation in binary mode
             'w'     - Create a new object or truncate if exists
             'wb'    - Create or truncate in binary mode
         :param pre_sign: (Optional) Explicitly state whether to use pre_sign mode when uploading the object.
-        If None, will be taken from pre_sign property.
+            If None, will be taken from pre_sign property.
         :param content_type: (Optional) Explicitly set the object Content-Type
         :param metadata: (Optional) User metadata
         :return: The Stat object representing the newly created object
-        :raises
+        :raises:
             ObjectExistsException if object exists and mode is exclusive ('x')
         """
         content = data

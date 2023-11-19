@@ -1,0 +1,15 @@
+theme: jekyll-theme-slate
+exclude:
+  - vendor
+  - Gemfile
+  - Gemfile.lock
+  - _config.yml
+  - build
+  - dist
+  - lakefs
+  - lakefs.egg-info
+  - requirements.txt
+  - setup.cfg
+  - setup.py
+  - tests
+  - sphinx

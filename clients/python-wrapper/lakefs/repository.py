@@ -47,13 +47,14 @@ class Repository:
                **kwargs) -> Repository:
         """
         Create a new repository in lakeFS from this object
+
         :param storage_namespace: Repository's storage namespace
         :param default_branch: The default branch for the repository. If None, use server default name
         :param include_samples: Whether to include sample data in repository creation
         :param exist_ok: If False will throw an exception if a repository by this name already exists. Otherwise,
          return the existing repository without creating a new one
         :return: The lakeFS SDK object representing the repository
-        :raises
+        :raises:
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
@@ -78,7 +79,8 @@ class Repository:
     def delete(self) -> None:
         """
         Delete repository from lakeFS server
-        :raises
+
+        :raises:
             NotFoundException if repository by this id does not exist
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors

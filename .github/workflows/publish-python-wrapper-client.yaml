@@ -32,4 +32,43 @@ jobs:
         packages-dir: clients/python-wrapper/dist/
         verbose: true
 
+    - name: Extract docs version
+      shell: bash
+      run: |
+          echo "tag=$(python setup.py --version)" >> $GITHUB_OUTPUT
+      id: docver
+
+    - name: Create markdown from docstring 
+      uses: ammaraskar/sphinx-action@master
+      with:
+        docs-folder: "docs/"
+        pre-build-command: "pip install sphinx-autodoc-typehints"
+        build-command: "sphinx-build -b markdown sphinx _build"
+
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        working-directory: clients/python-wrapper
+        ruby-version: '2.7'
+        bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+
+    - name: Build release as latest
+      working-directory: clients/python-wrapper
+      run: bundle exec jekyll build -d _site -b /
+
+    - name: Build release ${{ steps.docver.outputs.tag }}
+      working-directory: clients/python-wrapper
+      run: bundle exec jekyll build -d _site/${{ steps.docver.outputs.tag }} -b /${{ steps.docver.outputs.tag }}
+
+    - name: Publish to docs repository
+      uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
+      env:
+        API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
+      with:
+        source_file: clients/python-wrapper/_site/.
+        destination_repo: treeverse/docs-lakefs-sdk-python-wrapper
+        destination_folder: /
+        user_email: 'support@treeverse.io'
+        user_name: 'python-docs-action'
+
 # TODO: Publish docs once we decide on documentation process
