@@ -49,14 +49,15 @@ jobs:
       run: |
         pip install -r requirements.txt 
         sphinx-apidoc -o docs lakefs sphinx-apidoc --full -A 'Treeverse' -e
-        sphinx-build -b html docs docs/_build
+        sphinx-build -b html docs docs/_build/${{ steps.docver.outputs.tag }}
+        cp README.md docs/_build 
 
     - name: Publish to Docs Repository
       uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
       env:
         API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
       with:
-        source_file: clients/python-wrapper/docs/_build/. clients/python-wrapper/README.md
+        source_file: clients/python-wrapper/docs/_build/.
         destination_repo: treeverse/docs-lakefs-sdk-python-wrapper
         destination_folder: /
         user_email: 'support@treeverse.io'
