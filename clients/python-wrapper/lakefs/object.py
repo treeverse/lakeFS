@@ -202,19 +202,15 @@ class ObjectReader:
         if read_bytes and read_bytes <= 0:
             raise OSError("read_bytes must be a positive integer")
 
-        stat = self._obj.stat()
-        if self._pos >= stat.size_bytes:
-            raise EOFError
-        read_bytes = read_bytes if read_bytes is not None else stat.size_bytes
-        new_pos = min(self._pos + read_bytes, stat.size_bytes)
-        read_range = _RANGE_STR_TMPL.format(start=self._pos, end=new_pos - 1)
+        end_pos = self._pos + read_bytes - 1 if read_bytes is not None else ""
+        read_range = _RANGE_STR_TMPL.format(start=self._pos, end=end_pos)
         with api_exception_handler(_io_exception_handler):
             contents = self._client.sdk_client.objects_api.get_object(self._obj.repo,
                                                                       self._obj.ref,
                                                                       self._obj.path,
                                                                       range=read_range,
                                                                       presign=self._pre_sign)
-        self._pos = new_pos  # Update pointer position
+        self._pos += len(contents)  # Update pointer position
         if 'b' not in self._mode:
             return contents.decode('utf-8')
 
@@ -278,17 +274,6 @@ class WriteableObject(StoredObject):
             self._stats = ObjectStats(**stats.__dict__)
 
         return self
-
-    def delete(self) -> None:
-        """
-        Delete object from lakeFS
-            ObjectNotFoundException if repo id, reference id or object path does not exist
-            PermissionException if user is not authorized to perform this operation, or operation is forbidden
-            ServerException for any other errors
-        """
-        with api_exception_handler(_io_exception_handler):
-            self._client.sdk_client.objects_api.delete_object(self._repo_id, self._ref_id, self._path)
-            self._stats = None
 
     @staticmethod
     def _extract_etag_from_response(headers) -> str:
@@ -366,12 +351,24 @@ class WriteableObject(StoredObject):
         )
 
         etag = WriteableObject._extract_etag_from_response(resp.getheaders())
+        size_bytes = len(content.encode('utf-8')) if isinstance(content, str) else len(content)
         staging_metadata = StagingMetadata(staging=staging_location,
-                                           size_bytes=len(content),
+                                           size_bytes=size_bytes,
                                            checksum=etag,
                                            user_metadata=metadata)
         return self._client.sdk_client.staging_api.link_physical_address(self._repo_id, self._ref_id, self._path,
                                                                          staging_metadata=staging_metadata)
+
+    def delete(self) -> None:
+        """
+        Delete object from lakeFS
+            ObjectNotFoundException if repo id, reference id or object path does not exist
+            PermissionException if user is not authorized to perform this operation, or operation is forbidden
+            ServerException for any other errors
+        """
+        with api_exception_handler(_io_exception_handler):
+            self._client.sdk_client.objects_api.delete_object(self._repo_id, self._ref_id, self._path)
+            self._stats = None
 
 
 def _io_exception_handler(e: LakeFSException):

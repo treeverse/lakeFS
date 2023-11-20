@@ -2,9 +2,35 @@ from typing import get_args
 
 import pytest
 
-from lakefs.exceptions import ObjectExistsException
+from lakefs.exceptions import ObjectExistsException, InvalidRangeException
 from lakefs.object import WriteableObject, WriteModes, OpenModes
 from tests.integration.conftest import expect_exception_context
+
+
+def test_object_read_seek(setup_repo):
+    clt, repo = setup_repo
+    data = "test_data"
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).create(
+        data=data)
+
+    with obj.open() as fd:
+        assert fd.read(read_bytes=2 * len(data)) == data
+        fd.seek(2)
+
+        assert fd.read(read_bytes=5) == data[2:7]
+
+        assert fd.read() == data[7:]
+
+        # This should raise an exception
+        with expect_exception_context(InvalidRangeException):
+            fd.read(read_bytes=1)
+
+        fd.seek(0)
+        for c in data:
+            assert fd.read(read_bytes=1) == c
+        # This should raise an exception
+        with expect_exception_context(InvalidRangeException):
+            fd.read(read_bytes=1)
 
 
 def test_object_create_exists(setup_repo):
@@ -33,7 +59,7 @@ def test_object_create_exists(setup_repo):
 @pytest.mark.parametrize("r_mode", get_args(OpenModes))
 def test_object_create_read_different_params(setup_repo, w_mode, pre_sign, r_mode):
     clt, repo = setup_repo
-    data = b'\x68\x65\x6c\x6c\x6f\x20\x77\x6f\x72\x6c\x64\x21\x0a\x54\x65\x73\x74\x20\x64\x61\x74\x61'
+    data = b'test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82'
     obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).create(
         data=data, mode=w_mode, pre_sign=pre_sign)
 

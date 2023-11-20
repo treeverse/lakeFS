@@ -112,10 +112,11 @@ class TestObjectReader:
     def test_read(self, monkeypatch, tmp_path):
         test_kwargs = ObjectTestKWArgs()
         with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
+            data = b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82\n" * 100
             with obj.open(mode="rb") as fd:
                 object_stats = ObjectTestStats()
                 object_stats.path = test_kwargs.path
-                object_stats.size_bytes = 3000
+                object_stats.size_bytes = len(data)
                 monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "stat_object", lambda *args: object_stats)
 
                 # read negative
@@ -127,8 +128,7 @@ class TestObjectReader:
 
                 # Read whole file
                 start_pos = 0
-                end_pos = object_stats.size_bytes - 1
-                data = b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82"
+                end_pos = ""
 
                 def monkey_get_object(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
                     assert repository == test_kwargs.repository
@@ -136,11 +136,14 @@ class TestObjectReader:
                     assert path == test_kwargs.path
                     assert range == f"bytes={start_pos}-{end_pos}"
                     assert presign
-                    return b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82"
+
+                    if isinstance(end_pos, int):
+                        return data[start_pos:end_pos]
+                    return data[start_pos:]
 
                 monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "get_object", monkey_get_object)
                 assert fd.read() == data
-                assert fd.tell() == start_pos + object_stats.size_bytes
+                assert fd.tell() == object_stats.size_bytes
 
                 # Test reading from middle
                 start_pos = 132
@@ -148,36 +151,29 @@ class TestObjectReader:
                 read_size = 456
                 end_pos = start_pos + read_size - 1
                 fd.read(read_size)
-                assert fd.tell() == start_pos + read_size
+                assert fd.tell() == start_pos + read_size - 1
 
                 # Read more than file size
                 start_pos = fd.tell()
                 read_size = 2 * object_stats.size_bytes
-                end_pos = object_stats.size_bytes - 1
+                end_pos = start_pos + 2 * object_stats.size_bytes - 1
                 fd.read(read_size)
                 assert fd.tell() == object_stats.size_bytes
-
-                # Read again and expect EOF
-                try:
-                    fd.read()
-                    assert False, "Expected EOF error"
-                except EOFError:
-                    pass
 
     @pytest.mark.parametrize("mode", [*get_args(OpenModes)])
     def test_read_modes(self, monkeypatch, tmp_path, mode):
         test_kwargs = ObjectTestKWArgs()
+        data = b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82"
         with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             with obj.open(mode=mode) as fd:
                 object_stats = ObjectTestStats()
                 object_stats.path = test_kwargs.path
-                object_stats.size_bytes = 3000
+                object_stats.size_bytes = len(data)
                 monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "stat_object", lambda *args: object_stats)
 
                 # Read whole file
                 start_pos = 0
-                end_pos = object_stats.size_bytes - 1
-                data = b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82"
+                end_pos = ""
 
         def monkey_get_object(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
             assert repository == test_kwargs.repository

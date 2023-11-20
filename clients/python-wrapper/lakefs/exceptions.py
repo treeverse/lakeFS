@@ -85,7 +85,7 @@ class PermissionException(NotAuthorizedException, PermissionError):
     """
 
 
-class RefNotFoundException(NotFoundException):
+class InvalidRangeException(LakeFSException, OSError):
     """
     Raised when the reference could not be found in the lakeFS server
     """
@@ -97,6 +97,7 @@ _STATUS_CODE_TO_EXCEPTION = {
     http.HTTPStatus.NOT_FOUND.value: NotFoundException,
     http.HTTPStatus.METHOD_NOT_ALLOWED.value: UnsupportedOperationException,
     http.HTTPStatus.CONFLICT.value: ConflictException,
+    http.HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE.value: InvalidRangeException
 }
 
 
