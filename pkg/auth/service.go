@@ -1210,8 +1210,8 @@ func (a *APIAuthService) getFirstUser(ctx context.Context, userKey userKey, para
 	return a.cache.GetUser(userKey, func() (*model.User, error) {
 		// fetch at least two users to make sure we don't have duplicates
 		if params.Amount == nil {
-			const amount = 2
-			params.Amount = paginationAmount(amount)
+			amount := 2
+			params.Amount = &amount
 		}
 		resp, err := a.apiClient.ListUsersWithResponse(ctx, params)
 		if err != nil {
@@ -1290,13 +1290,10 @@ func toPagination(paginator Pagination) *model.Paginator {
 }
 
 func (a *APIAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
-	paginationPrefix := PaginationPrefix(params.Prefix)
-	paginationAfter := PaginationAfter(params.After)
-	paginationAmount := PaginationAmount(params.Amount)
 	resp, err := a.apiClient.ListUsersWithResponse(ctx, &ListUsersParams{
-		Prefix: &paginationPrefix,
-		After:  &paginationAfter,
-		Amount: &paginationAmount,
+		Prefix: &params.Prefix,
+		After:  &params.After,
+		Amount: &params.Amount,
 	})
 	if err != nil {
 		a.logger.WithError(err).Error("failed to list users")
@@ -1352,21 +1349,6 @@ func (a *APIAuthService) validateResponse(resp openapi3filter.StatusCoder, expec
 	}
 }
 
-func paginationPrefix(prefix string) *PaginationPrefix {
-	p := PaginationPrefix(prefix)
-	return &p
-}
-
-func paginationAfter(after string) *PaginationAfter {
-	p := PaginationAfter(after)
-	return &p
-}
-
-func paginationAmount(amount int) *PaginationAmount {
-	p := PaginationAmount(amount)
-	return &p
-}
-
 func (a *APIAuthService) DeleteGroup(ctx context.Context, groupDisplayName string) error {
 	resp, err := a.apiClient.DeleteGroupWithResponse(ctx, groupDisplayName)
 	if err != nil {
@@ -1393,9 +1375,9 @@ func (a *APIAuthService) GetGroup(ctx context.Context, groupDisplayName string) 
 
 func (a *APIAuthService) ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
 	resp, err := a.apiClient.ListGroupsWithResponse(ctx, &ListGroupsParams{
-		Prefix: paginationPrefix(params.Prefix),
-		After:  paginationAfter(params.After),
-		Amount: paginationAmount(params.Amount),
+		Prefix: &params.Prefix,
+		After:  &params.After,
+		Amount: &params.Amount,
 	})
 	if err != nil {
 		a.logger.WithError(err).Error("failed to list groups")
@@ -1435,9 +1417,9 @@ func (a *APIAuthService) RemoveUserFromGroup(ctx context.Context, username, grou
 
 func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
 	resp, err := a.apiClient.ListUserGroupsWithResponse(ctx, username, &ListUserGroupsParams{
-		Prefix: paginationPrefix(params.Prefix),
-		After:  paginationAfter(params.After),
-		Amount: paginationAmount(params.Amount),
+		Prefix: &params.Prefix,
+		After:  &params.After,
+		Amount: &params.Amount,
 	})
 	if err != nil {
 		a.logger.WithError(err).WithField("username", username).Error("failed to list user groups")
@@ -1458,9 +1440,9 @@ func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, pa
 
 func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
 	resp, err := a.apiClient.ListGroupMembersWithResponse(ctx, groupDisplayName, &ListGroupMembersParams{
-		Prefix: paginationPrefix(params.Prefix),
-		After:  paginationAfter(params.After),
-		Amount: paginationAmount(params.Amount),
+		Prefix: &params.Prefix,
+		After:  &params.After,
+		Amount: &params.Amount,
 	})
 	if err != nil {
 		a.logger.WithError(err).WithField("group", groupDisplayName).Error("failed to list group users")
@@ -1566,9 +1548,9 @@ func (a *APIAuthService) DeletePolicy(ctx context.Context, policyDisplayName str
 
 func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	resp, err := a.apiClient.ListPoliciesWithResponse(ctx, &ListPoliciesParams{
-		Prefix: paginationPrefix(params.Prefix),
-		After:  paginationAfter(params.After),
-		Amount: paginationAmount(params.Amount),
+		Prefix: &params.Prefix,
+		After:  &params.After,
+		Amount: &params.Amount,
 	})
 	if err != nil {
 		a.logger.WithError(err).Error("failed to list policies")
@@ -1692,9 +1674,9 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 
 func (a *APIAuthService) ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
 	resp, err := a.apiClient.ListUserCredentialsWithResponse(ctx, username, &ListUserCredentialsParams{
-		Prefix: paginationPrefix(params.Prefix),
-		After:  paginationAfter(params.After),
-		Amount: paginationAmount(params.Amount),
+		Prefix: &params.Prefix,
+		After:  &params.After,
+		Amount: &params.Amount,
 	})
 	if err != nil {
 		a.logger.WithError(err).WithField("username", username).Error("failed to list credentials")
@@ -1738,9 +1720,9 @@ func (a *APIAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplay
 
 func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, params *model.PaginationParams, effective bool) ([]*model.Policy, *model.Paginator, error) {
 	resp, err := a.apiClient.ListUserPoliciesWithResponse(ctx, username, &ListUserPoliciesParams{
-		Prefix:    paginationPrefix(params.Prefix),
-		After:     paginationAfter(params.After),
-		Amount:    paginationAmount(params.Amount),
+		Prefix:    &params.Prefix,
+		After:     &params.After,
+		Amount:    &params.Amount,
 		Effective: &effective,
 	})
 	if err != nil {
@@ -1820,9 +1802,9 @@ func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDispla
 
 func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	resp, err := a.apiClient.ListGroupPoliciesWithResponse(ctx, groupDisplayName, &ListGroupPoliciesParams{
-		Prefix: paginationPrefix(params.Prefix),
-		After:  paginationAfter(params.After),
-		Amount: paginationAmount(params.Amount),
+		Prefix: &params.Prefix,
+		After:  &params.After,
+		Amount: &params.Amount,
 	})
 	if err != nil {
 		a.logger.WithError(err).WithField("group", groupDisplayName).Error("failed to list policies")
