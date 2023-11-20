@@ -3,6 +3,7 @@ import time
 from lakefs.exceptions import NotFoundException, ConflictException, ObjectNotFoundException
 from lakefs.object import WriteableObject
 from lakefs.repository import RepositoryProperties
+from lakefs.object_io import WriteableObject
 from tests.integration.conftest import expect_exception_context
 
 
@@ -32,6 +33,36 @@ def test_repository_sanity(storage_namespace, setup_repo):
     # Delete non existent
     with expect_exception_context(NotFoundException):
         repo.delete()
+
+
+def test_branch_sanity(storage_namespace, setup_repo):
+    _, repo = setup_repo
+    branch_name = "test_branch"
+
+    main_branch = repo.branch("main")
+    new_branch = repo.branch(branch_name).create("main")
+    assert new_branch.repo_id == repo.properties.id
+    assert new_branch.id == branch_name
+    assert new_branch.head().id == main_branch.head().id
+
+    initial_content = "test_content"
+    new_branch.object("test_object").create(initial_content, metadata={
+        "test_key": "test_value"})  # TODO(Guys): remove metadata once bug is fixed
+    new_branch.commit("test_commit", {"test_key": "test_value"})
+
+    override_content = "override_test_content"
+    new_branch.object("test_object").create(override_content, metadata={
+        "test_key": "test_value"})  # TODO: remove metadata once bug is fixed
+    new_branch.commit("override_data")
+    assert new_branch.object("test_object").read().decode() == override_content
+    new_branch.revert(new_branch.head().id)
+
+    assert new_branch.object("test_object").read().decode() == initial_content
+
+    new_branch.delete()
+
+    with expect_exception_context(NotFoundException):
+        new_branch.head()
 
 
 def test_ref_sanity(setup_repo):
