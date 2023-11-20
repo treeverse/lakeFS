@@ -42,15 +42,16 @@ jobs:
     - name: Generate documentation 
       uses: ammaraskar/sphinx-action@master
       with:
-        docs-folder: "docs/"
-        pre-build-command: "pip install sphinx-autodoc-typehints && sphinx-apidoc -o . lakefs sphinx-apidoc --full -A 'Treeverse' -e"
+        docs-folder: "clients/python-wrapper/docs/"
+        pre-build-command: "pip install sphinx-autodoc-typehints && sphinx-apidoc -o . ../lakefs sphinx-apidoc --full -A 'Treeverse' -e"
+        build-command: "sphinx-build -b html"
 
     - name: Publish to docs repository
       uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
       env:
         API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
       with:
-        source_file: clients/python-wrapper/sphinx/_build/.
+        source_file: clients/python-wrapper/docs/_build/.
         destination_repo: treeverse/docs-lakefs-sdk-python-wrapper
         destination_folder: /
         user_email: 'support@treeverse.io'
