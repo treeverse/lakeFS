@@ -10,10 +10,10 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Python build and make package
+    - name: Python Build and Make Package
       run: make package-python-wrapper
 
-    - name: Publish distribution 📦 to TestPyPI
+    - name: Publish Distribution 📦 to TestPyPI
       continue-on-error: true
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
@@ -24,7 +24,7 @@ jobs:
         repository-url: https://test.pypi.org/legacy/
 
     # TODO: Enable once we're ready for production
-    - name: Publish distribution 📦 to PyPI
+    - name: Publish Distribution 📦 to PyPI
       if: false
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
@@ -44,21 +44,19 @@ jobs:
       with:
         python-version: 3.9
 
-    - name: Generate documentation 
+    - name: Generate and Build Documentation
+      working-directory: ./clients/python-wrapper/
       run: |
-        pip install sphinx sphinx-autodoc-typehints 
+        pip install -r requirements.txt 
         sphinx-apidoc -o clients/python-wrapper/docs clients/python-wrapper/lakefs sphinx-apidoc --full -A 'Treeverse' -e
-        
-    - name: Publish to docs repository
-      working-directory: ./clients/python-wrapper/docs
-      run: make html
+        sphinx-build -b html docs docs/_build
 
-    - name: Publish to docs repository
+    - name: Publish to Docs Repository
       uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
       env:
         API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
       with:
-        source_file: clients/python-wrapper/docs/_build/.
+        source_file: clients/python-wrapper/docs/_build/. 
         destination_repo: treeverse/docs-lakefs-sdk-python-wrapper
         destination_folder: /
         user_email: 'support@treeverse.io'
