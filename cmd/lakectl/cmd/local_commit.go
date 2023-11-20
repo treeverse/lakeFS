@@ -76,7 +76,7 @@ var localCommitCmd = &cobra.Command{
 					remoteChanges = append(remoteChanges, &local.Change{
 						Source: local.ChangeSourceRemote,
 						Path:   strings.TrimPrefix(dif.Path, remote.GetPath()),
-						Type:   local.ChangeTypeFromString(dif.Type),
+						Type:   local.ChangeTypeFromString(string(dif.Type)),
 					})
 				}
 				return nil
@@ -139,10 +139,8 @@ var localCommitCmd = &cobra.Command{
 
 		// commit!
 		response, err := client.CommitWithResponse(cmd.Context(), remote.Repository, remote.Ref, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
-			Message: message,
-			Metadata: &apigen.CommitCreation_Metadata{
-				AdditionalProperties: kvPairs,
-			},
+			Message:  message,
+			Metadata: &kvPairs,
 		})
 		DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusCreated)
 		commit := response.JSON201

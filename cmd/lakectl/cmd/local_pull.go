@@ -60,7 +60,7 @@ var localPullCmd = &cobra.Command{
 				c <- &local.Change{
 					Source: local.ChangeSourceRemote,
 					Path:   strings.TrimPrefix(dif.Path, currentBase.GetPath()),
-					Type:   local.ChangeTypeFromString(dif.Type),
+					Type:   local.ChangeTypeFromString(string(dif.Type)),
 				}
 			}
 			return nil

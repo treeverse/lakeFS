@@ -1,6 +1,6 @@
 package auth
 
-//go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package auth -generate "types,client" -o client.gen.go ../../api/authorization.yml
+//go:generate go run github.com/deepmap/oapi-codegen/v2/cmd/oapi-codegen@v2.0.0 -package auth -generate "types,client" -o client.gen.go ../../api/authorization.yml
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mock -destination=mock/mock_auth_client.go github.com/treeverse/lakefs/pkg/auth ClientWithResponsesInterface
 
 import (
@@ -1490,7 +1490,7 @@ func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy, 
 	for i, s := range policy.Statement {
 		stmts[i] = Statement{
 			Action:   s.Action,
-			Effect:   s.Effect,
+			Effect:   StatementEffect(s.Effect),
 			Resource: s.Resource,
 		}
 	}
@@ -1526,7 +1526,7 @@ func serializePolicyToModalPolicy(p Policy) *model.Policy {
 	stmts := make(model.Statements, len(p.Statement))
 	for i, apiStatement := range p.Statement {
 		stmts[i] = model.Statement{
-			Effect:   apiStatement.Effect,
+			Effect:   string(apiStatement.Effect),
 			Action:   apiStatement.Action,
 			Resource: apiStatement.Resource,
 		}

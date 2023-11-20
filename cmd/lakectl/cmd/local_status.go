@@ -58,7 +58,7 @@ var localStatusCmd = &cobra.Command{
 					changes = append(changes, &local.Change{
 						Source: local.ChangeSourceRemote,
 						Path:   strings.TrimPrefix(dif.Path, remoteBase.GetPath()),
-						Type:   local.ChangeTypeFromString(dif.Type),
+						Type:   local.ChangeTypeFromString(string(dif.Type)),
 					})
 				}
 				return nil

@@ -732,7 +732,7 @@ func TestAPIAuthService_GetUserById(t *testing.T) {
 			}
 
 			const amount = 2
-			paginationAmount := auth.PaginationAmount(amount)
+			paginationAmount := amount
 			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(),
 				gomock.Eq(&auth.ListUsersParams{Id: &tt.userIntID, Amount: &paginationAmount}),
 			).Return(&auth.ListUsersResponse{
@@ -1079,7 +1079,7 @@ func TestAPIAuthService_GetUserByEmail(t *testing.T) {
 				Results:    returnedUsers,
 			}
 			const amount = 2
-			paginationAmount := auth.PaginationAmount(amount)
+			paginationAmount := amount
 			mockClient.EXPECT().ListUsersWithResponse(gomock.Any(),
 				gomock.Eq(&auth.ListUsersParams{Email: swag.String(tt.email), Amount: &paginationAmount}),
 			).Return(&auth.ListUsersResponse{
@@ -1427,9 +1427,9 @@ func TestAPIAuthService_ListGroups(t *testing.T) {
 			}
 			response.JSON200 = &groupList
 			paginationParams := model.PaginationParams{}
-			paginationPrefix := auth.PaginationPrefix(paginationParams.Prefix)
-			paginationAfter := auth.PaginationAfter(paginationParams.After)
-			paginationAmount := auth.PaginationAmount(paginationParams.Amount)
+			paginationPrefix := paginationParams.Prefix
+			paginationAfter := paginationParams.After
+			paginationAmount := paginationParams.Amount
 			mockClient.EXPECT().ListGroupsWithResponse(gomock.Any(), gomock.Eq(&auth.ListGroupsParams{
 				Prefix: &paginationPrefix,
 				After:  &paginationAfter,
@@ -1793,7 +1793,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 		policyName             string
 		responseStatusCode     int
 		firstStatementResource string
-		firstStatementEffect   string
+		firstStatementEffect   auth.StatementEffect
 		firstStatementAction   []string
 		responseName           string
 		expectedErr            error
@@ -1907,7 +1907,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 				CreatedAt:   creationTime,
 				Statement: []model.Statement{{
 					Action:   tt.firstStatementAction,
-					Effect:   tt.firstStatementEffect,
+					Effect:   string(tt.firstStatementEffect),
 					Resource: tt.firstStatementResource,
 				}},
 			}, tt.overwrite)
@@ -1924,7 +1924,7 @@ func TestAPIAuthService_GetPolicy(t *testing.T) {
 		name                   string
 		policyName             string
 		firstStatementResource string
-		firstStatementEffect   string
+		firstStatementEffect   auth.StatementEffect
 		firstStatementAction   []string
 		responseStatusCode     int
 		responseName           string
@@ -2011,7 +2011,7 @@ func statementEquals(t *testing.T, authStatement []auth.Statement, modalStatemen
 		return
 	}
 	for i, authS := range authStatement {
-		if authS.Effect != modalStatement[i].Effect {
+		if string(authS.Effect) != modalStatement[i].Effect {
 			t.Errorf("Effect  (authStatement)%s != (modelStatement)%s", modalStatement[i].Effect, authS.Effect)
 		}
 		if authS.Resource != modalStatement[i].Resource {

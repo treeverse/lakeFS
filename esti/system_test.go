@@ -205,13 +205,11 @@ func uploadContentDirect(ctx context.Context, client apigen.ClientWithResponsesI
 		resp, err := client.LinkPhysicalAddressWithResponse(ctx, repoID, branchID, &apigen.LinkPhysicalAddressParams{
 			Path: objPath,
 		}, apigen.LinkPhysicalAddressJSONRequestBody{
-			Checksum:  stats.ETag,
-			SizeBytes: stats.Size,
-			Staging:   *stagingLocation,
-			UserMetadata: &apigen.StagingMetadata_UserMetadata{
-				AdditionalProperties: metadata,
-			},
-			ContentType: &contentType,
+			Checksum:     stats.ETag,
+			SizeBytes:    stats.Size,
+			Staging:      *stagingLocation,
+			UserMetadata: &metadata,
+			ContentType:  &contentType,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("link object to backing store: %w", err)
@@ -262,8 +260,8 @@ func listRepositoryObjects(ctx context.Context, t *testing.T, repository string,
 	var after string
 	for {
 		resp, err := client.ListObjectsWithResponse(ctx, repository, ref, &apigen.ListObjectsParams{
-			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
+			After:  apiutil.Ptr(after),
+			Amount: apiutil.Ptr(amount),
 		})
 		require.NoError(t, err, "listing objects")
 		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
@@ -293,8 +291,8 @@ func listRepositories(t *testing.T, ctx context.Context) []apigen.Repository {
 	var listedRepos []apigen.Repository
 	for {
 		resp, err := client.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{
-			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(repoPerPage)),
+			After:  apiutil.Ptr(after),
+			Amount: apiutil.Ptr(repoPerPage),
 		})
 		require.NoError(t, err, "list repositories")
 		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),

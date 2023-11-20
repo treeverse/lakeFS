@@ -52,10 +52,6 @@ const (
 	DefaultMaxPerPage int = 1000
 	lakeFSPrefix          = "symlinks"
 
-	actionStatusCompleted = "completed"
-	actionStatusFailed    = "failed"
-	actionStatusSkipped   = "skipped"
-
 	entryTypeObject       = "object"
 	entryTypeCommonPrefix = "common_prefix"
 
@@ -388,7 +384,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		Checksum(checksum).
 		ContentType(swag.StringValue(body.ContentType))
 	if body.UserMetadata != nil {
-		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
+		entryBuilder.Metadata(*body.UserMetadata)
 	}
 	entry := entryBuilder.Build()
 
@@ -397,7 +393,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	metadata := apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
+	metadata := apigen.ObjectUserMetadata(entry.Metadata)
 	response := apigen.ObjectStats{
 		Checksum:        entry.Checksum,
 		ContentType:     swag.String(entry.ContentType),
@@ -783,7 +779,7 @@ func serializePolicy(p *model.Policy) apigen.Policy {
 	for _, s := range p.Statement {
 		stmts = append(stmts, apigen.Statement{
 			Action:   s.Action,
-			Effect:   s.Effect,
+			Effect:   apigen.StatementEffect(s.Effect),
 			Resource: s.Resource,
 		})
 	}
@@ -905,7 +901,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body a
 	stmts := make(model.Statements, len(body.Statement))
 	for i, apiStatement := range body.Statement {
 		stmts[i] = model.Statement{
-			Effect:   apiStatement.Effect,
+			Effect:   string(apiStatement.Effect),
 			Action:   apiStatement.Action,
 			Resource: apiStatement.Resource,
 		}
@@ -1004,7 +1000,7 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body a
 	stmts := make(model.Statements, len(body.Statement))
 	for i, apiStatement := range body.Statement {
 		stmts[i] = model.Statement{
-			Effect:   apiStatement.Effect,
+			Effect:   string(apiStatement.Effect),
 			Action:   apiStatement.Action,
 			Resource: apiStatement.Resource,
 		}
@@ -1779,7 +1775,7 @@ func (c *Controller) GetRepositoryMetadata(w http.ResponseWriter, r *http.Reques
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	writeResponse(w, r, http.StatusOK, apigen.RepositoryMetadata{AdditionalProperties: metadata})
+	writeResponse(w, r, http.StatusOK, apigen.RepositoryMetadata(metadata))
 }
 
 func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Request, repository string) {
@@ -1960,9 +1956,9 @@ func runResultToActionRun(val *actions.RunResult) apigen.ActionRun {
 		EventType: val.EventType,
 	}
 	if val.Passed {
-		runResult.Status = actionStatusCompleted
+		runResult.Status = apigen.ActionRunStatusCompleted
 	} else {
-		runResult.Status = actionStatusFailed
+		runResult.Status = apigen.ActionRunStatusFailed
 	}
 	return runResult
 }
@@ -1988,11 +1984,11 @@ func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository, 
 		return
 	}
 
-	var status string
+	var status apigen.ActionRunStatus
 	if runResult.Passed {
-		status = actionStatusCompleted
+		status = apigen.ActionRunStatusCompleted
 	} else {
-		status = actionStatusFailed
+		status = apigen.ActionRunStatusFailed
 	}
 	response := apigen.ActionRun{
 		RunId:     runResult.RunID,
@@ -2047,12 +2043,12 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 		}
 		switch {
 		case val.Passed:
-			hookRun.Status = actionStatusCompleted
+			hookRun.Status = apigen.HookRunStatusCompleted
 		case val.StartTime.IsZero(): // assumes that database values are only stored after run is finished
-			hookRun.Status = actionStatusSkipped
+			hookRun.Status = apigen.HookRunStatusSkipped
 			hookRun.EndTime = nil
 		default:
-			hookRun.Status = actionStatusFailed
+			hookRun.Status = apigen.HookRunStatusFailed
 		}
 		response.Results = append(response.Results, hookRun)
 	}
@@ -2376,13 +2372,15 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ap
 		writeError(w, r, http.StatusUnauthorized, "missing user")
 		return
 	}
-	metadata := map[string]string{}
+	var metadata map[string]string
 	if body.Commit.Metadata != nil {
-		metadata = body.Commit.Metadata.AdditionalProperties
+		metadata = *body.Commit.Metadata
+	} else {
+		metadata = make(map[string]string)
 	}
 	paths := make([]catalog.ImportPath, 0, len(body.Paths))
 	for _, p := range body.Paths {
-		pathType, err := catalog.GetImportPathType(p.Type)
+		pathType, err := catalog.GetImportPathType(string(p.Type))
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
@@ -2426,13 +2424,14 @@ func importStatusToResponse(status *graveler.ImportStatus) apigen.ImportStatus {
 
 	commitLog := catalog.CommitRecordToLog(status.Commit)
 	if commitLog != nil {
+		metadata := map[string]string(commitLog.Metadata)
 		resp.Commit = &apigen.Commit{
 			Committer:    commitLog.Committer,
 			CreationDate: commitLog.CreationDate.Unix(),
 			Id:           commitLog.Reference,
 			Message:      commitLog.Message,
 			MetaRangeId:  commitLog.MetaRangeID,
-			Metadata:     &apigen.Commit_Metadata{AdditionalProperties: commitLog.Metadata},
+			Metadata:     &metadata,
 			Parents:      commitLog.Parents,
 		}
 	}
@@ -2496,7 +2495,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 	}
 	var metadata map[string]string
 	if body.Metadata != nil {
-		metadata = body.Metadata.AdditionalProperties
+		metadata = *body.Metadata
 	}
 
 	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange)
@@ -2516,13 +2515,14 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 }
 
 func commitResponse(w http.ResponseWriter, r *http.Request, newCommit *catalog.CommitLog) {
+	metadata := map[string]string(newCommit.Metadata)
 	response := apigen.Commit{
 		Committer:    newCommit.Committer,
 		CreationDate: newCommit.CreationDate.Unix(),
 		Id:           newCommit.Reference,
 		Message:      newCommit.Message,
 		MetaRangeId:  newCommit.MetaRangeID,
-		Metadata:     &apigen.Commit_Metadata{AdditionalProperties: newCommit.Metadata},
+		Metadata:     &metadata,
 		Parents:      newCommit.Parents,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
@@ -2561,8 +2561,8 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 		}
 		diff := apigen.Diff{
 			Path:     d.Path,
-			Type:     transformDifferenceTypeToString(d.Type),
-			PathType: pathType,
+			Type:     transformDifferenceTypeToDiffType(d.Type),
+			PathType: apigen.DiffPathType(pathType),
 		}
 		if !d.CommonLevel {
 			diff.SizeBytes = swag.Int64(d.Size)
@@ -2819,7 +2819,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 		Checksum(body.Checksum).
 		ContentType(swag.StringValue(body.ContentType))
 	if body.Metadata != nil {
-		entryBuilder.Metadata(body.Metadata.AdditionalProperties)
+		entryBuilder.Metadata(map[string]string(*body.Metadata))
 	}
 	entry := entryBuilder.Build()
 
@@ -3000,13 +3000,14 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
+	metadata := map[string]string(commit.Metadata)
 	response := apigen.Commit{
 		Id:           commit.Reference,
 		Committer:    commit.Committer,
 		CreationDate: commit.CreationDate.Unix(),
 		Message:      commit.Message,
 		MetaRangeId:  commit.MetaRangeID,
-		Metadata:     &apigen.Commit_Metadata{AdditionalProperties: commit.Metadata},
+		Metadata:     &metadata,
 		Parents:      commit.Parents,
 	}
 	writeResponse(w, r, http.StatusOK, response)
@@ -3033,7 +3034,7 @@ func (c *Controller) SetGarbageCollectionRulesPreflight(w http.ResponseWriter, r
 }
 
 func (c *Controller) InternalSetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, body apigen.InternalSetGarbageCollectionRulesJSONRequestBody, repository string) {
-	c.SetGCRules(w, r, apigen.SetGCRulesJSONRequestBody(body), repository)
+	c.SetGCRules(w, r, body, repository)
 }
 
 func (c *Controller) InternalDeleteGarbageCollectionRules(w http.ResponseWriter, r *http.Request, repository string) {
@@ -3660,13 +3661,13 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 	}
 	results := make([]apigen.Diff, 0, len(diff))
 	for _, d := range diff {
-		pathType := entryTypeObject
+		pathType := apigen.DiffPathTypeObject
 		if d.CommonLevel {
-			pathType = entryTypeCommonPrefix
+			pathType = apigen.DiffPathTypeCommonPrefix
 		}
 		diff := apigen.Diff{
 			Path:     d.Path,
-			Type:     transformDifferenceTypeToString(d.Type),
+			Type:     transformDifferenceTypeToDiffType(d.Type),
 			PathType: pathType,
 		}
 		if !d.CommonLevel {
@@ -3708,9 +3709,7 @@ func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, reposito
 
 	serializedCommits := make([]apigen.Commit, 0, len(commitLog))
 	for _, commit := range commitLog {
-		metadata := apigen.Commit_Metadata{
-			AdditionalProperties: commit.Metadata,
-		}
+		metadata := map[string]string(commit.Metadata)
 		serializedCommits = append(serializedCommits, apigen.Commit{
 			Committer:    commit.Committer,
 			CreationDate: commit.CreationDate.Unix(),
@@ -3938,7 +3937,8 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				ContentType:     swag.String(entry.ContentType),
 			}
 			if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
-				objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
+				metadata := apigen.ObjectUserMetadata(entry.Metadata)
+				objStat.Metadata = &metadata
 			}
 			if swag.BoolValue(params.Presign) {
 				// check if the user has read permissions for this object
@@ -4024,7 +4024,8 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		ContentType:     swag.String(entry.ContentType),
 	}
 	if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
-		objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
+		metadata := apigen.ObjectUserMetadata(entry.Metadata)
+		objStat.Metadata = &metadata
 	}
 	code := http.StatusOK
 	if entry.Expired {
@@ -4105,7 +4106,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	}
 	metadata := map[string]string{}
 	if body.Metadata != nil {
-		metadata = body.Metadata.AdditionalProperties
+		metadata = *body.Metadata
 	}
 
 	reference, err := c.Catalog.Merge(ctx,
@@ -4253,8 +4254,9 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 }
 
 func newLoginConfig(c *config.Config) *apigen.LoginConfig {
+	rbac := apigen.LoginConfigRBAC(c.Auth.UIConfig.RBAC)
 	return &apigen.LoginConfig{
-		RBAC:               &c.Auth.UIConfig.RBAC,
+		RBAC:               &rbac,
 		LoginUrl:           c.Auth.UIConfig.LoginURL,
 		LoginFailedMessage: &c.Auth.UIConfig.LoginFailedMessage,
 		FallbackLoginUrl:   c.Auth.UIConfig.FallbackLoginURL,
@@ -4269,8 +4271,9 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 
 	// external auth reports as initialized to avoid triggering the setup wizard
 	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
+		state := apigen.Initialized
 		response := apigen.SetupState{
-			State:            swag.String(string(auth.SetupStateInitialized)),
+			State:            &state,
 			LoginConfig:      newLoginConfig(c.Config),
 			CommPrefsMissing: swag.Bool(false),
 		}
@@ -4287,8 +4290,9 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		c.Collector.CollectEvent(stats.Event{Class: "global", Name: "preinit", Client: httputil.GetRequestLakeFSClient(r)})
 	}
 
+	state := apigen.SetupStateState(savedState)
 	response := apigen.SetupState{
-		State:       swag.String(string(savedState)),
+		State:       &state,
 		LoginConfig: newLoginConfig(c.Config),
 	}
 
@@ -4636,16 +4640,16 @@ func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) apigen.OtfDi
 			OperationContent: content,
 			Timestamp:        int(entry.Timestamp.Unix()),
 			Id:               id,
-			OperationType:    entry.OperationType,
+			OperationType:    apigen.OtfDiffEntryOperationType(entry.OperationType),
 		})
 	}
 
-	t := "changed"
+	t := apigen.OtfDiffListDiffTypeChanged
 	switch tableDiffResponse.DiffType {
 	case tablediff.DiffTypeCreated:
-		t = "created"
+		t = apigen.OtfDiffListDiffTypeCreated
 	case tablediff.DiffTypeDropped:
-		t = "dropped"
+		t = apigen.OtfDiffListDiffTypeDropped
 	}
 	return apigen.OtfDiffList{
 		Results:  ol,
@@ -4685,28 +4689,28 @@ func paginationAfter(v *apigen.PaginationAfter) string {
 	if v == nil {
 		return ""
 	}
-	return string(*v)
+	return *v
 }
 
 func paginationPrefix(v *apigen.PaginationPrefix) string {
 	if v == nil {
 		return ""
 	}
-	return string(*v)
+	return *v
 }
 
 func paginationDelimiter(v *apigen.PaginationDelimiter) string {
 	if v == nil {
 		return ""
 	}
-	return string(*v)
+	return *v
 }
 
 func paginationAmount(v *apigen.PaginationAmount) int {
 	if v == nil {
 		return DefaultMaxPerPage
 	}
-	i := int(*v)
+	i := *v
 	if i > DefaultMaxPerPage {
 		return DefaultMaxPerPage
 	}

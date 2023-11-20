@@ -116,7 +116,7 @@ func verifyImportObjects(t testing.TB, ctx context.Context, repoName, prefix, im
 		}
 	}
 	hasMore := true
-	after := apigen.PaginationAfter("")
+	after := ""
 	count := 0
 	for hasMore {
 		listResp, err := client.ListObjectsWithResponse(ctx, repoName, importBranch, &apigen.ListObjectsParams{After: &after})
@@ -124,7 +124,7 @@ func verifyImportObjects(t testing.TB, ctx context.Context, repoName, prefix, im
 		require.NotNil(t, listResp.JSON200)
 
 		hasMore = listResp.JSON200.Pagination.HasMore
-		after = apigen.PaginationAfter(listResp.JSON200.Pagination.NextOffset)
+		after = listResp.JSON200.Pagination.NextOffset
 		prev := apigen.ObjectStats{}
 		for _, obj := range listResp.JSON200.Results {
 			count++
@@ -171,7 +171,7 @@ func TestImport(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, metadataResp.JSON200)
 
-		repoMetadata := metadataResp.JSON200.AdditionalProperties
+		repoMetadata := *metadataResp.JSON200
 		require.NotNil(t, repoMetadata)
 		importMetadata, ok := repoMetadata[graveler.MetadataKeyLastImportTimeStamp]
 		require.True(t, ok)
@@ -261,7 +261,7 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 		Paths: paths,
 	}
 	if len(metadata) > 0 {
-		body.Commit.Metadata = &apigen.CommitCreation_Metadata{AdditionalProperties: metadata}
+		body.Commit.Metadata = &metadata
 	}
 
 	importResp, err := client.ImportStartWithResponse(ctx, repoName, importBranch, body)
@@ -311,7 +311,7 @@ func TestImportCancel(t *testing.T) {
 	importResp, err := client.ImportStartWithResponse(ctx, repoName, branch, apigen.ImportStartJSONRequestBody{
 		Commit: apigen.CommitCreation{
 			Message:  "created by import",
-			Metadata: &apigen.CommitCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
+			Metadata: &map[string]string{"created_by": "import"},
 		},
 		Paths: []apigen.ImportLocation{{
 			Destination: importTargetPrefix,

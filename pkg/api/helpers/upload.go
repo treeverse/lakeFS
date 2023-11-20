@@ -162,13 +162,11 @@ func clientUploadPreSignHelper(ctx context.Context, client apigen.ClientWithResp
 	}
 
 	linkReqBody := apigen.LinkPhysicalAddressJSONRequestBody{
-		Checksum:  etag,
-		SizeBytes: contentLength,
-		Staging:   *stagingLocation,
-		UserMetadata: &apigen.StagingMetadata_UserMetadata{
-			AdditionalProperties: metadata,
-		},
-		ContentType: apiutil.Ptr(contentType),
+		Checksum:     etag,
+		SizeBytes:    contentLength,
+		Staging:      *stagingLocation,
+		UserMetadata: &metadata,
+		ContentType:  apiutil.Ptr(contentType),
 	}
 	linkResp, err := client.LinkPhysicalAddressWithResponse(ctx, repoID, branchID,
 		&apigen.LinkPhysicalAddressParams{

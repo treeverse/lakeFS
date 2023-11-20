@@ -43,6 +43,7 @@ components:
       in: query
       name: prefix
       description: return items prefixed with this value
+      allowEmptyValue: true
       schema:
         type: string
 
@@ -50,6 +51,7 @@ components:
       in: query
       name: after
       description: return items after this value
+      allowEmptyValue: true
       schema:
         type: string
 
@@ -57,6 +59,7 @@ components:
       in: query
       name: amount
       description: how many items to return
+      allowEmptyValue: true
       schema:
         type: integer
         minimum: -1
@@ -67,6 +70,7 @@ components:
       in: query
       name: delimiter
       description: delimiter used to group common prefixes by
+      allowEmptyValue: true
       schema:
         type: string
 
@@ -1146,7 +1150,7 @@ components:
           format: date-time
         status:
           type: string
-          enum: [failed, completed]
+          enum: [failed, skipped, completed]
 
     HookRunList:
       type: object
@@ -1386,32 +1390,6 @@ components:
           type: string
       required:
         - id
-
-    MetaRangeCreation:
-      type: object
-      properties:
-        ranges:
-          type: array
-          items:
-            $ref: "#/components/schemas/RangeMetadata"
-          minItems: 1
-      required:
-        - ranges
-
-    MetaRangeCreationResponse:
-      type: object
-      properties:
-        id:
-          description: The id of the created metarange
-          type: string
-
-    UpdateToken:
-      type: object
-      properties:
-        staging_token:
-          type: string
-      required:
-        - staging_token
 
     StatsEvent:
       type: object
@@ -3049,6 +3027,7 @@ paths:
         - in: query
           name: objects
           description: list of paths, each element is a path of a specific object
+          allowEmptyValue: true
           schema:
             type: array
             items:
@@ -3056,6 +3035,7 @@ paths:
         - in: query
           name: prefixes
           description: list of paths, each element is a path of a prefix
+          allowEmptyValue: true
           schema:
             type: array
             items:
@@ -3063,16 +3043,19 @@ paths:
         - in: query
           name: limit
           description: limit the number of items in return to 'amount'. Without further indication on actual number of items.
+          allowEmptyValue: true
           schema:
             type: boolean
         - in: query
           name: first_parent
           description: if set to true, follow only the first parent upon reaching a merge commit
+          allowEmptyValue: true
           schema:
             type: boolean
         - in: query
           name: since
           description: Show commits more recent than a specific date-time
+          allowEmptyValue: true
           schema:
             type: string
             format: date-time
@@ -3108,6 +3091,7 @@ paths:
       parameters:
         - in: query
           name: source_metarange
+          allowEmptyValue: true
           required: false
           description: The source metarange to commit. Branch must not have uncommitted changes.
           schema:
@@ -3459,6 +3443,7 @@ paths:
       - $ref: "#/components/parameters/PaginationDelimiter"
       - in: query
         name: type
+        allowEmptyValue: true
         schema:
           type: string
           enum: [two_dot, three_dot]
@@ -3553,6 +3538,7 @@ paths:
             pattern: '^bytes=((\d*-\d*,? ?)+)$'
         - in: query
           name: presign
+          allowEmptyValue: true
           required: false
           schema:
             type: boolean
@@ -3707,6 +3693,7 @@ paths:
       parameters:
         - in: query
           name: presign
+          allowEmptyValue: true
           required: false
           schema:
             type: boolean

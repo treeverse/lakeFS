@@ -38,7 +38,7 @@ func getMtimeFromStats(stats apigen.ObjectStats) (int64, error) {
 	if stats.Metadata == nil {
 		return stats.Mtime, nil
 	}
-	clientMtime, hasClientMtime := stats.Metadata.Get(ClientMtimeMetadataKey)
+	clientMtime, hasClientMtime := (*stats.Metadata)[ClientMtimeMetadataKey]
 	if hasClientMtime {
 		// parse
 		return strconv.ParseInt(clientMtime, 10, 64)
@@ -180,7 +180,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 		err = f.Close()
 	}()
 
-	if sizeBytes == 0 { // if size is empty just create file
+	if sizeBytes == 0 { // if size is empty create file
 		spinner := s.progressBar.AddSpinner("download " + path)
 		atomic.AddUint64(&s.tasks.Downloaded, 1)
 		defer spinner.Done()

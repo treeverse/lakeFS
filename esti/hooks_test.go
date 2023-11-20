@@ -131,6 +131,8 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	require.NoError(t, decoder.Decode(&preCommitEvent), "reading pre-commit data")
 	appendRes(preCommitEvent)
 	commitRecord := commitResp.JSON201
+	require.NotNil(t, commitRecord.Metadata)
+
 	require.Equal(t, webhookEventInfo{
 		EventTime:     preCommitEvent.EventTime,
 		SourceRef:     branch,
@@ -141,7 +143,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 		BranchID:      branch,
 		Committer:     commitRecord.Committer,
 		CommitMessage: commitRecord.Message,
-		Metadata:      commitRecord.Metadata.AdditionalProperties,
+		Metadata:      *commitRecord.Metadata,
 	}, preCommitEvent)
 	require.NotNil(t, webhookData.queryParams)
 	require.Contains(t, webhookData.queryParams, "check_env_vars")
@@ -166,7 +168,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 		CommitID:      commitRecord.Id,
 		Committer:     commitRecord.Committer,
 		CommitMessage: commitRecord.Message,
-		Metadata:      commitRecord.Metadata.AdditionalProperties,
+		Metadata:      *commitRecord.Metadata,
 	}, postCommitEvent)
 
 	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, apigen.MergeIntoBranchJSONRequestBody{})

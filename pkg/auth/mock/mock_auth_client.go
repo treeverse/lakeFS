@@ -117,7 +117,7 @@ func (mr *MockClientWithResponsesInterfaceMockRecorder) ClaimTokenIdWithBodyWith
 }
 
 // ClaimTokenIdWithResponse mocks base method.
-func (m *MockClientWithResponsesInterface) ClaimTokenIdWithResponse(arg0 context.Context, arg1 auth.ClaimTokenIdJSONRequestBody, arg2 ...auth.RequestEditorFn) (*auth.ClaimTokenIdResponse, error) {
+func (m *MockClientWithResponsesInterface) ClaimTokenIdWithResponse(arg0 context.Context, arg1 auth.ClaimTokenId, arg2 ...auth.RequestEditorFn) (*auth.ClaimTokenIdResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -177,7 +177,7 @@ func (mr *MockClientWithResponsesInterfaceMockRecorder) CreateGroupWithBodyWithR
 }
 
 // CreateGroupWithResponse mocks base method.
-func (m *MockClientWithResponsesInterface) CreateGroupWithResponse(arg0 context.Context, arg1 auth.CreateGroupJSONRequestBody, arg2 ...auth.RequestEditorFn) (*auth.CreateGroupResponse, error) {
+func (m *MockClientWithResponsesInterface) CreateGroupWithResponse(arg0 context.Context, arg1 auth.GroupCreation, arg2 ...auth.RequestEditorFn) (*auth.CreateGroupResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -217,7 +217,7 @@ func (mr *MockClientWithResponsesInterfaceMockRecorder) CreatePolicyWithBodyWith
 }
 
 // CreatePolicyWithResponse mocks base method.
-func (m *MockClientWithResponsesInterface) CreatePolicyWithResponse(arg0 context.Context, arg1 auth.CreatePolicyJSONRequestBody, arg2 ...auth.RequestEditorFn) (*auth.CreatePolicyResponse, error) {
+func (m *MockClientWithResponsesInterface) CreatePolicyWithResponse(arg0 context.Context, arg1 auth.Policy, arg2 ...auth.RequestEditorFn) (*auth.CreatePolicyResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -257,7 +257,7 @@ func (mr *MockClientWithResponsesInterfaceMockRecorder) CreateUserWithBodyWithRe
 }
 
 // CreateUserWithResponse mocks base method.
-func (m *MockClientWithResponsesInterface) CreateUserWithResponse(arg0 context.Context, arg1 auth.CreateUserJSONRequestBody, arg2 ...auth.RequestEditorFn) (*auth.CreateUserResponse, error) {
+func (m *MockClientWithResponsesInterface) CreateUserWithResponse(arg0 context.Context, arg1 auth.UserCreation, arg2 ...auth.RequestEditorFn) (*auth.CreateUserResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -737,7 +737,7 @@ func (mr *MockClientWithResponsesInterfaceMockRecorder) UpdatePasswordWithBodyWi
 }
 
 // UpdatePasswordWithResponse mocks base method.
-func (m *MockClientWithResponsesInterface) UpdatePasswordWithResponse(arg0 context.Context, arg1 string, arg2 auth.UpdatePasswordJSONRequestBody, arg3 ...auth.RequestEditorFn) (*auth.UpdatePasswordResponse, error) {
+func (m *MockClientWithResponsesInterface) UpdatePasswordWithResponse(arg0 context.Context, arg1 string, arg2 auth.UserPassword, arg3 ...auth.RequestEditorFn) (*auth.UpdatePasswordResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
@@ -777,7 +777,7 @@ func (mr *MockClientWithResponsesInterfaceMockRecorder) UpdatePolicyWithBodyWith
 }
 
 // UpdatePolicyWithResponse mocks base method.
-func (m *MockClientWithResponsesInterface) UpdatePolicyWithResponse(arg0 context.Context, arg1 string, arg2 auth.UpdatePolicyJSONRequestBody, arg3 ...auth.RequestEditorFn) (*auth.UpdatePolicyResponse, error) {
+func (m *MockClientWithResponsesInterface) UpdatePolicyWithResponse(arg0 context.Context, arg1 string, arg2 auth.Policy, arg3 ...auth.RequestEditorFn) (*auth.UpdatePolicyResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {

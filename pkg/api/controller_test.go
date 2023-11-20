@@ -802,14 +802,12 @@ func TestController_GetCommitHandler(t *testing.T) {
 		if len(commit.Id) == 0 {
 			t.Errorf("GetCommit initial commit missing ID: %+v", commit)
 		}
-		metadata := apigen.Commit_Metadata{}
 		expectedCommit := &apigen.Commit{
 			Committer:    "",
 			CreationDate: commit.CreationDate,
 			Id:           commit.Id,
 			Message:      graveler.FirstCommitMsg,
 			MetaRangeId:  "",
-			Metadata:     &metadata,
 			Parents:      []string{},
 		}
 		if diff := deep.Equal(commit, expectedCommit); diff != nil {
@@ -1131,7 +1129,7 @@ func TestController_GetRepositoryMetadataHandler(t *testing.T) {
 		resp, err := clt.GetRepositoryMetadataWithResponse(ctx, repoName)
 		verifyResponseOK(t, resp, err)
 		require.NotNil(t, resp.JSON200)
-		require.Nil(t, resp.JSON200.AdditionalProperties)
+		require.Len(t, *resp.JSON200, 0)
 	})
 
 	t.Run("get metadata bare repo", func(t *testing.T) {
@@ -1150,7 +1148,7 @@ func TestController_GetRepositoryMetadataHandler(t *testing.T) {
 		resp, err := clt.GetRepositoryMetadataWithResponse(ctx, repoName)
 		verifyResponseOK(t, resp, err)
 		require.NotNil(t, resp.JSON200)
-		require.Nil(t, resp.JSON200.AdditionalProperties)
+		require.Len(t, *resp.JSON200, 0)
 	})
 
 	t.Run("get repository metadata not exist", func(t *testing.T) {
@@ -1866,7 +1864,7 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 		if objectStats.PhysicalAddress != onBlock(deps, "some-bucket/")+entry.PhysicalAddress {
 			t.Fatalf("expected correct PhysicalAddress, got %s", objectStats.PhysicalAddress)
 		}
-		if diff := deep.Equal(objectStats.Metadata.AdditionalProperties, map[string]string(entry.Metadata)); diff != nil {
+		if diff := deep.Equal(map[string]string(*objectStats.Metadata), map[string]string(entry.Metadata)); diff != nil {
 			t.Fatalf("expected to get back user-defined metadata: %s", diff)
 		}
 		contentType := apiutil.Value(objectStats.ContentType)
@@ -1880,7 +1878,7 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 		verifyResponseOK(t, resp, err)
 		objectStatsNoMetadata := resp.JSON200
 		if objectStatsNoMetadata.Metadata != nil {
-			t.Fatalf("expected to not get back user-defined metadata, got %+v", objectStatsNoMetadata.Metadata.AdditionalProperties)
+			t.Fatalf("expected to not get back user-defined metadata, got %+v", objectStatsNoMetadata.Metadata)
 		}
 	})
 
@@ -1977,7 +1975,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 		results := resp.JSON200.Results
 		for _, obj := range results {
 			if obj.Metadata != nil {
-				t.Fatalf("expected no user-defined metadata, got %+v", obj.Metadata.AdditionalProperties)
+				t.Fatalf("expected no user-defined metadata, got %+v", obj.Metadata)
 			}
 		}
 	})
@@ -4294,25 +4292,25 @@ func TestController_OtfDiff(t *testing.T) {
 		clt                apigen.ClientWithResponsesInterface
 		expectedHttpStatus int
 		err                error
-		resultDiffType     string
+		resultDiffType     apigen.OtfDiffListDiffType
 		description        string
 	}{
 		{
 			clt:                clt,
 			expectedHttpStatus: http.StatusOK,
-			resultDiffType:     "changed",
+			resultDiffType:     apigen.OtfDiffListDiffTypeChanged,
 			description:        "success - table changed",
 		},
 		{
 			clt:                clt,
 			expectedHttpStatus: http.StatusOK,
-			resultDiffType:     "dropped",
+			resultDiffType:     apigen.OtfDiffListDiffTypeDropped,
 			description:        "success - table dropped",
 		},
 		{
 			clt:                clt,
 			expectedHttpStatus: http.StatusOK,
-			resultDiffType:     "created",
+			resultDiffType:     apigen.OtfDiffListDiffTypeCreated,
 			description:        "success - table created",
 		},
 		{
@@ -4346,7 +4344,7 @@ func TestController_OtfDiff(t *testing.T) {
 			left := "left"
 			right := "right"
 
-			if tc.resultDiffType == "dropped" {
+			if tc.resultDiffType == apigen.OtfDiffListDiffTypeDropped {
 				left = "dropped"
 			} else if tc.resultDiffType == "created" {
 				right = "created"
@@ -4366,6 +4364,7 @@ func TestController_OtfDiff(t *testing.T) {
 			require.Equal(t, tc.expectedHttpStatus, response.StatusCode())
 			if tc.expectedHttpStatus == http.StatusOK {
 				require.NotNil(t, response.JSON200)
+				require.NotNil(t, response.JSON200.DiffType)
 				require.Equal(t, tc.resultDiffType, *response.JSON200.DiffType)
 				if tc.resultDiffType != "dropped" {
 					require.NotEmpty(t, response.JSON200.Results)

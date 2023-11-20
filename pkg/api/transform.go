@@ -1,21 +1,22 @@
 package api
 
 import (
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/catalog"
 )
 
-func transformDifferenceTypeToString(d catalog.DifferenceType) string {
+func transformDifferenceTypeToDiffType(d catalog.DifferenceType) apigen.DiffType {
 	switch d {
 	case catalog.DifferenceTypeAdded:
-		return "added"
+		return apigen.DiffTypeAdded
 	case catalog.DifferenceTypeRemoved:
-		return "removed"
+		return apigen.DiffTypeRemoved
 	case catalog.DifferenceTypeChanged:
-		return "changed"
+		return apigen.DiffTypeChanged
 	case catalog.DifferenceTypeConflict:
-		return "conflict"
+		return apigen.DiffTypeConflict
 	case catalog.DifferenceTypePrefixChanged:
-		return "prefix_changed"
+		return apigen.DiffTypePrefixChanged
 	default:
 		return ""
 	}

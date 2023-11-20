@@ -41,13 +41,10 @@ var commitCmd = &cobra.Command{
 		fmt.Println("Branch:", branchURI)
 
 		// do commit
-		metadata := apigen.CommitCreation_Metadata{
-			AdditionalProperties: kvPairs,
-		}
 		client := getClient()
 		resp, err := client.CommitWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 			Message:  message,
-			Metadata: &metadata,
+			Metadata: &kvPairs,
 			Date:     datePtr,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
