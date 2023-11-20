@@ -43,8 +43,8 @@ var actionsRunsListCmd = &cobra.Command{
 		}
 
 		resp, err := client.ListRepositoryRunsWithResponse(ctx, u.Repository, &apigen.ListRepositoryRunsParams{
-			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
+			After:  apiutil.Ptr(after),
+			Amount: apiutil.Ptr(amount),
 			Branch: optionalBranch,
 			Commit: optionalCommit,
 		})

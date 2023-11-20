@@ -72,8 +72,8 @@ func TestPreSign(t *testing.T) {
 	})
 
 	t.Run("preSignList", func(t *testing.T) {
-		paginationDelimiter := apigen.PaginationDelimiter("/")
-		paginationPrefix := apigen.PaginationPrefix("foo/")
+		paginationDelimiter := "/"
+		paginationPrefix := "foo/"
 		response, err := client.ListObjectsWithResponse(ctx, repo, mainBranch, &apigen.ListObjectsParams{
 			Prefix:    &paginationPrefix,
 			Presign:   swag.Bool(true),

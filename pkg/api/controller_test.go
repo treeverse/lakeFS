@@ -31,7 +31,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api"
-	"github.com/treeverse/lakefs/pkg/api/apigen"
+	apigen "github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -147,8 +147,8 @@ func TestController_ListRepositoriesHandler(t *testing.T) {
 	t.Run("paginate repos after", func(t *testing.T) {
 		// write some repos
 		resp, err := clt.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{
-			After:  apiutil.Ptr[apigen.PaginationAfter]("foo2"),
-			Amount: apiutil.Ptr[apigen.PaginationAmount](2),
+			After:  apiutil.Ptr("foo2"),
+			Amount: apiutil.Ptr(2),
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -1223,8 +1223,8 @@ func TestController_ListBranchesHandler(t *testing.T) {
 		}
 
 		resp, err = clt.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{
-			After:  apiutil.Ptr[apigen.PaginationAfter]("main1"),
-			Amount: apiutil.Ptr[apigen.PaginationAmount](2),
+			After:  apiutil.Ptr("main1"),
+			Amount: apiutil.Ptr(2),
 		})
 		verifyResponseOK(t, resp, err)
 		results := resp.JSON200.Results
@@ -1302,8 +1302,8 @@ func TestController_ListTagsHandler(t *testing.T) {
 		for {
 			calls++
 			resp, err := clt.ListTagsWithResponse(ctx, repo, &apigen.ListTagsParams{
-				After:  apiutil.Ptr(apigen.PaginationAfter(after)),
-				Amount: apiutil.Ptr(apigen.PaginationAmount(pageSize)),
+				After:  apiutil.Ptr(after),
+				Amount: apiutil.Ptr(pageSize),
 			})
 			testutil.Must(t, err)
 			payload := resp.JSON200
@@ -1602,7 +1602,7 @@ func TestController_DiffRefsHandler(t *testing.T) {
 			t.Fatalf("wrong diff type: %s", results[0].Type)
 		}
 
-		delimiter := apigen.PaginationDelimiter("/")
+		delimiter := "/"
 		resp2, err = clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &apigen.DiffRefsParams{Delimiter: &delimiter})
 		verifyResponseOK(t, resp2, err)
 		results = resp2.JSON200.Results
@@ -1953,7 +1953,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	}
 
 	t.Run("get object list", func(t *testing.T) {
-		prefix := apigen.PaginationPrefix("foo/")
+		prefix := "foo/"
 		resp, err := clt.ListObjectsWithResponse(ctx, repo, "main", &apigen.ListObjectsParams{
 			Prefix: &prefix,
 		})
@@ -1965,7 +1965,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	})
 
 	t.Run("get object list without user-defined metadata", func(t *testing.T) {
-		prefix := apigen.PaginationPrefix("foo/")
+		prefix := "foo/"
 		getUserMetadata := false
 		resp, err := clt.ListObjectsWithResponse(ctx, repo, "main", &apigen.ListObjectsParams{
 			Prefix:       &prefix,
@@ -1981,7 +1981,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	})
 
 	t.Run("get object list paginated", func(t *testing.T) {
-		prefix := apigen.PaginationPrefix("foo/")
+		prefix := "foo/"
 		resp, err := clt.ListObjectsWithResponse(ctx, repo, "main", &apigen.ListObjectsParams{
 			Prefix: &prefix,
 			Amount: apiutil.Ptr(apigen.PaginationAmount(2)),

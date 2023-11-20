@@ -52,13 +52,13 @@ var fsRmCmd = &cobra.Command{
 		}
 
 		prefix := *pathURI.Path
-		var paramsDelimiter apigen.PaginationDelimiter = ""
+		paramsDelimiter := ""
 		var from string
-		pfx := apigen.PaginationPrefix(prefix)
+		pfx := prefix
 		for {
 			params := &apigen.ListObjectsParams{
 				Prefix:    &pfx,
-				After:     apiutil.Ptr(apigen.PaginationAfter(from)),
+				After:     apiutil.Ptr(from),
 				Delimiter: &paramsDelimiter,
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)

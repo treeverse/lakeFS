@@ -56,7 +56,7 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 		// execute the restore operation
 		client := getClient()
 		ctx := cmd.Context()
-		resp, err := client.RestoreSubmitWithResponse(ctx, repoURI.Repository, apigen.RestoreSubmitJSONRequestBody(manifest))
+		resp, err := client.RestoreSubmitWithResponse(ctx, repoURI.Repository, manifest)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusAccepted)
 		if resp.JSON202 == nil {
 			Die("Bad response from server", 1)

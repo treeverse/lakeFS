@@ -54,8 +54,8 @@ var actionsRunsDescribeCmd = &cobra.Command{
 			}
 			// iterator over hooks - print information and output
 			runHooksRes, err := client.ListRunHooksWithResponse(ctx, u.Repository, runID, &apigen.ListRunHooksParams{
-				After:  apiutil.Ptr(apigen.PaginationAfter(after)),
-				Amount: apiutil.Ptr(apigen.PaginationAmount(amountForPagination)),
+				After:  apiutil.Ptr(after),
+				Amount: apiutil.Ptr(amountForPagination),
 			})
 			DieOnErrorOrUnexpectedStatusCode(runHooksRes, err, http.StatusOK)
 			if runHooksRes.JSON200 == nil {

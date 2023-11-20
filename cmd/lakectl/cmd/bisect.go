@@ -169,7 +169,7 @@ func (b *Bisect) Update(ctx context.Context, client apigen.ClientWithResponsesIn
 		if !logResponse.JSON200.Pagination.HasMore {
 			break
 		}
-		params.After = apiutil.Ptr(apigen.PaginationAfter(logResponse.JSON200.Pagination.NextOffset))
+		params.After = apiutil.Ptr(logResponse.JSON200.Pagination.NextOffset)
 	}
 	return fmt.Errorf("good %w", ErrCommitNotFound)
 }

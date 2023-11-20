@@ -96,7 +96,7 @@ func deleteAllRepositories(ctx context.Context, client apigen.ClientWithResponse
 	)
 
 	for {
-		resp, err := client.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{After: apiutil.Ptr(apigen.PaginationAfter(nextOffset))})
+		resp, err := client.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{After: apiutil.Ptr(nextOffset)})
 		if err != nil {
 			return fmt.Errorf("list repositories: %w", err)
 		}
@@ -134,7 +134,7 @@ func deleteAllGroups(ctx context.Context, client apigen.ClientWithResponsesInter
 		nextOffset     string
 	)
 	for {
-		resp, err := client.ListGroupsWithResponse(ctx, &apigen.ListGroupsParams{After: apiutil.Ptr(apigen.PaginationAfter(nextOffset))})
+		resp, err := client.ListGroupsWithResponse(ctx, &apigen.ListGroupsParams{After: apiutil.Ptr(nextOffset)})
 		if err != nil {
 			return fmt.Errorf("list groups: %w", err)
 		}
@@ -172,7 +172,7 @@ func deleteAllUsers(ctx context.Context, client apigen.ClientWithResponsesInterf
 		nextOffset    string
 	)
 	for {
-		resp, err := client.ListUsersWithResponse(ctx, &apigen.ListUsersParams{After: apiutil.Ptr(apigen.PaginationAfter(nextOffset))})
+		resp, err := client.ListUsersWithResponse(ctx, &apigen.ListUsersParams{After: apiutil.Ptr(nextOffset)})
 		if err != nil {
 			return fmt.Errorf("list users: %s", err)
 		}
@@ -210,7 +210,7 @@ func deleteAllPolicies(ctx context.Context, client apigen.ClientWithResponsesInt
 		nextOffset       string
 	)
 	for {
-		resp, err := client.ListPoliciesWithResponse(ctx, &apigen.ListPoliciesParams{After: apiutil.Ptr(apigen.PaginationAfter(nextOffset))})
+		resp, err := client.ListPoliciesWithResponse(ctx, &apigen.ListPoliciesParams{After: apiutil.Ptr(nextOffset)})
 		if err != nil {
 			return fmt.Errorf("list policies: %w", err)
 		}

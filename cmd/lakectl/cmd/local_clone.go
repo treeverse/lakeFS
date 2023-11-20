@@ -53,8 +53,8 @@ var localCloneCmd = &cobra.Command{
 			var after string
 			for {
 				listResp, err := client.ListObjectsWithResponse(ctx, remote.Repository, stableRemote.Ref, &apigen.ListObjectsParams{
-					After:        (*apigen.PaginationAfter)(swag.String(after)),
-					Prefix:       (*apigen.PaginationPrefix)(remote.Path),
+					After:        swag.String(after),
+					Prefix:       remote.Path,
 					UserMetadata: swag.Bool(true),
 				})
 				DieOnErrorOrUnexpectedStatusCode(listResp, err, http.StatusOK)

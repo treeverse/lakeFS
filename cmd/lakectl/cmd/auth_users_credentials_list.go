@@ -28,8 +28,8 @@ var authUsersCredentialsList = &cobra.Command{
 		}
 
 		resp, err := clt.ListUserCredentialsWithResponse(cmd.Context(), id, &apigen.ListUserCredentialsParams{
-			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
+			After:  apiutil.Ptr(after),
+			Amount: apiutil.Ptr(amount),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {

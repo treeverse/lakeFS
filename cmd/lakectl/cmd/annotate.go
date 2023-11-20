@@ -33,7 +33,7 @@ var annotateCmd = &cobra.Command{
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		firstParent := Must(cmd.Flags().GetBool("first-parent"))
 		client := getClient()
-		pfx := apigen.PaginationPrefix(*pathURI.Path)
+		pfx := *pathURI.Path
 		context := cmd.Context()
 		resp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, &apigen.ListObjectsParams{Prefix: &pfx})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -49,7 +49,7 @@ var annotateCmd = &cobra.Command{
 		for {
 			params := &apigen.ListObjectsParams{
 				Prefix:    &pfx,
-				After:     apiutil.Ptr(apigen.PaginationAfter(from)),
+				After:     apiutil.Ptr(from),
 				Delimiter: &listObjectsDelimiter,
 			}
 			listObjectsResp, err := client.ListObjectsWithResponse(context, pathURI.Repository, pathURI.Ref, params)

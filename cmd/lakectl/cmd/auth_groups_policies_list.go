@@ -21,8 +21,8 @@ var authGroupsPoliciesList = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.ListGroupPoliciesWithResponse(cmd.Context(), id, &apigen.ListGroupPoliciesParams{
-			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
+			After:  apiutil.Ptr(after),
+			Amount: apiutil.Ptr(amount),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {

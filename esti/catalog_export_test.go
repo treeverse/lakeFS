@@ -137,7 +137,6 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 	t.Helper()
 
 	tableYaml, err := yaml.Marshal(&testData.TableSpec)
-
 	if err != nil {
 		require.NoError(t, err, "failed marshaling table spec to YAML")
 	}
@@ -215,7 +214,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 	}
 
 	lakeFSObjs, err := client.ListObjectsWithResponse(ctx, repo, commit.Id, &apigen.ListObjectsParams{
-		Prefix: apiutil.Ptr(apigen.PaginationPrefix(testData.TableSpec.Path)),
+		Prefix: apiutil.Ptr(testData.TableSpec.Path),
 	})
 
 	require.NoError(t, err, "failed listing lakefs objects")
@@ -288,7 +287,7 @@ func TestAWSCatalogExport(t *testing.T) {
 	}
 
 	t.Run("symlink_exporter", func(t *testing.T) {
-		var columns = []string{"name", "color"}
+		columns := []string{"name", "color"}
 		csvData := genCSVData(t, columns, 3)
 		tablePaths := map[string]string{
 			testData.TableSpec.Path + "/type=axolotl/weight=22/b.csv":   csvData,

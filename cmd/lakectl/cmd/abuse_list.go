@@ -34,7 +34,7 @@ var abuseListCmd = &cobra.Command{
 			}
 		})
 
-		listPrefix := apigen.PaginationPrefix(prefix)
+		listPrefix := prefix
 		// execute the things!
 		generator.Run(func(input chan string, output chan stress.Result) {
 			ctx := cmd.Context()

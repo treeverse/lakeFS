@@ -89,7 +89,7 @@ func printDiffBranch(ctx context.Context, client apigen.ClientWithResponsesInter
 	pageSize := pageSize(minDiffPageSize)
 	for {
 		resp, err := client.DiffBranchWithResponse(ctx, repository, branch, &apigen.DiffBranchParams{
-			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			After:  apiutil.Ptr(after),
 			Amount: apiutil.Ptr(apigen.PaginationAmount(pageSize)),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)

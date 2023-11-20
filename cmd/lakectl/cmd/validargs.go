@@ -28,7 +28,7 @@ func validRepositoryToComplete(ctx context.Context, toComplete string) ([]string
 	var prefix apigen.PaginationPrefix
 	if strings.HasPrefix(toComplete, uriPrefix) {
 		if !strings.Contains(toComplete[len(uriPrefix):], uri.PathSeparator) {
-			prefix = apigen.PaginationPrefix(toComplete[len(uriPrefix):])
+			prefix = toComplete[len(uriPrefix):]
 		}
 	}
 
@@ -41,7 +41,7 @@ func validRepositoryToComplete(ctx context.Context, toComplete string) ([]string
 	for {
 		params := &apigen.ListRepositoriesParams{
 			Prefix: &prefix,
-			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			After:  apiutil.Ptr(after),
 		}
 		resp, err := clt.ListRepositoriesWithResponse(ctx, params)
 		result := resp.JSON200
