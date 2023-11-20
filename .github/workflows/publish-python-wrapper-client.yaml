@@ -34,6 +34,7 @@ jobs:
         verbose: true
 
     - name: Extract docs version
+      working-directory: ./clients/python-wrapper/
       shell: bash
       run: |
           echo "tag=$(python setup.py --version)" >> $GITHUB_OUTPUT
@@ -47,6 +48,7 @@ jobs:
     - name: Generate and Build Documentation
       working-directory: ./clients/python-wrapper/
       run: |
+        echo ${{ steps.docver.outputs.tag }}
         pip install -r requirements.txt 
         sphinx-apidoc -o docs lakefs sphinx-apidoc --full -A 'Treeverse' -e
         sphinx-build -b html docs docs/_build/${{ steps.docver.outputs.tag }}
