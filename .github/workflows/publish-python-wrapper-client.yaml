@@ -48,7 +48,7 @@ jobs:
       working-directory: ./clients/python-wrapper/
       run: |
         pip install -r requirements.txt 
-        sphinx-apidoc -o clients/python-wrapper/docs clients/python-wrapper/lakefs sphinx-apidoc --full -A 'Treeverse' -e
+        sphinx-apidoc -o docs lakefs sphinx-apidoc --full -A 'Treeverse' -e
         sphinx-build -b html docs docs/_build
 
     - name: Publish to Docs Repository
