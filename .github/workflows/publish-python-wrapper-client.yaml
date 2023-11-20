@@ -39,12 +39,19 @@ jobs:
           echo "tag=$(python setup.py --version)" >> $GITHUB_OUTPUT
       id: docver
 
-    - name: Generate documentation 
-      uses: ammaraskar/sphinx-action@master
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4
       with:
-        docs-folder: "clients/python-wrapper/docs/"
-        pre-build-command: "pip install sphinx sphinx-autodoc-typehints && sphinx-apidoc -o . ../lakefs sphinx-apidoc --full -A 'Treeverse' -e"
-        build-command: "sphinx-build . -b html"
+        python-version: 3.9
+
+    - name: Generate documentation 
+      run: |
+        pip install sphinx sphinx-autodoc-typehints 
+        sphinx-apidoc -o clients/python-wrapper/docs clients/python-wrapper/lakefs sphinx-apidoc --full -A 'Treeverse' -e
+        
+    - name: Publish to docs repository
+      working-directory: ./clients/python-wrapper/docs
+      run: make html
 
     - name: Publish to docs repository
       uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
