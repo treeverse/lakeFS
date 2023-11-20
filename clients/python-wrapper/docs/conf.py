@@ -22,7 +22,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
-    'sphinx_markdown_builder',
+    'sphinx_autodoc_typehints',
 ]
 
 templates_path = ['_templates']
@@ -50,6 +50,3 @@ def skip(app, what, name, obj, would_skip, options):
 
 def setup(app):
     app.connect('autodoc-skip-member', skip)
-
-
-extensions.append('sphinx_autodoc_typehints')

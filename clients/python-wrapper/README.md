@@ -36,7 +36,7 @@ Inside the `tests` folder, execute `pytest utests` to run the unit tests.
 
 #### Integration Tests
 
-See [documentation](tests/integration/README.md) for more information
+See [documentation](https://github.com/treeverse/lakeFS/blob/master/clients/python-wrapper/tests/integration/README.md) for more information
 
 ## Getting Started
 
@@ -66,7 +66,8 @@ main_branch = repo.create(storage_namespace="<storage_namespace>").branch(branch
 
 ## Documentation
 
-[index](docs/index.md)
+[//]: # (Add link to documentation site)
+[index](https://pypi.org/project/lakefs/) 
 
 ## Author
 
