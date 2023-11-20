@@ -27,7 +27,7 @@ def test_branch_creation():
     assert branch.id == "test_branch"
 
 
-def test_branch_creation_call(monkeypatch):
+def test_branch_create(monkeypatch):
     branch = get_test_branch()
     source = "main"
     with monkeypatch.context():
@@ -41,7 +41,7 @@ def test_branch_creation_call(monkeypatch):
         branch.create(source)
 
 
-def test_branch_creation_already_exists(monkeypatch):
+def test_branch_create_already_exists(monkeypatch):
     branch = get_test_branch()
     source = "main"
     ex = lakefs_sdk.exceptions.ApiException(status=http.HTTPStatus.CONFLICT.value)
@@ -119,13 +119,24 @@ def test_branch_delete(monkeypatch):
 def test_branch_revert(monkeypatch):
     branch = get_test_branch()
     ref_id = "ab1234"
-    parent_number = 0
+    expected_parent = 0
     with monkeypatch.context():
         def monkey_revert_branch(repo_name, branch_name, revert_branch_creation, *_):
             assert repo_name == branch.repo_id
             assert branch_name == branch.id
             assert revert_branch_creation.ref == ref_id
-            assert revert_branch_creation.parent_number == parent_number
+            assert revert_branch_creation.parent_number == expected_parent  # default value
 
+        # Test default parent number
         monkeypatch.setattr(branch._client.sdk_client.branches_api, "revert_branch", monkey_revert_branch)
-        branch.revert(ref_id, parent_number)
+        branch.revert(ref_id)
+        expected_parent = 2
+        # Test set parent number
+        branch.revert(ref_id, 2)
+
+        # Test set invalid parent number
+        try:
+            branch.revert(ref_id, 0)
+            assert 0, "Exception expected"
+        except ValueError:
+            pass
