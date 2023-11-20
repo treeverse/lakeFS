@@ -10,7 +10,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
-	"github.com/getkin/kin-openapi/routers/legacy"
+	"github.com/getkin/kin-openapi/routers/gorillamux"
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -36,7 +36,7 @@ func extractSecurityRequirements(router routers.Router, r *http.Request) (openap
 		return nil, err
 	}
 	if route.Operation.Security == nil {
-		return route.Swagger.Security, nil
+		return route.Spec.Security, nil
 	}
 	return *route.Operation.Security, nil
 }
@@ -79,8 +79,8 @@ func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticat
 	}, nil
 }
 
-func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig) func(next http.Handler) http.Handler {
-	router, err := legacy.NewRouter(swagger)
+func AuthMiddleware(logger logging.Logger, swagger *openapi3.T, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig) func(next http.Handler) http.Handler {
+	router, err := gorillamux.NewRouter(swagger)
 	if err != nil {
 		panic(err)
 	}
