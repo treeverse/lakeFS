@@ -37,8 +37,8 @@ class HookRun(BaseModel):
     @validator('status')
     def status_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in ('failed', 'completed'):
-            raise ValueError("must be one of enum values ('failed', 'completed')")
+        if value not in ('failed', 'skipped', 'completed'):
+            raise ValueError("must be one of enum values ('failed', 'skipped', 'completed')")
         return value
 
     class Config:

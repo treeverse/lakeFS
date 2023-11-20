@@ -58,6 +58,7 @@ class HookRun(ModelNormal):
     allowed_values = {
         ('status',): {
             'FAILED': "failed",
+            'SKIPPED': "skipped",
             'COMPLETED': "completed",
         },
     }

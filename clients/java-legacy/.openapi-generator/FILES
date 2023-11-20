@@ -57,8 +57,6 @@ docs/LoginConfig.md
 docs/LoginInformation.md
 docs/Merge.md
 docs/MergeResult.md
-docs/MetaRangeCreation.md
-docs/MetaRangeCreationResponse.md
 docs/MetadataApi.md
 docs/OTFDiffs.md
 docs/ObjectCopyCreation.md
@@ -103,7 +101,6 @@ docs/TagCreation.md
 docs/TagsApi.md
 docs/TaskInfo.md
 docs/UnderlyingObjectProperties.md
-docs/UpdateToken.md
 docs/User.md
 docs/UserCreation.md
 docs/UserList.md
@@ -192,8 +189,6 @@ src/main/java/io/lakefs/clients/api/model/LoginConfig.java
 src/main/java/io/lakefs/clients/api/model/LoginInformation.java
 src/main/java/io/lakefs/clients/api/model/Merge.java
 src/main/java/io/lakefs/clients/api/model/MergeResult.java
-src/main/java/io/lakefs/clients/api/model/MetaRangeCreation.java
-src/main/java/io/lakefs/clients/api/model/MetaRangeCreationResponse.java
 src/main/java/io/lakefs/clients/api/model/OTFDiffs.java
 src/main/java/io/lakefs/clients/api/model/ObjectCopyCreation.java
 src/main/java/io/lakefs/clients/api/model/ObjectError.java
@@ -232,7 +227,6 @@ src/main/java/io/lakefs/clients/api/model/StorageURI.java
 src/main/java/io/lakefs/clients/api/model/TagCreation.java
 src/main/java/io/lakefs/clients/api/model/TaskInfo.java
 src/main/java/io/lakefs/clients/api/model/UnderlyingObjectProperties.java
-src/main/java/io/lakefs/clients/api/model/UpdateToken.java
 src/main/java/io/lakefs/clients/api/model/User.java
 src/main/java/io/lakefs/clients/api/model/UserCreation.java
 src/main/java/io/lakefs/clients/api/model/UserList.java
@@ -295,8 +289,6 @@ src/test/java/io/lakefs/clients/api/model/LoginConfigTest.java
 src/test/java/io/lakefs/clients/api/model/LoginInformationTest.java
 src/test/java/io/lakefs/clients/api/model/MergeResultTest.java
 src/test/java/io/lakefs/clients/api/model/MergeTest.java
-src/test/java/io/lakefs/clients/api/model/MetaRangeCreationResponseTest.java
-src/test/java/io/lakefs/clients/api/model/MetaRangeCreationTest.java
 src/test/java/io/lakefs/clients/api/model/OTFDiffsTest.java
 src/test/java/io/lakefs/clients/api/model/ObjectCopyCreationTest.java
 src/test/java/io/lakefs/clients/api/model/ObjectErrorListTest.java
@@ -335,7 +327,6 @@ src/test/java/io/lakefs/clients/api/model/StorageURITest.java
 src/test/java/io/lakefs/clients/api/model/TagCreationTest.java
 src/test/java/io/lakefs/clients/api/model/TaskInfoTest.java
 src/test/java/io/lakefs/clients/api/model/UnderlyingObjectPropertiesTest.java
-src/test/java/io/lakefs/clients/api/model/UpdateTokenTest.java
 src/test/java/io/lakefs/clients/api/model/UserCreationTest.java
 src/test/java/io/lakefs/clients/api/model/UserListTest.java
 src/test/java/io/lakefs/clients/api/model/UserTest.java

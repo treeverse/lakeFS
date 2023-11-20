@@ -52,8 +52,6 @@ from lakefs_client.model.login_config import LoginConfig
 from lakefs_client.model.login_information import LoginInformation
 from lakefs_client.model.merge import Merge
 from lakefs_client.model.merge_result import MergeResult
-from lakefs_client.model.meta_range_creation import MetaRangeCreation
-from lakefs_client.model.meta_range_creation_response import MetaRangeCreationResponse
 from lakefs_client.model.otf_diffs import OTFDiffs
 from lakefs_client.model.object_copy_creation import ObjectCopyCreation
 from lakefs_client.model.object_error import ObjectError
@@ -94,7 +92,6 @@ from lakefs_client.model.storage_uri import StorageURI
 from lakefs_client.model.tag_creation import TagCreation
 from lakefs_client.model.task_info import TaskInfo
 from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties
-from lakefs_client.model.update_token import UpdateToken
 from lakefs_client.model.user import User
 from lakefs_client.model.user_creation import UserCreation
 from lakefs_client.model.user_list import UserList

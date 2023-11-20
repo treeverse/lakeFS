@@ -135,8 +135,6 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.LoginInformation.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.Merge.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.MergeResult.CustomTypeAdapterFactory());
-        gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.MetaRangeCreation.CustomTypeAdapterFactory());
-        gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.MetaRangeCreationResponse.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.OTFDiffs.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.ObjectCopyCreation.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.ObjectError.CustomTypeAdapterFactory());
@@ -175,7 +173,6 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.TagCreation.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.TaskInfo.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.UnderlyingObjectProperties.CustomTypeAdapterFactory());
-        gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.UpdateToken.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.User.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.UserCreation.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.UserList.CustomTypeAdapterFactory());

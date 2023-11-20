@@ -51,8 +51,6 @@ docs/LoginConfig.md
 docs/LoginInformation.md
 docs/Merge.md
 docs/MergeResult.md
-docs/MetaRangeCreation.md
-docs/MetaRangeCreationResponse.md
 docs/MetadataApi.md
 docs/OTFDiffs.md
 docs/ObjectCopyCreation.md
@@ -97,7 +95,6 @@ docs/TagCreation.md
 docs/TagsApi.md
 docs/TaskInfo.md
 docs/UnderlyingObjectProperties.md
-docs/UpdateToken.md
 docs/User.md
 docs/UserCreation.md
 docs/UserList.md
@@ -167,8 +164,6 @@ lakefs_sdk/models/login_config.py
 lakefs_sdk/models/login_information.py
 lakefs_sdk/models/merge.py
 lakefs_sdk/models/merge_result.py
-lakefs_sdk/models/meta_range_creation.py
-lakefs_sdk/models/meta_range_creation_response.py
 lakefs_sdk/models/object_copy_creation.py
 lakefs_sdk/models/object_error.py
 lakefs_sdk/models/object_error_list.py
@@ -207,7 +202,6 @@ lakefs_sdk/models/storage_uri.py
 lakefs_sdk/models/tag_creation.py
 lakefs_sdk/models/task_info.py
 lakefs_sdk/models/underlying_object_properties.py
-lakefs_sdk/models/update_token.py
 lakefs_sdk/models/user.py
 lakefs_sdk/models/user_creation.py
 lakefs_sdk/models/user_list.py
@@ -271,8 +265,6 @@ test/test_login_config.py
 test/test_login_information.py
 test/test_merge.py
 test/test_merge_result.py
-test/test_meta_range_creation.py
-test/test_meta_range_creation_response.py
 test/test_metadata_api.py
 test/test_object_copy_creation.py
 test/test_object_error.py
@@ -317,7 +309,6 @@ test/test_tag_creation.py
 test/test_tags_api.py
 test/test_task_info.py
 test/test_underlying_object_properties.py
-test/test_update_token.py
 test/test_user.py
 test/test_user_creation.py
 test/test_user_list.py

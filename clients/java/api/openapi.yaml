@@ -201,7 +201,8 @@ paths:
     get:
       operationId: listUsers
       parameters:
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -209,7 +210,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -217,7 +219,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -381,7 +384,8 @@ paths:
     get:
       operationId: listGroups
       parameters:
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -389,7 +393,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -397,7 +402,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -555,7 +561,8 @@ paths:
     get:
       operationId: listPolicies
       parameters:
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -563,7 +570,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -571,7 +579,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -797,7 +806,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -805,7 +815,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -813,7 +824,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -949,7 +961,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -957,7 +970,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -965,7 +979,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -1152,7 +1167,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1160,7 +1176,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1168,7 +1185,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -1221,7 +1239,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1229,7 +1248,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1237,7 +1257,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -1389,7 +1410,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1397,7 +1419,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1405,7 +1428,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -1626,7 +1650,8 @@ paths:
     get:
       operationId: listRepositories
       parameters:
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1634,7 +1659,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1642,7 +1668,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -2522,7 +2549,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -2530,7 +2558,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -2538,7 +2567,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -2744,7 +2774,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -2752,7 +2783,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -2760,7 +2792,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -2880,7 +2913,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -2888,7 +2922,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -2899,7 +2934,8 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - description: "list of paths, each element is a path of a specific object"
+      - allowEmptyValue: true
+        description: "list of paths, each element is a path of a specific object"
         explode: true
         in: query
         name: objects
@@ -2909,7 +2945,8 @@ paths:
             type: string
           type: array
         style: form
-      - description: "list of paths, each element is a path of a prefix"
+      - allowEmptyValue: true
+        description: "list of paths, each element is a path of a prefix"
         explode: true
         in: query
         name: prefixes
@@ -2919,7 +2956,8 @@ paths:
             type: string
           type: array
         style: form
-      - description: limit the number of items in return to 'amount'. Without further
+      - allowEmptyValue: true
+        description: limit the number of items in return to 'amount'. Without further
           indication on actual number of items.
         explode: true
         in: query
@@ -2928,7 +2966,8 @@ paths:
         schema:
           type: boolean
         style: form
-      - description: "if set to true, follow only the first parent upon reaching a\
+      - allowEmptyValue: true
+        description: "if set to true, follow only the first parent upon reaching a\
           \ merge commit"
         explode: true
         in: query
@@ -2937,7 +2976,8 @@ paths:
         schema:
           type: boolean
         style: form
-      - description: Show commits more recent than a specific date-time
+      - allowEmptyValue: true
+        description: Show commits more recent than a specific date-time
         explode: true
         in: query
         name: since
@@ -2996,7 +3036,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: The source metarange to commit. Branch must not have uncommitted
+      - allowEmptyValue: true
+        description: The source metarange to commit. Branch must not have uncommitted
           changes.
         explode: true
         in: query
@@ -3500,7 +3541,8 @@ paths:
     get:
       operationId: diffBranch
       parameters:
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -3508,7 +3550,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -3519,7 +3562,8 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -3527,7 +3571,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: delimiter used to group common prefixes by
+      - allowEmptyValue: true
+        description: delimiter used to group common prefixes by
         explode: true
         in: query
         name: delimiter
@@ -3608,7 +3653,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -3616,7 +3662,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -3627,7 +3674,8 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -3635,7 +3683,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: delimiter used to group common prefixes by
+      - allowEmptyValue: true
+        description: delimiter used to group common prefixes by
         explode: true
         in: query
         name: delimiter
@@ -3643,7 +3692,8 @@ paths:
         schema:
           type: string
         style: form
-      - explode: true
+      - allowEmptyValue: true
+        explode: true
         in: query
         name: type
         required: false
@@ -3771,7 +3821,8 @@ paths:
           pattern: "^bytes=((\\d*-\\d*,? ?)+)$"
           type: string
         style: simple
-      - explode: true
+      - allowEmptyValue: true
+        explode: true
         in: query
         name: presign
         required: false
@@ -4000,7 +4051,8 @@ paths:
         schema:
           type: string
         style: form
-      - explode: true
+      - allowEmptyValue: true
+        explode: true
         in: query
         name: presign
         required: false
@@ -4906,7 +4958,8 @@ paths:
         schema:
           type: boolean
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -4914,7 +4967,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -4925,7 +4979,8 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - description: delimiter used to group common prefixes by
+      - allowEmptyValue: true
+        description: delimiter used to group common prefixes by
         explode: true
         in: query
         name: delimiter
@@ -4933,7 +4988,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -5040,7 +5096,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -5048,7 +5105,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -5171,7 +5229,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -5179,7 +5238,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: how many items to return
+      - allowEmptyValue: true
+        description: how many items to return
         explode: true
         in: query
         name: amount
@@ -5957,6 +6017,7 @@ paths:
 components:
   parameters:
     PaginationPrefix:
+      allowEmptyValue: true
       description: return items prefixed with this value
       explode: true
       in: query
@@ -5966,6 +6027,7 @@ components:
         type: string
       style: form
     PaginationAfter:
+      allowEmptyValue: true
       description: return items after this value
       explode: true
       in: query
@@ -5975,6 +6037,7 @@ components:
         type: string
       style: form
     PaginationAmount:
+      allowEmptyValue: true
       description: how many items to return
       explode: true
       in: query
@@ -5987,6 +6050,7 @@ components:
         type: integer
       style: form
     PaginationDelimiter:
+      allowEmptyValue: true
       description: delimiter used to group common prefixes by
       explode: true
       in: query
@@ -7513,6 +7577,7 @@ components:
         status:
           enum:
           - failed
+          - skipped
           - completed
           type: string
       required:
@@ -7829,29 +7894,6 @@ components:
           type: string
       required:
       - id
-      type: object
-    MetaRangeCreation:
-      properties:
-        ranges:
-          items:
-            $ref: '#/components/schemas/RangeMetadata'
-          minItems: 1
-          type: array
-      required:
-      - ranges
-      type: object
-    MetaRangeCreationResponse:
-      properties:
-        id:
-          description: The id of the created metarange
-          type: string
-      type: object
-    UpdateToken:
-      properties:
-        staging_token:
-          type: string
-      required:
-      - staging_token
       type: object
     StatsEvent:
       example:

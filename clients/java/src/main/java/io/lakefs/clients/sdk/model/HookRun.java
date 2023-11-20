@@ -80,6 +80,8 @@ public class HookRun {
   public enum StatusEnum {
     FAILED("failed"),
     
+    SKIPPED("skipped"),
+    
     COMPLETED("completed");
 
     private String value;

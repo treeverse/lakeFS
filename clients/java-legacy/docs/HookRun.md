@@ -21,6 +21,7 @@ Name | Type | Description | Notes
 Name | Value
 ---- | -----
 FAILED | &quot;failed&quot;
+SKIPPED | &quot;skipped&quot;
 COMPLETED | &quot;completed&quot;
 
 
