@@ -38,3 +38,5 @@ linters-settings:
   gomnd:
     ignored-files:
       - 'pkg/actions/lua/.*'
+  goconst:
+    min-len: 20
