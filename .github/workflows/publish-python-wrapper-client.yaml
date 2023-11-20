@@ -43,8 +43,8 @@ jobs:
       uses: ammaraskar/sphinx-action@master
       with:
         docs-folder: "clients/python-wrapper/docs/"
-        pre-build-command: "pip install sphinx-autodoc-typehints && sphinx-apidoc -o . ../lakefs sphinx-apidoc --full -A 'Treeverse' -e"
-        build-command: "sphinx-build -b html"
+        pre-build-command: "pip install sphinx sphinx-autodoc-typehints && sphinx-apidoc -o . ../lakefs sphinx-apidoc --full -A 'Treeverse' -e"
+        build-command: "sphinx-build . -b html"
 
     - name: Publish to docs repository
       uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
