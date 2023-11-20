@@ -56,7 +56,7 @@ jobs:
       env:
         API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
       with:
-        source_file: clients/python-wrapper/docs/_build/. 
+        source_file: clients/python-wrapper/docs/_build/. clients/python-wrapper/README.md 
         destination_repo: treeverse/docs-lakefs-sdk-python-wrapper
         destination_folder: /
         user_email: 'support@treeverse.io'
