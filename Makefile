@@ -300,7 +300,8 @@ python-wrapper-lint:
 	pylint clients/python-wrapper/lakefs --rc=clients/python-wrapper/lakefs/.pylintrc
 
 python-wrapper-gen-docs: validate-python-wrapper
-	sphinx-multiversion -b html clients/python-wrapper/docs clients/python-wrapper/_site/
+	sphinx-build -b html clients/python-wrapper/docs clients/python-wrapper/_site/
+	sphinx-build -b html clients/python-wrapper/docs clients/python-wrapper/_site/$$(python clients/python-wrapper/setup.py --version)
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
