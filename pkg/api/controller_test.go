@@ -357,8 +357,8 @@ func TestController_LogCommitsParallelHandler(t *testing.T) {
 	}
 
 	var g multierror.Group
-	for path, logRef := range commitsToLook {
-		objects := []string{path}
+	for objPath, logRef := range commitsToLook {
+		objects := []string{objPath}
 		params := &apigen.LogCommitsParams{Objects: &objects}
 		log := logRef
 		g.Go(func() error {
@@ -1452,10 +1452,10 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		if len(reference) == 0 {
 			t.Fatalf("branch %s creation got no reference", newBranchName)
 		}
-		const path = "some/path"
+		const objPath = "some/path"
 		const content = "hello world!"
 
-		uploadResp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(content), repo, newBranchName)
+		uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(content), repo, newBranchName)
 		verifyResponseOK(t, uploadResp, err)
 
 		if _, err := deps.catalog.Commit(ctx, repo, "main2", "commit 1", "some_user", nil, nil, nil); err != nil {
@@ -1467,7 +1467,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		if len(results) != 1 {
 			t.Fatalf("unexpected length of results: %d", len(results))
 		}
-		if results[0].Path != path {
+		if results[0].Path != objPath {
 			t.Fatalf("wrong result: %s", results[0].Path)
 		}
 	})
@@ -1581,8 +1581,8 @@ func TestController_DiffRefsHandler(t *testing.T) {
 			t.Fatalf("branch %s creation got no reference", newBranchName)
 		}
 		const prefix = "some/"
-		const path = "path"
-		const fullPath = prefix + path
+		const objPath = "path"
+		const fullPath = prefix + objPath
 		const content = "hello world!"
 
 		uploadResp, err := uploadObjectHelper(t, ctx, clt, fullPath, strings.NewReader(content), repoName, newBranchName)
@@ -3814,8 +3814,8 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		testutil.Must(t, err)
 		const items = 3
 		for i := 0; i < items; i++ {
-			path := fmt.Sprintf("uncommitted/obj%d", i)
-			uploadResp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(path), repo, "main")
+			objPath := fmt.Sprintf("uncommitted/obj%d", i)
+			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
 		}
 		verifyPrepareGarbageCollection(t, repo, 1, true)
@@ -3827,8 +3827,8 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		testutil.Must(t, err)
 		const items = 3
 		for i := 0; i < items; i++ {
-			path := fmt.Sprintf("committed/obj%d", i)
-			uploadResp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(path), repo, "main")
+			objPath := fmt.Sprintf("committed/obj%d", i)
+			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
 		}
 		if _, err := deps.catalog.Commit(ctx, repo, "main", "committed objects", "some_user", nil, nil, nil); err != nil {
@@ -3843,14 +3843,14 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		testutil.Must(t, err)
 		const items = 3
 		for i := 0; i < items; i++ {
-			path := fmt.Sprintf("uncommitted/obj%d", i)
-			uploadResp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(path), repo, "main")
+			objPath := fmt.Sprintf("uncommitted/obj%d", i)
+			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
 
 			copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "main",
 				&apigen.CopyObjectParams{DestPath: fmt.Sprintf("copy/obj%d", i)},
 				apigen.CopyObjectJSONRequestBody{
-					SrcPath: path,
+					SrcPath: objPath,
 				})
 			verifyResponseOK(t, copyResp, err)
 		}
