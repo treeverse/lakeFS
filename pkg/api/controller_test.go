@@ -1841,6 +1841,27 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Run("object_stat_no_metadata", func(t *testing.T) {
+		const objPath = "foo/bar-no-metadata"
+		entry := catalog.DBEntry{
+			Path:            objPath,
+			PhysicalAddress: "this_is_bars_address",
+			CreationDate:    time.Now(),
+			Size:            666,
+			Checksum:        "this_is_a_checksum",
+		}
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", entry))
+
+		resp, err := clt.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: objPath})
+		verifyResponseOK(t, resp, err)
+		if resp.JSON200 == nil {
+			t.Fatalf("expected to get back object stats, got status %s", resp.Status())
+		}
+		if resp.JSON200.Metadata == nil {
+			t.Fatal("expected to not get back empty user-defined metadata, got nil")
+		}
+	})
+
 	t.Run("get object stats", func(t *testing.T) {
 		entry := catalog.DBEntry{
 			Path:            "foo/bar",
@@ -1879,8 +1900,8 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 		resp, err = clt.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: "foo/bar", UserMetadata: &getUserMetadata})
 		verifyResponseOK(t, resp, err)
 		objectStatsNoMetadata := resp.JSON200
-		if objectStatsNoMetadata.Metadata != nil {
-			t.Fatalf("expected to not get back user-defined metadata, got %+v", objectStatsNoMetadata.Metadata.AdditionalProperties)
+		if objectStatsNoMetadata.Metadata == nil || len(objectStatsNoMetadata.Metadata.AdditionalProperties) != 0 {
+			t.Fatalf("expected to not get back empty user-defined metadata, got %+v", objectStatsNoMetadata.Metadata.AdditionalProperties)
 		}
 	})
 

@@ -4023,9 +4023,16 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		SizeBytes:       swag.Int64(entry.Size),
 		ContentType:     swag.String(entry.ContentType),
 	}
+
+	// add metadata if requested
+	var metadata map[string]string
 	if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
-		objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
+		metadata = entry.Metadata
+	} else {
+		metadata = map[string]string{}
 	}
+	objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: metadata}
+
 	code := http.StatusOK
 	if entry.Expired {
 		code = http.StatusGone
