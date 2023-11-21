@@ -28,6 +28,7 @@ To run the tests using `pytest`, first clone the lakeFS git repository
 
 ```sh
 git clone https://github.com/treeverse/lakeFS.git
+cd lakefs/clients/python-wrapper
 ```
 
 #### Unit Tests
@@ -52,11 +53,11 @@ from lakefs.client import Client, init
 repo = lakefs.Repository(repository_id="my-repo")
 
 # Alternatively, provide explicit credentials and call client init method, which will initialize the default client
-init(username="<my_username>", password="<my_password>", host="<lakefs_host>")
+init(username="<lakefs_access_key_id>", password="<lakefs_secret_access_key>", host="<lakefs_endpoint>")
 repo = lakefs.Repository(repository_id="my-repo")
 
 # Or explicitly initialize and provide a Client object 
-clt = Client(username="<my_username>", password="<my_password>", host="<lakefs_host>")
+clt = Client(username="<lakefs_access_key_id>", password="<lakefs_secret_access_key>", host="<lakefs_endpoint>")
 repo = lakefs.Repository(repository_id="my-repo", client=clt)
 
 # From this point, proceed using the package according to documentation
