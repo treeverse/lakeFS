@@ -67,7 +67,7 @@ main_branch = repo.create(storage_namespace="<storage_namespace>").branch(branch
 
 ## Documentation
 
-[//]: # (Add link to documentation site)
+[//]: # (TODO: Add link to documentation site)
 [index](https://pypi.org/project/lakefs/) 
 
 ## Author

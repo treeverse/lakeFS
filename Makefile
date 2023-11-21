@@ -290,7 +290,8 @@ validate-client-java:
 	git diff --quiet -- clients/java || (echo "Modification verification failed! java client"; false)
 
 validate-python-wrapper:
-	sphinx-apidoc -o clients/python-wrapper/docs clients/python-wrapper/lakefs sphinx-apidoc --full -A 'Treeverse' -eq && git diff --quiet -- clients/python-wrapper || (echo 'Modification verification failed! python wrapper client'; false)
+	sphinx-apidoc -o clients/python-wrapper/docs clients/python-wrapper/lakefs sphinx-apidoc --full -A 'Treeverse' -eq
+	git diff --quiet -- clients/python-wrapper || (echo 'Modification verification failed! python wrapper client'; false)
 
 # Run all validation/linting steps
 checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference validate-mockgen validate-permissions-gen
