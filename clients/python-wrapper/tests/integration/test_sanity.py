@@ -1,6 +1,7 @@
+from tests.integration.conftest import expect_exception_context
+
 from lakefs.exceptions import NotFoundException, ConflictException
 from lakefs.repository import RepositoryProperties
-from tests.integration.conftest import expect_exception_context
 
 
 def test_repository_sanity(storage_namespace, setup_repo):

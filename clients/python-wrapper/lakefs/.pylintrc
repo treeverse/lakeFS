@@ -10,7 +10,7 @@ max-locals=25
 max-args=10
 
 [MESSAGES CONTROL]
-disable=too-few-public-methods
+disable=too-few-public-methods, fixme
 
 [MISCELLANEOUS]
 

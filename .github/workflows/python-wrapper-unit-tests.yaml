@@ -25,10 +25,7 @@ jobs:
 
       - name: Run Pylint
         working-directory: ./clients/python-wrapper
-        run: |
-          pylint tests --rc=tests/.pylintrc
-          pylint lakefs --rc=lakefs/.pylintrc
-        continue-on-error: true  # TODO: remove once pylint errors are fixed in lakefs package
+        run: make python-wrapper-lint
       
       - name: Run Unit Tests 
         uses: pavelzw/pytest-action@v2

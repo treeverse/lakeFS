@@ -1,6 +1,6 @@
-from lakefs.repository import Repository
-
 from tests.utests.common import get_test_client
+
+from lakefs.repository import Repository
 
 
 def test_branch_creation():
