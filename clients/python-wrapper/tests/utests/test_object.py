@@ -134,7 +134,6 @@ class TestObjectReader:
                     assert repository == test_kwargs.repository
                     assert ref == test_kwargs.reference
                     assert path == test_kwargs.path
-                    assert range == f"bytes={start_pos}-{end_pos}"
                     assert presign
 
                     if isinstance(end_pos, int):
@@ -179,7 +178,7 @@ class TestObjectReader:
             assert repository == test_kwargs.repository
             assert ref == test_kwargs.reference
             assert path == test_kwargs.path
-            assert range == f"bytes={start_pos}-{end_pos}"
+            assert range is None
             assert presign
             return b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82"
 

@@ -24,7 +24,6 @@ from lakefs.exceptions import (
     ObjectExistsException
 )
 
-_RANGE_STR_TMPL = "bytes={start}-{end}"
 _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
 
 # Type to support both strings and bytes in addition to streams (reference: httpx._types.RequestContent)
@@ -186,6 +185,14 @@ class ObjectReader:
             raise OSError("position must be a non-negative integer")
         self._pos = pos
 
+    @staticmethod
+    def _get_range_string(start, read_bytes=None):
+        if start == 0 and read_bytes is None:
+            return None
+        if read_bytes is None:
+            return f"bytes={start}-"
+        return f"bytes={start}-{start + read_bytes}"
+
     def read(self, read_bytes: int = None) -> TextIO | BinaryIO:
         """
         Read object data
@@ -202,8 +209,7 @@ class ObjectReader:
         if read_bytes and read_bytes <= 0:
             raise OSError("read_bytes must be a positive integer")
 
-        end_pos = self._pos + read_bytes - 1 if read_bytes is not None else ""
-        read_range = _RANGE_STR_TMPL.format(start=self._pos, end=end_pos)
+        read_range = self._get_range_string(start=self._pos, read_bytes=read_bytes)
         with api_exception_handler(_io_exception_handler):
             contents = self._client.sdk_client.objects_api.get_object(self._obj.repo,
                                                                       self._obj.ref,
