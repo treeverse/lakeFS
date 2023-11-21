@@ -289,8 +289,15 @@ validate-python-sdk:
 validate-client-java:
 	git diff --quiet -- clients/java || (echo "Modification verification failed! java client"; false)
 
+validate-python-wrapper:
+	sphinx-apidoc -o clients/python-wrapper/docs clients/python-wrapper/lakefs sphinx-apidoc --full -A 'Treeverse' -eq && git diff --quiet -- clients/python-wrapper || (echo 'Modification verification failed! python wrapper client'; false)
+
 # Run all validation/linting steps
 checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference validate-mockgen validate-permissions-gen
+
+python-wrapper-gen-docs: validate-python-wrapper
+	sphinx-build -b html clients/python-wrapper/docs _site/
+	sphinx-build -b html clients/python-wrapper/docs _site/$$(python clients/python-wrapper/setup.py --version)
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
