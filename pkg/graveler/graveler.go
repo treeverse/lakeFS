@@ -2291,6 +2291,10 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 		parentNumber--
 	}
 
+	if err := g.checkCommitExistsInTargetBranch(ctx, repository, branchID, commitRecord); err != nil {
+		return "", err
+	}
+
 	err = g.prepareForCommitIDUpdate(ctx, repository, branchID, "revert")
 	if err != nil {
 		return "", err
@@ -2762,6 +2766,25 @@ func (g *Graveler) dereferenceCommit(ctx context.Context, repository *Repository
 		CommitID: reference.CommitID,
 		Commit:   commit,
 	}, nil
+}
+
+// checkCommitExistsInTargetBranch Checks if the commit exist in the target branch's commit list
+func (g *Graveler) checkCommitExistsInTargetBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, commitRecord *CommitRecord) error {
+	branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
+	if err != nil {
+		return fmt.Errorf("invalid branch: %w", err)
+	}
+
+	branchCommmitRecord, err := g.dereferenceCommit(ctx, repository, branch.CommitID.Ref())
+	if err != nil {
+		return fmt.Errorf("get commit from ref %s: %w", branch.CommitID.Ref(), err)
+	}
+
+	if commitRecord.CommitID != branchCommmitRecord.CommitID && !branchCommmitRecord.Parents.Contains(commitRecord.CommitID) {
+		return fmt.Errorf("invalid ref %s: %w", commitRecord.CommitID, ErrInvalidCommitID)
+	}
+
+	return nil
 }
 
 func (g *Graveler) Diff(ctx context.Context, repository *RepositoryRecord, left, right Ref) (DiffIterator, error) {

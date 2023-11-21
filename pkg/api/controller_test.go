@@ -3414,6 +3414,19 @@ func TestController_Revert(t *testing.T) {
 			t.Errorf("Revert dirty merge no parent specified was expected, got %+v", revertResp)
 		}
 	})
+
+	t.Run("other branch commit", func(t *testing.T) {
+		anotherBranch := "second"
+		_, err := deps.catalog.CreateBranch(ctx, repo, anotherBranch, "main")
+		testutil.Must(t, err)
+		testutil.MustDo(t, "create entry bar 2", deps.catalog.CreateEntry(ctx, repo, anotherBranch, catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum2"}))
+		commit, err := deps.catalog.Commit(ctx, repo, anotherBranch, "another branch commit", DefaultUserID, nil, nil, nil)
+		testutil.Must(t, err)
+		revertResp, err := clt.RevertBranchWithResponse(ctx, repo, "main", apigen.RevertBranchJSONRequestBody{Ref: commit.Reference})
+		if revertResp.JSON400 == nil {
+			t.Errorf("Revert should fail when using other branch's commit reference, got (status code: %d): %s", revertResp.StatusCode(), revertResp.Body)
+		}
+	})
 }
 
 func TestController_RevertConflict(t *testing.T) {

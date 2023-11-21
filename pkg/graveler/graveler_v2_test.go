@@ -354,25 +354,19 @@ func TestGravelerRevert(t *testing.T) {
 			Value: value1,
 		}}))
 	}
+
 	t.Run("revert successful", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
-		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
-		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit2ID)).Times(1).Return(rawRefCommit2, nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit1ID)).Times(1).Return(rawRefCommit1, nil)
-		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit4ID)).Times(1).Return(rawRefCommit4, nil)
-		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit2).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit2ID}}}, nil)
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
-		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit4).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit4ID}}}, nil)
-		test.RefManager.EXPECT().GetCommit(ctx, repository, commit2ID).Times(1).Return(&commit2, nil)
-		test.RefManager.EXPECT().GetCommit(ctx, repository, commit4ID).Times(1).Return(&commit4, nil)
-		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageNamespace, mr1ID, mr4ID, mr2ID, graveler.MergeStrategyNone).Times(1).Return(mr3ID, nil)
-		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
-			require.Equal(t, mr3ID, commit.MetaRangeID)
-			return commit3ID, nil
-		}).Times(1)
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(2).Return(&commit1, nil)
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
+		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit1ID)).Times(1).Return(rawRefCommit1, nil)
+		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
+		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
 			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				branchTest := &graveler.Branch{StagingToken: stagingToken4, CommitID: commit1ID, SealedTokens: []graveler.StagingToken{stagingToken1, stagingToken2, stagingToken3}}
@@ -383,11 +377,27 @@ func TestGravelerRevert(t *testing.T) {
 				require.Equal(t, commit3ID, updatedBranch.CommitID)
 				return nil
 			}).Times(1)
+
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
+		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit4ID)).Times(1).Return(rawRefCommit4, nil)
+		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit4).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit4ID}}}, nil)
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit4ID).Times(1).Return(&commit4, nil)
+		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit1ID)).Times(1).Return(rawRefCommit1, nil)
+		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
+		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageNamespace, mr1ID, mr4ID, mr1ID, graveler.MergeStrategyNone).Times(1).Return(mr3ID, nil)
+
+		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
+			require.Equal(t, mr3ID, commit.MetaRangeID)
+			return commit3ID, nil
+		}).Times(1)
+
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken1).Times(1)
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken2).Times(1)
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken3).Times(1)
 
-		val, err := test.Sut.Revert(ctx, repository, branch1ID, graveler.Ref(commit2ID), 0, graveler.CommitParams{})
+		val, err := test.Sut.Revert(ctx, repository, branch1ID, graveler.Ref(commit1ID), 0, graveler.CommitParams{})
 
 		require.NoError(t, err)
 		require.NotNil(t, val)
@@ -400,11 +410,14 @@ func TestGravelerRevert(t *testing.T) {
 		emptyStagingTokenCombo(test, 1)
 		dirtyStagingTokenCombo(test)
 
+		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit1ID)).Times(1).Return(rawRefCommit1, nil)
+		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
+		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit1ID)).Times(1).Return(rawRefCommit1, nil)
+		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(2).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
-		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit2ID)).Times(1).Return(rawRefCommit2, nil)
-		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit2).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit2ID}}}, nil)
-		test.RefManager.EXPECT().GetCommit(ctx, repository, commit2ID).Times(1).Return(&commit2, nil)
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
 			DoAndReturn(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				branchTest := &graveler.Branch{StagingToken: stagingToken4, CommitID: commit1ID, SealedTokens: []graveler.StagingToken{stagingToken1, stagingToken2, stagingToken3}}
@@ -413,10 +426,27 @@ func TestGravelerRevert(t *testing.T) {
 				require.Nil(t, updatedBranch)
 				return err
 			}).Times(1)
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
+
+		val, err := test.Sut.Revert(ctx, repository, branch1ID, graveler.Ref(commit1ID), 0, graveler.CommitParams{})
+
+		require.True(t, errors.Is(err, graveler.ErrDirtyBranch))
+		require.Equal(t, "", val.String())
+	})
+
+	t.Run("fail to revert", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit2ID)).Times(1).Return(rawRefCommit2, nil)
+		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit2).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit2ID}}}, nil)
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit2ID).Times(1).Return(&commit2, nil)
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
+		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit1ID)).Times(1).Return(rawRefCommit1, nil)
+		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
 
 		val, err := test.Sut.Revert(ctx, repository, branch1ID, graveler.Ref(commit2ID), 0, graveler.CommitParams{})
 
-		require.True(t, errors.Is(err, graveler.ErrDirtyBranch))
+		require.True(t, errors.Is(err, graveler.ErrInvalidCommitID))
 		require.Equal(t, "", val.String())
 	})
 }
