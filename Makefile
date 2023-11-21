@@ -299,7 +299,7 @@ python-wrapper-lint:
 	pylint clients/python-wrapper/tests --rc=clients/python-wrapper/tests/.pylintrc
 	pylint clients/python-wrapper/lakefs --rc=clients/python-wrapper/lakefs/.pylintrc
 
-python-wrapper-gen-docs: validate-python-wrapper
+python-wrapper-gen-docs:
 	sphinx-build -b html clients/python-wrapper/docs clients/python-wrapper/_site/
 	sphinx-build -b html clients/python-wrapper/docs clients/python-wrapper/_site/$$(python clients/python-wrapper/setup.py --version)
 

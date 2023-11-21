@@ -36,11 +36,7 @@ language = 'en'
 
 html_theme = 'alabaster'
 html_static_path = ['_static']
-html_sidebars = {
-    '**': [
-        'versioning.html',
-    ],
-}
+html_sidebars = {'**': ['localtoc.html', 'searchbox.html']}
 
 # -- Options for todo extension ----------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/todo.html#configuration
