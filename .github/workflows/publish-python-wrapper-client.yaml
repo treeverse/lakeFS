@@ -14,7 +14,6 @@ jobs:
       run: make package-python-wrapper
 
     - name: Publish Distribution 📦 to TestPyPI
-      continue-on-error: true
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
