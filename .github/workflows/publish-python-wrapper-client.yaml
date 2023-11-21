@@ -2,6 +2,10 @@ name: Publish Python Wrapper Client
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag/version to publish
+        required: true
 
 jobs:
   deploy:
@@ -11,7 +15,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Python Build and Make Package
-      run: make package-python-wrapper
+      run: make package-python-wrapper PACKAGE_VERSION=${{ steps.version.outputs.tag }}
 
     - name: Publish Distribution 📦 to TestPyPI
       continue-on-error: true

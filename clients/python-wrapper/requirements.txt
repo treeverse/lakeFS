@@ -9,4 +9,6 @@ urllib3~=2.0.7
 Sphinx~=7.2.6
 sphinx-autodoc-typehints~=1.25.2
 myst-parser~=2.0.0
+sphinx-multiversion~=0.2.4
+
 

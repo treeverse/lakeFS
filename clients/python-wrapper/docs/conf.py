@@ -23,9 +23,11 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
     'sphinx_autodoc_typehints',
+    'sphinx_multiversion',
 ]
 
 templates_path = ['_templates']
+
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 language = 'en'
@@ -35,6 +37,11 @@ language = 'en'
 
 html_theme = 'alabaster'
 html_static_path = ['_static']
+html_sidebars = {
+    '**': [
+        'versioning.html',
+    ],
+}
 
 # -- Options for todo extension ----------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/todo.html#configuration
@@ -50,3 +57,21 @@ def skip(app, what, name, obj, would_skip, options):
 
 def setup(app):
     app.connect('autodoc-skip-member', skip)
+
+
+# Whitelist pattern for tags (set to None to ignore all tags)
+smv_tag_whitelist = r'^python-wrapper.*$'
+
+# Whitelist pattern for branches (set to None to ignore all branches)
+smv_branch_whitelist = 'master'
+
+# Whitelist pattern for remotes (set to None to use local branches only)
+smv_remote_whitelist = None
+
+# Format for versioned output directories inside the build directory
+smv_outputdir_format = '{ref.name}'
+
+# Determines whether remote or local git branches/tags are preferred if their output dirs conflict
+smv_prefer_remote_refs = False
+
+smv_released_pattern = r'^tags/.*$'
