@@ -191,7 +191,7 @@ class ObjectReader:
             return None
         if read_bytes is None:
             return f"bytes={start}-"
-        return f"bytes={start}-{start + read_bytes}"
+        return f"bytes={start}-{start + read_bytes - 1}"
 
     def read(self, read_bytes: int = None) -> TextIO | BinaryIO:
         """
