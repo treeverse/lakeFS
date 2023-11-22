@@ -2,12 +2,9 @@ import http
 
 import lakefs_sdk
 
-from lakefs.repository import Repository
-from lakefs.reference import Reference
-from lakefs.branch import Branch
-from lakefs.exceptions import ConflictException
-from tests.utests.common import get_test_repo, TEST_REPO_ARGS
 from tests.utests.common import get_test_client
+from lakefs.repository import Repository
+from lakefs.exceptions import ConflictException
 
 
 def get_test_branch():
@@ -46,7 +43,7 @@ def test_branch_create_already_exists(monkeypatch):
     source = "main"
     ex = lakefs_sdk.exceptions.ApiException(status=http.HTTPStatus.CONFLICT.value)
 
-    with (monkeypatch.context()):
+    with monkeypatch.context():
         def monkey_create_branch(_self, repo_name, branch_creation, *_):
             raise ex
 
