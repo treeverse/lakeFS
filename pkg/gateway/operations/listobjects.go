@@ -353,9 +353,9 @@ func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, 
 	// parse request parameters
 	// GET /example?list-type=2&prefix=main%2F&delimiter=%2F&encoding-type=url HTTP/1.1
 
-	// handle GET /?versioning
+	// handle GET /?versions
 	query := req.URL.Query()
-	if _, found := query["versioning"]; found {
+	if _, found := query["versions"]; found {
 		o.EncodeXMLBytes(w, req, []byte(serde.VersioningResponse), http.StatusOK)
 		return
 	}
