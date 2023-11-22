@@ -24,7 +24,6 @@ jobs:
         run: pip install -r requirements.txt pylint pytest pytest-md pytest-emoji
 
       - name: Run Pylint
-        working-directory: ./clients/python-wrapper
         run: make python-wrapper-lint
       
       - name: Run Unit Tests 

@@ -2,9 +2,9 @@ from typing import get_args
 
 import pytest
 
+from tests.integration.conftest import expect_exception_context
 from lakefs.exceptions import ObjectExistsException, InvalidRangeException
 from lakefs.object import WriteableObject, WriteModes, OpenModes
-from tests.integration.conftest import expect_exception_context
 
 
 def test_object_read_seek(setup_repo):
