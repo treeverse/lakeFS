@@ -14,23 +14,23 @@ def test_object_read_seek(setup_repo):
         data=data)
 
     with obj.open() as fd:
-        assert fd.read(read_bytes=2 * len(data)) == data
+        assert fd.read(2 * len(data)) == data
         fd.seek(2)
 
-        assert fd.read(read_bytes=5) == data[2:7]
+        assert fd.read(5) == data[2:7]
 
         assert fd.read() == data[7:]
 
         # This should raise an exception
         with expect_exception_context(InvalidRangeException):
-            fd.read(read_bytes=1)
+            fd.read(1)
 
         fd.seek(0)
         for c in data:
-            assert fd.read(read_bytes=1) == c
+            assert fd.read(1) == c
         # This should raise an exception
         with expect_exception_context(InvalidRangeException):
-            fd.read(read_bytes=1)
+            fd.read(1)
 
 
 def test_object_create_exists(setup_repo):
