@@ -61,7 +61,7 @@ def test_repository_creation_already_exists(monkeypatch):
         repo.create(storage_namespace=TEST_REPO_ARGS.storage_namespace,
                     default_branch=TEST_REPO_ARGS.default_branch,
                     include_samples=TEST_REPO_ARGS.sample_data)
-        assert 0, "Exception expected"
+        assert False, "Exception expected"
     except ConflictException:
         pass
 
@@ -71,7 +71,7 @@ def test_repository_creation_already_exists(monkeypatch):
         repo.create(storage_namespace=TEST_REPO_ARGS.storage_namespace,
                     default_branch=TEST_REPO_ARGS.default_branch,
                     include_samples=TEST_REPO_ARGS.sample_data)
-        assert 0, "Exception expected"
+        assert False, "Exception expected"
     except NotAuthorizedException:
         pass
 
@@ -92,14 +92,14 @@ def test_delete_repository(monkeypatch):
         ex = lakefs_sdk.exceptions.NotFoundException(status=http.HTTPStatus.NOT_FOUND)
         try:
             repo.delete()
-            assert 0, "Exception expected"
+            assert False, "Exception expected"
         except NotFoundException:
             pass
         # Unauthorized
         ex = lakefs_sdk.exceptions.UnauthorizedException(status=http.HTTPStatus.UNAUTHORIZED)
         try:
             repo.delete()
-            assert 0, "Exception expected"
+            assert False, "Exception expected"
         except NotAuthorizedException:
             pass
 
@@ -107,6 +107,6 @@ def test_delete_repository(monkeypatch):
         ex = lakefs_sdk.exceptions.ApiException()
         try:
             repo.delete()
-            assert 0, "Exception expected"
+            assert False, "Exception expected"
         except ServerException:
             pass
