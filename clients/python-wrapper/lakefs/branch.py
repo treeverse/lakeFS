@@ -2,12 +2,12 @@
 Module containing lakeFS branch implementation
 """
 from __future__ import annotations
+from typing import Optional
 
 import lakefs_sdk
-from typing import Optional
 from lakefs.object_io import WriteableObject
 from lakefs.object_manager import WriteableObjectManager
-from lakefs.reference import Reference, Commit
+from lakefs.reference import Reference
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 
 
@@ -114,7 +114,7 @@ class Branch(Reference):
 
     def object(self, path: str) -> WriteableObject:
         """
-        Returns a WriteableObject class representing a lakeFS writable object using the current repo id, reference and path
+        Returns a writeable object in lakeFS using the current repo id, reference id and  the given path
 
         :param path: The object's path
         """
