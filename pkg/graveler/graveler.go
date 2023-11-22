@@ -2324,6 +2324,17 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 			}
 			return nil, err
 		}
+
+		// Check if metarange is empty
+		itr, err := g.CommittedManager.Diff(ctx, repository.StorageNamespace, metaRangeID, branchCommit.MetaRangeID)
+		if err != nil {
+			return nil, err
+		}
+		defer itr.Close()
+		if !itr.Next() {
+			return nil, ErrNoChanges
+		}
+
 		commit := NewCommit()
 		commit.Committer = commitParams.Committer
 		commit.Message = commitParams.Message
