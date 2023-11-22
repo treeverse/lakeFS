@@ -2766,6 +2766,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       swag.Int64(blob.Size),
 		ContentType:     &contentType,
+		Metadata:        &apigen.ObjectUserMetadata{AdditionalProperties: meta},
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -2898,6 +2899,13 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		return
 	}
 
+	var metadata map[string]string
+	if entry.Metadata != nil {
+		metadata = entry.Metadata
+	} else {
+		metadata = map[string]string{}
+	}
+
 	response := apigen.ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
@@ -2906,6 +2914,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       swag.Int64(entry.Size),
 		ContentType:     swag.String(entry.ContentType),
+		Metadata:        &apigen.ObjectUserMetadata{AdditionalProperties: metadata},
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -4023,9 +4032,16 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		SizeBytes:       swag.Int64(entry.Size),
 		ContentType:     swag.String(entry.ContentType),
 	}
+
+	// add metadata if requested
+	var metadata map[string]string
 	if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
-		objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
+		metadata = entry.Metadata
+	} else {
+		metadata = map[string]string{}
 	}
+	objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: metadata}
+
 	code := http.StatusOK
 	if entry.Expired {
 		code = http.StatusGone
