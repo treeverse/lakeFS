@@ -130,7 +130,7 @@ class TestObjectReader:
                 start_pos = 0
                 end_pos = ""
 
-                def monkey_get_object(_, repository, ref, path, range, presign, **___):
+                def monkey_get_object(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
                     assert repository == test_kwargs.repository
                     assert ref == test_kwargs.reference
                     assert path == test_kwargs.path
