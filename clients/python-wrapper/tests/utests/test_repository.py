@@ -2,10 +2,11 @@ import http
 import time
 
 import lakefs_sdk
-from lakefs.exceptions import ServerException, NotAuthorizedException, NotFoundException, ConflictException
-from lakefs.repository import RepositoryProperties
 
 from tests.utests.common import get_test_repo, TEST_REPO_ARGS
+
+from lakefs.exceptions import ServerException, NotAuthorizedException, NotFoundException, ConflictException
+from lakefs.repository import RepositoryProperties
 
 
 def test_repository_creation(monkeypatch):

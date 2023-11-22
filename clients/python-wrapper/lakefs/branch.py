@@ -27,7 +27,7 @@ class Branch(Reference):
             return the existing branch without creating a new one
         :return: The lakeFS SDK object representing the branch
         :raises:
-            NotFoundException if repo, branch or source reference id do not exist
+            NotFoundException if repo, branch or source reference id does not exist
             ConflictException if branch already exists and exist_ok is False
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors

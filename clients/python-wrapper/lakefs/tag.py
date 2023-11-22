@@ -19,13 +19,14 @@ class Tag(Reference):
     def create(self, source_ref_id: str, exist_ok: Optional[bool] = False) -> Tag:
         """
         Create a tag from the given source_ref_id
+
         :param source_ref_id: The reference id to create the tag on
         :param exist_ok: If True returns the existing Tag reference otherwise raises exception
         :return: A lakeFS SDK Tag object
-        :raises
+        :raises:
             NotAuthorizedException if user is not authorized to perform this operation
             NotFoundException if source_ref_id doesn't exist on the lakeFS server
-            ServerException for any other errors
+            ServerException for any other errors.
         """
         tag_creation = lakefs_sdk.TagCreation(id=self.id, ref=source_ref_id)
 
@@ -42,6 +43,7 @@ class Tag(Reference):
     def delete(self) -> None:
         """
         Delete the tag from the lakeFS server
+
         :raises:
             NotAuthorizedException if user is not authorized to perform this operation
             NotFoundException if source_ref_id doesn't exist on the lakeFS server

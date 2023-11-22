@@ -2,9 +2,9 @@ import http
 
 import lakefs_sdk
 
+from tests.utests.common import get_test_client
 from lakefs.repository import Repository
 from lakefs.exceptions import ConflictException
-from tests.utests.common import get_test_client
 
 
 def get_test_branch():
