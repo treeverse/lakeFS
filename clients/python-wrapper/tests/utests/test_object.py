@@ -1,15 +1,15 @@
 import http
 from contextlib import contextmanager
 from typing import get_args
-
-import pytest
 import urllib3
 
+import pytest
+
+from tests.utests.common import get_test_client
 import lakefs_sdk.api
 from lakefs_sdk.rest import RESTResponse
 
 from lakefs.object import OpenModes
-from tests.utests.common import get_test_client
 
 
 class ObjectTestKWArgs:
@@ -172,7 +172,6 @@ class TestObjectReader:
 
                 # Read whole file
                 start_pos = 0
-                end_pos = ""
 
         def monkey_get_object(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
             assert repository == test_kwargs.repository

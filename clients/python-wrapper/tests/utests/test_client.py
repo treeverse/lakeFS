@@ -1,8 +1,6 @@
 import os
 import importlib
 
-from lakefs import config as client_config
-
 from tests.utests.common import (
     lakectl_test_config_context,
     lakectl_no_config_context,
@@ -11,6 +9,8 @@ from tests.utests.common import (
     TEST_SECRET_ACCESS_KEY,
     TEST_ENDPOINT_PATH
 )
+
+from lakefs import config as client_config
 
 TEST_CONFIG_KWARGS: dict[str, str] = {
     "username": "my_username",

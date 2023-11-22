@@ -1,8 +1,9 @@
 import time
 
+from tests.integration.conftest import expect_exception_context
 from lakefs.exceptions import NotFoundException, ConflictException, ObjectNotFoundException
 from lakefs import RepositoryProperties, WriteableObject
-from tests.integration.conftest import expect_exception_context
+
 
 
 def test_repository_sanity(storage_namespace, setup_repo):
