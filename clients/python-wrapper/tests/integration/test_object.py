@@ -2,7 +2,7 @@ from typing import get_args
 
 import pytest
 
-from tests.integration.conftest import expect_exception_context
+from tests.utests.common import expect_exception_context
 from lakefs.exceptions import ObjectExistsException, InvalidRangeException
 from lakefs.object import WriteableObject, WriteModes, OpenModes
 

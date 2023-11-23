@@ -4,8 +4,7 @@ Module containing lakeFS repository implementation
 
 from __future__ import annotations
 
-from typing import Optional, NamedTuple
-
+from typing import Optional
 import lakefs_sdk
 
 from lakefs.tag import Tag
@@ -13,11 +12,12 @@ from lakefs.branch import Branch
 from lakefs.branch_manager import BranchManager
 from lakefs.client import Client, DefaultClient
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
+from lakefs.namedtuple import LenientNamedTuple
 from lakefs.reference import Reference
 from lakefs.tag_manager import TagManager
 
 
-class RepositoryProperties(NamedTuple):
+class RepositoryProperties(LenientNamedTuple):
     """
     Represent a lakeFS repository's properties
     """

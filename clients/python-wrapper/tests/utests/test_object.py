@@ -5,7 +5,7 @@ import urllib3
 
 import pytest
 
-from tests.utests.common import get_test_client
+from tests.utests.common import get_test_client, expect_exception_context
 import lakefs_sdk.api
 from lakefs_sdk.rest import RESTResponse
 
@@ -84,11 +84,8 @@ class TestStoredObject:
             # Other exception
             monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "head_object",
                                 lambda *args: 1 / 0)
-            try:
+            with expect_exception_context(ZeroDivisionError):
                 obj.exists()
-                assert False, "Exception not raised"
-            except ZeroDivisionError:
-                pass
 
 
 class TestObjectReader:
@@ -99,11 +96,8 @@ class TestObjectReader:
                 assert fd.tell() == 0
                 fd.seek(30)
                 assert fd.tell() == 30
-                try:
+                with expect_exception_context(OSError):
                     fd.seek(-1)
-                    assert False, "expected ValueError exception"
-                except OSError:
-                    pass
 
             # Create another reader
             with obj.open() as fd:
@@ -120,11 +114,8 @@ class TestObjectReader:
                 monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "stat_object", lambda *args: object_stats)
 
                 # read negative
-                try:
+                with expect_exception_context(OSError):
                     fd.read(-1)
-                    assert False, "Expected ValueError"
-                except OSError:
-                    pass
 
                 # Read whole file
                 start_pos = 0
@@ -193,11 +184,9 @@ class TestObjectReader:
     def test_read_invalid_mode(self, monkeypatch, tmp_path):
         test_kwargs = ObjectTestKWArgs()
         with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
-            try:
+            with expect_exception_context(ValueError):
                 with obj.open(mode="invalid"):
-                    assert False, "Exception expected"
-            except ValueError:
-                pass
+                    pass
 
 
 class TestWriteableObject:
@@ -226,8 +215,5 @@ class TestWriteableObject:
     def test_create_invalid_mode(self, monkeypatch, tmp_path):
         test_kwargs = ObjectTestKWArgs()
         with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
-            try:
+            with expect_exception_context(ValueError):
                 obj.create(data="", mode="invalid")
-                assert False, "Exception expected"
-            except ValueError:
-                pass

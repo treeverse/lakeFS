@@ -3,17 +3,17 @@ Module containing lakeFS reference implementation
 """
 
 from __future__ import annotations
-from typing import Optional, Generator, NamedTuple, Literal
 
-import lakefs_sdk
+from typing import Optional, Generator, Literal
 
 from lakefs.client import Client, DefaultClient
 from lakefs.exceptions import api_exception_handler
 from lakefs.object import StoredObject
+from lakefs.namedtuple import LenientNamedTuple
 from lakefs.object_manager import ObjectManager
 
 
-class Commit(NamedTuple):
+class Commit(LenientNamedTuple):
     """
     NamedTuple representing a lakeFS commit's properties
     """
@@ -26,7 +26,7 @@ class Commit(NamedTuple):
     metadata: Optional[dict[str, str]] = None
 
 
-class Change(NamedTuple):
+class Change(LenientNamedTuple):
     """
     NamedTuple representing a diff change between two refs in lakeFS
     """
@@ -85,7 +85,7 @@ class Reference:
                     if max_amount is not None and count >= max_amount:
                         return
 
-    def log(self, max_amount: Optional[int] = None, **kwargs) -> Generator[lakefs_sdk.Commit]:
+    def log(self, max_amount: Optional[int] = None, **kwargs) -> Generator[Commit]:
         """
         Returns a generator of commits starting with this reference id
 
