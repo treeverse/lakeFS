@@ -177,6 +177,10 @@ package-python-sdk: sdk-python
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) /bin/bash -c \
 		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
 
+package-python-wrapper:
+	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c \
+		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
+
 package: package-python
 
 .PHONY: gen-api
@@ -285,8 +289,20 @@ validate-python-sdk:
 validate-client-java:
 	git diff --quiet -- clients/java || (echo "Modification verification failed! java client"; false)
 
+validate-python-wrapper:
+	sphinx-apidoc -o clients/python-wrapper/docs clients/python-wrapper/lakefs sphinx-apidoc --full -A 'Treeverse' -eq
+	git diff --quiet -- clients/python-wrapper || (echo 'Modification verification failed! python wrapper client'; false)
+
 # Run all validation/linting steps
 checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference validate-mockgen validate-permissions-gen
+
+python-wrapper-lint:
+	pylint clients/python-wrapper/tests --rc=clients/python-wrapper/tests/.pylintrc
+	pylint clients/python-wrapper/lakefs --rc=clients/python-wrapper/lakefs/.pylintrc
+
+python-wrapper-gen-docs:
+	sphinx-build -b html clients/python-wrapper/docs clients/python-wrapper/_site/
+	sphinx-build -b html clients/python-wrapper/docs clients/python-wrapper/_site/$$(python clients/python-wrapper/setup.py --version)
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install

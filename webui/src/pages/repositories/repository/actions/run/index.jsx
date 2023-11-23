@@ -1,6 +1,6 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
+import {useOutletContext} from "react-router-dom";
 
-import {RepositoryPageLayout} from "../../../../../lib/components/repository/layout";
 import {AlertError, FormattedDate, Loading, Na} from "../../../../../lib/components/controls";
 import {useRefs} from "../../../../../lib/hooks/repo";
 import {useAPI} from "../../../../../lib/hooks/api";
@@ -245,11 +245,9 @@ const ActionContainer = () => {
 }
 
 const RepositoryActionPage = () => {
-    return (
-            <RepositoryPageLayout activePage={'actions'} fluid>
-                <ActionContainer/>
-            </RepositoryPageLayout>
-    );
+    const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage('actions'), [setActivePage]);
+    return <ActionContainer/>;
 };
 
 export default RepositoryActionPage;

@@ -1,13 +1,14 @@
 """
 Module containing lakeFS repository implementation
 """
+
 from __future__ import annotations
 
 from typing import Optional
 import lakefs_sdk
 
-import lakefs.tag
-import lakefs.branch
+from lakefs.tag import Tag
+from lakefs.branch import Branch
 from lakefs.branch_manager import BranchManager
 from lakefs.client import Client, DefaultClient
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
@@ -48,13 +49,14 @@ class Repository:
                **kwargs) -> Repository:
         """
         Create a new repository in lakeFS from this object
+
         :param storage_namespace: Repository's storage namespace
         :param default_branch: The default branch for the repository. If None, use server default name
         :param include_samples: Whether to include sample data in repository creation
         :param exist_ok: If False will throw an exception if a repository by this name already exists. Otherwise,
          return the existing repository without creating a new one
         :return: The lakeFS SDK object representing the repository
-        :raises
+        :raises:
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
@@ -79,7 +81,8 @@ class Repository:
     def delete(self) -> None:
         """
         Delete repository from lakeFS server
-        :raises
+
+        :raises:
             NotFoundException if repository by this id does not exist
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
@@ -87,33 +90,33 @@ class Repository:
         with api_exception_handler():
             self._client.sdk_client.repositories_api.delete_repository(self._id)
 
-    def branch(self, branch_id: str) -> lakefs.branch.Branch:
+    def branch(self, branch_id: str) -> Branch:
         """
         Return a branch object using the current repository id and client
         :param branch_id: name of the branch
         """
-        return lakefs.branch.Branch(self._id, branch_id, self._client)
+        return Branch(self._id, branch_id, self._client)
 
     def commit(self, commit_id: str) -> Reference:
         """
         Return a reference object using the current repository id and client
         :param commit_id: id of the commit reference
         """
-        return lakefs.reference.Reference(self._id, commit_id, self._client)
+        return Reference(self._id, commit_id, self._client)
 
     def ref(self, ref_id: str) -> Reference:
         """
         Return a reference object using the current repository id and client
         :param ref_id: branch name, commit id or tag id
         """
-        return lakefs.reference.Reference(self._id, ref_id, self._client)
+        return Reference(self._id, ref_id, self._client)
 
-    def tag(self, tag_id: str) -> lakefs.tag.Tag:
+    def tag(self, tag_id: str) -> Tag:
         """
         Return a tag object using the current repository id and client
         :param tag_id: name of the tag
         """
-        return lakefs.tag.Tag(self._id, tag_id, self._client)
+        return Tag(self._id, tag_id, self._client)
 
     @property
     def metadata(self) -> dict[str, str]:

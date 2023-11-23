@@ -6,9 +6,7 @@ import os
 from pathlib import Path
 
 import yaml
-from lakefs_sdk import (
-    Configuration,
-)
+from lakefs_sdk import Configuration
 from lakefs.exceptions import NoAuthenticationFound
 from lakefs.namedtuple import LenientNamedTuple
 

@@ -1,6 +1,9 @@
-from lakefs.exceptions import NotFoundException, ConflictException
-from lakefs.repository import RepositoryProperties
+import time
+
 from tests.integration.conftest import expect_exception_context
+from lakefs.exceptions import NotFoundException, ConflictException, ObjectNotFoundException
+from lakefs import RepositoryProperties, WriteableObject
+
 
 
 def test_repository_sanity(storage_namespace, setup_repo):
@@ -31,6 +34,37 @@ def test_repository_sanity(storage_namespace, setup_repo):
         repo.delete()
 
 
+def test_branch_sanity(storage_namespace, setup_repo):
+    _, repo = setup_repo
+    branch_name = "test_branch"
+
+    main_branch = repo.branch("main")
+    new_branch = repo.branch(branch_name).create("main")
+    assert new_branch.repo_id == repo.properties.id
+    assert new_branch.id == branch_name
+    assert new_branch.head().id == main_branch.head().id
+
+    initial_content = "test_content"
+    new_branch.object("test_object").create(initial_content)
+    new_branch.commit("test_commit", {"test_key": "test_value"})
+
+    override_content = "override_test_content"
+    obj = new_branch.object("test_object").create(override_content)
+    new_branch.commit("override_data")
+    with obj.open() as fd:
+        assert fd.read() == override_content
+
+    new_branch.revert(new_branch.head().id)
+
+    with obj.open() as fd:
+        assert fd.read() == initial_content
+
+    new_branch.delete()
+
+    with expect_exception_context(NotFoundException):
+        new_branch.head()
+
+
 def test_ref_sanity(setup_repo):
     _, repo = setup_repo
     ref_id = "main"
@@ -38,7 +72,7 @@ def test_ref_sanity(setup_repo):
     assert ref.repo_id == repo.properties.id
     assert ref.id == ref_id
     assert ref.metadata() == {}
-    assert ref.commit_message() == "Add sample data"
+    assert ref.commit_message() == "Repository created"
 
 
 def test_tag_sanity(setup_repo):
@@ -75,3 +109,26 @@ def test_tag_sanity(setup_repo):
     # Delete twice
     with expect_exception_context(NotFoundException):
         tag.delete()
+
+
+def test_object_sanity(setup_repo):
+    clt, repo = setup_repo
+    data = "test_data"
+    path = "test_obj"
+    metadata = {"foo": "bar"}
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path=path, client=clt).create(
+        data=data, metadata=metadata)
+    with obj.open() as fd:
+        assert fd.read() == data
+
+    stats = obj.stat()
+    assert stats.path == path == obj.path
+    assert stats.path_type == "object"
+    assert stats.mtime <= time.time()
+    assert stats.size_bytes == len(data)
+    assert stats.metadata == metadata
+    assert stats.content_type == "application/octet-stream"
+
+    obj.delete()
+    with expect_exception_context(ObjectNotFoundException):
+        obj.stat()

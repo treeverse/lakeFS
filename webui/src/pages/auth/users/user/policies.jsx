@@ -1,6 +1,5 @@
-import React from "react";
-
-import {AuthLayout} from "../../../../lib/components/auth/layout";
+import React, {useEffect} from "react";
+import {useOutletContext} from "react-router-dom";
 import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {
     ActionGroup,
@@ -117,11 +116,9 @@ const UserPoliciesContainer = () => {
 };
 
 const UserPoliciesPage = () => {
-    return (
-        <AuthLayout activeTab="users">
-            <UserPoliciesContainer />
-        </AuthLayout>
-    );
+    const {setActiveTab} = useOutletContext();
+    useEffect(() => setActiveTab("users"), [setActiveTab]);
+    return <UserPoliciesContainer/>;
 };
 
 export default UserPoliciesPage;

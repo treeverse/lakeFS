@@ -1,7 +1,8 @@
 """
 lakeFS Client module
-Handles authentication against the lakeFS server and wraps the underlying lakefs_sdk client
 
+
+Handles authentication against the lakeFS server and wraps the underlying lakefs_sdk client.
 The client module holds a DefaultClient which will attempt to initialize on module loading using
 environment credentials.
 In case no credentials exist, a call to init() will be required or a Client object must be created explicitly
@@ -80,7 +81,8 @@ class Client:
 
     def __init__(self, **kwargs):
         self._conf = ClientConfig(**kwargs)
-        self._client = LakeFSClient(self._conf.configuration)
+        self._client = LakeFSClient(self._conf.configuration, header_name='X-Lakefs-Client',
+                                    header_value='python-wrapper')
 
     @property
     def config(self):
