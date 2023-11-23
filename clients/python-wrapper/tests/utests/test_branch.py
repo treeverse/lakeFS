@@ -2,7 +2,7 @@ import http
 
 import lakefs_sdk
 
-from tests.utests.common import get_test_client
+from tests.utests.common import get_test_client, expect_exception_context
 from lakefs.repository import Repository
 from lakefs.exceptions import ConflictException
 
@@ -55,11 +55,8 @@ def test_branch_create_already_exists(monkeypatch):
         assert res.repo_id == branch.repo_id
 
         # Expect fail on exists
-        try:
+        with expect_exception_context(ConflictException):
             branch.create(source)
-            assert 0, "Exception expected"
-        except ConflictException:
-            pass
 
 
 def test_branch_head(monkeypatch):
@@ -132,8 +129,5 @@ def test_branch_revert(monkeypatch):
         branch.revert(ref_id, 2)
 
         # Test set invalid parent number
-        try:
+        with expect_exception_context(ValueError):
             branch.revert(ref_id, 0)
-            assert 0, "Exception expected"
-        except ValueError:
-            pass

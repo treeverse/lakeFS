@@ -68,3 +68,13 @@ def get_test_repo() -> lakefs.repository.Repository:
     from lakefs.client import Client
     client = Client(username="test_user", password="test_password", host="http://127.0.0.1:8000")
     return lakefs.repository.Repository(repository_id=TEST_REPO_ARGS.name, client=client)
+
+
+@contextmanager
+def expect_exception_context(ex, status_code=None):
+    try:
+        yield
+        assert False, f"No exception raised! Expected exception of type {ex.__name__}"
+    except ex as e:
+        if status_code is not None:
+            assert e.status_code == status_code
