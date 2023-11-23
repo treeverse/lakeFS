@@ -13,6 +13,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
+const deleteChunkSize = 1000
+
 var fsRmCmd = &cobra.Command{
 	Use:               "rm <path URI>",
 	Short:             "Delete object",
@@ -90,12 +92,10 @@ var fsRmCmd = &cobra.Command{
 
 func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesInterface, repository, branch string, paths <-chan string, errors chan<- error, wg *sync.WaitGroup) {
 	defer wg.Done()
-	objs := make([]string, 0, 1000)
-	fmt.Println("deleteObjectWorker")
+	objs := make([]string, 0, deleteChunkSize)
 	for objPath := range paths {
 		objs = append(objs, objPath)
-		if len(objs) >= 1000 {
-			// err := deleteObject(ctx, client, pathURI)
+		if len(objs) >= deleteChunkSize {
 			resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, apigen.DeleteObjectsJSONRequestBody{
 				Paths: objs,
 			})
@@ -108,7 +108,6 @@ func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesIn
 		}
 	}
 	if len(objs) > 0 {
-		// err := deleteObject(ctx, client, pathURI)
 		resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, apigen.DeleteObjectsJSONRequestBody{
 			Paths: objs,
 		})
