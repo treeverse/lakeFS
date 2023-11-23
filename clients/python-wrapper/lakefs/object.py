@@ -8,7 +8,10 @@ import base64
 import binascii
 import io
 import os
-from typing import AnyStr, AsyncIterable, IO, Iterable, Iterator, List, Literal, NamedTuple, Optional, Self, Union, get_args
+from typing import (
+    AnyStr, AsyncIterable, IO, Iterable, Iterator,
+    List, Literal, NamedTuple, Optional, TypeVar, Union,
+    get_args)
 
 import lakefs_sdk
 from lakefs_sdk import StagingMetadata
@@ -278,10 +281,10 @@ class ObjectReader(IO):
         """
         raise io.UnsupportedOperation
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> TypeVar("Self", bound="ObjectReader"):
         return self
 
-    def __exit__(self, type, value, traceback) -> boolean:
+    def __exit__(self, typ, value, traceback) -> bool:
         self.close()
         return False            # Don't suppress an exception
 
