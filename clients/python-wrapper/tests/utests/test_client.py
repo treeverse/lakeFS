@@ -25,7 +25,7 @@ class TestClient:
         with lakectl_no_config_context(monkeypatch) as client:
             client.DEFAULT_CLIENT = None
             client = importlib.reload(client)
-            assert client.DefaultClient is None
+            assert client.DEFAULT_CLIENT is None
 
     def test_client_no_kwargs(self, monkeypatch, tmp_path):
         with lakectl_test_config_context(monkeypatch, tmp_path) as client:

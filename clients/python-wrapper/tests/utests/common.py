@@ -44,7 +44,7 @@ def lakectl_test_config_context(monkey, tmp_path):
         try:
             yield client
         finally:
-            client.DefaultClient = None
+            client.DEFAULT_CLIENT = None
 
 
 @contextmanager
