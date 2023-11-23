@@ -22,7 +22,7 @@ def fixture_storage_namespace(test_name):
 
 @pytest.fixture()
 def setup_repo(storage_namespace, test_name, default_branch="main"):
-    clt = client.DefaultClient
+    clt = client.DEFAULT_CLIENT
     repo_name = test_name + str(int(time.time()))
     repo = Repository(repo_name, clt)
     repo.create(storage_namespace=storage_namespace, default_branch=default_branch)

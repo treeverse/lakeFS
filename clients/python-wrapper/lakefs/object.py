@@ -16,7 +16,7 @@ from typing import (
 import lakefs_sdk
 from lakefs_sdk import StagingMetadata
 
-from lakefs.client import Client, DefaultClient
+from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.exceptions import (
     api_exception_handler,
     LakeFSException,
@@ -61,7 +61,7 @@ class StoredObject:
     _path: str
     _stats: Optional[ObjectStats] = None
 
-    def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = DefaultClient):
+    def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = DEFAULT_CLIENT):
         self._client = client
         self._repo_id = repository
         self._ref_id = reference
@@ -163,7 +163,7 @@ class ObjectReader(IO):
     _is_closed: bool = False
 
     def __init__(self, obj: StoredObject, mode: OpenModes, pre_sign: Optional[bool] = None,
-                 client: Optional[Client] = DefaultClient) -> None:
+                 client: Optional[Client] = DEFAULT_CLIENT) -> None:
         if mode not in get_args(OpenModes):
             raise ValueError(f"invalid read mode: '{mode}'. ReadModes: {OpenModes}")
 
@@ -286,7 +286,7 @@ class ObjectReader(IO):
 
     def __exit__(self, typ, value, traceback) -> bool:
         self.close()
-        return False            # Don't suppress an exception
+        return False  # Don't suppress an exception
 
     def seek(self, offset: int, whence: int = 0) -> int:
         """
@@ -364,7 +364,7 @@ class WriteableObject(StoredObject):
     This Object is instantiated and returned upon invoking open() on Branch reference type.
     """
 
-    def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = DefaultClient) -> None:
+    def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = DEFAULT_CLIENT) -> None:
         super().__init__(repository, reference, path, client=client)
 
     def create(self,
