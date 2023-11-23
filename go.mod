@@ -102,7 +102,10 @@ require (
 	cloud.google.com/go/iam v1.1.2 // indirect
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
+	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
+	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1 // indirect
+	github.com/ahmetb/go-linq/v3 v3.2.0 // indirect
 	github.com/apache/arrow/go/arrow v0.0.0-20200730104253-651201b0f516 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.14 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.13 // indirect
@@ -118,13 +121,18 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.15.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.15.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.17.3 // indirect
+	github.com/barweiss/go-tuple v1.1.1 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
+	github.com/csimplestring/delta-go v0.0.0-20231105162402-9b93ca02cedf // indirect
+	github.com/deckarep/golang-set/v2 v2.3.1 // indirect
+	github.com/fraugster/parquet-go v0.12.0 // indirect
 	github.com/getsentry/sentry-go v0.16.0 // indirect
-	github.com/go-sql-driver/mysql v1.7.0 // indirect
+	github.com/go-sql-driver/mysql v1.7.1 // indirect
 	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang/glog v1.1.0 // indirect
 	github.com/google/flatbuffers v2.0.0+incompatible // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
+	github.com/google/wire v0.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.1 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb // indirect
@@ -133,17 +141,25 @@ require (
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/mitchellh/go-testing-interface v0.0.0-20171004221916-a61a99592b77 // indirect
+	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.8 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
+	github.com/repeale/fp-go v0.11.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
+	github.com/rotisserie/eris v0.5.4 // indirect
 	github.com/rs/dnscache v0.0.0-20211102005908-e0241e321417 // indirect
 	github.com/sagikazarmark/locafero v0.3.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
+	github.com/samber/mo v1.10.0 // indirect
+	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
-	go.uber.org/multierr v1.9.0 // indirect
+	github.com/ulule/deepcopier v0.0.0-20200430083143-45decc6639b6 // indirect
+	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+	gocloud.dev v0.34.0 // indirect
 	gonum.org/v1/gonum v0.9.3 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231002182017-d307bd883b97 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231009173412-8bfb1ae86b6c // indirect
