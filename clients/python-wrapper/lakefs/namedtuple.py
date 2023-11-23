@@ -11,12 +11,16 @@ class LenientNamedTuple:
 
     def __new__(cls, **kwargs):
         fields = list(cls.__dict__["__annotations__"].keys())
+        unknown = {}
         for k, v in kwargs.items():
             if k in fields:
                 setattr(cls, k, v)
                 fields.remove(k)
+            else:
+                unknown[k] = v
         if len(fields) > 0:
             raise TypeError(f"missing {len(fields)} required arguments: {fields}")
+        setattr(cls, "unknown", unknown)
         return super(LenientNamedTuple, cls).__new__(cls)
 
     def __setattr__(self, name, value):

@@ -1,3 +1,4 @@
+from tests.utests.common import expect_exception_context
 from lakefs.namedtuple import LenientNamedTuple
 
 
@@ -17,11 +18,8 @@ def test_namedtuple():
     assert nt.field3
 
     # try to modify value
-    try:
+    with expect_exception_context(AttributeError):
         nt.field1 = "2"
-        assert 0, "Exception expected"
-    except AttributeError:
-        pass
 
     # Create named tuple with unknown args
     kwargs = {
@@ -35,21 +33,17 @@ def test_namedtuple():
     assert nt.field1 == "test"
     assert nt.field2 == 2
     assert not nt.field3
-    try:
-        nt.field4
-        assert 0, "Expected exception"
-    except AttributeError:
-        pass
 
-    try:
+    with expect_exception_context(AttributeError):
+        nt.field4
+
+    with expect_exception_context(AttributeError):
         nt.field5
-        assert 0, "Expected exception"
-    except AttributeError:
-        pass
+
+    # Verify extra kwargs are in 'unknown' dict
+    assert nt.unknown['field4'] == "something"
+    assert nt.unknown['field5'] is None
 
     # Missing args
-    try:
+    with expect_exception_context(TypeError):
         NamedTupleTest(field2=1)
-        assert 0, "Exception expected"
-    except TypeError:
-        pass
