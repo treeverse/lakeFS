@@ -9,7 +9,7 @@ import lakefs_sdk
 
 from lakefs.object import WriteableObject
 from lakefs.object_manager import WriteableObjectManager
-from lakefs.reference import Reference
+from lakefs.reference import Reference, Commit
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 
 
@@ -18,7 +18,16 @@ class Branch(Reference):
     Class representing a branch in lakeFS.
     """
 
-    def create(self, source_reference_id: str, exist_ok: bool = False) -> Branch:
+    def _get_commit(self):
+        """
+        For branches override the default _get_commit method to ensure we always fetch the latest head
+        """
+        with api_exception_handler():
+            commit = self._client.sdk_client.commits_api.get_commit(self._repo_id, self._id)
+            self._commit = Commit(**commit.__dict__)
+        return self._commit
+
+    def create(self, source_reference_id: str | Reference, exist_ok: bool = False) -> Branch:
         """
         Create a new branch in lakeFS from this object
 
@@ -38,7 +47,7 @@ class Branch(Reference):
                 return None
             return e
 
-        branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=source_reference_id)
+        branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=str(source_reference_id))
         with api_exception_handler(handle_conflict):
             self._client.sdk_client.branches_api.create_branch(self._repo_id, branch_creation)
         return self
