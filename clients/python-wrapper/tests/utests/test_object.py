@@ -103,52 +103,64 @@ class TestObjectReader:
             with obj.open() as fd:
                 assert fd.tell() == 0
 
-    def test_read(self, monkeypatch, tmp_path):
+    def verify_reader(self, fd, patch_setattr, test_kwargs, data):
+        object_stats = ObjectTestStats()
+        object_stats.path = test_kwargs.path
+        object_stats.size_bytes = len(data)
+        patch_setattr(lakefs_sdk.api.ObjectsApi, "stat_object", lambda *args: object_stats)
+
+        # read negative
+        with expect_exception_context(OSError):
+            fd.read(-1)
+
+        # Read whole file
+        start_pos = 0
+        end_pos = ""
+
+        def monkey_get_object(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
+            assert repository == test_kwargs.repository
+            assert ref == test_kwargs.reference
+            assert path == test_kwargs.path
+            assert presign
+
+            if isinstance(end_pos, int):
+                return data[start_pos:end_pos]
+            return data[start_pos:]
+
+        patch_setattr(lakefs_sdk.api.ObjectsApi, "get_object", monkey_get_object)
+        assert fd.read() == data
+        assert fd.tell() == object_stats.size_bytes
+
+        # Test reading from middle
+        start_pos = 132
+        fd.seek(start_pos)
+        read_size = 456
+        end_pos = start_pos + read_size - 1
+        fd.read(read_size)
+        assert fd.tell() == start_pos + read_size - 1
+
+        # Read more than file size
+        start_pos = fd.tell()
+        read_size = 2 * object_stats.size_bytes
+        end_pos = start_pos + 2 * object_stats.size_bytes - 1
+        fd.read(read_size)
+        assert fd.tell() == object_stats.size_bytes
+
+    def test_read_by_context(self, monkeypatch, tmp_path):
         test_kwargs = ObjectTestKWArgs()
         with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             data = b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82\n" * 100
             with obj.open(mode="rb") as fd:
-                object_stats = ObjectTestStats()
-                object_stats.path = test_kwargs.path
-                object_stats.size_bytes = len(data)
-                monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "stat_object", lambda *args: object_stats)
+                self.verify_reader(fd, monkeypatch.setattr, test_kwargs, data)
 
-                # read negative
-                with expect_exception_context(OSError):
-                    fd.read(-1)
-
-                # Read whole file
-                start_pos = 0
-                end_pos = ""
-
-                def monkey_get_object(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
-                    assert repository == test_kwargs.repository
-                    assert ref == test_kwargs.reference
-                    assert path == test_kwargs.path
-                    assert presign
-
-                    if isinstance(end_pos, int):
-                        return data[start_pos:end_pos]
-                    return data[start_pos:]
-
-                monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "get_object", monkey_get_object)
-                assert fd.read() == data
-                assert fd.tell() == object_stats.size_bytes
-
-                # Test reading from middle
-                start_pos = 132
-                fd.seek(start_pos)
-                read_size = 456
-                end_pos = start_pos + read_size - 1
-                fd.read(read_size)
-                assert fd.tell() == start_pos + read_size - 1
-
-                # Read more than file size
-                start_pos = fd.tell()
-                read_size = 2 * object_stats.size_bytes
-                end_pos = start_pos + 2 * object_stats.size_bytes - 1
-                fd.read(read_size)
-                assert fd.tell() == object_stats.size_bytes
+    def test_read_by_calling_open(self, monkeypatch, tmp_path):
+        test_kwargs = ObjectTestKWArgs()
+        with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
+            data = b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82\n" * 100
+            fd = obj.open(mode="rb")
+            self.verify_reader(fd, monkeypatch.setattr, test_kwargs, data)
+            fd.close()
+            assert fd.closed
 
     @pytest.mark.parametrize("mode", [*get_args(OpenModes)])
     def test_read_modes(self, monkeypatch, tmp_path, mode):

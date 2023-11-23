@@ -1,4 +1,4 @@
-name: Unit Test Python SDK Wrapper      
+name: Unit Test Python SDK Wrapper
 on:
   push:
     branches:
