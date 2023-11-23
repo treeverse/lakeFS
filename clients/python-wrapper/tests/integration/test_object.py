@@ -1,4 +1,5 @@
-from typing import get_args
+from io import StringIO, TextIOWrapper, BytesIO
+from typing import get_args, List, get_origin
 
 import pytest
 
@@ -94,3 +95,38 @@ def test_object_copy(setup_repo):
     assert copy_stat.mtime >= obj_stat.mtime
     assert copy_stat.size_bytes == obj_stat.size_bytes
     assert copy_stat.checksum == obj_stat.checksum
+
+
+def get_data_from_type(tmp_path, data_type, contents: str):
+    print(get_origin(data_type))
+    if data_type is str:
+        return contents
+    elif data_type is bytes:
+        return contents.encode('utf-8')
+    elif data_type is StringIO:
+        return StringIO(contents)
+    elif data_type is BytesIO:
+        return BytesIO(contents.encode('utf-8'))
+    elif get_origin(data_type) is list:
+        return list(contents.encode('utf-8'))
+    elif data_type is TextIOWrapper:
+        fd = tmp_path / "test_file"
+        fd.write_text(contents)
+        return fd
+    else:
+        raise ValueError("Bad data type")
+
+
+@pytest.mark.parametrize("pre_sign", (True, False))
+# @pytest.mark.parametrize("data_type", (str, bytes, List[bytes], StringIO, BytesIO, TextIOWrapper))
+@pytest.mark.parametrize("data_type", (str, bytes, StringIO, BytesIO, TextIOWrapper))
+@pytest.mark.parametrize("w_mode", get_args(WriteModes))
+def test_object_create_different_data_types(setup_repo, tmp_path, pre_sign, data_type, w_mode):
+    clt, repo = setup_repo
+    contents = "The quick brown fox jumps over the lazy dog"
+    data = get_data_from_type(tmp_path, data_type, contents)
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).create(
+        data=data, mode=w_mode, pre_sign=pre_sign)
+
+    d = StringIO("blabla")
+    b = BytesIO(d)

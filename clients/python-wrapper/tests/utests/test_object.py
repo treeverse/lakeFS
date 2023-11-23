@@ -1,5 +1,7 @@
 import http
+import io
 from contextlib import contextmanager
+from io import StringIO
 from typing import get_args
 import urllib3
 
@@ -231,3 +233,35 @@ class TestWriteableObject:
                 assert False, "Exception expected"
             except ValueError:
                 pass
+
+    def test_create_stream(self, monkeypatch, tmp_path):
+        test_kwargs = ObjectTestKWArgs()
+        with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
+            staging_location = StagingTestLocation()
+        monkeypatch.setattr(lakefs_sdk.api.StagingApi, "get_physical_address", lambda *args: staging_location)
+        monkeypatch.setattr(obj._client.sdk_client.objects_api.api_client, "request",
+                            lambda *args, **kwargs: RESTResponse(urllib3.response.HTTPResponse()))
+
+        def monkey_link_physical_address(*_, staging_metadata: lakefs_sdk.StagingMetadata, **__):
+            assert staging_metadata.size_bytes == data_size
+            assert staging_metadata.staging == staging_location
+            return lakefs_sdk.ObjectStats(path=obj.path,
+                                          path_type="object",
+                                          physical_address=staging_location.physical_address,
+                                          checksum="",
+                                          mtime=12345)
+
+        monkeypatch.setattr(lakefs_sdk.api.StagingApi, "link_physical_address", monkey_link_physical_address)
+        # Test string
+        contents = "test_data"
+        data = StringIO(contents)
+        data.read()
+        data_size = 9
+        obj.create(data=data)
+
+        with open("my_file", "w") as fd:
+            fd.write(contents)
+
+        with open("my_file", "r") as fd:
+            fd.read()
+            obj.create(data=fd)

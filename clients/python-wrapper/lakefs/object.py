@@ -6,9 +6,10 @@ from __future__ import annotations
 
 import base64
 import binascii
+import codecs
 from contextlib import contextmanager
-from typing import Optional, Literal, NamedTuple, Union, Iterable, AsyncIterable, TextIO, BinaryIO, get_args
-
+from typing import Optional, Literal, NamedTuple, Union, Iterable, AsyncIterable, get_args
+from io import IOBase, BytesIO, StringIO, TextIOWrapper, BufferedReader, BufferedRandom
 import lakefs_sdk
 from lakefs_sdk import StagingMetadata
 
@@ -26,8 +27,8 @@ from lakefs.exceptions import (
 
 _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
 
-# Type to support both strings and bytes in addition to streams (reference: httpx._types.RequestContent)
-UploadContentType = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+# Type to support both strings and bytes in addition to streams
+UploadContentType = Union[str, bytes, IOBase]
 OpenModes = Literal['r', 'rb']
 WriteModes = Literal['x', 'xb', 'w', 'wb']
 
@@ -193,7 +194,7 @@ class ObjectReader:
             return f"bytes={start}-"
         return f"bytes={start}-{start + read_bytes - 1}"
 
-    def read(self, read_bytes: int = None) -> TextIO | BinaryIO:
+    def read(self, read_bytes: int = None) -> str | bytes:
         """
         Read object data
         :param read_bytes: How many bytes to read. If read_bytes is None, will read from current position to end.
@@ -264,19 +265,12 @@ class WriteableObject(StoredObject):
         if 'x' in mode and self.exists():  # Requires explicit create
             raise ObjectExistsException
 
-        # TODO: handle streams
-        binary_mode = 'b' in mode
-        if binary_mode and isinstance(data, str):
-            content = data.encode('utf-8')
-        elif not binary_mode and isinstance(data, bytes):
-            content = data.decode('utf-8')
-        else:
-            content = data
+        contents = WriteableObject._get_contents_from_data(data, 'b' in mode)
 
         is_presign = pre_sign if pre_sign is not None else self._client.storage_config.pre_sign_support
         with api_exception_handler(_io_exception_handler):
-            stats = self._upload_presign(content, content_type, metadata) if is_presign \
-                else self._upload_raw(content, content_type, metadata)
+            stats = self._upload_presign(contents, content_type, metadata) if is_presign \
+                else self._upload_raw(contents, content_type, metadata)
             self._stats = ObjectStats(**stats.__dict__)
 
         return self
@@ -295,6 +289,31 @@ class WriteableObject(StoredObject):
         # fallback to ETag
         etag = headers.get("ETag", "").strip(' "')
         return etag
+
+    @staticmethod
+    def _get_size_bytes(contents: UploadContentType) -> int:
+        if isinstance(contents, str):
+            return len(contents.encode('utf-8'))
+        elif isinstance(contents, IOBase):  # Type streams
+            return contents.tell()
+        else:  # Type Iterable / bytes
+            return len(contents)
+
+    @staticmethod
+    def _get_contents_from_data(data: UploadContentType, binary_mode: bool) -> IOBase:
+        # First transform data into stream
+        if isinstance(data, str):
+            contents = BytesIO(data.encode('utf-8'))
+        elif isinstance(data, bytes):
+            contents = BytesIO(data)
+        else:
+            contents = data
+
+        if binary_mode:
+            # Wrap with a BinaryReader
+            return BufferedReader(contents)
+        else:
+            return TextIOWrapper(contents, encoding='utf-8')
 
     def _upload_raw(self, content: UploadContentType, content_type: Optional[str] = None,
                     metadata: Optional[dict[str, str]] = None) -> ObjectStats:
@@ -334,7 +353,7 @@ class WriteableObject(StoredObject):
             _return_http_data_only=True
         )
 
-    def _upload_presign(self, content: UploadContentType, content_type: Optional[str] = None,
+    def _upload_presign(self, contents: IOBase, content_type: Optional[str] = None,
                         metadata: Optional[dict[str, str]] = None) -> ObjectStats:
         headers = {
             "Accept": "application/json",
@@ -352,14 +371,14 @@ class WriteableObject(StoredObject):
         resp = self._client.sdk_client.objects_api.api_client.request(
             method="PUT",
             url=url,
-            body=content,
+            body=contents,
             headers=headers
         )
 
         etag = WriteableObject._extract_etag_from_response(resp.getheaders())
-        size_bytes = len(content.encode('utf-8')) if isinstance(content, str) else len(content)
+
         staging_metadata = StagingMetadata(staging=staging_location,
-                                           size_bytes=size_bytes,
+                                           size_bytes=contents.tell(),
                                            checksum=etag,
                                            user_metadata=metadata)
         return self._client.sdk_client.staging_api.link_physical_address(self._repo_id, self._ref_id, self._path,
