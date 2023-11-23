@@ -6,8 +6,10 @@ from __future__ import annotations
 
 import base64
 import binascii
+import io
+import os
 from contextlib import contextmanager
-from typing import Optional, Literal, NamedTuple, Union, Iterable, AsyncIterable, TextIO, BinaryIO, get_args
+from typing import Optional, Literal, NamedTuple, Union, Iterable, AsyncIterable, IO, get_args, AnyStr, List, Iterator
 
 import lakefs_sdk
 from lakefs_sdk import StagingMetadata
@@ -147,7 +149,7 @@ class StoredObject:
                                client=self._client)
 
 
-class ObjectReader:
+class ObjectReader(IO):
     """
     ReadableObject provides read-only functionality for lakeFS objects with IO semantics.
     This Object is instantiated and returned on open() methods for immutable reference types (Commit, Tag...)
@@ -157,6 +159,7 @@ class ObjectReader:
     _mode: OpenModes
     _pos: int
     _pre_sign: Optional[bool] = None
+    _is_closed: bool = False
 
     def __init__(self, obj: StoredObject, mode: OpenModes, pre_sign: Optional[bool] = None,
                  client: Optional[Client] = DefaultClient) -> None:
@@ -169,34 +172,153 @@ class ObjectReader:
         self._client = client
         self._pos = 0
 
-    def tell(self) -> int:
-        """
-        Object's read position. If position is past object byte size, trying to read the object will return EOF
-        """
-        return self._pos
+    #  typing.IO Interface Implementation ############################################################
 
-    def seek(self, pos) -> None:
+    @property
+    def mode(self) -> str:
+        """
+        Returns the open mode for this object
+        """
+        return self._mode
+
+    @property
+    def name(self) -> str:
+        """
+        Returns the name of the object relative to the repo and reference
+        """
+        return self._obj.path
+
+    @property
+    def closed(self) -> bool:
+        """
+        Returns False always
+        """
+        return self._is_closed
+
+    def close(self) -> None:
+        """
+        Closes the current file descriptor for IO operations
+        """
+        self._is_closed = True
+
+    def fileno(self) -> int:
+        """
+        The file descriptor number as defined by the operating system. In the context of lakeFS it has no meaning
+
+        :return: -1 Always
+        """
+        return -1
+
+    def flush(self) -> None:
+        """
+        Irrelevant for the lakeFS implementation
+        """
+
+    def isatty(self) -> bool:
+        """
+        Irrelevant for the lakeFS implementation
+        """
+        return False
+
+    def readable(self) -> bool:
+        """
+        Returns True always
+        """
+        return True
+
+    def readline(self, limit: int = -1):
+        """
+        Currently unsupported
+        """
+        raise io.UnsupportedOperation
+
+    def readlines(self, hint: int = -1):
+        """
+        Currently unsupported
+        """
+        raise io.UnsupportedOperation
+
+    def seekable(self) -> bool:
+        """
+        Returns True always
+        """
+        return True
+
+    def truncate(self, size: int = None) -> int:
+        """
+        Unsupported by lakeFS implementation
+        """
+        raise io.UnsupportedOperation
+
+    def writable(self) -> bool:
+        """
+        Unsupported - read only object
+        """
+        return False
+
+    def write(self, s: AnyStr) -> int:
+        """
+        Unsupported - read only object
+        """
+        raise io.UnsupportedOperation
+
+    def writelines(self, lines: List[AnyStr]) -> None:
+        """
+        Unsupported by lakeFS implementation
+        """
+        raise io.UnsupportedOperation
+
+    def __next__(self) -> AnyStr:
+        """
+        Unsupported by lakeFS implementation
+        """
+        raise io.UnsupportedOperation
+
+    def __iter__(self) -> Iterator[AnyStr]:
+        """
+        Unsupported by lakeFS implementation
+        """
+        raise io.UnsupportedOperation
+
+    def __enter__(self) -> 'IO[AnyStr]':
+        """
+        Unsupported by lakeFS implementation
+        """
+        raise io.UnsupportedOperation
+
+    def __exit__(self, type, value, traceback) -> None:  # pylint: disable=W0622
+        """
+        Unsupported by lakeFS implementation
+        """
+        raise io.UnsupportedOperation
+
+    def seek(self, offset: int, whence: int = 0) -> int:
         """
         Move the object's reading position
-        :param pos: The position (in bytes) to move to
-        :raises OSError if provided position is negative
+        :param offset: The offset from the beginning of the file
+        :param whence: Optional. The whence argument is optional and defaults to
+            os.SEEK_SET or 0 (absolute file positioning);
+            other values are os.SEEK_CUR or 1 (seek relative to the current position) and os.SEEK_END or 2
+            (seek relative to the file’s end)
+            os.SEEK_END is not supported
+        :raises OSError if calculated new position is negative
         """
+        if whence == os.SEEK_SET:
+            pos = offset
+        elif whence == os.SEEK_CUR:
+            pos = offset - whence
+        else:
+            raise io.UnsupportedOperation(f"whence={whence} is not supported")
+
         if pos < 0:
             raise OSError("position must be a non-negative integer")
         self._pos = pos
+        return pos
 
-    @staticmethod
-    def _get_range_string(start, read_bytes=None):
-        if start == 0 and read_bytes is None:
-            return None
-        if read_bytes is None:
-            return f"bytes={start}-"
-        return f"bytes={start}-{start + read_bytes - 1}"
-
-    def read(self, read_bytes: int = None) -> TextIO | BinaryIO:
+    def read(self, n: int = None) -> str | bytes:
         """
         Read object data
-        :param read_bytes: How many bytes to read. If read_bytes is None, will read from current position to end.
+        :param n: How many bytes to read. If read_bytes is None, will read from current position to end.
         If current position + read_bytes > object size.
         :return: The bytes read
         :raises
@@ -206,10 +328,10 @@ class ObjectReader:
             PermissionException if user is not authorized to perform this operation, or operation is forbidden
             ServerException for any other errors
         """
-        if read_bytes and read_bytes <= 0:
+        if n and n <= 0:
             raise OSError("read_bytes must be a positive integer")
 
-        read_range = self._get_range_string(start=self._pos, read_bytes=read_bytes)
+        read_range = self._get_range_string(start=self._pos, read_bytes=n)
         with api_exception_handler(_io_exception_handler):
             contents = self._client.sdk_client.objects_api.get_object(self._obj.repo,
                                                                       self._obj.ref,
@@ -221,6 +343,22 @@ class ObjectReader:
             return contents.decode('utf-8')
 
         return contents
+
+    #  END typing.IO Interface Implementation ############################################################
+
+    def tell(self) -> int:
+        """
+        Object's read position. If position is past object byte size, trying to read the object will return EOF
+        """
+        return self._pos
+
+    @staticmethod
+    def _get_range_string(start, read_bytes=None):
+        if start == 0 and read_bytes is None:
+            return None
+        if read_bytes is None:
+            return f"bytes={start}-"
+        return f"bytes={start}-{start + read_bytes - 1}"
 
 
 class WriteableObject(StoredObject):

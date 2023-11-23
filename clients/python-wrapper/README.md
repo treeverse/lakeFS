@@ -67,8 +67,7 @@ main_branch = repo.create(storage_namespace="<storage_namespace>").branch(branch
 
 ## Documentation
 
-[//]: # (TODO: Add link to documentation site)
-[index](https://pypi.org/project/lakefs/) 
+[lakeFS SDK Wrapper](http://pydocs-wrapper.lakefs.io/) 
 
 ## Author
 
