@@ -8,8 +8,7 @@ import base64
 import binascii
 import io
 import os
-from contextlib import contextmanager
-from typing import Optional, Literal, NamedTuple, Union, Iterable, AsyncIterable, IO, get_args, AnyStr, List, Iterator
+from typing import AnyStr, AsyncIterable, IO, Iterable, Iterator, List, Literal, NamedTuple, Optional, Self, Union, get_args
 
 import lakefs_sdk
 from lakefs_sdk import StagingMetadata
@@ -86,7 +85,6 @@ class StoredObject:
         """
         return self._path
 
-    @contextmanager
     def open(self, mode: OpenModes = 'r', pre_sign: Optional[bool] = None) -> ObjectReader:
         """
         Context manager which provide a file-descriptor like object that allow reading the given object
@@ -96,7 +94,7 @@ class StoredObject:
         :return: A Reader object
         """
         reader = ObjectReader(self, mode=mode, pre_sign=pre_sign, client=self._client)
-        yield reader
+        return reader
 
     def stat(self) -> ObjectStats:
         """
@@ -191,7 +189,7 @@ class ObjectReader(IO):
     @property
     def closed(self) -> bool:
         """
-        Returns False always
+        Returns True after the object is closed
         """
         return self._is_closed
 
@@ -280,17 +278,12 @@ class ObjectReader(IO):
         """
         raise io.UnsupportedOperation
 
-    def __enter__(self) -> 'IO[AnyStr]':
-        """
-        Unsupported by lakeFS implementation
-        """
-        raise io.UnsupportedOperation
+    def __enter__(self) -> Self:
+        return self
 
-    def __exit__(self, type, value, traceback) -> None:  # pylint: disable=W0622
-        """
-        Unsupported by lakeFS implementation
-        """
-        raise io.UnsupportedOperation
+    def __exit__(self, type, value, traceback) -> boolean:
+        self.close()
+        return False            # Don't suppress an exception
 
     def seek(self, offset: int, whence: int = 0) -> int:
         """
