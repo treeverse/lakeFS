@@ -10,7 +10,7 @@ import lakefs_sdk
 from lakefs.tag import Tag
 from lakefs.branch import Branch
 from lakefs.branch_manager import BranchManager
-from lakefs.client import Client, DefaultClient
+from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 from lakefs.namedtuple import LenientNamedTuple
 from lakefs.reference import Reference
@@ -37,7 +37,7 @@ class Repository:
     _id: str
     _properties: RepositoryProperties = None
 
-    def __init__(self, repository_id: str, client: Optional[Client] = DefaultClient) -> None:
+    def __init__(self, repository_id: str, client: Optional[Client] = DEFAULT_CLIENT) -> None:
         self._id = repository_id
         self._client = client
 
