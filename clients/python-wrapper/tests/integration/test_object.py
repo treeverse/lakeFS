@@ -55,9 +55,9 @@ def test_object_create_exists(setup_repo):
 
 
 @pytest.mark.parametrize("w_mode", get_args(WriteModes))
-@pytest.mark.parametrize("pre_sign", (True, False))
 @pytest.mark.parametrize("r_mode", get_args(OpenModes))
-def test_object_create_read_different_params(setup_repo, w_mode, pre_sign, r_mode):
+@pytest.mark.parametrize("pre_sign", (True, False), indirect=True)
+def test_object_create_read_different_params(setup_repo, w_mode, r_mode, pre_sign):
     clt, repo = setup_repo
     data = b'test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82'
     obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).create(

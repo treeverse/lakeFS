@@ -7,7 +7,10 @@ def test_reference_log(setup_branch_with_commits):
     for i, c in enumerate(branch.log(max_amount=199)):
         assert c.message == f"commit {i}"
 
-    assert len(list(branch.log(max_amount=2000))) == 200
+    commits = list(branch.log(max_amount=2000))
+    for i, c in enumerate(commits[:-1]):  # Ignore initial commit
+        assert c.message == f"commit {i}"
+    assert len(commits) == 200
 
     assert len(list(branch.log(limit=True, amount=10, max_amount=100))) == 10
 
@@ -15,7 +18,7 @@ def test_reference_log(setup_branch_with_commits):
 def test_reference_diff(setup_branch_with_commits):
     branch = setup_branch_with_commits
 
-    commits = list(branch.log(max_amount=3))  # Initial Commit is 0
+    commits = list(branch.log(max_amount=2))
     assert len(list(branch.diff(branch.commit_id()))) == 0
     changes = list(branch.diff(commits[0].id, type="two_dot"))
     assert len(changes) == 0
