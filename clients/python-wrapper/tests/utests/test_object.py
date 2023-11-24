@@ -9,7 +9,7 @@ from tests.utests.common import get_test_client, expect_exception_context
 import lakefs_sdk.api
 from lakefs_sdk.rest import RESTResponse
 
-from lakefs.object import OpenModes
+from lakefs.object import ReadModes
 
 
 class ObjectTestKWArgs:
@@ -92,7 +92,7 @@ class TestObjectReader:
     def test_seek(self, monkeypatch, tmp_path):
         test_kwargs = ObjectTestKWArgs()
         with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
-            with obj.open() as fd:
+            with obj.reader() as fd:
                 assert fd.tell() == 0
                 fd.seek(30)
                 assert fd.tell() == 30
@@ -100,7 +100,7 @@ class TestObjectReader:
                     fd.seek(-1)
 
             # Create another reader
-            with obj.open() as fd:
+            with obj.reader() as fd:
                 assert fd.tell() == 0
 
     def verify_reader(self, fd, patch_setattr, test_kwargs, data):
@@ -150,24 +150,24 @@ class TestObjectReader:
         test_kwargs = ObjectTestKWArgs()
         with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             data = b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82\n" * 100
-            with obj.open(mode="rb") as fd:
+            with obj.reader(mode="rb") as fd:
                 self.verify_reader(fd, monkeypatch.setattr, test_kwargs, data)
 
-    def test_read_by_calling_open(self, monkeypatch, tmp_path):
+    def test_read_by_calling_reader(self, monkeypatch, tmp_path):
         test_kwargs = ObjectTestKWArgs()
         with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             data = b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82\n" * 100
-            fd = obj.open(mode="rb")
+            fd = obj.reader(mode="rb")
             self.verify_reader(fd, monkeypatch.setattr, test_kwargs, data)
             fd.close()
             assert fd.closed
 
-    @pytest.mark.parametrize("mode", [*get_args(OpenModes)])
+    @pytest.mark.parametrize("mode", [*get_args(ReadModes)])
     def test_read_modes(self, monkeypatch, tmp_path, mode):
         test_kwargs = ObjectTestKWArgs()
         data = b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82"
         with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
-            with obj.open(mode=mode) as fd:
+            with obj.reader(mode=mode) as fd:
                 object_stats = ObjectTestStats()
                 object_stats.path = test_kwargs.path
                 object_stats.size_bytes = len(data)
@@ -197,18 +197,18 @@ class TestObjectReader:
         test_kwargs = ObjectTestKWArgs()
         with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             with expect_exception_context(ValueError):
-                with obj.open(mode="invalid"):
+                with obj.reader(mode="invalid"):
                     pass
 
 
 class TestWriteableObject:
-    def test_create(self, monkeypatch, tmp_path):
+    def test_upload(self, monkeypatch, tmp_path):
         test_kwargs = ObjectTestKWArgs()
         with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             staging_location = StagingTestLocation()
             monkeypatch.setattr(lakefs_sdk.api.StagingApi, "get_physical_address", lambda *args: staging_location)
-            monkeypatch.setattr(obj._client.sdk_client.objects_api.api_client, "request",
-                                lambda *args, **kwargs: RESTResponse(urllib3.response.HTTPResponse()))
+            monkeypatch.setattr(urllib3, "request",
+                                lambda *args, **kwargs: RESTResponse(urllib3.response.HTTPResponse(status=201)))
 
             def monkey_link_physical_address(*_, staging_metadata: lakefs_sdk.StagingMetadata, **__):
                 assert staging_metadata.size_bytes == len(data)
@@ -224,7 +224,7 @@ class TestWriteableObject:
             data = "test_data"
             obj.upload(data=data)
 
-    def test_create_invalid_mode(self, monkeypatch, tmp_path):
+    def test_upload_invalid_mode(self, monkeypatch, tmp_path):
         test_kwargs = ObjectTestKWArgs()
         with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             with expect_exception_context(ValueError):
