@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import Optional, Generator, Literal
 
+import lakefs_sdk
+
 from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.exceptions import api_exception_handler
 from lakefs.object import StoredObject
@@ -73,17 +75,18 @@ class Reference:
 
     @staticmethod
     def _get_generator(func, *args, max_amount: Optional[int] = None, **kwargs):
-        count = 0
         has_more = True
         with api_exception_handler():
             while has_more:
                 page = func(*args, **kwargs)
                 has_more = page.pagination.has_more
                 for res in page.results:
-                    count += 1
                     yield res
-                    if max_amount is not None and count >= max_amount:
-                        return
+
+                    if max_amount is not None:
+                        max_amount -= 1
+                        if max_amount <= 0:
+                            return
 
     def log(self, max_amount: Optional[int] = None, **kwargs) -> Generator[Commit]:
         """
@@ -96,17 +99,15 @@ class Reference:
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
-        if max_amount is not None:
-            kwargs["limit"] = True
-
-        return self._get_generator(self._client.sdk_client.refs_api.log_commits,
-                                   self._repo_id, self._id, max_amount=max_amount, **kwargs)
+        for res in self._get_generator(self._client.sdk_client.refs_api.log_commits,
+                                       self._repo_id, self._id, max_amount=max_amount, **kwargs):
+            yield Commit(**res.dict())
 
     def _get_commit(self):
         if self._commit is None:
             with api_exception_handler():
                 commit = self._client.sdk_client.commits_api.get_commit(self._repo_id, self._id)
-                self._commit = Commit(**commit.__dict__)
+                self._commit = Commit(**commit.dict())
         return self._commit
 
     def metadata(self) -> dict[str, str]:
@@ -130,9 +131,9 @@ class Reference:
     def diff(self,
              other_ref: str | Reference,
              max_amount: Optional[int] = None,
-             after: str = "",
-             prefix: str = "",
-             delimiter: str = '/',
+             after: Optional[str] = None,
+             prefix: Optional[str] = None,
+             delimiter: Optional[str] = None,
              **kwargs) -> Generator[Change]:
         """
         Returns a diff generator of changes between this reference and other_ref
@@ -156,7 +157,7 @@ class Reference:
                                         prefix=prefix,
                                         delimiter=delimiter,
                                         **kwargs):
-            yield Change(**diff.__dict__)
+            yield Change(**diff.dict())
 
     def merge_into(self, destination_branch_id: str | Reference, **kwargs) -> str:
         """
@@ -170,10 +171,11 @@ class Reference:
             ServerException for any other errors
         """
         with api_exception_handler():
+            merge = lakefs_sdk.Merge(**kwargs)
             res = self._client.sdk_client.refs_api.merge_into_branch(self._repo_id,
                                                                      self._id,
                                                                      str(destination_branch_id),
-                                                                     **kwargs)
+                                                                     merge=merge)
             return res.reference
 
     def object(self, path: str) -> StoredObject:  # pylint: disable=C0103
