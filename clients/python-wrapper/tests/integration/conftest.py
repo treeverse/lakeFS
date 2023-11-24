@@ -47,7 +47,7 @@ def setup_branch_with_commits():
     for i in range(commit_num):
         obj = branch.object("test1")
         if not i % 2:
-            obj.create("test_data")
+            obj.upload("test_data")
         else:
             obj.delete()
         branch.commit(f"commit {commit_num - i - 1}")

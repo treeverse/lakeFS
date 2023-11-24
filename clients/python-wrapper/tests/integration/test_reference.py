@@ -29,8 +29,8 @@ def test_reference_diff(setup_branch_with_commits):
     assert changes[0].type == "removed"
 
     other_branch = lakefs.Repository(branch.repo_id).branch("other_branch").create("test_branch")
-    other_branch.object("prefix1/test1").create(data="data1")
-    other_branch.object("prefix2/test2").create(data="data2")
+    other_branch.object("prefix1/test1").upload(data="data1")
+    other_branch.object("prefix2/test2").upload(data="data2")
     other_branch.commit("other commit")
 
     changes = list(branch.diff(other_branch))
