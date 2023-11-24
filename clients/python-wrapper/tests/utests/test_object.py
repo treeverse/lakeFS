@@ -222,10 +222,10 @@ class TestWriteableObject:
             monkeypatch.setattr(lakefs_sdk.api.StagingApi, "link_physical_address", monkey_link_physical_address)
             # Test string
             data = "test_data"
-            obj.create(data=data)
+            obj.upload(data=data)
 
     def test_create_invalid_mode(self, monkeypatch, tmp_path):
         test_kwargs = ObjectTestKWArgs()
         with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             with expect_exception_context(ValueError):
-                obj.create(data="", mode="invalid")
+                obj.upload(data="", mode="invalid")
