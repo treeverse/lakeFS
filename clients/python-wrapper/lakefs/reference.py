@@ -8,7 +8,7 @@ from typing import Optional, Generator, Literal
 
 import lakefs_sdk
 
-from lakefs.client import Client, DefaultClient
+from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.exceptions import api_exception_handler
 from lakefs.object import StoredObject
 from lakefs.namedtuple import LenientNamedTuple
@@ -47,7 +47,7 @@ class Reference:
     _id: str
     _commit: Optional[Commit] = None
 
-    def __init__(self, repo_id: str, ref_id: str, client: Optional[Client] = DefaultClient) -> None:
+    def __init__(self, repo_id: str, ref_id: str, client: Optional[Client] = DEFAULT_CLIENT) -> None:
         self._client = client
         self._repo_id = repo_id
         self._id = ref_id
