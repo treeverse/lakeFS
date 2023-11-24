@@ -9,7 +9,7 @@ import lakefs_sdk
 
 from lakefs.object import WriteableObject
 from lakefs.object_manager import WriteableObjectManager
-from lakefs.reference import Reference, Commit
+from lakefs.reference import Reference
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 
 
@@ -22,10 +22,8 @@ class Branch(Reference):
         """
         For branches override the default _get_commit method to ensure we always fetch the latest head
         """
-        with api_exception_handler():
-            commit = self._client.sdk_client.commits_api.get_commit(self._repo_id, self._id)
-            self._commit = Commit(**commit.__dict__)
-        return self._commit
+        self._commit = None
+        return super()._get_commit()
 
     def create(self, source_reference_id: str | Reference, exist_ok: bool = False) -> Branch:
         """

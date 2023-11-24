@@ -101,13 +101,13 @@ class Reference:
         """
         for res in self._get_generator(self._client.sdk_client.refs_api.log_commits,
                                        self._repo_id, self._id, max_amount=max_amount, **kwargs):
-            yield Commit(**res.__dict__)
+            yield Commit(**res.dict())
 
     def _get_commit(self):
         if self._commit is None:
             with api_exception_handler():
                 commit = self._client.sdk_client.commits_api.get_commit(self._repo_id, self._id)
-                self._commit = Commit(**commit.__dict__)
+                self._commit = Commit(**commit.dict())
         return self._commit
 
     def metadata(self) -> dict[str, str]:
@@ -157,7 +157,7 @@ class Reference:
                                         prefix=prefix,
                                         delimiter=delimiter,
                                         **kwargs):
-            yield Change(**diff.__dict__)
+            yield Change(**diff.dict())
 
     def merge_into(self, destination_branch_id: str | Reference, **kwargs) -> str:
         """
