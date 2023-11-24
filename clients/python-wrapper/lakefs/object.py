@@ -367,8 +367,8 @@ class WriteableObject(StoredObject):
     def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = DEFAULT_CLIENT) -> None:
         super().__init__(repository, reference, path, client=client)
 
-    def create(self,
-               data: UploadContentType,
+    def upload(self,
+               data: str | bytes,
                mode: WriteModes = 'wb',
                pre_sign: Optional[bool] = None,
                content_type: Optional[str] = None,
@@ -398,7 +398,6 @@ class WriteableObject(StoredObject):
         if 'x' in mode and self.exists():  # Requires explicit create
             raise ObjectExistsException
 
-        # TODO: handle streams
         binary_mode = 'b' in mode
         if binary_mode and isinstance(data, str):
             content = data.encode('utf-8')

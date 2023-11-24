@@ -10,7 +10,7 @@ from lakefs.object import WriteableObject, WriteModes, OpenModes
 def test_object_read_seek(setup_repo):
     clt, repo = setup_repo
     data = "test_data"
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).create(
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
         data=data)
 
     with obj.open() as fd:
@@ -33,20 +33,20 @@ def test_object_read_seek(setup_repo):
             fd.read(1)
 
 
-def test_object_create_exists(setup_repo):
+def test_object_upload_exists(setup_repo):
     clt, repo = setup_repo
     data = "test_data"
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).create(
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
         data=data)
     with expect_exception_context(ObjectExistsException):
-        obj.create(data="some_other_data", mode='xb')
+        obj.upload(data="some_other_data", mode='xb')
 
     with obj.open() as fd:
         assert fd.read() == data
 
     # Create - overwrite
     new_data = "new_data"
-    obj2 = obj.create(data=new_data, mode='w')
+    obj2 = obj.upload(data=new_data, mode='w')
 
     with obj.open() as fd:
         assert fd.read() == new_data
@@ -60,7 +60,7 @@ def test_object_create_exists(setup_repo):
 def test_object_create_read_different_params(setup_repo, w_mode, r_mode, pre_sign):
     clt, repo = setup_repo
     data = b'test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82'
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).create(
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
         data=data, mode=w_mode, pre_sign=pre_sign)
 
     with obj.open(mode=r_mode) as fd:
@@ -78,7 +78,7 @@ def test_object_create_read_different_params(setup_repo, w_mode, r_mode, pre_sig
 def test_object_copy(setup_repo):
     clt, repo = setup_repo
     data = "test_data"
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).create(
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
         data=data, metadata={"foo": "bar"})
 
     copy_name = "copy_obj"
