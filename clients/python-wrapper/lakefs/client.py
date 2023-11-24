@@ -48,7 +48,7 @@ class ServerConfiguration:
     def __init__(self, client: Optional[Client] = DEFAULT_CLIENT):
         try:
             self._conf = client.sdk_client.config_api.get_config()
-            self._storage_conf = ServerStorageConfiguration(**self._conf.storage_config.__dict__)
+            self._storage_conf = ServerStorageConfiguration(**self._conf.storage_config.dict())
         except lakefs_sdk.exceptions.ApiException as e:
             if isinstance(e, lakefs_sdk.exceptions.ApiException):
                 raise NotAuthorizedException(e.status, e.reason) from e

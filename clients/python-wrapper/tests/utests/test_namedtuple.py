@@ -29,21 +29,27 @@ def test_namedtuple():
         "field4": "something",
         "field5": None,
     }
-    nt = NamedTupleTest(**kwargs)
-    assert nt.field1 == "test"
-    assert nt.field2 == 2
-    assert not nt.field3
+    nt2 = NamedTupleTest(**kwargs)
+    assert nt.field1 != nt2.field1
+    assert nt2.field1 == "test"
+    assert nt2.field2 == 2
+    assert not nt2.field3
 
     with expect_exception_context(AttributeError):
-        nt.field4
+        nt2.field4
 
     with expect_exception_context(AttributeError):
-        nt.field5
+        nt2.field5
 
     # Verify extra kwargs are in 'unknown' dict
-    assert nt.unknown['field4'] == "something"
-    assert nt.unknown['field5'] is None
+    assert nt2.unknown['field4'] == "something"
+    assert nt2.unknown['field5'] is None
 
     # Missing args
     with expect_exception_context(TypeError):
         NamedTupleTest(field2=1)
+
+    # Verify comparison works with different unknown fields
+    kwargs["field5"] = "something"
+    nt3 = NamedTupleTest(**kwargs)
+    assert nt2 == nt3

@@ -106,7 +106,7 @@ class StoredObject:
         if self._stats is None:
             with api_exception_handler(_io_exception_handler):
                 stat = self._client.sdk_client.objects_api.stat_object(self._repo_id, self._ref_id, self._path)
-                self._stats = ObjectStats(**stat.__dict__)
+                self._stats = ObjectStats(**stat.dict())
         return self._stats
 
     def exists(self) -> bool:
@@ -410,7 +410,7 @@ class WriteableObject(StoredObject):
         with api_exception_handler(_io_exception_handler):
             stats = self._upload_presign(content, content_type, metadata) if is_presign \
                 else self._upload_raw(content, content_type, metadata)
-            self._stats = ObjectStats(**stats.__dict__)
+            self._stats = ObjectStats(**stats.dict())
 
         return self
 

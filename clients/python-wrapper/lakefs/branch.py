@@ -18,7 +18,14 @@ class Branch(Reference):
     Class representing a branch in lakeFS.
     """
 
-    def create(self, source_reference_id: str, exist_ok: bool = False) -> Branch:
+    def _get_commit(self):
+        """
+        For branches override the default _get_commit method to ensure we always fetch the latest head
+        """
+        self._commit = None
+        return super()._get_commit()
+
+    def create(self, source_reference_id: str | Reference, exist_ok: bool = False) -> Branch:
         """
         Create a new branch in lakeFS from this object
 
@@ -38,7 +45,7 @@ class Branch(Reference):
                 return None
             return e
 
-        branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=source_reference_id)
+        branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=str(source_reference_id))
         with api_exception_handler(handle_conflict):
             self._client.sdk_client.branches_api.create_branch(self._repo_id, branch_creation)
         return self
