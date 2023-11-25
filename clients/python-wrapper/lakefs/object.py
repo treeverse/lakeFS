@@ -10,6 +10,7 @@ import io
 import json
 import os
 import tempfile
+import urllib.parse
 from abc import abstractmethod
 from typing import AnyStr, IO, Iterator, List, Literal, Optional, Union, get_args
 
@@ -32,6 +33,11 @@ from lakefs.exceptions import (
 from lakefs.namedtuple import LenientNamedTuple
 
 _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
+# _BUFFER_SIZE - Writer buffer size. While buffer size not exceed, data will be maintained in memory and file will
+#                not be created.
+_BUFFER_SIZE = 32 * 1024 * 1024
+# _MAX_FILE_SIZE - Max size for PUT object in AWS
+_MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024
 
 ReadModes = Literal['r', 'rb']
 WriteModes = Literal['x', 'xb', 'w', 'wb']
@@ -306,11 +312,11 @@ class ObjectReader(LakeFSIOBase):
 class ObjectWriter(LakeFSIOBase):
     """
     ObjectWriter provides write-only functionality for lakeFS objects with IO semantics.
-    This Object is instantiated and returned for the Branch reference type
+    This Object is instantiated and returned from the WriteableObject writer method.
+    For the data to be actually written to the lakeFS server the close() method must be invoked explicitly or
+    implicitly when using writer as a context.
     """
-
-    _BUFFER_SIZE = 32 * 1024 * 1024
-    _fd: Union[io.BufferedWriter, io.TextIOWrapper]
+    _fd: tempfile.SpooledTemporaryFile
     _obj_stats: ObjectStats = None
 
     def __init__(self,
@@ -333,9 +339,10 @@ class ObjectWriter(LakeFSIOBase):
         open_kwargs = {
             "encoding": "utf-8" if 'b' not in mode else None,
             "mode": 'wb+' if 'b' in mode else 'w+',
-            "buffering": self._BUFFER_SIZE,
+            "buffering": _BUFFER_SIZE,
+            "max_size": _MAX_FILE_SIZE,
         }
-        self._fd = tempfile.TemporaryFile(**open_kwargs)
+        self._fd = tempfile.SpooledTemporaryFile(**open_kwargs)  # pylint: disable=consider-using-with
         super().__init__(obj, mode, pre_sign, client)
 
     @property
@@ -357,12 +364,12 @@ class ObjectWriter(LakeFSIOBase):
 
     def flush(self) -> None:
         """
-        Flush buffer to file. Once https://github.com/treeverse/lakeFS/issues/6964 is implemented, we should flush the
-        stream the buffer directly into the http connection
+        Flush buffer to file. Prevent flush if total write size is still smaller than _BUFFER_SIZE so that we avoid
+        unnecessary write to disk.
         """
         # Don't flush buffer to file if we didn't exceed buffer size
         # We want to avoid using the file if possible
-        if self._pos > self._BUFFER_SIZE:
+        if self._pos > _BUFFER_SIZE:
             self._fd.flush()
 
     def write(self, s: AnyStr) -> int:
@@ -424,8 +431,10 @@ class ObjectWriter(LakeFSIOBase):
                 headers[_LAKEFS_METADATA_PREFIX + k] = v
 
         self._fd.seek(0)
-        resource_path = f"/repositories/{self._obj.repo}/branches/{self._obj.ref}/objects"
-        url = self._client.config.host + resource_path + f"?path={self._obj.path}"
+        resource_path = urllib.parse.quote(f"/repositories/{self._obj.repo}/branches/{self._obj.ref}/objects",
+                                           encoding="utf-8")
+        query_params = urllib.parse.urlencode({"path": self._obj.path}, encoding="utf-8")
+        url = self._client.config.host + resource_path + f"?{query_params}"
         self._client.sdk_client.objects_api.api_client.update_params_for_auth(headers, None, auth_settings,
                                                                               resource_path, "POST", self._fd)
         resp = self._client.sdk_client.objects_api.api_client.rest_client.pool_manager.request(url=url,
@@ -657,7 +666,7 @@ class WriteableObject(StoredObject):
                metadata: Optional[dict[str, str]] = None) -> ObjectWriter:
         """
         Context manager which provide a file-descriptor like object that allow writing the given object to lakeFS
-        The writes are saved in a buffer as long as the writer is open. Only when it closes it writes the data into 
+        The writes are saved in a buffer as long as the writer is open. Only when it closes it writes the data into
         lakeFS. The optional parameters can be modified by accessing the respective fields as long as the writer is
         still open.
 
