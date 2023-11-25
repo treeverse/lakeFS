@@ -36,8 +36,6 @@ _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
 # _BUFFER_SIZE - Writer buffer size. While buffer size not exceed, data will be maintained in memory and file will
 #                not be created.
 _BUFFER_SIZE = 32 * 1024 * 1024
-# _MAX_FILE_SIZE - Max size for PUT object in AWS
-_MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024
 
 ReadModes = Literal['r', 'rb']
 WriteModes = Literal['x', 'xb', 'w', 'wb']
@@ -340,7 +338,7 @@ class ObjectWriter(LakeFSIOBase):
             "encoding": "utf-8" if 'b' not in mode else None,
             "mode": 'wb+' if 'b' in mode else 'w+',
             "buffering": _BUFFER_SIZE,
-            "max_size": _MAX_FILE_SIZE,
+            "max_size": _BUFFER_SIZE,
         }
         self._fd = tempfile.SpooledTemporaryFile(**open_kwargs)  # pylint: disable=consider-using-with
         super().__init__(obj, mode, pre_sign, client)
