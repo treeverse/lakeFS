@@ -393,11 +393,6 @@ Parameters:
   - `export_base_uri(string)`: Override the prefix in S3 i.e `s3://other-bucket/path/`.
   - `writer(function(bucket, key, data))`: If passed then will not use s3 client, helpful for debug.
 
-Return: 
-
-- `result(table)`:
-  - `location(table)`: Export bucket location information `{procol, bucket, key}`.
-  - `symlink_uris(table)`: List of all full path's for the the exported symlink.txt files in S3.
 Example:
 
 ```lua
