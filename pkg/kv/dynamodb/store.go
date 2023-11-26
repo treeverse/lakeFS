@@ -113,9 +113,13 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		}
 	})
 
-	err = setupKeyValueDatabase(ctx, svc, params)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
+	// Create table if not exists
+	success, _ := isTableExist(ctx, svc, params.TableName)
+	if !success {
+		err := setupKeyValueDatabase(ctx, svc, params)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
+		}
 	}
 
 	logger := logging.FromContext(ctx).WithField("store", DriverName)
