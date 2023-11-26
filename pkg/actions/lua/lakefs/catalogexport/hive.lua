@@ -49,8 +49,8 @@ local function extract_partition_pager(client, repo_id, commit_id, base_path, pa
                 end
             end
             local entry = page[1]
-            if not pathlib.is_hidden(entry.path) then
-                local partition_key = extract_partitions_path(partition_cols, entry.path)
+            local partition_key = extract_partitions_path(partition_cols, entry.path)
+            if not pathlib.is_hidden(entry.path) and partition_key ~= nil then
                 -- first time: if not set, assign current object partition as the target_partition key
                 if target_partition == "" then
                     target_partition = partition_key
@@ -61,12 +61,15 @@ local function extract_partition_pager(client, repo_id, commit_id, base_path, pa
                     target_partition = partition_key
                     return partition_result, partition_entries
                 end
-                table.insert(partition_entries, {
-                    physical_address = entry.physical_address,
-                    path = entry.path,
-                    size = entry.size_bytes,
-                    checksum = entry.checksum
-                })
+                -- if entry is not a hadoop directory marker add the file to the result set
+                if not (entry.path == partition_key and entry.size_bytes == 0) then 
+                    table.insert(partition_entries, {
+                        physical_address = entry.physical_address,
+                        path = entry.path,
+                        size = entry.size_bytes,
+                        checksum = entry.checksum
+                    }) 
+                end
             end
             -- remove entry (if its part of current partition, hidden files etc) from the entry set
             table.remove(page, 1)
