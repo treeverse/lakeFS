@@ -113,7 +113,8 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		}
 	})
 
-	// Create table if not exists
+	// Create table if not exists.
+	// To avoid potential errors in restricted environments, we confirmed the existence of the table beforehand.
 	success, _ := isTableExist(ctx, svc, params.TableName)
 	if !success {
 		err := setupKeyValueDatabase(ctx, svc, params)
