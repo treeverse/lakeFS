@@ -50,7 +50,10 @@ import (
 const (
 	// DefaultMaxPerPage is the maximum number of results returned for paginated queries to the API
 	DefaultMaxPerPage int = 1000
-	lakeFSPrefix          = "symlinks"
+	// DefaultPerPage is the default number of results returned for paginated queries to the API
+	DefaultPerPage int = 100
+
+	lakeFSPrefix = "symlinks"
 
 	actionStatusCompleted = "completed"
 	actionStatusFailed    = "failed"
@@ -4720,14 +4723,14 @@ func paginationDelimiter(v *apigen.PaginationDelimiter) string {
 
 func paginationAmount(v *apigen.PaginationAmount) int {
 	if v == nil {
-		return DefaultMaxPerPage
+		return DefaultPerPage
 	}
 	i := int(*v)
 	if i > DefaultMaxPerPage {
 		return DefaultMaxPerPage
 	}
 	if i <= 0 {
-		return DefaultMaxPerPage
+		return DefaultPerPage
 	}
 	return i
 }
