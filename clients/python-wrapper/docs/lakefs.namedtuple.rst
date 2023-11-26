@@ -1,7 +1,7 @@
-lakefs.object\_io module
+lakefs.namedtuple module
 ========================
 
-.. automodule:: lakefs.object_io
+.. automodule:: lakefs.namedtuple
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 NAME = "lakefs"
-VERSION = "0.1.0-alpha.5"
+VERSION = "0.1.0-beta"
 # To install the library, run the following
 #
 # python setup.py install
