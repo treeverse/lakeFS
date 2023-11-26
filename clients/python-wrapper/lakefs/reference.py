@@ -76,10 +76,12 @@ class Reference:
     @staticmethod
     def _get_generator(func, *args, max_amount: Optional[int] = None, **kwargs):
         has_more = True
+        after = ""
         with api_exception_handler():
             while has_more:
-                page = func(*args, **kwargs)
+                page = func(*args, after=after, **kwargs)
                 has_more = page.pagination.has_more
+                after = page.pagination.next_offset
                 for res in page.results:
                     yield res
 
