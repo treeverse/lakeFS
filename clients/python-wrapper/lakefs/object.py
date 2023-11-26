@@ -7,36 +7,41 @@ from __future__ import annotations
 import base64
 import binascii
 import io
+import json
 import os
-from typing import (
-    AnyStr, AsyncIterable, IO, Iterable, Iterator,
-    List, Literal, NamedTuple, Optional, TypeVar, Union,
-    get_args)
+import tempfile
+import urllib.parse
+from abc import abstractmethod
+from typing import AnyStr, IO, Iterator, List, Literal, Optional, Union, get_args
 
 import lakefs_sdk
+import urllib3
 from lakefs_sdk import StagingMetadata
 
 from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.exceptions import (
     api_exception_handler,
+    handle_http_error,
     LakeFSException,
     NotFoundException,
     ObjectNotFoundException,
     NotAuthorizedException,
     ForbiddenException,
     PermissionException,
-    ObjectExistsException
+    ObjectExistsException,
 )
+from lakefs.namedtuple import LenientNamedTuple
 
 _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
+# _BUFFER_SIZE - Writer buffer size. While buffer size not exceed, data will be maintained in memory and file will
+#                not be created.
+_BUFFER_SIZE = 32 * 1024 * 1024
 
-# Type to support both strings and bytes in addition to streams (reference: httpx._types.RequestContent)
-UploadContentType = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
-OpenModes = Literal['r', 'rb']
+ReadModes = Literal['r', 'rb']
 WriteModes = Literal['x', 'xb', 'w', 'wb']
 
 
-class ObjectStats(NamedTuple):
+class ObjectStats(LenientNamedTuple):
     """
     Represent a lakeFS object's stats
     """
@@ -49,6 +54,456 @@ class ObjectStats(NamedTuple):
     size_bytes: Optional[int] = None
     metadata: Optional[dict[str, str]] = None
     content_type: Optional[str] = None
+
+
+class LakeFSIOBase(IO):
+    """
+    Base class for the lakeFS Reader and Writer classes
+    """
+
+    _client: Client
+    _obj: StoredObject
+    _mode: ReadModes
+    _pos: int
+    _pre_sign: Optional[bool] = None
+    _is_closed: bool = False
+
+    def __init__(self, obj: StoredObject, mode: Union[ReadModes, WriteModes], pre_sign: Optional[bool] = None,
+                 client: Optional[Client] = DEFAULT_CLIENT) -> None:
+        self._obj = obj
+        self._mode = mode
+        self._pre_sign = pre_sign if pre_sign is not None else client.storage_config.pre_sign_support
+        self._client = client
+        self._pos = 0
+
+    @property
+    def mode(self) -> str:
+        """
+        Returns the open mode for this object
+        """
+        return self._mode
+
+    @property
+    def name(self) -> str:
+        """
+        Returns the name of the object relative to the repo and reference
+        """
+        return self._obj.path
+
+    @property
+    def closed(self) -> bool:
+        """
+        Returns True after the object is closed
+        """
+        return self._is_closed
+
+    def close(self) -> None:
+        """
+        Closes the current file descriptor for IO operations
+        """
+        self._is_closed = True
+
+    def fileno(self) -> int:
+        """
+        The file descriptor number as defined by the operating system. In the context of lakeFS it has no meaning
+
+        :return: -1 Always
+        """
+        return -1
+
+    @abstractmethod
+    def flush(self) -> None:
+        raise NotImplementedError
+
+    def isatty(self) -> bool:
+        """
+        Irrelevant for the lakeFS implementation
+        """
+        return False
+
+    @abstractmethod
+    def readable(self) -> bool:
+        raise NotImplementedError
+
+    def readline(self, limit: int = -1):
+        """
+        Currently unsupported
+        """
+        raise io.UnsupportedOperation
+
+    def readlines(self, hint: int = -1):
+        """
+        Currently unsupported
+        """
+        raise io.UnsupportedOperation
+
+    @abstractmethod
+    def seekable(self) -> bool:
+        raise NotImplementedError
+
+    def truncate(self, size: int = None) -> int:
+        """
+        Unsupported by lakeFS implementation
+        """
+        raise io.UnsupportedOperation
+
+    @abstractmethod
+    def writable(self) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def write(self, s: AnyStr) -> int:
+        raise NotImplementedError
+
+    def writelines(self, lines: List[AnyStr]) -> None:
+        """
+        Unsupported by lakeFS implementation
+        """
+        raise io.UnsupportedOperation
+
+    def __next__(self) -> AnyStr:
+        """
+        Unsupported by lakeFS implementation
+        """
+        raise io.UnsupportedOperation
+
+    def __iter__(self) -> Iterator[AnyStr]:
+        """
+        Unsupported by lakeFS implementation
+        """
+        raise io.UnsupportedOperation
+
+    def __enter__(self) -> LakeFSIOBase:
+        return self
+
+    def __exit__(self, typ, value, traceback) -> bool:
+        self.close()
+        return False  # Don't suppress an exception
+
+    @abstractmethod
+    def seek(self, offset: int, whence: int = 0) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
+    def read(self, n: int = None) -> str | bytes:
+        raise NotImplementedError
+
+    def tell(self) -> int:
+        """
+        For readers - read position, for writers can be used as an indication for bytes written
+        """
+        return self._pos
+
+
+class ObjectReader(LakeFSIOBase):
+    """
+    ObjectReader provides read-only functionality for lakeFS objects with IO semantics.
+    This Object is instantiated and returned for immutable reference types (Commit, Tag...)
+    """
+
+    def __init__(self, obj: StoredObject, mode: ReadModes, pre_sign: Optional[bool] = None,
+                 client: Optional[Client] = DEFAULT_CLIENT) -> None:
+        if mode not in get_args(ReadModes):
+            raise ValueError(f"invalid read mode: '{mode}'. ReadModes: {ReadModes}")
+
+        super().__init__(obj, mode, pre_sign, client)
+
+    @property
+    def pre_sign(self):
+        """
+        Returns whether the pre_sign mode is enabled
+        """
+        if self._pre_sign is None:
+            self._pre_sign = self._client.storage_config.pre_sign_support
+        return self._pre_sign
+
+    def readable(self) -> bool:
+        """
+        Returns True always
+        """
+        return True
+
+    def write(self, s: AnyStr) -> int:
+        """
+        Unsupported for reader object
+        """
+        raise io.UnsupportedOperation
+
+    def seekable(self) -> bool:
+        """
+        Returns True always
+        """
+        return True
+
+    def writable(self) -> bool:
+        """
+        Unsupported - read only object
+        """
+        return False
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        """
+        Move the object's reading position
+        :param offset: The offset from the beginning of the file
+        :param whence: Optional. The whence argument is optional and defaults to
+            os.SEEK_SET or 0 (absolute file positioning);
+            other values are os.SEEK_CUR or 1 (seek relative to the current position) and os.SEEK_END or 2
+            (seek relative to the file’s end)
+            os.SEEK_END is not supported
+        :raises OSError if calculated new position is negative
+        """
+        if whence == os.SEEK_SET:
+            pos = offset
+        elif whence == os.SEEK_CUR:
+            pos = offset - whence
+        else:
+            raise io.UnsupportedOperation(f"whence={whence} is not supported")
+
+        if pos < 0:
+            raise OSError("position must be a non-negative integer")
+        self._pos = pos
+        return pos
+
+    def read(self, n: int = None) -> str | bytes:
+        """
+        Read object data
+        :param n: How many bytes to read. If read_bytes is None, will read from current position to end.
+        If current position + read_bytes > object size.
+        :return: The bytes read
+        :raises
+            EOFError if current position is after object size
+            OSError if read_bytes is non-positive
+            ObjectNotFoundException if repo id, reference id or object path does not exist
+            PermissionException if user is not authorized to perform this operation, or operation is forbidden
+            ServerException for any other errors
+        """
+        if n and n <= 0:
+            raise OSError("read_bytes must be a positive integer")
+
+        read_range = self._get_range_string(start=self._pos, read_bytes=n)
+        with api_exception_handler(_io_exception_handler):
+            contents = self._client.sdk_client.objects_api.get_object(self._obj.repo,
+                                                                      self._obj.ref,
+                                                                      self._obj.path,
+                                                                      range=read_range,
+                                                                      presign=self.pre_sign)
+        self._pos += len(contents)  # Update pointer position
+        if 'b' not in self._mode:
+            return contents.decode('utf-8')
+
+        return contents
+
+    def flush(self) -> None:
+        """
+        Nothing to do for reader
+        """
+
+    @staticmethod
+    def _get_range_string(start, read_bytes=None):
+        if start == 0 and read_bytes is None:
+            return None
+        if read_bytes is None:
+            return f"bytes={start}-"
+        return f"bytes={start}-{start + read_bytes - 1}"
+
+
+class ObjectWriter(LakeFSIOBase):
+    """
+    ObjectWriter provides write-only functionality for lakeFS objects with IO semantics.
+    This Object is instantiated and returned from the WriteableObject writer method.
+    For the data to be actually written to the lakeFS server the close() method must be invoked explicitly or
+    implicitly when using writer as a context.
+    """
+    _fd: tempfile.SpooledTemporaryFile
+    _obj_stats: ObjectStats = None
+
+    def __init__(self,
+                 obj: StoredObject,
+                 mode: WriteModes,
+                 pre_sign: Optional[bool] = None,
+                 content_type: Optional[str] = None,
+                 metadata: Optional[dict[str, str]] = None,
+                 client: Optional[Client] = DEFAULT_CLIENT) -> None:
+
+        if 'x' in mode and obj.exists():  # Requires explicit create
+            raise ObjectExistsException
+
+        if mode not in get_args(WriteModes):
+            raise ValueError(f"invalid write mode: '{mode}'. WriteModes: {WriteModes}")
+
+        self.content_type = content_type
+        self.metadata = metadata
+
+        open_kwargs = {
+            "encoding": "utf-8" if 'b' not in mode else None,
+            "mode": 'wb+' if 'b' in mode else 'w+',
+            "buffering": _BUFFER_SIZE,
+            "max_size": _BUFFER_SIZE,
+        }
+        self._fd = tempfile.SpooledTemporaryFile(**open_kwargs)  # pylint: disable=consider-using-with
+        super().__init__(obj, mode, pre_sign, client)
+
+    @property
+    def pre_sign(self) -> bool:
+        """
+        Returns whether the pre_sign mode is enabled
+        """
+        if self._pre_sign is None:
+            self._pre_sign = self._client.storage_config.pre_sign_support
+        return self._pre_sign
+
+    @pre_sign.setter
+    def pre_sign(self, value: bool) -> None:
+        """
+        Set the pre_sign mode to value
+        :param value: The new value for pre_sign mode
+        """
+        self._pre_sign = value
+
+    def flush(self) -> None:
+        """
+        Flush buffer to file. Prevent flush if total write size is still smaller than _BUFFER_SIZE so that we avoid
+        unnecessary write to disk.
+        """
+        # Don't flush buffer to file if we didn't exceed buffer size
+        # We want to avoid using the file if possible
+        if self._pos > _BUFFER_SIZE:
+            self._fd.flush()
+
+    def write(self, s: AnyStr) -> int:
+        """
+        Write data to buffer
+        :param s: The data to write
+        :return: The number of bytes written to buffer
+        """
+        binary_mode = 'b' in self._mode
+        if binary_mode and isinstance(s, str):
+            contents = s.encode('utf-8')
+        elif not binary_mode and isinstance(s, bytes):
+            contents = s.decode('utf-8')
+        else:
+            contents = s
+
+        count = self._fd.write(contents)
+        self._pos += count
+        return count
+
+    def close(self) -> None:
+        """
+        Write the data to the lakeFS server and close open descriptors
+        """
+        stats = self._upload_presign() if self.pre_sign else self._upload_raw()
+        self._obj_stats = ObjectStats(**stats.dict())
+
+        self._fd.close()
+        super().close()
+
+    @staticmethod
+    def _extract_etag_from_response(headers) -> str:
+        # prefer Content-MD5 if exists
+        content_md5 = headers.get("Content-MD5")
+        if content_md5 is not None and len(content_md5) > 0:
+            try:  # decode base64, return as hex
+                decode_md5 = base64.b64decode(content_md5)
+                return binascii.hexlify(decode_md5).decode("utf-8")
+            except binascii.Error:
+                pass
+
+        # fallback to ETag
+        etag = headers.get("ETag", "").strip(' "')
+        return etag
+
+    def _upload_raw(self) -> ObjectStats:
+        """
+        Use raw upload API call to bypass validation of content parameter
+        """
+        auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": self.content_type if self.content_type is not None else "application/octet-stream"
+        }
+
+        # Create user metadata headers
+        if self.metadata is not None:
+            for k, v in self.metadata.items():
+                headers[_LAKEFS_METADATA_PREFIX + k] = v
+
+        self._fd.seek(0)
+        resource_path = urllib.parse.quote(f"/repositories/{self._obj.repo}/branches/{self._obj.ref}/objects",
+                                           encoding="utf-8")
+        query_params = urllib.parse.urlencode({"path": self._obj.path}, encoding="utf-8")
+        url = self._client.config.host + resource_path + f"?{query_params}"
+        self._client.sdk_client.objects_api.api_client.update_params_for_auth(headers, None, auth_settings,
+                                                                              resource_path, "POST", self._fd)
+        resp = self._client.sdk_client.objects_api.api_client.rest_client.pool_manager.request(url=url,
+                                                                                               method="POST",
+                                                                                               headers=headers,
+                                                                                               body=self._fd)
+
+        handle_http_error(resp)
+        return lakefs_sdk.ObjectStats(**json.loads(resp.data))
+
+    def _upload_presign(self) -> ObjectStats:
+        staging_location = self._client.sdk_client.staging_api.get_physical_address(self._obj.repo,
+                                                                                    self._obj.ref,
+                                                                                    self._obj.path,
+                                                                                    True)
+        url = staging_location.presigned_url
+
+        headers = {"Content-Length": self._pos}
+        if self.content_type:
+            headers["Content-Type"] = self.content_type
+        if self._client.storage_config.blockstore_type == "azure":
+            headers["x-ms-blob-type"] = "BlockBlob"
+
+        self._fd.seek(0)
+        resp = urllib3.request(method="PUT",
+                               url=url,
+                               body=self._fd,
+                               headers=headers)
+        handle_http_error(resp)
+
+        etag = ObjectWriter._extract_etag_from_response(resp.getheaders())
+        size_bytes = self._pos
+        staging_metadata = StagingMetadata(staging=staging_location,
+                                           size_bytes=size_bytes,
+                                           checksum=etag,
+                                           user_metadata=self.metadata,
+                                           content_type=self.content_type)
+        return self._client.sdk_client.staging_api.link_physical_address(self._obj.repo,
+                                                                         self._obj.ref,
+                                                                         self._obj.path,
+                                                                         staging_metadata=staging_metadata)
+
+    def readable(self) -> bool:
+        """
+        ObjectWriter is write-only - return False always
+        """
+        return False
+
+    def seekable(self) -> bool:
+        """
+        ObjectWriter is not seekable. Returns False always
+        """
+        return False
+
+    def writable(self) -> bool:
+        """
+        Returns True always
+        """
+        return True
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        """
+        Unsupported for writer class
+        """
+        raise io.UnsupportedOperation
+
+    def read(self, n: int = None) -> str | bytes:
+        """
+        Unsupported for writer class
+        """
+        raise io.UnsupportedOperation
 
 
 class StoredObject:
@@ -88,16 +543,15 @@ class StoredObject:
         """
         return self._path
 
-    def open(self, mode: OpenModes = 'r', pre_sign: Optional[bool] = None) -> ObjectReader:
+    def reader(self, mode: ReadModes = 'r', pre_sign: Optional[bool] = None) -> ObjectReader:
         """
         Context manager which provide a file-descriptor like object that allow reading the given object
-        :param mode: Open mode - as supported by OpenModes
+        :param mode: Read mode - as supported by ReadModes
         :param pre_sign: (Optional), enforce the pre_sign mode on the lakeFS server. If not set, will probe server for
         information.
         :return: A Reader object
         """
-        reader = ObjectReader(self, mode=mode, pre_sign=pre_sign, client=self._client)
-        return reader
+        return ObjectReader(self, mode=mode, pre_sign=pre_sign, client=self._client)
 
     def stat(self) -> ObjectStats:
         """
@@ -150,218 +604,11 @@ class StoredObject:
                                client=self._client)
 
 
-class ObjectReader(IO):
-    """
-    ReadableObject provides read-only functionality for lakeFS objects with IO semantics.
-    This Object is instantiated and returned on open() methods for immutable reference types (Commit, Tag...)
-    """
-    _client: Client
-    _obj: StoredObject
-    _mode: OpenModes
-    _pos: int
-    _pre_sign: Optional[bool] = None
-    _is_closed: bool = False
-
-    def __init__(self, obj: StoredObject, mode: OpenModes, pre_sign: Optional[bool] = None,
-                 client: Optional[Client] = DEFAULT_CLIENT) -> None:
-        if mode not in get_args(OpenModes):
-            raise ValueError(f"invalid read mode: '{mode}'. ReadModes: {OpenModes}")
-
-        self._obj = obj
-        self._mode = mode
-        self._pre_sign = pre_sign if pre_sign is not None else client.storage_config.pre_sign_support
-        self._client = client
-        self._pos = 0
-
-    #  typing.IO Interface Implementation ############################################################
-
-    @property
-    def mode(self) -> str:
-        """
-        Returns the open mode for this object
-        """
-        return self._mode
-
-    @property
-    def name(self) -> str:
-        """
-        Returns the name of the object relative to the repo and reference
-        """
-        return self._obj.path
-
-    @property
-    def closed(self) -> bool:
-        """
-        Returns True after the object is closed
-        """
-        return self._is_closed
-
-    def close(self) -> None:
-        """
-        Closes the current file descriptor for IO operations
-        """
-        self._is_closed = True
-
-    def fileno(self) -> int:
-        """
-        The file descriptor number as defined by the operating system. In the context of lakeFS it has no meaning
-
-        :return: -1 Always
-        """
-        return -1
-
-    def flush(self) -> None:
-        """
-        Irrelevant for the lakeFS implementation
-        """
-
-    def isatty(self) -> bool:
-        """
-        Irrelevant for the lakeFS implementation
-        """
-        return False
-
-    def readable(self) -> bool:
-        """
-        Returns True always
-        """
-        return True
-
-    def readline(self, limit: int = -1):
-        """
-        Currently unsupported
-        """
-        raise io.UnsupportedOperation
-
-    def readlines(self, hint: int = -1):
-        """
-        Currently unsupported
-        """
-        raise io.UnsupportedOperation
-
-    def seekable(self) -> bool:
-        """
-        Returns True always
-        """
-        return True
-
-    def truncate(self, size: int = None) -> int:
-        """
-        Unsupported by lakeFS implementation
-        """
-        raise io.UnsupportedOperation
-
-    def writable(self) -> bool:
-        """
-        Unsupported - read only object
-        """
-        return False
-
-    def write(self, s: AnyStr) -> int:
-        """
-        Unsupported - read only object
-        """
-        raise io.UnsupportedOperation
-
-    def writelines(self, lines: List[AnyStr]) -> None:
-        """
-        Unsupported by lakeFS implementation
-        """
-        raise io.UnsupportedOperation
-
-    def __next__(self) -> AnyStr:
-        """
-        Unsupported by lakeFS implementation
-        """
-        raise io.UnsupportedOperation
-
-    def __iter__(self) -> Iterator[AnyStr]:
-        """
-        Unsupported by lakeFS implementation
-        """
-        raise io.UnsupportedOperation
-
-    def __enter__(self) -> TypeVar("Self", bound="ObjectReader"):
-        return self
-
-    def __exit__(self, typ, value, traceback) -> bool:
-        self.close()
-        return False  # Don't suppress an exception
-
-    def seek(self, offset: int, whence: int = 0) -> int:
-        """
-        Move the object's reading position
-        :param offset: The offset from the beginning of the file
-        :param whence: Optional. The whence argument is optional and defaults to
-            os.SEEK_SET or 0 (absolute file positioning);
-            other values are os.SEEK_CUR or 1 (seek relative to the current position) and os.SEEK_END or 2
-            (seek relative to the file’s end)
-            os.SEEK_END is not supported
-        :raises OSError if calculated new position is negative
-        """
-        if whence == os.SEEK_SET:
-            pos = offset
-        elif whence == os.SEEK_CUR:
-            pos = offset - whence
-        else:
-            raise io.UnsupportedOperation(f"whence={whence} is not supported")
-
-        if pos < 0:
-            raise OSError("position must be a non-negative integer")
-        self._pos = pos
-        return pos
-
-    def read(self, n: int = None) -> str | bytes:
-        """
-        Read object data
-        :param n: How many bytes to read. If read_bytes is None, will read from current position to end.
-        If current position + read_bytes > object size.
-        :return: The bytes read
-        :raises
-            EOFError if current position is after object size
-            OSError if read_bytes is non-positive
-            ObjectNotFoundException if repo id, reference id or object path does not exist
-            PermissionException if user is not authorized to perform this operation, or operation is forbidden
-            ServerException for any other errors
-        """
-        if n and n <= 0:
-            raise OSError("read_bytes must be a positive integer")
-
-        read_range = self._get_range_string(start=self._pos, read_bytes=n)
-        with api_exception_handler(_io_exception_handler):
-            contents = self._client.sdk_client.objects_api.get_object(self._obj.repo,
-                                                                      self._obj.ref,
-                                                                      self._obj.path,
-                                                                      range=read_range,
-                                                                      presign=self._pre_sign)
-        self._pos += len(contents)  # Update pointer position
-        if 'b' not in self._mode:
-            return contents.decode('utf-8')
-
-        return contents
-
-    #  END typing.IO Interface Implementation ############################################################
-
-    def tell(self) -> int:
-        """
-        Object's read position. If position is past object byte size, trying to read the object will return EOF
-        """
-        return self._pos
-
-    @staticmethod
-    def _get_range_string(start, read_bytes=None):
-        if start == 0 and read_bytes is None:
-            return None
-        if read_bytes is None:
-            return f"bytes={start}-"
-        return f"bytes={start}-{start + read_bytes - 1}"
-
-
 class WriteableObject(StoredObject):
     """
     WriteableObject inherits from ReadableObject and provides read/write functionality for lakeFS objects
     using IO semantics.
-    This Object is instantiated and returned upon invoking open() on Branch reference type.
+    This Object is instantiated and returned upon invoking writer() on Branch reference type.
     """
 
     def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = DEFAULT_CLIENT) -> None:
@@ -392,115 +639,16 @@ class WriteableObject(StoredObject):
             PermissionException if user is not authorized to perform this operation, or operation is forbidden
             ServerException for any other errors
         """
-        if mode not in get_args(WriteModes):
-            raise ValueError(f"invalid write mode: '{mode}'. WriteModes: {WriteModes}")
-
-        if 'x' in mode and self.exists():  # Requires explicit create
-            raise ObjectExistsException
-
-        binary_mode = 'b' in mode
-        if binary_mode and isinstance(data, str):
-            content = data.encode('utf-8')
-        elif not binary_mode and isinstance(data, bytes):
-            content = data.decode('utf-8')
-        else:
-            content = data
-
-        is_presign = pre_sign if pre_sign is not None else self._client.storage_config.pre_sign_support
-        with api_exception_handler(_io_exception_handler):
-            stats = self._upload_presign(content, content_type, metadata) if is_presign \
-                else self._upload_raw(content, content_type, metadata)
-            self._stats = ObjectStats(**stats.dict())
+        with ObjectWriter(self, mode, pre_sign, content_type, metadata, self._client) as writer:
+            writer.write(data)
 
         return self
-
-    @staticmethod
-    def _extract_etag_from_response(headers) -> str:
-        # prefer Content-MD5 if exists
-        content_md5 = headers.get("Content-MD5")
-        if content_md5 is not None and len(content_md5) > 0:
-            try:  # decode base64, return as hex
-                decode_md5 = base64.b64decode(content_md5)
-                return binascii.hexlify(decode_md5).decode("utf-8")
-            except binascii.Error:
-                pass
-
-        # fallback to ETag
-        etag = headers.get("ETag", "").strip(' "')
-        return etag
-
-    def _upload_raw(self, content: UploadContentType, content_type: Optional[str] = None,
-                    metadata: Optional[dict[str, str]] = None) -> ObjectStats:
-        """
-        Use raw upload API call to bypass validation of content parameter
-        """
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": content_type if content_type is not None else "application/octet-stream"
-        }
-
-        # Create user metadata headers
-        if metadata is not None:
-            for k, v in metadata.items():
-                headers[_LAKEFS_METADATA_PREFIX + k] = v
-
-        _response_types_map = {
-            '201': "ObjectStats",
-            '400': "Error",
-            '401': "Error",
-            '403': "Error",
-            '404': "Error",
-            '412': "Error",
-            '420': None,
-        }
-        # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']
-        return self._client.sdk_client.objects_api.api_client.call_api(
-            resource_path='/repositories/{repository}/branches/{branch}/objects',
-            method='POST',
-            path_params={"repository": self._repo_id, "branch": self._ref_id},
-            query_params={"path": self._path},
-            header_params=headers,
-            body=content,
-            response_types_map=_response_types_map,
-            auth_settings=_auth_settings,
-            _return_http_data_only=True
-        )
-
-    def _upload_presign(self, content: UploadContentType, content_type: Optional[str] = None,
-                        metadata: Optional[dict[str, str]] = None) -> ObjectStats:
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": content_type if content_type is not None else "application/octet-stream"
-        }
-
-        staging_location = self._client.sdk_client.staging_api.get_physical_address(self._repo_id,
-                                                                                    self._ref_id,
-                                                                                    self._path,
-                                                                                    True)
-        url = staging_location.presigned_url
-        if self._client.storage_config.blockstore_type == "azure":
-            headers["x-ms-blob-type"] = "BlockBlob"
-
-        resp = self._client.sdk_client.objects_api.api_client.request(
-            method="PUT",
-            url=url,
-            body=content,
-            headers=headers
-        )
-
-        etag = WriteableObject._extract_etag_from_response(resp.getheaders())
-        size_bytes = len(content.encode('utf-8')) if isinstance(content, str) else len(content)
-        staging_metadata = StagingMetadata(staging=staging_location,
-                                           size_bytes=size_bytes,
-                                           checksum=etag,
-                                           user_metadata=metadata)
-        return self._client.sdk_client.staging_api.link_physical_address(self._repo_id, self._ref_id, self._path,
-                                                                         staging_metadata=staging_metadata)
 
     def delete(self) -> None:
         """
         Delete object from lakeFS
+
+        :raises:
             ObjectNotFoundException if repo id, reference id or object path does not exist
             PermissionException if user is not authorized to perform this operation, or operation is forbidden
             ServerException for any other errors
@@ -508,6 +656,31 @@ class WriteableObject(StoredObject):
         with api_exception_handler(_io_exception_handler):
             self._client.sdk_client.objects_api.delete_object(self._repo_id, self._ref_id, self._path)
             self._stats = None
+
+    def writer(self,
+               mode: WriteModes = 'wb',
+               pre_sign: Optional[bool] = None,
+               content_type: Optional[str] = None,
+               metadata: Optional[dict[str, str]] = None) -> ObjectWriter:
+        """
+        Context manager which provide a file-descriptor like object that allow writing the given object to lakeFS
+        The writes are saved in a buffer as long as the writer is open. Only when it closes it writes the data into
+        lakeFS. The optional parameters can be modified by accessing the respective fields as long as the writer is
+        still open.
+
+        :param mode: Write mode - as supported by WriteModes
+        :param pre_sign: (Optional), enforce the pre_sign mode on the lakeFS server. If not set, will probe server for
+            information.
+        :param content_type: (Optional) Specify the data media type
+        :param metadata: (Optional) User defined metadata to save on the object
+        :return: A Writer object
+        """
+        return ObjectWriter(self,
+                            mode=mode,
+                            pre_sign=pre_sign,
+                            content_type=content_type,
+                            metadata=metadata,
+                            client=self._client)
 
 
 def _io_exception_handler(e: LakeFSException):
