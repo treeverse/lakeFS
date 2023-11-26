@@ -35,7 +35,7 @@ from lakefs.namedtuple import LenientNamedTuple
 _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
 # _BUFFER_SIZE - Writer buffer size. While buffer size not exceed, data will be maintained in memory and file will
 #                not be created.
-_BUFFER_SIZE = 32 * 1024 * 1024
+_WRITER_BUFFER_SIZE = 32 * 1024 * 1024
 
 ReadModes = Literal['r', 'rb']
 WriteModes = Literal['x', 'xb', 'w', 'wb']
@@ -244,6 +244,7 @@ class ObjectReader(LakeFSIOBase):
     def seek(self, offset: int, whence: int = 0) -> int:
         """
         Move the object's reading position
+
         :param offset: The offset from the beginning of the file
         :param whence: Optional. The whence argument is optional and defaults to
             os.SEEK_SET or 0 (absolute file positioning);
@@ -267,6 +268,7 @@ class ObjectReader(LakeFSIOBase):
     def read(self, n: int = None) -> str | bytes:
         """
         Read object data
+
         :param n: How many bytes to read. If read_bytes is None, will read from current position to end.
         If current position + read_bytes > object size.
         :return: The bytes read
@@ -337,8 +339,7 @@ class ObjectWriter(LakeFSIOBase):
         open_kwargs = {
             "encoding": "utf-8" if 'b' not in mode else None,
             "mode": 'wb+' if 'b' in mode else 'w+',
-            "buffering": _BUFFER_SIZE,
-            "max_size": _BUFFER_SIZE,
+            "max_size": _WRITER_BUFFER_SIZE,
         }
         self._fd = tempfile.SpooledTemporaryFile(**open_kwargs)  # pylint: disable=consider-using-with
         super().__init__(obj, mode, pre_sign, client)
@@ -356,6 +357,7 @@ class ObjectWriter(LakeFSIOBase):
     def pre_sign(self, value: bool) -> None:
         """
         Set the pre_sign mode to value
+
         :param value: The new value for pre_sign mode
         """
         self._pre_sign = value
@@ -367,12 +369,13 @@ class ObjectWriter(LakeFSIOBase):
         """
         # Don't flush buffer to file if we didn't exceed buffer size
         # We want to avoid using the file if possible
-        if self._pos > _BUFFER_SIZE:
+        if self._pos > _WRITER_BUFFER_SIZE:
             self._fd.flush()
 
     def write(self, s: AnyStr) -> int:
         """
         Write data to buffer
+
         :param s: The data to write
         :return: The number of bytes written to buffer
         """
@@ -546,9 +549,10 @@ class StoredObject:
     def reader(self, mode: ReadModes = 'r', pre_sign: Optional[bool] = None) -> ObjectReader:
         """
         Context manager which provide a file-descriptor like object that allow reading the given object
+
         :param mode: Read mode - as supported by ReadModes
         :param pre_sign: (Optional), enforce the pre_sign mode on the lakeFS server. If not set, will probe server for
-        information.
+            information.
         :return: A Reader object
         """
         return ObjectReader(self, mode=mode, pre_sign=pre_sign, client=self._client)
@@ -584,6 +588,7 @@ class StoredObject:
     def copy(self, destination_branch_id: str, destination_path: str) -> WriteableObject:
         """
         Copy the object to a destination branch
+
         :param destination_branch_id: The destination branch to copy the object to
         :param destination_path: The path of the copied object in the destination branch
         :return: The newly copied Object
@@ -621,7 +626,8 @@ class WriteableObject(StoredObject):
                content_type: Optional[str] = None,
                metadata: Optional[dict[str, str]] = None) -> WriteableObject:
         """
-        Creates a new object or overwrites an existing object
+        Upload a new object or overwrites an existing object
+
         :param data: The contents of the object to write (can be bytes or string)
         :param mode: Write mode:
             'x'     - Open for exclusive creation
