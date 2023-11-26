@@ -1,19 +1,21 @@
+import io
 from typing import get_args
 
 import pytest
 
 from tests.utests.common import expect_exception_context
-from lakefs.exceptions import ObjectExistsException, InvalidRangeException
-from lakefs.object import WriteableObject, WriteModes, OpenModes
+from lakefs.exceptions import ObjectExistsException, InvalidRangeException, NotFoundException
+from lakefs.object import WriteableObject, WriteModes, ReadModes
 
 
-def test_object_read_seek(setup_repo):
+@pytest.mark.parametrize("pre_sign", (True, False), indirect=True)
+def test_object_read_seek(setup_repo, pre_sign):
     clt, repo = setup_repo
     data = "test_data"
     obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
-        data=data)
+        data=data, pre_sign=pre_sign)
 
-    with obj.open() as fd:
+    with obj.reader() as fd:
         assert fd.read(2 * len(data)) == data
         fd.seek(2)
 
@@ -41,38 +43,36 @@ def test_object_upload_exists(setup_repo):
     with expect_exception_context(ObjectExistsException):
         obj.upload(data="some_other_data", mode='xb')
 
-    with obj.open() as fd:
+    with obj.reader() as fd:
         assert fd.read() == data
 
     # Create - overwrite
     new_data = "new_data"
     obj2 = obj.upload(data=new_data, mode='w')
 
-    with obj.open() as fd:
+    with obj.reader() as fd:
         assert fd.read() == new_data
 
     assert obj2 == obj
 
 
 @pytest.mark.parametrize("w_mode", get_args(WriteModes))
-@pytest.mark.parametrize("r_mode", get_args(OpenModes))
+@pytest.mark.parametrize("r_mode", get_args(ReadModes))
 @pytest.mark.parametrize("pre_sign", (True, False), indirect=True)
-def test_object_create_read_different_params(setup_repo, w_mode, r_mode, pre_sign):
+def test_object_upload_read_different_params(setup_repo, w_mode, r_mode, pre_sign):
     clt, repo = setup_repo
-    data = b'test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82'
+
+    # urllib3 encodes TextIOBase to ISO-8859-1, data should contain symbols that can be encoded as such
+    data = b'test \x48\x65\x6c\x6c\x6f\x20\x57\x6f\x72\x6c\x64\x21'
     obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
         data=data, mode=w_mode, pre_sign=pre_sign)
 
-    with obj.open(mode=r_mode) as fd:
+    with obj.reader(mode=r_mode) as fd:
         res = fd.read()
-        if 'b' in w_mode and 'b' in r_mode:
+        if 'b' in r_mode:
             assert res == data
-        elif 'b' in w_mode and 'b' not in r_mode:
-            assert res == data.decode('utf-8')
-        elif 'b' not in r_mode:
-            assert res.encode('utf-8') == data
         else:
-            assert res == data
+            assert res.encode('utf-8') == data
 
 
 def test_object_copy(setup_repo):
@@ -94,3 +94,68 @@ def test_object_copy(setup_repo):
     assert copy_stat.mtime >= obj_stat.mtime
     assert copy_stat.size_bytes == obj_stat.size_bytes
     assert copy_stat.checksum == obj_stat.checksum
+
+
+def test_writer(setup_repo):
+    _, repo = setup_repo
+    obj = repo.branch("main").object("test_object")
+    with obj.writer() as writer:
+        with expect_exception_context(io.UnsupportedOperation):
+            writer.seek(10)
+
+        assert not writer.readable()
+        assert writer.writable()
+
+        writer.write("Hello")
+        writer.write(" World!")
+
+        # Check that the object does not exist in lakeFS before we close the writer
+        with expect_exception_context(NotFoundException):
+            obj.stat()
+
+    assert obj.reader().read() == "Hello World!"
+
+
+@pytest.mark.parametrize("w_mode", get_args(WriteModes))
+@pytest.mark.parametrize("r_mode", get_args(ReadModes))
+@pytest.mark.parametrize("pre_sign", (True, False), indirect=True)
+def test_writer_different_params(setup_repo, w_mode, r_mode, pre_sign):
+    _, repo = setup_repo
+    obj = repo.branch("main").object("test_object")
+    writer = obj.writer(mode=w_mode)
+
+    data = [
+        "The quick brown fox jumps over the lazy dog"
+        "Pack my box with five dozen liquor jugs"
+        "Sphinx of black quartz, judge my vow" * 1000
+    ]
+
+    pos = 0
+    for part in data:
+        pos += len(part)
+        writer.write(part)
+        assert writer.tell() == pos
+
+    # Check that the object does not exist in lakeFS before we close the writer
+    with expect_exception_context(NotFoundException):
+        obj.stat()
+
+    writer.content_type = "text/plain"
+    writer.metadata = {"foo": "bar"}
+    writer.pre_sign = pre_sign
+
+    writer.close()
+
+    stats = obj.stat()
+    assert stats.metadata == {"foo": "bar"}
+    assert stats.content_type == "text/plain"
+    assert stats.path == "test_object"
+    assert stats.size_bytes == pos
+
+    expected = "".join(data)
+    res = obj.reader(mode=r_mode).read()
+
+    if 'b' in r_mode:
+        assert res.decode('utf-8') == expected
+    else:
+        assert res == expected

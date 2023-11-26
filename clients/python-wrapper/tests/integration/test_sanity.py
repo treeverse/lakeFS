@@ -50,12 +50,12 @@ def test_branch_sanity(storage_namespace, setup_repo):
     override_content = "override_test_content"
     obj = new_branch.object("test_object").upload(override_content)
     new_branch.commit("override_data")
-    with obj.open() as fd:
+    with obj.reader() as fd:
         assert fd.read() == override_content
 
     new_branch.revert(new_branch.head().id)
 
-    with obj.open() as fd:
+    with obj.reader() as fd:
         assert fd.read() == initial_content
 
     new_branch.delete()
@@ -117,7 +117,7 @@ def test_object_sanity(setup_repo):
     metadata = {"foo": "bar"}
     obj = WriteableObject(repository=repo.properties.id, reference="main", path=path, client=clt).upload(
         data=data, metadata=metadata)
-    with obj.open() as fd:
+    with obj.reader() as fd:
         assert fd.read() == data
 
     stats = obj.stat()
