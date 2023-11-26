@@ -14,7 +14,7 @@ redirect_from:
 
 
 **Improved Python SDK**  <span class="badge mr-1">New</span><span class="badge">beta</span>  
-Check-out the newly released [Python SDK library](https://pydocs-wrapper.lakefs.io/) - providing simpler interface and improved user experience!  
+Check-out the newly released [Python SDK library](https://pydocs-lakefs.lakefs.io/) - providing simpler interface and improved user experience!  
 *OR* continue reading for the current Python SDK.
 {: .note }
 
