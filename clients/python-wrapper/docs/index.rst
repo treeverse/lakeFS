@@ -6,8 +6,6 @@
 Welcome to lakeFS's Python SDK Library Documentation!
 =====================================================
 
-Looking for older versions documentation? Click `here <https://pydocs-legacy.lakefs.io>`_
-
 .. toctree::
    :maxdepth: 4
    :caption: Contents:
