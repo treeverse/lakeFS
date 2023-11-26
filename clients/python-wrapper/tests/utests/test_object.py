@@ -5,11 +5,11 @@ import urllib3
 
 import pytest
 
-from tests.utests.common import get_test_client, expect_exception_context
 import lakefs_sdk.api
 from lakefs_sdk.rest import RESTResponse
 
 from lakefs.object import ReadModes
+from tests.utests.common import get_test_client, expect_exception_context
 
 
 class ObjectTestKWArgs:
