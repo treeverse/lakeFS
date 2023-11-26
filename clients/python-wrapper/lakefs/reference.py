@@ -76,7 +76,6 @@ class Reference:
     @staticmethod
     def _get_generator(func, *args, max_amount: Optional[int] = None, **kwargs):
         has_more = True
-        after = kwargs.get("after", "")
         with api_exception_handler():
             while has_more:
                 page = func(*args, **kwargs)
