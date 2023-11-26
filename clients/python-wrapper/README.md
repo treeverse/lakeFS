@@ -66,7 +66,7 @@ main_branch = repo.create(storage_namespace="<storage_namespace>").branch(branch
 
 ## Documentation
 
-[lakeFS Python SDK](http://pydocs.lakefs.io/) 
+[lakeFS Python SDK](http://pydocs-lakefs.lakefs.io/) 
 
 ## Author
 
