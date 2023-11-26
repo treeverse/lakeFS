@@ -17,10 +17,8 @@ REQUIRES = [
     "pyyaml ~= 6.0.1",
 ]
 
-# TODO: autogenerate docs and grab long description from docs
-long_description = (
-    "A Wrapper package for the lakeFS Python SDK providing a simpler programming interface with less configuration and "
-    "better abstractions for common, more complex operations")
+with open('README.md') as f:
+    long_description = f.read()
 
 setup(
     name=NAME,

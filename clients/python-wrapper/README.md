@@ -21,23 +21,6 @@ Then import the package:
 import lakefs
 ```
 
-### Tests
-
-To run the tests using `pytest`, first clone the lakeFS git repository
-
-```sh
-git clone https://github.com/treeverse/lakeFS.git
-cd lakefs/clients/python-wrapper
-```
-
-#### Unit Tests
-
-Inside the `tests` folder, execute `pytest utests` to run the unit tests.
-
-#### Integration Tests
-
-See [documentation](https://github.com/treeverse/lakeFS/blob/master/clients/python-wrapper/tests/integration/README.md) for more information
-
 ## Getting Started
 
 Please follow the [installation procedure](#installation--usage) and then run the following:
@@ -63,6 +46,23 @@ repo = lakefs.Repository(repository_id="my-repo", client=clt)
 main_branch = repo.create(storage_namespace="<storage_namespace>").branch(branch_id="main")
 ...
 ```
+
+## Tests
+
+To run the tests using `pytest`, first clone the lakeFS git repository
+
+```sh
+git clone https://github.com/treeverse/lakeFS.git
+cd lakefs/clients/python-wrapper
+```
+
+### Unit Tests
+
+Inside the `tests` folder, execute `pytest utests` to run the unit tests.
+
+### Integration Tests
+
+See [testing documentation](https://github.com/treeverse/lakeFS/blob/master/clients/python-wrapper/tests/integration/README.md) for more information
 
 ## Documentation
 
