@@ -35,7 +35,7 @@ from lakefs.namedtuple import LenientNamedTuple
 _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
 # _BUFFER_SIZE - Writer buffer size. While buffer size not exceed, data will be maintained in memory and file will
 #                not be created.
-_BUFFER_SIZE = 32 * 1024 * 1024
+_WRITER_BUFFER_SIZE = 32 * 1024 * 1024
 
 ReadModes = Literal['r', 'rb']
 WriteModes = Literal['x', 'xb', 'w', 'wb']
@@ -337,8 +337,7 @@ class ObjectWriter(LakeFSIOBase):
         open_kwargs = {
             "encoding": "utf-8" if 'b' not in mode else None,
             "mode": 'wb+' if 'b' in mode else 'w+',
-            "buffering": _BUFFER_SIZE,
-            "max_size": _BUFFER_SIZE,
+            "max_size": _WRITER_BUFFER_SIZE,
         }
         self._fd = tempfile.SpooledTemporaryFile(**open_kwargs)  # pylint: disable=consider-using-with
         super().__init__(obj, mode, pre_sign, client)
@@ -367,7 +366,7 @@ class ObjectWriter(LakeFSIOBase):
         """
         # Don't flush buffer to file if we didn't exceed buffer size
         # We want to avoid using the file if possible
-        if self._pos > _BUFFER_SIZE:
+        if self._pos > _WRITER_BUFFER_SIZE:
             self._fd.flush()
 
     def write(self, s: AnyStr) -> int:
