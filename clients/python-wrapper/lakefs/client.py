@@ -82,7 +82,7 @@ class Client:
     def __init__(self, **kwargs):
         self._conf = ClientConfig(**kwargs)
         self._client = LakeFSClient(self._conf.configuration, header_name='X-Lakefs-Client',
-                                    header_value='python-wrapper')
+                                    header_value='python-lakefs')
 
     @property
     def config(self):

@@ -1,10 +1,9 @@
-# lakefs-sdk-wrapper (Pre-release Alpha)
+# lakeFS Python SDK (Pre-release Beta)
 
-This is a wrapper package for the lakefs-sdk API, providing the following features:
-1. Provide a simpler programming interface with less configuration 
-2. Behave closer to other related Python SDKs
-3. Allow inferring identity from environment 
-4. Provide better abstractions for common, more complex operations (I/O, transactions, imports)
+lakeFS Software Development Kit (SDK) for Python, provides developers with the following features:
+1. Simpler programming interface with less configuration
+2. Inferring identity from environment 
+3. Better abstractions for common, more complex operations (I/O, transactions, imports)
 
 ## Requirements.
 
@@ -67,7 +66,7 @@ See [testing documentation](https://github.com/treeverse/lakeFS/blob/master/clie
 
 ## Documentation
 
-[lakeFS SDK Wrapper](http://pydocs-wrapper.lakefs.io/) 
+[lakeFS Python SDK](http://pydocs-lakefs.lakefs.io/) 
 
 ## Author
 

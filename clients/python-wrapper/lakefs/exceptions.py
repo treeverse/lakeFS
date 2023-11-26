@@ -11,7 +11,7 @@ from urllib3 import BaseHTTPResponse
 
 class LakeFSException(Exception):
     """
-    Base exception for all SDK Wrapper exceptions
+    Base exception for all SDK exceptions
     """
     status_code: int
     reason: str
@@ -58,7 +58,7 @@ class ServerException(LakeFSException):
 
 class UnsupportedOperationException(LakeFSException):
     """
-    Operation not supported by lakeFS server or SDK wrapper
+    Operation not supported by lakeFS server or SDK
     """
 
 
