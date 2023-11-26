@@ -80,6 +80,7 @@ class Reference:
             while has_more:
                 page = func(*args, **kwargs)
                 has_more = page.pagination.has_more
+                kwargs["after"] = page.pagination.next_offset
                 for res in page.results:
                     yield res
 
