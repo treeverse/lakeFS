@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath('../'))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'python-wrapper'
+project = 'python-sdk'
 copyright = '2023, Treeverse'
 author = 'Treeverse'
 

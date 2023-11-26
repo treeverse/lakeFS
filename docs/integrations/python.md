@@ -12,6 +12,12 @@ redirect_from:
 
 {% include toc_2-3.html %}
 
+
+**Improved Python SDK**  <span class="badge mr-1">New</span><span class="badge">beta</span>  
+Check-out the newly released [Python SDK library](https://pydocs-wrapper.lakefs.io/) - providing simpler interface and improved user experience!  
+*OR* continue reading for the current Python SDK.
+{: .note }
+
 There are two primary ways to work with lakeFS from Python: 
 
 * [Use Boto](#using-boto) to perform **object operations** through the lakeFS S3 gateway.
