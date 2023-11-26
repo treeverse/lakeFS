@@ -1,7 +1,7 @@
-# Python SDK Wrapper System Tests
+# Python SDK System Tests
 
-This package consists of the integration tests for the python SDK wrapper.
-Please make sure to add / modify tests whenever pushing new code to the SDK wrapper.
+This package consists of the integration tests for the python SDK library.
+Please make sure to add / modify tests whenever pushing new code to the SDK.
 
 These tests can be run against a lakeFS instance with the following environment configuration:
 

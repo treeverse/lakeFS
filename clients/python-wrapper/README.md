@@ -1,10 +1,9 @@
-# lakefs-sdk-wrapper (Pre-release Alpha)
+# lakeFS Python SDK (Pre-release Beta)
 
-This is a wrapper package for the lakefs-sdk API, providing the following features:
-1. Provide a simpler programming interface with less configuration 
-2. Behave closer to other related Python SDKs
-3. Allow inferring identity from environment 
-4. Provide better abstractions for common, more complex operations (I/O, transactions, imports)
+lakeFS Software Development Kit (SDK) for Python, provides developers with the following features:
+1. Simpler programming interface with less configuration
+2. Inferring identity from environment 
+3. Better abstractions for common, more complex operations (I/O, transactions, imports)
 
 ## Requirements.
 
@@ -21,23 +20,6 @@ Then import the package:
 ```python
 import lakefs
 ```
-
-### Tests
-
-To run the tests using `pytest`, first clone the lakeFS git repository
-
-```sh
-git clone https://github.com/treeverse/lakeFS.git
-cd lakefs/clients/python-wrapper
-```
-
-#### Unit Tests
-
-Inside the `tests` folder, execute `pytest utests` to run the unit tests.
-
-#### Integration Tests
-
-See [documentation](https://github.com/treeverse/lakeFS/blob/master/clients/python-wrapper/tests/integration/README.md) for more information
 
 ## Getting Started
 
@@ -65,9 +47,26 @@ main_branch = repo.create(storage_namespace="<storage_namespace>").branch(branch
 ...
 ```
 
+## Tests
+
+To run the tests using `pytest`, first clone the lakeFS git repository
+
+```sh
+git clone https://github.com/treeverse/lakeFS.git
+cd lakefs/clients/python-wrapper
+```
+
+### Unit Tests
+
+Inside the `tests` folder, execute `pytest utests` to run the unit tests.
+
+### Integration Tests
+
+See [testing documentation](https://github.com/treeverse/lakeFS/blob/master/clients/python-wrapper/tests/integration/README.md) for more information
+
 ## Documentation
 
-[lakeFS SDK Wrapper](http://pydocs-wrapper.lakefs.io/) 
+[lakeFS Python SDK](http://pydocs-lakefs.lakefs.io/) 
 
 ## Author
 

@@ -13,18 +13,7 @@ jobs:
     - name: Python Build and Make Package
       run: make package-python-wrapper
 
-    - name: Publish Distribution 📦 to TestPyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        user: __token__
-        password: ${{ secrets.TESTPYPI_API_TOKEN }}
-        packages_dir: clients/python-wrapper/dist/
-        verbose: true
-        repository-url: https://test.pypi.org/legacy/
-
-    # TODO: Enable once we're ready for production
     - name: Publish Distribution 📦 to PyPI
-      if: false
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
