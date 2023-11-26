@@ -297,8 +297,8 @@ validate-python-wrapper:
 checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference validate-mockgen validate-permissions-gen
 
 python-wrapper-lint:
-	pylint clients/python-wrapper/tests --rc=clients/python-wrapper/tests/.pylintrc
-	pylint clients/python-wrapper/lakefs --rc=clients/python-wrapper/lakefs/.pylintrc
+	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c \
+		"./pylint.sh"
 
 python-wrapper-gen-docs:
 	sphinx-build -b html clients/python-wrapper/docs clients/python-wrapper/_site/
