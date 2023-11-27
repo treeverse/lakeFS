@@ -349,7 +349,8 @@ func BaseOpen(buf io.StringWriter) glua.Function {
 }
 
 type OpenSafeConfig struct {
-	NetHTTPEnabled bool
+	NetHTTPEnabled   bool
+	ListeningAddress string
 }
 
 func OpenSafe(l *glua.State, ctx context.Context, cfg OpenSafeConfig, buf io.StringWriter) {

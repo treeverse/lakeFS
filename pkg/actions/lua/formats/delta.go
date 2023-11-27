@@ -7,9 +7,11 @@ import (
 	"github.com/Shopify/go-lua"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	delta "github.com/csimplestring/delta-go"
+	"github.com/csimplestring/delta-go/storage"
 	deltaStore "github.com/csimplestring/delta-go/store"
 	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
-	"path"
+	"net/url"
+	"strings"
 )
 
 type storageType string
@@ -21,27 +23,32 @@ const (
 )
 
 type DeltaClient struct {
-	accessProvider AccessProvider
-	ctx            context.Context
+	accessProvider   AccessProvider
+	ctx              context.Context
+	listeningAddress string
 }
 
-func (dc *DeltaClient) s3Fetcher(repo, ref, prefix string) (map[int64][]string, error) {
-	table, err := dc.buildS3DeltaTable(repo, ref, prefix)
+func (dc *DeltaClient) fetchS3Table(repo, ref, prefix string) (map[int64][]string, error) {
+	table, err := dc.getS3DeltaTable(repo, ref, prefix)
 	if err != nil {
 		return nil, err
 	}
 	return dc.buildLog(table)
 }
-func (dc *DeltaClient) buildS3DeltaTable(repo, ref, prefix string) (delta.Log, error) {
+func (dc *DeltaClient) getS3DeltaTable(repo, ref, prefix string) (delta.Log, error) {
 	awsInfo := dc.accessProvider.(AWSInfo)
 	config := delta.Config{StoreType: string(s3StorageType)}
-	s3LogStore, err := deltaStore.NewS3CompatLogStore(&awsInfo.AWSProps, repo, path.Join(ref, prefix))
+	u := fmt.Sprintf("lakefs://%s/%s/%s", repo, ref, prefix)
+	parsedURL, err := url.Parse(u)
+	if err != nil {
+		return nil, err
+	}
+	s3LogStore, err := deltaStore.NewS3CompatLogStore(&awsInfo.AWSProps, parsedURL)
 	if err != nil {
 		return nil, err
 	}
 	store := deltaStore.Store(s3LogStore)
-	url := fmt.Sprintf("lakefs://%s/%s/%s", repo, ref, prefix)
-	return delta.ForTableWithStore(url, config, &delta.SystemClock{}, &store)
+	return delta.ForTableWithStore(u, config, &delta.SystemClock{}, &store)
 }
 func (dc *DeltaClient) buildLog(table delta.Log) (map[int64][]string, error) {
 	s, err := table.Snapshot()
@@ -75,7 +82,7 @@ func (dc *DeltaClient) fetchTableLog(repo, ref, prefix string) (map[int64][]stri
 	ap, _ := dc.accessProvider.GetAccessProperties()
 	switch ap.(type) {
 	case AWSInfo:
-		return dc.s3Fetcher(repo, ref, prefix)
+		return dc.fetchS3Table(repo, ref, prefix)
 	default:
 		return nil, errors.New("unimplemented provider")
 	}
@@ -113,29 +120,26 @@ type AccessProvider interface {
 }
 
 type AWSInfo struct {
-	AWSProps deltaStore.AWSProperties
-}
-
-type AWSInfo2 struct {
-	Region     string
-	DisableSsl bool
-	Key        string
-	Secret     string
-	Endpoint   string
+	AWSProps storage.AWSProperties
 }
 
 func (awsI AWSInfo) GetAccessProperties() (interface{}, error) {
 	return awsI, nil
 }
 
-func newDelta(ctx context.Context) lua.Function {
+func newDelta(ctx context.Context, listenAddress string) lua.Function {
+	if strings.HasPrefix(listenAddress, ":") {
+		// workaround in case we listen on all interfaces without specifying ip
+		listenAddress = fmt.Sprintf("localhost%s", listenAddress)
+	}
+	listenAddress = fmt.Sprintf("http://%s", listenAddress)
 	// Factory method to create storage specific Delta Lake client
 	return func(l *lua.State) int {
 		var client *DeltaClient
 		st := lua.CheckString(l, 1)
 		switch storageType(st) {
 		case s3StorageType:
-			client = newS3DeltaClient(l, ctx)
+			client = newS3DeltaClient(l, ctx, listenAddress)
 		default:
 			lua.Errorf(l, "unimplemented storage type")
 			panic("unimplemented storage type")
@@ -151,25 +155,22 @@ func newDelta(ctx context.Context) lua.Function {
 	}
 }
 
-func newS3DeltaClient(l *lua.State, ctx context.Context) *DeltaClient {
+func newS3DeltaClient(l *lua.State, ctx context.Context, listenAddress string) *DeltaClient {
 	aki := lua.CheckString(l, 2)
 	sak := lua.CheckString(l, 3)
-	e := lua.CheckString(l, 4)
-	r := lua.OptString(l, 5, "us-east-1")
-	disableSsl := lua.CheckInteger(l, 6) == 1
-	awsProps := deltaStore.AWSProperties{
+	r := lua.OptString(l, 4, "us-east-1")
+	awsProps := storage.AWSProperties{
 		Region:         r,
 		ForcePathStyle: true,
-		DisableHTTPs:   disableSsl,
 		CredsProvider: aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
 			return aws.Credentials{
 				AccessKeyID:     aki,
 				SecretAccessKey: sak,
 			}, nil
 		}),
-		Endpoint: e,
+		Endpoint: listenAddress,
 	}
-	deltaStore.RegisterS3CompatBucketURLOpener("lakefs", &awsProps)
+	storage.RegisterS3CompatBucketURLOpener("lakefs", &awsProps)
 
-	return &DeltaClient{accessProvider: AWSInfo{AWSProps: awsProps}, ctx: ctx}
+	return &DeltaClient{accessProvider: AWSInfo{AWSProps: awsProps}, ctx: ctx, listeningAddress: listenAddress}
 }

@@ -36,7 +36,7 @@ var (
 	errWebhookWrongFormat   = errors.New("webhook wrong format")
 )
 
-func NewWebhook(h ActionHook, action *Action, cfg Config, e *http.Server, collector stats.Collector) (Hook, error) {
+func NewWebhook(h ActionHook, action *Action, cfg Config, e *http.Server, _ string, collector stats.Collector) (Hook, error) {
 	url, ok := h.Properties[webhookURLPropertyKey]
 	if !ok {
 		return nil, fmt.Errorf("missing url: %w", errWebhookWrongFormat)

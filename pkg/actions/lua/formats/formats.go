@@ -5,10 +5,10 @@ import (
 	"github.com/Shopify/go-lua"
 )
 
-func Open(l *lua.State, ctx context.Context) {
+func Open(l *lua.State, ctx context.Context, listeningAddress string) {
 	open := func(l *lua.State) int {
 		lua.NewLibrary(l, []lua.RegistryFunction{
-			{Name: "delta_client", Function: newDelta(ctx)},
+			{Name: "delta_client", Function: newDelta(ctx, listeningAddress)},
 		})
 		return 1
 	}
