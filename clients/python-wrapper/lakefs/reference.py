@@ -4,7 +4,7 @@ Module containing lakeFS reference implementation
 
 from __future__ import annotations
 
-from typing import Optional, Generator, Literal
+from typing import Optional, Generator, Literal, List
 
 import lakefs_sdk
 
@@ -20,7 +20,7 @@ class Commit(LenientNamedTuple):
     NamedTuple representing a lakeFS commit's properties
     """
     id: str
-    parents: [str]
+    parents: List[str]
     committer: str
     message: str
     creation_date: int

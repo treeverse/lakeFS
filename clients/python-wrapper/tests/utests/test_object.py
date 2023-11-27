@@ -103,7 +103,8 @@ class TestObjectReader:
             with obj.reader() as fd:
                 assert fd.tell() == 0
 
-    def verify_reader(self, fd, patch_setattr, test_kwargs, data):
+    @staticmethod
+    def verify_reader(fd, patch_setattr, test_kwargs, data):
         object_stats = ObjectTestStats()
         object_stats.path = test_kwargs.path
         object_stats.size_bytes = len(data)
