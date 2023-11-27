@@ -44,15 +44,12 @@ func (dc *DeltaClient) buildS3DeltaTable(repo, ref, prefix string) (delta.Log, e
 	return delta.ForTableWithStore(url, config, &delta.SystemClock{}, &store)
 }
 func (dc *DeltaClient) buildLog(table delta.Log) (map[int64][]string, error) {
-	//s, err := table.Snapshot()
-	//if err != nil {
-	//	return nil, err
-	//}
-	//version := s.Version()
-
-	//versionLog, err := table.Changes(version, false)
-
-	versionLog, err := table.Changes(0, false)
+	s, err := table.Snapshot()
+	if err != nil {
+		return nil, err
+	}
+	version, _ := s.EarliestVersion()
+	versionLog, err := table.Changes(version, false)
 	if err != nil {
 		return nil, err
 	}
