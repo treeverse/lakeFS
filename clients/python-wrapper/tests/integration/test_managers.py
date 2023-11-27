@@ -17,7 +17,7 @@ def fixture_setup_repo_with_branches_and_tags():
 
 
 @pytest.mark.parametrize("attr", ("branches", "tags"))
-def test_branch_manager(setup_repo_with_branches_and_tags, attr):
+def test_managers(setup_repo_with_branches_and_tags, attr):
     _, repo = setup_repo_with_branches_and_tags
 
     manager = getattr(repo, attr)

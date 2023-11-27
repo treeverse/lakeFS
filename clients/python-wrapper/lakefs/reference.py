@@ -84,8 +84,8 @@ class Reference:
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
-        for res in get_generator(self._client.sdk_client.refs_api.log_commits, self._repo_id, self._id,
-                                 max_amount=max_amount, **kwargs):
+        for res in generate_listing(self._client.sdk_client.refs_api.log_commits, self._repo_id, self._id,
+                                    max_amount=max_amount, **kwargs):
             yield Commit(**res.dict())
 
     def _get_commit(self):
@@ -133,15 +133,15 @@ class Reference:
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
-        for diff in get_generator(self._client.sdk_client.refs_api.diff_refs,
-                                  repository=self._repo_id,
-                                  left_ref=self._id,
-                                  right_ref=str(other_ref),
-                                  after=after,
-                                  max_amount=max_amount,
-                                  prefix=prefix,
-                                  delimiter=delimiter,
-                                  **kwargs):
+        for diff in generate_listing(self._client.sdk_client.refs_api.diff_refs,
+                                     repository=self._repo_id,
+                                     left_ref=self._id,
+                                     right_ref=str(other_ref),
+                                     after=after,
+                                     max_amount=max_amount,
+                                     prefix=prefix,
+                                     delimiter=delimiter,
+                                     **kwargs):
             yield Change(**diff.dict())
 
     def merge_into(self, destination_branch_id: str | Reference, **kwargs) -> str:
@@ -178,7 +178,7 @@ class Reference:
         return f"lakefs://{self._repo_id}/{self._id}"
 
 
-def get_generator(func, *args, max_amount: Optional[int] = None, **kwargs):
+def generate_listing(func, *args, max_amount: Optional[int] = None, **kwargs):
     """
     Generic generator function, for lakefs-sdk listings functionality
 

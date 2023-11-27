@@ -10,20 +10,19 @@ class LenientNamedTuple:
     """
 
     __initialized: bool = False
-    unknown: dict = None
+    unknown: dict = {}
 
     def __init__(self, **kwargs):
         fields = list(self.__class__.__dict__["__annotations__"].keys())
-        unknown = {}
         for k, v in kwargs.items():
             if k in fields:
                 setattr(self, k, v)
                 fields.remove(k)
             else:
-                unknown[k] = v
+                self.unknown[k] = v
+
         if len(fields) > 0:
             raise TypeError(f"missing {len(fields)} required arguments: {fields}")
-        setattr(self, "unknown", unknown)
         self.__initialized = True
         super().__init__()
 
