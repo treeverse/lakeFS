@@ -43,11 +43,11 @@ def test_branch_sanity(storage_namespace, setup_repo):
     assert new_branch.id == branch_name
     assert new_branch.head().id == main_branch.head().id
 
-    initial_content = "test_content"
+    initial_content = b"test_content"
     new_branch.object("test_object").upload(initial_content)
     new_branch.commit("test_commit", {"test_key": "test_value"})
 
-    override_content = "override_test_content"
+    override_content = b"override_test_content"
     obj = new_branch.object("test_object").upload(override_content)
     new_branch.commit("override_data")
     with obj.reader() as fd:
@@ -112,7 +112,7 @@ def test_tag_sanity(setup_repo):
 
 def test_object_sanity(setup_repo):
     clt, repo = setup_repo
-    data = "test_data"
+    data = b"test_data"
     path = "test_obj"
     metadata = {"foo": "bar"}
     obj = WriteableObject(repository=repo.properties.id, reference="main", path=path, client=clt).upload(

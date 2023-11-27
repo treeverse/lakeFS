@@ -11,7 +11,7 @@ from lakefs.object import WriteableObject, WriteModes, ReadModes
 @pytest.mark.parametrize("pre_sign", (True, False), indirect=True)
 def test_object_read_seek(setup_repo, pre_sign):
     clt, repo = setup_repo
-    data = "test_data"
+    data = b"test_data"
     obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
         data=data, pre_sign=pre_sign)
 
@@ -29,7 +29,7 @@ def test_object_read_seek(setup_repo, pre_sign):
 
         fd.seek(0)
         for c in data:
-            assert fd.read(1) == c
+            assert ord(fd.read(1)) == c
         # This should raise an exception
         with expect_exception_context(InvalidRangeException):
             fd.read(1)
@@ -37,7 +37,7 @@ def test_object_read_seek(setup_repo, pre_sign):
 
 def test_object_upload_exists(setup_repo):
     clt, repo = setup_repo
-    data = "test_data"
+    data = b"test_data"
     obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
         data=data)
     with expect_exception_context(ObjectExistsException):
@@ -47,7 +47,7 @@ def test_object_upload_exists(setup_repo):
         assert fd.read() == data
 
     # Create - overwrite
-    new_data = "new_data"
+    new_data = b"new_data"
     obj2 = obj.upload(data=new_data, mode='w')
 
     with obj.reader() as fd:
@@ -113,7 +113,7 @@ def test_writer(setup_repo):
         with expect_exception_context(NotFoundException):
             obj.stat()
 
-    assert obj.reader().read() == "Hello World!"
+    assert obj.reader().read() == b"Hello World!"
 
 
 @pytest.mark.parametrize("w_mode", get_args(WriteModes))

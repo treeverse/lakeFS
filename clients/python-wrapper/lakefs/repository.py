@@ -68,8 +68,8 @@ class Repository:
         def handle_conflict(e: LakeFSException):
             if isinstance(e, ConflictException) and exist_ok:
                 with api_exception_handler():
-                    repo = self._client.sdk_client.repositories_api.get_repository(self._id)
-                    self._properties = RepositoryProperties(**repo.dict())
+                    get_repo = self._client.sdk_client.repositories_api.get_repository(self._id)
+                    self._properties = RepositoryProperties(**get_repo.dict())
                     return None
             return e
 

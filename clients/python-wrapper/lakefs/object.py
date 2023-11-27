@@ -416,7 +416,7 @@ class ObjectWriter(LakeFSIOBase):
         etag = headers.get("ETag", "").strip(' "')
         return etag
 
-    def _upload_raw(self) -> ObjectStats:
+    def _upload_raw(self) -> lakefs_sdk.ObjectStats:
         """
         Use raw upload API call to bypass validation of content parameter
         """
@@ -446,7 +446,7 @@ class ObjectWriter(LakeFSIOBase):
         handle_http_error(resp)
         return lakefs_sdk.ObjectStats(**json.loads(resp.data))
 
-    def _upload_presign(self) -> ObjectStats:
+    def _upload_presign(self) -> lakefs_sdk.ObjectStats:
         staging_location = self._client.sdk_client.staging_api.get_physical_address(self._obj.repo,
                                                                                     self._obj.ref,
                                                                                     self._obj.path,
@@ -546,7 +546,7 @@ class StoredObject:
         """
         return self._path
 
-    def reader(self, mode: ReadModes = 'r', pre_sign: Optional[bool] = None) -> ObjectReader:
+    def reader(self, mode: ReadModes = 'rb', pre_sign: Optional[bool] = None) -> ObjectReader:
         """
         Context manager which provide a file-descriptor like object that allow reading the given object
 
