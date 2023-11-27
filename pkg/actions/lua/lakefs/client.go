@@ -204,6 +204,22 @@ func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *htt
 				l.PushString(rr.Body.String())
 				return 2
 			}},
+			{Name: "get_repo", Function: func(state *lua.State) int {
+				repo := lua.CheckString(l, 1)
+				reqURL, err := url.JoinPath("/repositories", repo)
+				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
+				if err != nil {
+					check(l, err)
+				}
+				// query params
+				q := req.URL.Query()
+				req.URL.RawQuery = q.Encode()
+				rr := httptest.NewRecorder()
+				server.Handler.ServeHTTP(rr, req)
+				l.PushInteger(rr.Code)
+				l.PushString(rr.Body.String())
+				return 2
+			}},
 			{Name: "diff_branch", Function: func(state *lua.State) int {
 				repo := lua.CheckString(l, 1)
 				branch := lua.CheckString(l, 2)
