@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath('../'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'python-lakefs'
-copyright = '2023, Treeverse'
+project_copyright = '2023, Treeverse'
 author = 'Treeverse'
 
 # -- General configuration ---------------------------------------------------

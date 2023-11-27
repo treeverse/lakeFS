@@ -10,6 +10,7 @@ class LenientNamedTuple:
     """
 
     __initialized: bool = False
+    unknown: dict = None
 
     def __init__(self, **kwargs):
         fields = list(self.__class__.__dict__["__annotations__"].keys())
