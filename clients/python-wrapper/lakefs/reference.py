@@ -73,22 +73,6 @@ class Reference:
         """
         # TODO: Implement
 
-    @staticmethod
-    def _get_generator(func, *args, max_amount: Optional[int] = None, **kwargs):
-        has_more = True
-        with api_exception_handler():
-            while has_more:
-                page = func(*args, **kwargs)
-                has_more = page.pagination.has_more
-                kwargs["after"] = page.pagination.next_offset
-                for res in page.results:
-                    yield res
-
-                    if max_amount is not None:
-                        max_amount -= 1
-                        if max_amount <= 0:
-                            return
-
     def log(self, max_amount: Optional[int] = None, **kwargs) -> Generator[Commit]:
         """
         Returns a generator of commits starting with this reference id
@@ -100,8 +84,8 @@ class Reference:
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
-        for res in self._get_generator(self._client.sdk_client.refs_api.log_commits,
-                                       self._repo_id, self._id, max_amount=max_amount, **kwargs):
+        for res in get_generator(self._client.sdk_client.refs_api.log_commits, self._repo_id, self._id,
+                                 max_amount=max_amount, **kwargs):
             yield Commit(**res.dict())
 
     def _get_commit(self):
@@ -149,15 +133,15 @@ class Reference:
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
-        for diff in self._get_generator(self._client.sdk_client.refs_api.diff_refs,
-                                        repository=self._repo_id,
-                                        left_ref=self._id,
-                                        right_ref=str(other_ref),
-                                        after=after,
-                                        max_amount=max_amount,
-                                        prefix=prefix,
-                                        delimiter=delimiter,
-                                        **kwargs):
+        for diff in get_generator(self._client.sdk_client.refs_api.diff_refs,
+                                  repository=self._repo_id,
+                                  left_ref=self._id,
+                                  right_ref=str(other_ref),
+                                  after=after,
+                                  max_amount=max_amount,
+                                  prefix=prefix,
+                                  delimiter=delimiter,
+                                  **kwargs):
             yield Change(**diff.dict())
 
     def merge_into(self, destination_branch_id: str | Reference, **kwargs) -> str:
@@ -192,3 +176,28 @@ class Reference:
 
     def __repr__(self):
         return f"lakefs://{self._repo_id}/{self._id}"
+
+
+def get_generator(func, *args, max_amount: Optional[int] = None, **kwargs):
+    """
+    Generic generator function, for lakefs-sdk listings functionality
+
+    :param func: The listing function
+    :param args: The function args
+    :param max_amount: The max amount of objects to generate
+    :param kwargs: The function kwargs
+    :return: A generator based on the listing function
+    """
+    has_more = True
+    with api_exception_handler():
+        while has_more:
+            page = func(*args, **kwargs)
+            has_more = page.pagination.has_more
+            kwargs["after"] = page.pagination.next_offset
+            for res in page.results:
+                yield res
+
+                if max_amount is not None:
+                    max_amount -= 1
+                    if max_amount <= 0:
+                        return

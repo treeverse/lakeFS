@@ -9,12 +9,11 @@ import lakefs_sdk
 
 from lakefs.tag import Tag
 from lakefs.branch import Branch
-from lakefs.branch_manager import BranchManager
 from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 from lakefs.namedtuple import LenientNamedTuple
 from lakefs.reference import Reference
-from lakefs.tag_manager import TagManager
+from lakefs.managers import TagManager, BranchManager
 
 
 class RepositoryProperties(LenientNamedTuple):
@@ -131,14 +130,14 @@ class Repository:
         """
         Returns a BranchManager object for this repository
         """
-        return BranchManager()
+        return BranchManager(self._id, self._client)
 
     @property
     def tags(self) -> TagManager:
         """
         Returns a TagManager object for this repository
         """
-        return TagManager()
+        return TagManager(self._id, self._client)
 
     @property
     def properties(self) -> RepositoryProperties:
