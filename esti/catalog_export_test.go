@@ -234,12 +234,12 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 	return commit.Id, symlinksPrefix
 }
 
-// TestAWSCatalogExport will verify that symlinks are exported correcrtly and then in a sequential test verify that the glue exporter works well.
+// TestAWSCatalogExport will verify that symlinks are exported correctly and then in a sequential test verify that the glue exporter works well.
 // The setup in this test includes:
 // Symlinks export: lua script, table in _lakefs_tables, action file, mock table data in CSV form
 // Glue export: lua script, table in _lakefs_tables, action file
 func TestAWSCatalogExport(t *testing.T) {
-	// skip if blockstore is not not s3
+	// skip if blockstore is not s3
 	requireBlockstoreType(t, block.BlockstoreTypeS3)
 	// skip of the following args are not provided
 	accessKeyID := viper.GetString("aws_access_key_id")
