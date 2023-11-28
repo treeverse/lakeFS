@@ -104,6 +104,8 @@ def test_branch_sanity(storage_namespace, setup_repo):
     new_branch.delete_objects(paths)
     validate_changes(new_branch, ["foo/a", "foo/b", "foo/c"], "removed")
 
+    new_branch.delete_objects([repo.ref(new_branch.head()).object("a"), repo.ref(new_branch.head()).object("b")])
+    validate_changes(new_branch, ["a", "b", "foo/a", "foo/b", "foo/c"], "removed")
     with expect_exception_context(ValidationError):
         new_branch.reset_changes("unknown", "foo/")
     new_branch.delete()

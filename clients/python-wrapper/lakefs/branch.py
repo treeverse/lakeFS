@@ -8,6 +8,7 @@ from typing import Optional, Generator, Iterable, Literal
 import lakefs_sdk
 from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.object import WriteableObject
+from lakefs.object import StoredObject
 from lakefs.import_manager import ImportManager
 from lakefs.reference import Reference, Change
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
@@ -130,38 +131,40 @@ class Branch(Reference):
 
         return WriteableObject(self.repo_id, self._id, path, client=self._client)
 
-    def uncommitted(self, max_amount: Optional[int], after: str = '', prefix: str = '') -> Generator[Change]:
+    def uncommitted(self, max_amount: Optional[int], after: Optional[str] = None, prefix: Optional[str] = None,
+                    **kwargs) -> \
+            Generator[Change]:
         """
-        List uncommitted changes
+        Returns a diff generator of uncommitted changes on this branch
 
-        :param max_amount: maximum amount of changes to return
-        :param after: return changes after this path
-        :param prefix: return changes with this prefix
-        :return: a generator of Change objects
+        :param max_amount: Stop showing changes after this amount
+        :param after: Return items after this value
+        :param prefix: Return items prefixed with this value
         :raises:
             NotFoundException if branch or repository do not exist
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
+
         for diff in self._get_generator(self._client.sdk_client.branches_api.diff_branch,
-                                        self._repo_id, self._id, max_amount=max_amount, after=after, prefix=prefix):
+                                        self._repo_id, self._id, max_amount=max_amount, after=after, prefix=prefix,
+                                        **kwargs):
             yield Change(**diff.dict())
 
-    def import_data(self, commit_message: str) -> ImportManager:
+    def import_data(self, commit_message: str, metadata: dict = None) -> ImportManager:
         """
         Import data to lakeFS
 
         :param commit_message: once the data is imported, a commit is created with this message
         :return: an ImportManager object
         """
-        return ImportManager(self._repo_id, self._id, commit_message, self._client)
+        return ImportManager(self._repo_id, self._id, commit_message, metadata, self._client)
 
-    def delete_objects(self, object_paths: str | Iterable[str]) -> None:
+    def delete_objects(self, object_paths: str | Iterable[str | StoredObject]) -> None:
         """
         Delete objects from lakeFS
 
         :param object_paths: a single path or an iterable of paths to delete
-        :return: None
         :raises:
             NotFoundException if branch or repository do not exist
             NotAuthorizedException if user is not authorized to perform this operation
@@ -169,6 +172,10 @@ class Branch(Reference):
         """
         if isinstance(object_paths, str):
             object_paths = [object_paths]
+        elif isinstance(object_paths, StoredObject):
+            object_paths = [object_paths.path]
+        elif isinstance(object_paths, Iterable):
+            object_paths = (o.path if isinstance(o, StoredObject) else o for o in object_paths)
         with api_exception_handler():
             return self._client.sdk_client.objects_api.delete_objects(
                 self._repo_id,
@@ -188,13 +195,12 @@ class Branch(Reference):
     def reset_changes(self, path_type: Literal["common_prefix", "object", "reset"] = "reset",
                       path: Optional[str] = None) -> None:
         """
-        Reset uncommitted changes
+        Reset uncommitted changes (if any) on this branch
 
         :param path_type: the type of path to reset ('common_prefix', 'object', 'reset' - for all changes)
         :param path: the path to reset (optional) - if path_type is 'reset' this parameter is ignored
-        :return: None
         :raises:
-            ValueError if path_type is not one of the allowed values
+            ValidationError if path_type is not one of the allowed values
             NotFoundException if branch or repository do not exist
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
