@@ -76,34 +76,35 @@ func TestS3UploadAndDownload(t *testing.T) {
 				objects = make(chan Object, parallelism*2)
 			)
 
+			client := newMinioClient(t, sig.GetCredentials)
+			wg.Add(parallelism)
 			for i := 0; i < parallelism; i++ {
-				client := newMinioClient(t, sig.GetCredentials)
-
-				wg.Add(1)
 				go func() {
+					defer wg.Done()
 					for o := range objects {
 						_, err := client.PutObject(
 							ctx, repo, o.Path, strings.NewReader(o.Content), int64(len(o.Content)), minio.PutObjectOptions{})
 						if err != nil {
 							t.Errorf("minio.Client.PutObject(%s): %s", o.Path, err)
+							continue
 						}
 
 						download, err := client.GetObject(
 							ctx, repo, o.Path, minio.GetObjectOptions{})
 						if err != nil {
 							t.Errorf("minio.Client.GetObject(%s): %s", o.Path, err)
+							continue
 						}
 						contents := bytes.NewBuffer(nil)
 						_, err = io.Copy(contents, download)
 						if err != nil {
 							t.Errorf("download %s: %s", o.Path, err)
+							continue
 						}
 						if strings.Compare(contents.String(), o.Content) != 0 {
-							t.Errorf(
-								"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), o.Content)
+							t.Errorf("Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), o.Content)
 						}
 					}
-					wg.Done()
 				}()
 			}
 
