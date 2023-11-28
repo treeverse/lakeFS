@@ -3,7 +3,6 @@ Module containing lakeFS branch implementation
 """
 from __future__ import annotations
 
-from collections import namedtuple
 from typing import Optional, Generator, Iterable, Literal
 
 import lakefs_sdk
