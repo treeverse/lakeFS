@@ -151,16 +151,17 @@ class Branch(Reference):
                                         **kwargs):
             yield Change(**diff.dict())
 
-    def import_data(self, commit_message: str, metadata: dict = None) -> ImportManager:
+    def import_data(self, commit_message: str, metadata: Optional[dict] = None) -> ImportManager:
         """
         Import data to lakeFS
 
+        :param metadata: metadata to attach to the commit
         :param commit_message: once the data is imported, a commit is created with this message
         :return: an ImportManager object
         """
         return ImportManager(self._repo_id, self._id, commit_message, metadata, self._client)
 
-    def delete_objects(self, object_paths: str | Iterable[str | StoredObject]) -> None:
+    def delete_objects(self, object_paths: str | StoredObject | Iterable[str | StoredObject]) -> None:
         """
         Delete objects from lakeFS
 
@@ -170,12 +171,10 @@ class Branch(Reference):
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
-        if isinstance(object_paths, str):
-            object_paths = [object_paths]
-        elif isinstance(object_paths, StoredObject):
-            object_paths = [object_paths.path]
+        if isinstance(object_paths, str) or isinstance(object_paths, StoredObject):
+            object_paths = [str(object_paths)]
         elif isinstance(object_paths, Iterable):
-            object_paths = (o.path if isinstance(o, StoredObject) else o for o in object_paths)
+            object_paths = {str(o) for o in object_paths}
         with api_exception_handler():
             return self._client.sdk_client.objects_api.delete_objects(
                 self._repo_id,

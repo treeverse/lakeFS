@@ -525,6 +525,9 @@ class StoredObject:
         self._ref_id = reference
         self._path = path
 
+    def __str__(self) -> str:
+        return self.path
+
     @property
     def repo(self) -> str:
         """
