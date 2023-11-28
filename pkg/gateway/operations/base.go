@@ -45,16 +45,17 @@ const (
 type ActionIncr func(action, userID, repository, ref string)
 
 type Operation struct {
-	OperationID      OperationID
-	Region           string
-	FQDN             string
-	Catalog          *catalog.Catalog
-	MultipartTracker multipart.Tracker
-	BlockStore       block.Adapter
-	Auth             auth.GatewayService
-	Incr             ActionIncr
-	MatchedHost      bool
-	PathProvider     upload.PathProvider
+	OperationID           OperationID
+	Region                string
+	FQDN                  string
+	Catalog               *catalog.Catalog
+	MultipartTracker      multipart.Tracker
+	BlockStore            block.Adapter
+	Auth                  auth.GatewayService
+	Incr                  ActionIncr
+	MatchedHost           bool
+	PathProvider          upload.PathProvider
+	SkipVerifyUnsupported bool
 }
 
 func StorageClassFromHeader(header http.Header) *string {
@@ -86,6 +87,9 @@ func (o *Operation) EncodeXMLBytes(w http.ResponseWriter, req *http.Request, t [
 }
 
 func (o *Operation) HandleUnsupported(w http.ResponseWriter, req *http.Request, keys ...string) bool {
+	if o.SkipVerifyUnsupported {
+		return false
+	}
 	query := req.URL.Query()
 	if slices.ContainsFunc(keys, query.Has) {
 		_ = o.EncodeError(w, req, nil, gwerrors.ERRLakeFSNotSupported.ToAPIErr())

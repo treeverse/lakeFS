@@ -82,15 +82,13 @@ func TestS3UploadAndDownload(t *testing.T) {
 				go func() {
 					defer wg.Done()
 					for o := range objects {
-						_, err := client.PutObject(
-							ctx, repo, o.Path, strings.NewReader(o.Content), int64(len(o.Content)), minio.PutObjectOptions{})
+						_, err := client.PutObject(ctx, repo, o.Path, strings.NewReader(o.Content), int64(len(o.Content)), minio.PutObjectOptions{})
 						if err != nil {
 							t.Errorf("minio.Client.PutObject(%s): %s", o.Path, err)
 							continue
 						}
 
-						download, err := client.GetObject(
-							ctx, repo, o.Path, minio.GetObjectOptions{})
+						download, err := client.GetObject(ctx, repo, o.Path, minio.GetObjectOptions{})
 						if err != nil {
 							t.Errorf("minio.Client.GetObject(%s): %s", o.Path, err)
 							continue
