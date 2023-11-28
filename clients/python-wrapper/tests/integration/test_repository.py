@@ -20,15 +20,15 @@ def fixture_setup_repo_with_branches_and_tags():
 def test_repository_listings(setup_repo_with_branches_and_tags, attr):
     _, repo = setup_repo_with_branches_and_tags
 
-    func = getattr(repo, attr)
+    generator = getattr(repo, attr)
 
     total = 200
     if attr == "branches":
         total += 1  # Including main
-    assert len(list(func())) == total
+    assert len(list(generator())) == total
 
     after = 9
-    res = list(func(max_amount=100, prefix=f"{attr}01", after=f"{attr}01-{after:02d}"))
+    res = list(generator(max_amount=100, prefix=f"{attr}01", after=f"{attr}01-{after:02d}"))
     assert len(res) == 10
     for i, b in enumerate(res):
         assert b.id == f"{attr}01-{i + after + 1:02d}"
