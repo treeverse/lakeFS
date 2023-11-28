@@ -68,7 +68,7 @@ func (s *Walker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOpt
 				Address:     addr,
 				ETag:        strings.Trim(aws.ToString(record.ETag), "\""),
 				Mtime:       aws.ToTime(record.LastModified),
-				Size:        *record.Size,
+				Size:        aws.ToInt64(record.Size),
 			}
 			s.mark.LastKey = key
 			err := walkFn(ent)
