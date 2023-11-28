@@ -133,10 +133,15 @@ class Branch(Reference):
     def uncommitted(self, max_amount: Optional[int], after: str = '', prefix: str = '') -> Generator[Change]:
         """
         List uncommitted changes
-        :param max_amount:
-        :param after:
-        :param prefix:
-        :return:
+
+        :param max_amount: maximum amount of changes to return
+        :param after: return changes after this path
+        :param prefix: return changes with this prefix
+        :return: a generator of Change objects
+        :raises:
+            NotFoundException if branch or repository do not exist
+            NotAuthorizedException if user is not authorized to perform this operation
+            ServerException for any other errors
         """
         for diff in self._get_generator(self._client.sdk_client.branches_api.diff_branch,
                                         self._repo_id, self._id, max_amount=max_amount, after=after, prefix=prefix):
@@ -145,6 +150,7 @@ class Branch(Reference):
     def import_data(self, commit_message: str) -> ImportManager:
         """
         Import data to lakeFS
+
         :param commit_message: once the data is imported, a commit is created with this message
         :return: an ImportManager object
         """
@@ -153,8 +159,13 @@ class Branch(Reference):
     def delete_objects(self, object_paths: str | Iterable[str]) -> None:
         """
         Delete objects from lakeFS
-        :param object_paths:
-        :return:
+
+        :param object_paths: a single path or an iterable of paths to delete
+        :return: None
+        :raises:
+            NotFoundException if branch or repository do not exist
+            NotAuthorizedException if user is not authorized to perform this operation
+            ServerException for any other errors
         """
         if isinstance(object_paths, str):
             object_paths = [object_paths]
@@ -168,6 +179,7 @@ class Branch(Reference):
     def transact(self, commit_message: str) -> Transaction:
         """
         Create a transaction for multiple operations
+
         :param commit_message: once the transaction is committed, a commit is created with this message
         :return: a Transaction object to perform operations on
         """
@@ -177,9 +189,15 @@ class Branch(Reference):
                       path: Optional[str] = None) -> None:
         """
         Reset uncommitted changes
-        :param path_type:
-        :param path:
+
+        :param path_type: the type of path to reset ('common_prefix', 'object', 'reset' - for all changes)
+        :param path: the path to reset (optional) - if path_type is 'reset' this parameter is ignored
         :return: None
+        :raises:
+            ValueError if path_type is not one of the allowed values
+            NotFoundException if branch or repository do not exist
+            NotAuthorizedException if user is not authorized to perform this operation
+            ServerException for any other errors
         """
 
         reset_creation = lakefs_sdk.ResetCreation(path=path, type=path_type)
