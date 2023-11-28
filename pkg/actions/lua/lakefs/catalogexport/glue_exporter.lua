@@ -109,7 +109,7 @@ local function export_glue(glue, db, table_src_path, create_table_input, action_
     local repo_id = action_info.repository_id
     local commit_id = action_info.commit_id
 
-    -- get table desctiptor from _lakefs_tables/
+    -- get table descriptor from _lakefs_tables/
     local descriptor = extractor.get_table_descriptor(lakefs, repo_id, commit_id, table_src_path)
 
     -- get table symlink location uri 
@@ -127,7 +127,7 @@ local function export_glue(glue, db, table_src_path, create_table_input, action_
         error("table " .. descriptor.type .. " in path " .. table_src_path .. " not supported")
     end
 
-    -- finallize create glue table input
+    -- finalize create glue table input
     local table_input = build_glue_create_table_input(create_table_input, descriptor, symlink_location, columns,
         partitions, action_info, opts)
 
