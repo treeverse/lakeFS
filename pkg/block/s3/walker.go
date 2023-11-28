@@ -49,7 +49,7 @@ func (s *Walker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOpt
 		result, err := s.client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 			Bucket:            aws.String(bucket),
 			ContinuationToken: continuation,
-			MaxKeys:           maxKeys,
+			MaxKeys:           aws.Int32(maxKeys),
 			Prefix:            aws.String(prefix),
 			StartAfter:        aws.String(op.After),
 		})
@@ -68,7 +68,7 @@ func (s *Walker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOpt
 				Address:     addr,
 				ETag:        strings.Trim(aws.ToString(record.ETag), "\""),
 				Mtime:       aws.ToTime(record.LastModified),
-				Size:        record.Size,
+				Size:        *record.Size,
 			}
 			s.mark.LastKey = key
 			err := walkFn(ent)
@@ -76,7 +76,7 @@ func (s *Walker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOpt
 				return err
 			}
 		}
-		if !result.IsTruncated {
+		if !*result.IsTruncated {
 			break
 		}
 		continuation = result.NextContinuationToken

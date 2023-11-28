@@ -121,7 +121,7 @@ func deleteRecursive(c *S3Client) lua.Function {
 				errs = errors.Join(errs, errDel)
 			}
 
-			if !listObjects.IsTruncated {
+			if !*listObjects.IsTruncated {
 				break
 			}
 			input.ContinuationToken = listObjects.NextContinuationToken

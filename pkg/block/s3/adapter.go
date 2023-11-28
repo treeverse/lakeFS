@@ -209,7 +209,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		Bucket:        aws.String(bucket),
 		Key:           aws.String(key),
 		Body:          reader,
-		ContentLength: sizeBytes,
+		ContentLength: aws.Int64(sizeBytes),
 	}
 	if sizeBytes == 0 {
 		putObject.Body = http.NoBody
@@ -275,10 +275,10 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	uploadPartInput := &s3.UploadPartInput{
 		Bucket:        aws.String(bucket),
 		Key:           aws.String(key),
-		PartNumber:    int32(partNumber),
+		PartNumber:    aws.Int32(int32(partNumber)),
 		UploadId:      aws.String(uploadID),
 		Body:          reader,
-		ContentLength: sizeBytes,
+		ContentLength: aws.Int64(sizeBytes),
 	}
 	if a.ServerSideEncryption != "" {
 		uploadPartInput.SSECustomerAlgorithm = &a.ServerSideEncryption
@@ -337,7 +337,7 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 		log.WithError(err).Errorf("failed to get S3 object bucket %s key %s", qualifiedKey.GetStorageNamespace(), qualifiedKey.GetKey())
 		return nil, err
 	}
-	sizeBytes = objectOutput.ContentLength
+	sizeBytes = *objectOutput.ContentLength
 	return objectOutput.Body, nil
 }
 
@@ -473,7 +473,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 		}).Error("failed to get S3 object range")
 		return nil, err
 	}
-	sizeBytes = objectOutput.ContentLength
+	sizeBytes = *objectOutput.ContentLength
 	return objectOutput.Body, nil
 }
 
@@ -541,7 +541,7 @@ func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.
 	uploadPartCopyObject := s3.UploadPartCopyInput{
 		Bucket:     aws.String(bucket),
 		Key:        aws.String(key),
-		PartNumber: int32(partNumber),
+		PartNumber: aws.Int32(int32(partNumber)),
 		UploadId:   aws.String(uploadID),
 		CopySource: aws.String(fmt.Sprintf("%s/%s", srcKey.GetStorageNamespace(), srcKey.GetKey())),
 	}
@@ -683,7 +683,7 @@ func convertFromBlockMultipartUploadCompletion(multipartList *block.MultipartUpl
 	for _, p := range multipartList.Part {
 		parts = append(parts, types.CompletedPart{
 			ETag:       aws.String(p.ETag),
-			PartNumber: int32(p.PartNumber),
+			PartNumber: aws.Int32(int32(p.PartNumber)),
 		})
 	}
 	return &types.CompletedMultipartUpload{Parts: parts}
@@ -724,7 +724,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	etag := strings.Trim(aws.ToString(resp.ETag), `"`)
 	return &block.CompleteMultiPartUploadResponse{
 		ETag:             etag,
-		ContentLength:    headResp.ContentLength,
+		ContentLength:    *headResp.ContentLength,
 		ServerSideHeader: extractSSHeaderCompleteMultipartUpload(resp),
 	}, nil
 }
