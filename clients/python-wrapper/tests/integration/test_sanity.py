@@ -1,5 +1,7 @@
 import time
 
+from pydantic import ValidationError
+
 from tests.utests.common import expect_exception_context
 from lakefs.exceptions import NotFoundException, ConflictException, ObjectNotFoundException
 from lakefs import RepositoryProperties, WriteableObject
@@ -58,10 +60,67 @@ def test_branch_sanity(storage_namespace, setup_repo):
     with obj.reader() as fd:
         assert fd.read() == initial_content
 
-    new_branch.delete()
+    obj.upload(override_content)
+    with obj.reader() as fd:
+        assert fd.read() == override_content
 
+    validate_changes(new_branch, [obj.path], "changed")
+
+    new_branch.reset_changes()
+    with obj.reader() as fd:
+        assert fd.read() == initial_content
+
+    # Add some files and test combinations of reset and uncommitted
+    path_and_data = ["a", "b", "bar/a", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ]
+    for s in path_and_data:
+        new_branch.object(s).upload(s)
+
+    validate_changes(new_branch, path_and_data)
+
+    validate_changes(new_branch, ["bar/a", "bar/b", "bar/c"], prefix="bar")
+
+    new_branch.reset_changes("object", "bar/a")
+    validate_changes(new_branch, ["a", "b", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ])
+
+    new_branch.reset_changes("object", "bar/")
+
+    validate_changes(new_branch, ["a", "b", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ])
+
+    new_branch.reset_changes("common_prefix", "foo/")
+    validate_changes(new_branch, ["a", "b", "bar/b", "bar/c", "c"])
+
+    new_branch.reset_changes()
+    validate_changes(new_branch, [])
+
+    # Add some files. commit and test combinations of delete_objects and uncommitted
+    for s in path_and_data:
+        new_branch.object(s).upload(s)
+    new_branch.commit("add some files", {"test_key": "test_value"})
+
+    new_branch.delete_objects("foo/a")
+    validate_changes(new_branch, ["foo/a"], "removed")
+
+    paths = {"foo/b", "foo/c"}
+    new_branch.delete_objects(paths)
+    validate_changes(new_branch, ["foo/a", "foo/b", "foo/c"], "removed")
+
+    with expect_exception_context(ValidationError):
+        new_branch.reset_changes("unknown", "foo/")
+    new_branch.delete()
     with expect_exception_context(NotFoundException):
         new_branch.head()
+
+
+def validate_changes(branch, expected, change_type="added", prefix=""):
+    count = 0
+    for index, change in enumerate(branch.uncommitted(max_amount=10, prefix=prefix)):
+        assert change.path == expected[index]
+        assert change.path_type == "object"
+        assert change.type == change_type
+        assert change.size_bytes == 0 if change_type == "removed" else len(expected[index])
+        count += 1
+    if count != len(expected):
+        raise AssertionError(f"Expected {len(expected)} changes, got {count}")
 
 
 def test_ref_sanity(setup_repo):

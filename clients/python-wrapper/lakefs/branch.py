@@ -3,13 +3,14 @@ Module containing lakeFS branch implementation
 """
 from __future__ import annotations
 
-from typing import Optional
+from collections import namedtuple
+from typing import Optional, Generator, Iterable, Literal
 
 import lakefs_sdk
-
+from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.object import WriteableObject
-from lakefs.object_manager import WriteableObjectManager
-from lakefs.reference import Reference
+from lakefs.import_manager import ImportManager
+from lakefs.reference import Reference, Change
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 
 
@@ -130,9 +131,70 @@ class Branch(Reference):
 
         return WriteableObject(self.repo_id, self._id, path, client=self._client)
 
-    @property
-    def objects(self) -> WriteableObjectManager:
+    def uncommitted(self, max_amount: Optional[int], after: str = '', prefix: str = '') -> Generator[Change]:
         """
-        Return an Objects object using the current repository id and client
+        List uncommitted changes
+        :param max_amount:
+        :param after:
+        :param prefix:
+        :return:
         """
-        return WriteableObjectManager()
+        for diff in self._get_generator(self._client.sdk_client.branches_api.diff_branch,
+                                        self._repo_id, self._id, max_amount=max_amount, after=after, prefix=prefix):
+            yield Change(**diff.dict())
+
+    def import_data(self, commit_message: str) -> ImportManager:
+        """
+        Import data to lakeFS
+        :param commit_message: once the data is imported, a commit is created with this message
+        :return: an ImportManager object
+        """
+        return ImportManager(self._repo_id, self._id, commit_message, self._client)
+
+    def delete_objects(self, object_paths: str | Iterable[str]) -> None:
+        """
+        Delete objects from lakeFS
+        :param object_paths:
+        :return:
+        """
+        if isinstance(object_paths, str):
+            object_paths = [object_paths]
+        with api_exception_handler():
+            return self._client.sdk_client.objects_api.delete_objects(
+                self._repo_id,
+                self._id,
+                lakefs_sdk.PathList(paths=object_paths)
+            )
+
+    def transact(self, commit_message: str) -> Transaction:
+        """
+        Create a transaction for multiple operations
+        :param commit_message: once the transaction is committed, a commit is created with this message
+        :return: a Transaction object to perform operations on
+        """
+        return Transaction(self._repo_id, self.id, commit_message, self._client)
+
+    def reset_changes(self, path_type: Literal["common_prefix", "object", "reset"] = "reset",
+                      path: Optional[str] = None) -> None:
+        """
+        Reset uncommitted changes
+        :param path_type:
+        :param path:
+        :return: None
+        """
+
+        reset_creation = lakefs_sdk.ResetCreation(path=path, type=path_type)
+        return self._client.sdk_client.branches_api.reset_branch(self._repo_id, self.id, reset_creation)
+
+
+class Transaction(Branch):
+    """
+    Manage a transactions on a given branch
+    """
+
+    def __init__(self, repository_id: str, branch_id: str, commit_message: str, client: Client = DEFAULT_CLIENT):
+        super().__init__(repository_id, branch_id, client)
+        self._commit_message = commit_message
+
+    # TODO: Implement and check if we are OK with transaction returning a branch
+    #  with capabilities such as commit and transaction
