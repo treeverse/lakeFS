@@ -198,29 +198,22 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
-		repoID := ctx.Value(ContextKeyRepositoryID).(string)
 		o.OperationID = operations.OperationIDOperationNotFound
-		if repoID == "" {
-			if req.Method == http.MethodGet {
-				o.OperationID = operations.OperationIDListBuckets
-			} else {
-				_ = o.EncodeError(w, req, nil, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
-				return
-			}
-		} else {
-			ref := ctx.Value(ContextKeyRef).(string)
-			pth := ctx.Value(ContextKeyPath).(string)
-			switch {
-			case ref != "" && pth != "":
-				req = req.WithContext(ctx)
-				o.OperationID = pathBasedOperationID(req.Method)
-			case ref == "" && pth == "":
-				o.OperationID = repositoryBasedOperationID(req.Method)
-			default:
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
+
+		repoID := ctx.Value(ContextKeyRepositoryID).(string)
+		ref := ctx.Value(ContextKeyRef).(string)
+		pth := ctx.Value(ContextKeyPath).(string)
+
+		// based on the operation level, we can determine the operation id
+		switch {
+		case repoID == "":
+			o.OperationID = rootBasedOperationID(req.Method)
+		case ref != "" && pth != "":
+			o.OperationID = pathBasedOperationID(req.Method)
+		case ref == "" && pth == "":
+			o.OperationID = repositoryBasedOperationID(req.Method)
 		}
+
 		req = req.WithContext(logging.AddFields(ctx, logging.Fields{"operation_id": o.OperationID}))
 		next.ServeHTTP(w, req)
 	})
@@ -277,7 +270,7 @@ func ParseRequestParts(host string, urlPath string, bareDomains []string) Reques
 	}
 
 	if !parts.MatchedHost {
-		// assume path based for domains we don't explicitly know
+		// assume path-based for domains we don't explicitly know
 		p = strings.SplitN(urlPath, path.Separator, 3) //nolint: gomnd
 		parts.Repository = p[0]
 		if len(p) >= 1 {
@@ -293,6 +286,13 @@ func ParseRequestParts(host string, urlPath string, bareDomains []string) Reques
 		parts.Path = p[1]
 	}
 	return parts
+}
+
+func rootBasedOperationID(method string) operations.OperationID {
+	if method == http.MethodGet {
+		return operations.OperationIDListBuckets
+	}
+	return operations.OperationIDOperationNotFound
 }
 
 func pathBasedOperationID(method string) operations.OperationID {

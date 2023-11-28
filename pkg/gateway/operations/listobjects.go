@@ -349,13 +349,22 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 }
 
 func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
+	// TODO(barak): do we like to reject "versioning" or return empty response?
+	// TODO(barak): do we like to support "location" (getbucketlocation)?
+	if o.HandleUnsupported(w, req, "inventory", "metrics", "publicAccessBlock", "ownershipControls",
+		"intelligent-tiering", "analytics", "location", "policy", "lifecycle", "encryption", "object-lock", "replication",
+		"notification", "events", "acl", "cors", "website", "accelerate",
+		"requestPayment", "logging", "tagging", "uploads", "versions", "policyStatus") {
+		return
+	}
+
 	o.Incr("list_objects", o.Principal, o.Repository.Name, "")
 	// parse request parameters
 	// GET /example?list-type=2&prefix=main%2F&delimiter=%2F&encoding-type=url HTTP/1.1
 
 	// handle GET /?versions
 	query := req.URL.Query()
-	if _, found := query["versions"]; found {
+	if query.Has("versioning") {
 		o.EncodeXMLBytes(w, req, []byte(serde.VersioningResponse), http.StatusOK)
 		return
 	}
