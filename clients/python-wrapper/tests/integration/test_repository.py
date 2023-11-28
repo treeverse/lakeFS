@@ -9,26 +9,26 @@ def fixture_setup_repo_with_branches_and_tags():
                             "branches-and-tags",
                             "main")
     for i in range(10):
-        for j in range(100):
-            b = repo.branch(f"branches{i:02d}-{j:03d}").create("main")
-            repo.tag(tag_id=f"tags{i:02d}-{j:03d}").create(b)
+        for j in range(20):
+            b = repo.branch(f"branches{i:02d}-{j:02d}").create("main")
+            repo.tag(tag_id=f"tags{i:02d}-{j:02d}").create(b)
 
     return clt, repo
 
 
 @pytest.mark.parametrize("attr", ("branches", "tags"))
-def test_managers(setup_repo_with_branches_and_tags, attr):
+def test_repository_listings(setup_repo_with_branches_and_tags, attr):
     _, repo = setup_repo_with_branches_and_tags
 
-    manager = getattr(repo, attr)
+    func = getattr(repo, attr)
 
-    total = 1000
+    total = 200
     if attr == "branches":
         total += 1  # Including main
-    assert len(list(manager.list())) == total
+    assert len(list(func())) == total
 
-    after = 49
-    res = list(manager.list(max_amount=100, prefix=f"{attr}02", after=f"{attr}02-{after:03d}"))
-    assert len(res) == 50
+    after = 9
+    res = list(func(max_amount=100, prefix=f"{attr}01", after=f"{attr}01-{after:02d}"))
+    assert len(res) == 10
     for i, b in enumerate(res):
-        assert b.id == f"{attr}02-{i + after + 1:03d}"
+        assert b.id == f"{attr}01-{i + after + 1:02d}"

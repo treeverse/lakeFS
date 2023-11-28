@@ -4,7 +4,7 @@ Module containing lakeFS repository implementation
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Generator
 import lakefs_sdk
 
 from lakefs.tag import Tag
@@ -12,8 +12,7 @@ from lakefs.branch import Branch
 from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 from lakefs.namedtuple import LenientNamedTuple
-from lakefs.reference import Reference
-from lakefs.managers import TagManager, BranchManager
+from lakefs.reference import Reference, generate_listing
 
 
 class RepositoryProperties(LenientNamedTuple):
@@ -117,6 +116,42 @@ class Repository:
         """
         return Tag(self._id, tag_id, self._client)
 
+    def branches(self, max_amount: Optional[int] = None,
+                 after: Optional[str] = None, prefix: Optional[str] = None, **kwargs) -> Generator[Branch]:
+        """
+        Returns a generator listing for branches on the given repository
+
+        :param max_amount: Stop showing changes after this amount
+        :param after: Return items after this value
+        :param prefix: Return items prefixed with this value
+        :raises:
+            NotFoundException if repository does not exist
+            NotAuthorizedException if user is not authorized to perform this operation
+            ServerException for any other errors
+        """
+
+        for res in generate_listing(self._client.sdk_client.branches_api.list_branches, self._id,
+                                    max_amount=max_amount, after=after, prefix=prefix, **kwargs):
+            yield Branch(self._id, res.id, client=self._client)
+
+    def tags(self, max_amount: Optional[int] = None,
+             after: Optional[str] = None, prefix: Optional[str] = None, **kwargs) -> Generator[Tag]:
+        """
+        Returns a generator listing for tags on the given repository
+
+        :param max_amount: Stop showing changes after this amount
+        :param after: Return items after this value
+        :param prefix: Return items prefixed with this value
+        :raises:
+            NotFoundException if repository does not exist
+            NotAuthorizedException if user is not authorized to perform this operation
+            ServerException for any other errors
+        """
+
+        for res in generate_listing(self._client.sdk_client.tags_api.list_tags, self._id,
+                                    max_amount=max_amount, after=after, prefix=prefix, **kwargs):
+            yield Tag(self._id, res.id, client=self._client)
+
     @property
     def metadata(self) -> dict[str, str]:
         """
@@ -124,20 +159,6 @@ class Repository:
         """
         with api_exception_handler():
             return self._client.sdk_client.repositories_api.get_repository_metadata(repository=self._id)
-
-    @property
-    def branches(self) -> BranchManager:
-        """
-        Returns a BranchManager object for this repository
-        """
-        return BranchManager(self._id, self._client)
-
-    @property
-    def tags(self) -> TagManager:
-        """
-        Returns a TagManager object for this repository
-        """
-        return TagManager(self._id, self._client)
 
     @property
     def properties(self) -> RepositoryProperties:
