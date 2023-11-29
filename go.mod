@@ -69,7 +69,6 @@ require (
 	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
 	github.com/alitto/pond v1.8.3
 	github.com/antonmedv/expr v1.15.3
-	github.com/aws/aws-sdk-go v1.45.25
 	github.com/aws/aws-sdk-go-v2 v1.23.3
 	github.com/aws/aws-sdk-go-v2/config v1.25.9
 	github.com/aws/aws-sdk-go-v2/credentials v1.16.7
