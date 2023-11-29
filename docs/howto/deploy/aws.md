@@ -176,13 +176,18 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
 
 1. From the S3 Administration console, choose _Create Bucket_.
 2. Use the following as your bucket policy, filling in the placeholders:
+
+    **Note:** For Amazon S3 Express One Zone storage class with directory buckets, apply the Standard Permission with s3express.
+    {: .note }
+
    <div class="tabs">
       <ul>
          <li><a href="#bucket-policy-standard">Standard Permissions</a></li>
+         <li><a href="#bucket-policy-minimal">Standard Permissions (with s3express)</a></li>
          <li><a href="#bucket-policy-minimal">Minimal Permissions (Advanced)</a></li>
       </ul>
       <div markdown="1" id="bucket-policy-standard">
-         
+
       ```json 
    {
       "Id": "lakeFSPolicy",
@@ -224,10 +229,65 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
         This way, lakeFS will be able to create repositories only under this specific path (see: [Storage Namespace][understand-repository]).
       * lakeFS will try to assume the role `[IAM_ROLE]`.
    </div>
+   <div markdown="1" id="bucket-policy-express">
+
+      In case you like to allow also S3 Express One Zone's directory bucket, the following include `lakeFSDirectoryBucket` segment to allow access to the bucket.
+
+      ```json 
+   {
+      "Id": "lakeFSPolicy",
+      "Version": "2012-10-17",
+      "Statement": [
+         {
+            "Sid": "lakeFSObjects",
+            "Action": [
+               "s3:GetObject",
+               "s3:PutObject",
+               "s3:AbortMultipartUpload",
+               "s3:ListMultipartUploadParts"
+            ],
+            "Effect": "Allow",
+            "Resource": ["arn:aws:s3:::[BUCKET_NAME_AND_PREFIX]/*"],
+            "Principal": {
+               "AWS": ["arn:aws:iam::[ACCOUNT_ID]:role/[IAM_ROLE]"]
+            }
+         },
+         {
+            "Sid": "lakeFSBucket",
+            "Action": [
+               "s3:ListBucket",
+               "s3:GetBucketLocation",
+               "s3:ListBucketMultipartUploads"
+            ],
+            "Effect": "Allow",
+            "Resource": ["arn:aws:s3:::[BUCKET]"],
+            "Principal": {
+               "AWS": ["arn:aws:iam::[ACCOUNT_ID]:role/[IAM_ROLE]"]
+            }
+         },
+         {
+            "Sid": "lakeFSDirectoryBucket",
+            "Action": [
+               "s3express:CreateSession"
+            ],
+            "Effect": "Allow",
+            "Resource": "arn:aws:s3express:[REGION]:[ACCOUNT_ID]:bucket/[BUCKET_NAME]"
+         }
+      ]
+   }
+      ```
+
+      * The above policy applied for general purpose and directory buckets.
+      * The directory bucket required just the `lakeFSDirectoryBucket` segment which is on the bucket level.
+      * Replace `[BUCKET_NAME]`, `[ACCOUNT_ID]` and `[IAM_ROLE]` with values relevant to your environment.
+      * `[BUCKET_NAME_AND_PREFIX]` can be the bucket name. If you want to minimize the bucket policy permissions, use the bucket name together with a prefix (e.g. `example-bucket/a/b/c`).
+        This way, lakeFS will be able to create repositories only under this specific path (see: [Storage Namespace][understand-repository]).
+      * lakeFS will try to assume the role `[IAM_ROLE]`.
+   </div>
    <div markdown="1" id="bucket-policy-minimal">
    If required lakeFS can operate without accessing the data itself, this permission section is useful if you are using [presigned URLs mode][presigned-url] or the [lakeFS Hadoop FileSystem Spark integration][integration-hadoopfs].
    Since this FileSystem performs many operations directly on the storage, lakeFS requires less permissive permissions, resulting in increased security.
-   
+
    lakeFS always requires permissions to access the `_lakefs` prefix under your storage namespace, in which metadata
    is stored ([learn more][understand-commits]).
 
@@ -237,7 +297,7 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
       * Upload objects through Spark using the S3 gateway
       * Run `lakectl fs` commands (unless using **presign mode** with `--pre-sign` flag)
       * Use [Actions and Hooks](/howto/hooks/)
-   
+
    ```json
    {
      "Id": "[POLICY_ID]",
