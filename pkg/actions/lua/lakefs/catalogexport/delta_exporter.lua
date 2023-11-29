@@ -6,35 +6,35 @@ local storage_utils = require("lakefs/catalogexport/storage_utils")
 local utils = require("lakefs/catalogexport/internal")
 
 --[[
-    action_args:
-        - storage_namespace
-        - repo
+    action:
+        - repository_id
         - commit_id
 
-    export_delta_args:
+    hook_args:
         - table_paths: ["path/to/table1", "path/to/table2", ...]
         - lakefs_key
         - lakefs_secret
-        - **might change** lakefs_server_url
+        - region
 
     storage_client:
         - put_object: function(bucket, key, data)
 
 ]]
-local function export_delta_log(action, export_delta_args, storage_client)
-    local ns = action.storage_namespace
+local function export_delta_log(action, hook_args, storage_client)
     local repo = action.repository_id
     local commit_id = action.commit_id
-    local table_paths = export_delta_args.table_paths
-    local lakefs_key = export_delta_args.lakefs_key
-    local lakefs_secret = export_delta_args.lakefs_secret
-    local lakefs_server_url = export_delta_args.lakefs_server_url
-    local disable_ssl = lakefs_server_url:find("http://", 1, true)
+    local table_paths = hook_args.table_paths
+    local lakefs_key = hook_args.lakefs_key
+    local lakefs_secret = hook_args.lakefs_secret
+    local region = hook_args.region
 
-    local delta = formats.delta_client("s3", lakefs_key, lakefs_secret, lakefs_server_url, "us-east-1", disable_ssl)
-
+    local ns = utils.get_storage_namespace(repo)
+    if ns == nil then
+        error("failed getting storage namespace for repo " .. repo)
+    end
+    local delta = formats.delta_client("s3", lakefs_key, lakefs_secret, region)
+    local response = {}
     for _, path in ipairs(table_paths) do
-        print(path)
         local t = delta.get_table(repo, commit_id, path)
         local sortedKeys = utils.sortedKeys(t, nil)
         --[[ Pairs of (version, map of json content):
@@ -44,10 +44,8 @@ local function export_delta_log(action, export_delta_args, storage_client)
                 {"remove":{"path":"part-00000-d660b401-ceec-415a-a791-e8d1c7599e3d-c000.snappy.parquet","deletionTimestamp":1699276565259,"dataChange":true,"extendedFileMetadata":true,"partitionValues":{},"size":82491}})
         ]]
         local table_log = {}
-        --local i = 0
-        local keyGenerator = generateKeyFunc()
+        local keyGenerator = delta_log_entry_key_generator()
         for _, key in ipairs(sortedKeys) do
-            print(key)
             local content = t[key]
             local entry_log = {}
             --[[
@@ -57,7 +55,6 @@ local function export_delta_log(action, export_delta_args, storage_client)
                     {"remove":{"path":"part-00000-d660b401-ceec-415a-a791-e8d1c7599e3d-c000.snappy.parquet","deletionTimestamp":1699276565259,"dataChange":true,"extendedFileMetadata":true,"partitionValues":{},"size":82491}}
             ]]
             for _, e in ipairs(content) do
-                print(e)
                 local entry = json.unmarshal(e)
                 local p = ""
                 if entry.add ~= nil then
@@ -78,20 +75,19 @@ local function export_delta_log(action, export_delta_args, storage_client)
                     end
                 end
                 local entry_m = json.marshal(entry)
-                --print(entry_m)
                 table.insert(entry_log, entry_m)
             end
             table_log[string.format("%s.json", keyGenerator())] = entry_log
-            --i = i + 1
         end
 
         -- Get the table delta log physical location
         local t_name = pathlib.parse(path)["base_name"]
-        local table_physical_path = pathlib.join("/", storage_utils.get_storage_uri_prefix(ns, commit_id, action), t_name, "_delta_log")
-        print(table_physical_path)
+        local table_export_prefix = storage_utils.get_storage_uri_prefix(ns, commit_id, action)
+        local table_physical_path = pathlib.join("/", table_export_prefix, t_name)
+        local table_log_physical_path = pathlib.join("/", table_physical_path, "_delta_log")
 
         -- Upload the log to this physical_address
-        local storage_props = storage_utils.parse_storage_uri(table_physical_path)
+        local storage_props = storage_utils.parse_storage_uri(table_log_physical_path)
         --[[
             table_log:
                 {
@@ -109,14 +105,14 @@ local function export_delta_log(action, export_delta_args, storage_client)
                 table_entry_string = table_entry_string .. content_entry
             end
             local version_key = storage_props.key .. "/" .. entry_version
-            print("Version key:\n" .. version_key .. "\n")
-            print("Version content:\n" .. table_entry_string .. "\n")
             storage_client.put_object(storage_props.bucket, version_key, table_entry_string)
         end
+        response[t_name] = table_physical_path
     end
+    return response
 end
 
-function generateKeyFunc()
+function delta_log_entry_key_generator()
     local current = 0
     return function()
         local delta_log_entry_length = 20
