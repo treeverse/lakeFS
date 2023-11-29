@@ -76,7 +76,7 @@ func (s *Walker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOpt
 				return err
 			}
 		}
-		if !*result.IsTruncated {
+		if !aws.ToBool(result.IsTruncated) {
 			break
 		}
 		continuation = result.NextContinuationToken

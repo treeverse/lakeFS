@@ -70,16 +70,16 @@ require (
 	github.com/alitto/pond v1.8.3
 	github.com/antonmedv/expr v1.15.3
 	github.com/aws/aws-sdk-go v1.45.25
-	github.com/aws/aws-sdk-go-v2 v1.23.1
-	github.com/aws/aws-sdk-go-v2/config v1.25.5
-	github.com/aws/aws-sdk-go-v2/credentials v1.16.4
+	github.com/aws/aws-sdk-go-v2 v1.23.2
+	github.com/aws/aws-sdk-go-v2/config v1.25.8
+	github.com/aws/aws-sdk-go-v2/credentials v1.16.6
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.12.3
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression v1.6.3
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.14.3
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.15.0
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.25.3
 	github.com/aws/aws-sdk-go-v2/service/glue v1.63.0
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.45.0
-	github.com/aws/aws-sdk-go-v2/service/sts v1.25.4
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.46.0
+	github.com/aws/aws-sdk-go-v2/service/sts v1.25.6
 	github.com/aws/smithy-go v1.17.0
 	github.com/benburkert/dns v0.0.0-20190225204957-d356cf78cdfc
 	github.com/dgraph-io/badger/v4 v4.2.0
@@ -105,19 +105,19 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1 // indirect
 	github.com/apache/arrow/go/arrow v0.0.0-20200730104253-651201b0f516 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.1 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.5 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.4 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.4 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.6 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.5 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.5 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.7.1 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.2.4 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.2.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.17.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.10.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.2.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.2.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.8.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.10.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.16.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.17.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.20.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.10.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.16.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.17.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.20.3 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/getsentry/sentry-go v0.16.0 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
