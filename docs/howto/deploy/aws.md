@@ -174,11 +174,8 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
 
 ## Prepare your S3 bucket
 
-1. From the S3 Administration console, choose _Create Bucket_.
+1. Take note of the bucket name you want to use with lakeFS
 2. Use the following as your bucket policy, filling in the placeholders:
-
-    **Note:** For Amazon S3 Express One Zone storage class with directory buckets, apply the Standard Permission with s3express.
-    {: .note }
 
    <div class="tabs">
       <ul>
@@ -231,7 +228,7 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
    </div>
    <div markdown="1" id="bucket-policy-express">
 
-      In case you like to allow also S3 Express One Zone's directory bucket, use the following policy. Note the `lakeFSDirectoryBucket` statement which is specifically required to use this feature.
+      To use an S3 Express One Zone _directory bucket_, use the following policy. Note the `lakeFSDirectoryBucket` statement which is specifically required for using a directory bucket.
 
       ```json 
    {
