@@ -266,6 +266,19 @@ Read the payload (string) as the contents of a Parquet file and return its schem
 }
 ```
 
+### `formats`
+
+### `formats/delta_client(listenAddress)`
+
+Creates a new Delta Lake client used to interact with the lakeFS server listening on the given `listenAddress`
+
+### `formats/delta_client.get_table(repository_id, reference_id, prefix)`
+
+Returns a representation of a Delta Lake table under the given repository, reference, and prefix.
+The format of the response is a table `{number, {string}}` where `number` is a version in the Delta Log, and the mapped 
+`{string}` table (list) contains JSON strings of the different Delta Lake log operations listed in the mapped version entry. 
+
+
 ### `gcloud`
 
 ### `gcloud/gs_client(gcs_credentials_json_string)`
@@ -323,6 +336,14 @@ Returns 2 values:
 
 Returns an object-wise diff of uncommitted changes on `branch_id`.
 
+### `lakefs/stat_object(repository_id, ref_id, path)`
+
+Returns a stat object for the given path under the given reference and repository.
+
+### `lakefs/get_repo(repository_id)`
+
+Returns a repository object for the given repository.
+
 ### `lakefs/catalogexport/table_extractor`
 
 Utility package to parse `_lakefs_tables/` descriptors.
@@ -353,6 +374,18 @@ for part_key, entries in pager do
     end
 end
 ```
+
+### `lakefs/catalogexport/storage_utils`
+
+### `lakefs/catalogexport/storage_utils.get_storage_uri_prefix(storage_ns, commit_id, action_info)`
+
+Returns a path under the given storage namespace of the format:
+`${storage_ns}/_lakefs/exported/${ref}/${commitId}`
+
+### `lakefs/catalogexport/storage_utils.parse_storage_uri(uri)`
+
+Given a cloud storage URI string, return a table representing that URI:
+`{ protocol, bucket, key }`
 
 ### `lakefs/catalogexport/symlink_exporter`
 
@@ -466,6 +499,66 @@ Parameters:
 
 - `descriptor(Table)`: Object from (i.e _lakefs_tables/my_table.yaml).
 - `action_info(Table)`: The global action object.
+
+### `lakefs/catalogexport/delta_exporter`
+
+A package used to export Delta Lake tables from lakeFS to an external cloud storage.
+
+### `lakefs/catalogexport/delta_exporter.export_delta_log(action, export_delta_args, storage_client)`
+
+The function used to export Delta Lake tables.
+The return value is a table with mapping of table names to external table location (from which it is possible to query the data).
+
+Parameters:
+
+- `action`: The global action object
+- `export_delta_args`: 
+  - `table_paths`: Paths list in lakeFS to Delta Tables (e.g. `{"path/to/table1", "path/to/table2"}`)
+  - `lakefs_key`: lakeFS access key associated to a user with access to the Delta Lake tables.
+  - `lakefs_secret`: Complementary to the `lakefs_key` above.
+  - `region`: The region your external bucket is located in.
+- `storage_client`: A storage client that implements `put_object: function(bucket, key, data)` (e.g. `aws/s3.s3_client`)
+
+Example:
+
+```yaml
+---
+name: test_delta_exporter
+on:
+  post-commit: null
+hooks:
+  - id: delta
+    type: lua
+    properties:
+      script: |
+        local aws = require("aws")
+        local delta = require("lakefs/catalogexport/delta_exporter")
+        
+        local export_delta_args = {
+          table_paths = args.table_paths,
+          lakefs_key = args.lakefs.access_key_id,
+          lakefs_secret = args.lakefs.secret_access_key,
+          region = args.aws.aws_region
+        }
+      
+        local sc = aws.s3_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_key, args.aws.aws_region)
+      
+        local delta_table_locations = delta.export_delta_log(action, export_delta_args, sc)
+        for t, loc in pairs(delta_table_locations) do
+          print("Delta Lake exported table \"" .. t .. "\"'s location: " .. loc .. "\n")
+        end
+      args:
+        aws:
+          aws_access_key_id: <AWS_ACCESS_KEY_ID>
+          aws_secret_access_key: <AWS_SECRET_ACCESS_KEY>
+          aws_region: us-east-1
+        lakefs:
+          access_key_id: <LAKEFS_ACCESS_KEY_ID> 
+          secret_access_key: <LAKEFS_SECRET_ACCESS_KEY>
+        table_paths:
+          - delta
+          - delta2
+```
 
 ### `path/parse(path_string)`
 
