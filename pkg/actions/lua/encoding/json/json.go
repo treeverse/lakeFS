@@ -54,7 +54,6 @@ func jsonMarshal(l *lua.State) int {
 			e.SetIndent(pre, ind)
 		}
 	}
-	//e.SetIndent("", "  ")
 	err = e.Encode(t)
 	check(l, err)
 	l.PushString(buf.String())
