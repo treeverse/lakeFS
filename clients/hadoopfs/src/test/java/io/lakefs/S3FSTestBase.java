@@ -73,7 +73,7 @@ abstract class S3FSTestBase extends FSTestBase {
             .withPathStyleAccess(true);
         s3Client.setS3ClientOptions(s3ClientOptions);
         s3Client.setEndpoint(s3Endpoint);
-        s3Client.setRegion("us-east-1");
+        s3Client.setRegion(Region.fromValue("us-east-1").toAWSRegion());
 
         s3Bucket = makeS3BucketName();
         s3Base = String.format("s3://%s/", s3Bucket);
