@@ -171,7 +171,7 @@ class Branch(Reference):
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
-        if isinstance(object_paths, str) or isinstance(object_paths, StoredObject):
+        if isinstance(object_paths, (str,StoredObject)):
             object_paths = [str(object_paths)]
         elif isinstance(object_paths, Iterable):
             object_paths = {str(o) for o in object_paths}

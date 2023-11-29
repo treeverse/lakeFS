@@ -1,6 +1,7 @@
+from pydantic import ValidationError
+
 import lakefs
 from tests.utests.common import expect_exception_context
-from pydantic import ValidationError
 
 
 def test_revert(setup_branch):
