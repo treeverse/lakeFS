@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+	"strings"
+
 	"github.com/Shopify/go-lua"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	delta "github.com/csimplestring/delta-go"
 	"github.com/csimplestring/delta-go/storage"
 	deltaStore "github.com/csimplestring/delta-go/store"
 	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
-	"net/url"
-	"strings"
 )
 
 type storageType string

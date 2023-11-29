@@ -2,6 +2,7 @@ package formats
 
 import (
 	"context"
+
 	"github.com/Shopify/go-lua"
 )
 
