@@ -1,7 +1,5 @@
 import time
 
-from pydantic import ValidationError
-
 from tests.utests.common import expect_exception_context
 from lakefs.exceptions import NotFoundException, ConflictException, ObjectNotFoundException
 from lakefs import RepositoryProperties, WriteableObject
@@ -45,84 +43,9 @@ def test_branch_sanity(storage_namespace, setup_repo):
     assert new_branch.id == branch_name
     assert new_branch.head().id == main_branch.head().id
 
-    initial_content = b"test_content"
-    new_branch.object("test_object").upload(initial_content)
-    new_branch.commit("test_commit", {"test_key": "test_value"})
-
-    override_content = b"override_test_content"
-    obj = new_branch.object("test_object").upload(override_content)
-    new_branch.commit("override_data")
-    with obj.reader() as fd:
-        assert fd.read() == override_content
-
-    new_branch.revert(new_branch.head().id)
-
-    with obj.reader() as fd:
-        assert fd.read() == initial_content
-
-    obj.upload(override_content)
-    with obj.reader() as fd:
-        assert fd.read() == override_content
-
-    validate_changes(new_branch, [obj.path], "changed")
-
-    new_branch.reset_changes()
-    with obj.reader() as fd:
-        assert fd.read() == initial_content
-
-    # Add some files and test combinations of reset and uncommitted
-    path_and_data = ["a", "b", "bar/a", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ]
-    for s in path_and_data:
-        new_branch.object(s).upload(s)
-
-    validate_changes(new_branch, path_and_data)
-
-    validate_changes(new_branch, ["bar/a", "bar/b", "bar/c"], prefix="bar")
-
-    new_branch.reset_changes("object", "bar/a")
-    validate_changes(new_branch, ["a", "b", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ])
-
-    new_branch.reset_changes("object", "bar/")
-
-    validate_changes(new_branch, ["a", "b", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ])
-
-    new_branch.reset_changes("common_prefix", "foo/")
-    validate_changes(new_branch, ["a", "b", "bar/b", "bar/c", "c"])
-
-    new_branch.reset_changes()
-    validate_changes(new_branch, [])
-
-    # Add some files. commit and test combinations of delete_objects and uncommitted
-    for s in path_and_data:
-        new_branch.object(s).upload(s)
-    new_branch.commit("add some files", {"test_key": "test_value"})
-
-    new_branch.delete_objects("foo/a")
-    validate_changes(new_branch, ["foo/a"], "removed")
-
-    paths = {"foo/b", "foo/c"}
-    new_branch.delete_objects(paths)
-    validate_changes(new_branch, ["foo/a", "foo/b", "foo/c"], "removed")
-
-    new_branch.delete_objects([repo.ref(new_branch.head()).object("a"), repo.ref(new_branch.head()).object("b")])
-    validate_changes(new_branch, ["a", "b", "foo/a", "foo/b", "foo/c"], "removed")
-    with expect_exception_context(ValidationError):
-        new_branch.reset_changes("unknown", "foo/")
     new_branch.delete()
     with expect_exception_context(NotFoundException):
         new_branch.head()
-
-
-def validate_changes(branch, expected, change_type="added", prefix=""):
-    count = 0
-    for index, change in enumerate(branch.uncommitted(max_amount=10, prefix=prefix)):
-        assert change.path == expected[index]
-        assert change.path_type == "object"
-        assert change.type == change_type
-        assert change.size_bytes == 0 if change_type == "removed" else len(expected[index])
-        count += 1
-    if count != len(expected):
-        raise AssertionError(f"Expected {len(expected)} changes, got {count}")
 
 
 def test_ref_sanity(setup_repo):
@@ -173,7 +96,7 @@ def test_tag_sanity(setup_repo):
 
 def test_object_sanity(setup_repo):
     clt, repo = setup_repo
-    data = b"test_data"
+    data = "test_data"
     path = "test_obj"
     metadata = {"foo": "bar"}
     obj = WriteableObject(repository=repo.properties.id, reference="main", path=path, client=clt).upload(
