@@ -4,7 +4,9 @@ import lakefs
 from tests.utests.common import expect_exception_context
 
 
-def test_revert(test_branch):
+def test_revert(setup_repo):
+    _, repo = setup_repo
+    test_branch = repo.branch("main")
     initial_content = "test_content"
     test_branch.object("test_object").upload(initial_content)
     test_branch.commit("test_commit", {"test_key": "test_value"})
@@ -22,7 +24,9 @@ def test_revert(test_branch):
         assert fd.read() == initial_content
 
 
-def test_reset_changes(test_branch):
+def test_reset_changes(setup_repo):
+    _, repo = setup_repo
+    test_branch = repo.branch("main")
     paths = ["a", "b", "bar/a", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ]
     upload_data(test_branch, paths)
 
@@ -43,7 +47,9 @@ def test_reset_changes(test_branch):
     validate_uncommitted_changes(test_branch, [])
 
 
-def test_delete_object_changes(test_branch):
+def test_delete_object_changes(setup_repo):
+    _, repo = setup_repo
+    test_branch = repo.branch("main")
     path_and_data = ["a", "b", "bar/a", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ]
     for s in path_and_data:
         test_branch.object(s).upload(s)
