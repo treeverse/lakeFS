@@ -37,8 +37,8 @@ def setup_repo(storage_namespace, test_name, default_branch="main"):
     return _setup_repo(storage_namespace, test_name, default_branch)
 
 
-@pytest.fixture(scope="session")
-def setup_branch():
+@pytest.fixture()
+def test_branch():
     _, repo = _setup_repo(get_storage_namespace("sample-branch"),
                           "sample-branch",
                           "main")

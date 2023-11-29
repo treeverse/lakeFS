@@ -96,7 +96,7 @@ def test_tag_sanity(setup_repo):
 
 def test_object_sanity(setup_repo):
     clt, repo = setup_repo
-    data = "test_data"
+    data = b"test_data"
     path = "test_obj"
     metadata = {"foo": "bar"}
     obj = WriteableObject(repository=repo.properties.id, reference="main", path=path, client=clt).upload(

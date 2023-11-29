@@ -132,8 +132,7 @@ class Branch(Reference):
         return WriteableObject(self.repo_id, self._id, path, client=self._client)
 
     def uncommitted(self, max_amount: Optional[int], after: Optional[str] = None, prefix: Optional[str] = None,
-                    **kwargs) -> \
-            Generator[Change]:
+                    **kwargs) -> Generator[Change]:
         """
         Returns a diff generator of uncommitted changes on this branch
 
@@ -171,7 +170,7 @@ class Branch(Reference):
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
-        if isinstance(object_paths, (str,StoredObject)):
+        if isinstance(object_paths, (str, StoredObject)):
             object_paths = [str(object_paths)]
         elif isinstance(object_paths, Iterable):
             object_paths = {str(o) for o in object_paths}

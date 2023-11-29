@@ -4,67 +4,62 @@ import lakefs
 from tests.utests.common import expect_exception_context
 
 
-def test_revert(setup_branch):
-    branch = setup_branch
-
+def test_revert(test_branch):
     initial_content = "test_content"
-    branch.object("test_object").upload(initial_content)
-    branch.commit("test_commit", {"test_key": "test_value"})
+    test_branch.object("test_object").upload(initial_content)
+    test_branch.commit("test_commit", {"test_key": "test_value"})
 
     override_content = "override_test_content"
-    obj = branch.object("test_object").upload(override_content)
-    branch.commit("override_data")
-    with obj.reader() as fd:
+    obj = test_branch.object("test_object").upload(override_content)
+    test_branch.commit("override_data")
+
+    with obj.reader(mode='r') as fd:
         assert fd.read() == override_content
 
-    branch.revert(branch.head().id)
+    test_branch.revert(test_branch.head().id)
 
-    with obj.reader() as fd:
+    with obj.reader(mode='r') as fd:
         assert fd.read() == initial_content
 
 
-def test_reset_changes(setup_branch):
-    branch = setup_branch
-
+def test_reset_changes(test_branch):
     paths = ["a", "b", "bar/a", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ]
-    upload_data(branch, paths)
+    upload_data(test_branch, paths)
 
-    validate_uncommitted_changes(branch, paths)
+    validate_uncommitted_changes(test_branch, paths)
 
-    validate_uncommitted_changes(branch, ["bar/a", "bar/b", "bar/c"], prefix="bar")
-    branch.reset_changes("object", "bar/a")
-    validate_uncommitted_changes(branch, ["a", "b", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ])
+    validate_uncommitted_changes(test_branch, ["bar/a", "bar/b", "bar/c"], prefix="bar")
+    test_branch.reset_changes("object", "bar/a")
+    validate_uncommitted_changes(test_branch, ["a", "b", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ])
 
-    branch.reset_changes("object", "bar/")
+    test_branch.reset_changes("object", "bar/")
 
-    validate_uncommitted_changes(branch, ["a", "b", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ])
+    validate_uncommitted_changes(test_branch, ["a", "b", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ])
 
-    branch.reset_changes("common_prefix", "foo/")
-    validate_uncommitted_changes(branch, ["a", "b", "bar/b", "bar/c", "c"])
+    test_branch.reset_changes("common_prefix", "foo/")
+    validate_uncommitted_changes(test_branch, ["a", "b", "bar/b", "bar/c", "c"])
 
-    branch.reset_changes()
-    validate_uncommitted_changes(branch, [])
+    test_branch.reset_changes()
+    validate_uncommitted_changes(test_branch, [])
 
 
-def test_delete_object_changes(setup_branch):
-    branch = setup_branch
-
+def test_delete_object_changes(test_branch):
     path_and_data = ["a", "b", "bar/a", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ]
     for s in path_and_data:
-        branch.object(s).upload(s)
-    branch.commit("add some files", {"test_key": "test_value"})
+        test_branch.object(s).upload(s)
+    test_branch.commit("add some files", {"test_key": "test_value"})
 
-    branch.delete_objects("foo/a")
-    validate_uncommitted_changes(branch, ["foo/a"], "removed")
+    test_branch.delete_objects("foo/a")
+    validate_uncommitted_changes(test_branch, ["foo/a"], "removed")
 
     paths = {"foo/b", "foo/c"}
-    branch.delete_objects(paths)
-    validate_uncommitted_changes(branch, ["foo/a", "foo/b", "foo/c"], "removed")
-    repo = lakefs.Repository(branch.repo_id)
-    branch.delete_objects([repo.ref(branch.head()).object("a"), repo.ref(branch.head()).object("b")])
-    validate_uncommitted_changes(branch, ["a", "b", "foo/a", "foo/b", "foo/c"], "removed")
+    test_branch.delete_objects(paths)
+    validate_uncommitted_changes(test_branch, ["foo/a", "foo/b", "foo/c"], "removed")
+    repo = lakefs.Repository(test_branch.repo_id)
+    test_branch.delete_objects([repo.ref(test_branch.head()).object("a"), repo.ref(test_branch.head()).object("b")])
+    validate_uncommitted_changes(test_branch, ["a", "b", "foo/a", "foo/b", "foo/c"], "removed")
     with expect_exception_context(ValidationError):
-        branch.reset_changes("unknown", "foo/")
+        test_branch.reset_changes("unknown", "foo/")
 
 
 def upload_data(branch, path_and_data):
