@@ -16,6 +16,10 @@
         <value>minio123</value>
     </property>
     <property>
+        <name>fs.s3a.endpoint.region</name>
+        <value>us-east-1</value>
+    </property>
+    <property>
         <name>fs.s3a.endpoint</name>
         <value>http://s3.local.lakefs.io:9000</value>
     </property>
