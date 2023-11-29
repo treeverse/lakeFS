@@ -4,38 +4,15 @@ Module containing lakeFS reference implementation
 
 from __future__ import annotations
 
-from typing import Optional, Generator, Literal, List
+from typing import Optional, Generator
 
 import lakefs_sdk
 
+from lakefs.models import Commit, Change
 from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.exceptions import api_exception_handler
 from lakefs.object import StoredObject
-from lakefs.namedtuple import LenientNamedTuple
 from lakefs.object_manager import ObjectManager
-
-
-class Commit(LenientNamedTuple):
-    """
-    NamedTuple representing a lakeFS commit's properties
-    """
-    id: str
-    parents: List[str]
-    committer: str
-    message: str
-    creation_date: int
-    meta_range_id: str
-    metadata: Optional[dict[str, str]] = None
-
-
-class Change(LenientNamedTuple):
-    """
-    NamedTuple representing a diff change between two refs in lakeFS
-    """
-    type: Literal["added", "removed", "changed", "conflict", "prefix_changed"]
-    path: str
-    path_type: Literal["common_prefix", "object"]
-    size_bytes: Optional[int]
 
 
 class Reference:

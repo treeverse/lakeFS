@@ -10,7 +10,8 @@ from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.object import WriteableObject
 from lakefs.object import StoredObject
 from lakefs.import_manager import ImportManager
-from lakefs.reference import Reference, Change
+from lakefs.reference import Reference
+from lakefs.models import Change
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 
 
