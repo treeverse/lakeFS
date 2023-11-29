@@ -32,7 +32,8 @@ abstract class S3FSTestBase extends FSTestBase {
     protected String s3Endpoint;
     protected AmazonS3 s3Client;
 
-    private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2023-11-20T22-40-07Z");
+//    private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2023-11-20T22-40-07Z");
+    private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2021-06-07T21-40-51Z");
 
     @Rule
     public final GenericContainer s3 = new GenericContainer(MINIO.toString()).
