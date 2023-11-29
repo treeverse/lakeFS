@@ -28,7 +28,6 @@ func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, pat
 }
 
 func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
-	// TODO(barak): do we like to reject tagging or return empty tagging?
 	if o.HandleUnsupported(w, req, "torrent", "acl", "retention", "legal-hold", "lambdaArn") {
 		return
 	}
