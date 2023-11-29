@@ -82,6 +82,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.23.2
 	github.com/aws/smithy-go v1.15.0
 	github.com/benburkert/dns v0.0.0-20190225204957-d356cf78cdfc
+	github.com/csimplestring/delta-go v0.0.0-20231105162402-9b93ca02cedf
 	github.com/dgraph-io/badger/v4 v4.2.0
 	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/go-co-op/gocron v1.35.2
@@ -123,11 +124,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.17.3 // indirect
 	github.com/barweiss/go-tuple v1.1.1 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
-	github.com/csimplestring/delta-go v0.0.0-20231105162402-9b93ca02cedf // indirect
 	github.com/deckarep/golang-set/v2 v2.3.1 // indirect
 	github.com/fraugster/parquet-go v0.12.0 // indirect
 	github.com/getsentry/sentry-go v0.16.0 // indirect
-	github.com/go-sql-driver/mysql v1.7.1 // indirect
 	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang/glog v1.1.0 // indirect
 	github.com/google/flatbuffers v2.0.0+incompatible // indirect
@@ -139,7 +138,6 @@ require (
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/lib/pq v1.10.9 // indirect
 	github.com/mitchellh/go-testing-interface v0.0.0-20171004221916-a61a99592b77 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/oklog/run v1.0.0 // indirect
@@ -248,3 +246,5 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
+
+replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20231128165607-87acc8332e05
