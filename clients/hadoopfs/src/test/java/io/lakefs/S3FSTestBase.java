@@ -47,6 +47,7 @@ abstract class S3FSTestBase extends FSTestBase {
         withEnv("MINIO_ROOT_USER", S3_ACCESS_KEY_ID).
         withEnv("MINIO_ROOT_PASSWORD", S3_SECRET_ACCESS_KEY).
         withEnv("MINIO_DOMAIN", "s3.local.lakefs.io").
+        withEnv("MINIO_REGION", "us-east-1").
         withEnv("MINIO_UPDATE", "off").
         withExposedPorts(9000);
 
