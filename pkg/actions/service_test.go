@@ -63,7 +63,7 @@ func GetKVService(t *testing.T, ctx context.Context, source actions.Source, writ
 	kvStore := kvtest.GetStore(ctx, t)
 	cfg := actions.Config{Enabled: runHooks}
 	cfg.Lua.NetHTTPEnabled = true
-	return actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, writer, &actions.DecreasingIDGenerator{}, stats, cfg)
+	return actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, writer, &actions.DecreasingIDGenerator{}, stats, cfg, "")
 }
 
 func TestServiceRun(t *testing.T) {
