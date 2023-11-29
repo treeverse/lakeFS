@@ -17,9 +17,7 @@ import (
 type storageType string
 
 const (
-	s3StorageType    storageType = "s3"
-	gcsStorageType   storageType = "gcs"
-	azureStorageType storageType = "azure"
+	s3StorageType storageType = "s3"
 )
 
 type DeltaClient struct {
@@ -55,7 +53,10 @@ func (dc *DeltaClient) buildLog(table delta.Log) (map[int64][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	version, _ := s.EarliestVersion()
+	version, err := s.EarliestVersion()
+	if err != nil {
+		return nil, err
+	}
 	versionLog, err := table.Changes(version, false)
 	if err != nil {
 		return nil, err
@@ -104,17 +105,11 @@ func getTable(client *DeltaClient) lua.Function {
 	}
 }
 
-func fetchFormattedChanges(client *DeltaClient) lua.Function {
-	return func(l *lua.State) int {
-		return 1
-	}
-}
-
 var functions = map[string]func(client *DeltaClient) lua.Function{
-	"get_table":               getTable,
-	"fetch_formatted_changes": fetchFormattedChanges,
+	"get_table": getTable,
 }
 
+// AccessProvider is used to provide different expected access properties to different storage providers
 type AccessProvider interface {
 	GetAccessProperties() (interface{}, error)
 }
@@ -127,13 +122,13 @@ func (awsI AWSInfo) GetAccessProperties() (interface{}, error) {
 	return awsI, nil
 }
 
+// newDelta is a factory function to create server/cloud specific Delta Lake client
 func newDelta(ctx context.Context, listenAddress string) lua.Function {
 	if strings.HasPrefix(listenAddress, ":") {
 		// workaround in case we listen on all interfaces without specifying ip
 		listenAddress = fmt.Sprintf("localhost%s", listenAddress)
 	}
 	listenAddress = fmt.Sprintf("http://%s", listenAddress)
-	// Factory method to create storage specific Delta Lake client
 	return func(l *lua.State) int {
 		var client *DeltaClient
 		st := lua.CheckString(l, 1)
@@ -146,9 +141,7 @@ func newDelta(ctx context.Context, listenAddress string) lua.Function {
 		}
 		l.NewTable()
 		for name, goFn := range functions {
-			// -1: tbl
 			l.PushGoFunction(goFn(client))
-			// -1: fn, -2:tbl
 			l.SetField(-2, name)
 		}
 		return 1
