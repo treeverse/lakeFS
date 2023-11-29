@@ -26,22 +26,21 @@ type DeltaClient struct {
 	listeningAddress string
 }
 
-func (dc *DeltaClient) fetchS3Table(repo, ref, prefix string) (map[int64][]string, error) {
-	table, err := dc.getS3DeltaTable(repo, ref, prefix)
+func (dc *DeltaClient) fetchS3Table(repo, ref, prefix string, awsProps *storage.AWSProperties) (map[int64][]string, error) {
+	table, err := dc.getS3DeltaTable(repo, ref, prefix, awsProps)
 	if err != nil {
 		return nil, err
 	}
 	return dc.buildLog(table)
 }
-func (dc *DeltaClient) getS3DeltaTable(repo, ref, prefix string) (delta.Log, error) {
-	awsInfo := dc.accessProvider.(AWSInfo)
+func (dc *DeltaClient) getS3DeltaTable(repo, ref, prefix string, awsProps *storage.AWSProperties) (delta.Log, error) {
 	config := delta.Config{StoreType: string(s3StorageType)}
 	u := fmt.Sprintf("lakefs://%s/%s/%s", repo, ref, prefix)
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
 	}
-	s3LogStore, err := deltaStore.NewS3CompatLogStore(&awsInfo.AWSProps, parsedURL)
+	s3LogStore, err := deltaStore.NewS3CompatLogStore(awsProps, parsedURL)
 	if err != nil {
 		return nil, err
 	}
@@ -81,9 +80,9 @@ func (dc *DeltaClient) buildLog(table delta.Log) (map[int64][]string, error) {
 
 func (dc *DeltaClient) fetchTableLog(repo, ref, prefix string) (map[int64][]string, error) {
 	ap, _ := dc.accessProvider.GetAccessProperties()
-	switch ap.(type) {
+	switch access := ap.(type) {
 	case AWSInfo:
-		return dc.fetchS3Table(repo, ref, prefix)
+		return dc.fetchS3Table(repo, ref, prefix, &access.AWSProps)
 	default:
 		return nil, errors.New("unimplemented provider")
 	}
