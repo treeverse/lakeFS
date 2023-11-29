@@ -1,7 +1,5 @@
 package io.lakefs;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -9,18 +7,13 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.*;
-import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
+import io.lakefs.clients.sdk.model.StagingLocation;
 import org.apache.commons.io.IOUtils;
-
-import io.lakefs.clients.sdk.model.*;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -73,7 +66,7 @@ abstract class S3FSTestBase extends FSTestBase {
             .withPathStyleAccess(true);
         s3Client.setS3ClientOptions(s3ClientOptions);
         s3Client.setEndpoint(s3Endpoint);
-        s3Client.setRegion(Region.US_Standard.toAWSRegion())
+        s3Client.setRegion(Region.US_Standard.toAWSRegion());
 
         s3Bucket = makeS3BucketName();
         s3Base = String.format("s3://%s/", s3Bucket);
