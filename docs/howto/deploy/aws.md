@@ -231,7 +231,7 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
    </div>
    <div markdown="1" id="bucket-policy-express">
 
-      In case you like to allow also S3 Express One Zone's directory bucket, the following include `lakeFSDirectoryBucket` segment to allow access to the bucket.
+      In case you like to allow also S3 Express One Zone's directory bucket, use the following policy. Note the `lakeFSDirectoryBucket` statement which is specifically required to use this feature.
 
       ```json 
    {
@@ -277,8 +277,6 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
    }
       ```
 
-      * The above policy applied for general purpose and directory buckets.
-      * The directory bucket required just the `lakeFSDirectoryBucket` segment which is on the bucket level.
       * Replace `[BUCKET_NAME]`, `[ACCOUNT_ID]` and `[IAM_ROLE]` with values relevant to your environment.
       * `[BUCKET_NAME_AND_PREFIX]` can be the bucket name. If you want to minimize the bucket policy permissions, use the bucket name together with a prefix (e.g. `example-bucket/a/b/c`).
         This way, lakeFS will be able to create repositories only under this specific path (see: [Storage Namespace][understand-repository]).
