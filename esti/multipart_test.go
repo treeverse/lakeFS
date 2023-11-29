@@ -7,11 +7,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
@@ -172,9 +170,9 @@ func uploadMultipartPart(ctx context.Context, logger logging.Logger, svc *s3.Cli
 		Body:          bytes.NewReader(fileBytes),
 		Bucket:        resp.Bucket,
 		Key:           resp.Key,
-		PartNumber:    int32(partNumber),
+		PartNumber:    aws.Int32(int32(partNumber)),
 		UploadId:      resp.UploadId,
-		ContentLength: int64(len(fileBytes)),
+		ContentLength: aws.Int64(int64(len(fileBytes))),
 	}
 
 	uploadResult, err := svc.UploadPart(ctx, partInput)
@@ -186,6 +184,6 @@ func uploadMultipartPart(ctx context.Context, logger logging.Logger, svc *s3.Cli
 
 	return types.CompletedPart{
 		ETag:       uploadResult.ETag,
-		PartNumber: int32(partNumber),
+		PartNumber: aws.Int32(int32(partNumber)),
 	}, nil
 }
