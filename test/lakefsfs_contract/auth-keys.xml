@@ -24,6 +24,10 @@
         <value>http://s3.local.lakefs.io:9000</value>
     </property>
     <property>
+        <name>fs.s3a.connection.ssl.enabled</name>
+        <value>false</value>
+    </property>
+    <property>
         <name>fs.lakefs.impl</name>
         <value>io.lakefs.LakeFSFileSystem</value>
     </property>
