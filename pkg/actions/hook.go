@@ -41,10 +41,10 @@ var hooks = map[HookType]NewHookFunc{
 
 var ErrUnknownHookType = errors.New("unknown hook type")
 
-func NewHook(hook ActionHook, action *Action, cfg Config, server *http.Server, listeningAddress string, collector stats.Collector) (Hook, error) {
+func NewHook(hook ActionHook, action *Action, cfg Config, server *http.Server, serverAddress string, collector stats.Collector) (Hook, error) {
 	f := hooks[hook.Type]
 	if f == nil {
 		return nil, fmt.Errorf("%w (%s)", ErrUnknownHookType, hook.Type)
 	}
-	return f(hook, action, cfg, server, listeningAddress, collector)
+	return f(hook, action, cfg, server, serverAddress, collector)
 }

@@ -72,11 +72,7 @@ local function sortedKeys(query, sortFunction)
         len = len + 1
         keys[len] = k
     end
-    if sortFunction ~= nil then
-        table.sort(keys, sortFunction)
-    else
-        table.sort(keys)
-    end
+    table.sort(keys, sortFunction)
 
     return keys
 end

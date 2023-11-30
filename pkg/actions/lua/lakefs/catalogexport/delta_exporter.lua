@@ -4,6 +4,22 @@ local pathlib = require("path")
 local json = require("encoding/json")
 local utils = require("lakefs/catalogexport/internal")
 
+local function delta_log_entry_key_generator()
+    local current = 0
+    return function()
+        local delta_log_entry_length = 20
+        local key = tostring(current)
+        local padding_length = delta_log_entry_length - key:len()
+        local padded_key = ""
+        for _ = 1, padding_length do
+            padded_key = padded_key .. "0"
+        end
+        padded_key = padded_key .. key
+        current = current + 1
+        return padded_key
+    end
+end
+
 --[[
     action:
         - repository_id
@@ -35,7 +51,7 @@ local function export_delta_log(action, hook_args, storage_client)
     local response = {}
     for _, path in ipairs(table_paths) do
         local t = delta.get_table(repo, commit_id, path)
-        local sortedKeys = utils.sortedKeys(t, nil)
+        local sortedKeys = utils.sortedKeys(t)
         --[[ Pairs of (version, map of json content):
                 (1,
                 {
@@ -112,22 +128,6 @@ local function export_delta_log(action, hook_args, storage_client)
         response[t_name] = table_physical_path
     end
     return response
-end
-
-function delta_log_entry_key_generator()
-    local current = 0
-    return function()
-        local delta_log_entry_length = 20
-        local key = tostring(current)
-        local padding_length = delta_log_entry_length - key:len()
-        local padded_key = ""
-        for _ = 1, padding_length do
-            padded_key = padded_key .. "0"
-        end
-        padded_key = padded_key .. key
-        current = current + 1
-        return padded_key
-    end
 end
 
 return {
