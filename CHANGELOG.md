@@ -14,7 +14,7 @@
 :bug: Bugs fixed:
 
 - API: Fix StatsObject returned metadata on empty metadata (#7026)
-- Return the right default pagination default per page- 100 instead of 1000 (#7051)
+- Return the right default pagination per page- 100 instead of 1000 (#7051)
 - DynamoDB KV: Check if table exists before we try to create (#7056)
 
 # v1.2.0
