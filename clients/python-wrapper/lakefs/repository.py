@@ -52,7 +52,8 @@ class Repository:
         :param default_branch: The default branch for the repository. If None, use server default name
         :param include_samples: Whether to include sample data in repository creation
         :param exist_ok: If False will throw an exception if a repository by this name already exists. Otherwise,
-         return the existing repository without creating a new one
+            return the existing repository without creating a new one
+        :param kwargs: Additional Keyword Arguments to send to the server
         :return: The lakeFS SDK object representing the repository
         :raises:
             NotAuthorizedException if user is not authorized to perform this operation
@@ -124,6 +125,7 @@ class Repository:
         :param max_amount: Stop showing changes after this amount
         :param after: Return items after this value
         :param prefix: Return items prefixed with this value
+        :param kwargs: Additional Keyword Arguments to send to the server
         :raises:
             NotFoundException if repository does not exist
             NotAuthorizedException if user is not authorized to perform this operation
@@ -142,6 +144,7 @@ class Repository:
         :param max_amount: Stop showing changes after this amount
         :param after: Return items after this value
         :param prefix: Return items prefixed with this value
+        :param kwargs: Additional Keyword Arguments to send to the server
         :raises:
             NotFoundException if repository does not exist
             NotAuthorizedException if user is not authorized to perform this operation

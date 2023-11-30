@@ -2,14 +2,17 @@ import pytest
 
 from tests.integration.conftest import _setup_repo, get_storage_namespace
 
+_NUM_PREFIXES = 10
+_NUM_ELEM_PER_PREFIX = 20
+
 
 @pytest.fixture(name="setup_repo_with_branches_and_tags", scope="session")
 def fixture_setup_repo_with_branches_and_tags():
     clt, repo = _setup_repo(get_storage_namespace("branches-and-tags"),
                             "branches-and-tags",
                             "main")
-    for i in range(10):
-        for j in range(20):
+    for i in range(_NUM_PREFIXES):
+        for j in range(_NUM_ELEM_PER_PREFIX):
             b = repo.branch(f"branches{i:02d}-{j:02d}").create("main")
             repo.tag(tag_id=f"tags{i:02d}-{j:02d}").create(b)
 
@@ -22,7 +25,7 @@ def test_repository_listings(setup_repo_with_branches_and_tags, attr):
 
     generator = getattr(repo, attr)
 
-    total = 200
+    total = _NUM_PREFIXES * _NUM_ELEM_PER_PREFIX
     if attr == "branches":
         total += 1  # Including main
     assert len(list(generator())) == total

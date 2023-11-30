@@ -78,7 +78,7 @@ class Reference:
         Returns a generator of commits starting with this reference id
 
         :param max_amount: (Optional) limits the amount of results to return from the server
-        :param kwargs: Additional keyword arguments
+        :param kwargs: Additional Keyword Arguments to send to the server
         :raises:
             NotFoundException if reference by this id does not exist
             NotAuthorizedException if user is not authorized to perform this operation
@@ -128,6 +128,7 @@ class Reference:
         :param after: Return items after this value
         :param prefix: Return items prefixed with this value
         :param delimiter: Group common prefixes by this delimiter
+        :param kwargs: Additional Keyword Arguments to send to the server
         :raises:
             NotFoundException if this reference or other_ref does not exist
             NotAuthorizedException if user is not authorized to perform this operation
@@ -149,6 +150,7 @@ class Reference:
         Merge this reference into destination branch
 
         :param destination_branch_id: The ID of the merge destination
+        :param kwargs: Additional Keyword Arguments to send to the server
         :return: The reference id of the merge commit
         :raises:
             NotFoundException if reference by this id does not exist, or branch doesn't exist
