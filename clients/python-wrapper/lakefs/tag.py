@@ -16,7 +16,7 @@ class Tag(Reference):
     Class representing a tag in lakeFS.
     """
 
-    def create(self, source_ref_id: str, exist_ok: Optional[bool] = False) -> Tag:
+    def create(self, source_ref_id: str | Reference, exist_ok: Optional[bool] = False) -> Tag:
         """
         Create a tag from the given source_ref_id
 
@@ -28,7 +28,7 @@ class Tag(Reference):
             NotFoundException if source_ref_id doesn't exist on the lakeFS server
             ServerException for any other errors.
         """
-        tag_creation = lakefs_sdk.TagCreation(id=self.id, ref=source_ref_id)
+        tag_creation = lakefs_sdk.TagCreation(id=self.id, ref=str(source_ref_id))
 
         def handle_conflict(e: LakeFSException):
             if not (isinstance(e, ConflictException) and exist_ok):
