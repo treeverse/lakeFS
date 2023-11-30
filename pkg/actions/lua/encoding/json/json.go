@@ -50,9 +50,8 @@ func jsonMarshal(l *lua.State) int {
 		rot = vot.Interface().(map[string]any)
 	}
 	if rot != nil {
-		if pre, ind, ok := fetchIndentProps(rot); ok {
-			e.SetIndent(pre, ind)
-		}
+		pre, ind := fetchIndentProps(rot)
+		e.SetIndent(pre, ind)
 	}
 	err = e.Encode(t)
 	check(l, err)
@@ -60,29 +59,16 @@ func jsonMarshal(l *lua.State) int {
 	return 1
 }
 
-func fetchIndentProps(rot map[string]any) (string, string, bool) {
-	var prefix *string
-	var indent *string
+func fetchIndentProps(rot map[string]any) (string, string) {
+	prefix := ""
+	indent := ""
 	if p, ok := rot["prefix"]; ok {
-		sp := p.(string)
-		prefix = &sp
+		prefix = p.(string)
 	}
 	if i, ok := rot["indent"]; ok {
-		si := i.(string)
-		indent = &si
+		indent = i.(string)
 	}
-	if prefix != nil || indent != nil {
-		if prefix == nil {
-			defaultPref := ""
-			prefix = &defaultPref
-		}
-		if indent == nil {
-			defaultIndent := ""
-			indent = &defaultIndent
-		}
-		return *prefix, *indent, true
-	}
-	return "", "", false
+	return prefix, indent
 }
 
 func jsonUnmarshal(l *lua.State) int {

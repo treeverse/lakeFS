@@ -1,4 +1,7 @@
 local url = require("net/url")
+local pathlib = require("path")
+local lakefs = require("lakefs")
+local json = require("encoding/json")
 local DEFAULT_SHORT_DIGEST_LEN=6
 
 local function deepcopy(orig)
@@ -66,17 +69,19 @@ local function parse_storage_uri(uri)
     }
 end
 
+local function get_storage_uri_prefix(storage_ns, commit_id, action_info)
+    local branch_or_tag = ref_from_branch_or_tag(action_info)
+    local sha = short_digest(commit_id)
+    return pathlib.join("/", storage_ns, string.format("_lakefs/exported/%s/%s/", branch_or_tag, sha))
+end
+
 local function sortedKeys(query, sortFunction)
     local keys, len = {}, 0
     for k,_ in pairs(query) do
         len = len + 1
         keys[len] = k
     end
-    if sortFunction ~= nil then
-        table.sort(keys, sortFunction)
-    else
-        table.sort(keys)
-    end
+    table.sort(keys, sortFunction)
 
     return keys
 end
@@ -99,4 +104,5 @@ return {
     lakefs_paginiated_api=lakefs_paginiated_api,
     sortedKeys = sortedKeys,
     get_storage_namespace = get_storage_namespace,
+    get_storage_uri_prefix = get_storage_uri_prefix,
 }

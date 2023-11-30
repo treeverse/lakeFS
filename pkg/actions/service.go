@@ -48,17 +48,17 @@ type Config struct {
 // the run data to the blockstore and to the actions.Store (which is a
 // fancy name for a DB - kv style or postgres directly)
 type StoreService struct {
-	Store            Store
-	idGen            IDGenerator
-	Source           Source
-	Writer           OutputWriter
-	ctx              context.Context
-	cancel           context.CancelFunc
-	wg               sync.WaitGroup
-	stats            stats.Collector
-	cfg              Config
-	endpoint         *http.Server
-	listeningAddress string
+	Store         Store
+	idGen         IDGenerator
+	Source        Source
+	Writer        OutputWriter
+	ctx           context.Context
+	cancel        context.CancelFunc
+	wg            sync.WaitGroup
+	stats         stats.Collector
+	cfg           Config
+	endpoint      *http.Server
+	serverAddress string
 }
 
 type Task struct {
@@ -214,19 +214,19 @@ type Service interface {
 	graveler.HooksHandler
 }
 
-func NewService(ctx context.Context, store Store, source Source, writer OutputWriter, idGen IDGenerator, stats stats.Collector, cfg Config, listeningAddress string) *StoreService {
+func NewService(ctx context.Context, store Store, source Source, writer OutputWriter, idGen IDGenerator, stats stats.Collector, cfg Config, serverAddress string) *StoreService {
 	ctx, cancel := context.WithCancel(ctx)
 	return &StoreService{
-		Store:            store,
-		Source:           source,
-		Writer:           writer,
-		ctx:              ctx,
-		idGen:            idGen,
-		cancel:           cancel,
-		wg:               sync.WaitGroup{},
-		stats:            stats,
-		cfg:              cfg,
-		listeningAddress: listeningAddress,
+		Store:         store,
+		Source:        source,
+		Writer:        writer,
+		ctx:           ctx,
+		idGen:         idGen,
+		cancel:        cancel,
+		wg:            sync.WaitGroup{},
+		stats:         stats,
+		cfg:           cfg,
+		serverAddress: serverAddress,
 	}
 }
 
@@ -312,7 +312,7 @@ func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task
 	for actionIdx, action := range actions {
 		var actionTasks []*Task
 		for hookIdx, hook := range action.Hooks {
-			h, err := NewHook(hook, action, s.cfg, s.endpoint, s.listeningAddress, s.stats)
+			h, err := NewHook(hook, action, s.cfg, s.endpoint, s.serverAddress, s.stats)
 			if err != nil {
 				return nil, err
 			}

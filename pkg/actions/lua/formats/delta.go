@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+	"strings"
+
 	"github.com/Shopify/go-lua"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	delta "github.com/csimplestring/delta-go"
 	"github.com/csimplestring/delta-go/storage"
 	deltaStore "github.com/csimplestring/delta-go/store"
 	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
-	"net/url"
-	"strings"
 )
 
 type storageType string
@@ -20,10 +21,11 @@ const (
 	s3StorageType storageType = "s3"
 )
 
+var errUnimplementedProvided = errors.New("unimplemented provider")
+
 type DeltaClient struct {
-	accessProvider   AccessProvider
-	ctx              context.Context
-	listeningAddress string
+	accessProvider AccessProvider
+	ctx            context.Context
 }
 
 func (dc *DeltaClient) fetchS3Table(repo, ref, prefix string, awsProps *storage.AWSProperties) (map[int64][]string, error) {
@@ -84,9 +86,8 @@ func (dc *DeltaClient) fetchTableLog(repo, ref, prefix string) (map[int64][]stri
 	case AWSInfo:
 		return dc.fetchS3Table(repo, ref, prefix, &access.AWSProps)
 	default:
-		return nil, errors.New("unimplemented provider")
+		return nil, errUnimplementedProvided
 	}
-
 }
 
 func getTable(client *DeltaClient) lua.Function {
@@ -122,18 +123,18 @@ func (awsI AWSInfo) GetAccessProperties() (interface{}, error) {
 }
 
 // newDelta is a factory function to create server/cloud specific Delta Lake client
-func newDelta(ctx context.Context, listenAddress string) lua.Function {
-	if strings.HasPrefix(listenAddress, ":") {
+func newDelta(ctx context.Context, serverAddress string) lua.Function {
+	if strings.HasPrefix(serverAddress, ":") {
 		// workaround in case we listen on all interfaces without specifying ip
-		listenAddress = fmt.Sprintf("localhost%s", listenAddress)
+		serverAddress = fmt.Sprintf("localhost%s", serverAddress)
 	}
-	listenAddress = fmt.Sprintf("http://%s", listenAddress)
+	serverAddress = fmt.Sprintf("http://%s", serverAddress)
 	return func(l *lua.State) int {
 		var client *DeltaClient
 		st := lua.CheckString(l, 1)
 		switch storageType(st) {
 		case s3StorageType:
-			client = newS3DeltaClient(l, ctx, listenAddress)
+			client = newS3DeltaClient(l, ctx, serverAddress)
 		default:
 			lua.Errorf(l, "unimplemented storage type")
 			panic("unimplemented storage type")
@@ -147,22 +148,22 @@ func newDelta(ctx context.Context, listenAddress string) lua.Function {
 	}
 }
 
-func newS3DeltaClient(l *lua.State, ctx context.Context, listenAddress string) *DeltaClient {
-	aki := lua.CheckString(l, 2)
-	sak := lua.CheckString(l, 3)
-	r := lua.OptString(l, 4, "us-east-1")
+func newS3DeltaClient(l *lua.State, ctx context.Context, serverAddress string) *DeltaClient {
+	accessKeyID := lua.CheckString(l, 2)
+	secretAccessKey := lua.CheckString(l, 3)
+	r := lua.CheckString(l, 4)
 	awsProps := storage.AWSProperties{
 		Region:         r,
 		ForcePathStyle: true,
 		CredsProvider: aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
 			return aws.Credentials{
-				AccessKeyID:     aki,
-				SecretAccessKey: sak,
+				AccessKeyID:     accessKeyID,
+				SecretAccessKey: secretAccessKey,
 			}, nil
 		}),
-		Endpoint: listenAddress,
+		Endpoint: serverAddress,
 	}
 	storage.RegisterS3CompatBucketURLOpener("lakefs", &awsProps)
 
-	return &DeltaClient{accessProvider: AWSInfo{AWSProps: awsProps}, ctx: ctx, listeningAddress: listenAddress}
+	return &DeltaClient{accessProvider: AWSInfo{AWSProps: awsProps}, ctx: ctx}
 }

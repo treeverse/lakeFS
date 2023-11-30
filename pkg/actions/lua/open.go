@@ -2,6 +2,7 @@ package lua
 
 import (
 	"context"
+
 	"github.com/Shopify/go-lua"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/aes"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/hmac"
@@ -45,7 +46,7 @@ func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	aws.Open(l, ctx)
 	gcloud.Open(l, ctx)
 	url.Open(l)
-	formats.Open(l, ctx, cfg.ListeningAddress)
+	formats.Open(l, ctx, cfg.ServerAddress)
 	if cfg.NetHTTPEnabled {
 		http.Open(l)
 	}
