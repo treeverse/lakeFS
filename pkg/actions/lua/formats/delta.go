@@ -21,6 +21,8 @@ const (
 	s3StorageType storageType = "s3"
 )
 
+var errUnimplementedProvided = errors.New("unimplemented provider")
+
 type DeltaClient struct {
 	accessProvider AccessProvider
 	ctx            context.Context
@@ -84,9 +86,8 @@ func (dc *DeltaClient) fetchTableLog(repo, ref, prefix string) (map[int64][]stri
 	case AWSInfo:
 		return dc.fetchS3Table(repo, ref, prefix, &access.AWSProps)
 	default:
-		return nil, errors.New("unimplemented provider")
+		return nil, errUnimplementedProvided
 	}
-
 }
 
 func getTable(client *DeltaClient) lua.Function {
