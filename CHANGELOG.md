@@ -1,5 +1,22 @@
 # Changelog
 
+# v1.3.0
+
+:new: What's new:
+
+- Update aws go sdk v2 to support s3 express buckets (#7083)
+- Support long-running dump and restore (#6975)
+- lakectl: Improved performance for rm lakectl recursive command (#7035)
+- PythonSDK: Support StoredObject 'open' as both context and function(#7038)
+- Glue Exporter: Support Hadoop directory markers (#7058)
+
+
+:bug: Bugs fixed:
+
+- API: Fix StatsObject returned metadata on empty metadata (#7026)
+- Return the right default pagination default per page- 100 instead of 1000 (#7051)
+- DynamoDB KV: Check if table exists before we try to create (#7056)
+
 # v1.2.0
 
 :new: What's new:
