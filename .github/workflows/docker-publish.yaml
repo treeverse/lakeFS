@@ -99,7 +99,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.tag }}
             type=semver,pattern={{major}},value=${{ steps.version.outputs.tag }}
       - name: Build and push lakectl
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .
           target: lakectl
@@ -109,7 +109,7 @@ jobs:
           tags: ${{ steps.lakectl_meta.outputs.tags }}
 
       - name: Build and push lakefs
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: .
           target: lakefs-plugins
