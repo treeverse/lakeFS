@@ -20,34 +20,32 @@ local function delta_log_entry_key_generator()
     end
 end
 
+local function get_delta_client(key, secret, region)
+    return formats.delta_client("s3", key, secret, region)
+end
+
 --[[
     action:
         - repository_id
         - commit_id
 
-    hook_args:
-        - table_paths: ["path/to/table1", "path/to/table2", ...]
-        - lakefs_key
-        - lakefs_secret
-        - region
+   table_paths: ["path/to/table1", "path/to/table2", ...]
 
     storage_client:
         - put_object: function(bucket, key, data)
 
+    delta_client:
+        - get_table: function(repo, ref, prefix)
+
 ]]
-local function export_delta_log(action, hook_args, storage_client)
+local function export_delta_log(action, table_paths, storage_client, delta)
     local repo = action.repository_id
     local commit_id = action.commit_id
-    local table_paths = hook_args.table_paths
-    local lakefs_key = hook_args.lakefs_key
-    local lakefs_secret = hook_args.lakefs_secret
-    local region = hook_args.region
 
     local ns = utils.get_storage_namespace(repo)
     if ns == nil then
         error("failed getting storage namespace for repo " .. repo)
     end
-    local delta = formats.delta_client("s3", lakefs_key, lakefs_secret, region)
     local response = {}
     for _, path in ipairs(table_paths) do
         local t = delta.get_table(repo, commit_id, path)
@@ -131,5 +129,6 @@ local function export_delta_log(action, hook_args, storage_client)
 end
 
 return {
-    export_delta_log = export_delta_log
+    export_delta_log = export_delta_log,
+    get_delta_client = get_delta_client
 }
