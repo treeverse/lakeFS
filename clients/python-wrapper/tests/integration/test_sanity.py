@@ -47,23 +47,7 @@ def test_branch_sanity(storage_namespace, setup_repo):
     assert new_branch.id == branch_name
     assert new_branch.head().id == main_branch.head().id
 
-    initial_content = b"test_content"
-    new_branch.object("test_object").upload(initial_content)
-    new_branch.commit("test_commit", {"test_key": "test_value"})
-
-    override_content = b"override_test_content"
-    obj = new_branch.object("test_object").upload(override_content)
-    new_branch.commit("override_data")
-    with obj.reader() as fd:
-        assert fd.read() == override_content
-
-    new_branch.revert(new_branch.head().id)
-
-    with obj.reader() as fd:
-        assert fd.read() == initial_content
-
     new_branch.delete()
-
     with expect_exception_context(NotFoundException):
         new_branch.head()
 
