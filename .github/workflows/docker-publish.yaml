@@ -101,6 +101,7 @@ jobs:
       - name: Build and push lakectl
         uses: docker/build-push-action@v5
         with:
+          driver-opts: image=moby/buildkit:buildx-stable-1
           context: .
           target: lakectl
           push: true
@@ -112,6 +113,7 @@ jobs:
       - name: Build and push lakefs
         uses: docker/build-push-action@v5
         with:
+          driver-opts: image=moby/buildkit:buildx-stable-1
           context: .
           target: lakefs-plugins
           push: true
