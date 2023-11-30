@@ -4,10 +4,33 @@ on:
     branches:
       - master
   pull_request:
-    paths:
-      - "clients/python-wrapper/**"
+
 jobs:
+  paths-filter:
+    runs-on: ubuntu-latest
+    outputs:
+      client-change: ${{ steps.filter.outputs.client == 'true' }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            client: 
+              - 'clients/python-wrapper/**'
+
+  always-succeed:
+    needs: paths-filter
+    if: ${{ needs.paths-filter.outputs.client-change != 'true' }}
+    name: Unit Test Python SDK Wrapper
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Always Succeed
+        run: echo "No changes in client - skipping unit tests"
+
   unit-tests:
+    needs: paths-filter
+    if: ${{ needs.paths-filter.outputs.client-change == 'true' }}
     name: Unit Test Python SDK Wrapper
     runs-on: ubuntu-22.04
     steps:
