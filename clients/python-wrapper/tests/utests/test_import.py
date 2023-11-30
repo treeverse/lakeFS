@@ -19,7 +19,7 @@ class TestImportManager:
 
         with monkeypatch.context():
             def monkey_import_start(*_, **__):
-                return "import_id"
+                return lakefs_sdk.ImportCreationResponse(id="import_id")
 
             monkeypatch.setattr(lakefs_sdk.ImportApi, "import_start", monkey_import_start)
             res = mgr.start()
