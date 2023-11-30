@@ -26,7 +26,7 @@ def test_repository_sanity(storage_namespace, setup_repo):
     _ = repo.metadata
 
     # List branches
-    branches = list(repo.branches.list())
+    branches = list(repo.branches())
     assert len(branches) == 1
 
     # Delete repository
