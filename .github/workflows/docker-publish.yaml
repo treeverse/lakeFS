@@ -107,6 +107,7 @@ jobs:
           platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
           build-args: VERSION=${{ steps.version.outputs.tag }}
           tags: ${{ steps.lakectl_meta.outputs.tags }}
+          provenance: false
 
       - name: Build and push lakefs
         uses: docker/build-push-action@v5
@@ -117,3 +118,4 @@ jobs:
           platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
           build-args: VERSION=${{ steps.version.outputs.tag }}
           tags: ${{ steps.lakefs_meta.outputs.tags }}
+          provenance: false
