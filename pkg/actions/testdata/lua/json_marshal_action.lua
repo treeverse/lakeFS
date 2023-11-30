@@ -1,3 +1,3 @@
 json = require("encoding/json")
 
-print(json.marshal(action, "  "))
+print(json.marshal(action, {indent = "  "}))
