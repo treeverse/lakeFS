@@ -6,7 +6,7 @@
 
 - Update aws go sdk v2 to support s3 express buckets (#7083)
 - Support long-running dump and restore (#6975)
-- lakectl: Improved performance for rm lakectl recursive command (#7035)
+- lakectl: Improved performance for lakectl rm recursive command (#7035)
 - PythonSDK: Support StoredObject 'open' as both context and function(#7038)
 - Glue Exporter: Support Hadoop directory markers (#7058)
 
