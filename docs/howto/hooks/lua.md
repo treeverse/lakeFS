@@ -268,9 +268,9 @@ Read the payload (string) as the contents of a Parquet file and return its schem
 
 ### `formats`
 
-### `formats/delta_client(listenAddress)`
+### `formats/delta_client(serverAddress)`
 
-Creates a new Delta Lake client used to interact with the lakeFS server listening on the given `listenAddress`
+Creates a new Delta Lake client used to interact with the lakeFS server listening on the given `serverAddress`
 
 ### `formats/delta_client.get_table(repository_id, reference_id, prefix)`
 
@@ -374,18 +374,6 @@ for part_key, entries in pager do
     end
 end
 ```
-
-### `lakefs/catalogexport/storage_utils`
-
-### `lakefs/catalogexport/storage_utils.get_storage_uri_prefix(storage_ns, commit_id, action_info)`
-
-Returns a path under the given storage namespace of the format:
-`${storage_ns}/_lakefs/exported/${ref}/${commitId}`
-
-### `lakefs/catalogexport/storage_utils.parse_storage_uri(uri)`
-
-Given a cloud storage URI string, return a table representing that URI:
-`{ protocol, bucket, key }`
 
 ### `lakefs/catalogexport/symlink_exporter`
 
@@ -504,7 +492,17 @@ Parameters:
 
 A package used to export Delta Lake tables from lakeFS to an external cloud storage.
 
-### `lakefs/catalogexport/delta_exporter.export_delta_log(action, export_delta_args, storage_client)`
+### `lakefs/catalogexport/delta_exporter.get_delta_client(key, secret, region)`
+
+Returns a Delta Lake client to communicate with Delta Lake tables.
+
+Parameters:
+
+- `key`: lakeFS access key id
+- `secret`: lakeFS secret access key
+- `region`: The region in which your lakeFS server is configured at.
+
+### `lakefs/catalogexport/delta_exporter.export_delta_log(action, table_paths, storage_client, delta_client)`
 
 The function used to export Delta Lake tables.
 The return value is a table with mapping of table names to external table location (from which it is possible to query the data).
@@ -512,12 +510,9 @@ The return value is a table with mapping of table names to external table locati
 Parameters:
 
 - `action`: The global action object
-- `export_delta_args`: 
-  - `table_paths`: Paths list in lakeFS to Delta Tables (e.g. `{"path/to/table1", "path/to/table2"}`)
-  - `lakefs_key`: lakeFS access key associated to a user with access to the Delta Lake tables.
-  - `lakefs_secret`: Complementary to the `lakefs_key` above.
-  - `region`: The region your external bucket is located in.
+- `table_paths`: Paths list in lakeFS to Delta Tables (e.g. `{"path/to/table1", "path/to/table2"}`)
 - `storage_client`: A storage client that implements `put_object: function(bucket, key, data)` (e.g. `aws/s3.s3_client`)
+- `delta_client`: A Delta Lake client that implements `get_table: function(repo, ref, prefix)`
 
 Example:
 
