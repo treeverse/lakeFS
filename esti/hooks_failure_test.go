@@ -36,7 +36,6 @@ description: set of checks to verify that branch is good
 on:
   pre-create-branch:
     branches:
-      - *
 hooks:
   - id: test_webhook
     type: webhook
