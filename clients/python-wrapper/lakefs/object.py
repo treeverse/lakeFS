@@ -30,7 +30,7 @@ from lakefs.exceptions import (
     PermissionException,
     ObjectExistsException,
 )
-from lakefs.namedtuple import LenientNamedTuple
+from lakefs.models import ObjectStats
 
 _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
 # _BUFFER_SIZE - Writer buffer size. While buffer size not exceed, data will be maintained in memory and file will
@@ -39,21 +39,6 @@ _WRITER_BUFFER_SIZE = 32 * 1024 * 1024
 
 ReadModes = Literal['r', 'rb']
 WriteModes = Literal['x', 'xb', 'w', 'wb']
-
-
-class ObjectStats(LenientNamedTuple):
-    """
-    Represent a lakeFS object's stats
-    """
-    path: str
-    path_type: str
-    physical_address: str
-    checksum: str
-    mtime: int
-    physical_address_expiry: Optional[int] = None
-    size_bytes: Optional[int] = None
-    metadata: Optional[dict[str, str]] = None
-    content_type: Optional[str] = None
 
 
 class LakeFSIOBase(IO):

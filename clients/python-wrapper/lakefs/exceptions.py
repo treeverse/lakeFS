@@ -13,6 +13,12 @@ class LakeFSException(Exception):
     """
     Base exception for all SDK exceptions
     """
+
+
+class ServerException(LakeFSException):
+    """
+    Generic exception when no other exception is applicable
+    """
     status_code: int
     reason: str
 
@@ -21,7 +27,7 @@ class LakeFSException(Exception):
         self.message = reason
 
 
-class NotFoundException(LakeFSException):
+class NotFoundException(ServerException):
     """
     Resource could not be found on lakeFS server
     """
@@ -32,37 +38,31 @@ class NotFoundException(LakeFSException):
         super().__init__(status, reason)
 
 
-class ForbiddenException(LakeFSException):
+class ForbiddenException(ServerException):
     """
     Operation not permitted
     """
 
 
-class NoAuthenticationFound(LakeFSException):
+class NoAuthenticationFound(ServerException):
     """
     Raised when no authentication method could be found on Client instantiation
     """
 
 
-class NotAuthorizedException(LakeFSException):
+class NotAuthorizedException(ServerException):
     """
     User not authorized to perform operation
     """
 
 
-class ServerException(LakeFSException):
-    """
-    Generic exception when no other exception is applicable
-    """
-
-
-class UnsupportedOperationException(LakeFSException):
+class UnsupportedOperationException(ServerException):
     """
     Operation not supported by lakeFS server or SDK
     """
 
 
-class ConflictException(LakeFSException):
+class ConflictException(ServerException):
     """
      Resource / request conflict
     """
@@ -74,7 +74,7 @@ class ObjectNotFoundException(NotFoundException, FileNotFoundError):
     """
 
 
-class ObjectExistsException(LakeFSException, FileExistsError):
+class ObjectExistsException(ServerException, FileExistsError):
     """
     Raised when Object('...').create(mode='x') and object exists
     """
@@ -86,9 +86,15 @@ class PermissionException(NotAuthorizedException, PermissionError):
     """
 
 
-class InvalidRangeException(LakeFSException, OSError):
+class InvalidRangeException(ServerException, OSError):
     """
     Raised when the reference could not be found in the lakeFS server
+    """
+
+
+class ImportManagerException(LakeFSException):
+    """
+    Import manager exceptions that are not originated from the SDK
     """
 
 
