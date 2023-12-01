@@ -37,10 +37,10 @@ jobs:
         working-directory: docs
         run: bundle exec jekyll build --config _config.yml -d _site/${{ steps.version.outputs.tag }} -b /${{ steps.version.outputs.tag }}
 
-      - name: Update robots.txt
-        working-directory: docs/_site
+      - name: Remove robots.txt
+        working-directory: docs/_site/${{ steps.version.outputs.tag }}
         run: |
-          sed -i 's/^Sitemap: /Sitemap: https:\/\/docs.lakefs.io/' robots.txt
+          if [[ -f robots.txt ]]; then rm robots.txt; fi
 
       - name: Update published version
         env:

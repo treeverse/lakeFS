@@ -20,6 +20,7 @@ class LenientNamedTuple:
                 fields.remove(k)
             else:
                 self.unknown[k] = v
+
         if len(fields) > 0:
             raise TypeError(f"missing {len(fields)} required arguments: {fields}")
 
