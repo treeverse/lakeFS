@@ -236,7 +236,7 @@ class ObjectReader(LakeFSIOBase):
             other values are os.SEEK_CUR or 1 (seek relative to the current position) and os.SEEK_END or 2
             (seek relative to the file’s end)
             os.SEEK_END is not supported
-        :raises OSError if calculated new position is negative
+        :raises: OSError if calculated new position is negative
         """
         if whence == os.SEEK_SET:
             pos = offset
@@ -255,9 +255,9 @@ class ObjectReader(LakeFSIOBase):
         Read object data
 
         :param n: How many bytes to read. If read_bytes is None, will read from current position to end.
-        If current position + read_bytes > object size.
+            If current position + read_bytes > object size.
         :return: The bytes read
-        :raises
+        :raises:
             EOFError if current position is after object size
             OSError if read_bytes is non-positive
             ObjectNotFoundException if repo id, reference id or object path does not exist
@@ -626,11 +626,11 @@ class WriteableObject(StoredObject):
             'w'     - Create a new object or truncate if exists
             'wb'    - Create or truncate in binary mode
         :param pre_sign: (Optional) Explicitly state whether to use pre_sign mode when uploading the object.
-        If None, will be taken from pre_sign property.
+            If None, will be taken from pre_sign property.
         :param content_type: (Optional) Explicitly set the object Content-Type
         :param metadata: (Optional) User metadata
         :return: The Stat object representing the newly created object
-        :raises
+        :raises:
             ObjectExistsException if object exists and mode is exclusive ('x')
             ObjectNotFoundException if repo id, reference id or object path does not exist
             PermissionException if user is not authorized to perform this operation, or operation is forbidden
