@@ -1,5 +1,8 @@
 from time import sleep
 
+from lakefs.exceptions import ImportManagerException, ConflictException
+from tests.utests.common import expect_exception_context
+
 _IMPORT_PATH = "s3://esti-system-testing-data/import-test-data/"
 
 _FILES_TO_CHECK = ["nested/prefix-1/file002005",
@@ -14,18 +17,19 @@ _FILES_TO_CHECK = ["nested/prefix-1/file002005",
 def test_import_manager(setup_repo):
     _, repo = setup_repo
     branch = repo.branch("import-branch").create("main")
-    mgr = branch.import_data("my imported data", metadata={"foo": "bar"})
+    mgr = branch.import_data(commit_message="my imported data", metadata={"foo": "bar"})
 
     #  No import running
-    mgr.cancel()
+    with expect_exception_context(ImportManagerException):
+        mgr.cancel()
 
     # empty import
     res = mgr.run()
     assert res.error is None
     assert res.completed
     assert res.commit.id == branch.commit_id()
-    assert res.commit.message == branch.commit_message()
-    assert res.commit.metadata == branch.metadata()
+    assert res.commit.message == "my imported data"
+    assert res.commit.metadata.get("foo") == "bar"
     assert res.ingested_objects == 0
 
     # Import with objects and prefixes
@@ -42,12 +46,13 @@ def test_import_manager(setup_repo):
     assert res.error is None
     assert res.completed
     assert res.commit.id == branch.commit_id()
-    assert res.commit.message == branch.commit_message()
-    assert res.commit.metadata == branch.metadata()
+    assert res.commit.message == mgr.commit_message
+    assert res.commit.metadata.get("foo") is None
     assert res.ingested_objects == 4207
 
-    # Should not raise exception
-    mgr.cancel()
+    # Conflict since import completed
+    with expect_exception_context(ConflictException):
+        mgr.cancel()
 
 
 def test_import_manager_cancel(setup_repo):

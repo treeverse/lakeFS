@@ -21,7 +21,8 @@ _OBJECT = "object"
 class ImportManager:
     """
     ImportManager provides an easy-to-use interface to perform imports with multiple sources.
-    It provides both synchronous and asynchronous functionality TBD
+    It provides both synchronous and asynchronous functionality allowing the user to start an import process,
+    continue executing logic and poll for the import completion.
     """
     _client: Client
     _repo_id: str
@@ -32,13 +33,12 @@ class ImportManager:
     commit_metadata: Optional[Dict]
     sources: List[lakefs_sdk.ImportLocation]
 
-    def __init__(self, repository_id: str, branch_id: str, commit_message: Optional[str] = None,
+    def __init__(self, repository_id: str, branch_id: str, commit_message: Optional[str] = "",
                  commit_metadata: Optional[Dict] = None, client: Optional[Client] = DEFAULT_CLIENT) -> None:
         self._client = client
         self._repo_id = repository_id
         self._branch_id = branch_id
-        # Bug in import API - message is required
-        self.commit_message = commit_message if commit_message is not None else ""
+        self.commit_message = commit_message
         self.commit_metadata = commit_metadata
         self.sources = []
 
@@ -154,8 +154,8 @@ class ImportManager:
             ConflictException if the import was already completed
             ServerException for any other errors
         """
-        if not self._in_progress:  # No import in progress - nothing to do
-            return
+        if self._import_id is None:  # Can't cancel on no id
+            raise ImportManagerException("No import in progress")
 
         with api_exception_handler():
             self._client.sdk_client.import_api.import_cancel(repository=self._repo_id,
