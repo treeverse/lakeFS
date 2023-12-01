@@ -1,6 +1,7 @@
 """
 Module containing lakeFS branch implementation
 """
+
 from __future__ import annotations
 
 from typing import Optional, Generator, Iterable, Literal
