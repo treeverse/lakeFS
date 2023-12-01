@@ -18,6 +18,7 @@ jobs:
           filters: |
             client: 
               - 'clients/python-wrapper/**'
+              - '.github/workflows/python-wrapper-unit-tests.yaml'
 
   always-succeed:
     needs: paths-filter
