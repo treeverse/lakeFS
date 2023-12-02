@@ -39,7 +39,7 @@ func (s *HashingReader) Read(p []byte) (int, error) {
 func NewHashingReader(body io.Reader, hashTypes ...int) *HashingReader {
 	s := new(HashingReader)
 	s.originalReader = body
-	for hashType := range hashTypes {
+	for _, hashType := range hashTypes {
 		switch hashType {
 		case HashFunctionMD5:
 			if s.Md5 == nil {
