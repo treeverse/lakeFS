@@ -199,8 +199,6 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
-		o.OperationID = operations.OperationIDOperationNotFound
-
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)
 		ref := ctx.Value(ContextKeyRef).(string)
 		pth := ctx.Value(ContextKeyPath).(string)
@@ -213,6 +211,8 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 			o.OperationID = pathBasedOperationID(req.Method)
 		case ref == "" && pth == "":
 			o.OperationID = repositoryBasedOperationID(req.Method)
+		default:
+			o.OperationID = operations.OperationIDOperationNotFound
 		}
 
 		req = req.WithContext(logging.AddFields(ctx, logging.Fields{"operation_id": o.OperationID}))
