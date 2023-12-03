@@ -21,7 +21,7 @@ services:
       - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
       - LAKEFS_STATS_ENABLED
       - LAKEFS_DATABASE_DYNAMODB_ENDPOINT=http://dynamodb:8000
-      - ACTIONS_VAR=this_is_actions_var
+      - LAKEFSACTION_VAR=this_is_actions_var
       - LAKEFS_DATABASE_TYPE=dynamodb
       - LAKEFS_DATABASE_KV_ENABLED=true
       - LAKEFS_DATABASE_DYNAMODB_AWS_REGION=us-east-1
