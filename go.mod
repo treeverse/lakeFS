@@ -107,6 +107,7 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1 // indirect
 	github.com/ahmetb/go-linq/v3 v3.2.0 // indirect
 	github.com/apache/arrow/go/arrow v0.0.0-20200730104253-651201b0f516 // indirect
+	github.com/aws/aws-sdk-go v1.44.314 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.3 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.8 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.7 // indirect
@@ -121,6 +122,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.16.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.18.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.1 // indirect
+	github.com/barweiss/go-tuple v1.1.1 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/deckarep/golang-set/v2 v2.3.1 // indirect
 	github.com/fraugster/parquet-go v0.12.0 // indirect
