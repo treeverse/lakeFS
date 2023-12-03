@@ -85,6 +85,8 @@ class ImportManager:
         """
         if self._in_progress:
             raise ImportManagerException("Import in progress")
+        if self._import_id is not None:
+            raise ImportManagerException("Import Manager can only be used once")
 
         creation = lakefs_sdk.ImportCreation(paths=self.sources,
                                              commit=lakefs_sdk.CommitCreation(message=self.commit_message,
