@@ -39,14 +39,13 @@ end
 
    table_paths: ["path/to/table1", "path/to/table2", ...]
 
-    storage_client:
-        - put_object: function(bucket, key, data)
+    write_object: function(bucket, key, data)
 
     delta_client:
         - get_table: function(repo, ref, prefix)
 
 ]]
-local function export_delta_log(action, table_paths, storage_client, delta)
+local function export_delta_log(action, table_paths, write_object, delta)
     local repo = action.repository_id
     local commit_id = action.commit_id
 
@@ -129,7 +128,7 @@ local function export_delta_log(action, table_paths, storage_client, delta)
                 table_entry_string = table_entry_string .. content_entry
             end
             local version_key = storage_props.key .. "/" .. entry_version
-            storage_client.put_object(storage_props.bucket, version_key, table_entry_string)
+            write_object(storage_props.bucket, version_key, table_entry_string)
         end
         response[t_name] = table_physical_path
     end
