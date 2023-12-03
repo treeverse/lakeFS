@@ -100,7 +100,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Build and Push
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}
@@ -257,7 +257,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Build and Push to Amazon ECR
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/lakefs-rclone-export:${{ steps.version.outputs.tag }}
@@ -583,7 +583,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Build and Push hive-metastore
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           push: true
           tags: ghcr.io/treeverse/hive-metastore:${{ needs.deploy-image.outputs.tag }}
