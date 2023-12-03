@@ -33,6 +33,8 @@ This reference uses `.` to denote the nesting of values.
 * `logging.files_keep` `(int : 0)` - Number of log files to keep, default is all.
 * `actions.enabled` `(bool : true)` - Setting this to false will block hooks from being executed.
 * `actions.lua.net_http_enabled` `(bool : false)` - Setting this to true will load the `net/http` package.
+* `actions.env.enabled` `(bool : true)` - Environment variables accessible by hooks, disabled values evaluated to empty strings
+* `actions.env.prefix` `(string : "LAKEFSACTION_")` - Access to environment variables is restricted to those with the prefix. When environment access is enabled and no prefix is provided, all variables are accessible.
 
   **Note:** Deprecated - See `database` section
   {: .note }
