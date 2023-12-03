@@ -85,6 +85,7 @@ func setDefaults(cfgType string) {
 
 	viper.SetDefault("gateways.s3.domain_name", "s3.local.lakefs.io")
 	viper.SetDefault("gateways.s3.region", "us-east-1")
+	viper.SetDefault("gateways.s3.verify_unsupported", true)
 
 	viper.SetDefault("blockstore.gs.s3_endpoint", "https://storage.googleapis.com")
 	viper.SetDefault("blockstore.gs.pre_signed_expiry", 15*time.Minute)

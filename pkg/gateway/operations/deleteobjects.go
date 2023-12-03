@@ -27,6 +27,13 @@ func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, _ string) 
 }
 
 func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
+	// verify we only handle delete request
+	query := req.URL.Query()
+	if !query.Has("delete") {
+		_ = o.EncodeError(w, req, nil, gerrors.ERRLakeFSNotSupported.ToAPIErr())
+		return
+	}
+
 	o.Incr("delete_objects", o.Principal, o.Repository.Name, "")
 	decodedXML := &serde.Delete{}
 	err := DecodeXMLBody(req.Body, decodedXML)

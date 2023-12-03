@@ -320,9 +320,10 @@ type Config struct {
 	} `mapstructure:"graveler"`
 	Gateways struct {
 		S3 struct {
-			DomainNames Strings `mapstructure:"domain_name"`
-			Region      string  `mapstructure:"region"`
-			FallbackURL string  `mapstructure:"fallback_url"`
+			DomainNames       Strings `mapstructure:"domain_name"`
+			Region            string  `mapstructure:"region"`
+			FallbackURL       string  `mapstructure:"fallback_url"`
+			VerifyUnsupported bool    `mapstructure:"verify_unsupported"`
 		} `mapstructure:"s3"`
 	}
 	Stats struct {

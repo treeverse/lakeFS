@@ -21,6 +21,10 @@ func (controller *ListBuckets) RequiredPermissions(_ *http.Request) (permissions
 
 // Handle - list buckets (repositories)
 func (controller *ListBuckets) Handle(w http.ResponseWriter, req *http.Request, o *AuthorizedOperation) {
+	if o.HandleUnsupported(w, req, "events") {
+		return
+	}
+
 	o.Incr("list_repos", o.Principal, "", "")
 
 	buckets := make([]serde.Bucket, 0)

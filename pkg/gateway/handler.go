@@ -49,17 +49,18 @@ type handler struct {
 }
 
 type ServerContext struct {
-	region           string
-	bareDomains      []string
-	catalog          *catalog.Catalog
-	multipartTracker multipart.Tracker
-	blockStore       block.Adapter
-	authService      auth.GatewayService
-	stats            stats.Collector
-	pathProvider     upload.PathProvider
+	region            string
+	bareDomains       []string
+	catalog           *catalog.Catalog
+	multipartTracker  multipart.Tracker
+	blockStore        block.Adapter
+	authService       auth.GatewayService
+	stats             stats.Collector
+	pathProvider      upload.PathProvider
+	verifyUnsupported bool
 }
 
-func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool) http.Handler {
+func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool, verifyUnsupported bool) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -75,14 +76,15 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 		})
 	}
 	sc := &ServerContext{
-		catalog:          catalog,
-		multipartTracker: multipartTracker,
-		region:           region,
-		bareDomains:      bareDomains,
-		blockStore:       blockStore,
-		authService:      authService,
-		stats:            stats,
-		pathProvider:     pathProvider,
+		catalog:           catalog,
+		multipartTracker:  multipartTracker,
+		region:            region,
+		bareDomains:       bareDomains,
+		blockStore:        blockStore,
+		authService:       authService,
+		stats:             stats,
+		pathProvider:      pathProvider,
+		verifyUnsupported: verifyUnsupported,
 	}
 
 	// setup routes
