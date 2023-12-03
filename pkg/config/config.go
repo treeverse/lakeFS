@@ -104,7 +104,11 @@ type Config struct {
 		Lua     struct {
 			NetHTTPEnabled bool `mapstructure:"net_http_enabled"`
 		} `mapstructure:"lua"`
-	}
+		Env struct {
+			Enabled bool   `mapstructure:"enabled"`
+			Prefix  string `mapstructure:"prefix"`
+		} `mapstructure:"env"`
+	} `mapstructure:"actions"`
 
 	Logging struct {
 		Format        string   `mapstructure:"format"`

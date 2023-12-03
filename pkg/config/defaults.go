@@ -45,6 +45,8 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("logging.file_max_size_mb", (1<<10)*100) // 100MiB
 
 	viper.SetDefault("actions.enabled", true)
+	viper.SetDefault("actions.env.enabled", true)
+	viper.SetDefault("actions.env.prefix", "LAKEFSACTION_")
 
 	viper.SetDefault("auth.cache.enabled", true)
 	viper.SetDefault("auth.cache.size", 1024)
