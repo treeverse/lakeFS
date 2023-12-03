@@ -15,7 +15,6 @@ Submodules
    lakefs.models
    lakefs.namedtuple
    lakefs.object
-   lakefs.object_manager
    lakefs.reference
    lakefs.repository
    lakefs.tag

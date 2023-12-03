@@ -10,12 +10,9 @@ from typing import Optional, Dict, List
 
 import lakefs_sdk
 
-from lakefs.models import ImportStatus
+from lakefs.models import ImportStatus, _OBJECT, _PREFIX
 from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.exceptions import ImportManagerException, api_exception_handler
-
-_PREFIX = "common_prefix"
-_OBJECT = "object"
 
 
 class ImportManager:
