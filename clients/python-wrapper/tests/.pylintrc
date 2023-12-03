@@ -11,7 +11,10 @@ disable=
     missing-class-docstring,
     missing-function-docstring,
     missing-module-docstring,
-    too-few-public-methods
+    too-few-public-methods,
+    pointless-statement,
+    no-member,
+    fixme,
 
 [MISCELLANEOUS]
 

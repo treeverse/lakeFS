@@ -3,6 +3,15 @@
 # Maximum number of characters on a single line.
 max-line-length=120
 
+[DESIGN]
+# Maximum number of locals for function / method body
+max-locals=25
+# Maximum number of arguments for function / method
+max-args=10
+
+[MESSAGES CONTROL]
+disable=too-few-public-methods, fixme
+
 [MISCELLANEOUS]
 
 # List of note tags to take in consideration, separated by a comma.

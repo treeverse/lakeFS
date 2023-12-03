@@ -80,11 +80,14 @@ func TestMain(m *testing.M) {
 		it := client.Buckets(ctx, gcsProjectID)
 		for {
 			_, err := it.Next()
-			if errors.Is(err, iterator.Done) {
-				return nil
+			if err != nil {
+				if errors.Is(err, iterator.Done) {
+					return nil
+				}
+				return err
 			}
-			return err
 		}
+		return nil
 	}); err != nil {
 		log.Fatalf("Could not connect to fake-gcs-server while trying to list buckets: %s", err)
 	}

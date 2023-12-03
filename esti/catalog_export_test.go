@@ -223,7 +223,8 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 	// test that all lakeFS entries are exported and represented correctly in symlink files
 	lakefsPhysicalAddrs := map[string]bool{}
 	for _, entry := range lakeFSObjs.JSON200.Results {
-		if !strings.Contains(entry.Path, "_hidden") {
+		// add file to the expected result if it's not hidden and not marker directory file
+		if !strings.Contains(entry.Path, "_hidden") && aws.ToInt64(entry.SizeBytes) > 0 {
 			lakefsPhysicalAddrs[entry.PhysicalAddress] = true
 		}
 	}
@@ -291,8 +292,10 @@ func TestAWSCatalogExport(t *testing.T) {
 		var columns = []string{"name", "color"}
 		csvData := genCSVData(t, columns, 3)
 		tablePaths := map[string]string{
-			testData.TableSpec.Path + "/type=axolotl/weight=22/b.csv":   csvData,
-			testData.TableSpec.Path + "/type=axolotl/weight=22/a.csv":   csvData,
+			testData.TableSpec.Path + "/type=axolotl/weight=22/b.csv": csvData,
+			testData.TableSpec.Path + "/type=axolotl/weight=22/a.csv": csvData,
+			// empty file simulates directory marker
+			testData.TableSpec.Path + "/type=axolotl/weight=22/":        "",
 			testData.TableSpec.Path + "/type=axolotl/weight=22/c.csv":   csvData,
 			testData.TableSpec.Path + "/type=axolotl/weight=12/a.csv":   csvData,
 			testData.TableSpec.Path + "/type=axolotl/weight=12/_hidden": "blob",

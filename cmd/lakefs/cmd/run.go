@@ -174,7 +174,7 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		deleteScheduler := getScheduler()
+		deleteScheduler := gocron.NewScheduler(time.UTC)
 		err = scheduleCleanupJobs(ctx, deleteScheduler, c)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to schedule cleanup jobs")
@@ -365,7 +365,7 @@ var runCmd = &cobra.Command{
 	},
 }
 
-// checkRepos iterates on all repos and validates that their settings are correct.
+// checkRepos iterating on all repos and validates that their settings are correct.
 func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager auth.MetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
 	initialized, err := authMetadataManager.IsInitialized(ctx)
 	if err != nil {
@@ -407,36 +407,48 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 }
 
 func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Catalog) error {
-	// delete expired link addresses
-	const deleteExpiredAddressPeriod = 3
-	job1, err := s.Every(deleteExpiredAddressPeriod * ref.LinkAddressTime).Do(func() {
-		c.DeleteExpiredLinkAddresses(ctx)
-	})
-	if err != nil {
-		return err
-	}
-	job1.SingletonMode()
+	const (
+		deleteExpiredLinkAddressesInterval = 3 * ref.LinkAddressTime
+		deleteExpiredTaskInterval          = 24 * time.Hour
+	)
 
-	// delete expired imports
-	job2, err := s.Every(ref.ImportExpiryTime).Do(func() {
-		c.DeleteExpiredImports(ctx)
-	})
-	if err != nil {
-		return err
+	jobData := []struct {
+		name     string
+		interval time.Duration
+		fn       func(context.Context)
+	}{
+		{
+			name:     "delete expired link addresses",
+			interval: deleteExpiredLinkAddressesInterval,
+			fn:       c.DeleteExpiredLinkAddresses,
+		},
+		{
+			name:     "delete expired imports",
+			interval: ref.ImportExpiryTime,
+			fn:       c.DeleteExpiredImports,
+		},
+		{
+			name:     "delete expired tasks",
+			interval: deleteExpiredTaskInterval,
+			fn:       c.DeleteExpiredTasks,
+		},
 	}
-	job2.SingletonMode()
 
+	for _, jd := range jobData {
+		job, err := s.Every(jd.interval).Do(jd.fn, ctx)
+		if err != nil {
+			return fmt.Errorf("schedule %s failed: %w", jd.name, err)
+		}
+		job.SingletonMode()
+	}
 	return nil
-}
-
-func getScheduler() *gocron.Scheduler {
-	return gocron.NewScheduler(time.UTC)
 }
 
 // checkForeignRepo checks whether a repo storage namespace matches the block adapter.
 // A foreign repo is a repository which namespace doesn't match the current block adapter.
 // A foreign repo might exist if the lakeFS instance configuration changed after a repository was
-// already created. The behaviour of lakeFS for foreign repos is undefined and should be blocked.
+// already created.
+// The behavior of lakeFS for foreign repos is undefined and should be blocked.
 func checkForeignRepo(repoStorageType block.StorageType, logger logging.Logger, adapterStorageType, repoName string) {
 	if adapterStorageType != repoStorageType.BlockstoreType() {
 		logger.Fatalf("Mismatched adapter detected. lakeFS started with adapter of type '%s', but repository '%s' is of type '%s'",

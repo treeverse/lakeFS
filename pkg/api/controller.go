@@ -50,7 +50,10 @@ import (
 const (
 	// DefaultMaxPerPage is the maximum number of results returned for paginated queries to the API
 	DefaultMaxPerPage int = 1000
-	lakeFSPrefix          = "symlinks"
+	// DefaultPerPage is the default number of results returned for paginated queries to the API
+	DefaultPerPage int = 100
+
+	lakeFSPrefix = "symlinks"
 
 	actionStatusCompleted = "completed"
 	actionStatusFailed    = "failed"
@@ -655,7 +658,7 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body ap
 		Permission: model.ACLPermission(body.Permission),
 	}
 
-	err := acl.WriteGroupACL(ctx, c.Auth, groupID, newACL, time.Now(), true)
+	err := acl.WriteGroupACL(ctx, c.Auth, groupID, newACL, time.Now(), false)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2766,6 +2769,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       swag.Int64(blob.Size),
 		ContentType:     &contentType,
+		Metadata:        &apigen.ObjectUserMetadata{AdditionalProperties: meta},
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -2898,6 +2902,13 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		return
 	}
 
+	var metadata map[string]string
+	if entry.Metadata != nil {
+		metadata = entry.Metadata
+	} else {
+		metadata = map[string]string{}
+	}
+
 	response := apigen.ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
@@ -2906,6 +2917,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       swag.Int64(entry.Size),
 		ContentType:     swag.String(entry.ContentType),
+		Metadata:        &apigen.ObjectUserMetadata{AdditionalProperties: metadata},
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -3356,6 +3368,192 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body ap
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+}
+
+func (c *Controller) DumpSubmit(w http.ResponseWriter, r *http.Request, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListTagsAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListBranchesAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListCommitsAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "dump_repository", r, repository, "", "")
+
+	taskID, err := c.Catalog.DumpRepositorySubmit(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	writeResponse(w, r, http.StatusAccepted, apigen.TaskInfo{
+		Id: taskID,
+	})
+}
+
+func (c *Controller) DumpStatus(w http.ResponseWriter, r *http.Request, repository string, params apigen.DumpStatusParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListTagsAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListBranchesAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListCommitsAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	// get the current status
+	ctx := r.Context()
+	status, err := c.Catalog.DumpRepositoryStatus(ctx, repository, params.TaskId)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// build response based on status
+	response := &apigen.RepositoryDumpStatus{
+		Id:         params.TaskId,
+		Done:       status.Task.Done,
+		UpdateTime: status.Task.UpdatedAt.AsTime(),
+	}
+	if status.Task.Error != "" {
+		response.Error = apiutil.Ptr(status.Task.Error)
+	}
+	if status.Task.Done && status.Info != nil {
+		response.Refs = &apigen.RefsDump{
+			CommitsMetaRangeId:  status.Info.CommitsMetarangeId,
+			TagsMetaRangeId:     status.Info.TagsMetarangeId,
+			BranchesMetaRangeId: status.Info.BranchesMetarangeId,
+		}
+	}
+	writeResponse(w, r, http.StatusOK, response)
+}
+
+func (c *Controller) RestoreSubmit(w http.ResponseWriter, r *http.Request, body apigen.RestoreSubmitJSONRequestBody, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateTagAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateBranchAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateCommitAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "restore_repository", r, repository, "", "")
+
+	info := &catalog.RepositoryDumpInfo{
+		CommitsMetarangeId:  body.CommitsMetaRangeId,
+		TagsMetarangeId:     body.TagsMetaRangeId,
+		BranchesMetarangeId: body.BranchesMetaRangeId,
+	}
+	taskID, err := c.Catalog.RestoreRepositorySubmit(ctx, repository, info)
+	if errors.Is(err, catalog.ErrNonEmptyRepository) {
+		writeError(w, r, http.StatusBadRequest, "can only restore into a bare repository")
+		return
+	}
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusAccepted, apigen.TaskInfo{
+		Id: taskID,
+	})
+}
+
+func (c *Controller) RestoreStatus(w http.ResponseWriter, r *http.Request, repository string, params apigen.RestoreStatusParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateTagAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateBranchAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateCommitAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	// get the current status
+	ctx := r.Context()
+	status, err := c.Catalog.RestoreRepositoryStatus(ctx, repository, params.TaskId)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// build response based on status
+	response := &apigen.RepositoryRestoreStatus{
+		Id:         params.TaskId,
+		Done:       status.Task.Done,
+		UpdateTime: status.Task.UpdatedAt.AsTime(),
+	}
+	if status.Task.Error != "" {
+		response.Error = apiutil.Ptr(status.Task.Error)
+	}
+	writeResponse(w, r, http.StatusOK, response)
 }
 
 func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CreateSymlinkFileParams) {
@@ -3837,9 +4035,16 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		SizeBytes:       swag.Int64(entry.Size),
 		ContentType:     swag.String(entry.ContentType),
 	}
+
+	// add metadata if requested
+	var metadata map[string]string
 	if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
-		objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
+		metadata = entry.Metadata
+	} else {
+		metadata = map[string]string{}
 	}
+	objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: metadata}
+
 	code := http.StatusOK
 	if entry.Expired {
 		code = http.StatusGone
@@ -4106,8 +4311,9 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 		LoginConfig: newLoginConfig(c.Config),
 	}
 
-	// if email subscription is disabled in the config, set missing flag to false.
-	// otherwise, check if the comm prefs are set. if they are, set missing flag to false.
+	// if email subscription is disabled in the config, set the missing flag to false.
+	// otherwise, check if the comm prefs are set.
+	// if they are, set the missing flag to false.
 	if !c.Config.EmailSubscription.Enabled {
 		response.CommPrefsMissing = swag.Bool(false)
 		writeResponse(w, r, http.StatusOK, response)
@@ -4517,14 +4723,14 @@ func paginationDelimiter(v *apigen.PaginationDelimiter) string {
 
 func paginationAmount(v *apigen.PaginationAmount) int {
 	if v == nil {
-		return DefaultMaxPerPage
+		return DefaultPerPage
 	}
 	i := int(*v)
 	if i > DefaultMaxPerPage {
 		return DefaultMaxPerPage
 	}
 	if i <= 0 {
-		return DefaultMaxPerPage
+		return DefaultPerPage
 	}
 	return i
 }

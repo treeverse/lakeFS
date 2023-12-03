@@ -22,3 +22,38 @@ message Entry {
 	AddressType address_type = 6;
 	string content_type = 7;
 }
+
+// Task is a generic task status message
+message Task {
+	string id = 1;
+	bool done = 2;
+	google.protobuf.Timestamp updated_at = 3;
+	int64 progress = 4;
+	string error = 5;
+}
+
+// RepositoryDumpInfo holds the metarange IDs for a repository dump
+message RepositoryDumpInfo {
+	string commits_metarange_id = 1;
+	string tags_metarange_id = 2;
+	string branches_metarange_id = 3;
+}
+
+// RepositoryDumpStatus holds the status of a repository dump
+message RepositoryDumpStatus {
+	Task task = 1;
+	RepositoryDumpInfo info = 2;
+}
+
+// RepositoryRestoreStatus holds the status of a repository restore
+message RepositoryRestoreStatus {
+	Task task = 1;
+}
+
+// TaskMsg described generic message with Task field
+// used for all status messages and for cleanup messages
+message TaskMsg {
+	Task task = 1;
+}
+
+

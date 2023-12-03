@@ -1,4 +1,4 @@
-name: Unit Test Python SDK Wrapper      
+name: Unit Test Python SDK Wrapper
 on:
   push:
     branches:
@@ -23,12 +23,11 @@ jobs:
         working-directory: ./clients/python-wrapper
         run: pip install -r requirements.txt pylint pytest pytest-md pytest-emoji
 
+      - name: Validate Documentation
+        run: make validate-python-wrapper
+
       - name: Run Pylint
-        working-directory: ./clients/python-wrapper
-        run: |
-          pylint tests --rc=tests/.pylintrc
-          pylint lakefs --rc=lakefs/.pylintrc
-        continue-on-error: true  # TODO: remove once pylint errors are fixed in lakefs package
+        run: make python-wrapper-lint
       
       - name: Run Unit Tests 
         uses: pavelzw/pytest-action@v2

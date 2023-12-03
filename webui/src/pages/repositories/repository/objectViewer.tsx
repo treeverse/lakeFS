@@ -11,7 +11,6 @@ import { ObjectRenderer } from "./fileRenderers";
 import { AlertError } from "../../../lib/components/controls";
 import { URINavigator } from "../../../lib/components/repository/tree";
 import { RefTypeBranch } from "../../../constants";
-import { RepositoryPageLayout } from "../../../lib/components/repository/layout";
 import { RefContextProvider } from "../../../lib/hooks/repo";
 import { useStorageConfig } from "../../../lib/hooks/storageConfig";
 import { linkToPath } from "../../../lib/api";
@@ -101,9 +100,7 @@ const FileObjectsViewerPage = () => {
 
   return (
     <RefContextProvider>
-      <RepositoryPageLayout activePage={"objects"}>
         {content}
-      </RepositoryPageLayout>
     </RefContextProvider>
   );
 };

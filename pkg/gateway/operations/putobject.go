@@ -249,6 +249,12 @@ func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		return
 	}
 
+	if query.Has("tagging") {
+		o.Log(req).Debug("put-object-tagging isn't supported yet")
+		o.EncodeError(w, req, nil, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ERRLakeFSNotSupported))
+		return
+	}
+
 	// handle the upload itself
 	handlePut(w, req, o)
 }

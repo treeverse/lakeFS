@@ -113,9 +113,14 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		}
 	})
 
-	err = setupKeyValueDatabase(ctx, svc, params)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
+	// Create table if not exists.
+	// To avoid potential errors in restricted environments, we confirmed the existence of the table beforehand.
+	success, _ := isTableExist(ctx, svc, params.TableName)
+	if !success {
+		err := setupKeyValueDatabase(ctx, svc, params)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", kv.ErrSetupFailed, err)
+		}
 	}
 
 	logger := logging.FromContext(ctx).WithField("store", DriverName)
@@ -399,12 +404,17 @@ func (e *EntriesIterator) SeekGE(key []byte) {
 		}
 		return bytes.Compare(key, item.ItemKey) <= 0
 	})
+	if e.currEntryIdx == -1 {
+		// not found, set to the end
+		e.currEntryIdx = len(e.queryResult.Items)
+	}
 }
 
 func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
 	}
+	// check if we reached the end of the current queryResult, this can be called twice in case runQuery returned an empty result
 	for e.currEntryIdx == len(e.queryResult.Items) {
 		if e.queryResult.LastEvaluatedKey == nil {
 			return false
@@ -479,20 +489,34 @@ func (e *EntriesIterator) runQuery() {
 	e.currEntryIdx = 0
 }
 
+// isInRange checks if key falls within the range of keys on the queryResult.
+// To optimize range checking:
+// - If the current queryResult is a result of a seek operation with exclusiveStartKey use exclusiveStartKey as the minKey otherwise use e.startKey as the minKey.
+// - Use LastEvaluatedKey as the Max value, in case LastEvaluatedKey is nil  all keys greater than the minimum key are considered in range.
+// This function returns true if e.startKey is within these defined range criteria.
 func (e *EntriesIterator) isInRange(key []byte) bool {
-	if len(e.queryResult.Items) == 0 {
+	minKey := e.startKey
+	if e.exclusiveStartKey != nil {
+		var minItem DynKVItem
+		e.err = attributevalue.UnmarshalMap(e.exclusiveStartKey, &minItem)
+		if e.err != nil {
+			return false
+		}
+		minKey = minItem.ItemKey
+	}
+	if bytes.Compare(key, minKey) < 0 {
 		return false
 	}
-	var maxItem, minItem DynKVItem
-	e.err = attributevalue.UnmarshalMap(e.queryResult.Items[0], &minItem)
+	if e.queryResult.LastEvaluatedKey == nil {
+		// evaluated all -> all keys greater than minKey are in range
+		return true
+	}
+	var maxItem DynKVItem
+	e.err = attributevalue.UnmarshalMap(e.queryResult.LastEvaluatedKey, &maxItem)
 	if e.err != nil {
 		return false
 	}
-	e.err = attributevalue.UnmarshalMap(e.queryResult.Items[len(e.queryResult.Items)-1], &maxItem)
-	if e.err != nil {
-		return false
-	}
-	return bytes.Compare(key, minItem.ItemKey) >= 0 && bytes.Compare(key, maxItem.ItemKey) <= 0
+	return bytes.Compare(key, maxItem.ItemKey) <= 0
 }
 
 // StartPeriodicCheck performs one check and continues every 'interval' in the background

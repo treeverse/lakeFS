@@ -69,17 +69,16 @@ require (
 	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
 	github.com/alitto/pond v1.8.3
 	github.com/antonmedv/expr v1.15.3
-	github.com/aws/aws-sdk-go v1.45.25
 	github.com/aws/aws-sdk-go-v2 v1.23.4
-	github.com/aws/aws-sdk-go-v2/config v1.18.45
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.43
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.10.42
-	github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression v1.4.69
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.90
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.22.2
-	github.com/aws/aws-sdk-go-v2/service/glue v1.63.0
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.40.2
-	github.com/aws/aws-sdk-go-v2/service/sts v1.23.2
+	github.com/aws/aws-sdk-go-v2/config v1.25.10
+	github.com/aws/aws-sdk-go-v2/credentials v1.16.8
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.12.7
+	github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression v1.6.7
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.15.3
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.26.1
+	github.com/aws/aws-sdk-go-v2/service/glue v1.71.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.47.1
+	github.com/aws/aws-sdk-go-v2/service/sts v1.26.1
 	github.com/aws/smithy-go v1.18.1
 	github.com/benburkert/dns v0.0.0-20190225204957-d356cf78cdfc
 	github.com/csimplestring/delta-go v0.0.0-20231105162402-9b93ca02cedf
@@ -108,21 +107,20 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1 // indirect
 	github.com/ahmetb/go-linq/v3 v3.2.0 // indirect
 	github.com/apache/arrow/go/arrow v0.0.0-20200730104253-651201b0f516 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.14 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.13 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.43 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.37 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.45 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.1.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.15.7 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.15 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.38 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.37 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.37 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.15.6 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.15.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.17.3 // indirect
-	github.com/barweiss/go-tuple v1.1.1 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.3 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.8 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.7 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.7 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.7.1 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.2.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.18.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.10.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.2.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.8.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.10.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.16.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.18.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.1 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/deckarep/golang-set/v2 v2.3.1 // indirect
 	github.com/fraugster/parquet-go v0.12.0 // indirect
