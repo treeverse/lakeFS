@@ -60,10 +60,11 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(w http.ResponseWriter
 }
 
 func (controller *DeleteObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
+	if o.HandleUnsupported(w, req, "tagging", "acl", "torrent") {
+		return
+	}
 	query := req.URL.Query()
-
-	_, hasUploadID := query[QueryParamUploadID]
-	if hasUploadID {
+	if query.Has(QueryParamUploadID) {
 		controller.HandleAbortMultipartUpload(w, req, o)
 		return
 	}

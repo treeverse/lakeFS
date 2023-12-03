@@ -168,3 +168,8 @@ type Tagging struct {
 	XMLName xml.Name `xml:"http://s3.amazonaws.com/doc/2006-03-01/ Tagging"`
 	TagSet  TagSet   `xml:"TagSet"`
 }
+
+type LocationResponse struct {
+	XMLName  xml.Name `xml:"http://s3.amazonaws.com/doc/2006-03-01/ LocationConstraint"`
+	Location string   `xml:",chardata"`
+}
