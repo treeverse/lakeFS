@@ -86,15 +86,6 @@ local function sortedKeys(query, sortFunction)
     return keys
 end
 
-local function get_storage_namespace(repo)
-    local code, obj = lakefs.get_repo(repo)
-    if code == 200 then
-        local obj_repo = json.unmarshal(obj)
-        return obj_repo["storage_namespace"]
-    end
-    return nil
-end
-
 return {
     deepcopy=deepcopy,
     parse_storage_uri=parse_storage_uri,
@@ -103,6 +94,5 @@ return {
     lakefs_object_pager=lakefs_object_pager,
     lakefs_paginiated_api=lakefs_paginiated_api,
     sortedKeys = sortedKeys,
-    get_storage_namespace = get_storage_namespace,
     get_storage_uri_prefix = get_storage_uri_prefix,
 }

@@ -42,7 +42,7 @@ local function export_delta_log(action, table_paths, storage_client, delta)
     local repo = action.repository_id
     local commit_id = action.commit_id
 
-    local ns = utils.get_storage_namespace(repo)
+    local ns = action.storage_namespace
     if ns == nil then
         error("failed getting storage namespace for repo " .. repo)
     end
