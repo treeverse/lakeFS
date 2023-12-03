@@ -366,6 +366,11 @@ func TestLuaRunTable(t *testing.T) {
 			Input:  "testdata/lua/catalogexport_hive_partition_pager.lua",
 			Output: "testdata/lua/catalogexport_hive_partition_pager.output",
 		},
+		{
+			Name:   "catalogexport_delta",
+			Input:  "testdata/lua/catalogexport_delta.lua",
+			Output: "",
+		},
 	}
 
 	for _, testCase := range tests {
