@@ -69,7 +69,7 @@ func (dc *DeltaClient) buildLog(table delta.Log) (map[int64][]string, error) {
 		entryVersion := entry.Version()
 		actions, aErr := entry.Actions()
 		if aErr != nil {
-			return nil, err
+			return nil, aErr
 		}
 		for _, a := range actions {
 			aj, _ := a.Json()
