@@ -1,29 +1,31 @@
-# lakeFS Python SDK (Pre-release Beta)
+# lakeFS High-Level Python SDK (Pre-release Beta)
 
-lakeFS Software Development Kit (SDK) for Python, provides developers with the following features:
+lakeFS High Level SDK for Python, provides developers with the following features:
 1. Simpler programming interface with less configuration
 2. Inferring identity from environment 
 3. Better abstractions for common, more complex operations (I/O, transactions, imports)
 
-## Requirements.
+## Requirements
 
 Python 3.9+
 
 ## Installation & Usage
+
 ### pip install
 
 ```sh
 pip install lakefs
 ```
 
-Then import the package:
+### Import the package
+
 ```python
 import lakefs
 ```
 
 ## Getting Started
 
-Please follow the [installation procedure](#installation--usage) and then run the following:
+Please follow the [installation procedure](#installation--usage) and afterward refer to the following example snippet for a quick start:
 
 ```python
 

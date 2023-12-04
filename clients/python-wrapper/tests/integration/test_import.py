@@ -61,7 +61,7 @@ def test_import_manager_cancel(setup_repo):
     expected_commit_id = branch.commit_id()
     expected_commit_message = branch.commit_message()
 
-    mgr = branch.import_data("my imported data", metadata={"foo": "bar"})
+    mgr = branch.import_data(commit_message="my imported data", metadata={"foo": "bar"})
     mgr.prefix(_IMPORT_PATH, "import/")
 
     mgr.start()
