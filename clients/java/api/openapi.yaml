@@ -6716,13 +6716,16 @@ components:
       - source
       type: object
     TagCreation:
+      description: Make tag ID point at this REF.
       example:
         ref: ref
         id: id
       properties:
         id:
+          description: ID of tag to create
           type: string
         ref:
+          description: reference to commit to tag
           type: string
       required:
       - id

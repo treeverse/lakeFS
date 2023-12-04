@@ -24,10 +24,10 @@ from pydantic import BaseModel, Field, StrictStr
 
 class TagCreation(BaseModel):
     """
-    TagCreation
+    Make tag ID point at this REF.
     """
-    id: StrictStr = Field(...)
-    ref: StrictStr = Field(...)
+    id: StrictStr = Field(..., description="ID of tag to create")
+    ref: StrictStr = Field(..., description="reference to commit to tag")
     __properties = ["id", "ref"]
 
     class Config:

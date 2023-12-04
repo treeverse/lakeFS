@@ -107,8 +107,8 @@ class TagCreation(ModelNormal):
         """TagCreation - a model defined in OpenAPI
 
         Args:
-            id (str):
-            ref (str):
+            id (str): ID of tag to create
+            ref (str): reference to commit to tag
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -194,8 +194,8 @@ class TagCreation(ModelNormal):
         """TagCreation - a model defined in OpenAPI
 
         Args:
-            id (str):
-            ref (str):
+            id (str): ID of tag to create
+            ref (str): reference to commit to tag
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
