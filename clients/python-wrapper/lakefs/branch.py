@@ -1,6 +1,7 @@
 """
 Module containing lakeFS branch implementation
 """
+
 from __future__ import annotations
 
 from typing import Optional, Generator, Iterable, Literal
@@ -10,7 +11,8 @@ from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.object import WriteableObject
 from lakefs.object import StoredObject
 from lakefs.import_manager import ImportManager
-from lakefs.reference import Reference, Change, generate_listing
+from lakefs.reference import Reference, generate_listing
+from lakefs.models import Change
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 
 

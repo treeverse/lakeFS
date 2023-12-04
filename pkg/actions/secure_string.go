@@ -26,7 +26,12 @@ func (s SecureString) String() string {
 var envVarRegex = regexp.MustCompile(`{{ ?ENV\..*? ?}}`)
 
 // NewSecureString creates a new SecureString, reading env var if needed.
-func NewSecureString(s string) (SecureString, error) {
+// If the string is not of the form {{ ENV.EXAMPLE_VARIABLE }}, the value is not considered a secret.
+// If the string is of the form {{ ENV.EXAMPLE_VARIABLE }}, the value is populated from EXAMPLE_VARIABLE and
+// is considered a secret.
+// If the environment variable is not found, an error is returned.
+// IF envEnabled is false, the value we evaluate is an empty string.
+func NewSecureString(s string, envGetter EnvGetter) (SecureString, error) {
 	matches := 0
 	var err error
 	ret := envVarRegex.ReplaceAllStringFunc(s, func(origin string) string {
@@ -35,13 +40,12 @@ func NewSecureString(s string) (SecureString, error) {
 		}
 		matches++
 		raw := strings.Trim(origin, "{} ")
-		parts := strings.SplitN(raw, ".", 2) //nolint: gomnd
-		if len(parts) != 2 || parts[0] != "ENV" {
+		source, envVarName, ok := strings.Cut(raw, ".")
+		if !ok || source != "ENV" {
 			return origin
 		}
 
-		envVarName := parts[1]
-		val, ok := os.LookupEnv(envVarName)
+		val, ok := envGetter.Lookup(envVarName)
 		if !ok {
 			err = fmt.Errorf("%s not found: %w", envVarName, errMissingEnvVar)
 			return ""
@@ -56,4 +60,37 @@ func NewSecureString(s string) (SecureString, error) {
 	}
 
 	return SecureString{val: ret, secret: true}, nil
+}
+
+type EnvGetter interface {
+	Lookup(name string) (string, bool)
+}
+
+type EnvironmentVariableGetter struct {
+	Enabled bool
+	Prefix  string
+}
+
+// NewEnvironmentVariableGetter creates a new EnvironmentVariableGetter.
+// If envEnabled is false, the value we evaluate is an empty string.
+// If filterPrefix is not empty, we only evaluate environment variables that start with this prefix.
+func NewEnvironmentVariableGetter(envEnabled bool, prefix string) *EnvironmentVariableGetter {
+	return &EnvironmentVariableGetter{
+		Enabled: envEnabled,
+		Prefix:  prefix,
+	}
+}
+
+// Lookup retrieves the value of the environment variable named
+// by the key. If the variable is present in the environment, the
+// value (which may be empty) is returned and the boolean is true.
+// This function doesn't provide a way to extract variables that can be used by viper.
+func (o *EnvironmentVariableGetter) Lookup(name string) (string, bool) {
+	if !o.Enabled {
+		return "", true
+	}
+	if o.Prefix != "" && !strings.HasPrefix(name, o.Prefix) {
+		return "", true
+	}
+	return os.LookupEnv(name)
 }

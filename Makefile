@@ -14,7 +14,7 @@ OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.0.1
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
 GOLANGCI_LINT_VERSION=v1.53.3
-BUF_CLI_VERSION=v1.27.1
+BUF_CLI_VERSION=v1.28.1
 
 ifndef PACKAGE_VERSION
 	PACKAGE_VERSION=0.1.0-SNAPSHOT
@@ -300,8 +300,8 @@ python-wrapper-lint:
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c "./pylint.sh"
 
 python-wrapper-gen-docs:
-	sphinx-build -b html clients/python-wrapper/docs clients/python-wrapper/_site/
-	sphinx-build -b html clients/python-wrapper/docs clients/python-wrapper/_site/$$(python clients/python-wrapper/setup.py --version)
+	sphinx-build -b html -W clients/python-wrapper/docs clients/python-wrapper/_site/
+	sphinx-build -b html -W clients/python-wrapper/docs clients/python-wrapper/_site/$$(python clients/python-wrapper/setup.py --version)
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
