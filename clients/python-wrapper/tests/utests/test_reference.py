@@ -161,4 +161,4 @@ def test_reference_objects(monkeypatch):
                 with expect_exception_context(AttributeError):
                     item.checksum  # pylint: disable=pointless-statement
 
-            assert item.path == f"path{i}"
+            assert item.path == f"path-{i}"
