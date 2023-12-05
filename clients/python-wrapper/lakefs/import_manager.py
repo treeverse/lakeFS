@@ -60,7 +60,9 @@ class ImportManager:
         :param destination: The destination prefix relative to the branch
         :return: The ImportManager instance (self) after update, to allow operations chaining
         """
-        self._append_source(lakefs_sdk.ImportLocation(type=_COMMON_PREFIX, path=object_store_uri, destination=destination))
+        self._append_source(lakefs_sdk.ImportLocation(type=_COMMON_PREFIX,
+                                                      path=object_store_uri,
+                                                      destination=destination))
         return self
 
     def object(self, object_store_uri: str, destination: str) -> ImportManager:

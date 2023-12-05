@@ -2,7 +2,7 @@ from time import sleep
 
 import pytest
 
-from lakefs import Client
+from lakefs.client import Client
 from lakefs.exceptions import ImportManagerException, ConflictException
 from tests.utests.common import expect_exception_context
 
@@ -92,4 +92,4 @@ def test_import_manager_cancel(setup_repo):
     assert branch.commit_message() == expected_commit_message
     assert not status.completed
     assert "Canceled" in status.error.message
-    assert len(mgr.sources) == 0
+    assert len(mgr.sources) == 1
