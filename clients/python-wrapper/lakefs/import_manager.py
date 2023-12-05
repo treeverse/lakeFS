@@ -10,7 +10,7 @@ from typing import Optional, Dict, List
 
 import lakefs_sdk
 
-from lakefs.models import ImportStatus, _OBJECT, _PREFIX
+from lakefs.models import ImportStatus, _OBJECT, _COMMON_PREFIX
 from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.exceptions import ImportManagerException, api_exception_handler
 
@@ -54,7 +54,8 @@ class ImportManager:
         :param destination: The destination prefix relative to the branch
         :return: The ImportManager instance (self) after update, to allow operations chaining
         """
-        self.sources.append(lakefs_sdk.ImportLocation(type=_PREFIX, path=object_store_uri, destination=destination))
+        self.sources.append(
+            lakefs_sdk.ImportLocation(type=_COMMON_PREFIX, path=object_store_uri, destination=destination))
         return self
 
     def object(self, object_store_uri: str, destination: str) -> ImportManager:

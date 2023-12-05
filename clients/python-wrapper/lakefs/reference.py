@@ -49,7 +49,8 @@ class Reference:
                 delimiter: Optional[str] = None,
                 **kwargs) -> Generator[StoredObject | CommonPrefix]:
         """
-        Returns an object generator for this reference
+        Returns an object generator for this reference, the generator can yield either a StoredObject or a CommonPrefix
+        object depending on the listing parameters provided.
 
         :param max_amount: Stop showing changes after this amount
         :param after: Return items after this value

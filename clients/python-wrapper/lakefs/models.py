@@ -9,7 +9,7 @@ from typing import List, Optional, Literal
 
 from lakefs.namedtuple import LenientNamedTuple
 
-_PREFIX = "common_prefix"
+_COMMON_PREFIX = "common_prefix"
 _OBJECT = "object"
 
 
