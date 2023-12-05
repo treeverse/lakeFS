@@ -2,14 +2,20 @@
 Allow importing of models from package root
 """
 
-from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.repository import Repository
 from lakefs.reference import Reference
-from lakefs.models import Commit, Change, RepositoryProperties
+from lakefs.models import (
+    Commit,
+    Change,
+    ImportStatus,
+    ServerStorageConfiguration,
+    ObjectInfo,
+    CommonPrefix,
+    RepositoryProperties
+)
 from lakefs.tag import Tag
 from lakefs.branch import Branch
 from lakefs.object import StoredObject, WriteableObject, ObjectReader
-from lakefs.object_manager import ObjectManager
 
 
 def repository(repository_id: str) -> Repository:

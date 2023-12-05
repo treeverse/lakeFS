@@ -30,7 +30,7 @@ from lakefs.exceptions import (
     PermissionException,
     ObjectExistsException,
 )
-from lakefs.models import ObjectStats
+from lakefs.models import ObjectInfo
 
 _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
 # _BUFFER_SIZE - Writer buffer size. While buffer size not exceed, data will be maintained in memory and file will
@@ -302,7 +302,7 @@ class ObjectWriter(LakeFSIOBase):
     implicitly when using writer as a context.
     """
     _fd: tempfile.SpooledTemporaryFile
-    _obj_stats: ObjectStats = None
+    _obj_stats: ObjectInfo = None
 
     def __init__(self,
                  obj: StoredObject,
@@ -381,7 +381,7 @@ class ObjectWriter(LakeFSIOBase):
         Write the data to the lakeFS server and close open descriptors
         """
         stats = self._upload_presign() if self.pre_sign else self._upload_raw()
-        self._obj_stats = ObjectStats(**stats.dict())
+        self._obj_stats = ObjectInfo(**stats.dict())
 
         self._fd.close()
         super().close()
@@ -502,7 +502,7 @@ class StoredObject:
     _repo_id: str
     _ref_id: str
     _path: str
-    _stats: Optional[ObjectStats] = None
+    _stats: Optional[ObjectInfo] = None
 
     def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = DEFAULT_CLIENT):
         self._client = client
@@ -548,14 +548,14 @@ class StoredObject:
         """
         return ObjectReader(self, mode=mode, pre_sign=pre_sign, client=self._client)
 
-    def stat(self) -> ObjectStats:
+    def stat(self) -> ObjectInfo:
         """
         Return the Stat object representing this object
         """
         if self._stats is None:
             with api_exception_handler(_io_exception_handler):
                 stat = self._client.sdk_client.objects_api.stat_object(self._repo_id, self._ref_id, self._path)
-                self._stats = ObjectStats(**stat.dict())
+                self._stats = ObjectInfo(**stat.dict())
         return self._stats
 
     def exists(self) -> bool:
