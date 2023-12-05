@@ -28,6 +28,9 @@ func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, pat
 }
 
 func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
+	if o.HandleUnsupported(w, req, "torrent", "acl", "retention", "legal-hold", "lambdaArn") {
+		return
+	}
 	o.Incr("get_object", o.Principal, o.Repository.Name, o.Reference)
 	ctx := req.Context()
 	query := req.URL.Query()

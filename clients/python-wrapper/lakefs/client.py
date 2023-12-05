@@ -18,24 +18,10 @@ from lakefs_sdk.client import LakeFSClient
 
 from lakefs.config import ClientConfig
 from lakefs.exceptions import NoAuthenticationFound, NotAuthorizedException, ServerException
-from lakefs.namedtuple import LenientNamedTuple
+from lakefs.models import ServerStorageConfiguration
 
 # global default client
 DEFAULT_CLIENT: Optional[Client] = None
-
-
-class ServerStorageConfiguration(LenientNamedTuple):
-    """
-    Represent a lakeFS server's storage configuration
-    """
-    blockstore_type: str
-    pre_sign_support: bool
-    import_support: bool
-    blockstore_namespace_example: str
-    blockstore_namespace_validity_regex: str
-    pre_sign_support_ui: bool
-    import_validity_regex: str
-    default_namespace_prefix: Optional[str] = None
 
 
 class ServerConfiguration:

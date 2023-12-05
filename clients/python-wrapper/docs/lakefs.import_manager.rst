@@ -1,7 +1,7 @@
-lakefs.branch\_manager module
+lakefs.import\_manager module
 =============================
 
-.. automodule:: lakefs.branch_manager
+.. automodule:: lakefs.import_manager
    :members:
    :undoc-members:
    :show-inheritance:

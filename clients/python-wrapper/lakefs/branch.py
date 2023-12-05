@@ -1,6 +1,7 @@
 """
 Module containing lakeFS branch implementation
 """
+
 from __future__ import annotations
 
 from typing import Optional, Generator, Iterable, Literal
@@ -10,7 +11,8 @@ from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.object import WriteableObject
 from lakefs.object import StoredObject
 from lakefs.import_manager import ImportManager
-from lakefs.reference import Reference, Change
+from lakefs.reference import Reference, generate_listing
+from lakefs.models import Change
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 
 
@@ -139,15 +141,16 @@ class Branch(Reference):
         :param max_amount: Stop showing changes after this amount
         :param after: Return items after this value
         :param prefix: Return items prefixed with this value
+        :param kwargs: Additional Keyword Arguments to send to the server
         :raises:
             NotFoundException if branch or repository do not exist
             NotAuthorizedException if user is not authorized to perform this operation
             ServerException for any other errors
         """
 
-        for diff in self._get_generator(self._client.sdk_client.branches_api.diff_branch,
-                                        self._repo_id, self._id, max_amount=max_amount, after=after, prefix=prefix,
-                                        **kwargs):
+        for diff in generate_listing(self._client.sdk_client.branches_api.diff_branch,
+                                     self._repo_id, self._id, max_amount=max_amount, after=after, prefix=prefix,
+                                     **kwargs):
             yield Change(**diff.dict())
 
     def import_data(self, commit_message: str, metadata: Optional[dict] = None) -> ImportManager:

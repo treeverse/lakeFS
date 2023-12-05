@@ -214,6 +214,10 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 }
 
 func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
+	if o.HandleUnsupported(w, req, "torrent", "acl") {
+		return
+	}
+
 	// verify branch before we upload data - fail early
 	branchExists, err := o.Catalog.BranchExists(req.Context(), o.Repository.Name, o.Reference)
 	if err != nil {
@@ -230,8 +234,7 @@ func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	query := req.URL.Query()
 
 	// check if this is a multipart upload creation call
-	_, hasUploadID := query[QueryParamUploadID]
-	if hasUploadID {
+	if query.Has(QueryParamUploadID) {
 		handleUploadPart(w, req, o)
 		return
 	}

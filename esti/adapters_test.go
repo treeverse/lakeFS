@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 )
 
@@ -88,7 +88,7 @@ func (s *s3Adapter) Upload(ctx context.Context, physicalAddress *url.URL, conten
 	}
 	return ObjectStats{
 		Size: size,
-		ETag: aws.StringValue(out.ETag),
+		ETag: aws.ToString(out.ETag),
 		// S3Manager Upload does not return creation time.
 	}, nil
 }

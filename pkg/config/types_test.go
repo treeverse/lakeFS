@@ -1,14 +1,14 @@
 package config_test
 
 import (
+	"errors"
+	"strings"
+	"testing"
+
 	"github.com/go-test/deep"
 	"github.com/mitchellh/mapstructure"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/testutil"
-
-	"errors"
-	"strings"
-	"testing"
 )
 
 type StringsStruct struct {
