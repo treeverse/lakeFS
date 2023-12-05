@@ -3856,7 +3856,6 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		}()
 		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", rng.EndOffset-rng.StartOffset+1))
-		writeResponse(w, r, http.StatusPartialContent, nil)
 	} else {
 		reader, err = c.BlockAdapter.Get(ctx, pointer, entry.Size)
 		if c.handleAPIError(ctx, w, r, err) {
@@ -3879,6 +3878,13 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'")
+
+	// set the response code to partial content if a range was requested
+	// must be done after setting the headers, before writing the content
+	if params.Range != nil {
+		w.WriteHeader(http.StatusPartialContent)
+	}
+
 	_, err = io.Copy(w, reader)
 	if err != nil {
 		c.Logger.
