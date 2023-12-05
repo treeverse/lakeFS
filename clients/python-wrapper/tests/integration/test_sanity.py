@@ -110,7 +110,6 @@ def test_object_sanity(setup_repo):
 
     stats = obj.stat()
     assert stats.path == path == obj.path
-    assert stats.path_type == "object"
     assert stats.mtime <= time.time()
     assert stats.size_bytes == len(data)
     assert stats.metadata == metadata

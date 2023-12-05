@@ -9,6 +9,9 @@ from typing import List, Optional, Literal
 
 from lakefs.namedtuple import LenientNamedTuple
 
+_COMMON_PREFIX = "common_prefix"
+_OBJECT = "object"
+
 
 class Commit(LenientNamedTuple):
     """
@@ -74,12 +77,11 @@ class ServerStorageConfiguration(LenientNamedTuple):
     default_namespace_prefix: Optional[str] = None
 
 
-class ObjectStats(LenientNamedTuple):
+class ObjectInfo(LenientNamedTuple):
     """
     Represent a lakeFS object's stats
     """
     path: str
-    path_type: str
     physical_address: str
     checksum: str
     mtime: int
@@ -87,6 +89,13 @@ class ObjectStats(LenientNamedTuple):
     size_bytes: Optional[int] = None
     metadata: Optional[dict[str, str]] = None
     content_type: Optional[str] = None
+
+
+class CommonPrefix(LenientNamedTuple):
+    """
+    Represents a common prefix in lakeFS
+    """
+    path: str
 
 
 class RepositoryProperties(LenientNamedTuple):
