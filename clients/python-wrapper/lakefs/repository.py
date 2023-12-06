@@ -137,7 +137,6 @@ class Repository:
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
-
         for res in generate_listing(self._client.sdk_client.tags_api.list_tags, self._id,
                                     max_amount=max_amount, after=after, prefix=prefix, **kwargs):
             yield Tag(self._id, res.id, client=self._client)
