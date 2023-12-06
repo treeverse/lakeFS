@@ -45,6 +45,8 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("logging.file_max_size_mb", (1<<10)*100) // 100MiB
 
 	viper.SetDefault("actions.enabled", true)
+	viper.SetDefault("actions.env.enabled", true)
+	viper.SetDefault("actions.env.prefix", "LAKEFSACTION_")
 
 	viper.SetDefault("auth.cache.enabled", true)
 	viper.SetDefault("auth.cache.size", 1024)
@@ -85,6 +87,7 @@ func setDefaults(cfgType string) {
 
 	viper.SetDefault("gateways.s3.domain_name", "s3.local.lakefs.io")
 	viper.SetDefault("gateways.s3.region", "us-east-1")
+	viper.SetDefault("gateways.s3.verify_unsupported", true)
 
 	viper.SetDefault("blockstore.gs.s3_endpoint", "https://storage.googleapis.com")
 	viper.SetDefault("blockstore.gs.pre_signed_expiry", 15*time.Minute)

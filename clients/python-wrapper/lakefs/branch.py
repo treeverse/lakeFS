@@ -1,6 +1,7 @@
 """
 Module containing lakeFS branch implementation
 """
+
 from __future__ import annotations
 
 from typing import Optional, Generator, Iterable, Literal
@@ -10,7 +11,8 @@ from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.object import WriteableObject
 from lakefs.object import StoredObject
 from lakefs.import_manager import ImportManager
-from lakefs.reference import Reference, Change, generate_listing
+from lakefs.reference import Reference, generate_listing
+from lakefs.models import Change
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 
 
@@ -151,12 +153,13 @@ class Branch(Reference):
                                      **kwargs):
             yield Change(**diff.dict())
 
-    def import_data(self, commit_message: str, metadata: Optional[dict] = None) -> ImportManager:
+    def import_data(self, commit_message: Optional[str] = "", metadata: Optional[dict] = None) -> ImportManager:
         """
         Import data to lakeFS
 
         :param metadata: metadata to attach to the commit
-        :param commit_message: once the data is imported, a commit is created with this message
+        :param commit_message: once the data is imported, a commit is created with this message. If default (empty)
+            message is provided, uses the default server commit message for imports.
         :return: an ImportManager object
         """
         return ImportManager(self._repo_id, self._id, commit_message, metadata, self._client)

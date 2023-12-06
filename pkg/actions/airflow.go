@@ -56,7 +56,7 @@ var (
 	errAirflowHookDAGFailed     = errors.New("airflow hook DAG failed")
 )
 
-func NewAirflowHook(h ActionHook, action *Action, cfg Config, endpoint *http.Server, _ string, collector stats.Collector) (Hook, error) {
+func NewAirflowHook(h ActionHook, action *Action, cfg Config, endpoint *http.Server, _ string, _ stats.Collector) (Hook, error) {
 	airflowHook := Airflow{
 		HookBase: HookBase{
 			ID:         h.ID,
@@ -86,7 +86,8 @@ func NewAirflowHook(h ActionHook, action *Action, cfg Config, endpoint *http.Ser
 	if err != nil {
 		return nil, fmt.Errorf("airflow hook password property: %w", err)
 	}
-	airflowHook.Password, err = NewSecureString(rawPass)
+	envGetter := NewEnvironmentVariableGetter(cfg.Env.Enabled, cfg.Env.Prefix)
+	airflowHook.Password, err = NewSecureString(rawPass, envGetter)
 	if err != nil {
 		return nil, fmt.Errorf("airflow hook password property: %w", err)
 	}

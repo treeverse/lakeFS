@@ -8,6 +8,8 @@ max-line-length=120
 max-locals=25
 # Maximum number of arguments for function / method
 max-args=10
+# Maximum number of class attributes
+max-attributes=10
 
 [MESSAGES CONTROL]
 disable=too-few-public-methods, fixme

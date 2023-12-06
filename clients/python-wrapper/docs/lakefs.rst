@@ -8,17 +8,16 @@ Submodules
    :maxdepth: 4
 
    lakefs.branch
-   lakefs.branch_manager
    lakefs.client
    lakefs.config
    lakefs.exceptions
+   lakefs.import_manager
+   lakefs.models
+   lakefs.namedtuple
    lakefs.object
-   lakefs.object_io
-   lakefs.object_manager
    lakefs.reference
    lakefs.repository
    lakefs.tag
-   lakefs.tag_manager
 
 Module contents
 ---------------

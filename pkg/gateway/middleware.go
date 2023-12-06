@@ -112,12 +112,13 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 		ctx := req.Context()
 		client := httputil.GetRequestLakeFSClient(req)
 		o := &operations.Operation{
-			Region:           sc.region,
-			FQDN:             getBareDomain(stripPort(req.Host), sc.bareDomains),
-			Catalog:          sc.catalog,
-			MultipartTracker: sc.multipartTracker,
-			BlockStore:       sc.blockStore,
-			Auth:             sc.authService,
+			Region:            sc.region,
+			FQDN:              getBareDomain(stripPort(req.Host), sc.bareDomains),
+			Catalog:           sc.catalog,
+			MultipartTracker:  sc.multipartTracker,
+			BlockStore:        sc.blockStore,
+			Auth:              sc.authService,
+			VerifyUnsupported: sc.verifyUnsupported,
 			Incr: func(action, userID, repository, ref string) {
 				logging.FromContext(ctx).
 					WithFields(logging.Fields{
@@ -199,28 +200,21 @@ func OperationLookupHandler(next http.Handler) http.Handler {
 		ctx := req.Context()
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		repoID := ctx.Value(ContextKeyRepositoryID).(string)
-		o.OperationID = operations.OperationIDOperationNotFound
-		if repoID == "" {
-			if req.Method == http.MethodGet {
-				o.OperationID = operations.OperationIDListBuckets
-			} else {
-				_ = o.EncodeError(w, req, nil, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
-				return
-			}
-		} else {
-			ref := ctx.Value(ContextKeyRef).(string)
-			pth := ctx.Value(ContextKeyPath).(string)
-			switch {
-			case ref != "" && pth != "":
-				req = req.WithContext(ctx)
-				o.OperationID = pathBasedOperationID(req.Method)
-			case ref == "" && pth == "":
-				o.OperationID = repositoryBasedOperationID(req.Method)
-			default:
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
+		ref := ctx.Value(ContextKeyRef).(string)
+		pth := ctx.Value(ContextKeyPath).(string)
+
+		// based on the operation level, we can determine the operation id
+		switch {
+		case repoID == "":
+			o.OperationID = rootBasedOperationID(req.Method)
+		case ref != "" && pth != "":
+			o.OperationID = pathBasedOperationID(req.Method)
+		case ref == "" && pth == "":
+			o.OperationID = repositoryBasedOperationID(req.Method)
+		default:
+			o.OperationID = operations.OperationIDOperationNotFound
 		}
+
 		req = req.WithContext(logging.AddFields(ctx, logging.Fields{"operation_id": o.OperationID}))
 		next.ServeHTTP(w, req)
 	})
@@ -277,7 +271,7 @@ func ParseRequestParts(host string, urlPath string, bareDomains []string) Reques
 	}
 
 	if !parts.MatchedHost {
-		// assume path based for domains we don't explicitly know
+		// assume path-based for domains we don't explicitly know
 		p = strings.SplitN(urlPath, path.Separator, 3) //nolint: gomnd
 		parts.Repository = p[0]
 		if len(p) >= 1 {
@@ -293,6 +287,13 @@ func ParseRequestParts(host string, urlPath string, bareDomains []string) Reques
 		parts.Path = p[1]
 	}
 	return parts
+}
+
+func rootBasedOperationID(method string) operations.OperationID {
+	if method == http.MethodGet {
+		return operations.OperationIDListBuckets
+	}
+	return operations.OperationIDOperationNotFound
 }
 
 func pathBasedOperationID(method string) operations.OperationID {

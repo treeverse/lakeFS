@@ -1,7 +1,7 @@
-lakefs.object\_manager module
+lakefs.import\_manager module
 =============================
 
-.. automodule:: lakefs.object_manager
+.. automodule:: lakefs.import_manager
    :members:
    :undoc-members:
    :show-inheritance:

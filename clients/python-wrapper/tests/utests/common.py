@@ -64,10 +64,10 @@ def env_var_context():
         os.environ = old_env
 
 
-def get_test_repo() -> lakefs.repository.Repository:
+def get_test_repo() -> lakefs.Repository:
     from lakefs.client import Client
     client = Client(username="test_user", password="test_password", host="http://127.0.0.1:8000")
-    return lakefs.repository.Repository(repository_id=TEST_REPO_ARGS.name, client=client)
+    return lakefs.Repository(repository_id=TEST_REPO_ARGS.name, client=client)
 
 
 @contextmanager

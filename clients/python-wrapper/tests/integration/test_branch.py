@@ -50,9 +50,8 @@ def test_reset_changes(setup_repo):
 def test_delete_object_changes(setup_repo):
     _, repo = setup_repo
     test_branch = repo.branch("main")
-    path_and_data = ["a", "b", "bar/a", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c", ]
-    for s in path_and_data:
-        test_branch.object(s).upload(s)
+    path_and_data = ["a", "b", "bar/a", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c"]
+    upload_data(test_branch, path_and_data)
     test_branch.commit("add some files", {"test_key": "test_value"})
 
     test_branch.delete_objects("foo/a")
