@@ -134,9 +134,6 @@ class _BaseLakeFSObject:
             return self.__client
 
         with _BaseLakeFSObject.__mutex:
-            if _BaseLakeFSObject.__client is not None:
-                return _BaseLakeFSObject.__client
-
-            clt = Client()
-            _BaseLakeFSObject.__client = clt
-            return clt
+            if _BaseLakeFSObject.__client is None:
+                _BaseLakeFSObject.__client = Client()
+            return _BaseLakeFSObject.__client
