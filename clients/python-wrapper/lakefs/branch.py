@@ -158,7 +158,8 @@ class Branch(Reference):
         Import data to lakeFS
 
         :param metadata: metadata to attach to the commit
-        :param commit_message: once the data is imported, a commit is created with this message
+        :param commit_message: once the data is imported, a commit is created with this message. If default (empty)
+            message is provided, uses the default server commit message for imports.
         :return: an ImportManager object
         """
         return ImportManager(self._repo_id, self._id, commit_message, metadata, self._client)
