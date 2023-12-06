@@ -1,5 +1,37 @@
 # Changelog
 
+# v1.3.0
+
+:new: What's new:
+
+- Update AWS Go SDK v2 to support S3 express directory buckets (#7083)
+- API and lakectl: support long-running dump and restore operations (#6975)
+- lakectl: Improved performance for fs rm recursive command (#7035)
+- Glue Exporter: Support Hadoop directory markers (#7058)
+
+:bug: Bugs fixed:
+
+- API: Fix StatsObject returned metadata on empty metadata (#7026)
+- API: Return the right default pagination per page- 100 instead of 1000 (#7051)
+- DynamoDB KV: Check if a table exists before we try to create it (#7056)
+
+# v1.2.0
+
+:new: What's new:
+
+- UI: Allow commit message and metadata in merge action (#6897)
+- API: CreateRepository check if repository exists before trying to validate storage namespace (#6967)
+- lakectl: Add commit params to merge command (#6892)
+- Optimization - Reduce DynamoDB and CosmosDB calls by extending current range to include additional information (#6983)
+
+:bug: Bugs fixed:
+
+- Fix - Lakefs crashing when using database.type=”dynamodb” and scylladb as a database (#6924)
+- Change 'committer' field from UserID to Email, when Email is available (#6912)
+- Use Buf CLI to compile our proto files (#6784)
+- Log time.Duration _twice_ in all modes, as string and as nanoseconds (#6934)
+- External auth remove required id from user model (#6902)
+
 # v1.1.0
 
 :new: What's new:

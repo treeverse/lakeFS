@@ -19,7 +19,7 @@ services:
       - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
       - LAKEFS_LOGGING_LEVEL=DEBUG
       - LAKEFS_STATS_ENABLED=false
-      - ACTIONS_VAR=this_is_actions_var
+      - LAKEFSACTION_VAR=this_is_actions_var
       - LAKEFS_DATABASE_TYPE=cosmosdb
       - LAKEFS_DATABASE_COSMOSDB_ENDPOINT
       - LAKEFS_DATABASE_COSMOSDB_DATABASE
@@ -30,7 +30,7 @@ services:
       - AZURE_TENANT_ID
     entrypoint: ["/app/lakefs", "run"]
   esti:
-    image: "golang:1.21.3-alpine3.18"
+    image: "golang:1.21.4-alpine3.18"
     links:
       - lakefs:s3.local.lakefs.io
       - lakefs:testmultipartupload.s3.local.lakefs.io

@@ -163,20 +163,20 @@ func normalizeMultipartUploadCompletion(list *block.MultipartUploadCompletion) {
 }
 
 func (controller *PostObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
-	// POST is only supported for CreateMultipartUpload/CompleteMultipartUpload
-	// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html
-	// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompleteMultipartUpload.html
-	_, mpuCreateParamExist := req.URL.Query()[CreateMultipartUploadQueryParam]
-	if mpuCreateParamExist {
-		controller.HandleCreateMultipartUpload(w, req, o)
+	if o.HandleUnsupported(w, req, "select", "restore") {
 		return
 	}
 
-	_, mpuCompleteParamExist := req.URL.Query()[CompleteMultipartUploadQueryParam]
-	if mpuCompleteParamExist {
+	// POST is only supported for CreateMultipartUpload/CompleteMultipartUpload
+	// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html
+	// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompleteMultipartUpload.html
+	query := req.URL.Query()
+	switch {
+	case query.Has(CreateMultipartUploadQueryParam):
+		controller.HandleCreateMultipartUpload(w, req, o)
+	case query.Has(CompleteMultipartUploadQueryParam):
 		controller.HandleCompleteMultipartUpload(w, req, o)
-		return
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
-	// otherwise
-	w.WriteHeader(http.StatusMethodNotAllowed)
 }

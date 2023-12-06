@@ -4,6 +4,14 @@ local pathlib = require("path")
 local json = require("encoding/json")
 local utils = require("lakefs/catalogexport/internal")
 
+--[[
+    delta_log_entry_key_generator returns a closure that returns a Delta Lake version key according to the Delta Lake
+    protocol: https://github.com/delta-io/delta/blob/master/PROTOCOL.md#delta-log-entries
+    Example:
+        local gen = delta_log_entry_key_generator()
+        gen() -- 000000000000000001.json
+        gen() -- 000000000000000002.json
+]]
 local function delta_log_entry_key_generator()
     local current = 0
     return function()
@@ -14,14 +22,10 @@ local function delta_log_entry_key_generator()
         for _ = 1, padding_length do
             padded_key = padded_key .. "0"
         end
-        padded_key = padded_key .. key
+        padded_key = padded_key .. key .. ".json"
         current = current + 1
         return padded_key
     end
-end
-
-local function get_delta_client(key, secret, region)
-    return formats.delta_client("s3", key, secret, region)
 end
 
 --[[
@@ -31,18 +35,17 @@ end
 
    table_paths: ["path/to/table1", "path/to/table2", ...]
 
-    storage_client:
-        - put_object: function(bucket, key, data)
+    write_object: function(bucket, key, data)
 
     delta_client:
         - get_table: function(repo, ref, prefix)
 
 ]]
-local function export_delta_log(action, table_paths, storage_client, delta_client)
+local function export_delta_log(action, table_paths, write_object, delta_client)
     local repo = action.repository_id
     local commit_id = action.commit_id
 
-    local ns = utils.get_storage_namespace(repo)
+    local ns = action.storage_namespace
     if ns == nil then
         error("failed getting storage namespace for repo " .. repo)
     end
@@ -93,7 +96,7 @@ local function export_delta_log(action, table_paths, storage_client, delta_clien
                 local entry_m = json.marshal(entry)
                 table.insert(entry_log, entry_m)
             end
-            table_log[string.format("%s.json", keyGenerator())] = entry_log
+            table_log[keyGenerator()] = entry_log
         end
 
         -- Get the table delta log physical location
@@ -121,7 +124,7 @@ local function export_delta_log(action, table_paths, storage_client, delta_clien
                 table_entry_string = table_entry_string .. content_entry
             end
             local version_key = storage_props.key .. "/" .. entry_version
-            storage_client.put_object(storage_props.bucket, version_key, table_entry_string)
+            write_object(storage_props.bucket, version_key, table_entry_string)
         end
         response[t_name] = table_physical_path
     end
@@ -130,5 +133,4 @@ end
 
 return {
     export_delta_log = export_delta_log,
-    get_delta_client = get_delta_client
 }

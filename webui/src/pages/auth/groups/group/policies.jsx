@@ -1,8 +1,7 @@
 import React, {useEffect, useState} from "react";
-
+import { useOutletContext } from "react-router-dom";
 import Button from "react-bootstrap/Button";
 
-import {AuthLayout} from "../../../../lib/components/auth/layout";
 import {GroupHeader} from "../../../../lib/components/auth/nav";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {auth} from "../../../../lib/api";
@@ -120,11 +119,9 @@ const GroupPoliciesContainer = () => {
 };
 
 const GroupPoliciesPage = () => {
-    return (
-        <AuthLayout activeTab="groups">
-            <GroupPoliciesContainer/>
-        </AuthLayout>
-    );
+    const [setActiveTab] = useOutletContext();
+    useEffect(() => setActiveTab('groups'), [setActiveTab]);
+    return <GroupPoliciesContainer/>;
 };
 
 export default GroupPoliciesPage;

@@ -1,6 +1,6 @@
-import React from "react";
+import React, {useEffect} from "react";
+import { useOutletContext } from "react-router-dom";
 
-import {AuthLayout} from "../../../../lib/components/auth/layout";
 import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {
     ActionGroup,
@@ -116,11 +116,9 @@ const UserGroupsContainer = () => {
 };
 
 const UserGroupsPage = () => {
-    return (
-        <AuthLayout activeTab="users">
-            <UserGroupsContainer />
-        </AuthLayout>
-    );
+    const {setActiveTab} = useOutletContext();
+    useEffect(() => setActiveTab("users"), [setActiveTab]);
+    return <UserGroupsContainer />;
 };
 
 export default UserGroupsPage;

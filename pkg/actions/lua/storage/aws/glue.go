@@ -91,7 +91,6 @@ func deleteTable(c *GlueClient) lua.Function {
 			Name:         aws.String(tableName),
 			CatalogId:    catalogID,
 		})
-
 		if err != nil {
 			lua.Errorf(l, err.Error())
 			panic("unreachable")
@@ -100,6 +99,7 @@ func deleteTable(c *GlueClient) lua.Function {
 		return 0
 	}
 }
+
 func updateTable(c *GlueClient) lua.Function {
 	return func(l *lua.State) int {
 		client := c.client()
@@ -148,6 +148,7 @@ func updateTable(c *GlueClient) lua.Function {
 		return 0
 	}
 }
+
 func createTable(c *GlueClient) lua.Function {
 	return func(l *lua.State) int {
 		client := c.client()

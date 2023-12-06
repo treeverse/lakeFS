@@ -1,6 +1,5 @@
-import React from "react";
-
-import {AuthLayout} from "../../lib/components/auth/layout";
+import React, {useEffect} from "react";
+import { useOutletContext } from "react-router-dom";
 import {
     ActionGroup,
     ActionsBar,
@@ -81,11 +80,9 @@ const CredentialsContainer = () => {
 };
 
 const CredentialsPage = () => {
-    return (
-        <AuthLayout activeTab="credentials">
-            <CredentialsContainer/>
-        </AuthLayout>
-    );
+    const [setActiveTab] = useOutletContext();
+    useEffect(() => setActiveTab("credentials"), [setActiveTab]);
+    return <CredentialsContainer/>;
 };
 
 

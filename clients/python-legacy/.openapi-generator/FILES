@@ -82,8 +82,10 @@ docs/RefsDump.md
 docs/RepositoriesApi.md
 docs/Repository.md
 docs/RepositoryCreation.md
+docs/RepositoryDumpStatus.md
 docs/RepositoryList.md
 docs/RepositoryMetadata.md
+docs/RepositoryRestoreStatus.md
 docs/ResetCreation.md
 docs/RevertCreation.md
 docs/Setup.md
@@ -98,6 +100,7 @@ docs/StorageConfig.md
 docs/StorageURI.md
 docs/TagCreation.md
 docs/TagsApi.md
+docs/TaskInfo.md
 docs/UnderlyingObjectProperties.md
 docs/UpdateToken.md
 docs/User.md
@@ -195,8 +198,10 @@ lakefs_client/model/ref_list.py
 lakefs_client/model/refs_dump.py
 lakefs_client/model/repository.py
 lakefs_client/model/repository_creation.py
+lakefs_client/model/repository_dump_status.py
 lakefs_client/model/repository_list.py
 lakefs_client/model/repository_metadata.py
+lakefs_client/model/repository_restore_status.py
 lakefs_client/model/reset_creation.py
 lakefs_client/model/revert_creation.py
 lakefs_client/model/setup.py
@@ -209,6 +214,7 @@ lakefs_client/model/stats_events_list.py
 lakefs_client/model/storage_config.py
 lakefs_client/model/storage_uri.py
 lakefs_client/model/tag_creation.py
+lakefs_client/model/task_info.py
 lakefs_client/model/underlying_object_properties.py
 lakefs_client/model/update_token.py
 lakefs_client/model/user.py
@@ -303,8 +309,10 @@ test/test_refs_dump.py
 test/test_repositories_api.py
 test/test_repository.py
 test/test_repository_creation.py
+test/test_repository_dump_status.py
 test/test_repository_list.py
 test/test_repository_metadata.py
+test/test_repository_restore_status.py
 test/test_reset_creation.py
 test/test_revert_creation.py
 test/test_setup.py
@@ -319,6 +327,7 @@ test/test_storage_config.py
 test/test_storage_uri.py
 test/test_tag_creation.py
 test/test_tags_api.py
+test/test_task_info.py
 test/test_underlying_object_properties.py
 test/test_update_token.py
 test/test_user.py

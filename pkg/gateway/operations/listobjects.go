@@ -18,6 +18,9 @@ import (
 
 const (
 	ListObjectMaxKeys = 1000
+
+	// defaultBucketLocation used to identify if we need to specify the location constraint
+	defaultBucketLocation = "us-east-1"
 )
 
 type ListObjects struct{}
@@ -349,16 +352,34 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 }
 
 func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
-	o.Incr("list_objects", o.Principal, o.Repository.Name, "")
-	// parse request parameters
-	// GET /example?list-type=2&prefix=main%2F&delimiter=%2F&encoding-type=url HTTP/1.1
-
-	// handle GET /?versioning
+	if o.HandleUnsupported(w, req, "inventory", "metrics", "publicAccessBlock", "ownershipControls",
+		"intelligent-tiering", "analytics", "policy", "lifecycle", "encryption", "object-lock", "replication",
+		"notification", "events", "acl", "cors", "website", "accelerate",
+		"requestPayment", "logging", "tagging", "uploads", "versions", "policyStatus") {
+		return
+	}
 	query := req.URL.Query()
-	if _, found := query["versioning"]; found {
+
+	// getbucketlocation support
+	if query.Has("location") {
+		o.Incr("get_bucket_location", o.Principal, o.Repository.Name, "")
+		response := serde.LocationResponse{}
+		if o.Region != "" && o.Region != defaultBucketLocation {
+			response.Location = o.Region
+		}
+		o.EncodeResponse(w, req, response, http.StatusOK)
+		return
+	}
+
+	// getbucketversioing support
+	if query.Has("versioning") {
 		o.EncodeXMLBytes(w, req, []byte(serde.VersioningResponse), http.StatusOK)
 		return
 	}
+	o.Incr("list_objects", o.Principal, o.Repository.Name, "")
+
+	// parse request parameters
+	// GET /example?list-type=2&prefix=main%2F&delimiter=%2F&encoding-type=url HTTP/1.1
 
 	// handle ListObjects versions
 	listType := query.Get("list-type")

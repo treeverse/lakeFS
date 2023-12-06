@@ -1,5 +1,4 @@
-import React, {useState} from "react";
-import {RepositoryPageLayout} from "../../../../../lib/components/repository/layout";
+import React, {useEffect, useState} from "react";
 import {AlertError, Loading} from "../../../../../lib/components/controls";
 import {useRefs} from "../../../../../lib/hooks/repo";
 import {useAPI, useAPIWithPagination} from "../../../../../lib/hooks/api";
@@ -9,6 +8,7 @@ import {useRouter} from "../../../../../lib/hooks/router";
 import {URINavigator} from "../../../../../lib/components/repository/tree";
 import {appendMoreResults} from "../../changes";
 import {CommitInfoCard} from "../../../../../lib/components/repository/commits";
+import { useOutletContext } from "react-router-dom";
 
 
 
@@ -113,11 +113,10 @@ const CommitContainer = () => {
 }
 
 const RepositoryCommitPage = () => {
-    return (
-        <RepositoryPageLayout activePage={'commits'}>
-            <CommitContainer/>
-        </RepositoryPageLayout>
-    )
+    const [setActivePage] = useOutletContext();
+    useEffect(() => setActivePage('commits'), [setActivePage]);
+
+    return <CommitContainer/>;
 }
 
 export default RepositoryCommitPage;

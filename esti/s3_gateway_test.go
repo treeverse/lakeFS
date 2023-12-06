@@ -13,6 +13,7 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/minio/minio-go/v7/pkg/tags"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -75,34 +76,33 @@ func TestS3UploadAndDownload(t *testing.T) {
 				objects = make(chan Object, parallelism*2)
 			)
 
+			client := newMinioClient(t, sig.GetCredentials)
+			wg.Add(parallelism)
 			for i := 0; i < parallelism; i++ {
-				client := newMinioClient(t, sig.GetCredentials)
-
-				wg.Add(1)
 				go func() {
+					defer wg.Done()
 					for o := range objects {
-						_, err := client.PutObject(
-							ctx, repo, o.Path, strings.NewReader(o.Content), int64(len(o.Content)), minio.PutObjectOptions{})
+						_, err := client.PutObject(ctx, repo, o.Path, strings.NewReader(o.Content), int64(len(o.Content)), minio.PutObjectOptions{})
 						if err != nil {
 							t.Errorf("minio.Client.PutObject(%s): %s", o.Path, err)
+							continue
 						}
 
-						download, err := client.GetObject(
-							ctx, repo, o.Path, minio.GetObjectOptions{})
+						download, err := client.GetObject(ctx, repo, o.Path, minio.GetObjectOptions{})
 						if err != nil {
 							t.Errorf("minio.Client.GetObject(%s): %s", o.Path, err)
+							continue
 						}
 						contents := bytes.NewBuffer(nil)
 						_, err = io.Copy(contents, download)
 						if err != nil {
 							t.Errorf("download %s: %s", o.Path, err)
+							continue
 						}
 						if strings.Compare(contents.String(), o.Content) != 0 {
-							t.Errorf(
-								"Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), o.Content)
+							t.Errorf("Downloaded bytes %v from uploaded bytes %v", contents.Bytes(), o.Content)
 						}
 					}
-					wg.Done()
 				}()
 			}
 
@@ -435,4 +435,22 @@ func TestS3CopyObject(t *testing.T) {
 		// assert that the physical addresses of the objects are not the same
 		require.NotEqual(t, sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
 	})
+}
+
+func TestS3PutObjectTagging(t *testing.T) {
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	srcPath := gatewayTestPrefix + "source-file"
+	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
+
+	tag, err := tags.NewTags(map[string]string{"tag1": "value1"}, true)
+	require.NoError(t, err)
+
+	err = s3lakefsClient.PutObjectTagging(ctx, repo, srcPath, tag, minio.PutObjectTaggingOptions{})
+	require.Error(t, err)
+
+	errResponse := minio.ToErrorResponse(err)
+	require.Equal(t, "ERRLakeFSNotSupported", errResponse.Code)
+	require.Equal(t, "This operation is not supported in LakeFS", errResponse.Message)
 }

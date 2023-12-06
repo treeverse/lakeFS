@@ -1,25 +1,18 @@
 import os
 import importlib
-from copy import deepcopy
-from contextlib import contextmanager
+
+from tests.utests.common import (
+    lakectl_test_config_context,
+    lakectl_no_config_context,
+    env_var_context, TEST_SERVER,
+    TEST_ACCESS_KEY_ID,
+    TEST_SECRET_ACCESS_KEY,
+    TEST_ENDPOINT_PATH
+)
 
 from lakefs import config as client_config
 
-TEST_SERVER = "https://test_server"
-TEST_ACCESS_KEY_ID = "test_access_key_id"
-TEST_SECRET_ACCESS_KEY = "test_secret_access_key"
-TEST_CONFIG = f'''
-server:
-  endpoint_url: {TEST_SERVER}
-
-credentials:
-    access_key_id: {TEST_ACCESS_KEY_ID}
-    secret_access_key: {TEST_SECRET_ACCESS_KEY}
-'''
-
-TEST_ENDPOINT_PATH = "/api/v1"
-
-TEST_CONFIG_KWARGS = {
+TEST_CONFIG_KWARGS: dict[str, str] = {
     "username": "my_username",
     "password": "my_password",
     "host": "http://my_host",
@@ -27,48 +20,17 @@ TEST_CONFIG_KWARGS = {
 }
 
 
-@contextmanager
-def env_var_context():
-    old_env = deepcopy(os.environ)
-    try:
-        yield
-    finally:
-        os.environ = old_env
-
-
-@contextmanager
-def lakectl_no_config_context(monkey):
-    with monkey.context():
-        monkey.setattr(client_config, "_LAKECTL_YAML_PATH", "file_not_found")
-        from lakefs import client  # Must be imported after the monkey patching
-        yield client
-
-
-@contextmanager
-def lakectl_test_config_context(monkey, tmp_path):
-    cfg_file = tmp_path / "test.yaml"
-    cfg_file.write_bytes(TEST_CONFIG.encode())
-    with monkey.context():
-        monkey.setattr(client_config, "_LAKECTL_YAML_PATH", cfg_file)
-        from lakefs import client  # Must be imported after the monkey patching
-        client = importlib.reload(client)
-        try:
-            yield client
-        finally:
-            client.DefaultClient = None
-
-
 class TestClient:
     def test_client_no_config(self, monkeypatch):
         with lakectl_no_config_context(monkeypatch) as client:
-            client.DefaultClient = None
+            client.DEFAULT_CLIENT = None
             client = importlib.reload(client)
-            assert client.DefaultClient is None
+            assert client.DEFAULT_CLIENT is None
 
     def test_client_no_kwargs(self, monkeypatch, tmp_path):
         with lakectl_test_config_context(monkeypatch, tmp_path) as client:
-            assert client.DefaultClient is not None
-            config = client.DefaultClient.config
+            assert client.DEFAULT_CLIENT is not None
+            config = client.DEFAULT_CLIENT.config
             assert config.host == TEST_SERVER + TEST_ENDPOINT_PATH
             assert config.username == TEST_ACCESS_KEY_ID
             assert config.password == TEST_SECRET_ACCESS_KEY
@@ -80,7 +42,7 @@ class TestClient:
                 os.environ[client_config._LAKECTL_ENDPOINT_ENV] = env_endpoint
                 os.environ[client_config._LAKECTL_SECRET_ACCESS_KEY_ENV] = env_secret
                 clt = client.Client()
-                assert clt is not client.DefaultClient
+                assert clt is not client.DEFAULT_CLIENT
                 config = clt.config
                 assert config.host == env_endpoint
                 assert config.username == TEST_ACCESS_KEY_ID
@@ -98,11 +60,11 @@ class TestClient:
 
     def test_client_init(self, monkeypatch, tmp_path):
         with lakectl_no_config_context(monkeypatch) as client:
-            assert client.DefaultClient is None
+            assert client.DEFAULT_CLIENT is None
             from lakefs.client import init
             init(**TEST_CONFIG_KWARGS)
-            assert client.DefaultClient is not None
-            config = client.DefaultClient.config
+            assert client.DEFAULT_CLIENT is not None
+            config = client.DEFAULT_CLIENT.config
             assert config.host == TEST_CONFIG_KWARGS["host"] + TEST_ENDPOINT_PATH
             assert config.username == TEST_CONFIG_KWARGS["username"]
             assert config.password == TEST_CONFIG_KWARGS["password"]

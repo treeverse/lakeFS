@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
@@ -44,16 +45,17 @@ const (
 type ActionIncr func(action, userID, repository, ref string)
 
 type Operation struct {
-	OperationID      OperationID
-	Region           string
-	FQDN             string
-	Catalog          *catalog.Catalog
-	MultipartTracker multipart.Tracker
-	BlockStore       block.Adapter
-	Auth             auth.GatewayService
-	Incr             ActionIncr
-	MatchedHost      bool
-	PathProvider     upload.PathProvider
+	OperationID       OperationID
+	Region            string
+	FQDN              string
+	Catalog           *catalog.Catalog
+	MultipartTracker  multipart.Tracker
+	BlockStore        block.Adapter
+	Auth              auth.GatewayService
+	Incr              ActionIncr
+	MatchedHost       bool
+	PathProvider      upload.PathProvider
+	VerifyUnsupported bool
 }
 
 func StorageClassFromHeader(header http.Header) *string {
@@ -82,6 +84,18 @@ func (o *Operation) EncodeXMLBytes(w http.ResponseWriter, req *http.Request, t [
 	if err != nil {
 		o.Log(req).WithError(err).Error("failed to encode XML to response")
 	}
+}
+
+func (o *Operation) HandleUnsupported(w http.ResponseWriter, req *http.Request, keys ...string) bool {
+	if !o.VerifyUnsupported {
+		return false
+	}
+	query := req.URL.Query()
+	if slices.ContainsFunc(keys, query.Has) {
+		_ = o.EncodeError(w, req, nil, gwerrors.ERRLakeFSNotSupported.ToAPIErr())
+		return true
+	}
+	return false
 }
 
 func EncodeResponse(w http.ResponseWriter, entity interface{}, statusCode int) error {

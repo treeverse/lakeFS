@@ -357,8 +357,8 @@ func TestController_LogCommitsParallelHandler(t *testing.T) {
 	}
 
 	var g multierror.Group
-	for path, logRef := range commitsToLook {
-		objects := []string{path}
+	for objPath, logRef := range commitsToLook {
+		objects := []string{objPath}
 		params := &apigen.LogCommitsParams{Objects: &objects}
 		log := logRef
 		g.Go(func() error {
@@ -1452,10 +1452,10 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		if len(reference) == 0 {
 			t.Fatalf("branch %s creation got no reference", newBranchName)
 		}
-		const path = "some/path"
+		const objPath = "some/path"
 		const content = "hello world!"
 
-		uploadResp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(content), repo, newBranchName)
+		uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(content), repo, newBranchName)
 		verifyResponseOK(t, uploadResp, err)
 
 		if _, err := deps.catalog.Commit(ctx, repo, "main2", "commit 1", "some_user", nil, nil, nil); err != nil {
@@ -1467,7 +1467,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		if len(results) != 1 {
 			t.Fatalf("unexpected length of results: %d", len(results))
 		}
-		if results[0].Path != path {
+		if results[0].Path != objPath {
 			t.Fatalf("wrong result: %s", results[0].Path)
 		}
 	})
@@ -1581,8 +1581,8 @@ func TestController_DiffRefsHandler(t *testing.T) {
 			t.Fatalf("branch %s creation got no reference", newBranchName)
 		}
 		const prefix = "some/"
-		const path = "path"
-		const fullPath = prefix + path
+		const objPath = "path"
+		const fullPath = prefix + objPath
 		const content = "hello world!"
 
 		uploadResp, err := uploadObjectHelper(t, ctx, clt, fullPath, strings.NewReader(content), repoName, newBranchName)
@@ -1841,6 +1841,27 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Run("object_stat_no_metadata", func(t *testing.T) {
+		const objPath = "foo/bar-no-metadata"
+		entry := catalog.DBEntry{
+			Path:            objPath,
+			PhysicalAddress: "this_is_bars_address",
+			CreationDate:    time.Now(),
+			Size:            666,
+			Checksum:        "this_is_a_checksum",
+		}
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", entry))
+
+		resp, err := clt.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: objPath})
+		verifyResponseOK(t, resp, err)
+		if resp.JSON200 == nil {
+			t.Fatalf("expected to get back object stats, got status %s", resp.Status())
+		}
+		if resp.JSON200.Metadata == nil {
+			t.Fatal("expected to not get back empty user-defined metadata, got nil")
+		}
+	})
+
 	t.Run("get object stats", func(t *testing.T) {
 		entry := catalog.DBEntry{
 			Path:            "foo/bar",
@@ -1879,8 +1900,8 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 		resp, err = clt.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: "foo/bar", UserMetadata: &getUserMetadata})
 		verifyResponseOK(t, resp, err)
 		objectStatsNoMetadata := resp.JSON200
-		if objectStatsNoMetadata.Metadata != nil {
-			t.Fatalf("expected to not get back user-defined metadata, got %+v", objectStatsNoMetadata.Metadata.AdditionalProperties)
+		if objectStatsNoMetadata.Metadata == nil || len(objectStatsNoMetadata.Metadata.AdditionalProperties) != 0 {
+			t.Fatalf("expected to not get back empty user-defined metadata, got %+v", objectStatsNoMetadata.Metadata.AdditionalProperties)
 		}
 	})
 
@@ -3793,8 +3814,8 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		testutil.Must(t, err)
 		const items = 3
 		for i := 0; i < items; i++ {
-			path := fmt.Sprintf("uncommitted/obj%d", i)
-			uploadResp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(path), repo, "main")
+			objPath := fmt.Sprintf("uncommitted/obj%d", i)
+			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
 		}
 		verifyPrepareGarbageCollection(t, repo, 1, true)
@@ -3806,8 +3827,8 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		testutil.Must(t, err)
 		const items = 3
 		for i := 0; i < items; i++ {
-			path := fmt.Sprintf("committed/obj%d", i)
-			uploadResp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(path), repo, "main")
+			objPath := fmt.Sprintf("committed/obj%d", i)
+			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
 		}
 		if _, err := deps.catalog.Commit(ctx, repo, "main", "committed objects", "some_user", nil, nil, nil); err != nil {
@@ -3822,14 +3843,14 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		testutil.Must(t, err)
 		const items = 3
 		for i := 0; i < items; i++ {
-			path := fmt.Sprintf("uncommitted/obj%d", i)
-			uploadResp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(path), repo, "main")
+			objPath := fmt.Sprintf("uncommitted/obj%d", i)
+			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
 
 			copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "main",
 				&apigen.CopyObjectParams{DestPath: fmt.Sprintf("copy/obj%d", i)},
 				apigen.CopyObjectJSONRequestBody{
-					SrcPath: path,
+					SrcPath: objPath,
 				})
 			verifyResponseOK(t, copyResp, err)
 		}
@@ -4526,4 +4547,156 @@ func TestController_GarbageCollectionRules(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestController_DumpRestoreRepository(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	// setup repository with some commits
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	testutil.Must(t, err)
+
+	const commits = 3
+	for i := 0; i < commits; i++ {
+		n := strconv.Itoa(i + 1)
+		p := "foo/bar" + n
+		err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
+		testutil.MustDo(t, "create entry "+p, err)
+		_, err = deps.catalog.Commit(ctx, repo, "main", "commit"+n, "tester", nil, nil, nil)
+		testutil.MustDo(t, "commit "+p, err)
+	}
+
+	var dumpStatus *apigen.RepositoryDumpStatus
+
+	t.Run("dump", func(t *testing.T) {
+		dumpResp, err := clt.DumpSubmitWithResponse(ctx, repo)
+		testutil.MustDo(t, "dump submit", err)
+		if dumpResp.JSON202 == nil {
+			t.Fatal("Expected 202 response")
+		}
+
+		taskID := dumpResp.JSON202.Id
+		ticker := time.NewTicker(500 * time.Millisecond)
+		started := time.Now()
+		for range ticker.C {
+			statusResp, err := clt.DumpStatusWithResponse(ctx, repo, &apigen.DumpStatusParams{TaskId: taskID})
+			testutil.MustDo(t, "dump status", err)
+			if statusResp.JSON200 == nil {
+				t.Fatal("Expected 200 response")
+			}
+			if statusResp.JSON200.Done {
+				dumpStatus = statusResp.JSON200
+				break
+			}
+			if time.Since(started) > 30*time.Second {
+				break
+			}
+		}
+		ticker.Stop()
+
+		if dumpStatus == nil {
+			t.Fatal("Expected dump to complete (timed-out)")
+		}
+		if dumpStatus.Error != nil {
+			t.Fatalf("Failed to dump repository refs: %s", *dumpStatus.Error)
+		}
+	})
+
+	t.Run("dump_status_invalid_id", func(t *testing.T) {
+		response, err := clt.DumpStatusWithResponse(ctx, repo, &apigen.DumpStatusParams{TaskId: "invalid"})
+		testutil.MustDo(t, "dump status", err)
+		if response.JSON404 == nil {
+			t.Fatalf("Expected 404 (not found) response, got %s", response.Status())
+		}
+	})
+
+	t.Run("restore", func(t *testing.T) {
+		if dumpStatus == nil || dumpStatus.Refs == nil {
+			t.Skip("Skipping restore test, dump failed")
+		}
+
+		newRepo := testUniqueRepoName()
+		_, err = deps.catalog.CreateBareRepository(ctx, newRepo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, "create bare repository", err)
+
+		submitResponse, err := clt.RestoreSubmitWithResponse(ctx, newRepo, apigen.RestoreSubmitJSONRequestBody{
+			BranchesMetaRangeId: dumpStatus.Refs.BranchesMetaRangeId,
+			CommitsMetaRangeId:  dumpStatus.Refs.CommitsMetaRangeId,
+			TagsMetaRangeId:     dumpStatus.Refs.TagsMetaRangeId,
+		})
+		testutil.MustDo(t, "restore submit", err)
+		if submitResponse.JSON202 == nil {
+			t.Fatalf("Expected 202 response, got: %s", submitResponse.Status())
+		}
+
+		restoreStatus := pollRestoreStatus(t, clt, newRepo, submitResponse.JSON202.Id)
+		if restoreStatus == nil {
+			t.Fatal("Expected restore to complete (timed-out)")
+		}
+		if restoreStatus.Error != nil {
+			t.Fatalf("Failed to restore repository refs: %s", *restoreStatus.Error)
+		}
+	})
+
+	t.Run("restore_invalid_refs", func(t *testing.T) {
+		// delete and recreate repository as bare for restore
+		newRepo := testUniqueRepoName()
+		_, err = deps.catalog.CreateBareRepository(ctx, newRepo, onBlock(deps, repo), "main")
+		testutil.MustDo(t, "create bare repository", err)
+
+		submitResponse, err := clt.RestoreSubmitWithResponse(ctx, newRepo, apigen.RestoreSubmitJSONRequestBody{
+			BranchesMetaRangeId: "invalid",
+			CommitsMetaRangeId:  "invalid",
+			TagsMetaRangeId:     "invalid",
+		})
+		testutil.MustDo(t, "restore submit", err)
+		if submitResponse.JSON202 == nil {
+			t.Fatalf("Expected 202 response, got: %s", submitResponse.Status())
+		}
+
+		restoreStatus := pollRestoreStatus(t, clt, newRepo, submitResponse.JSON202.Id)
+		if restoreStatus == nil {
+			t.Fatal("Expected restore to complete (timed-out)")
+		}
+		if restoreStatus.Error == nil {
+			t.Fatal("Expected restore to fail, got nil Error")
+		}
+		if !strings.Contains(*restoreStatus.Error, graveler.ErrNotFound.Error()) {
+			t.Fatal("Expected restore to fail with not found error")
+		}
+	})
+
+	t.Run("restore_status_invalid_id", func(t *testing.T) {
+		response, err := clt.RestoreStatusWithResponse(ctx, repo, &apigen.RestoreStatusParams{TaskId: "invalid"})
+		testutil.MustDo(t, "restore status", err)
+		if response.JSON404 == nil {
+			t.Fatalf("Expected 404 (not found) response, got %s", response.Status())
+		}
+	})
+}
+
+// pollRestoreStatus polls the restore status endpoint until the restore is complete or times out.
+// test will fail in case of error.
+// will return nil in case of timeout.
+func pollRestoreStatus(t *testing.T, clt apigen.ClientWithResponsesInterface, repo string, taskID string) *apigen.RepositoryRestoreStatus {
+	t.Helper()
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+	started := time.Now()
+	for range ticker.C {
+		statusResponse, err := clt.RestoreStatusWithResponse(context.Background(), repo, &apigen.RestoreStatusParams{TaskId: taskID})
+		testutil.MustDo(t, "restore status", err)
+		if statusResponse.JSON200 == nil {
+			t.Fatalf("Expected 200 response, got: %s", statusResponse.Status())
+		}
+		if statusResponse.JSON200.Done {
+			return statusResponse.JSON200
+		}
+		if time.Since(started) > 30*time.Second {
+			break
+		}
+	}
+	return nil
 }

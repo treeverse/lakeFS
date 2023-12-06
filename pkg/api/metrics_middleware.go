@@ -12,13 +12,12 @@ import (
 )
 
 func MetricsMiddleware(swagger *openapi3.Swagger) func(http.Handler) http.Handler {
+	// router for operation ID lookup
+	router, err := legacy.NewRouter(swagger)
+	if err != nil {
+		panic(err)
+	}
 	return func(next http.Handler) http.Handler {
-		// router for operation ID lookup
-		router, err := legacy.NewRouter(swagger)
-		if err != nil {
-			panic(err)
-		}
-
 		// request histogram by operation ID
 		requestHistogramHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			route, _, err := router.FindRoute(r)

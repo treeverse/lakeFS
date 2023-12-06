@@ -28,8 +28,8 @@ _See the [Action configuration](./index.md#action-file) for overall configuratio
 | Property      | Description                               | Data Type  | Required                                       | Default Value |
 |---------------|-------------------------------------------|------------|------------------------------------------------|---------------|
 | `args`        | One or more arguments to pass to the hook | Dictionary | false                                          |               |
-| `script`      | An inline Lua script                      | String     | either this or `script_file` must be specified |               |
-| `script_file` | The lakeFS path to a Lua script           | String     | either this or `script` must be specified      |               |
+| `script`      | An inline Lua script                      | String     | either this or `script_path` must be specified |               |
+| `script_path` | The path in lakeFS to a Lua script        | String     | either this or `script` must be specified      |               |
 
 
 ## Example Lua Hooks
@@ -74,17 +74,22 @@ hooks:
       args:
         notebook_url: {"pattern": "my-jupyter.example.com/.*"}
         spark_version:  {}
-      script: |
-        regexp = require("regexp")
-        for k, props in pairs(args) do
-          current_value = action.commit.metadata[k]
-          if current_value == nil then
-            error("missing mandatory metadata field: " .. k)
-          end
-          if props.pattern and not regexp.match(props.pattern, current_value) then
-            error("current value for commit metadata field " .. k .. " does not match pattern: " .. props.pattern .. " - got: " .. current_value)
-          end
-        end
+      script_path: lua_hooks/ensure_metadata_field.lua
+```
+
+Lua code at `lakefs://repo/main/lua_hooks/ensure_metadata_field.lua`:
+
+```lua
+regexp = require("regexp")
+for k, props in pairs(args) do
+  current_value = action.commit.metadata[k]
+  if current_value == nil then
+    error("missing mandatory metadata field: " .. k)
+  end
+  if props.pattern and not regexp.match(props.pattern, current_value) then
+    error("current value for commit metadata field " .. k .. " does not match pattern: " .. props.pattern .. " - got: " .. current_value)
+  end
+end
 ```
 
 For more examples and configuration samples, check out the [examples/hooks/](https://github.com/treeverse/lakeFS/tree/master/examples/hooks) directory in the lakeFS repository.
@@ -418,13 +423,6 @@ local aws = require("aws")
 local s3 = aws.s3_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_key, args.aws.aws_region)
 exporter.export_s3(s3, args.table_descriptor_path, action, {debug=true})
 ```
-
-### `lakefs/catalogexport/symlink_exporter.get_storage_uri_prefix(storage_ns, commit_id, action_info)`
-
-Generate prefix for Symlink file(s) structure that represents a `ref` and a `commit` in lakeFS.
-The output pattern `${storage_ns}_lakefs/exported/${ref}/${commit_id}/`.
-The `ref` is deduced from the action event in `action_info` (i.e branch name).
-
 
 ### `lakefs/catalogexport/glue_exporter`
 

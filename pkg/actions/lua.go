@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Shopify/go-lua"
+	"github.com/spf13/viper"
 	lualibs "github.com/treeverse/lakefs/pkg/actions/lua"
 	"github.com/treeverse/lakefs/pkg/actions/lua/lakefs"
 	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
@@ -91,7 +92,7 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 	l := lua.NewState()
 	osc := lualibs.OpenSafeConfig{
 		NetHTTPEnabled: h.Config.Lua.NetHTTPEnabled,
-		ServerAddress:  h.serverAddress,
+		LakeFSAddr:     h.serverAddress,
 	}
 	lualibs.OpenSafe(l, ctx, osc, &loggingBuffer{buf: buf, ctx: ctx})
 	injectHookContext(l, ctx, user, h.Endpoint, h.Args)
@@ -153,12 +154,12 @@ func (h *LuaHook) collectMetrics(l *lua.State) {
 	l.Pop(1) // Pop the _LOADED table from the stack
 }
 
-func DescendArgs(args interface{}) (interface{}, error) {
+func DescendArgs(args interface{}, getter EnvGetter) (interface{}, error) {
 	var err error
 	switch t := args.(type) {
 	case Properties:
 		for k, v := range t {
-			t[k], err = DescendArgs(v)
+			t[k], err = DescendArgs(v, getter)
 			if err != nil {
 				return nil, err
 			}
@@ -166,14 +167,14 @@ func DescendArgs(args interface{}) (interface{}, error) {
 		return t, nil
 	case map[string]interface{}:
 		for k, v := range t {
-			t[k], err = DescendArgs(v)
+			t[k], err = DescendArgs(v, getter)
 			if err != nil {
 				return nil, err
 			}
 		}
 		return t, nil
 	case string:
-		secure, secureErr := NewSecureString(t)
+		secure, secureErr := NewSecureString(t, getter)
 		if secureErr != nil {
 			return t, secureErr
 		}
@@ -181,13 +182,13 @@ func DescendArgs(args interface{}) (interface{}, error) {
 	case []string:
 		stuff := make([]interface{}, len(t))
 		for i, e := range t {
-			stuff[i], err = DescendArgs(e)
+			stuff[i], err = DescendArgs(e, getter)
 		}
 		return stuff, err
 	case []interface{}:
 		stuff := make([]interface{}, len(t))
 		for i, e := range t {
-			stuff[i], err = DescendArgs(e)
+			stuff[i], err = DescendArgs(e, getter)
 		}
 		return stuff, err
 	default:
@@ -211,7 +212,10 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, server
 			return nil, fmt.Errorf("'args' should be a map: %w", errWrongValueType)
 		}
 	}
-	parsedArgs, err := DescendArgs(args)
+	parsedArgs, err := DescendArgs(args, &EnvironmentVariableGetter{
+		Enabled: cfg.Env.Enabled,
+		Prefix:  viper.GetEnvPrefix(),
+	})
 	if err != nil {
 		return &LuaHook{}, fmt.Errorf("error parsing args: %w", err)
 	}

@@ -462,7 +462,8 @@ func TestDescendArgs(t *testing.T) {
 				"e":        []interface{}{"a", 1, false, "{{ ENV.magic_environ123123 }}"},
 			},
 		}
-		out, err := actions.DescendArgs(v)
+		envGetter := actions.NewEnvironmentVariableGetter(true, "")
+		out, err := actions.DescendArgs(v, envGetter)
 		if err != nil {
 			t.Fatalf("unexpected err: %s", err)
 		}
@@ -501,9 +502,71 @@ func TestDescendArgs(t *testing.T) {
 				"e":        []interface{}{"a", 1, false, "{{ ENV.magic_environ123123456 }}"}, // <- shouldn't exist?
 			},
 		}
-		_, err := actions.DescendArgs(v)
+
+		envGetter := actions.NewEnvironmentVariableGetter(true, "")
+		_, err := actions.DescendArgs(v, envGetter)
 		if err == nil {
 			t.Fatalf("expected error!")
+		}
+	})
+
+	t.Run("env_disabled", func(t *testing.T) {
+		testutil.WithEnvironmentVariable(t, "magic_environ123123", "magic_environ_value")
+		v := map[string]interface{}{
+			"key":        "value",
+			"secure_key": "value with {{ ENV.magic_environ123123 }}",
+		}
+		envGetter := actions.NewEnvironmentVariableGetter(false, "")
+		args, err := actions.DescendArgs(v, envGetter)
+		if err != nil {
+			t.Fatalf("DescendArgs failed: %s", err)
+		}
+		argsMap, ok := args.(map[string]interface{})
+		if !ok {
+			t.Fatalf("expected map[string]interface{}, got a %T", argsMap)
+		}
+		secureString, ok := argsMap["secure_key"].(string)
+		if !ok {
+			t.Fatalf("expected a string, got a %T", argsMap["secure_key"])
+		}
+		const expectedValue = "value with "
+		if secureString != expectedValue {
+			t.Fatalf("expected '%s' as value from env when env is disabled, got '%s'", expectedValue, secureString)
+		}
+	})
+
+	t.Run("env_prefix", func(t *testing.T) {
+		testutil.WithEnvironmentVariable(t, "magic_environ123123", "magic_environ_value")
+		v := map[string]interface{}{
+			"key":        "value{{ ENV.no_magic_environ123123 }}",
+			"secure_key": "value with {{ ENV.magic_environ123123 }}",
+		}
+		envGetter := actions.NewEnvironmentVariableGetter(true, "magic_")
+		args, err := actions.DescendArgs(v, envGetter)
+		if err != nil {
+			t.Fatalf("DescendArgs failed: %s", err)
+		}
+		argsMap, ok := args.(map[string]interface{})
+		if !ok {
+			t.Fatalf("expected map[string]interface{}, got a %T", argsMap)
+		}
+
+		// verify that we have value access to keys with the prefix
+		secureString, ok := argsMap["secure_key"].(string)
+		if !ok {
+			t.Fatalf("expected a string, got a %T", argsMap["secure_key"])
+		}
+		if secureString != "value with magic_environ_value" {
+			t.Fatalf("expected magic environ value, got '%s'", secureString)
+		}
+
+		// verify that we don't have value access to keys without the prefix
+		secureString, ok = argsMap["key"].(string)
+		if !ok {
+			t.Fatalf("expected a string, got a %T", argsMap["key"])
+		}
+		if secureString != "value" {
+			t.Fatalf("expected just value for 'key', got '%s'", secureString)
 		}
 	})
 }

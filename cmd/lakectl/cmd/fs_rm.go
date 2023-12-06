@@ -13,6 +13,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
+const deleteChunkSize = 1000
+
 var fsRmCmd = &cobra.Command{
 	Use:               "rm <path URI>",
 	Short:             "Delete object",
@@ -45,10 +47,10 @@ var fsRmCmd = &cobra.Command{
 		}()
 
 		var deleteWg sync.WaitGroup
-		paths := make(chan *uri.URI)
+		paths := make(chan string)
 		deleteWg.Add(concurrency)
 		for i := 0; i < concurrency; i++ {
-			go deleteObjectWorker(cmd.Context(), client, paths, errors, &deleteWg)
+			go deleteObjectWorker(cmd.Context(), client, pathURI.Repository, pathURI.Ref, paths, errors, &deleteWg)
 		}
 
 		prefix := *pathURI.Path
@@ -69,12 +71,7 @@ var fsRmCmd = &cobra.Command{
 
 			results := resp.JSON200.Results
 			for i := range results {
-				destURI := uri.URI{
-					Repository: pathURI.Repository,
-					Ref:        pathURI.Ref,
-					Path:       &results[i].Path,
-				}
-				paths <- &destURI
+				paths <- results[i].Path
 			}
 
 			pagination := resp.JSON200.Pagination
@@ -93,12 +90,30 @@ var fsRmCmd = &cobra.Command{
 	},
 }
 
-func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesInterface, paths <-chan *uri.URI, errors chan<- error, wg *sync.WaitGroup) {
+func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesInterface, repository, branch string, paths <-chan string, errors chan<- error, wg *sync.WaitGroup) {
 	defer wg.Done()
-	for pathURI := range paths {
-		err := deleteObject(ctx, client, pathURI)
+	objs := make([]string, 0, deleteChunkSize)
+	for objPath := range paths {
+		objs = append(objs, objPath)
+		if len(objs) >= deleteChunkSize {
+			resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, apigen.DeleteObjectsJSONRequestBody{
+				Paths: objs,
+			})
+			err = RetrieveError(resp, err)
+			if err != nil {
+				rmErr := fmt.Errorf("rm objects - %w", err)
+				errors <- rmErr
+			}
+			clear(objs)
+		}
+	}
+	if len(objs) > 0 {
+		resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, apigen.DeleteObjectsJSONRequestBody{
+			Paths: objs,
+		})
+		err = RetrieveError(resp, err)
 		if err != nil {
-			rmErr := fmt.Errorf("rm %s - %w", pathURI, err)
+			rmErr := fmt.Errorf("rm objects - %w", err)
 			errors <- rmErr
 		}
 	}
@@ -108,7 +123,6 @@ func deleteObject(ctx context.Context, client apigen.ClientWithResponsesInterfac
 	resp, err := client.DeleteObjectWithResponse(ctx, pathURI.Repository, pathURI.Ref, &apigen.DeleteObjectParams{
 		Path: *pathURI.Path,
 	})
-
 	return RetrieveError(resp, err)
 }
 

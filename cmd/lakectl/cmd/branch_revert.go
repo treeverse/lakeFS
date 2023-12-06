@@ -33,7 +33,7 @@ var branchRevertCmd = &cobra.Command{
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
 		parentNumber := Must(cmd.Flags().GetInt(ParentNumberFlagName))
 		if hasParentNumber && parentNumber <= 0 {
-			Die("parent number must be non-negative, if specified", 1)
+			Die("parent number must be number greater than 0, if specified", 1)
 		}
 		commits := strings.Join(args[1:], " ")
 		confirmation, err := Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to revert the effect of commits %s", commits))
