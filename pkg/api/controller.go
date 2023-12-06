@@ -3837,10 +3837,21 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 
-	// setup response
-	var reader io.ReadCloser
+	// set response headers
+	etag := httputil.ETag(entry.Checksum)
+	w.Header().Set("ETag", etag)
+	lastModified := httputil.HeaderTimestamp(entry.CreationDate)
+	w.Header().Set("Last-Modified", lastModified)
+	w.Header().Set("Content-Type", entry.ContentType)
+	// for security, make sure the browser and any proxies en route don't cache the response
+	w.Header().Set("Cache-Control", "no-store, must-revalidate")
+	w.Header().Set("Expires", "0")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'")
 
 	// handle partial response if byte range supplied
+	var reader io.ReadCloser
 	if params.Range != nil {
 		rng, err := httputil.ParseRange(*params.Range, entry.Size)
 		if err != nil {
@@ -3856,6 +3867,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		}()
 		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", rng.EndOffset-rng.StartOffset+1))
+		w.WriteHeader(http.StatusPartialContent)
 	} else {
 		reader, err = c.BlockAdapter.Get(ctx, pointer, entry.Size)
 		if c.handleAPIError(ctx, w, r, err) {
@@ -3867,24 +3879,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		w.Header().Set("Content-Length", fmt.Sprint(entry.Size))
 	}
 
-	etag := httputil.ETag(entry.Checksum)
-	w.Header().Set("ETag", etag)
-	lastModified := httputil.HeaderTimestamp(entry.CreationDate)
-	w.Header().Set("Last-Modified", lastModified)
-	w.Header().Set("Content-Type", entry.ContentType)
-	// for security, make sure the browser and any proxies en route don't cache the response
-	w.Header().Set("Cache-Control", "no-store, must-revalidate")
-	w.Header().Set("Expires", "0")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
-	w.Header().Set("Content-Security-Policy", "default-src 'none'")
-
-	// set the response code to partial content if a range was requested
-	// must be done after setting the headers, before writing the content
-	if params.Range != nil {
-		w.WriteHeader(http.StatusPartialContent)
-	}
-
+	// copy the content
 	_, err = io.Copy(w, reader)
 	if err != nil {
 		c.Logger.
