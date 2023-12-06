@@ -164,6 +164,23 @@ def test_writer_different_params(setup_repo, w_mode, r_mode, pre_sign):
         assert res == expected
 
 
+def test_byte_by_byte(setup_repo):
+    clt, repo = setup_repo
+
+    data = b'test_data'
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+        data=data, pre_sign=False)
+    res = b""
+    reader = obj.reader()
+    while True:
+        byte = reader.read(1)
+        if not byte:
+            break
+        res = res + byte
+
+    assert res == data
+
+
 def test_read_all(setup_repo):
     clt, repo = setup_repo
     with open("../files/mock.csv", "rb") as fd:
