@@ -49,6 +49,5 @@ class TestImportManager:
             assert res.completed
             assert requests == 0
 
-            # try again and expect error
-            with expect_exception_context(ImportManagerException):
-                mgr.wait()
+            # try again and expect no error
+            mgr.wait()
