@@ -28,10 +28,6 @@ local function delta_log_entry_key_generator()
     end
 end
 
-local function get_delta_client(key, secret, region)
-    return formats.delta_client("s3", key, secret, region)
-end
-
 --[[
     action:
         - repository_id
@@ -137,5 +133,4 @@ end
 
 return {
     export_delta_log = export_delta_log,
-    get_delta_client = get_delta_client
 }

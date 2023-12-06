@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
+	"regexp"
 
 	"github.com/Shopify/go-lua"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -125,21 +125,13 @@ func (awsI AWSInfo) GetAccessProperties() (interface{}, error) {
 // newDelta is a factory function to create server/cloud specific Delta Lake client
 // lakeFSAddr is the domain or "authority:port" of the running lakeFS server
 func newDelta(ctx context.Context, lakeFSAddr string) lua.Function {
-	if strings.HasPrefix(lakeFSAddr, ":") {
+	if regexp.MustCompile(`^:\d+`).MatchString(lakeFSAddr) {
 		// workaround in case we listen on all interfaces without specifying ip
 		lakeFSAddr = fmt.Sprintf("localhost%s", lakeFSAddr)
 	}
 	lakeFSAddr = fmt.Sprintf("http://%s", lakeFSAddr)
 	return func(l *lua.State) int {
-		var client *DeltaClient
-		st := lua.CheckString(l, 1)
-		switch storageType(st) {
-		case s3StorageType:
-			client = newS3DeltaClient(l, ctx, lakeFSAddr)
-		default:
-			lua.Errorf(l, "unimplemented storage type")
-			panic("unimplemented storage type")
-		}
+		client := newS3DeltaClient(l, ctx, lakeFSAddr)
 		l.NewTable()
 		for name, goFn := range functions {
 			l.PushGoFunction(goFn(client))
@@ -150,9 +142,9 @@ func newDelta(ctx context.Context, lakeFSAddr string) lua.Function {
 }
 
 func newS3DeltaClient(l *lua.State, ctx context.Context, lakeFSAddr string) *DeltaClient {
-	accessKeyID := lua.CheckString(l, 2)
-	secretAccessKey := lua.CheckString(l, 3)
-	r := lua.CheckString(l, 4)
+	accessKeyID := lua.CheckString(l, 1)
+	secretAccessKey := lua.CheckString(l, 2)
+	r := lua.CheckString(l, 3)
 	awsProps := storage.AWSProperties{
 		Region:         r,
 		ForcePathStyle: true,
