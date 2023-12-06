@@ -174,8 +174,8 @@ def repositories(client: Client = None,
     :param after: Return items after this value
     :return: A generator listing lakeFS repositories
     """
-    if client is None:
-        raise NoAuthenticationFound("Explicitly provide a client or invoke client module's init method")
+    if client is None:  # Try to get default client
+        client = Client()
 
     for res in generate_listing(client.sdk_client.repositories_api.list_repositories,
                                 prefix=prefix,
