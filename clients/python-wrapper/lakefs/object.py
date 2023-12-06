@@ -236,7 +236,7 @@ class ObjectReader(LakeFSIOBase):
             other values are os.SEEK_CUR or 1 (seek relative to the current position) and os.SEEK_END or 2
             (seek relative to the file’s end)
             os.SEEK_END is not supported
-        :raises: OSError if calculated new position is negative
+        :raise OSError: if calculated new position is negative
         """
         if whence == os.SEEK_SET:
             pos = offset
@@ -257,12 +257,10 @@ class ObjectReader(LakeFSIOBase):
         :param n: How many bytes to read. If read_bytes is None, will read from current position to end.
             If current position + read_bytes > object size.
         :return: The bytes read
-        :raises:
-            EOFError if current position is after object size
-            OSError if read_bytes is non-positive
-            ObjectNotFoundException if repo id, reference id or object path does not exist
-            PermissionException if user is not authorized to perform this operation, or operation is forbidden
-            ServerException for any other errors
+        :raise OSError: if read_bytes is non-positive
+        :raise ObjectNotFoundException: if repository id, reference id or object path does not exist
+        :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
+        :raise ServerException: for any other errors
         """
         if n and n <= 0:
             raise OSError("read_bytes must be a positive integer")
@@ -539,7 +537,22 @@ class StoredObject:
 
     def reader(self, mode: ReadModes = 'rb', pre_sign: Optional[bool] = None) -> ObjectReader:
         """
-        Context manager which provide a file-descriptor like object that allow reading the given object
+        Context manager which provide a file-descriptor like object that allow reading the given object.
+
+        Usage Example:
+
+        .. code-block:: python
+
+            import lakefs
+
+            obj = lakefs.repository("<repository_name>").branch("<branch_name>").object("file.txt")
+            file_size = obj.stat().size_bytes
+
+            with obj.reader(mode='r', pre_sign=True) as fd:
+                # print every other 10 chars
+                while fd.tell() < file_size
+                    print(fd.read(10))
+                    fd.seek(10, os.SEEK_CUR)
 
         :param mode: Read mode - as supported by ReadModes
         :param pre_sign: (Optional), enforce the pre_sign mode on the lakeFS server. If not set, will probe server for
@@ -583,10 +596,9 @@ class StoredObject:
         :param destination_branch_id: The destination branch to copy the object to
         :param destination_path: The path of the copied object in the destination branch
         :return: The newly copied Object
-        :raises:
-            ObjectNotFoundException if repo id,reference id, destination branch id or object path does not exist
-            PermissionException if user is not authorized to perform this operation, or operation is forbidden
-            ServerException for any other errors
+        :raise ObjectNotFoundException: if repo id,reference id, destination branch id or object path does not exist
+        :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
+        :raise ServerException: for any other errors
         """
 
         with api_exception_handler():
@@ -621,20 +633,23 @@ class WriteableObject(StoredObject):
 
         :param data: The contents of the object to write (can be bytes or string)
         :param mode: Write mode:
+
             'x'     - Open for exclusive creation
+
             'xb'    - Open for exclusive creation in binary mode
+
             'w'     - Create a new object or truncate if exists
+
             'wb'    - Create or truncate in binary mode
         :param pre_sign: (Optional) Explicitly state whether to use pre_sign mode when uploading the object.
             If None, will be taken from pre_sign property.
         :param content_type: (Optional) Explicitly set the object Content-Type
         :param metadata: (Optional) User metadata
         :return: The Stat object representing the newly created object
-        :raises:
-            ObjectExistsException if object exists and mode is exclusive ('x')
-            ObjectNotFoundException if repo id, reference id or object path does not exist
-            PermissionException if user is not authorized to perform this operation, or operation is forbidden
-            ServerException for any other errors
+        :raise ObjectExistsException: if object exists and mode is exclusive ('x')
+        :raise ObjectNotFoundException: if repo id, reference id or object path does not exist
+        :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
+        :raise ServerException: for any other errors
         """
         with ObjectWriter(self, mode, pre_sign, content_type, metadata, self._client) as writer:
             writer.write(data)
@@ -645,10 +660,9 @@ class WriteableObject(StoredObject):
         """
         Delete object from lakeFS
 
-        :raises:
-            ObjectNotFoundException if repo id, reference id or object path does not exist
-            PermissionException if user is not authorized to perform this operation, or operation is forbidden
-            ServerException for any other errors
+        :raise ObjectNotFoundException: if repo id, reference id or object path does not exist
+        :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
+        :raise ServerException: for any other errors
         """
         with api_exception_handler(_io_exception_handler):
             self._client.sdk_client.objects_api.delete_object(self._repo_id, self._ref_id, self._path)
@@ -664,6 +678,17 @@ class WriteableObject(StoredObject):
         The writes are saved in a buffer as long as the writer is open. Only when it closes it writes the data into
         lakeFS. The optional parameters can be modified by accessing the respective fields as long as the writer is
         still open.
+
+        Usage example of reading a file from local file system and writing it to lakeFS:
+
+        .. code-block:: python
+
+            import lakefs
+
+            obj = lakefs.repository("<repository_name>").branch("<branch_name>").object("my_image")
+
+            with open("my_local_image", mode='rb') as reader, obj.writer("wb") as writer:
+                writer.write(reader.read())
 
         :param mode: Write mode - as supported by WriteModes
         :param pre_sign: (Optional), enforce the pre_sign mode on the lakeFS server. If not set, will probe server for

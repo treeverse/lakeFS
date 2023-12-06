@@ -25,8 +25,6 @@ extensions = [
     'sphinx_autodoc_typehints',
 ]
 
-templates_path = ['_templates']
-
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 language = 'en'
@@ -34,9 +32,15 @@ language = 'en'
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'alabaster'
 html_static_path = ['_static']
-html_sidebars = {'**': ['localtoc.html', 'searchbox.html']}
+html_css_files = ["custom.css"]
+html_theme = 'classic'
+html_theme_options = {
+    "body_min_width": 1000,
+    "body_max_width": "75%",
+    "sidebarwidth": 300,
+    "stickysidebar": "true"
+}
 
 # -- Options for todo extension ----------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/todo.html#configuration

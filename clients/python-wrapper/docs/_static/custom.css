@@ -1,0 +1,7 @@
+.sphinxsidebarwrapper {
+    overflow-x: scroll;
+}
+
+div.sphinxsidebarwrapper {
+    padding: 10px 5px 10px 10px;
+}
