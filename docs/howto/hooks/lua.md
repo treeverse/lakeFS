@@ -489,7 +489,7 @@ Parameters:
 
 A package used to export Delta Lake tables from lakeFS to an external cloud storage.
 
-### `lakefs/catalogexport/delta_exporter.export_delta_log(action, table_paths, storage_client, delta_client)`
+### `lakefs/catalogexport/delta_exporter.export_delta_log(action, table_paths, writer, delta_client)`
 
 The function used to export Delta Lake tables.
 The return value is a table with mapping of table names to external table location (from which it is possible to query the data).
@@ -498,7 +498,7 @@ Parameters:
 
 - `action`: The global action object
 - `table_paths`: Paths list in lakeFS to Delta Tables (e.g. `{"path/to/table1", "path/to/table2"}`)
-- `storage_client`: A storage client that implements `put_object: function(bucket, key, data)` (e.g. `aws/s3.s3_client`)
+- `writer`: A writer function with `function(bucket, key, data)` signature, used to write the exported Delta Log (e.g. `aws/s3.s3_client.put_object`)
 - `delta_client`: A Delta Lake client that implements `get_table: function(repo, ref, prefix)`
 
 Example:
@@ -514,18 +514,13 @@ hooks:
     properties:
       script: |
         local aws = require("aws")
-        local delta = require("lakefs/catalogexport/delta_exporter")
-        
-        local export_delta_args = {
-          table_paths = args.table_paths,
-          lakefs_key = args.lakefs.access_key_id,
-          lakefs_secret = args.lakefs.secret_access_key,
-          region = args.aws.aws_region
-        }
-      
+        local formats = require("formats")
+        local delta_exporter = require("lakefs/catalogexport/delta_exporter")
+
         local sc = aws.s3_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_key, args.aws.aws_region)
-      
-        local delta_table_locations = delta.export_delta_log(action, export_delta_args, sc)
+        local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.aws_region)
+        local delta_table_locations = delta_exporter.export_delta_log(action, args.table_paths, sc.put_object, delta_client)
+        
         for t, loc in pairs(delta_table_locations) do
           print("Delta Lake exported table \"" .. t .. "\"'s location: " .. loc .. "\n")
         end
