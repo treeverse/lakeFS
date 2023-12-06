@@ -22,6 +22,7 @@ class ClientConfig:
     """
     Configuration class for the SDK Client.
     Instantiation will try to get authentication methods using the following chain:
+
     1. Provided kwargs to __init__ func (should contain necessary credentials as defined in lakefs_sdk.Configuration)
     2. Use LAKECTL_SERVER_ENDPOINT_URL, LAKECTL_ACCESS_KEY_ID and LAKECTL_ACCESS_SECRET_KEY if set
     3. Try to read ~/.lakectl.yaml if exists

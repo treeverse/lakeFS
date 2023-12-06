@@ -46,7 +46,7 @@ func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	aws.Open(l, ctx)
 	gcloud.Open(l, ctx)
 	url.Open(l)
-	formats.Open(l, ctx, cfg.ServerAddress)
+	formats.Open(l, ctx, cfg.LakeFSAddr)
 	if cfg.NetHTTPEnabled {
 		http.Open(l)
 	}

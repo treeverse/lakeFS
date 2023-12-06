@@ -53,9 +53,9 @@ You can also [deploy lakeFS]({% link howto/deploy/index.md %}) locally or self-m
 
 ### Using lakeFS Playground on lakeFS Cloud
 
-In this tutorial, we will use [a lakeFS playground environment](https://demo.lakefs.io/) to create dev/test data environments for ETL testing. This allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
+In this tutorial, we will use [a lakeFS playground environment](https://lakefs.cloud/) to create dev/test data environments for ETL testing. This allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
 
-First, let us spin up a [playground](https://demo.lakefs.io/) instance. Once you have a live environment, login to your instance with access and secret keys. Then, you can work with the sample data repository `my-repo` that is created for you.
+First, let us spin up a [playground](https://lakefs.cloud/) instance. Once you have a live environment, login to your instance with access and secret keys. Then, you can work with the sample data repository `my-repo` that is created for you.
 
 
 ![sample repository]({{ site.baseurl }}/assets/img/iso_env_myrepo.png)
