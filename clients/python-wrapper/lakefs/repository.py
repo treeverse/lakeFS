@@ -161,6 +161,15 @@ class Repository(_BaseLakeFSObject):
 
         return self._properties
 
+    @property
+    def id(self) -> str:
+        if self._id:
+            return self._id
+        return self.properties.id
+
+    def __repr__(self) -> str:
+        return f'Repository(id="{self.id}")'
+
 
 def repositories(client: Client = None,
                  prefix: Optional[str] = None,
