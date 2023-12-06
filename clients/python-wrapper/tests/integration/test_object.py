@@ -166,10 +166,11 @@ def test_writer_different_params(setup_repo, w_mode, r_mode, pre_sign):
 
 def test_read_all(setup_repo):
     clt, repo = setup_repo
-    data = open("../files/mock.csv", "rb").read()
+    with open("../files/mock.csv", "rb") as fd:
+        data = fd.read()
 
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
-        data=data, pre_sign=False)
+        obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+            data=data, pre_sign=False)
 
     read_data = obj.reader().read()
     assert read_data == data
@@ -177,35 +178,38 @@ def test_read_all(setup_repo):
 
 def test_read_csv(setup_repo):
     clt, repo = setup_repo
-    data = open("../files/mock.csv", "rb").read()
+    with open("../files/mock.csv", "rb") as fd:
+        obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+            data=fd.read(), pre_sign=False)
 
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
-        data=data, pre_sign=False)
+    uploaded = csv.reader(obj.reader('r', buffer_size=1000))
 
-    uploaded = csv.reader(obj.reader('r', buffer_size=300))
-    source = csv.reader(open("../files/mock.csv", "r"))
-    for uploaded_row, source_row in zip(uploaded, source):
-        assert uploaded_row == source_row
+    with open("../files/mock.csv", "r", encoding="utf-8") as fd:
+        source = csv.reader(fd)
+        for uploaded_row, source_row in zip(uploaded, source):
+            assert uploaded_row == source_row
 
 
 def test_read_json(setup_repo):
     clt, repo = setup_repo
-    data = open("../files/mock.json", "rb").read()
+    data = ''
+    with open("../files/mock.json", "rb") as fd:
+        data = fd.read()
 
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
-        data=data, pre_sign=False)
+        obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+            data=data, pre_sign=False)
+    with open("../files/mock.json", "r", encoding="utf-8") as fd:
+        source = json.load(fd)
+        uploaded = json.load(obj.reader(buffer_size=1000))
 
-    uploaded = json.loads(obj.reader(buffer_size=1000).read())
-    source = json.loads(open("../files/mock.json", "r").read())
-    assert uploaded == source
+        assert uploaded == source
 
 
 def test_read_xml(setup_repo):
     clt, repo = setup_repo
-    data = open("../files/mock.xml", "rb").read()
-
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
-        data=data, pre_sign=False)
+    with open("../files/mock.xml", "rb") as fd:
+        obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+            data=fd.read(), pre_sign=False)
 
     uploaded = ET.parse(obj.reader(buffer_size=1000))
     source = ET.parse("../files/mock.xml")

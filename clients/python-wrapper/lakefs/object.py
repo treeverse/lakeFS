@@ -288,6 +288,12 @@ class ObjectReader(LakeFSIOBase):
 
     @staticmethod
     def size_from_response(resp):
+        """
+        Extract object size from response headers
+
+        :param resp: The response object
+        :return: The object size
+        """
         # if range extract size from range
         content_range = resp.headers.get('content-range')
         size = 0
@@ -316,17 +322,17 @@ class ObjectReader(LakeFSIOBase):
 
         return self.cast_by_mode(self.read_bytes(n))
 
-    def readline(self, length: int = -1):
+    def readline(self, limit: int = -1):
         """
         Read and return a line from the stream.
         If size is specified, at most size bytes will be read.
         """
 
-        if length >= 0:
-            read_length = length
+        if limit >= 0:
+            read_length = limit
         else:
             read_length = self._buffer_size
-        if length == 0:
+        if limit == 0:
             return self.cast_by_mode(b'')
         if self._size == 0:
             self._buffer = self.read_bytes(read_length)
@@ -338,12 +344,12 @@ class ObjectReader(LakeFSIOBase):
             retval = self._buffer[self._loc:self._loc + maybe_break]
             self._loc += min(self._size - self._loc, maybe_break)
             return self.cast_by_mode(retval)
-        elif 0 < length <= len(self._buffer) - self._loc:
+        if 0 < limit <= len(self._buffer) - self._loc:
             # searched area is not to end of buffer
-            retval = self._buffer[self._loc:self._loc + length]
-            self._loc += length
+            retval = self._buffer[self._loc:self._loc + limit]
+            self._loc += limit
             return self.cast_by_mode(retval)
-        elif len(self._buffer) == self._size:
+        if len(self._buffer) == self._size:
             # reached end of file
             retval = self._buffer[self._loc:self._size]
             self._loc = self._size
@@ -357,9 +363,15 @@ class ObjectReader(LakeFSIOBase):
             # EOF
             return self.cast_by_mode(b'')
         self._buffer = self._buffer + b
-        return self.readline(length)
+        return self.readline(limit)
 
     def cast_by_mode(self, retval):
+        """
+        Cast retval to str regarding the expected mode
+
+        :param retval:
+        :return:
+        """
         if self.mode == 'r':
             return retval.decode('utf-8')
         return retval
