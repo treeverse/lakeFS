@@ -30,7 +30,7 @@ class ImportManager:
     commit_metadata: Optional[Dict]
     sources: List[lakefs_sdk.ImportLocation]
 
-    def __init__(self, repository_id: str, branch_id: str, commit_message: Optional[str] = "",
+    def __init__(self, repository_id: str, branch_id: str, commit_message: str = "",
                  commit_metadata: Optional[Dict] = None, client: Optional[Client] = DEFAULT_CLIENT) -> None:
         self._client = client
         self._repo_id = repository_id

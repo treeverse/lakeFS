@@ -153,7 +153,7 @@ class Branch(Reference):
                                      **kwargs):
             yield Change(**diff.dict())
 
-    def import_data(self, commit_message: Optional[str] = "", metadata: Optional[dict] = None) -> ImportManager:
+    def import_data(self, commit_message: str = "", metadata: Optional[dict] = None) -> ImportManager:
         """
         Import data to lakeFS
 
