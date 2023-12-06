@@ -9,24 +9,23 @@ from typing import Optional, Generator
 import lakefs_sdk
 
 from lakefs.models import Commit, Change, CommonPrefix, ObjectInfo, _OBJECT
-from lakefs.client import Client, DEFAULT_CLIENT
+from lakefs.client import Client, _BaseLakeFSObject, DEFAULT_CLIENT
 from lakefs.exceptions import api_exception_handler
 from lakefs.object import StoredObject
 
 
-class Reference:
+class Reference(_BaseLakeFSObject):
     """
     Class representing a reference in lakeFS.
     """
-    _client: Client
     _repo_id: str
     _id: str
     _commit: Optional[Commit] = None
 
     def __init__(self, repo_id: str, ref_id: str, client: Optional[Client] = DEFAULT_CLIENT) -> None:
-        self._client = client
         self._repo_id = repo_id
         self._id = ref_id
+        super().__init__(client)
 
     @property
     def repo_id(self) -> str:

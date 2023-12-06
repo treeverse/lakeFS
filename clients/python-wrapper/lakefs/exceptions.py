@@ -44,7 +44,7 @@ class ForbiddenException(ServerException):
     """
 
 
-class NoAuthenticationFound(ServerException):
+class NoAuthenticationFound(LakeFSException):
     """
     Raised when no authentication method could be found on Client instantiation
     """

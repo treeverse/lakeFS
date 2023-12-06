@@ -11,24 +11,23 @@ import lakefs_sdk
 from lakefs.models import RepositoryProperties
 from lakefs.tag import Tag
 from lakefs.branch import Branch
-from lakefs.client import Client, DEFAULT_CLIENT
+from lakefs.client import Client, DEFAULT_CLIENT, _BaseLakeFSObject
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 from lakefs.reference import Reference, generate_listing
 
 
-class Repository:
+class Repository(_BaseLakeFSObject):
     """
     Class representing a Repository in lakeFS.
     The Repository object provides the context for the other objects that are found in it.
     Access to these objects should be done from this class
     """
-    _client: Client
     _id: str
     _properties: RepositoryProperties = None
 
     def __init__(self, repository_id: str, client: Optional[Client] = DEFAULT_CLIENT) -> None:
         self._id = repository_id
-        self._client = client
+        super().__init__(client)
 
     def create(self,
                storage_namespace: str,

@@ -4,7 +4,8 @@ import importlib
 from tests.utests.common import (
     lakectl_test_config_context,
     lakectl_no_config_context,
-    env_var_context, TEST_SERVER,
+    env_var_context,
+    TEST_SERVER,
     TEST_ACCESS_KEY_ID,
     TEST_SECRET_ACCESS_KEY,
     TEST_ENDPOINT_PATH

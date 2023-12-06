@@ -116,3 +116,28 @@ def init(**kwargs) -> None:
     """
     global DEFAULT_CLIENT  # pylint: disable=W0603
     DEFAULT_CLIENT = Client(**kwargs)
+
+
+class _BaseLakeFSObject:
+    """
+    Base class for all lakeFS SDK objects, holds the client object and handles errors where no authentication method
+    found for client. Attempts to reload client dynamically in case of changes in the environment.
+    """
+    __client: Client
+
+    def __init__(self, client: Optional[Client]):
+        self.__client = client
+
+    @property
+    def _client(self):
+        """
+        If client is None due to missing authentication params, try to init again. If authentication method is still
+        missing - will raise exception
+        :return: The initialized client object
+        :raise NoAuthenticationFound: If no authentication method found to configure the lakeFS client with
+        """
+        if self.__client is None:
+            init()  # Try to init default client
+            self.__client = DEFAULT_CLIENT
+
+        return self.__client
