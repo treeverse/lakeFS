@@ -12,7 +12,7 @@ from lakefs.models import RepositoryProperties
 from lakefs.tag import Tag
 from lakefs.branch import Branch
 from lakefs.client import Client, _BaseLakeFSObject
-from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException, NoAuthenticationFound
+from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 from lakefs.reference import Reference, generate_listing
 
 
