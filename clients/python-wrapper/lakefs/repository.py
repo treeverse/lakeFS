@@ -11,7 +11,7 @@ import lakefs_sdk
 from lakefs.models import RepositoryProperties
 from lakefs.tag import Tag
 from lakefs.branch import Branch
-from lakefs.client import Client, get_default_client, _BaseLakeFSObject
+from lakefs.client import Client, _BaseLakeFSObject
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 from lakefs.reference import Reference, generate_listing
 
@@ -25,7 +25,7 @@ class Repository(_BaseLakeFSObject):
     _id: str
     _properties: RepositoryProperties = None
 
-    def __init__(self, repository_id: str, client: Optional[Client] = get_default_client()) -> None:
+    def __init__(self, repository_id: str, client: Optional[Client] = None) -> None:
         self._id = repository_id
         super().__init__(client)
 

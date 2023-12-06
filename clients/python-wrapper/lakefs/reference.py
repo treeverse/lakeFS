@@ -9,7 +9,7 @@ from typing import Optional, Generator
 import lakefs_sdk
 
 from lakefs.models import Commit, Change, CommonPrefix, ObjectInfo, _OBJECT
-from lakefs.client import Client, _BaseLakeFSObject, get_default_client
+from lakefs.client import Client, _BaseLakeFSObject
 from lakefs.exceptions import api_exception_handler
 from lakefs.object import StoredObject
 
@@ -22,7 +22,7 @@ class Reference(_BaseLakeFSObject):
     _id: str
     _commit: Optional[Commit] = None
 
-    def __init__(self, repo_id: str, ref_id: str, client: Optional[Client] = get_default_client()) -> None:
+    def __init__(self, repo_id: str, ref_id: str, client: Optional[Client] = None) -> None:
         self._repo_id = repo_id
         self._id = ref_id
         super().__init__(client)

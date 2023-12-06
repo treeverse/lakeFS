@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Optional, Generator, Iterable, Literal
 
 import lakefs_sdk
-from lakefs.client import Client, get_default_client
+from lakefs.client import Client
 from lakefs.object import WriteableObject
 from lakefs.object import StoredObject
 from lakefs.import_manager import ImportManager
@@ -234,7 +234,7 @@ class Transaction(Branch):
     Manage a transactions on a given branch (TBD)
     """
 
-    def __init__(self, repository_id: str, branch_id: str, commit_message: str, client: Client = get_default_client()):
+    def __init__(self, repository_id: str, branch_id: str, commit_message: str, client: Client = None):
         super().__init__(repository_id, branch_id, client)
         self._commit_message = commit_message
 

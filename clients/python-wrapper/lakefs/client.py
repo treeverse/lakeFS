@@ -12,23 +12,14 @@ In case no credentials exist, a call to init() will be required or a Client obje
 from __future__ import annotations
 
 from typing import Optional
+from threading import Lock
 
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
 from lakefs.config import ClientConfig
-from lakefs.exceptions import NoAuthenticationFound, NotAuthorizedException, ServerException
+from lakefs.exceptions import NotAuthorizedException, ServerException
 from lakefs.models import ServerStorageConfiguration
-
-# global default client
-_DEFAULT_CLIENT: Optional[Client] = None
-
-
-def get_default_client() -> Client:
-    """
-    Returns client module's default client
-    """
-    return _DEFAULT_CLIENT
 
 
 class ServerConfiguration:
@@ -38,7 +29,7 @@ class ServerConfiguration:
     _conf: lakefs_sdk.Config
     _storage_conf: ServerStorageConfiguration
 
-    def __init__(self, client: Optional[Client] = get_default_client()):
+    def __init__(self, client: Optional[Client] = None):
         try:
             self._conf = client.sdk_client.config_api.get_config()
             self._storage_conf = ServerStorageConfiguration(**self._conf.storage_config.dict())
@@ -120,27 +111,13 @@ class Client:
         return self._server_conf.version
 
 
-try:
-    _DEFAULT_CLIENT = Client()
-except NoAuthenticationFound:
-    # must call init() explicitly
-    _DEFAULT_CLIENT = None  # pylint: disable=C0103
-
-
-def init(**kwargs) -> None:
-    """
-    Initialize DefaultClient using the provided parameters
-    """
-    global _DEFAULT_CLIENT  # pylint: disable=W0603
-    _DEFAULT_CLIENT = Client(**kwargs)
-
-
 class _BaseLakeFSObject:
     """
     Base class for all lakeFS SDK objects, holds the client object and handles errors where no authentication method
     found for client. Attempts to reload client dynamically in case of changes in the environment.
     """
-    __client: Client
+    __mutex: Lock = Lock()
+    __client: Optional[Client] = None
 
     def __init__(self, client: Optional[Client]):
         self.__client = client
@@ -153,8 +130,13 @@ class _BaseLakeFSObject:
         :return: The initialized client object
         :raise NoAuthenticationFound: If no authentication method found to configure the lakeFS client with
         """
-        if self.__client is None:
-            init()  # Try to init default client
-            self.__client = _DEFAULT_CLIENT
+        if self.__client is not None:
+            return self.__client
 
-        return self.__client
+        with _BaseLakeFSObject.__mutex:
+            if _BaseLakeFSObject.__client is not None:
+                return _BaseLakeFSObject.__client
+
+            clt = Client()
+            _BaseLakeFSObject.__client = clt
+            return clt

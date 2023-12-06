@@ -15,7 +15,7 @@ def get_storage_namespace(test_name):
 
 
 def _setup_repo(namespace, name, default_branch):
-    clt = client.get_default_client()
+    clt = client.Client()
     repo_name = name + str(int(time.time()))
     repo = Repository(repo_name, clt)
     repo.create(storage_namespace=namespace, default_branch=default_branch)
@@ -56,7 +56,7 @@ def setup_branch_with_commits():
 
 @pytest.fixture(name="pre_sign", scope="function")
 def fixture_pre_sign(request):
-    clt = client.get_default_client()
+    clt = client.Client()
     if request.param and not clt.storage_config.pre_sign_support:
         pytest.skip("Storage adapter does not support pre-sign mode")
     return request.param

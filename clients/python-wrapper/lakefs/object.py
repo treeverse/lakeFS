@@ -18,7 +18,7 @@ import lakefs_sdk
 import urllib3
 from lakefs_sdk import StagingMetadata
 
-from lakefs.client import Client,_BaseLakeFSObject, get_default_client
+from lakefs.client import Client, _BaseLakeFSObject
 from lakefs.exceptions import (
     api_exception_handler,
     handle_http_error,
@@ -52,7 +52,7 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
     _is_closed: bool = False
 
     def __init__(self, obj: StoredObject, mode: Union[ReadModes, WriteModes], pre_sign: Optional[bool] = None,
-                 client: Optional[Client] = get_default_client()) -> None:
+                 client: Optional[Client] = None) -> None:
         self._obj = obj
         self._mode = mode
         self._pre_sign = pre_sign if pre_sign is not None else client.storage_config.pre_sign_support
@@ -185,7 +185,7 @@ class ObjectReader(LakeFSIOBase):
     """
 
     def __init__(self, obj: StoredObject, mode: ReadModes, pre_sign: Optional[bool] = None,
-                 client: Optional[Client] = get_default_client()) -> None:
+                 client: Optional[Client] = None) -> None:
         if mode not in get_args(ReadModes):
             raise ValueError(f"invalid read mode: '{mode}'. ReadModes: {ReadModes}")
 
@@ -306,7 +306,7 @@ class ObjectWriter(LakeFSIOBase):
                  pre_sign: Optional[bool] = None,
                  content_type: Optional[str] = None,
                  metadata: Optional[dict[str, str]] = None,
-                 client: Optional[Client] = get_default_client()) -> None:
+                 client: Optional[Client] = None) -> None:
 
         if 'x' in mode and obj.exists():  # Requires explicit create
             raise ObjectExistsException
@@ -499,7 +499,7 @@ class StoredObject(_BaseLakeFSObject):
     _path: str
     _stats: Optional[ObjectInfo] = None
 
-    def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = get_default_client()):
+    def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = None):
         self._repo_id = repository
         self._ref_id = reference
         self._path = path
@@ -617,7 +617,7 @@ class WriteableObject(StoredObject):
     """
 
     def __init__(self, repository: str, reference: str, path: str,
-                 client: Optional[Client] = get_default_client()) -> None:
+                 client: Optional[Client] = None) -> None:
         super().__init__(repository, reference, path, client=client)
 
     def upload(self,
