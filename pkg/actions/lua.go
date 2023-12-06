@@ -92,7 +92,7 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 	l := lua.NewState()
 	osc := lualibs.OpenSafeConfig{
 		NetHTTPEnabled: h.Config.Lua.NetHTTPEnabled,
-		ServerAddress:  h.serverAddress,
+		LakeFSAddr:     h.serverAddress,
 	}
 	lualibs.OpenSafe(l, ctx, osc, &loggingBuffer{buf: buf, ctx: ctx})
 	injectHookContext(l, ctx, user, h.Endpoint, h.Args)
