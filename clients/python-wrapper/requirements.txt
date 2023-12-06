@@ -10,5 +10,5 @@ Sphinx~=7.2.6
 sphinx-autodoc-typehints~=1.25.2
 myst-parser~=2.0.0
 pytest~=7.4.3
-
+pytest-datafiles~=3.0.0
 

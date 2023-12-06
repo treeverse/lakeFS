@@ -124,11 +124,12 @@ class TestObjectReader:
             assert path == test_kwargs.path
             assert presign
 
+            resp_data = data[start_pos:]
             if isinstance(end_pos, int):
-                return data[start_pos:end_pos]
-            return data[start_pos:]
+                resp_data = data[start_pos:end_pos]
+            return lakefs_sdk.ApiResponse(data=resp_data, headers={})
 
-        patch_setattr(lakefs_sdk.api.ObjectsApi, "get_object", monkey_get_object)
+        patch_setattr(lakefs_sdk.api.ObjectsApi, "get_object_with_http_info", monkey_get_object)
         assert fd.read() == data
         assert fd.tell() == object_stats.size_bytes
 
@@ -183,9 +184,10 @@ class TestObjectReader:
             assert path == test_kwargs.path
             assert range is None
             assert presign
-            return b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82"
+            resp_data = b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82"
+            return lakefs_sdk.ApiResponse(data=resp_data, headers={})
 
-        monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "get_object", monkey_get_object)
+        monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "get_object_with_http_info", monkey_get_object)
         res = fd.read()
         if 'b' not in mode:
             assert res == data.decode('utf-8')

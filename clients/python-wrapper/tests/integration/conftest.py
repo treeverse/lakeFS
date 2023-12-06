@@ -2,6 +2,8 @@ import os
 import re
 import time
 import uuid
+from pathlib import Path
+
 import pytest
 
 from lakefs import client
@@ -60,3 +62,12 @@ def fixture_pre_sign(request):
     if request.param and not clt.storage_config.pre_sign_support:
         pytest.skip("Storage adapter does not support pre-sign mode")
     return request.param
+
+
+FIXTURE_DIR = Path(__file__).parent.parent.resolve() / 'test_files'
+TEST_DATA = pytest.mark.datafiles(
+    FIXTURE_DIR / 'mock.csv',
+    FIXTURE_DIR / 'mock.json',
+    FIXTURE_DIR / 'mock.yaml',
+    FIXTURE_DIR / 'mock.xml',
+)
