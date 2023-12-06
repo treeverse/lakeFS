@@ -273,9 +273,12 @@ Read the payload (string) as the contents of a Parquet file and return its schem
 
 ### `formats`
 
-### `formats/delta_client(serverAddress)`
+### `formats/delta_client(key, secret, region)`
 
-Creates a new Delta Lake client used to interact with the lakeFS server listening on the given `serverAddress`
+Creates a new Delta Lake client used to interact with the lakeFS server.
+- `key`: lakeFS access key id
+- `secret`: lakeFS secret access key
+- `region`: The region in which your lakeFS server is configured at.
 
 ### `formats/delta_client.get_table(repository_id, reference_id, prefix)`
 
@@ -344,10 +347,6 @@ Returns an object-wise diff of uncommitted changes on `branch_id`.
 ### `lakefs/stat_object(repository_id, ref_id, path)`
 
 Returns a stat object for the given path under the given reference and repository.
-
-### `lakefs/get_repo(repository_id)`
-
-Returns a repository object for the given repository.
 
 ### `lakefs/catalogexport/table_extractor`
 
@@ -489,16 +488,6 @@ Parameters:
 ### `lakefs/catalogexport/delta_exporter`
 
 A package used to export Delta Lake tables from lakeFS to an external cloud storage.
-
-### `lakefs/catalogexport/delta_exporter.get_delta_client(key, secret, region)`
-
-Returns a Delta Lake client to communicate with Delta Lake tables.
-
-Parameters:
-
-- `key`: lakeFS access key id
-- `secret`: lakeFS secret access key
-- `region`: The region in which your lakeFS server is configured at.
 
 ### `lakefs/catalogexport/delta_exporter.export_delta_log(action, table_paths, storage_client, delta_client)`
 
