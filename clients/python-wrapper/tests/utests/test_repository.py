@@ -6,7 +6,7 @@ import lakefs_sdk
 from tests.utests.common import get_test_repo, TEST_REPO_ARGS, expect_exception_context
 
 from lakefs.exceptions import ServerException, NotAuthorizedException, NotFoundException, ConflictException
-from lakefs.repository import RepositoryProperties
+from lakefs import RepositoryProperties
 
 
 def test_repository_creation(monkeypatch):

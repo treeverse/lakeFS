@@ -30,7 +30,7 @@ from lakefs.exceptions import (
     PermissionException,
     ObjectExistsException,
 )
-from lakefs.namedtuple import LenientNamedTuple
+from lakefs.models import ObjectInfo
 
 _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
 # _BUFFER_SIZE - Writer buffer size. While buffer size not exceed, data will be maintained in memory and file will
@@ -39,21 +39,6 @@ _WRITER_BUFFER_SIZE = 32 * 1024 * 1024
 
 ReadModes = Literal['r', 'rb']
 WriteModes = Literal['x', 'xb', 'w', 'wb']
-
-
-class ObjectStats(LenientNamedTuple):
-    """
-    Represent a lakeFS object's stats
-    """
-    path: str
-    path_type: str
-    physical_address: str
-    checksum: str
-    mtime: int
-    physical_address_expiry: Optional[int] = None
-    size_bytes: Optional[int] = None
-    metadata: Optional[dict[str, str]] = None
-    content_type: Optional[str] = None
 
 
 class LakeFSIOBase(IO):
@@ -251,7 +236,7 @@ class ObjectReader(LakeFSIOBase):
             other values are os.SEEK_CUR or 1 (seek relative to the current position) and os.SEEK_END or 2
             (seek relative to the file’s end)
             os.SEEK_END is not supported
-        :raises OSError if calculated new position is negative
+        :raises: OSError if calculated new position is negative
         """
         if whence == os.SEEK_SET:
             pos = offset
@@ -270,9 +255,9 @@ class ObjectReader(LakeFSIOBase):
         Read object data
 
         :param n: How many bytes to read. If read_bytes is None, will read from current position to end.
-        If current position + read_bytes > object size.
+            If current position + read_bytes > object size.
         :return: The bytes read
-        :raises
+        :raises:
             EOFError if current position is after object size
             OSError if read_bytes is non-positive
             ObjectNotFoundException if repo id, reference id or object path does not exist
@@ -317,7 +302,7 @@ class ObjectWriter(LakeFSIOBase):
     implicitly when using writer as a context.
     """
     _fd: tempfile.SpooledTemporaryFile
-    _obj_stats: ObjectStats = None
+    _obj_stats: ObjectInfo = None
 
     def __init__(self,
                  obj: StoredObject,
@@ -396,7 +381,7 @@ class ObjectWriter(LakeFSIOBase):
         Write the data to the lakeFS server and close open descriptors
         """
         stats = self._upload_presign() if self.pre_sign else self._upload_raw()
-        self._obj_stats = ObjectStats(**stats.dict())
+        self._obj_stats = ObjectInfo(**stats.dict())
 
         self._fd.close()
         super().close()
@@ -517,7 +502,7 @@ class StoredObject:
     _repo_id: str
     _ref_id: str
     _path: str
-    _stats: Optional[ObjectStats] = None
+    _stats: Optional[ObjectInfo] = None
 
     def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = DEFAULT_CLIENT):
         self._client = client
@@ -563,14 +548,14 @@ class StoredObject:
         """
         return ObjectReader(self, mode=mode, pre_sign=pre_sign, client=self._client)
 
-    def stat(self) -> ObjectStats:
+    def stat(self) -> ObjectInfo:
         """
         Return the Stat object representing this object
         """
         if self._stats is None:
             with api_exception_handler(_io_exception_handler):
                 stat = self._client.sdk_client.objects_api.stat_object(self._repo_id, self._ref_id, self._path)
-                self._stats = ObjectStats(**stat.dict())
+                self._stats = ObjectInfo(**stat.dict())
         return self._stats
 
     def exists(self) -> bool:
@@ -641,11 +626,11 @@ class WriteableObject(StoredObject):
             'w'     - Create a new object or truncate if exists
             'wb'    - Create or truncate in binary mode
         :param pre_sign: (Optional) Explicitly state whether to use pre_sign mode when uploading the object.
-        If None, will be taken from pre_sign property.
+            If None, will be taken from pre_sign property.
         :param content_type: (Optional) Explicitly set the object Content-Type
         :param metadata: (Optional) User metadata
         :return: The Stat object representing the newly created object
-        :raises
+        :raises:
             ObjectExistsException if object exists and mode is exclusive ('x')
             ObjectNotFoundException if repo id, reference id or object path does not exist
             PermissionException if user is not authorized to perform this operation, or operation is forbidden

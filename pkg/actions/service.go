@@ -42,6 +42,10 @@ type Config struct {
 	Lua     struct {
 		NetHTTPEnabled bool
 	}
+	Env struct {
+		Enabled bool
+		Prefix  string
+	}
 }
 
 // StoreService is an implementation of actions.Service that saves

@@ -4,38 +4,14 @@ Module containing lakeFS reference implementation
 
 from __future__ import annotations
 
-from typing import Optional, Generator, Literal, List
+from typing import Optional, Generator
 
 import lakefs_sdk
 
+from lakefs.models import Commit, Change, CommonPrefix, ObjectInfo, _OBJECT
 from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.exceptions import api_exception_handler
 from lakefs.object import StoredObject
-from lakefs.namedtuple import LenientNamedTuple
-from lakefs.object_manager import ObjectManager
-
-
-class Commit(LenientNamedTuple):
-    """
-    NamedTuple representing a lakeFS commit's properties
-    """
-    id: str
-    parents: List[str]
-    committer: str
-    message: str
-    creation_date: int
-    meta_range_id: str
-    metadata: Optional[dict[str, str]] = None
-
-
-class Change(LenientNamedTuple):
-    """
-    NamedTuple representing a diff change between two refs in lakeFS
-    """
-    type: Literal["added", "removed", "changed", "conflict", "prefix_changed"]
-    path: str
-    path_type: Literal["common_prefix", "object"]
-    size_bytes: Optional[int]
 
 
 class Reference:
@@ -66,12 +42,37 @@ class Reference:
         """
         return self._id
 
-    @property
-    def objects(self) -> ObjectManager:
+    def objects(self,
+                max_amount: Optional[int] = None,
+                after: Optional[str] = None,
+                prefix: Optional[str] = None,
+                delimiter: Optional[str] = None,
+                **kwargs) -> Generator[StoredObject | CommonPrefix]:
         """
-        Returns a ObjectManager object for this reference
+        Returns an object generator for this reference, the generator can yield either a StoredObject or a CommonPrefix
+        object depending on the listing parameters provided.
+
+        :param max_amount: Stop showing changes after this amount
+        :param after: Return items after this value
+        :param prefix: Return items prefixed with this value
+        :param delimiter: Group common prefixes by this delimiter
+        :param kwargs: Additional Keyword Arguments to send to the server
+        :raises:
+            NotFoundException if this reference or other_ref does not exist
+            NotAuthorizedException if user is not authorized to perform this operation
+            ServerException for any other errors
         """
-        # TODO: Implement
+
+        for res in generate_listing(self._client.sdk_client.objects_api.list_objects,
+                                    repository=self._repo_id,
+                                    ref=self._id,
+                                    max_amount=max_amount,
+                                    after=after,
+                                    prefix=prefix,
+                                    delimiter=delimiter,
+                                    **kwargs):
+            type_class = ObjectInfo if res.path_type == _OBJECT else CommonPrefix
+            yield type_class(**res.dict())
 
     def log(self, max_amount: Optional[int] = None, **kwargs) -> Generator[Commit]:
         """
@@ -171,7 +172,7 @@ class Reference:
 
         :param path: The object's path
         """
-        return StoredObject(self._repo_id, self._id, path)
+        return StoredObject(self._repo_id, self._id, path, self._client)
 
     def __str__(self) -> str:
         return self._id

@@ -104,7 +104,11 @@ type Config struct {
 		Lua     struct {
 			NetHTTPEnabled bool `mapstructure:"net_http_enabled"`
 		} `mapstructure:"lua"`
-	}
+		Env struct {
+			Enabled bool   `mapstructure:"enabled"`
+			Prefix  string `mapstructure:"prefix"`
+		} `mapstructure:"env"`
+	} `mapstructure:"actions"`
 
 	Logging struct {
 		Format        string   `mapstructure:"format"`
@@ -320,9 +324,10 @@ type Config struct {
 	} `mapstructure:"graveler"`
 	Gateways struct {
 		S3 struct {
-			DomainNames Strings `mapstructure:"domain_name"`
-			Region      string  `mapstructure:"region"`
-			FallbackURL string  `mapstructure:"fallback_url"`
+			DomainNames       Strings `mapstructure:"domain_name"`
+			Region            string  `mapstructure:"region"`
+			FallbackURL       string  `mapstructure:"fallback_url"`
+			VerifyUnsupported bool    `mapstructure:"verify_unsupported"`
 		} `mapstructure:"s3"`
 	}
 	Stats struct {

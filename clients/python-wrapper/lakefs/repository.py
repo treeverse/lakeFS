@@ -5,24 +5,15 @@ Module containing lakeFS repository implementation
 from __future__ import annotations
 
 from typing import Optional, Generator
+
 import lakefs_sdk
 
+from lakefs.models import RepositoryProperties
 from lakefs.tag import Tag
 from lakefs.branch import Branch
 from lakefs.client import Client, DEFAULT_CLIENT
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
-from lakefs.namedtuple import LenientNamedTuple
 from lakefs.reference import Reference, generate_listing
-
-
-class RepositoryProperties(LenientNamedTuple):
-    """
-    Represent a lakeFS repository's properties
-    """
-    id: str
-    creation_date: int
-    default_branch: str
-    storage_namespace: str
 
 
 class Repository:

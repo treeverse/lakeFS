@@ -57,3 +57,24 @@ def test_reference_merge_into(setup_branch_with_commits):
     branch.merge_into(other_branch.id, message="Merge2")
     assert other_branch.commit_message() == "Merge2"
     assert list(other_branch.log(max_amount=3))[2].id == commits[0].id
+
+
+def test_reference_objects(setup_repo):
+    _, repo = setup_repo
+    test_branch = repo.branch("main")
+    path_and_data = ["a", "b", "bar/a", "bar/b", "bar/c", "c", "foo/a", "foo/b", "foo/c"]
+    for s in path_and_data:
+        test_branch.object(s).upload(s)
+
+    objects = list(test_branch.objects())
+    assert len(objects) == len(path_and_data)
+    for obj in objects:
+        assert obj.path in path_and_data
+
+    expected = ["a", "b", "bar/", "c", "foo/"]
+    i = 0
+    for obj in test_branch.objects(delimiter='/'):
+        i += 1
+        assert obj.path in expected
+
+    assert i == len(expected)

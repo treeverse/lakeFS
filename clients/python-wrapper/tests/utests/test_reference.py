@@ -1,8 +1,8 @@
 import lakefs_sdk
 
-from tests.utests.common import get_test_client
-
+from lakefs import ObjectInfo, CommonPrefix
 from lakefs.repository import Repository
+from tests.utests.common import get_test_client, expect_exception_context
 
 
 def get_test_ref():
@@ -118,3 +118,47 @@ def test_reference_diff(monkeypatch):
         idx = 0
         max_amount = pages * items_per_page * 2
         assert len(list(ref.diff(other_ref="other_ref", max_amount=max_amount))) == pages * items_per_page
+
+
+def test_reference_objects(monkeypatch):
+    ref = get_test_ref()
+    with monkeypatch.context():
+        def monkey_list_objects(*_, **__):
+            results = []
+            for i in range(10):
+                if i % 2:
+                    results.append(lakefs_sdk.ObjectStats(
+                        path=f"path-{i}",
+                        path_type="object",
+                        physical_address=f"address-{i}",
+                        checksum=f"{i}",
+                        size_bytes=i,
+                        mtime=i,
+                    ))
+                else:
+                    results.append(lakefs_sdk.ObjectStats(
+                        path=f"path-{i}",
+                        path_type="common_prefix",
+                        physical_address="?",
+                        checksum="",
+                        mtime=i,
+                    ))
+            return lakefs_sdk.ObjectStatsList(pagination=lakefs_sdk.Pagination(
+                has_more=False,
+                next_offset="",
+                max_per_page=1,
+                results=1),
+                results=results)
+
+        monkeypatch.setattr(ref._client.sdk_client.objects_api, "list_objects", monkey_list_objects)
+
+        for i, item in enumerate(ref.objects()):
+            if i % 2:
+                assert isinstance(item, ObjectInfo)
+                assert item.size_bytes == i
+            else:
+                assert isinstance(item, CommonPrefix)
+                with expect_exception_context(AttributeError):
+                    item.checksum  # pylint: disable=pointless-statement
+
+            assert item.path == f"path-{i}"

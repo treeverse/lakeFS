@@ -23,6 +23,7 @@ class LenientNamedTuple:
 
         if len(fields) > 0:
             raise TypeError(f"missing {len(fields)} required arguments: {fields}")
+
         self.__initialized = True
         super().__init__()
 

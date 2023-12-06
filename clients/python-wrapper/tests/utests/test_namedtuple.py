@@ -36,10 +36,10 @@ def test_namedtuple():
     assert not nt2.field3
 
     with expect_exception_context(AttributeError):
-        nt2.field4
+        nt2.field4  # pylint: disable=pointless-statement
 
     with expect_exception_context(AttributeError):
-        nt2.field5
+        nt2.field5  # pylint: disable=pointless-statement
 
     # Verify extra kwargs are in 'unknown' dict
     assert nt2.unknown['field4'] == "something"
