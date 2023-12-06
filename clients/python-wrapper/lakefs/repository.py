@@ -12,7 +12,7 @@ from lakefs.models import RepositoryProperties
 from lakefs.tag import Tag
 from lakefs.branch import Branch
 from lakefs.client import Client, _BaseLakeFSObject
-from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
+from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException, NoAuthenticationFound
 from lakefs.reference import Reference, generate_listing
 
 
@@ -160,3 +160,25 @@ class Repository(_BaseLakeFSObject):
                 return self._properties
 
         return self._properties
+
+
+def repositories(client: Client = None,
+                 prefix: Optional[str] = None,
+                 after: Optional[str] = None,
+                 **kwargs) -> Generator[Repository]:
+    """
+    Creates a repositories object generator listing lakeFS repositories
+
+    :param client: The lakeFS client to use, if None, tries to use the default client
+    :param prefix: Return items prefixed with this value
+    :param after: Return items after this value
+    :return: A generator listing lakeFS repositories
+    """
+    if client is None:
+        raise NoAuthenticationFound("Explicitly provide a client or invoke client module's init method")
+
+    for res in generate_listing(client.sdk_client.repositories_api.list_repositories,
+                                prefix=prefix,
+                                after=after,
+                                **kwargs):
+        yield Repository(res.id, client)
