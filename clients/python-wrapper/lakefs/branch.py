@@ -13,7 +13,7 @@ from lakefs.object import StoredObject
 from lakefs.import_manager import ImportManager
 from lakefs.reference import Reference, generate_listing
 from lakefs.models import Change
-from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
+from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException, UnsupportedOperationException
 
 
 class Branch(Reference):
@@ -32,15 +32,22 @@ class Branch(Reference):
         """
         Create a new branch in lakeFS from this object
 
+        Example of creating a new branch:
+
+        .. code-block:: python
+
+            import lakefs
+
+            branch = lakefs.repository("<repository_name>").branch("<branch_name>").create("<source_reference>")
+
         :param source_reference_id: The reference to create the branch from
         :param exist_ok: If False will throw an exception if a branch by this name already exists. Otherwise,
             return the existing branch without creating a new one
         :return: The lakeFS SDK object representing the branch
-        :raises:
-            NotFoundException if repo, branch or source reference id does not exist
-            ConflictException if branch already exists and exist_ok is False
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise NotFoundException: if repo, branch or source reference id does not exist
+        :raise ConflictException: if branch already exists and exist_ok is False
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
 
         def handle_conflict(e: LakeFSException):
@@ -58,10 +65,9 @@ class Branch(Reference):
         Get the commit reference this branch is pointing to
 
         :return: The commit reference this branch is pointing to
-        :raises:
-            NotFoundException if branch by this id does not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise NotFoundException: if branch by this id does not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
         with api_exception_handler():
             branch = self._client.sdk_client.branches_api.get_branch(self._repo_id, self._id)
@@ -74,11 +80,10 @@ class Branch(Reference):
         :param message: Commit message
         :param metadata: Metadata to attach to the commit
         :return: The new reference after the commit
-        :raises:
-            NotFoundException if branch by this id does not exist
-            ForbiddenException if commit is not allowed on this branch
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise NotFoundException: if branch by this id does not exist
+        :raise ForbiddenException: if commit is not allowed on this branch
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
 
         commits_creation = lakefs_sdk.CommitCreation(message=message, metadata=metadata)
@@ -90,11 +95,10 @@ class Branch(Reference):
         """
         Delete branch from lakeFS server
 
-        :raises:
-            NotFoundException if branch or repository do not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ForbiddenException for branches that are protected
-            ServerException for any other errors
+        :raise NotFoundException: if branch or repository do not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ForbiddenException: for branches that are protected
+        :raise ServerException: for any other errors
         """
         with api_exception_handler():
             return self._client.sdk_client.branches_api.delete_branch(self._repo_id, self._id)
@@ -107,10 +111,9 @@ class Branch(Reference):
             perform the revert.
         :param reference_id: the reference to revert
         :return: The new reference after the revert
-        :raises:
-            NotFoundException if branch by this id does not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise NotFoundException: if branch by this id does not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
         if parent_number is None:
             parent_number = 0
@@ -142,10 +145,9 @@ class Branch(Reference):
         :param after: Return items after this value
         :param prefix: Return items prefixed with this value
         :param kwargs: Additional Keyword Arguments to send to the server
-        :raises:
-            NotFoundException if branch or repository do not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise NotFoundException: if branch or repository do not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
 
         for diff in generate_listing(self._client.sdk_client.branches_api.diff_branch,
@@ -153,7 +155,7 @@ class Branch(Reference):
                                      **kwargs):
             yield Change(**diff.dict())
 
-    def import_data(self, commit_message: Optional[str] = "", metadata: Optional[dict] = None) -> ImportManager:
+    def import_data(self, commit_message: str = "", metadata: Optional[dict] = None) -> ImportManager:
         """
         Import data to lakeFS
 
@@ -168,11 +170,27 @@ class Branch(Reference):
         """
         Delete objects from lakeFS
 
+        This method can be used to delete single/multiple objects from branch. It accepts both str and StoredObject
+        types as well as Iterables of these types.
+        Using this method is more performant than sequentially calling delete on objects as it saves the back and forth
+        from the server.
+
+        This can also be used in combination with object listing. For example:
+
+        .. code-block:: python
+
+            import lakefs
+
+            branch = lakefs.repository("<repository_name>").branch("<branch_name>")
+            # list objects on a common prefix
+            objs = branch.objects(prefix="my-object-prefix/", max_amount=100)
+            # delete objects which have "foo" in their name
+            branch.delete_objects([o.path for o in objs if "foo" in o.path])
+
         :param object_paths: a single path or an iterable of paths to delete
-        :raises:
-            NotFoundException if branch or repository do not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise NotFoundException: if branch or repository do not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
         if isinstance(object_paths, (str, StoredObject)):
             object_paths = [str(object_paths)]
@@ -192,7 +210,7 @@ class Branch(Reference):
         :param commit_message: once the transaction is committed, a commit is created with this message
         :return: a Transaction object to perform operations on
         """
-        return Transaction(self._repo_id, self.id, commit_message, self._client)
+        raise UnsupportedOperationException("Transaction not yet implemented")
 
     def reset_changes(self, path_type: Literal["common_prefix", "object", "reset"] = "reset",
                       path: Optional[str] = None) -> None:
@@ -201,11 +219,10 @@ class Branch(Reference):
 
         :param path_type: the type of path to reset ('common_prefix', 'object', 'reset' - for all changes)
         :param path: the path to reset (optional) - if path_type is 'reset' this parameter is ignored
-        :raises:
-            ValidationError if path_type is not one of the allowed values
-            NotFoundException if branch or repository do not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise ValidationError: if path_type is not one of the allowed values
+        :raise NotFoundException: if branch or repository do not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
 
         reset_creation = lakefs_sdk.ResetCreation(path=path, type=path_type)
@@ -214,7 +231,7 @@ class Branch(Reference):
 
 class Transaction(Branch):
     """
-    Manage a transactions on a given branch
+    Manage a transactions on a given branch (TBD)
     """
 
     def __init__(self, repository_id: str, branch_id: str, commit_message: str, client: Client = DEFAULT_CLIENT):
