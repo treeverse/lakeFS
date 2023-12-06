@@ -148,7 +148,7 @@ class Reference:
 
         :param path: The object's path
         """
-        return StoredObject(self._repo_id, self._id, path,self._client)
+        return StoredObject(self._repo_id, self._id, path, self._client)
 
     def __str__(self) -> str:
         return self._id
