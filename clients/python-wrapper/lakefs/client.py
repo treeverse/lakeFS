@@ -21,7 +21,14 @@ from lakefs.exceptions import NoAuthenticationFound, NotAuthorizedException, Ser
 from lakefs.models import ServerStorageConfiguration
 
 # global default client
-DEFAULT_CLIENT: Optional[Client] = None
+_DEFAULT_CLIENT: Optional[Client] = None
+
+
+def get_default_client() -> Client:
+    """
+    Returns client module's default client
+    """
+    return _DEFAULT_CLIENT
 
 
 class ServerConfiguration:
@@ -31,7 +38,7 @@ class ServerConfiguration:
     _conf: lakefs_sdk.Config
     _storage_conf: ServerStorageConfiguration
 
-    def __init__(self, client: Optional[Client] = DEFAULT_CLIENT):
+    def __init__(self, client: Optional[Client] = get_default_client()):
         try:
             self._conf = client.sdk_client.config_api.get_config()
             self._storage_conf = ServerStorageConfiguration(**self._conf.storage_config.dict())
@@ -104,18 +111,18 @@ class Client:
 
 
 try:
-    DEFAULT_CLIENT = Client()
+    _DEFAULT_CLIENT = Client()
 except NoAuthenticationFound:
     # must call init() explicitly
-    DEFAULT_CLIENT = None  # pylint: disable=C0103
+    _DEFAULT_CLIENT = None  # pylint: disable=C0103
 
 
 def init(**kwargs) -> None:
     """
     Initialize DefaultClient using the provided parameters
     """
-    global DEFAULT_CLIENT  # pylint: disable=W0603
-    DEFAULT_CLIENT = Client(**kwargs)
+    global _DEFAULT_CLIENT  # pylint: disable=W0603
+    _DEFAULT_CLIENT = Client(**kwargs)
 
 
 class _BaseLakeFSObject:
@@ -138,6 +145,6 @@ class _BaseLakeFSObject:
         """
         if self.__client is None:
             init()  # Try to init default client
-            self.__client = DEFAULT_CLIENT
+            self.__client = _DEFAULT_CLIENT
 
         return self.__client

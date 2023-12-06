@@ -11,7 +11,7 @@ from typing import Optional, Dict, List
 import lakefs_sdk
 
 from lakefs.models import ImportStatus, _OBJECT, _COMMON_PREFIX
-from lakefs.client import Client, _BaseLakeFSObject, DEFAULT_CLIENT
+from lakefs.client import Client, _BaseLakeFSObject, get_default_client
 from lakefs.exceptions import ImportManagerException, api_exception_handler
 
 
@@ -29,8 +29,8 @@ class ImportManager(_BaseLakeFSObject):
     commit_metadata: Optional[Dict]
     sources: List[lakefs_sdk.ImportLocation]
 
-    def __init__(self, repository_id: str, branch_id: str, commit_message: Optional[str] = "",
-                 commit_metadata: Optional[Dict] = None, client: Optional[Client] = DEFAULT_CLIENT) -> None:
+    def __init__(self, repository_id: str, branch_id: str, commit_message: str = "",
+                 commit_metadata: Optional[Dict] = None, client: Optional[Client] = get_default_client()) -> None:
         self._repo_id = repository_id
         self._branch_id = branch_id
         self.commit_message = commit_message
