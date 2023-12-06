@@ -112,9 +112,10 @@ _STATUS_CODE_TO_EXCEPTION = {
 def api_exception_handler(custom_handler: Optional[Callable[[LakeFSException], LakeFSException]] = None):
     """
     Contexts which converts lakefs_sdk API exceptions to LakeFS exceptions and handles them.
+
     :param custom_handler: Optional handler which can be used to provide custom behavior for specific exceptions.
-    If custom_handler returns an exception, this function will raise the exception at the end of the 
-    custom_handler invocation.
+        If custom_handler returns an exception, this function will raise the exception at the end of the
+        custom_handler invocation.
     """
     try:
         yield
@@ -130,6 +131,7 @@ def api_exception_handler(custom_handler: Optional[Callable[[LakeFSException], L
 def handle_http_error(resp: BaseHTTPResponse) -> None:
     """
     Handles http response and raises the appropriate lakeFS exception if needed
+
     :param resp: The response to parse
     """
     if not http.HTTPStatus.OK <= resp.status < http.HTTPStatus.MULTIPLE_CHOICES:

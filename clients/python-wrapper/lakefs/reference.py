@@ -56,10 +56,9 @@ class Reference(_BaseLakeFSObject):
         :param prefix: Return items prefixed with this value
         :param delimiter: Group common prefixes by this delimiter
         :param kwargs: Additional Keyword Arguments to send to the server
-        :raises:
-            NotFoundException if this reference or other_ref does not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise NotFoundException: if this reference or other_ref does not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
 
         for res in generate_listing(self._client.sdk_client.objects_api.list_objects,
@@ -79,10 +78,9 @@ class Reference(_BaseLakeFSObject):
 
         :param max_amount: (Optional) limits the amount of results to return from the server
         :param kwargs: Additional Keyword Arguments to send to the server
-        :raises:
-            NotFoundException if reference by this id does not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise NotFoundException: if reference by this id does not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
         for res in generate_listing(self._client.sdk_client.refs_api.log_commits, self._repo_id, self._id,
                                     max_amount=max_amount, **kwargs):
@@ -129,10 +127,9 @@ class Reference(_BaseLakeFSObject):
         :param prefix: Return items prefixed with this value
         :param delimiter: Group common prefixes by this delimiter
         :param kwargs: Additional Keyword Arguments to send to the server
-        :raises:
-            NotFoundException if this reference or other_ref does not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise NotFoundException: if this reference or other_ref does not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
         for diff in generate_listing(self._client.sdk_client.refs_api.diff_refs,
                                      repository=self._repo_id,
@@ -152,10 +149,9 @@ class Reference(_BaseLakeFSObject):
         :param destination_branch_id: The ID of the merge destination
         :param kwargs: Additional Keyword Arguments to send to the server
         :return: The reference id of the merge commit
-        :raises:
-            NotFoundException if reference by this id does not exist, or branch doesn't exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise NotFoundException: if reference by this id does not exist, or branch doesn't exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
         with api_exception_handler():
             merge = lakefs_sdk.Merge(**kwargs)

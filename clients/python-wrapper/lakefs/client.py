@@ -66,6 +66,16 @@ class Client:
     """
     Wrapper around lakefs_sdk's client object
     Takes care of instantiating it from the environment
+
+    Example of initializing a Client object:
+
+    .. code-block:: python
+
+        from lakefs import Client
+
+        client = Client(username="<access_key_id>", password="<secret_access_key>", host="<lakefs_endpoint>")
+        print(client.version)
+
     """
 
     _client: Optional[LakeFSClient] = None
