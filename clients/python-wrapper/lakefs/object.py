@@ -258,7 +258,7 @@ class ObjectReader(LakeFSIOBase):
             If current position + read_bytes > object size.
         :return: The bytes read
         :raise OSError: if read_bytes is non-positive
-        :raise ObjectNotFoundException: if repo id, reference id or object path does not exist
+        :raise ObjectNotFoundException: if repository id, reference id or object path does not exist
         :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
         :raise ServerException: for any other errors
         """
@@ -552,7 +552,7 @@ class StoredObject:
                 # print every other 10 chars
                 while fd.tell() < file_size
                     print(fd.read(10))
-                    fd.seek(10)
+                    fd.seek(10, os.SEEK_CUR)
 
         :param mode: Read mode - as supported by ReadModes
         :param pre_sign: (Optional), enforce the pre_sign mode on the lakeFS server. If not set, will probe server for
@@ -687,9 +687,8 @@ class WriteableObject(StoredObject):
 
             obj = lakefs.repository("<repository_name>").branch("<branch_name>").object("my_image")
 
-            with open("my_local_image", mode='rb') as reader:
-                with obj.writer("wb") as writer:
-                    writer.write(reader.read())
+            with open("my_local_image", mode='rb') as reader, obj.writer("wb") as writer:
+                writer.write(reader.read())
 
         :param mode: Write mode - as supported by WriteModes
         :param pre_sign: (Optional), enforce the pre_sign mode on the lakeFS server. If not set, will probe server for
@@ -698,9 +697,6 @@ class WriteableObject(StoredObject):
         :param metadata: (Optional) User defined metadata to save on the object
         :return: A Writer object
         """
-        with open("my_file", mode='rb') as reader:
-            with self.writer("wb") as writer:
-                writer.write(reader.read())
         return ObjectWriter(self,
                             mode=mode,
                             pre_sign=pre_sign,

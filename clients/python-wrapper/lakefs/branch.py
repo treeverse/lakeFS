@@ -183,7 +183,7 @@ class Branch(Reference):
 
             branch = lakefs.repository("<repository_name>").branch("<branch_name>")
             # list objects on a common prefix
-            objs = branch.objects(prefix="my-object-prefix/")
+            objs = branch.objects(prefix="my-object-prefix/", max_amount=100)
             # delete objects which have "foo" in their name
             branch.delete_objects([o.path for o in objs if "foo" in o.path])
 

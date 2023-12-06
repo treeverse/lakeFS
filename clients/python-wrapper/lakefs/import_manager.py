@@ -49,9 +49,6 @@ class ImportManager:
 
     def __init__(self, repository_id: str, branch_id: str, commit_message: Optional[str] = "",
                  commit_metadata: Optional[Dict] = None, client: Optional[Client] = DEFAULT_CLIENT) -> None:
-        self.prefix(object_store_uri="s3://import-bucket/data1/",
-                    destination="import-prefix/").object(object_store_uri="s3://import-bucket/data2/imported_file",
-                                                         destination="import-prefix/imported_file")
         self._client = client
         self._repo_id = repository_id
         self._branch_id = branch_id
