@@ -3,19 +3,18 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to lakeFS's Python SDK Library Documentation!
-=====================================================
-
-.. toctree::
-   :maxdepth: 4
-   :caption: Contents:
-   
-   lakefs
-
 .. include:: ../README.md
    :parser: markdown
 
-Indices and tables
+API Reference
+=============
+
+.. toctree::
+   :maxdepth: 1
+   
+   lakefs
+
+Indices and Tables
 ==================
 
 * :ref:`genindex`
