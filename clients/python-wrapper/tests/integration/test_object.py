@@ -1,4 +1,7 @@
+import csv
 import io
+import json
+import xml.etree.ElementTree as ET
 from typing import get_args
 
 import pytest
@@ -159,3 +162,63 @@ def test_writer_different_params(setup_repo, w_mode, r_mode, pre_sign):
         assert res.decode('utf-8') == expected
     else:
         assert res == expected
+
+
+def test_read_all(setup_repo):
+    clt, repo = setup_repo
+    data = open("../files/mock.csv", "rb").read()
+
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+        data=data, pre_sign=False)
+
+    read_data = obj.reader().read()
+    assert read_data == data
+
+
+def test_read_csv(setup_repo):
+    clt, repo = setup_repo
+    data = open("../files/mock.csv", "rb").read()
+
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+        data=data, pre_sign=False)
+
+    uploaded = csv.reader(obj.reader('r', buffer_size=300))
+    source = csv.reader(open("../files/mock.csv", "r"))
+    for uploaded_row, source_row in zip(uploaded, source):
+        assert uploaded_row == source_row
+
+
+def test_read_json(setup_repo):
+    clt, repo = setup_repo
+    data = open("../files/mock.json", "rb").read()
+
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+        data=data, pre_sign=False)
+
+    uploaded = json.loads(obj.reader(buffer_size=1000).read())
+    source = json.loads(open("../files/mock.json", "r").read())
+    assert uploaded == source
+
+
+def test_read_xml(setup_repo):
+    clt, repo = setup_repo
+    data = open("../files/mock.xml", "rb").read()
+
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+        data=data, pre_sign=False)
+
+    uploaded = ET.parse(obj.reader(buffer_size=1000))
+    source = ET.parse("../files/mock.xml")
+    uploaded_root = uploaded.getroot()
+    source_root = source.getroot()
+    assert uploaded_root.tag == source_root.tag
+    assert uploaded_root.attrib == source_root.attrib
+    assert uploaded_root.text == source_root.text
+    assert uploaded_root.tail == source_root.tail
+
+    for uploaded_child, source_child in zip(uploaded_root, source_root):
+        for uploaded_child_child, source_child_child in zip(uploaded_child, source_child):
+            assert uploaded_child_child.tag == source_child_child.tag
+            assert uploaded_child_child.attrib == source_child_child.attrib
+            assert uploaded_child_child.text == source_child_child.text
+            assert uploaded_child_child.tail == source_child_child.tail

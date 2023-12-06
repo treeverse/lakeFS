@@ -9,6 +9,7 @@ import binascii
 import io
 import json
 import os
+import re
 import tempfile
 import urllib.parse
 from abc import abstractmethod
@@ -29,6 +30,7 @@ from lakefs.exceptions import (
     ForbiddenException,
     PermissionException,
     ObjectExistsException,
+    InvalidRangeException,
 )
 from lakefs.models import ObjectInfo
 
@@ -37,6 +39,7 @@ _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
 #                not be created.
 _WRITER_BUFFER_SIZE = 32 * 1024 * 1024
 
+_READER_BUFFER_SIZE = 5 * 2 ** 20  # 5MB
 ReadModes = Literal['r', 'rb']
 WriteModes = Literal['x', 'xb', 'w', 'wb']
 
@@ -148,13 +151,13 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
         """
         Unsupported by lakeFS implementation
         """
-        raise io.UnsupportedOperation
+        return self.readline()
 
     def __iter__(self) -> Iterator[AnyStr]:
         """
         Unsupported by lakeFS implementation
         """
-        raise io.UnsupportedOperation
+        return self
 
     def __enter__(self) -> LakeFSIOBase:
         return self
@@ -184,8 +187,17 @@ class ObjectReader(LakeFSIOBase):
     This Object is instantiated and returned for immutable reference types (Commit, Tag...)
     """
 
+    _size: int
+    _loc: int
+    _buffer_size: int
+    _buffer: bytes
+
     def __init__(self, obj: StoredObject, mode: ReadModes, pre_sign: Optional[bool] = None,
-                 client: Optional[Client] = None) -> None:
+                 client: Optional[Client] = None, buffer_size: int = _READER_BUFFER_SIZE) -> None:
+        self._size = 0
+        self._loc = 0
+        self._buffer_size = buffer_size
+        self._buffer = b''
         if mode not in get_args(ReadModes):
             raise ValueError(f"invalid read mode: '{mode}'. ReadModes: {ReadModes}")
 
@@ -248,6 +260,47 @@ class ObjectReader(LakeFSIOBase):
         self._pos = pos
         return pos
 
+    def read_bytes(self, n: int = None) -> bytes:
+        """
+        Read range data
+        """
+        if n and n <= 0:
+            raise OSError("read_bytes must be a positive integer")
+
+        read_range = self._get_range_string(start=self._pos, read_bytes=n)
+
+        try:
+
+            with api_exception_handler(_io_exception_handler):
+                resp = self._client.sdk_client.objects_api.get_object_with_http_info(self._obj.repo,
+                                                                                     self._obj.ref,
+                                                                                     self._obj.path,
+                                                                                     range=read_range,
+                                                                                     presign=self.pre_sign)
+        except InvalidRangeException:
+            # This is done in order to behave like the built-in open() function
+            return b''
+
+        self._size = self.size_from_response(resp)
+        contents = resp.data
+        self._pos += len(contents)  # Update pointer position
+        return contents
+
+    @staticmethod
+    def size_from_response(resp):
+        # if range extract size from range
+        content_range = resp.headers.get('content-range')
+        size = 0
+        if content_range:
+            match = re.search(r'/(\d+)$', content_range)
+            size = int(match.group(1)) - 1 if match else None
+        else:
+            # else extract size from content-length
+            content_length = resp.headers.get('content-length')
+            if content_length:
+                size = int(content_length)
+        return size
+
     def read(self, n: int = None) -> str | bytes:
         """
         Read object data
@@ -260,21 +313,56 @@ class ObjectReader(LakeFSIOBase):
         :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
         :raise ServerException: for any other errors
         """
-        if n and n <= 0:
-            raise OSError("read_bytes must be a positive integer")
 
-        read_range = self._get_range_string(start=self._pos, read_bytes=n)
-        with api_exception_handler(_io_exception_handler):
-            contents = self._client.sdk_client.objects_api.get_object(self._obj.repo,
-                                                                      self._obj.ref,
-                                                                      self._obj.path,
-                                                                      range=read_range,
-                                                                      presign=self.pre_sign)
-        self._pos += len(contents)  # Update pointer position
-        if 'b' not in self._mode:
-            return contents.decode('utf-8')
+        return self.cast_by_mode(self.read_bytes(n))
 
-        return contents
+    def readline(self, length: int = -1):
+        """
+        Read and return a line from the stream.
+        If size is specified, at most size bytes will be read.
+        """
+
+        if length >= 0:
+            read_length = length
+        else:
+            read_length = self._buffer_size
+        if length == 0:
+            return self.cast_by_mode(b'')
+        if self._size == 0:
+            self._buffer = self.read_bytes(read_length)
+            # TODO(Guys): should we handle case where size is still 0 (by exception or API call to stat object)?
+        # +1 to include b'\n'
+        maybe_break = self._buffer[self._loc:self._loc + read_length].find(b'\n') + 1
+        if maybe_break >= 1:
+            # Found in buffer
+            retval = self._buffer[self._loc:self._loc + maybe_break]
+            self._loc += min(self._size - self._loc, maybe_break)
+            return self.cast_by_mode(retval)
+        elif 0 < length <= len(self._buffer) - self._loc:
+            # searched area is not to end of buffer
+            retval = self._buffer[self._loc:self._loc + length]
+            self._loc += length
+            return self.cast_by_mode(retval)
+        elif len(self._buffer) == self._size:
+            # reached end of file
+            retval = self._buffer[self._loc:self._size]
+            self._loc = self._size
+            return self.cast_by_mode(retval)
+        # else not in buffer and more to fetch
+        # clean up buffer before reading more
+        self._buffer = self._buffer[self._loc:]
+        self._loc = 0
+        b = self.read_bytes(read_length)
+        if b == b'':
+            # EOF
+            return self.cast_by_mode(b'')
+        self._buffer = self._buffer + b
+        return self.readline(length)
+
+    def cast_by_mode(self, retval):
+        if self.mode == 'r':
+            return retval.decode('utf-8')
+        return retval
 
     def flush(self) -> None:
         """
@@ -532,7 +620,8 @@ class StoredObject(_BaseLakeFSObject):
         """
         return self._path
 
-    def reader(self, mode: ReadModes = 'rb', pre_sign: Optional[bool] = None) -> ObjectReader:
+    def reader(self, mode: ReadModes = 'rb', pre_sign: Optional[bool] = None,
+               buffer_size: Optional[int] = None) -> ObjectReader:
         """
         Context manager which provide a file-descriptor like object that allow reading the given object.
 
@@ -551,12 +640,13 @@ class StoredObject(_BaseLakeFSObject):
                     print(fd.read(10))
                     fd.seek(10, os.SEEK_CUR)
 
+        :param buffer_size:
         :param mode: Read mode - as supported by ReadModes
         :param pre_sign: (Optional), enforce the pre_sign mode on the lakeFS server. If not set, will probe server for
             information.
         :return: A Reader object
         """
-        return ObjectReader(self, mode=mode, pre_sign=pre_sign, client=self._client)
+        return ObjectReader(self, mode=mode, pre_sign=pre_sign, client=self._client, buffer_size=buffer_size)
 
     def stat(self) -> ObjectInfo:
         """
