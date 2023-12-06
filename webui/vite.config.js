@@ -22,6 +22,15 @@ export default ({ command }) => {
       })
     ],
     publicDir: './pub',
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-ipynb-renderer': ['react-ipynb-renderer']
+          }
+        }
+      }
+    }
   };
 
   // in development
@@ -50,7 +59,7 @@ export default ({ command }) => {
       },
       build: {
         sourcemap: 'inline',
-      },
+      }
     };
   } 
   // while building
