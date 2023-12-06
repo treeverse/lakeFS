@@ -46,9 +46,8 @@ class Repository:
             return the existing repository without creating a new one
         :param kwargs: Additional Keyword Arguments to send to the server
         :return: The lakeFS SDK object representing the repository
-        :raises:
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
         repository_creation = lakefs_sdk.RepositoryCreation(name=self._id,
                                                             storage_namespace=storage_namespace,
@@ -72,10 +71,9 @@ class Repository:
         """
         Delete repository from lakeFS server
 
-        :raises:
-            NotFoundException if repository by this id does not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise NotFoundException: if repository by this id does not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
         with api_exception_handler():
             self._client.sdk_client.repositories_api.delete_repository(self._id)
@@ -117,10 +115,9 @@ class Repository:
         :param after: Return items after this value
         :param prefix: Return items prefixed with this value
         :param kwargs: Additional Keyword Arguments to send to the server
-        :raises:
-            NotFoundException if repository does not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise NotFoundException: if repository does not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
 
         for res in generate_listing(self._client.sdk_client.branches_api.list_branches, self._id,
@@ -136,12 +133,10 @@ class Repository:
         :param after: Return items after this value
         :param prefix: Return items prefixed with this value
         :param kwargs: Additional Keyword Arguments to send to the server
-        :raises:
-            NotFoundException if repository does not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise NotFoundException: if repository does not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
-
         for res in generate_listing(self._client.sdk_client.tags_api.list_tags, self._id,
                                     max_amount=max_amount, after=after, prefix=prefix, **kwargs):
             yield Tag(self._id, res.id, client=self._client)

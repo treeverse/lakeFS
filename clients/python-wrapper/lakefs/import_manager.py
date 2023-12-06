@@ -20,6 +20,23 @@ class ImportManager:
     ImportManager provides an easy-to-use interface to perform imports with multiple sources.
     It provides both synchronous and asynchronous functionality allowing the user to start an import process,
     continue executing logic and poll for the import completion.
+
+    ImportManager usage example:
+
+    .. code-block:: python
+
+        import lakefs
+
+        branch = lakefs.repository("<repository_name>").branch("<branch_name>")
+        mgr = branch.import_data(commit_message="my imported data", metadata={"foo": "bar"})
+
+        # add sources for import
+        mgr.prefix(object_store_uri="s3://import-bucket/data1/",
+                   destination="import-prefix/").object(object_store_uri="s3://import-bucket/data2/imported_file",
+                                                        destination="import-prefix/imported_file")
+        # start import and wait
+        mgr.run()
+
     """
     _client: Client
     _repo_id: str
@@ -81,12 +98,11 @@ class ImportManager:
         Start import, reporting back (and storing) a process id
 
         :return: The import process identifier in lakeFS
-        :raises:
-            ImportManagerException if an import process is already in progress
-            NotFoundException if branch or repository do not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ValidationError if path_type is not one of the allowed values
-            ServerException for any other errors
+        :raise ImportManagerException: if an import process is already in progress
+        :raise NotFoundException: if branch or repository do not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ValidationError: if path_type is not one of the allowed values
+        :raise ServerException: for any other errors
         """
         if self._in_progress:
             raise ImportManagerException("Import in progress")
@@ -124,11 +140,10 @@ class ImportManager:
 
         :param poll_interval: The interval for polling the import status.
         :return: Import status as returned by the lakeFS server
-        :raises:
-            ImportManagerException if no import is in progress
-            NotFoundException if branch, repository or import id do not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise ImportManagerException: if no import is in progress
+        :raise NotFoundException: if branch, repository or import id do not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
         if self._import_id is None:
             raise ImportManagerException("No import in progress")
@@ -143,8 +158,7 @@ class ImportManager:
 
         :param poll_interval: The interval for polling the import status.
         :return: Import status as returned by the lakeFS server
-        :raises:
-            See start(), wait()
+        :raises: See start(), wait()
         """
         self.start()
         wait_kwargs = {} if poll_interval is None else {"poll_interval": poll_interval}
@@ -154,11 +168,10 @@ class ImportManager:
         """
         Cancel an ongoing import process
 
-        :raises:
-            NotFoundException if branch, repository or import id do not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ConflictException if the import was already completed
-            ServerException for any other errors
+        :raise NotFoundException: if branch, repository or import id do not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ConflictException: if the import was already completed
+        :raise ServerException: for any other errors
         """
         if self._import_id is None:  # Can't cancel on no id
             raise ImportManagerException("No import in progress")
@@ -174,11 +187,10 @@ class ImportManager:
         Get the current import status
 
         :return: Import status as returned by the lakeFS server
-        :raises:
-            ImportManagerException if no import is in progress
-            NotFoundException if branch, repository or import id do not exist
-            NotAuthorizedException if user is not authorized to perform this operation
-            ServerException for any other errors
+        :raise ImportManagerException: if no import is in progress
+        :raise NotFoundException: if branch, repository or import id do not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
         """
 
         if self._import_id is None:

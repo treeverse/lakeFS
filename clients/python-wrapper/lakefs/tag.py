@@ -23,10 +23,9 @@ class Tag(Reference):
         :param source_ref_id: The reference id to create the tag on
         :param exist_ok: If True returns the existing Tag reference otherwise raises exception
         :return: A lakeFS SDK Tag object
-        :raises:
-            NotAuthorizedException if user is not authorized to perform this operation
-            NotFoundException if source_ref_id doesn't exist on the lakeFS server
-            ServerException for any other errors.
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise NotFoundException: if source_ref_id doesn't exist on the lakeFS server
+        :raise ServerException: for any other errors.
         """
         tag_creation = lakefs_sdk.TagCreation(id=self.id, ref=str(source_ref_id))
 
@@ -44,10 +43,9 @@ class Tag(Reference):
         """
         Delete the tag from the lakeFS server
 
-        :raises:
-            NotAuthorizedException if user is not authorized to perform this operation
-            NotFoundException if source_ref_id doesn't exist on the lakeFS server
-            ServerException for any other errors
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise NotFoundException: if source_ref_id doesn't exist on the lakeFS server
+        :raise ServerException: for any other errors
         """
         with api_exception_handler():
             self._client.sdk_client.tags_api.delete_tag(self._repo_id, self.id)
