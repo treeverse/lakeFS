@@ -1,5 +1,6 @@
-import pytest
 import uuid
+import pytest
+
 import lakefs
 
 from tests.integration.conftest import _setup_repo, get_storage_namespace
