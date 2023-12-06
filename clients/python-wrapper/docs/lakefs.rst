@@ -18,11 +18,3 @@ Submodules
    lakefs.reference
    lakefs.repository
    lakefs.tag
-
-Module contents
----------------
-
-.. automodule:: lakefs
-   :members:
-   :undoc-members:
-   :show-inheritance:
