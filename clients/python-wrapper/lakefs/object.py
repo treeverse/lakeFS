@@ -18,7 +18,7 @@ import lakefs_sdk
 import urllib3
 from lakefs_sdk import StagingMetadata
 
-from lakefs.client import Client, DEFAULT_CLIENT
+from lakefs.client import Client, _BaseLakeFSObject
 from lakefs.exceptions import (
     api_exception_handler,
     handle_http_error,
@@ -41,12 +41,10 @@ ReadModes = Literal['r', 'rb']
 WriteModes = Literal['x', 'xb', 'w', 'wb']
 
 
-class LakeFSIOBase(IO):
+class LakeFSIOBase(_BaseLakeFSObject, IO):
     """
     Base class for the lakeFS Reader and Writer classes
     """
-
-    _client: Client
     _obj: StoredObject
     _mode: ReadModes
     _pos: int
@@ -54,12 +52,12 @@ class LakeFSIOBase(IO):
     _is_closed: bool = False
 
     def __init__(self, obj: StoredObject, mode: Union[ReadModes, WriteModes], pre_sign: Optional[bool] = None,
-                 client: Optional[Client] = DEFAULT_CLIENT) -> None:
+                 client: Optional[Client] = None) -> None:
         self._obj = obj
         self._mode = mode
         self._pre_sign = pre_sign if pre_sign is not None else client.storage_config.pre_sign_support
-        self._client = client
         self._pos = 0
+        super().__init__(client)
 
     @property
     def mode(self) -> str:
@@ -187,7 +185,7 @@ class ObjectReader(LakeFSIOBase):
     """
 
     def __init__(self, obj: StoredObject, mode: ReadModes, pre_sign: Optional[bool] = None,
-                 client: Optional[Client] = DEFAULT_CLIENT) -> None:
+                 client: Optional[Client] = None) -> None:
         if mode not in get_args(ReadModes):
             raise ValueError(f"invalid read mode: '{mode}'. ReadModes: {ReadModes}")
 
@@ -308,7 +306,7 @@ class ObjectWriter(LakeFSIOBase):
                  pre_sign: Optional[bool] = None,
                  content_type: Optional[str] = None,
                  metadata: Optional[dict[str, str]] = None,
-                 client: Optional[Client] = DEFAULT_CLIENT) -> None:
+                 client: Optional[Client] = None) -> None:
 
         if 'x' in mode and obj.exists():  # Requires explicit create
             raise ObjectExistsException
@@ -492,21 +490,20 @@ class ObjectWriter(LakeFSIOBase):
         raise io.UnsupportedOperation
 
 
-class StoredObject:
+class StoredObject(_BaseLakeFSObject):
     """
     Class representing an object in lakeFS.
     """
-    _client: Client
     _repo_id: str
     _ref_id: str
     _path: str
     _stats: Optional[ObjectInfo] = None
 
-    def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = DEFAULT_CLIENT):
-        self._client = client
+    def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = None):
         self._repo_id = repository
         self._ref_id = reference
         self._path = path
+        super().__init__(client)
 
     def __str__(self) -> str:
         return self.path
@@ -619,7 +616,8 @@ class WriteableObject(StoredObject):
     This Object is instantiated and returned upon invoking writer() on Branch reference type.
     """
 
-    def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = DEFAULT_CLIENT) -> None:
+    def __init__(self, repository: str, reference: str, path: str,
+                 client: Optional[Client] = None) -> None:
         super().__init__(repository, reference, path, client=client)
 
     def upload(self,
