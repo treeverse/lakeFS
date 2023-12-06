@@ -59,8 +59,8 @@ def test_ref_sanity(setup_repo):
     ref = repo.ref(ref_id)
     assert ref.repo_id == repo.properties.id
     assert ref.id == ref_id
-    assert ref.metadata() == {}
-    assert ref.commit_message() == "Repository created"
+    assert ref.get_commit().metadata == {}
+    assert ref.get_commit().message == "Repository created"
 
 
 def test_tag_sanity(setup_repo):
@@ -70,14 +70,14 @@ def test_tag_sanity(setup_repo):
 
     # expect not found
     with expect_exception_context(NotFoundException):
-        tag.commit_message()
+        tag.get_commit()
 
     commit = repo.commit("main")
     res = tag.create(commit.id)
     assert res == tag
     assert tag.id == tag_name
-    assert tag.metadata() == commit.metadata()
-    assert tag.commit_message() == commit.commit_message()
+    assert tag.get_commit().metadata == commit.get_commit().metadata
+    assert tag.get_commit().message == commit.get_commit().message
 
     # Create again
     with expect_exception_context(ConflictException):
@@ -92,7 +92,7 @@ def test_tag_sanity(setup_repo):
 
     # expect not found
     with expect_exception_context(NotFoundException):
-        tag.metadata()
+        tag.get_commit()
 
     # Delete twice
     with expect_exception_context(NotFoundException):

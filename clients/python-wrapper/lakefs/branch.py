@@ -21,12 +21,12 @@ class Branch(Reference):
     Class representing a branch in lakeFS.
     """
 
-    def _get_commit(self):
+    def get_commit(self):
         """
         For branches override the default _get_commit method to ensure we always fetch the latest head
         """
         self._commit = None
-        return super()._get_commit()
+        return super().get_commit()
 
     def create(self, source_reference_id: str | Reference, exist_ok: bool = False) -> Branch:
         """
@@ -136,7 +136,7 @@ class Branch(Reference):
 
         return WriteableObject(self.repo_id, self._id, path, client=self._client)
 
-    def uncommitted(self, max_amount: Optional[int], after: Optional[str] = None, prefix: Optional[str] = None,
+    def uncommitted(self, max_amount: Optional[int] = None, after: Optional[str] = None, prefix: Optional[str] = None,
                     **kwargs) -> Generator[Change]:
         """
         Returns a diff generator of uncommitted changes on this branch

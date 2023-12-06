@@ -86,30 +86,19 @@ class Reference(_BaseLakeFSObject):
                                     max_amount=max_amount, **kwargs):
             yield Commit(**res.dict())
 
-    def _get_commit(self):
+    def get_commit(self) -> Commit:
+        """
+        Returns the underlying commit referenced by this reference id
+
+        :raise NotFoundException: if this reference does not exist
+        :raise NotAuthorizedException: if user is not authorized to perform this operation
+        :raise ServerException: for any other errors
+        """
         if self._commit is None:
             with api_exception_handler():
                 commit = self._client.sdk_client.commits_api.get_commit(self._repo_id, self._id)
                 self._commit = Commit(**commit.dict())
         return self._commit
-
-    def metadata(self) -> dict[str, str]:
-        """
-        Return commit metadata for this reference id
-        """
-        return self._get_commit().metadata
-
-    def commit_message(self) -> str:
-        """
-        Return commit message for this reference id
-        """
-        return self._get_commit().message
-
-    def commit_id(self) -> str:
-        """
-        Return commit id for this reference id
-        """
-        return self._get_commit().id
 
     def diff(self,
              other_ref: str | Reference,
