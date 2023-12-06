@@ -2,16 +2,17 @@ import time
 
 from tests.utests.common import expect_exception_context
 from lakefs.exceptions import NotFoundException, ConflictException, ObjectNotFoundException
-from lakefs import RepositoryProperties, WriteableObject
+import lakefs
 
 
 def test_repository_sanity(storage_namespace, setup_repo):
     _, repo = setup_repo
+    repo = lakefs.repository(repo.properties.id)  # test the lakefs.repository function works properly
     default_branch = "main"
-    expected_properties = RepositoryProperties(id=repo.properties.id,
-                                               default_branch=default_branch,
-                                               storage_namespace=storage_namespace,
-                                               creation_date=repo.properties.creation_date)
+    expected_properties = lakefs.RepositoryProperties(id=repo.properties.id,
+                                                      default_branch=default_branch,
+                                                      storage_namespace=storage_namespace,
+                                                      creation_date=repo.properties.creation_date)
     assert repo.properties == expected_properties
 
     # Create with allow exists
@@ -103,7 +104,7 @@ def test_object_sanity(setup_repo):
     data = b"test_data"
     path = "test_obj"
     metadata = {"foo": "bar"}
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path=path, client=clt).upload(
+    obj = lakefs.WriteableObject(repository=repo.properties.id, reference="main", path=path, client=clt).upload(
         data=data, metadata=metadata)
     with obj.reader() as fd:
         assert fd.read() == data
