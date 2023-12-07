@@ -1,13 +1,16 @@
-import csv
 import io
+import csv
 import json
-import xml.etree.ElementTree as ET
+import math
+from xml.etree import ElementTree
 from typing import get_args
 
+import yaml
 import pytest
 
+from tests.integration.conftest import TEST_DATA
 from tests.utests.common import expect_exception_context
-from lakefs.exceptions import ObjectExistsException, InvalidRangeException, NotFoundException
+from lakefs.exceptions import ObjectExistsException, NotFoundException
 from lakefs.object import WriteableObject, WriteModes, ReadModes
 
 
@@ -26,16 +29,14 @@ def test_object_read_seek(setup_repo, pre_sign):
 
         assert fd.read() == data[7:]
 
-        # This should raise an exception
-        with expect_exception_context(InvalidRangeException):
-            fd.read(1)
+        # This should return an empty string (simulates behavior of builtin open())
+        assert len(fd.read(1)) == 0
 
         fd.seek(0)
         for c in data:
             assert ord(fd.read(1)) == c
-        # This should raise an exception
-        with expect_exception_context(InvalidRangeException):
-            fd.read(1)
+        # This should return an empty string (simulates behavior of builtin open())
+        assert len(fd.read(1)) == 0
 
 
 def test_object_upload_exists(setup_repo):
@@ -164,7 +165,16 @@ def test_writer_different_params(setup_repo, w_mode, r_mode, pre_sign):
         assert res == expected
 
 
-def test_byte_by_byte(setup_repo):
+def _upload_file(repo, test_file):
+    obj = repo.branch("main").object("test_obj")
+
+    with open(test_file, "rb") as fd, obj.writer() as writer:
+        writer.write(fd.read())
+
+    return obj
+
+
+def test_read_byte_by_byte(setup_repo):
     clt, repo = setup_repo
 
     data = b'test_data'
@@ -176,60 +186,70 @@ def test_byte_by_byte(setup_repo):
         byte = reader.read(1)
         if not byte:
             break
-        res = res + byte
+        res += byte
 
     assert res == data
 
 
-def test_read_all(setup_repo):
-    clt, repo = setup_repo
-    with open("../files/mock.csv", "rb") as fd:
+@TEST_DATA
+def test_read_all(setup_repo, datafiles):
+    _, repo = setup_repo
+    test_file = datafiles / "mock.csv"
+    obj = _upload_file(repo, test_file)
+
+    with open(test_file, "r", encoding="utf-8") as fd:
         data = fd.read()
-
-        obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
-            data=data, pre_sign=False)
-
-    read_data = obj.reader().read()
-    assert read_data == data
+        read_data = obj.reader("r").read()
+        assert read_data == data
 
 
-def test_read_csv(setup_repo):
-    clt, repo = setup_repo
-    with open("../files/mock.csv", "rb") as fd:
-        obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
-            data=fd.read(), pre_sign=False)
+@TEST_DATA
+def test_read_csv(setup_repo, datafiles):
+    _, repo = setup_repo
+    test_file = datafiles / "mock.csv"
+    obj = _upload_file(repo, test_file)
 
     uploaded = csv.reader(obj.reader('r', buffer_size=1000))
 
-    with open("../files/mock.csv", "r", encoding="utf-8") as fd:
+    with open(test_file, "r", encoding="utf-8") as fd:
         source = csv.reader(fd)
         for uploaded_row, source_row in zip(uploaded, source):
             assert uploaded_row == source_row
 
 
-def test_read_json(setup_repo):
-    clt, repo = setup_repo
-    data = ''
-    with open("../files/mock.json", "rb") as fd:
-        data = fd.read()
+@TEST_DATA
+def test_read_json(setup_repo, datafiles):
+    _, repo = setup_repo
+    test_file = datafiles / "mock.json"
+    obj = _upload_file(repo, test_file)
 
-        obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
-            data=data, pre_sign=False)
-    with open("../files/mock.json", "r", encoding="utf-8") as fd:
+    with open(test_file, "r", encoding="utf-8") as fd:
         source = json.load(fd)
-        uploaded = json.load(obj.reader(buffer_size=1000))
+        uploaded = json.load(obj.reader(mode="r", buffer_size=1000))
 
         assert uploaded == source
 
 
-def test_read_xml(setup_repo):
-    clt, repo = setup_repo
-    with open("../files/mock.xml", "rb") as fd:
-        obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
-            data=fd.read(), pre_sign=False)
+@TEST_DATA
+def test_read_yaml(setup_repo, datafiles):
+    _, repo = setup_repo
+    test_file = datafiles / "mock.yaml"
+    obj = _upload_file(repo, test_file)
 
-    uploaded = ET.parse(obj.reader(buffer_size=1000))
-    source = ET.parse("../files/mock.xml")
+    with open(test_file, "r", encoding="utf-8") as fd:
+        source = yaml.load(fd, Loader=yaml.Loader)
+        uploaded = yaml.load(obj.reader(mode="r", buffer_size=1000), Loader=yaml.Loader)
+        assert uploaded == source
+
+
+@TEST_DATA
+def test_read_xml(setup_repo, datafiles):
+    _, repo = setup_repo
+    test_file = datafiles / "mock.xml"
+    obj = _upload_file(repo, test_file)
+
+    uploaded = ElementTree.parse(obj.reader(mode="r", buffer_size=1000))
+    source = ElementTree.parse(test_file)
     uploaded_root = uploaded.getroot()
     source_root = source.getroot()
     assert uploaded_root.tag == source_root.tag
@@ -243,3 +263,40 @@ def test_read_xml(setup_repo):
             assert uploaded_child_child.attrib == source_child_child.attrib
             assert uploaded_child_child.text == source_child_child.text
             assert uploaded_child_child.tail == source_child_child.tail
+
+
+def test_readline_no_newline(setup_repo):
+    clt, repo = setup_repo
+    data = b'test_data'
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+        data=data, pre_sign=False)
+
+    assert obj.reader().readline() == data
+
+    assert obj.reader(buffer_size=8).readline() == data
+
+
+def test_readline_partial_line_buffer(setup_repo):
+    clt, repo = setup_repo
+    data = "a" * 15 + "\n" + "b" * 25 + "\n" + "That is all folks! "
+    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+        data=data, pre_sign=False)
+
+    with obj.reader(buffer_size=10, mode="r") as reader:
+        assert reader.readline() == "a" * 15 + "\n"
+        assert reader.readline() == "b" * 25 + "\n"
+        assert reader.readline() == "That is all folks! "
+        assert reader.readline() == ""
+        reader.seek(0)
+        assert reader.readline() == "a" * 15 + "\n"
+        assert reader.read() == data[16:]
+
+    # Read with limit
+    with obj.reader(buffer_size=5, mode="r") as reader:
+        for i in range(math.ceil(len(data) / 10)):
+            end = min((i + 1) * 10, len(data))
+            read = reader.readline(10)
+            print(read)
+            assert read == data[i * 10:end]
+
+        assert reader.read() == ""

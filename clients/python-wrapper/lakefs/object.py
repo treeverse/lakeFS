@@ -8,6 +8,7 @@ import base64
 import binascii
 import io
 import json
+import math
 import os
 import re
 import tempfile
@@ -38,8 +39,9 @@ _LAKEFS_METADATA_PREFIX = "x-lakefs-meta-"
 # _BUFFER_SIZE - Writer buffer size. While buffer size not exceed, data will be maintained in memory and file will
 #                not be created.
 _WRITER_BUFFER_SIZE = 32 * 1024 * 1024
+# _READ_BLOCK_SIZE - Improves reading performance by defining a minimal size to read
+_READ_BLOCK_SIZE = 5 * 1024 * 1024
 
-_READER_BUFFER_SIZE = 5 * 2 ** 20  # 5MB
 ReadModes = Literal['r', 'rb']
 WriteModes = Literal['x', 'xb', 'w', 'wb']
 
@@ -113,13 +115,13 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
 
     def readline(self, limit: int = -1):
         """
-        Currently unsupported
+        Must be explicitly implemented by inheriting class
         """
         raise io.UnsupportedOperation
 
     def readlines(self, hint: int = -1):
         """
-        Currently unsupported
+        Must be explicitly implemented by inheriting class
         """
         raise io.UnsupportedOperation
 
@@ -148,15 +150,9 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
         raise io.UnsupportedOperation
 
     def __next__(self) -> AnyStr:
-        """
-        Unsupported by lakeFS implementation
-        """
         return self.readline()
 
     def __iter__(self) -> Iterator[AnyStr]:
-        """
-        Unsupported by lakeFS implementation
-        """
         return self
 
     def __enter__(self) -> LakeFSIOBase:
@@ -187,16 +183,13 @@ class ObjectReader(LakeFSIOBase):
     This Object is instantiated and returned for immutable reference types (Commit, Tag...)
     """
 
-    _size: int
-    _loc: int
-    _buffer_size: int
+    _size: int = math.inf
+    _block_size: int
     _buffer: bytes
 
     def __init__(self, obj: StoredObject, mode: ReadModes, pre_sign: Optional[bool] = None,
-                 client: Optional[Client] = None, buffer_size: int = _READER_BUFFER_SIZE) -> None:
-        self._size = 0
-        self._loc = 0
-        self._buffer_size = buffer_size
+                 buffer_size: int = _READ_BLOCK_SIZE, client: Optional[Client] = None) -> None:
+        self._block_size = buffer_size
         self._buffer = b''
         if mode not in get_args(ReadModes):
             raise ValueError(f"invalid read mode: '{mode}'. ReadModes: {ReadModes}")
@@ -260,17 +253,22 @@ class ObjectReader(LakeFSIOBase):
         self._pos = pos
         return pos
 
-    def read_bytes(self, n: int = None) -> bytes:
-        """
-        Read range data
-        """
-        if n and n <= 0:
-            raise OSError("read_bytes must be a positive integer")
+    def _read_buffer(self, size: int) -> bytes:
+        data = self._buffer[self._pos: self._pos + size]
+        self._pos += size
+        return data
 
-        read_range = self._get_range_string(start=self._pos, read_bytes=n)
+    def _read_from_store(self, size: int):
+        """
+        Read from the blockstore into the buffer
+        :param size: Size to read in bytes
+        :return: The number of bytes actually read
+        """
+        if not size < math.inf:  # In case size is not determined yet - provide an open-ended range
+            size = None
 
+        read_range = self._get_range_string(start=len(self._buffer), read_bytes=size)
         try:
-
             with api_exception_handler(_io_exception_handler):
                 resp = self._client.sdk_client.objects_api.get_object_with_http_info(self._obj.repo,
                                                                                      self._obj.ref,
@@ -279,15 +277,32 @@ class ObjectReader(LakeFSIOBase):
                                                                                      presign=self.pre_sign)
         except InvalidRangeException:
             # This is done in order to behave like the built-in open() function
-            return b''
+            return 0
 
-        self._size = self.size_from_response(resp)
-        contents = resp.data
-        self._pos += len(contents)  # Update pointer position
-        return contents
+        if self._size is math.inf:  # Do it only once
+            self._size = self._size_from_response(resp)
 
-    @staticmethod
-    def size_from_response(resp):
+        self._buffer += resp.data
+
+        return len(resp.data)
+
+    def read_bytes(self, n: int = None) -> bytes:
+        """
+        Read range data
+        """
+        if n is not None and n <= 0:
+            raise OSError("read_bytes must be a positive integer")
+
+        read_from_buffer = n if n is not None else self._size - self._pos
+
+        if self._pos + read_from_buffer <= len(self._buffer):  # Data in buffer - no need to fetch from server
+            return self._read_buffer(read_from_buffer)
+
+        read_from_store = max(read_from_buffer, _READ_BLOCK_SIZE)
+        actual_read = self._read_from_store(read_from_store)
+        return self._read_buffer(actual_read)
+
+    def _size_from_response(self, resp):
         """
         Extract object size from response headers
 
@@ -296,15 +311,19 @@ class ObjectReader(LakeFSIOBase):
         """
         # if range extract size from range
         content_range = resp.headers.get('content-range')
-        size = 0
+        size = None
         if content_range:
             match = re.search(r'/(\d+)$', content_range)
-            size = int(match.group(1)) - 1 if match else None
+            size = int(match.group(1)) if match else None
         else:
             # else extract size from content-length
             content_length = resp.headers.get('content-length')
             if content_length:
                 size = int(content_length)
+
+        if size is None:  # Explicitly stat object
+            with api_exception_handler(_io_exception_handler):
+                size = self._obj.stat().size_bytes
         return size
 
     def read(self, n: int = None) -> str | bytes:
@@ -319,60 +338,52 @@ class ObjectReader(LakeFSIOBase):
         :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
         :raise ServerException: for any other errors
         """
+        return self._cast_by_mode(self.read_bytes(n))
 
-        return self.cast_by_mode(self.read_bytes(n))
-
-    def readline(self, limit: int = -1):
+    def readline(self, limit: int = -1) -> AnyStr:
         """
         Read and return a line from the stream.
         If size is specified, at most size bytes will be read.
         """
+        return self._readline_rec(limit, self._pos)
 
+    def _readline_rec(self, limit: int, search_from: int = 0) -> AnyStr:
         if limit >= 0:
             read_length = limit
         else:
-            read_length = self._buffer_size
-        if limit == 0:
-            return self.cast_by_mode(b'')
-        if self._size == 0:
-            self._buffer = self.read_bytes(read_length)
-            # TODO(Guys): should we handle case where size is still 0 (by exception or API call to stat object)?
-        # +1 to include b'\n'
-        maybe_break = self._buffer[self._loc:self._loc + read_length].find(b'\n') + 1
-        if maybe_break >= 1:
+            read_length = self._block_size
+
+        if limit == 0 or self._size == 0:  # Read size 0 or 0 sized file
+            return self._cast_by_mode(b'')
+
+        if len(self._buffer) == 0:  # read first bytes to save redundant recursion
+            self._read_from_store(read_length)
+
+        # First check if buffer size reached limit and return contents if so
+        if 0 < limit <= len(self._buffer) - self._pos:
+            return self._cast_by_mode(self._read_buffer(limit))
+
+        # Now check if buffer contains newline
+        found = self._buffer[search_from:].find(b'\n') + 1  # +1 to include b'\n'
+        if found > 0:
+            bytes_to_read = search_from - self._pos + found
             # Found in buffer
-            retval = self._buffer[self._loc:self._loc + maybe_break]
-            self._loc += min(self._size - self._loc, maybe_break)
-            return self.cast_by_mode(retval)
-        if 0 < limit <= len(self._buffer) - self._loc:
-            # searched area is not to end of buffer
-            retval = self._buffer[self._loc:self._loc + limit]
-            self._loc += limit
-            return self.cast_by_mode(retval)
+            return self._cast_by_mode(self._read_buffer(bytes_to_read))
+
+        # Now check if we read the entire file
         if len(self._buffer) == self._size:
             # reached end of file
-            retval = self._buffer[self._loc:self._size]
-            self._loc = self._size
-            return self.cast_by_mode(retval)
-        # else not in buffer and more to fetch
-        # clean up buffer before reading more
-        self._buffer = self._buffer[self._loc:]
-        self._loc = 0
-        b = self.read_bytes(read_length)
-        if b == b'':
-            # EOF
-            return self.cast_by_mode(b'')
-        self._buffer = self._buffer + b
-        return self.readline(limit)
+            return self._cast_by_mode(self._read_buffer(len(self._buffer) - self._pos))
 
-    def cast_by_mode(self, retval):
-        """
-        Cast retval to str regarding the expected mode
+        # Else not in buffer and more to fetch
+        search_from = len(self._buffer)
+        if self._read_from_store(read_length) == 0:  # EOF
+            return self._cast_by_mode(self._buffer[self._pos:])
 
-        :param retval:
-        :return:
-        """
-        if self.mode == 'r':
+        return self._readline_rec(limit, search_from)
+
+    def _cast_by_mode(self, retval):
+        if 'b' not in self.mode:
             return retval.decode('utf-8')
         return retval
 
@@ -633,7 +644,7 @@ class StoredObject(_BaseLakeFSObject):
         return self._path
 
     def reader(self, mode: ReadModes = 'rb', pre_sign: Optional[bool] = None,
-               buffer_size: Optional[int] = None) -> ObjectReader:
+               buffer_size: int = _READ_BLOCK_SIZE) -> ObjectReader:
         """
         Context manager which provide a file-descriptor like object that allow reading the given object.
 
