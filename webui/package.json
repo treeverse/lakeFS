@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test-watch": "vitest",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
-    "typesync": "npx typesync"
+    "typesync": "typesync"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.28.0",
