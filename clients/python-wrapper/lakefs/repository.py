@@ -151,7 +151,7 @@ class Repository(_BaseLakeFSObject):
     @property
     def properties(self) -> RepositoryProperties:
         """
-        Return the repositories properties object
+        Return the repository's properties object
         """
         if self._properties is None:
             with api_exception_handler():
@@ -163,9 +163,10 @@ class Repository(_BaseLakeFSObject):
 
     @property
     def id(self) -> str:
-        if self._id:
-            return self._id
-        return self.properties.id
+        """
+        Returns the repository's id
+        """
+        return self._id
 
     def __repr__(self) -> str:
         return f'Repository(id="{self.id}")'

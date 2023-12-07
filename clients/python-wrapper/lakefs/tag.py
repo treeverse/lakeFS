@@ -50,3 +50,6 @@ class Tag(Reference):
         with api_exception_handler():
             self._client.sdk_client.tags_api.delete_tag(self._repo_id, self.id)
             self._commit = None
+
+    def __repr__(self):
+        return f'Tag(repository="{self.repo_id}", id="{self.id}")'

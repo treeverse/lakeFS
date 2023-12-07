@@ -169,11 +169,8 @@ class Reference(_BaseLakeFSObject):
         """
         return StoredObject(self._repo_id, self._id, path, self._client)
 
-    def __str__(self) -> str:
-        return self._id
-
     def __repr__(self):
-        return f"lakefs://{self._repo_id}/{self._id}"
+        return f'Reference(repository="{self.repo_id}", id="{self.id}")'
 
 
 def generate_listing(func, *args, max_amount: Optional[int] = None, **kwargs):
