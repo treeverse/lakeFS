@@ -29,6 +29,7 @@ from lakefs.exceptions import (
     ForbiddenException,
     PermissionException,
     ObjectExistsException,
+    InvalidRangeException,
 )
 from lakefs.models import ObjectInfo
 
@@ -110,13 +111,13 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
 
     def readline(self, limit: int = -1):
         """
-        Currently unsupported
+        Must be explicitly implemented by inheriting class
         """
         raise io.UnsupportedOperation
 
     def readlines(self, hint: int = -1):
         """
-        Currently unsupported
+        Must be explicitly implemented by inheriting class
         """
         raise io.UnsupportedOperation
 
@@ -145,16 +146,10 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
         raise io.UnsupportedOperation
 
     def __next__(self) -> AnyStr:
-        """
-        Unsupported by lakeFS implementation
-        """
-        raise io.UnsupportedOperation
+        return self.readline()
 
     def __iter__(self) -> Iterator[AnyStr]:
-        """
-        Unsupported by lakeFS implementation
-        """
-        raise io.UnsupportedOperation
+        return self
 
     def __enter__(self) -> LakeFSIOBase:
         return self
@@ -184,10 +179,14 @@ class ObjectReader(LakeFSIOBase):
     This Object is instantiated and returned for immutable reference types (Commit, Tag...)
     """
 
+    _readlines_buf: io.BytesIO
+
     def __init__(self, obj: StoredObject, mode: ReadModes, pre_sign: Optional[bool] = None,
                  client: Optional[Client] = None) -> None:
         if mode not in get_args(ReadModes):
             raise ValueError(f"invalid read mode: '{mode}'. ReadModes: {ReadModes}")
+
+        self._readlines_buf = io.BytesIO(b"")
 
         super().__init__(obj, mode, pre_sign, client)
 
@@ -248,6 +247,24 @@ class ObjectReader(LakeFSIOBase):
         self._pos = pos
         return pos
 
+    def _cast_by_mode(self, retval):
+        if 'b' not in self.mode:
+            return retval.decode('utf-8')
+        return retval
+
+    def _read(self, read_range: str) -> str | bytes:
+        try:
+            with api_exception_handler(_io_exception_handler):
+                return self._client.sdk_client.objects_api.get_object(self._obj.repo,
+                                                                      self._obj.ref,
+                                                                      self._obj.path,
+                                                                      range=read_range,
+                                                                      presign=self.pre_sign)
+
+        except InvalidRangeException:
+            # This is done in order to behave like the built-in open() function
+            return b''
+
     def read(self, n: int = None) -> str | bytes:
         """
         Read object data
@@ -264,17 +281,23 @@ class ObjectReader(LakeFSIOBase):
             raise OSError("read_bytes must be a positive integer")
 
         read_range = self._get_range_string(start=self._pos, read_bytes=n)
-        with api_exception_handler(_io_exception_handler):
-            contents = self._client.sdk_client.objects_api.get_object(self._obj.repo,
-                                                                      self._obj.ref,
-                                                                      self._obj.path,
-                                                                      range=read_range,
-                                                                      presign=self.pre_sign)
+        contents = self._read(read_range)
         self._pos += len(contents)  # Update pointer position
-        if 'b' not in self._mode:
-            return contents.decode('utf-8')
 
-        return contents
+        return self._cast_by_mode(contents)
+
+    def readline(self, limit: int = -1):
+        """
+        Read and return a line from the stream.
+
+        :param limit: If limit > -1 returns at most limit bytes
+        """
+        if self._readlines_buf.getbuffer().nbytes == 0:
+            self._readlines_buf = io.BytesIO(self._read(self._get_range_string(0)))
+        self._readlines_buf.seek(self._pos)
+        line = self._readlines_buf.readline(limit)
+        self._pos = self._readlines_buf.tell()
+        return self._cast_by_mode(line)
 
     def flush(self) -> None:
         """
