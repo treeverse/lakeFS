@@ -2,7 +2,7 @@
   "name": "lakefs-ui",
   "version": "0.1.0",
   "engines": {
-    "node": ">= 16.16.0"
+    "node": ">= 18"
   },
   "scripts": {
     "dev": "vite",
