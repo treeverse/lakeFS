@@ -2256,8 +2256,9 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	const content = "hello world this is my awesome content"
+
 	t.Run("upload object", func(t *testing.T) {
-		const content = "hello world this is my awesome content"
 		resp, err := uploadObjectHelper(t, ctx, clt, "foo/bar", strings.NewReader(content), repo, "main")
 		verifyResponseOK(t, resp, err)
 
@@ -2282,7 +2283,6 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 	})
 
 	t.Run("upload object missing branch", func(t *testing.T) {
-		const content = "hello world this is my awesome content"
 		resp, err := uploadObjectHelper(t, ctx, clt, "foo/bar", strings.NewReader(content), repo, "mainX")
 		testutil.Must(t, err)
 		if resp.JSON404 == nil {
@@ -2291,11 +2291,21 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 	})
 
 	t.Run("upload object missing repo", func(t *testing.T) {
-		const content = "hello world this is my awesome content"
 		resp, err := uploadObjectHelper(t, ctx, clt, "foo/bar", strings.NewReader(content), "repo55555", "main")
 		testutil.Must(t, err)
 		if resp.JSON404 == nil {
 			t.Fatal("Missing repository should return not found")
+		}
+	})
+
+	t.Run("upload object missing content type", func(t *testing.T) {
+		const contentType = ""
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, repo, "main", &apigen.UploadObjectParams{
+			Path: "foo/bar-no-content-type",
+		}, contentType, strings.NewReader(content))
+		testutil.Must(t, err)
+		if resp.JSON201 == nil {
+			t.Fatal("Missing content type should be successful, got status", resp.Status())
 		}
 	})
 }
