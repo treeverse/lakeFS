@@ -1,5 +1,5 @@
 import React from 'react';
-import { createRoot } from 'react-dom/client';
+import ReactDOM from 'react-dom';
 
 // styles
 import 'bootstrap/dist/css/bootstrap.css';
@@ -10,6 +10,4 @@ import {IndexPage} from './pages';
 
 const container = document.getElementById('root');
 if (!container) throw new Error("Failed to find root element!");
-
-const root = createRoot(container);
-root.render(<IndexPage />);
+ReactDOM.render(<IndexPage />, container);
