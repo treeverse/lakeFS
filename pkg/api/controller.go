@@ -2663,7 +2663,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 
 	// read request body parse multipart for "content" and upload the data
-	contentType := r.Header.Get("Content-Type")
+	contentType := catalog.ContentTypeOrDefault(r.Header.Get("Content-Type"))
 	mediaType, p, err := mime.ParseMediaType(contentType)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
