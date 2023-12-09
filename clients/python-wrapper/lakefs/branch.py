@@ -228,9 +228,6 @@ class Branch(Reference):
         reset_creation = lakefs_sdk.ResetCreation(path=path, type=path_type)
         return self._client.sdk_client.branches_api.reset_branch(self._repo_id, self.id, reset_creation)
 
-    def __repr__(self):
-        return f'Branch(repository="{self.repo_id}", id="{self.id}")'
-
 
 class Transaction(Branch):
     """
@@ -243,6 +240,3 @@ class Transaction(Branch):
 
     # TODO: Implement and check if we are OK with transaction returning a branch
     #  with capabilities such as commit and transaction
-
-    def __repr__(self):
-        return f'Transaction(repository="{self.repo_id}", branch_id="{self.id}")'
