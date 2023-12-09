@@ -14,7 +14,7 @@
     "typesync": "typesync"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "^1.26.0",
+    "@duckdb/duckdb-wasm": "^1.28.0",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@mui/material": "^5.11.1",
