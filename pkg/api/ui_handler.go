@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	gomime "github.com/cubewise-code/go-mime"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/treeverse/lakefs/pkg/api/params"
 	gwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/operations"
@@ -34,7 +33,7 @@ func NewUIHandler(gatewayDomains []string, snippets []params.CodeSnippet) http.H
 		panic(err)
 	}
 	fileSystem := http.FS(injectedContent)
-	nocacheContent := middleware.NoCache(http.StripPrefix("/", http.FileServer(fileSystem)))
+	nocacheContent := EtagMiddleware(injectedContent, http.StripPrefix("/", http.FileServer(fileSystem)))
 	return NewHandlerWithDefault(fileSystem, nocacheContent, gatewayDomains)
 }
 
@@ -45,7 +44,7 @@ func NewS3GatewayEndpointErrorHandler(gatewayDomains []string) http.Handler {
 			return
 		}
 
-		// For other requests, return generic not found error
+		// For other requests, return generic "not found" error
 		w.WriteHeader(http.StatusNotFound)
 	})
 }
