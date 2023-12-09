@@ -20,7 +20,8 @@ export default ({ command }) => {
       react(),
       eslintPlugin({
         include: ['src/**/*.jsx', 'src/**/*.js', 'src/**/*.ts', 'src/**/*.tsx']
-      })
+      }),
+      splitVendorChunkPlugin(),
     ],
     publicDir: './pub',
   };
