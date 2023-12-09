@@ -6,7 +6,7 @@
         "checkJs": false,
         "target": "ESNext",
         "isolatedModules": true,
-        "moduleResolution": "node",
+        "moduleResolution": "bundle",
         "allowSyntheticDefaultImports": true,
         "jsx": "preserve",
         "noEmit": true,
