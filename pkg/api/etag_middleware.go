@@ -1,7 +1,7 @@
 package api
 
 import (
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec
 	"encoding/hex"
 	"io"
 	"io/fs"
@@ -63,11 +63,12 @@ func scanFSEtags(fSys fs.FS) (map[string]string, error) {
 		}
 		defer func() { _ = f.Close() }()
 
-		h := md5.New()
+		h := md5.New() //nolint:gosec
 		if _, err := io.Copy(h, f); err != nil {
 			return err
 		}
-		etags["/"+fpath] = hex.EncodeToString(h.Sum(nil))
+		hashValue := hex.EncodeToString(h.Sum(nil))
+		etags["/"+fpath] = hashValue
 		return nil
 	})
 	if err != nil {

@@ -33,8 +33,8 @@ func NewUIHandler(gatewayDomains []string, snippets []params.CodeSnippet) http.H
 		panic(err)
 	}
 	fileSystem := http.FS(injectedContent)
-	nocacheContent := EtagMiddleware(injectedContent, http.StripPrefix("/", http.FileServer(fileSystem)))
-	return NewHandlerWithDefault(fileSystem, nocacheContent, gatewayDomains)
+	etagHandler := EtagMiddleware(injectedContent, http.StripPrefix("/", http.FileServer(fileSystem)))
+	return NewHandlerWithDefault(fileSystem, etagHandler, gatewayDomains)
 }
 
 func NewS3GatewayEndpointErrorHandler(gatewayDomains []string) http.Handler {
