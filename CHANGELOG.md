@@ -4,6 +4,8 @@
 
 :bug: Bugs fixed:
 
+- Fix: User with permission to write actions can impersonate another user when auth token is configured in environment variable
+  ([GHSA-26hr-q2wp-rvc5](https://github.com/treeverse/lakeFS/security/advisories/GHSA-26hr-q2wp-rvc5))
 - Fix: S3 Gateway block unsupported S3 operations (#7028)
 - Fix: Better error handling on hook error (#7081)
 - Fix: Upload object without specify content type (#7130)
