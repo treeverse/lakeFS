@@ -1,5 +1,3 @@
-import queryString from "query-string"
-
 export const API_ENDPOINT = '/api/v1';
 export const DEFAULT_LISTING_AMOUNT = 100;
 
@@ -26,17 +24,17 @@ class LocalCache {
 
 const cache = new LocalCache();
 
+export const qs = (queryParts) => {
+    const parts = Object.keys(queryParts).map(key => [key, queryParts[key]]);
+    return new URLSearchParams(parts).toString();
+};
+
 export const linkToPath = (repoId, branchId, path, presign = false) => {
     const query = qs({
         path,
         presign,
     });
     return `${API_ENDPOINT}/repositories/${repoId}/refs/${branchId}/objects?${query}`;
-};
-
-export const qs = (queryParts) => {
-    const parts = Object.keys(queryParts).map(key => [key, queryParts[key]]);
-    return new URLSearchParams(parts).toString();
 };
 
 export const extractError = async (response) => {
@@ -751,18 +749,11 @@ class Commits {
         return response.json();
     }
 
-    async commit(repoId, branchId, message, metadata = {}, source_metarange = "") {
-        const requestURL = queryString.stringifyUrl({
-            url: `/repositories/${repoId}/branches/${branchId}/commits`,
-            query: {source_metarange: source_metarange}
-        });
-        const parsedURL = queryString.exclude(requestURL, (name, value) => value === "", {parseNumbers: true});
-        const response = await apiRequest(parsedURL, {
-
+    async commit(repoId, branchId, message, metadata = {}) {
+        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits`, {
             method: 'POST',
             body: JSON.stringify({message, metadata}),
         });
-
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }

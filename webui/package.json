@@ -26,7 +26,6 @@
     "lodash": "^4.17.21",
     "p-map": "^6.0.0",
     "prismjs": "^1.29.0",
-    "query-string": "^7.1.1",
     "react": "^18.2.0",
     "react-bootstrap": "^2.8.0",
     "react-diff-viewer-continued": "^3.2.3",
