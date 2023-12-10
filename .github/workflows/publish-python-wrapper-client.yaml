@@ -10,22 +10,11 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Python Build and Make Package
-      run: make package-python-wrapper
-
-    - name: Publish Distribution 📦 to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
-        packages-dir: clients/python-wrapper/dist/
-        verbose: true
-
     - name: Extract docs version
       working-directory: ./clients/python-wrapper/
       shell: bash
       run: |
-          echo "tag=$(python setup.py --version)" >> $GITHUB_OUTPUT
+        echo "tag=$(python setup.py --version)" >> $GITHUB_OUTPUT
       id: docver
 
     - name: Set up Python 3.9
@@ -34,7 +23,7 @@ jobs:
         python-version: '3.9'
         cache: 'pip'
         cache-dependency-path: 'clients/python-wrapper/requirements.txt'
-    
+
     - name: Generate and Build Documentation
       run: |
         pip install -r clients/python-wrapper/requirements.txt
@@ -50,3 +39,15 @@ jobs:
         destination_folder: /
         user_email: 'support@treeverse.io'
         user_name: 'python-docs-action'
+
+    - name: Python Build and Make Package
+      run: make package-python-wrapper
+
+    - name: Publish Distribution 📦 to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        packages-dir: clients/python-wrapper/dist/
+        verbose: true
+  
