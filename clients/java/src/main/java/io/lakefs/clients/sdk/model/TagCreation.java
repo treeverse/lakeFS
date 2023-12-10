@@ -48,7 +48,7 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * TagCreation
+ * Make tag ID point at this REF.
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TagCreation {
@@ -70,7 +70,7 @@ public class TagCreation {
   }
 
    /**
-   * Get id
+   * ID of tag to create
    * @return id
   **/
   @javax.annotation.Nonnull
@@ -91,7 +91,7 @@ public class TagCreation {
   }
 
    /**
-   * Get ref
+   * the commit to tag
    * @return ref
   **/
   @javax.annotation.Nonnull

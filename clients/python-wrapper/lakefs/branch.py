@@ -54,8 +54,9 @@ class Branch(Reference):
             if isinstance(e, ConflictException) and exist_ok:
                 return None
             return e
-
-        branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=str(source_reference_id))
+        if isinstance(source_reference_id, Reference):
+            source_reference_id = source_reference_id.id
+        branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=source_reference_id)
         with api_exception_handler(handle_conflict):
             self._client.sdk_client.branches_api.create_branch(self._repo_id, branch_creation)
         return self
@@ -192,10 +193,12 @@ class Branch(Reference):
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
-        if isinstance(object_paths, (str, StoredObject)):
-            object_paths = [str(object_paths)]
+        if isinstance(object_paths, str):
+            object_paths = [object_paths]
+        elif isinstance(object_paths, StoredObject):
+            object_paths = [object_paths.path]
         elif isinstance(object_paths, Iterable):
-            object_paths = {str(o) for o in object_paths}
+            object_paths = [o.path if isinstance(o, StoredObject) else o for o in object_paths]
         with api_exception_handler():
             return self._client.sdk_client.objects_api.delete_objects(
                 self._repo_id,

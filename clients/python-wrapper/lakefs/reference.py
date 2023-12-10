@@ -120,10 +120,13 @@ class Reference(_BaseLakeFSObject):
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
+        other_ref_id = other_ref
+        if isinstance(other_ref, Reference):
+            other_ref_id = other_ref.id
         for diff in generate_listing(self._client.sdk_client.refs_api.diff_refs,
                                      repository=self._repo_id,
                                      left_ref=self._id,
-                                     right_ref=str(other_ref),
+                                     right_ref=other_ref_id,
                                      after=after,
                                      max_amount=max_amount,
                                      prefix=prefix,
@@ -142,11 +145,13 @@ class Reference(_BaseLakeFSObject):
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
+        if isinstance(destination_branch_id, Reference):
+            destination_branch_id = destination_branch_id.id
         with api_exception_handler():
             merge = lakefs_sdk.Merge(**kwargs)
             res = self._client.sdk_client.refs_api.merge_into_branch(self._repo_id,
                                                                      self._id,
-                                                                     str(destination_branch_id),
+                                                                     destination_branch_id,
                                                                      merge=merge)
             return res.reference
 
@@ -158,11 +163,9 @@ class Reference(_BaseLakeFSObject):
         """
         return StoredObject(self._repo_id, self._id, path, self._client)
 
-    def __str__(self) -> str:
-        return self._id
-
     def __repr__(self):
-        return f"lakefs://{self._repo_id}/{self._id}"
+        class_name = self.__class__.__name__
+        return f'{class_name}(repository="{self.repo_id}", id="{self.id}")'
 
 
 def generate_listing(func, *args, max_amount: Optional[int] = None, **kwargs):

@@ -30,7 +30,7 @@ setup(
     keywords=["OpenAPI", "OpenAPI-Generator", "lakeFS API", "Python Wrapper"],
     python_requires=">=3.9",
     install_requires=REQUIRES,
-    tests_require=["pytest ~= 7.4.3"],
+    tests_require=["pytest ~= 7.4.3", "pytest-datafiles ~= 3.0.0"],
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     license="Apache 2.0",

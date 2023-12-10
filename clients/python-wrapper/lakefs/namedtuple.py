@@ -27,6 +27,12 @@ class LenientNamedTuple:
         self.__initialized = True
         super().__init__()
 
+    def __repr__(self):
+        class_name = self.__class__.__name__
+        if hasattr(self, 'id'):
+            return f'{class_name}(id="{self.id}")'
+        return f'{class_name}()'
+
     def __setattr__(self, name, value):
         if self.__initialized:
             raise AttributeError("can't set attribute")
