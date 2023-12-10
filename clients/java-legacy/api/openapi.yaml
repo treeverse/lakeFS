@@ -6751,7 +6751,7 @@ components:
           description: ID of tag to create
           type: string
         ref:
-          description: reference to commit to tag
+          description: the commit to tag
           type: string
       required:
       - id

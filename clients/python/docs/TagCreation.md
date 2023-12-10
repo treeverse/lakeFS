@@ -7,7 +7,7 @@ Make tag ID point at this REF.
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** | ID of tag to create | 
-**ref** | **str** | reference to commit to tag | 
+**ref** | **str** | the commit to tag | 
 
 ## Example
 

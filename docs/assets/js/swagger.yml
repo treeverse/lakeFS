@@ -595,7 +595,7 @@ components:
           description: ID of tag to create
         ref:
           type: string
-          description: reference to commit to tag
+          description: the commit to tag
 
     TaskInfo:
       type: object

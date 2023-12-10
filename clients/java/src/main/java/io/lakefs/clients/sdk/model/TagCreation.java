@@ -91,7 +91,7 @@ public class TagCreation {
   }
 
    /**
-   * reference to commit to tag
+   * the commit to tag
    * @return ref
   **/
   @javax.annotation.Nonnull

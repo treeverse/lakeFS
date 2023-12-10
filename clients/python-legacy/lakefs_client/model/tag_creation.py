@@ -108,7 +108,7 @@ class TagCreation(ModelNormal):
 
         Args:
             id (str): ID of tag to create
-            ref (str): reference to commit to tag
+            ref (str): the commit to tag
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -195,7 +195,7 @@ class TagCreation(ModelNormal):
 
         Args:
             id (str): ID of tag to create
-            ref (str): reference to commit to tag
+            ref (str): the commit to tag
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

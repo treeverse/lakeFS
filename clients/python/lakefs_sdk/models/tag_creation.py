@@ -27,7 +27,7 @@ class TagCreation(BaseModel):
     Make tag ID point at this REF.
     """
     id: StrictStr = Field(..., description="ID of tag to create")
-    ref: StrictStr = Field(..., description="reference to commit to tag")
+    ref: StrictStr = Field(..., description="the commit to tag")
     __properties = ["id", "ref"]
 
     class Config:

@@ -69,11 +69,11 @@ public class TagCreation {
   }
 
    /**
-   * reference to commit to tag
+   * the commit to tag
    * @return ref
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "reference to commit to tag")
+  @ApiModelProperty(required = true, value = "the commit to tag")
 
   public String getRef() {
     return ref;
