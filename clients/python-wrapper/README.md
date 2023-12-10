@@ -1,4 +1,4 @@
-# lakeFS High-Level Python SDK (Pre-release Beta)
+# lakeFS High-Level Python SDK
 
 lakeFS High Level SDK for Python, provides developers with the following features:
 1. Simpler programming interface with less configuration

@@ -15,7 +15,6 @@ import { RefContextProvider } from "../../../lib/hooks/repo";
 import { useStorageConfig } from "../../../lib/hooks/storageConfig";
 import { linkToPath } from "../../../lib/api";
 
-import "../../../styles/ipynb.css";
 import "../../../styles/quickstart.css";
 
 type ObjectViewerPathParams = {

@@ -146,7 +146,10 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
         raise io.UnsupportedOperation
 
     def __next__(self) -> AnyStr:
-        return self.readline()
+        line = self.readline()
+        if len(line) == 0:
+            raise StopIteration
+        return line
 
     def __iter__(self) -> Iterator[AnyStr]:
         return self
