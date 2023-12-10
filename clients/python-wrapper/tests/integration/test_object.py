@@ -306,3 +306,26 @@ def test_readline_partial_line_buffer(setup_repo):
             assert read == expected
 
         assert reader.read() == ""
+
+
+def test_write_read_csv(setup_repo):
+    _, repo = setup_repo
+    columns = ["ID", "Name", "Email"]
+    sample_data = [
+        ['1', "Alice", "alice@example.com"],
+        ['2', "Bob", "bob@example.com"],
+        ['3', "Carol", "carol@example.com"],
+    ]
+    obj = repo.branch("main").object(path="csv/sample_data.csv")
+
+    with obj.writer(mode='w', pre_sign=False, content_type="text/csv") as fd:
+        writer = csv.writer(fd)
+        writer.writerow(columns)
+        for row in sample_data:
+            writer.writerow(row)
+
+    for i, row in enumerate(csv.reader(obj.reader(mode='r'))):
+        if i == 0:
+            assert row == columns
+        else:
+            assert row == sample_data[i - 1]
