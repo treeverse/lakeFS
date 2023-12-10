@@ -1,12 +1,7 @@
 """
 lakeFS Client module
 
-
 Handles authentication against the lakeFS server and wraps the underlying lakefs_sdk client.
-The client module holds a DefaultClient which will attempt to initialize on module loading using
-environment credentials.
-In case no credentials exist, a call to init() will be required or a Client object must be created explicitly
-
 """
 
 from __future__ import annotations

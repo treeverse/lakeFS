@@ -660,7 +660,7 @@ class WriteableObject(StoredObject):
 
     def upload(self,
                data: str | bytes,
-               mode: WriteModes = 'wb',
+               mode: WriteModes = 'w',
                pre_sign: Optional[bool] = None,
                content_type: Optional[str] = None,
                metadata: Optional[dict[str, str]] = None) -> WriteableObject:
