@@ -48,3 +48,10 @@ class LenientNamedTuple:
                 return False
 
         return True
+
+    def __str__(self):
+        fields = {}
+        for k, v in self.__dict__.items():
+            if k != "unknown" and k[0] != "_":  # Filter internal and unknown fields
+                fields[k] = v
+        return str(fields)
