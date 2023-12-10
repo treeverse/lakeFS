@@ -312,6 +312,12 @@ class ObjectReader(LakeFSIOBase):
             return f"bytes={start}-"
         return f"bytes={start}-{start + read_bytes - 1}"
 
+    def __str__(self):
+        return self._obj.path
+
+    def __repr__(self):
+        return f'ObjectReader(path="{self._obj.path}")'
+
 
 class ObjectWriter(LakeFSIOBase):
     """
@@ -512,6 +518,9 @@ class ObjectWriter(LakeFSIOBase):
         """
         raise io.UnsupportedOperation
 
+    def __repr__(self):
+        return f'ObjectWriter(path="{self._obj.path}")'
+
 
 class StoredObject(_BaseLakeFSObject):
     """
@@ -532,7 +541,7 @@ class StoredObject(_BaseLakeFSObject):
         return self.path
 
     def __repr__(self):
-        return f"lakefs://{self._repo_id}/{self._ref_id}/{self._path}"
+        return f'StoredObject(repository="{self.repo}", reference="{self.ref}", path="{self.path}")'
 
     @property
     def repo(self) -> str:
@@ -642,6 +651,9 @@ class WriteableObject(StoredObject):
     def __init__(self, repository: str, reference: str, path: str,
                  client: Optional[Client] = None) -> None:
         super().__init__(repository, reference, path, client=client)
+
+    def __repr__(self):
+        return f'WriteableObject(repository="{self.repo}", reference="{self.ref}", path="{self.path}")'
 
     def upload(self,
                data: str | bytes,
