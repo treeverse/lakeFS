@@ -15,8 +15,8 @@ redirect_from:
 
 **High Level Python SDK**  <span class="badge mr-1">New</span>  
 We've just released a new High Level Python SDK library, and we're super excited to tell you about it! Continue reading to get the
-full story!
-Though our previous SDK client is still supported and maintained, we highly recommend using the new High Level SDK.
+full story!  
+Though our previous SDK client is still supported and maintained, we highly recommend using the new High Level SDK.  
 **For previous Python SDKs follow these links:**  
 [lakefs-sdk](https://pydocs-sdk.lakefs.io)  
 [legacy-sdk](https://pydocs.lakefs.io) (Depracated)
@@ -84,7 +84,7 @@ Lets see how we can interact with lakeFS using the High Level SDK.
 import lakefs
 
 repo = lakefs.repository("example-repo").create(storage_namespace="s3://storage-bucket/repos/example-repo")
-print(repo.properties.id)
+print(repo)
 ```
 
 If using an explicit client, create the Repository object and pass the client to it (note the changed syntax).
@@ -100,7 +100,7 @@ clt = Client(
 )
 
 repo = lakefs.Repository("example-repo", client=clt).create(storage_namespace="s3://storage-bucket/repos/example-repo")
-print(repo.properties)
+print(repo)
 ```
 
 #### Output
