@@ -25,8 +25,9 @@ import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 
 /**
- * TagCreation
+ * Make tag ID point at this REF.
  */
+@ApiModel(description = "Make tag ID point at this REF.")
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class TagCreation {
   public static final String SERIALIZED_NAME_ID = "id";
@@ -45,11 +46,11 @@ public class TagCreation {
   }
 
    /**
-   * Get id
+   * ID of tag to create
    * @return id
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(required = true, value = "ID of tag to create")
 
   public String getId() {
     return id;
@@ -68,11 +69,11 @@ public class TagCreation {
   }
 
    /**
-   * Get ref
+   * the commit to tag
    * @return ref
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @ApiModelProperty(required = true, value = "the commit to tag")
 
   public String getRef() {
     return ref;
