@@ -1,5 +1,16 @@
 # Changelog
 
+# v1.3.1
+
+:bug: Bugs fixed:
+
+- Fix: S3 Gateway block unsupported S3 operations (#7028)
+- Fix: Better error handling on hook error (#7081)
+- Fix: Upload object without specify content type (#7130)
+- Fix: UI notebook preview fix colors (#7141)
+- Fix: Match blockstore reader hash function (#7099) (thanks @hunjixin)
+- UI improve load by cache and split of embedded content (#7132,#7135)
+
 # v1.3.0
 
 :new: What's new:
