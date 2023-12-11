@@ -2,49 +2,58 @@ local pathlib = require("path")
 local json = require("encoding/json")
 local utils = require("lakefs/catalogexport/internal")
 
+--[[
+    Used to mark the objects to which a stat_object request was issued.
+    {
+        "table_path1": { "file1.parquet" = true, "file2.parquet" = true, ...},
+        "table_path2": { "file1.parquet" = true, "file2.parquet" = true, ...}
+    }
+]]
+local table_to_objects = {}
+
 package.loaded.lakefs = {
-    stat_object = function(repo, commit_id, path)
+    stat_object = function(_, _, path)
+        local parsed_path = pathlib.parse(path)
+        local table_path_base = parsed_path["parent"]
+        if not table_to_objects[table_path_base] then
+            table_to_objects[table_path_base] = {}
+        end
+        -- mark the given parquet file path under a specific table as requested.
+        table_to_objects[table_path_base][parsed_path["base_name"]] = true
         return 200, json.marshal({
-            physical_address = "s3://bucket/but-the-real-one/" .. path ,
+            physical_address = "s3://" .. path ,
         })
     end
 }
 
 local delta_export = require("lakefs/catalogexport/delta_exporter")
 
-local table_paths = {"path/to/table1", "path/to/table2"}
-
-local table_content = {
-    ["00000000000000000000.json"] = {
-        "{\"commitInfo\":\"some info\"}",
-        "{\"add\": {\"path\":\"part-c000.snappy.parquet\"}}",
-        "{\"remove\": {\"path\":\"part-c001.snappy.parquet\"}}",
-        "{\"protocol\":\"the protocol\"}",
-    },
-    ["00000000000000000001.json"] = {
-        "{\"metaData\":\"some metadata\"}",
-        "{\"add\": {\"path\":\"part-c002.snappy.parquet\"}}",
-        "{\"remove\": {\"path\":\"part-c003.snappy.parquet\"}}",
-    },
-}
-
-local mock_delta_client = {
-    get_table = function (repo, commit_id, path)
-        local content = {}
-        for _, v in pairs(table_content) do
-            table.insert(content, v)
+local function mock_delta_client(table_logs_content)
+    return {
+        get_table = function (_, _, path)
+            local table_log_contents = table_logs_content[path]
+            return table_log_contents
+            --[[ For the given table's path:
+                {"0" = <logical log content>, "1" = <logical log content>}
+            ]]
         end
-        return content
-    end
-}
-
--- Validates that the given key exists in the table.
-local function mock_object_writer(bucket, key, data)
-    local parsed_key = pathlib.parse(key)["base_name"]
-    assert(table_content[parsed_key], "unfamiliar key: " .. parsed_key)
+    }
 end
 
-local function assert_physical_address(delta_table_locations)
+--[[
+    Used to validate the expected Delta Log content
+    {
+        "<physical_table_log_entry_address>" = "<physical log content>",
+        ...
+    }
+]]
+local output_delta_log = {}
+
+local function mock_object_writer(_, key, data)
+    output_delta_log[key] = data
+end
+
+local function assert_physical_address(delta_table_locations, table_paths)
     local ns = action.storage_namespace
     local commit_id = action.commit_id
     local table_export_prefix = utils.get_storage_uri_prefix(ns, commit_id, action)
@@ -62,8 +71,104 @@ local function assert_physical_address(delta_table_locations)
     end
 end
 
--- Run delta export
-local delta_table_locations = delta_export.export_delta_log(action, table_paths, mock_object_writer, mock_delta_client)
+local function assert_lakefs_stats(table_paths, content_paths)
+    for _, table_path in ipairs(table_paths) do
+        local table = table_to_objects[table_path]
+        if not table then
+            error("missing lakeFS stat_object call for table path: " .. table_path .. "\n")
+        end
+        for _, data_path in ipairs(content_paths) do
+            if not table[data_path] then
+                error("missing lakeFS stat_object call for data path: " .. data_path .. " in table path: " .. table_path .. "\n")
+            end
+        end
+    end
+end
+
+local function assert_delta_log_content(delta_table_locations, table_to_physical_content)
+    for table_name, table_loc in pairs(delta_table_locations) do
+        local table_loc_key = utils.parse_storage_uri(table_loc).key
+        local content_table = table_to_physical_content[table_name]
+        if not content_table then
+            error("unknown table " .. table_name)
+        end
+        for entry, content in pairs(content_table) do
+            local full_key = table_loc_key .. "/" .. entry
+            local output_content = output_delta_log[full_key]
+            if not output_content then
+                error("missing log file for path: " .. full_key .. "\n")
+            end
+            local str_content = ""
+            for _, row in ipairs(content) do
+                str_content = str_content .. row .. "\n"
+            end
+            if output_content ~= str_content then
+                error("expected content:\n" .. str_content .. "\n\nactual content:\n" .. output_content)
+            end
+        end
+    end
+end
+
+-- Test data
+local data_paths = { "part-c000.snappy.parquet", "part-c001.snappy.parquet", "part-c002.snappy.parquet", "part-c003.snappy.parquet" }
+local test_table_paths = {"path/to/table1/", "path/to/table2/"}
+
+--[[ Used to return a mock response from "delta_client.get_table()"
+    {
+       "<n>" = {<initial log content>},
+       "<n+1>" = {<initial log content>},
+    }
+]]
+local table_logs_content = {}
+
+--[[ Used to validate the expected log content for a given table.
+    {<table_name1> = {
+       "<n>" = {<expected log content>},
+       "<n+1>" = {<expected log content>},
+    }},
+    ...
+]]
+local table_expected_log = {}
+for _, table_path in ipairs(test_table_paths) do
+    local table_name = pathlib.parse(table_path)["base_name"]
+    table_logs_content[table_path] = {
+        ["_delta_log/00000000000000000000.json"] = {
+            "{\"commitInfo\":\"some info\"}",
+            "{\"add\": {\"path\":\"part-c000.snappy.parquet\"}}",
+            "{\"remove\": {\"path\":\"part-c001.snappy.parquet\"}}",
+            "{\"protocol\":\"the protocol\"}",
+        },
+        ["_delta_log/00000000000000000001.json"] = {
+            "{\"metaData\":\"some metadata\"}",
+            "{\"add\": {\"path\":\"part-c002.snappy.parquet\"}}",
+            "{\"remove\": {\"path\":\"part-c003.snappy.parquet\"}}",
+        }
+    }
+    table_expected_log[table_name] = {
+        ["_delta_log/00000000000000000000.json"] = {
+            "{\"commitInfo\":\"some info\"}",
+            "{\"add\":{\"path\":\"s3://" .. table_path .. "part-c000.snappy.parquet\"}}",
+            "{\"remove\":{\"path\":\"s3://" .. table_path .. "part-c001.snappy.parquet\"}}",
+            "{\"protocol\":\"the protocol\"}",
+        },
+        ["_delta_log/00000000000000000001.json"] = {
+            "{\"metaData\":\"some metadata\"}",
+            "{\"add\":{\"path\":\"s3://" .. table_path .. "part-c002.snappy.parquet\"}}",
+            "{\"remove\":{\"path\":\"s3://" .. table_path .. "part-c003.snappy.parquet\"}}",
+        }
+    }
+end
+
+
+-- Run Delta export
+local delta_table_locations = delta_export.export_delta_log(
+        action,
+        test_table_paths,
+        mock_object_writer,
+        mock_delta_client(table_logs_content)
+)
 
 -- Test results
-assert_physical_address(delta_table_locations)
+assert_lakefs_stats(test_table_paths, data_paths)
+assert_physical_address(delta_table_locations, test_table_paths)
+assert_delta_log_content(delta_table_locations, table_expected_log)
