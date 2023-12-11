@@ -11,6 +11,10 @@ local utils = require("lakefs/catalogexport/internal")
 ]]
 local table_to_objects = {}
 
+local function generate_physical_address(path)
+    return "s3://" .. path
+end
+
 package.loaded.lakefs = {
     stat_object = function(_, _, path)
         local parsed_path = pathlib.parse(path)
@@ -21,7 +25,7 @@ package.loaded.lakefs = {
         -- mark the given parquet file path under a specific table as requested.
         table_to_objects[table_path_base][parsed_path["base_name"]] = true
         return 200, json.marshal({
-            physical_address = "s3://" .. path ,
+            physical_address = generate_physical_address(path) ,
         })
     end
 }
@@ -147,14 +151,14 @@ for _, table_path in ipairs(test_table_paths) do
     table_expected_log[table_name] = {
         ["_delta_log/00000000000000000000.json"] = {
             "{\"commitInfo\":\"some info\"}",
-            "{\"add\":{\"path\":\"s3://" .. table_path .. "part-c000.snappy.parquet\"}}",
-            "{\"remove\":{\"path\":\"s3://" .. table_path .. "part-c001.snappy.parquet\"}}",
+            "{\"add\":{\"path\":\"" .. generate_physical_address(table_path .. "part-c000.snappy.parquet") .. "\"}}",
+            "{\"remove\":{\"path\":\"" .. generate_physical_address(table_path .. "part-c001.snappy.parquet") .. "\"}}",
             "{\"protocol\":\"the protocol\"}",
         },
         ["_delta_log/00000000000000000001.json"] = {
             "{\"metaData\":\"some metadata\"}",
-            "{\"add\":{\"path\":\"s3://" .. table_path .. "part-c002.snappy.parquet\"}}",
-            "{\"remove\":{\"path\":\"s3://" .. table_path .. "part-c003.snappy.parquet\"}}",
+            "{\"add\":{\"path\":\"" .. generate_physical_address(table_path .. "part-c002.snappy.parquet") .. "\"}}",
+            "{\"remove\":{\"path\":\"" .. generate_physical_address(table_path .. "part-c003.snappy.parquet") .. "\"}}",
         }
     }
 end
