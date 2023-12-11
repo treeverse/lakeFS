@@ -2,9 +2,11 @@ import io
 import csv
 import json
 import math
+import os
 from xml.etree import ElementTree
 from typing import get_args
 
+import pandas as pd
 import yaml
 import pytest
 
@@ -37,6 +39,20 @@ def test_object_read_seek(setup_repo, pre_sign):
             assert ord(fd.read(1)) == c
         # This should return an empty string (simulates behavior of builtin open())
         assert len(fd.read(1)) == 0
+
+        fd.seek(-4, os.SEEK_END)
+        assert fd.read() == data[len(data) - 4:]
+
+        with expect_exception_context(OSError):
+            fd.seek(-len(data) - 1, os.SEEK_CUR)
+
+        assert fd.tell() == len(data)
+
+        fd.seek(-4, os.SEEK_CUR)
+        assert fd.read() == data[len(data) - 4:]
+
+        with expect_exception_context(io.UnsupportedOperation):
+            fd.seek(0, 10)
 
 
 def test_object_upload_exists(setup_repo):
@@ -194,7 +210,7 @@ def test_read_byte_by_byte(setup_repo):
 @TEST_DATA
 def test_read_all(setup_repo, datafiles):
     _, repo = setup_repo
-    test_file = datafiles / "mock.csv"
+    test_file = datafiles / "data.csv"
     obj = _upload_file(repo, test_file)
 
     with open(test_file, "r", encoding="utf-8") as fd:
@@ -206,7 +222,7 @@ def test_read_all(setup_repo, datafiles):
 @TEST_DATA
 def test_read_csv(setup_repo, datafiles):
     _, repo = setup_repo
-    test_file = datafiles / "mock.csv"
+    test_file = datafiles / "data.csv"
     obj = _upload_file(repo, test_file)
 
     uploaded = csv.reader(obj.reader('r'))
@@ -220,7 +236,7 @@ def test_read_csv(setup_repo, datafiles):
 @TEST_DATA
 def test_read_json(setup_repo, datafiles):
     _, repo = setup_repo
-    test_file = datafiles / "mock.json"
+    test_file = datafiles / "data.json"
     obj = _upload_file(repo, test_file)
 
     with open(test_file, "r", encoding="utf-8") as fd:
@@ -233,7 +249,7 @@ def test_read_json(setup_repo, datafiles):
 @TEST_DATA
 def test_read_yaml(setup_repo, datafiles):
     _, repo = setup_repo
-    test_file = datafiles / "mock.yaml"
+    test_file = datafiles / "data.yaml"
     obj = _upload_file(repo, test_file)
 
     with open(test_file, "r", encoding="utf-8") as fd:
@@ -243,9 +259,22 @@ def test_read_yaml(setup_repo, datafiles):
 
 
 @TEST_DATA
+def test_read_parquet(setup_repo, datafiles):
+    _, repo = setup_repo
+    test_file = datafiles / "data.parquet"
+    obj = _upload_file(repo, test_file)
+
+    uploaded = pd.read_parquet(obj.reader('rb'))
+    print(uploaded)
+    with open(test_file, "rb") as fd:
+        source = pd.read_parquet(fd)
+        assert source.equals(uploaded)
+
+
+@TEST_DATA
 def test_read_xml(setup_repo, datafiles):
     _, repo = setup_repo
-    test_file = datafiles / "mock.xml"
+    test_file = datafiles / "data.xml"
     obj = _upload_file(repo, test_file)
 
     uploaded = ElementTree.parse(obj.reader(mode="r"))
