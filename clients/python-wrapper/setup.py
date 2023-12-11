@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 NAME = "lakefs"
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 # To install the library, run the following
 #
 # python setup.py install
@@ -13,7 +13,7 @@ PYTHON_REQUIRES = ">=3.9"
 REQUIRES = [
     "pydantic >= 1.10.5, < 2",
     "setuptools == 68.2.2",
-    "lakefs-sdk ~= 1.1.0",
+    "lakefs-sdk ~= 1.0",
     "pyyaml ~= 6.0.1",
 ]
 
