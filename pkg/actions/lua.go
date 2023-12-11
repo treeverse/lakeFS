@@ -26,10 +26,11 @@ import (
 
 type LuaHook struct {
 	HookBase
-	Script     string
-	ScriptPath string
-	Args       map[string]interface{}
-	collector  stats.Collector
+	Script        string
+	ScriptPath    string
+	Args          map[string]interface{}
+	collector     stats.Collector
+	serverAddress string
 }
 
 func applyRecord(l *lua.State, actionName, hookID string, record graveler.HookRecord) {
@@ -89,7 +90,11 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 		return err
 	}
 	l := lua.NewState()
-	lualibs.OpenSafe(l, ctx, h.Config.Lua, &loggingBuffer{buf: buf, ctx: ctx})
+	osc := lualibs.OpenSafeConfig{
+		NetHTTPEnabled: h.Config.Lua.NetHTTPEnabled,
+		LakeFSAddr:     h.serverAddress,
+	}
+	lualibs.OpenSafe(l, ctx, osc, &loggingBuffer{buf: buf, ctx: ctx})
 	injectHookContext(l, ctx, user, h.Endpoint, h.Args)
 	applyRecord(l, h.ActionName, h.ID, record)
 
@@ -191,7 +196,7 @@ func DescendArgs(args interface{}, getter EnvGetter) (interface{}, error) {
 	}
 }
 
-func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, collector stats.Collector) (Hook, error) {
+func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, serverAddress string, collector stats.Collector) (Hook, error) {
 	// optional args
 	args := make(map[string]interface{})
 	argsVal, hasArgs := h.Properties["args"]
@@ -253,8 +258,9 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, collec
 			Config:     cfg,
 			Endpoint:   e,
 		},
-		ScriptPath: scriptFile,
-		Args:       args,
-		collector:  collector,
+		ScriptPath:    scriptFile,
+		Args:          args,
+		collector:     collector,
+		serverAddress: serverAddress,
 	}, nil
 }

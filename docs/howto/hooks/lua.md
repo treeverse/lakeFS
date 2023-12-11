@@ -403,13 +403,6 @@ local s3 = aws.s3_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_
 exporter.export_s3(s3, args.table_descriptor_path, action, {debug=true})
 ```
 
-### `lakefs/catalogexport/symlink_exporter.get_storage_uri_prefix(storage_ns, commit_id, action_info)`
-
-Generate prefix for Symlink file(s) structure that represents a `ref` and a `commit` in lakeFS.
-The output pattern `${storage_ns}_lakefs/exported/${ref}/${commit_id}/`.
-The `ref` is deduced from the action event in `action_info` (i.e branch name).
-
-
 ### `lakefs/catalogexport/glue_exporter`
 
 A Package for automating the export process from lakeFS stored tables into Glue catalog.

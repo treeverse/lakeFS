@@ -69,7 +69,7 @@ func TestLocalLoad(t *testing.T) {
 	outputWriter := catalog.NewActionsOutputWriter(c.BlockAdapter)
 
 	// wire actions
-	actionsService := actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, outputWriter, &actions.DecreasingIDGenerator{}, &stats.NullCollector{}, actions.Config{Enabled: true})
+	actionsService := actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, outputWriter, &actions.DecreasingIDGenerator{}, &stats.NullCollector{}, actions.Config{Enabled: true}, "")
 	c.SetHooksHandler(actionsService)
 
 	credentials, err := setup.CreateAdminUser(ctx, authService, conf, superuser)
