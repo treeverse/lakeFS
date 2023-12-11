@@ -84,6 +84,10 @@ arn:lakefs:fs:::*
 
 this allows us to create fine-grained policies affecting only a specific subset of resources.
 
+When specifying ARNs in the lakeFS configuration, the use of '*' at the end is crucial for proper application of configurations to subfolders. If '*' is included, 
+the configuration will apply to all subfolders and objects within the specified scope. However, if '*' is omitted, the configuration will not extend to subfolders,
+affecting only the specified level in the hierarchy.
+
 See below for a full reference of ARNs and actions.
 
 
