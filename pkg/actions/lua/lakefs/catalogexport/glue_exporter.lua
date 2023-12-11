@@ -8,7 +8,7 @@ local sym_exporter = require("lakefs/catalogexport/symlink_exporter")
 --[[
     Generate glue table name
     @descriptor(Table): object from (i.e _lakefs_tables/my_table.yaml)
-    @action_info(Table): the global action object 
+    @action_info(Table): the global action object
 ]]
 local function get_full_table_name(descriptor, action_info)
     local commit_id = action_info.commit_id
@@ -33,7 +33,7 @@ local function hive_col_to_glue(col)
     }
 end
 
--- Create list of partitions for Glue input from a Hive descriptor 
+-- Create list of partitions for Glue input from a Hive descriptor
 local function hive_partitions_to_glue_input(descriptor)
     local partitions = {}
     local cols = descriptor.schema.fields or {}
@@ -54,16 +54,16 @@ end
 
 -- Create list of columns for Glue excluding partitions
 local function hive_columns_to_glue_input(descriptor)
-    -- create set of partition names since they must not appear in the columns input in glue 
+    -- create set of partition names since they must not appear in the columns input in glue
     local partition_names = {}
     for _, p in ipairs(descriptor.partition_columns) do
         partition_names[p] = true
     end
-    -- create columns as inputs for glue 
+    -- create columns as inputs for glue
     local columns = {}
     local cols = descriptor.schema.fields or {}
     for _, col in ipairs(cols) do
-        if not partition_names[col.name] then -- not a partition 
+        if not partition_names[col.name] then -- not a partition
             table.insert(columns, hive_col_to_glue(col))
         end
     end
@@ -73,7 +73,7 @@ end
 -- default location value (e.g root location of either partitions or flat symlink.txt file)
 local function get_table_location(storage_base_prefix, descriptor, action_info)
     local commit_id = action_info.commit_id
-    local export_base_uri = sym_exporter.get_storage_uri_prefix(storage_base_prefix, commit_id, action_info)
+    local export_base_uri = utils.get_storage_uri_prefix(storage_base_prefix, commit_id, action_info)
     return pathlib.join("/", export_base_uri, descriptor.name)
 end
 
@@ -96,7 +96,7 @@ end
     @db(string): glue database name
     @table_src_path(string): path to table spec (i.e _lakefs_tables/my_table.yaml)
     @create_table_input(Table): struct mapping to table_input in AWS https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html#API_CreateTable_RequestSyntax
-    should contain inputs describing the data format (i.e InputFormat, OutputFormat, SerdeInfo) since the exporter is agnostic to this. 
+    should contain inputs describing the data format (i.e InputFormat, OutputFormat, SerdeInfo) since the exporter is agnostic to this.
     by default this function will configure table location and schema.
     @action_info(Table): the global action object
     @options:
@@ -112,7 +112,7 @@ local function export_glue(glue, db, table_src_path, create_table_input, action_
     -- get table desctiptor from _lakefs_tables/
     local descriptor = extractor.get_table_descriptor(lakefs, repo_id, commit_id, table_src_path)
 
-    -- get table symlink location uri 
+    -- get table symlink location uri
     local base_prefix = opts.export_base_uri or action_info.storage_namespace
     local symlink_location = get_table_location(base_prefix, descriptor, action_info)
 

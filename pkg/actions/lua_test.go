@@ -46,7 +46,7 @@ func TestNewLuaHook(t *testing.T) {
 				NetHTTPEnabled: true,
 			},
 		},
-		nil, &mockStatsCollector)
+		nil, "", &mockStatsCollector)
 	if err != nil {
 		t.Errorf("unexpedcted error: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestLuaRun(t *testing.T) {
 				NetHTTPEnabled: true,
 			},
 		},
-		nil, &mockStatsCollector)
+		nil, "", &mockStatsCollector)
 	if err != nil {
 		t.Errorf("unexpedcted error: %v", err)
 	}
@@ -130,7 +130,7 @@ func TestLuaRun_NetHttpDisabled(t *testing.T) {
 			Hooks:       nil,
 		},
 		actions.Config{Enabled: true},
-		nil, &mockStatsCollector)
+		nil, "", &mockStatsCollector)
 	if err != nil {
 		t.Errorf("unexpedcted error: %v", err)
 	}
@@ -281,7 +281,7 @@ print(code .. " " .. body .. " " .. status)
 						NetHTTPEnabled: true,
 					},
 				},
-				nil, &mockStatsCollector)
+				nil, "", &mockStatsCollector)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -400,7 +400,7 @@ func TestLuaRunTable(t *testing.T) {
 						NetHTTPEnabled: true,
 					},
 				},
-				nil, &mockStatsCollector)
+				nil, "", &mockStatsCollector)
 			if err != nil {
 				t.Errorf("unexpedcted error: %v", err)
 			}

@@ -1,4 +1,7 @@
 local url = require("net/url")
+local pathlib = require("path")
+local lakefs = require("lakefs")
+local json = require("encoding/json")
 local DEFAULT_SHORT_DIGEST_LEN=6
 
 local function deepcopy(orig)
@@ -18,9 +21,9 @@ end
 
 local function short_digest(digest, len)
     return digest:sub(1, len or DEFAULT_SHORT_DIGEST_LEN)
-end 
+end
 
--- paginate lakefs api 
+-- paginate lakefs api
 local function lakefs_paginiated_api(api_call, after)
     local next_offset = after
     local has_more = true
@@ -38,7 +41,7 @@ local function lakefs_paginiated_api(api_call, after)
     end
 end
 
--- paginage over lakefs objects 
+-- paginage over lakefs objects
 local function lakefs_object_pager(lakefs_client, repo_id, commit_id, after, prefix, delimiter, page_size)
     return lakefs_paginiated_api(function(next_offset)
         return lakefs_client.list_objects(repo_id, commit_id, next_offset, prefix, delimiter, page_size or 30)
@@ -59,11 +62,28 @@ end
 
 local function parse_storage_uri(uri)
     local u = url.parse(uri)
-    return { 
+    return {
         protocol = u.scheme,
         bucket = u.host,
         key = (u.path:sub(0, 1) == "/") and u.path:sub(2) or u.path,
     }
+end
+
+local function get_storage_uri_prefix(storage_ns, commit_id, action_info)
+    local branch_or_tag = ref_from_branch_or_tag(action_info)
+    local sha = short_digest(commit_id)
+    return pathlib.join("/", storage_ns, string.format("_lakefs/exported/%s/%s/", branch_or_tag, sha))
+end
+
+local function sortedKeys(query, sortFunction)
+    local keys, len = {}, 0
+    for k,_ in pairs(query) do
+        len = len + 1
+        keys[len] = k
+    end
+    table.sort(keys, sortFunction)
+
+    return keys
 end
 
 return {
@@ -71,6 +91,8 @@ return {
     parse_storage_uri=parse_storage_uri,
     short_digest=short_digest,
     ref_from_branch_or_tag=ref_from_branch_or_tag,
-    lakefs_object_pager=lakefs_object_pager, 
+    lakefs_object_pager=lakefs_object_pager,
     lakefs_paginiated_api=lakefs_paginiated_api,
+    sortedKeys = sortedKeys,
+    get_storage_uri_prefix = get_storage_uri_prefix,
 }

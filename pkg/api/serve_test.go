@@ -171,6 +171,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		idGen,
 		collector,
 		actionsConfig,
+		"",
 	)
 
 	c.SetHooksHandler(actionsService)
