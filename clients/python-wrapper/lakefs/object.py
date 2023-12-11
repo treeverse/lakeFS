@@ -235,13 +235,16 @@ class ObjectReader(LakeFSIOBase):
             os.SEEK_SET or 0 (absolute file positioning);
             other values are os.SEEK_CUR or 1 (seek relative to the current position) and os.SEEK_END or 2
             (seek relative to the file’s end)
-            os.SEEK_END is not supported
         :raise OSError: if calculated new position is negative
+        :raise io.UnsupportedOperation: If whence value is unsupported
         """
         if whence == os.SEEK_SET:
             pos = offset
         elif whence == os.SEEK_CUR:
-            pos = offset - whence
+            pos = self._pos + offset
+        elif whence == os.SEEK_END:
+            size = self._obj.stat().size_bytes  # Seek end requires us to know the size of the file
+            pos = size + offset
         else:
             raise io.UnsupportedOperation(f"whence={whence} is not supported")
 
