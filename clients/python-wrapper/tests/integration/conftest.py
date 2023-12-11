@@ -66,8 +66,9 @@ def fixture_pre_sign(request):
 
 FIXTURE_DIR = Path(__file__).parent.parent.resolve() / 'test_files'
 TEST_DATA = pytest.mark.datafiles(
-    FIXTURE_DIR / 'mock.csv',
-    FIXTURE_DIR / 'mock.json',
-    FIXTURE_DIR / 'mock.yaml',
-    FIXTURE_DIR / 'mock.xml',
+    FIXTURE_DIR / 'data.csv',
+    FIXTURE_DIR / 'data.json',
+    FIXTURE_DIR / 'data.yaml',
+    FIXTURE_DIR / 'data.xml',
+    FIXTURE_DIR / 'data.parquet',
 )
