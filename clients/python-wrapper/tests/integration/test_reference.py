@@ -19,7 +19,7 @@ def test_reference_diff(setup_branch_with_commits):
     branch = setup_branch_with_commits
 
     commits = list(branch.log(max_amount=2))
-    assert len(list(branch.diff(branch.commit_id()))) == 0
+    assert len(list(branch.diff(branch.get_commit().id))) == 0
     changes = list(branch.diff(commits[0].id, type="two_dot"))
     assert len(changes) == 0
 
@@ -51,11 +51,11 @@ def test_reference_merge_into(setup_branch_with_commits):
     other_branch = repo.branch("test_reference_merge_into").create(main)
     ref = repo.ref(commits[1].id)
     ref.merge_into(other_branch, message="Merge1")
-    assert other_branch.commit_message() == "Merge1"
+    assert other_branch.get_commit().message == "Merge1"
     assert list(other_branch.log(max_amount=2))[1].id == commits[1].id
 
     branch.merge_into(other_branch.id, message="Merge2")
-    assert other_branch.commit_message() == "Merge2"
+    assert other_branch.get_commit().message == "Merge2"
     assert list(other_branch.log(max_amount=3))[2].id == commits[0].id
 
 

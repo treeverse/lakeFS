@@ -1,4 +1,7 @@
+import uuid
 import pytest
+
+import lakefs
 
 from tests.integration.conftest import _setup_repo, get_storage_namespace
 
@@ -35,3 +38,14 @@ def test_repository_listings(setup_repo_with_branches_and_tags, attr):
     assert len(res) == 10
     for i, b in enumerate(res):
         assert b.id == f"{attr}01-{i + after + 1:02d}"
+
+
+def test_repositories(storage_namespace):
+    repo_base_name = f"test-repo{uuid.uuid1()}-"
+    for i in range(10):
+        lakefs.repository(f"{repo_base_name}{i}").create(storage_namespace=f"{storage_namespace}-{i}")
+
+    repos = list(lakefs.repositories(prefix=repo_base_name))
+    assert len(repos) == 10
+    for i, repo in enumerate(repos):
+        assert repo.properties.id == f"{repo_base_name}{i}"

@@ -585,14 +585,17 @@ components:
 
     TagCreation:
       type: object
+      description: Make tag ID point at this REF.
       required:
         - id
         - ref
       properties:
         id:
           type: string
+          description: ID of tag to create
         ref:
           type: string
+          description: the commit to tag
 
     TaskInfo:
       type: object

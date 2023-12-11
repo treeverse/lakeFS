@@ -35,6 +35,9 @@ class Change(LenientNamedTuple):
     path_type: Literal["common_prefix", "object"]
     size_bytes: Optional[int]
 
+    def __repr__(self):
+        return f'Change(type="{self.type}", path="{self.path}", path_type="{self.path_type}")'
+
 
 class ImportStatus(LenientNamedTuple):
     """
@@ -90,12 +93,18 @@ class ObjectInfo(LenientNamedTuple):
     metadata: Optional[dict[str, str]] = None
     content_type: Optional[str] = None
 
+    def __repr__(self):
+        return f'ObjectInfo(path="{self.path}")'
+
 
 class CommonPrefix(LenientNamedTuple):
     """
     Represents a common prefix in lakeFS
     """
     path: str
+
+    def __repr__(self):
+        return f'CommonPrefix(path="{self.path}")'
 
 
 class RepositoryProperties(LenientNamedTuple):

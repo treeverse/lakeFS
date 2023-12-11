@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 NAME = "lakefs"
-VERSION = "0.1.0-beta.2"
+VERSION = "0.1.0"
 # To install the library, run the following
 #
 # python setup.py install
@@ -30,7 +30,7 @@ setup(
     keywords=["OpenAPI", "OpenAPI-Generator", "lakeFS API", "Python Wrapper"],
     python_requires=">=3.9",
     install_requires=REQUIRES,
-    tests_require=["pytest ~= 7.4.3"],
+    tests_require=["pytest ~= 7.4.3", "pytest-datafiles ~= 3.0.0"],
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     license="Apache 2.0",

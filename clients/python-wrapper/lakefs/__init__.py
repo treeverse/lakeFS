@@ -2,7 +2,7 @@
 Allow importing of models from package root
 """
 
-from lakefs.repository import Repository
+from lakefs.repository import Repository, repositories
 from lakefs.reference import Reference
 from lakefs.models import (
     Commit,
