@@ -2,6 +2,8 @@ import os
 import re
 import time
 import uuid
+from pathlib import Path
+
 import pytest
 
 from lakefs import client
@@ -15,7 +17,7 @@ def get_storage_namespace(test_name):
 
 
 def _setup_repo(namespace, name, default_branch):
-    clt = client.DEFAULT_CLIENT
+    clt = client.Client()
     repo_name = name + str(int(time.time()))
     repo = Repository(repo_name, clt)
     repo.create(storage_namespace=namespace, default_branch=default_branch)
@@ -56,7 +58,16 @@ def setup_branch_with_commits():
 
 @pytest.fixture(name="pre_sign", scope="function")
 def fixture_pre_sign(request):
-    clt = client.DEFAULT_CLIENT
+    clt = client.Client()
     if request.param and not clt.storage_config.pre_sign_support:
         pytest.skip("Storage adapter does not support pre-sign mode")
     return request.param
+
+
+FIXTURE_DIR = Path(__file__).parent.parent.resolve() / 'test_files'
+TEST_DATA = pytest.mark.datafiles(
+    FIXTURE_DIR / 'mock.csv',
+    FIXTURE_DIR / 'mock.json',
+    FIXTURE_DIR / 'mock.yaml',
+    FIXTURE_DIR / 'mock.xml',
+)

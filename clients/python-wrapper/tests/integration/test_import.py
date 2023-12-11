@@ -36,7 +36,7 @@ def test_import_manager(setup_repo):
     res = mgr.run()
     assert res.error is None
     assert res.completed
-    assert res.commit.id == branch.commit_id()
+    assert res.commit.id == branch.get_commit().id
     assert res.commit.message == "my imported data"
     assert res.commit.metadata.get("foo") == "bar"
     assert res.ingested_objects == 0
@@ -59,7 +59,7 @@ def test_import_manager(setup_repo):
 
     assert res.error is None
     assert res.completed
-    assert res.commit.id == branch.commit_id()
+    assert res.commit.id == branch.get_commit().id
     assert res.commit.message == mgr.commit_message
     assert res.commit.metadata.get("foo") is None
     assert res.ingested_objects == 4207
@@ -73,8 +73,8 @@ def test_import_manager_cancel(setup_repo):
     clt, repo = setup_repo
     skip_on_unsupported_blockstore(clt, "s3")
     branch = repo.branch("import-branch").create("main")
-    expected_commit_id = branch.commit_id()
-    expected_commit_message = branch.commit_message()
+    expected_commit_id = branch.get_commit().id
+    expected_commit_message = branch.get_commit().message
 
     mgr = branch.import_data(commit_message="my imported data", metadata={"foo": "bar"})
     mgr.prefix(_IMPORT_PATH, "import/")
@@ -88,8 +88,8 @@ def test_import_manager_cancel(setup_repo):
     mgr.cancel()
 
     status = mgr.status()
-    assert branch.commit_id() == expected_commit_id
-    assert branch.commit_message() == expected_commit_message
+    assert branch.get_commit().id == expected_commit_id
+    assert branch.get_commit().message == expected_commit_message
     assert not status.completed
     assert "Canceled" in status.error.message
     assert len(mgr.sources) == 1

@@ -18,7 +18,7 @@ import lakefs_sdk
 import urllib3
 from lakefs_sdk import StagingMetadata
 
-from lakefs.client import Client, DEFAULT_CLIENT
+from lakefs.client import Client, _BaseLakeFSObject
 from lakefs.exceptions import (
     api_exception_handler,
     handle_http_error,
@@ -29,6 +29,7 @@ from lakefs.exceptions import (
     ForbiddenException,
     PermissionException,
     ObjectExistsException,
+    InvalidRangeException,
 )
 from lakefs.models import ObjectInfo
 
@@ -41,12 +42,10 @@ ReadModes = Literal['r', 'rb']
 WriteModes = Literal['x', 'xb', 'w', 'wb']
 
 
-class LakeFSIOBase(IO):
+class LakeFSIOBase(_BaseLakeFSObject, IO):
     """
     Base class for the lakeFS Reader and Writer classes
     """
-
-    _client: Client
     _obj: StoredObject
     _mode: ReadModes
     _pos: int
@@ -54,12 +53,12 @@ class LakeFSIOBase(IO):
     _is_closed: bool = False
 
     def __init__(self, obj: StoredObject, mode: Union[ReadModes, WriteModes], pre_sign: Optional[bool] = None,
-                 client: Optional[Client] = DEFAULT_CLIENT) -> None:
+                 client: Optional[Client] = None) -> None:
         self._obj = obj
         self._mode = mode
         self._pre_sign = pre_sign if pre_sign is not None else client.storage_config.pre_sign_support
-        self._client = client
         self._pos = 0
+        super().__init__(client)
 
     @property
     def mode(self) -> str:
@@ -112,13 +111,13 @@ class LakeFSIOBase(IO):
 
     def readline(self, limit: int = -1):
         """
-        Currently unsupported
+        Must be explicitly implemented by inheriting class
         """
         raise io.UnsupportedOperation
 
     def readlines(self, hint: int = -1):
         """
-        Currently unsupported
+        Must be explicitly implemented by inheriting class
         """
         raise io.UnsupportedOperation
 
@@ -147,16 +146,13 @@ class LakeFSIOBase(IO):
         raise io.UnsupportedOperation
 
     def __next__(self) -> AnyStr:
-        """
-        Unsupported by lakeFS implementation
-        """
-        raise io.UnsupportedOperation
+        line = self.readline()
+        if len(line) == 0:
+            raise StopIteration
+        return line
 
     def __iter__(self) -> Iterator[AnyStr]:
-        """
-        Unsupported by lakeFS implementation
-        """
-        raise io.UnsupportedOperation
+        return self
 
     def __enter__(self) -> LakeFSIOBase:
         return self
@@ -186,10 +182,14 @@ class ObjectReader(LakeFSIOBase):
     This Object is instantiated and returned for immutable reference types (Commit, Tag...)
     """
 
+    _readlines_buf: io.BytesIO
+
     def __init__(self, obj: StoredObject, mode: ReadModes, pre_sign: Optional[bool] = None,
-                 client: Optional[Client] = DEFAULT_CLIENT) -> None:
+                 client: Optional[Client] = None) -> None:
         if mode not in get_args(ReadModes):
             raise ValueError(f"invalid read mode: '{mode}'. ReadModes: {ReadModes}")
+
+        self._readlines_buf = io.BytesIO(b"")
 
         super().__init__(obj, mode, pre_sign, client)
 
@@ -250,6 +250,24 @@ class ObjectReader(LakeFSIOBase):
         self._pos = pos
         return pos
 
+    def _cast_by_mode(self, retval):
+        if 'b' not in self.mode:
+            return retval.decode('utf-8')
+        return retval
+
+    def _read(self, read_range: str) -> str | bytes:
+        try:
+            with api_exception_handler(_io_exception_handler):
+                return self._client.sdk_client.objects_api.get_object(self._obj.repo,
+                                                                      self._obj.ref,
+                                                                      self._obj.path,
+                                                                      range=read_range,
+                                                                      presign=self.pre_sign)
+
+        except InvalidRangeException:
+            # This is done in order to behave like the built-in open() function
+            return b''
+
     def read(self, n: int = None) -> str | bytes:
         """
         Read object data
@@ -266,17 +284,23 @@ class ObjectReader(LakeFSIOBase):
             raise OSError("read_bytes must be a positive integer")
 
         read_range = self._get_range_string(start=self._pos, read_bytes=n)
-        with api_exception_handler(_io_exception_handler):
-            contents = self._client.sdk_client.objects_api.get_object(self._obj.repo,
-                                                                      self._obj.ref,
-                                                                      self._obj.path,
-                                                                      range=read_range,
-                                                                      presign=self.pre_sign)
+        contents = self._read(read_range)
         self._pos += len(contents)  # Update pointer position
-        if 'b' not in self._mode:
-            return contents.decode('utf-8')
 
-        return contents
+        return self._cast_by_mode(contents)
+
+    def readline(self, limit: int = -1):
+        """
+        Read and return a line from the stream.
+
+        :param limit: If limit > -1 returns at most limit bytes
+        """
+        if self._readlines_buf.getbuffer().nbytes == 0:
+            self._readlines_buf = io.BytesIO(self._read(self._get_range_string(0)))
+        self._readlines_buf.seek(self._pos)
+        line = self._readlines_buf.readline(limit)
+        self._pos = self._readlines_buf.tell()
+        return self._cast_by_mode(line)
 
     def flush(self) -> None:
         """
@@ -290,6 +314,12 @@ class ObjectReader(LakeFSIOBase):
         if read_bytes is None:
             return f"bytes={start}-"
         return f"bytes={start}-{start + read_bytes - 1}"
+
+    def __str__(self):
+        return self._obj.path
+
+    def __repr__(self):
+        return f'ObjectReader(path="{self._obj.path}")'
 
 
 class ObjectWriter(LakeFSIOBase):
@@ -308,7 +338,7 @@ class ObjectWriter(LakeFSIOBase):
                  pre_sign: Optional[bool] = None,
                  content_type: Optional[str] = None,
                  metadata: Optional[dict[str, str]] = None,
-                 client: Optional[Client] = DEFAULT_CLIENT) -> None:
+                 client: Optional[Client] = None) -> None:
 
         if 'x' in mode and obj.exists():  # Requires explicit create
             raise ObjectExistsException
@@ -491,28 +521,30 @@ class ObjectWriter(LakeFSIOBase):
         """
         raise io.UnsupportedOperation
 
+    def __repr__(self):
+        return f'ObjectWriter(path="{self._obj.path}")'
 
-class StoredObject:
+
+class StoredObject(_BaseLakeFSObject):
     """
     Class representing an object in lakeFS.
     """
-    _client: Client
     _repo_id: str
     _ref_id: str
     _path: str
     _stats: Optional[ObjectInfo] = None
 
-    def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = DEFAULT_CLIENT):
-        self._client = client
+    def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = None):
         self._repo_id = repository
         self._ref_id = reference
         self._path = path
+        super().__init__(client)
 
     def __str__(self) -> str:
         return self.path
 
     def __repr__(self):
-        return f"lakefs://{self._repo_id}/{self._ref_id}/{self._path}"
+        return f'StoredObject(repository="{self.repo}", reference="{self.ref}", path="{self.path}")'
 
     @property
     def repo(self) -> str:
@@ -619,12 +651,16 @@ class WriteableObject(StoredObject):
     This Object is instantiated and returned upon invoking writer() on Branch reference type.
     """
 
-    def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = DEFAULT_CLIENT) -> None:
+    def __init__(self, repository: str, reference: str, path: str,
+                 client: Optional[Client] = None) -> None:
         super().__init__(repository, reference, path, client=client)
+
+    def __repr__(self):
+        return f'WriteableObject(repository="{self.repo}", reference="{self.ref}", path="{self.path}")'
 
     def upload(self,
                data: str | bytes,
-               mode: WriteModes = 'wb',
+               mode: WriteModes = 'w',
                pre_sign: Optional[bool] = None,
                content_type: Optional[str] = None,
                metadata: Optional[dict[str, str]] = None) -> WriteableObject:

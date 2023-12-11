@@ -11,24 +11,23 @@ import lakefs_sdk
 from lakefs.models import RepositoryProperties
 from lakefs.tag import Tag
 from lakefs.branch import Branch
-from lakefs.client import Client, DEFAULT_CLIENT
+from lakefs.client import Client, _BaseLakeFSObject
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException
 from lakefs.reference import Reference, generate_listing
 
 
-class Repository:
+class Repository(_BaseLakeFSObject):
     """
     Class representing a Repository in lakeFS.
     The Repository object provides the context for the other objects that are found in it.
     Access to these objects should be done from this class
     """
-    _client: Client
     _id: str
     _properties: RepositoryProperties = None
 
-    def __init__(self, repository_id: str, client: Optional[Client] = DEFAULT_CLIENT) -> None:
+    def __init__(self, repository_id: str, client: Optional[Client] = None) -> None:
         self._id = repository_id
-        self._client = client
+        super().__init__(client)
 
     def create(self,
                storage_namespace: str,
@@ -152,7 +151,7 @@ class Repository:
     @property
     def properties(self) -> RepositoryProperties:
         """
-        Return the repositories properties object
+        Return the repository's properties object
         """
         if self._properties is None:
             with api_exception_handler():
@@ -161,3 +160,38 @@ class Repository:
                 return self._properties
 
         return self._properties
+
+    @property
+    def id(self) -> str:
+        """
+        Returns the repository's id
+        """
+        return self._id
+
+    def __repr__(self) -> str:
+        return f'Repository(id="{self.id}")'
+
+    def __str__(self):
+        return str(self.properties)
+
+
+def repositories(client: Client = None,
+                 prefix: Optional[str] = None,
+                 after: Optional[str] = None,
+                 **kwargs) -> Generator[Repository]:
+    """
+    Creates a repositories object generator listing lakeFS repositories
+
+    :param client: The lakeFS client to use, if None, tries to use the default client
+    :param prefix: Return items prefixed with this value
+    :param after: Return items after this value
+    :return: A generator listing lakeFS repositories
+    """
+    if client is None:  # Try to get default client
+        client = Client()
+
+    for res in generate_listing(client.sdk_client.repositories_api.list_repositories,
+                                prefix=prefix,
+                                after=after,
+                                **kwargs):
+        yield Repository(res.id, client)

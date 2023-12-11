@@ -2225,6 +2225,14 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	log := c.Logger.WithContext(ctx).WithError(err)
 
+	// Handle Hook Errors
+	var hookAbortErr *graveler.HookAbortError
+	if errors.As(err, &hookAbortErr) {
+		log.WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks")
+		cb(w, r, http.StatusPreconditionFailed, err)
+		return true
+	}
+
 	// order of case is important, more specific errors should be first
 	switch {
 	case errors.Is(err, graveler.ErrLinkAddressNotFound),
@@ -2503,15 +2511,6 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 	}
 
 	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange)
-	var hookAbortErr *graveler.HookAbortError
-	if errors.As(err, &hookAbortErr) {
-		c.Logger.
-			WithError(err).
-			WithField("run_id", hookAbortErr.RunID).
-			Warn("aborted by hooks")
-		writeError(w, r, http.StatusPreconditionFailed, err)
-		return
-	}
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2664,7 +2663,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 
 	// read request body parse multipart for "content" and upload the data
-	contentType := r.Header.Get("Content-Type")
+	contentType := catalog.ContentTypeOrDefault(r.Header.Get("Content-Type"))
 	mediaType, p, err := mime.ParseMediaType(contentType)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
@@ -4135,13 +4134,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		metadata,
 		swag.StringValue(body.Strategy))
 
-	var hookAbortErr *graveler.HookAbortError
-	switch {
-	case errors.As(err, &hookAbortErr):
-		c.Logger.WithError(err).WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks")
-		writeError(w, r, http.StatusPreconditionFailed, err)
-		return
-	case errors.Is(err, graveler.ErrConflictFound):
+	if errors.Is(err, graveler.ErrConflictFound) {
 		writeResponse(w, r, http.StatusConflict, apigen.MergeResult{
 			Reference: reference,
 		})

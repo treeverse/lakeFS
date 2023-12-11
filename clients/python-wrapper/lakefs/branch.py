@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Optional, Generator, Iterable, Literal
 
 import lakefs_sdk
-from lakefs.client import Client, DEFAULT_CLIENT
+from lakefs.client import Client
 from lakefs.object import WriteableObject
 from lakefs.object import StoredObject
 from lakefs.import_manager import ImportManager
@@ -21,12 +21,12 @@ class Branch(Reference):
     Class representing a branch in lakeFS.
     """
 
-    def _get_commit(self):
+    def get_commit(self):
         """
         For branches override the default _get_commit method to ensure we always fetch the latest head
         """
         self._commit = None
-        return super()._get_commit()
+        return super().get_commit()
 
     def create(self, source_reference_id: str | Reference, exist_ok: bool = False) -> Branch:
         """
@@ -54,8 +54,9 @@ class Branch(Reference):
             if isinstance(e, ConflictException) and exist_ok:
                 return None
             return e
-
-        branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=str(source_reference_id))
+        if isinstance(source_reference_id, Reference):
+            source_reference_id = source_reference_id.id
+        branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=source_reference_id)
         with api_exception_handler(handle_conflict):
             self._client.sdk_client.branches_api.create_branch(self._repo_id, branch_creation)
         return self
@@ -136,7 +137,7 @@ class Branch(Reference):
 
         return WriteableObject(self.repo_id, self._id, path, client=self._client)
 
-    def uncommitted(self, max_amount: Optional[int], after: Optional[str] = None, prefix: Optional[str] = None,
+    def uncommitted(self, max_amount: Optional[int] = None, after: Optional[str] = None, prefix: Optional[str] = None,
                     **kwargs) -> Generator[Change]:
         """
         Returns a diff generator of uncommitted changes on this branch
@@ -192,10 +193,12 @@ class Branch(Reference):
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
-        if isinstance(object_paths, (str, StoredObject)):
-            object_paths = [str(object_paths)]
+        if isinstance(object_paths, str):
+            object_paths = [object_paths]
+        elif isinstance(object_paths, StoredObject):
+            object_paths = [object_paths.path]
         elif isinstance(object_paths, Iterable):
-            object_paths = {str(o) for o in object_paths}
+            object_paths = [o.path if isinstance(o, StoredObject) else o for o in object_paths]
         with api_exception_handler():
             return self._client.sdk_client.objects_api.delete_objects(
                 self._repo_id,
@@ -234,7 +237,7 @@ class Transaction(Branch):
     Manage a transactions on a given branch (TBD)
     """
 
-    def __init__(self, repository_id: str, branch_id: str, commit_message: str, client: Client = DEFAULT_CLIENT):
+    def __init__(self, repository_id: str, branch_id: str, commit_message: str, client: Client = None):
         super().__init__(repository_id, branch_id, client)
         self._commit_message = commit_message
 

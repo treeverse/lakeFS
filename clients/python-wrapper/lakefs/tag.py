@@ -27,7 +27,9 @@ class Tag(Reference):
         :raise NotFoundException: if source_ref_id doesn't exist on the lakeFS server
         :raise ServerException: for any other errors.
         """
-        tag_creation = lakefs_sdk.TagCreation(id=self.id, ref=str(source_ref_id))
+        if isinstance(source_ref_id, Reference):
+            source_ref_id = source_ref_id.id
+        tag_creation = lakefs_sdk.TagCreation(id=self.id, ref=source_ref_id)
 
         def handle_conflict(e: LakeFSException):
             if not (isinstance(e, ConflictException) and exist_ok):

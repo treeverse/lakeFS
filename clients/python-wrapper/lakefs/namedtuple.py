@@ -27,6 +27,12 @@ class LenientNamedTuple:
         self.__initialized = True
         super().__init__()
 
+    def __repr__(self):
+        class_name = self.__class__.__name__
+        if hasattr(self, 'id'):
+            return f'{class_name}(id="{self.id}")'
+        return f'{class_name}()'
+
     def __setattr__(self, name, value):
         if self.__initialized:
             raise AttributeError("can't set attribute")
@@ -42,3 +48,10 @@ class LenientNamedTuple:
                 return False
 
         return True
+
+    def __str__(self):
+        fields = {}
+        for k, v in self.__dict__.items():
+            if k != "unknown" and k[0] != "_":  # Filter internal and unknown fields
+                fields[k] = v
+        return str(fields)
