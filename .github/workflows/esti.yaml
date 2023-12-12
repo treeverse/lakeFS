@@ -1045,6 +1045,8 @@ jobs:
         ports:
           - '8000:8000'
         env:
+          AWS_ACCESS_KEY_ID: AKIAIOSFDNN7EXAMPLEQ
+          AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
           LAKEFS_DATABASE_TYPE: dynamodb
           LAKEFS_DATABASE_DYNAMODB_ENDPOINT: http://dynamodb:8000
           LAKEFS_BLOCKSTORE_TYPE: local
