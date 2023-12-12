@@ -28,7 +28,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
-	"github.com/treeverse/lakefs/pkg/graveler/repository"
 	"github.com/treeverse/lakefs/pkg/graveler/retention"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/graveler/sstable"
@@ -363,9 +362,8 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
-	readOnlyRepositoryManager := repository.NewReadOnlyRepositoriesManager()
 	stagingManager := staging.NewManager(ctx, cfg.KVStore, storeLimiter, cfg.Config.Graveler.BatchDBIOTransactionMarkers, executor)
-	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager, readOnlyRepositoryManager)
+	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
 
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
 	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))

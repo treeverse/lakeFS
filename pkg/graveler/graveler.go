@@ -1015,13 +1015,12 @@ func (id ImportID) String() string {
 }
 
 type Graveler struct {
-	hooks                     HooksHandler
-	CommittedManager          CommittedManager
-	RefManager                RefManager
-	StagingManager            StagingManager
-	protectedBranchesManager  ProtectedBranchesManager
-	garbageCollectionManager  GarbageCollectionManager
-	readOnlyRepositoryManager ReadOnlyRepositoryManager
+	hooks                    HooksHandler
+	CommittedManager         CommittedManager
+	RefManager               RefManager
+	StagingManager           StagingManager
+	protectedBranchesManager ProtectedBranchesManager
+	garbageCollectionManager GarbageCollectionManager
 	// logger *without context* to be used for logging.  It should be
 	// avoided in favour of g.log(ctx) in any operation where context is
 	// available.
@@ -1029,20 +1028,19 @@ type Graveler struct {
 	BranchUpdateBackOff backoff.BackOff
 }
 
-func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager, readOnlyRepositoryManager ReadOnlyRepositoryManager) *Graveler {
+func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *Graveler {
 	branchUpdateBackOff := backoff.NewExponentialBackOff()
 	branchUpdateBackOff.MaxInterval = BranchUpdateMaxInterval
 
 	return &Graveler{
-		hooks:                     &HooksNoOp{},
-		CommittedManager:          committedManager,
-		RefManager:                refManager,
-		StagingManager:            stagingManager,
-		BranchUpdateBackOff:       branchUpdateBackOff,
-		protectedBranchesManager:  protectedBranchesManager,
-		readOnlyRepositoryManager: readOnlyRepositoryManager,
-		garbageCollectionManager:  gcManager,
-		logger:                    logging.ContextUnavailable().WithField("service_name", "graveler_graveler"),
+		hooks:                    &HooksNoOp{},
+		CommittedManager:         committedManager,
+		RefManager:               refManager,
+		StagingManager:           stagingManager,
+		BranchUpdateBackOff:      branchUpdateBackOff,
+		protectedBranchesManager: protectedBranchesManager,
+		garbageCollectionManager: gcManager,
+		logger:                   logging.ContextUnavailable().WithField("service_name", "graveler_graveler"),
 	}
 }
 
@@ -1095,10 +1093,16 @@ func (g *Graveler) GetRepositoryMetadata(ctx context.Context, repositoryID Repos
 }
 
 func (g *Graveler) WriteRange(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*RangeInfo, error) {
+	if repository.ReadOnly {
+		return nil, ErrReadOnlyRepository
+	}
 	return g.CommittedManager.WriteRange(ctx, repository.StorageNamespace, it)
 }
 
 func (g *Graveler) WriteMetaRange(ctx context.Context, repository *RepositoryRecord, ranges []*RangeInfo) (*MetaRangeInfo, error) {
+	if repository.ReadOnly {
+		return nil, ErrReadOnlyRepository
+	}
 	return g.CommittedManager.WriteMetaRange(ctx, repository.StorageNamespace, ranges)
 }
 
@@ -1107,6 +1111,9 @@ func (g *Graveler) StageObject(ctx context.Context, stagingToken string, object 
 }
 
 func (g *Graveler) WriteMetaRangeByIterator(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*MetaRangeID, error) {
+	if repository.ReadOnly {
+		return nil, ErrReadOnlyRepository
+	}
 	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace, it, nil)
 }
 
@@ -1120,6 +1127,9 @@ func GenerateStagingToken(repositoryID RepositoryID, branchID BranchID) StagingT
 }
 
 func (g *Graveler) CreateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref) (*Branch, error) {
+	if repository.ReadOnly {
+		return nil, ErrReadOnlyRepository
+	}
 	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, fmt.Errorf("source reference '%s': %w", ref, err)
@@ -1181,6 +1191,9 @@ func (g *Graveler) CreateBranch(ctx context.Context, repository *RepositoryRecor
 }
 
 func (g *Graveler) UpdateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref) (*Branch, error) {
+	if repository.ReadOnly {
+		return nil, ErrReadOnlyRepository
+	}
 	reference, err := g.Dereference(ctx, repository, ref)
 	if err != nil {
 		return nil, err
@@ -1269,6 +1282,10 @@ func (g *Graveler) GetTag(ctx context.Context, repository *RepositoryRecord, tag
 }
 
 func (g *Graveler) CreateTag(ctx context.Context, repository *RepositoryRecord, tagID TagID, commitID CommitID) error {
+	if repository.ReadOnly {
+		return ErrReadOnlyRepository
+	}
+
 	storageNamespace := repository.StorageNamespace
 
 	// Check that Tag doesn't exist before running hook - Non-Atomic operation
@@ -1319,6 +1336,10 @@ func (g *Graveler) CreateTag(ctx context.Context, repository *RepositoryRecord, 
 }
 
 func (g *Graveler) DeleteTag(ctx context.Context, repository *RepositoryRecord, tagID TagID) error {
+	if repository.ReadOnly {
+		return ErrReadOnlyRepository
+	}
+
 	storageNamespace := repository.StorageNamespace
 
 	// Sanity check that Tag exists before running hook.
@@ -1381,6 +1402,9 @@ func (g *Graveler) ParseRef(ref Ref) (RawRef, error) {
 }
 
 func (g *Graveler) ResolveRawRef(ctx context.Context, repository *RepositoryRecord, rawRef RawRef) (*ResolvedRef, error) {
+	if repository.ReadOnly {
+		return nil, ErrReadOnlyRepository
+	}
 	return g.RefManager.ResolveRawRef(ctx, repository, rawRef)
 }
 
@@ -1393,6 +1417,10 @@ func (g *Graveler) ListBranches(ctx context.Context, repository *RepositoryRecor
 }
 
 func (g *Graveler) DeleteBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) error {
+	if repository.ReadOnly {
+		return ErrReadOnlyRepository
+	}
+
 	if repository.DefaultBranchID == branchID {
 		return ErrDeleteDefaultBranch
 	}
@@ -1466,6 +1494,9 @@ func (g *Graveler) SetGarbageCollectionRules(ctx context.Context, repository *Re
 }
 
 func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord) (*GarbageCollectionRunMetadata, error) {
+	if repository.ReadOnly {
+		return nil, ErrReadOnlyRepository
+	}
 	rules, err := g.getGarbageCollectionRules(ctx, repository)
 	if err != nil {
 		return nil, fmt.Errorf("get gc rules: %w", err)
@@ -1504,6 +1535,9 @@ func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *Rep
 }
 
 func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error {
+	if repository.ReadOnly {
+		return ErrReadOnlyRepository
+	}
 	return g.protectedBranchesManager.SetRules(ctx, repository, rules, lastKnownChecksum)
 }
 
@@ -1593,9 +1627,8 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 		return ErrWriteToProtectedBranch
 	}
 
-	isProtected = g.readOnlyRepositoryManager.IsBlocked(repository)
-	if isProtected {
-		return ErrWriteToReadOnlyRepository
+	if repository.ReadOnly {
+		return ErrReadOnlyRepository
 	}
 
 	options := &SetOptions{}
@@ -1688,9 +1721,8 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 		return ErrWriteToProtectedBranch
 	}
 
-	isProtected = g.readOnlyRepositoryManager.IsBlocked(repository)
-	if isProtected {
-		return ErrWriteToReadOnlyRepository
+	if repository.ReadOnly {
+		return ErrReadOnlyRepository
 	}
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "delete"})
@@ -1712,9 +1744,8 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 		return ErrWriteToProtectedBranch
 	}
 
-	isProtected = g.readOnlyRepositoryManager.IsBlocked(repository)
-	if isProtected {
-		return ErrWriteToReadOnlyRepository
+	if repository.ReadOnly {
+		return ErrReadOnlyRepository
 	}
 
 	if len(keys) > DeleteKeysMaxSize {
@@ -1865,9 +1896,8 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 	if isProtected {
 		return "", ErrCommitToProtectedBranch
 	}
-	isProtected = g.readOnlyRepositoryManager.IsBlocked(repository)
-	if isProtected {
-		return "", ErrWriteToReadOnlyRepository
+	if repository.ReadOnly {
+		return "", ErrReadOnlyRepository
 	}
 
 	storageNamespace = repository.StorageNamespace
@@ -2051,6 +2081,9 @@ func CommitExists(ctx context.Context, repository *RepositoryRecord, commitID Co
 }
 
 func (g *Graveler) AddCommit(ctx context.Context, repository *RepositoryRecord, commit Commit) (CommitID, error) {
+	if repository.ReadOnly {
+		return "nil", ErrReadOnlyRepository
+	}
 	// at least a single parent must exists
 	if len(commit.Parents) == 0 {
 		return "", ErrAddCommitNoParent
@@ -2155,9 +2188,8 @@ func (g *Graveler) Reset(ctx context.Context, repository *RepositoryRecord, bran
 		return ErrWriteToProtectedBranch
 	}
 
-	isProtected = g.readOnlyRepositoryManager.IsBlocked(repository)
-	if isProtected {
-		return ErrWriteToReadOnlyRepository
+	if repository.ReadOnly {
+		return ErrReadOnlyRepository
 	}
 
 	tokensToDrop := make([]StagingToken, 0)
@@ -2215,9 +2247,8 @@ func (g *Graveler) ResetKey(ctx context.Context, repository *RepositoryRecord, b
 		return ErrWriteToProtectedBranch
 	}
 
-	isProtected = g.readOnlyRepositoryManager.IsBlocked(repository)
-	if isProtected {
-		return ErrWriteToReadOnlyRepository
+	if repository.ReadOnly {
+		return ErrReadOnlyRepository
 	}
 
 	branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
@@ -2256,9 +2287,8 @@ func (g *Graveler) ResetPrefix(ctx context.Context, repository *RepositoryRecord
 		return ErrWriteToProtectedBranch
 	}
 
-	isProtected = g.readOnlyRepositoryManager.IsBlocked(repository)
-	if isProtected {
-		return ErrWriteToReadOnlyRepository
+	if repository.ReadOnly {
+		return ErrReadOnlyRepository
 	}
 
 	// New sealed tokens list after change includes current staging token
@@ -2318,6 +2348,10 @@ type CommitIDAndSummary struct {
 // That is, try to apply the diff from C2 to C1 on the tip of the branch.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the revert is done.
 func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams) (CommitID, error) {
+	if repository.ReadOnly {
+		return "", ErrReadOnlyRepository
+	}
+
 	commitRecord, err := g.dereferenceCommit(ctx, repository, ref)
 	if err != nil {
 		return "", fmt.Errorf("get commit from ref %s: %w", ref, err)
@@ -2395,6 +2429,10 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 // CherryPick creates a new commit on the given branch, with the changes from the given commit.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the cherry-pick is done.
 func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber *int, committer string) (CommitID, error) {
+	if repository.ReadOnly {
+		return "", ErrReadOnlyRepository
+	}
+
 	commitRecord, err := g.dereferenceCommit(ctx, repository, ref)
 	if err != nil {
 		return "", fmt.Errorf("get commit from ref %s: %w", ref, err)
@@ -2482,6 +2520,9 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 }
 
 func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string) (CommitID, error) {
+	if repository.ReadOnly {
+		return "", ErrReadOnlyRepository
+	}
 	var (
 		preRunID string
 		commit   Commit
@@ -2643,6 +2684,9 @@ func (g *Graveler) retryRepoMetadataUpdate(ctx context.Context, repository *Repo
 }
 
 func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams, prefixes []Prefix) (CommitID, error) {
+	if repository.ReadOnly {
+		return "", ErrReadOnlyRepository
+	}
 	var (
 		preRunID string
 		commit   Commit
@@ -2881,6 +2925,10 @@ func (g *Graveler) SetHooksHandler(handler HooksHandler) {
 }
 
 func (g *Graveler) LoadCommits(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) error {
+	if repository.ReadOnly {
+		return ErrReadOnlyRepository
+	}
+
 	iter, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
 	if err != nil {
 		return err
@@ -2925,6 +2973,9 @@ func (g *Graveler) LoadCommits(ctx context.Context, repository *RepositoryRecord
 }
 
 func (g *Graveler) LoadBranches(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) error {
+	if repository.ReadOnly {
+		return ErrReadOnlyRepository
+	}
 	iter, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
 	if err != nil {
 		return err
@@ -2954,6 +3005,9 @@ func (g *Graveler) LoadBranches(ctx context.Context, repository *RepositoryRecor
 }
 
 func (g *Graveler) LoadTags(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) error {
+	if repository.ReadOnly {
+		return ErrReadOnlyRepository
+	}
 	iter, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
 	if err != nil {
 		return err
@@ -3292,9 +3346,4 @@ type ProtectedBranchesManager interface {
 func NewRepoInstanceID() string {
 	tm := time.Now().UTC()
 	return xid.NewWithTime(tm).String()
-}
-
-type ReadOnlyRepositoryManager interface {
-	// IsBlocked returns whether the repository is blocked for write operations.
-	IsBlocked(repository *RepositoryRecord) bool
 }

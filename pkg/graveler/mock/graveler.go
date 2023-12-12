@@ -2915,18 +2915,3 @@ func (mr *MockProtectedBranchesManagerMockRecorder) SetRules(ctx, repository, ru
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRules", reflect.TypeOf((*MockProtectedBranchesManager)(nil).SetRules), ctx, repository, rules, lastKnownChecksum)
 }
-
-// MockReadOnlyRepositoriesManager is a mock of ReadOnlyRepositoriesManager interface.
-type MockReadOnlyRepositoriesManager struct {
-}
-
-// NewMockReadOnlyRepositoriesManager creates a new mock instance.
-func NewMockReadOnlyRepositoriesManager() *MockReadOnlyRepositoriesManager {
-	mock := &MockReadOnlyRepositoriesManager{}
-	return mock
-}
-
-// IsBlocked mocks base method.
-func (m *MockReadOnlyRepositoriesManager) IsBlocked(repository *graveler.RepositoryRecord) bool {
-	return repository.ReadOnly
-}

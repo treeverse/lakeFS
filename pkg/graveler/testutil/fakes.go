@@ -871,10 +871,6 @@ type ProtectedBranchesManagerFake struct {
 	protectedBranches []string
 }
 
-type ReadOnlyRepositoriesManagerFake struct {
-	graveler.ReadOnlyRepositoryManager
-}
-
 func NewProtectedBranchesManagerFake(protectedBranches ...string) *ProtectedBranchesManagerFake {
 	return &ProtectedBranchesManagerFake{protectedBranches: protectedBranches}
 }
@@ -896,12 +892,4 @@ func (m *RefsFake) GetRepositoryMetadata(_ context.Context, _ graveler.Repositor
 func (m *RefsFake) SetRepositoryMetadata(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.RepoMetadataUpdateFunc) error {
 	// TODO implement me
 	panic("implement me")
-}
-
-func NewReadOnlyRepositoriesManagerFake() *ReadOnlyRepositoriesManagerFake {
-	return &ReadOnlyRepositoriesManagerFake{}
-}
-
-func (p ReadOnlyRepositoriesManagerFake) IsBlocked(repositoryRecord *graveler.RepositoryRecord) bool {
-	return repositoryRecord.ReadOnly
 }
