@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { SetupPage } from "../poms/setupPage";
 import { LoginPage } from "../poms/loginPage";
-import { LOCAL_STORAGE_STATE_PATH } from "../consts";
+import { COMMON_STORAGE_STATE_PATH } from "../consts";
 
 const LAKECTL_CONFIGURATION_FILE_NAME = "lakectl.yaml";
 
@@ -57,7 +57,7 @@ test.describe("Setup Page", () => {
         await loginTab.waitForURL(/.*\/repositories/);
 
         // save local storage state
-        await loginTab.context().storageState({ path: LOCAL_STORAGE_STATE_PATH });
+        await loginTab.context().storageState({ path: COMMON_STORAGE_STATE_PATH });
     });
 
     test("after successful setup, navigating to the base URL should redirect to /login", async ({ page }) => {
