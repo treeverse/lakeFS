@@ -11,7 +11,7 @@ import (
 const (
 	DefaultBranch = "main"
 
-	repoCreateCmdArgs = 3
+	repoCreateCmdArgs = 2
 )
 
 // repoCreateCmd represents the create repo command
