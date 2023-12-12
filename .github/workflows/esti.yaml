@@ -1039,8 +1039,6 @@ jobs:
     services:
       dynamodb:
         image: amazon/dynamodb-local:1.13.6
-        ports:
-          - '9000:8000'
       lakefs:
         image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
         credentials:
@@ -1050,7 +1048,7 @@ jobs:
           - '8000:8000'
         env:
           LAKEFS_DATABASE_TYPE: dynamodb
-          LAKEFS_DATABASE_DYNAMODB_ENDPOINT: http://dynamodb:9000
+          LAKEFS_DATABASE_DYNAMODB_ENDPOINT: http://dynamodb:8000
           LAKEFS_DATABASE_DYNAMODB_TABLE_NAME: e2e-test-refstore
           LAKEFS_BLOCKSTORE_TYPE: local
           LAKEFS_EMAIL_SUBSCRIPTION_ENABLED: true
