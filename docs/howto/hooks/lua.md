@@ -526,9 +526,9 @@ hooks:
         end
       args:
         aws:
-          aws_access_key_id: <AWS_ACCESS_KEY_ID>
-          aws_secret_access_key: <AWS_SECRET_ACCESS_KEY>
-          aws_region: us-east-1
+          access_key_id: <AWS_ACCESS_KEY_ID>
+          secret_access_key: <AWS_SECRET_ACCESS_KEY>
+          region: us-east-1
         lakefs:
           access_key_id: <LAKEFS_ACCESS_KEY_ID> 
           secret_access_key: <LAKEFS_SECRET_ACCESS_KEY>
