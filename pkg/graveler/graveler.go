@@ -265,7 +265,7 @@ type Repository struct {
 	// to this specific instantiation of repo with the given ID
 	InstanceUID string
 	// ReadOnly indicates if the repository is a read-only repository. All write operations will be blocked for a
-	//read-only repository.
+	// read-only repository.
 	ReadOnly bool
 }
 
@@ -1593,7 +1593,7 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 		return ErrWriteToProtectedBranch
 	}
 
-	isProtected = g.readOnlyRepositoryManager.IsBlocked(ctx, repository)
+	isProtected = g.readOnlyRepositoryManager.IsBlocked(repository)
 	if isProtected {
 		return ErrWriteToReadOnlyRepository
 	}
@@ -1688,7 +1688,7 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 		return ErrWriteToProtectedBranch
 	}
 
-	isProtected = g.readOnlyRepositoryManager.IsBlocked(ctx, repository)
+	isProtected = g.readOnlyRepositoryManager.IsBlocked(repository)
 	if isProtected {
 		return ErrWriteToReadOnlyRepository
 	}
@@ -1712,7 +1712,7 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 		return ErrWriteToProtectedBranch
 	}
 
-	isProtected = g.readOnlyRepositoryManager.IsBlocked(ctx, repository)
+	isProtected = g.readOnlyRepositoryManager.IsBlocked(repository)
 	if isProtected {
 		return ErrWriteToReadOnlyRepository
 	}
@@ -1865,7 +1865,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 	if isProtected {
 		return "", ErrCommitToProtectedBranch
 	}
-	isProtected = g.readOnlyRepositoryManager.IsBlocked(ctx, repository)
+	isProtected = g.readOnlyRepositoryManager.IsBlocked(repository)
 	if isProtected {
 		return "", ErrWriteToReadOnlyRepository
 	}
@@ -2155,7 +2155,7 @@ func (g *Graveler) Reset(ctx context.Context, repository *RepositoryRecord, bran
 		return ErrWriteToProtectedBranch
 	}
 
-	isProtected = g.readOnlyRepositoryManager.IsBlocked(ctx, repository)
+	isProtected = g.readOnlyRepositoryManager.IsBlocked(repository)
 	if isProtected {
 		return ErrWriteToReadOnlyRepository
 	}
@@ -2215,7 +2215,7 @@ func (g *Graveler) ResetKey(ctx context.Context, repository *RepositoryRecord, b
 		return ErrWriteToProtectedBranch
 	}
 
-	isProtected = g.readOnlyRepositoryManager.IsBlocked(ctx, repository)
+	isProtected = g.readOnlyRepositoryManager.IsBlocked(repository)
 	if isProtected {
 		return ErrWriteToReadOnlyRepository
 	}
@@ -2256,7 +2256,7 @@ func (g *Graveler) ResetPrefix(ctx context.Context, repository *RepositoryRecord
 		return ErrWriteToProtectedBranch
 	}
 
-	isProtected = g.readOnlyRepositoryManager.IsBlocked(ctx, repository)
+	isProtected = g.readOnlyRepositoryManager.IsBlocked(repository)
 	if isProtected {
 		return ErrWriteToReadOnlyRepository
 	}
@@ -3296,5 +3296,5 @@ func NewRepoInstanceID() string {
 
 type ReadOnlyRepositoryManager interface {
 	// IsBlocked returns whether the repository is blocked for write operations.
-	IsBlocked(ctx context.Context, repository *RepositoryRecord) bool
+	IsBlocked(repository *RepositoryRecord) bool
 }

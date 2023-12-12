@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
@@ -12,6 +11,6 @@ func NewReadOnlyRepositoriesManager() *ReadOnlyRepositoriesManager {
 	return &ReadOnlyRepositoriesManager{}
 }
 
-func (m *ReadOnlyRepositoriesManager) IsBlocked(ctx context.Context, repository *graveler.RepositoryRecord) bool {
+func (m *ReadOnlyRepositoriesManager) IsBlocked(repository *graveler.RepositoryRecord) bool {
 	return repository.ReadOnly
 }

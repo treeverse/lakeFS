@@ -1,12 +1,11 @@
 package repository_test
 
 import (
-	"context"
-	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/graveler/repository"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/repository"
 )
 
 var normalRepository = &graveler.RepositoryRecord{
@@ -27,7 +26,6 @@ var readOnlyRepository = &graveler.RepositoryRecord{
 }
 
 func TestIsBlocked(t *testing.T) {
-	ctx := context.Background()
 	tests := map[string]struct {
 		repositoryRecord *graveler.RepositoryRecord
 	}{
@@ -41,7 +39,7 @@ func TestIsBlocked(t *testing.T) {
 	for name, tst := range tests {
 		t.Run(name, func(t *testing.T) {
 			rorm := repository.NewReadOnlyRepositoriesManager()
-			require.Equal(t, tst.repositoryRecord.ReadOnly, rorm.IsBlocked(ctx, tst.repositoryRecord))
+			require.Equal(t, tst.repositoryRecord.ReadOnly, rorm.IsBlocked(tst.repositoryRecord))
 		})
 	}
 }
