@@ -1053,10 +1053,7 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: local
           LAKEFS_EMAIL_SUBSCRIPTION_ENABLED: true
           LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
-          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
-          LAKEFS_AUTH_UI_CONFIG_LOGIN_COOKIE_NAMES: "internal_auth_session"
           LAKEFS_STATS_ENABLED: false
-          LAKEFS_BLOCKSTORE_LOCAL_PATH: /home/lakefs
           LAKEFS_LOGGING_LEVEL: DEBUG
     steps:
       - uses: actions/checkout@v4
