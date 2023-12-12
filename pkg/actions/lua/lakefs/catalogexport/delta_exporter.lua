@@ -41,7 +41,7 @@ end
         - get_table: function(repo, ref, prefix)
 
 ]]
-local function export_delta_log(action, table_paths, write_object, delta)
+local function export_delta_log(action, table_paths, write_object, delta_client)
     local repo = action.repository_id
     local commit_id = action.commit_id
 
@@ -51,7 +51,7 @@ local function export_delta_log(action, table_paths, write_object, delta)
     end
     local response = {}
     for _, path in ipairs(table_paths) do
-        local t = delta.get_table(repo, commit_id, path)
+        local t = delta_client.get_table(repo, commit_id, path)
         local sortedKeys = utils.sortedKeys(t)
         --[[ Pairs of (version, map of json content):
                 (1,
