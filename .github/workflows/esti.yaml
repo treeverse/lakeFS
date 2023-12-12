@@ -1057,11 +1057,6 @@ jobs:
           LAKEFS_STATS_ENABLED: false
           LAKEFS_BLOCKSTORE_LOCAL_PATH: /home/lakefs
           LAKEFS_LOGGING_LEVEL: DEBUG
-          LAKEFS_BLOCKSTORE_LOCAL_ALLOWED_EXTERNAL_PREFIXES: /tmp
-          LAKEFS_DATABASE_KV_ENABLED: true
-          LAKEFSACTION_VAR: this_is_actions_var
-          LAKEFS_DATABASE_DYNAMODB_AWS_REGION: us-east-1
-          LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
