@@ -1052,7 +1052,16 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: local
           LAKEFS_EMAIL_SUBSCRIPTION_ENABLED: true
           LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
+          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
+          LAKEFS_AUTH_UI_CONFIG_LOGIN_COOKIE_NAMES: "internal_auth_session"
           LAKEFS_STATS_ENABLED: false
+          LAKEFS_BLOCKSTORE_LOCAL_PATH: /home/lakefs
+          LAKEFS_LOGGING_LEVEL: DEBUG
+          LAKEFS_BLOCKSTORE_LOCAL_ALLOWED_EXTERNAL_PREFIXES: /tmp
+          LAKEFS_DATABASE_KV_ENABLED: true
+          LAKEFSACTION_VAR: this_is_actions_var
+          LAKEFS_DATABASE_DYNAMODB_AWS_REGION: us-east-1
+          LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
@@ -1085,9 +1094,6 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         working-directory: webui
         run: npx playwright install-deps chromium
-      - name: Health check
-        shell: bash
-        run: curl -kX GET http://localhost:8000/healthcheck
       - name: Playwright run
         env:
           BASE_URL: http://localhost:8000
