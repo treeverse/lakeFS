@@ -9,8 +9,8 @@ local utils = require("lakefs/catalogexport/internal")
     protocol: https://github.com/delta-io/delta/blob/master/PROTOCOL.md#delta-log-entries
     Example:
         local gen = delta_log_entry_key_generator()
+        gen() -- 000000000000000000.json
         gen() -- 000000000000000001.json
-        gen() -- 000000000000000002.json
 ]]
 local function delta_log_entry_key_generator()
     local current = 0
