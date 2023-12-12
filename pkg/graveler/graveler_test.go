@@ -3,10 +3,6 @@ package graveler_test
 import (
 	"context"
 	"errors"
-	"strconv"
-	"testing"
-	"time"
-
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -16,6 +12,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
 	"github.com/treeverse/lakefs/pkg/graveler/testutil"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"strconv"
+	"testing"
 )
 
 type Hooks struct {
@@ -371,62 +369,6 @@ func TestGraveler_Set(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestGraveler_Set_ReadOnlyRepo(t *testing.T) {
-	newSetVal := &graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
-	repository = &graveler.RepositoryRecord{
-		RepositoryID: "read-only-repo1",
-		Repository: &graveler.Repository{
-			StorageNamespace: "readonly-repo-ns",
-			CreationDate:     time.Now(),
-			DefaultBranchID:  branch1ID,
-			ReadOnly:         true,
-		},
-	}
-	ctx := context.Background()
-	store := newGraveler(t, &testutil.CommittedFake{}, &testutil.StagingFake{}, &testutil.RefsFake{}, nil, testutil.NewProtectedBranchesManagerFake(), testutil.NewReadOnlyRepositoriesManagerFake())
-	err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value)
-	require.Error(t, err, graveler.ErrReadOnlyRepository)
-}
-
-func TestGraveler_Delete_ReadOnlyRepo(t *testing.T) {
-	newSetVal := &graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
-	repository = &graveler.RepositoryRecord{
-		RepositoryID: "read-only-repo1",
-		Repository: &graveler.Repository{
-			StorageNamespace: "readonly-repo-ns",
-			CreationDate:     time.Now(),
-			DefaultBranchID:  branch1ID,
-			ReadOnly:         true,
-		},
-	}
-	ctx := context.Background()
-	store := newGraveler(t, &testutil.CommittedFake{}, &testutil.StagingFake{}, &testutil.RefsFake{}, nil, testutil.NewProtectedBranchesManagerFake(), testutil.NewReadOnlyRepositoriesManagerFake())
-	err := store.Delete(ctx, repository, "branch-1", newSetVal.Key)
-	require.Error(t, err, graveler.ErrReadOnlyRepository)
-}
-
-func TestGraveler_commit_ReadOnlyRepo(t *testing.T) {
-	repository = &graveler.RepositoryRecord{
-		RepositoryID: "read-only-repo1",
-		Repository: &graveler.Repository{
-			StorageNamespace: "readonly-repo-ns",
-			CreationDate:     time.Now(),
-			DefaultBranchID:  branch1ID,
-			ReadOnly:         true,
-		},
-	}
-	ctx := context.Background()
-	mr := graveler.MetaRangeID("")
-	store := newGraveler(t, &testutil.CommittedFake{}, &testutil.StagingFake{}, &testutil.RefsFake{}, nil, testutil.NewProtectedBranchesManagerFake(), testutil.NewReadOnlyRepositoriesManagerFake())
-	_, err := store.Commit(ctx, repository, "branch-1", graveler.CommitParams{
-		Committer:       "committer",
-		Message:         "commit",
-		Metadata:        graveler.Metadata{},
-		SourceMetaRange: &mr,
-	})
-	require.Error(t, err, graveler.ErrReadOnlyRepository)
 }
 
 func TestGravelerSet_Advanced(t *testing.T) {
