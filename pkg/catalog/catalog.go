@@ -28,6 +28,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
+	"github.com/treeverse/lakefs/pkg/graveler/repository"
 	"github.com/treeverse/lakefs/pkg/graveler/retention"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/graveler/sstable"
@@ -362,8 +363,9 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}
 
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
+	readOnlyRepositoryManager := repository.NewReadOnlyRepositoriesManager()
 	stagingManager := staging.NewManager(ctx, cfg.KVStore, storeLimiter, cfg.Config.Graveler.BatchDBIOTransactionMarkers, executor)
-	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
+	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager, readOnlyRepositoryManager)
 
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
 	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
@@ -403,7 +405,7 @@ func (c *Catalog) log(ctx context.Context) logging.Logger {
 }
 
 // CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
-func (c *Catalog) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error) {
+func (c *Catalog) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string, readOnly bool) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	storageNS := graveler.StorageNamespace(storageNamespace)
 	branchID := graveler.BranchID(branch)
@@ -422,6 +424,7 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 		StorageNamespace: storageNS.String(),
 		DefaultBranch:    branchID.String(),
 		CreationDate:     repo.CreationDate,
+		ReadOnly:         readOnly,
 	}
 	return catalogRepo, nil
 }

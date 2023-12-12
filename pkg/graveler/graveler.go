@@ -264,6 +264,9 @@ type Repository struct {
 	// this field identifies the specific instance, and used in the KV store key path to store all the entities belonging
 	// to this specific instantiation of repo with the given ID
 	InstanceUID string
+	// ReadOnly indicates if the repository is a read-only repository. All write operations will be blocked for a
+	//read-only repository.
+	ReadOnly bool
 }
 
 type RepositoryMetadata map[string]string
@@ -1012,12 +1015,13 @@ func (id ImportID) String() string {
 }
 
 type Graveler struct {
-	hooks                    HooksHandler
-	CommittedManager         CommittedManager
-	RefManager               RefManager
-	StagingManager           StagingManager
-	protectedBranchesManager ProtectedBranchesManager
-	garbageCollectionManager GarbageCollectionManager
+	hooks                     HooksHandler
+	CommittedManager          CommittedManager
+	RefManager                RefManager
+	StagingManager            StagingManager
+	protectedBranchesManager  ProtectedBranchesManager
+	garbageCollectionManager  GarbageCollectionManager
+	readOnlyRepositoryManager ReadOnlyRepositoryManager
 	// logger *without context* to be used for logging.  It should be
 	// avoided in favour of g.log(ctx) in any operation where context is
 	// available.
@@ -1025,19 +1029,20 @@ type Graveler struct {
 	BranchUpdateBackOff backoff.BackOff
 }
 
-func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *Graveler {
+func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager, readOnlyRepositoryManager ReadOnlyRepositoryManager) *Graveler {
 	branchUpdateBackOff := backoff.NewExponentialBackOff()
 	branchUpdateBackOff.MaxInterval = BranchUpdateMaxInterval
 
 	return &Graveler{
-		hooks:                    &HooksNoOp{},
-		CommittedManager:         committedManager,
-		RefManager:               refManager,
-		StagingManager:           stagingManager,
-		BranchUpdateBackOff:      branchUpdateBackOff,
-		protectedBranchesManager: protectedBranchesManager,
-		garbageCollectionManager: gcManager,
-		logger:                   logging.ContextUnavailable().WithField("service_name", "graveler_graveler"),
+		hooks:                     &HooksNoOp{},
+		CommittedManager:          committedManager,
+		RefManager:                refManager,
+		StagingManager:            stagingManager,
+		BranchUpdateBackOff:       branchUpdateBackOff,
+		protectedBranchesManager:  protectedBranchesManager,
+		readOnlyRepositoryManager: readOnlyRepositoryManager,
+		garbageCollectionManager:  gcManager,
+		logger:                    logging.ContextUnavailable().WithField("service_name", "graveler_graveler"),
 	}
 }
 
@@ -1588,6 +1593,11 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 		return ErrWriteToProtectedBranch
 	}
 
+	isProtected = g.readOnlyRepositoryManager.IsBlocked(ctx, repository)
+	if isProtected {
+		return ErrWriteToReadOnlyRepository
+	}
+
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -1678,6 +1688,11 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 		return ErrWriteToProtectedBranch
 	}
 
+	isProtected = g.readOnlyRepositoryManager.IsBlocked(ctx, repository)
+	if isProtected {
+		return ErrWriteToReadOnlyRepository
+	}
+
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "delete"})
 	err = g.safeBranchWrite(ctx, log, repository, branchID,
 		safeBranchWriteOptions{}, func(branch *Branch) error {
@@ -1696,6 +1711,12 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 	if isProtected {
 		return ErrWriteToProtectedBranch
 	}
+
+	isProtected = g.readOnlyRepositoryManager.IsBlocked(ctx, repository)
+	if isProtected {
+		return ErrWriteToReadOnlyRepository
+	}
+
 	if len(keys) > DeleteKeysMaxSize {
 		return fmt.Errorf("keys length (%d) passed the maximum allowed(%d): %w", len(keys), DeleteKeysMaxSize, ErrInvalidValue)
 	}
@@ -1844,6 +1865,11 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 	if isProtected {
 		return "", ErrCommitToProtectedBranch
 	}
+	isProtected = g.readOnlyRepositoryManager.IsBlocked(ctx, repository)
+	if isProtected {
+		return "", ErrWriteToReadOnlyRepository
+	}
+
 	storageNamespace = repository.StorageNamespace
 
 	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
@@ -2128,6 +2154,12 @@ func (g *Graveler) Reset(ctx context.Context, repository *RepositoryRecord, bran
 	if isProtected {
 		return ErrWriteToProtectedBranch
 	}
+
+	isProtected = g.readOnlyRepositoryManager.IsBlocked(ctx, repository)
+	if isProtected {
+		return ErrWriteToReadOnlyRepository
+	}
+
 	tokensToDrop := make([]StagingToken, 0)
 	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		// Save current branch tokens for drop
@@ -2183,6 +2215,11 @@ func (g *Graveler) ResetKey(ctx context.Context, repository *RepositoryRecord, b
 		return ErrWriteToProtectedBranch
 	}
 
+	isProtected = g.readOnlyRepositoryManager.IsBlocked(ctx, repository)
+	if isProtected {
+		return ErrWriteToReadOnlyRepository
+	}
+
 	branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 	if err != nil {
 		return fmt.Errorf("getting branch: %w", err)
@@ -2218,6 +2255,12 @@ func (g *Graveler) ResetPrefix(ctx context.Context, repository *RepositoryRecord
 	if isProtected {
 		return ErrWriteToProtectedBranch
 	}
+
+	isProtected = g.readOnlyRepositoryManager.IsBlocked(ctx, repository)
+	if isProtected {
+		return ErrWriteToReadOnlyRepository
+	}
+
 	// New sealed tokens list after change includes current staging token
 	newSealedTokens := make([]StagingToken, 0)
 	newStagingToken := GenerateStagingToken(repository.RepositoryID, branchID)
@@ -3249,4 +3292,9 @@ type ProtectedBranchesManager interface {
 func NewRepoInstanceID() string {
 	tm := time.Now().UTC()
 	return xid.NewWithTime(tm).String()
+}
+
+type ReadOnlyRepositoryManager interface {
+	// IsBlocked returns whether the repository is blocked for write operations.
+	IsBlocked(ctx context.Context, repository *RepositoryRecord) bool
 }

@@ -20,6 +20,7 @@ type Repository struct {
 	StorageNamespace string
 	DefaultBranch    string
 	CreationDate     time.Time
+	ReadOnly         bool
 }
 
 type DBEntry struct {

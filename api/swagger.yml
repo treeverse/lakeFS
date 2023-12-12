@@ -158,6 +158,7 @@ components:
         - id
         - default_branch
         - storage_namespace
+        - read_only
       properties:
         id:
           type: string
@@ -170,6 +171,9 @@ components:
         storage_namespace:
           type: string
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
+        read_only:
+          type: boolean
+          description: Whether the repository is a read-only repository
 
     RepositoryMetadata:
       type: object
@@ -232,6 +236,10 @@ components:
           type: string
           example: "main"
         sample_data:
+          type: boolean
+          example: "true"
+          default: false
+        read_only:
           type: boolean
           example: "true"
           default: false

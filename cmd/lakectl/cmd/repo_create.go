@@ -11,7 +11,7 @@ import (
 const (
 	DefaultBranch = "main"
 
-	repoCreateCmdArgs = 2
+	repoCreateCmdArgs = 3
 )
 
 // repoCreateCmd represents the create repo command
@@ -29,12 +29,17 @@ var repoCreateCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+		readonlyRepository, err := cmd.Flags().GetBool("read-only")
+		if err != nil {
+			DieErr(err)
+		}
 		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(),
 			&apigen.CreateRepositoryParams{},
 			apigen.CreateRepositoryJSONRequestBody{
 				Name:             u.Repository,
 				StorageNamespace: args[1],
 				DefaultBranch:    &defaultBranch,
+				ReadOnly:         &readonlyRepository,
 			})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
@@ -48,6 +53,6 @@ var repoCreateCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
-
+	repoCreateCmd.Flags().BoolP("read-only", "r", false, "whether the repository is read-only")
 	repoCmd.AddCommand(repoCreateCmd)
 }
