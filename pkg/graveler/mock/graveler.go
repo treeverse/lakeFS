@@ -2927,6 +2927,6 @@ func NewMockReadOnlyRepositoriesManager() *MockReadOnlyRepositoriesManager {
 }
 
 // IsBlocked mocks base method.
-func (m *MockReadOnlyRepositoriesManager) IsBlocked(repository *graveler.RepositoryRecord) bool{
+func (m *MockReadOnlyRepositoriesManager) IsBlocked(repository *graveler.RepositoryRecord) bool {
 	return repository.ReadOnly
 }
