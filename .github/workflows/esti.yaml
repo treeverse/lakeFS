@@ -1033,8 +1033,6 @@ jobs:
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-      LAKEFS_INSTALLATION_ACCESS_KEY_ID: AKIAIOSFDNN7EXAMPLEQ
-      LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     
     services:
       dynamodb:
@@ -1049,7 +1047,6 @@ jobs:
         env:
           LAKEFS_DATABASE_TYPE: dynamodb
           LAKEFS_DATABASE_DYNAMODB_ENDPOINT: http://dynamodb:8000
-          LAKEFS_DATABASE_DYNAMODB_TABLE_NAME: e2e-test-refstore
           LAKEFS_BLOCKSTORE_TYPE: local
           LAKEFS_EMAIL_SUBSCRIPTION_ENABLED: true
           LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
