@@ -2,14 +2,40 @@ local pathlib = require("path")
 local json = require("encoding/json")
 local utils = require("lakefs/catalogexport/internal")
 
---[[
-    Used to mark the objects to which a stat_object request was issued.
-    {
-        "table_path1": { "file1.parquet" = true, "file2.parquet" = true, ...},
-        "table_path2": { "file1.parquet" = true, "file2.parquet" = true, ...}
-    }
-]]
-local table_to_objects = {}
+
+local test_data = {
+    --[[
+        Used to mark the objects to which a stat_object request was issued.
+        {
+            "table_path1": { "file1.parquet" = true, "file2.parquet" = true, ...},
+            "table_path2": { "file1.parquet" = true, "file2.parquet" = true, ...}
+        }
+    ]]
+    table_to_objects = {},
+    --[[
+        Used to validate the expected Delta Log content
+        {
+            "<physical_table_log_entry_address>" = "<physical log content>",
+            ...
+        }
+    ]]
+    output_delta_log = {},
+    --[[ Used to return a mock response from "delta_client.get_table()"
+        {
+           "<n>" = {<initial log content>},
+           "<n+1>" = {<initial log content>},
+        }
+    ]]
+    table_logs_content = {},
+    --[[ Used to validate the expected log content for a given table.
+        {<table_name1> = {
+           "<n>" = {<expected log content>},
+           "<n+1>" = {<expected log content>},
+        }},
+        ...
+    ]]
+    table_expected_log = {},
+}
 
 local function generate_physical_address(path)
     return "s3://" .. path
@@ -19,11 +45,11 @@ package.loaded.lakefs = {
     stat_object = function(_, _, path)
         local parsed_path = pathlib.parse(path)
         local table_path_base = parsed_path["parent"]
-        if not table_to_objects[table_path_base] then
-            table_to_objects[table_path_base] = {}
+        if not test_data.table_to_objects[table_path_base] then
+            test_data.table_to_objects[table_path_base] = {}
         end
         -- mark the given parquet file path under a specific table as requested.
-        table_to_objects[table_path_base][parsed_path["base_name"]] = true
+        test_data.table_to_objects[table_path_base][parsed_path["base_name"]] = true
         return 200, json.marshal({
             physical_address = generate_physical_address(path) ,
         })
@@ -35,26 +61,16 @@ local delta_export = require("lakefs/catalogexport/delta_exporter")
 local function mock_delta_client(table_logs_content)
     return {
         get_table = function (_, _, path)
-            local table_log_contents = table_logs_content[path]
-            return table_log_contents
             --[[ For the given table's path:
                 {"0" = <logical log content>, "1" = <logical log content>}
             ]]
+            return table_logs_content[path]
         end
     }
 end
 
---[[
-    Used to validate the expected Delta Log content
-    {
-        "<physical_table_log_entry_address>" = "<physical log content>",
-        ...
-    }
-]]
-local output_delta_log = {}
-
 local function mock_object_writer(_, key, data)
-    output_delta_log[key] = data
+    test_data.output_delta_log[key] = data
 end
 
 local function assert_physical_address(delta_table_locations, table_paths)
@@ -77,7 +93,7 @@ end
 
 local function assert_lakefs_stats(table_paths, content_paths)
     for _, table_path in ipairs(table_paths) do
-        local table = table_to_objects[table_path]
+        local table = test_data.table_to_objects[table_path]
         if not table then
             error("missing lakeFS stat_object call for table path: " .. table_path .. "\n")
         end
@@ -98,7 +114,7 @@ local function assert_delta_log_content(delta_table_locations, table_to_physical
         end
         for entry, content in pairs(content_table) do
             local full_key = table_loc_key .. "/" .. entry
-            local output_content = output_delta_log[full_key]
+            local output_content = test_data.output_delta_log[full_key]
             if not output_content then
                 error("missing log file for path: " .. full_key .. "\n")
             end
@@ -117,25 +133,9 @@ end
 local data_paths = { "part-c000.snappy.parquet", "part-c001.snappy.parquet", "part-c002.snappy.parquet", "part-c003.snappy.parquet" }
 local test_table_paths = {"path/to/table1/", "path/to/table2/"}
 
---[[ Used to return a mock response from "delta_client.get_table()"
-    {
-       "<n>" = {<initial log content>},
-       "<n+1>" = {<initial log content>},
-    }
-]]
-local table_logs_content = {}
-
---[[ Used to validate the expected log content for a given table.
-    {<table_name1> = {
-       "<n>" = {<expected log content>},
-       "<n+1>" = {<expected log content>},
-    }},
-    ...
-]]
-local table_expected_log = {}
 for _, table_path in ipairs(test_table_paths) do
     local table_name = pathlib.parse(table_path)["base_name"]
-    table_logs_content[table_path] = {
+    test_data.table_logs_content[table_path] = {
         ["_delta_log/00000000000000000000.json"] = {
             "{\"commitInfo\":\"some info\"}",
             "{\"add\": {\"path\":\"part-c000.snappy.parquet\"}}",
@@ -148,7 +148,7 @@ for _, table_path in ipairs(test_table_paths) do
             "{\"remove\": {\"path\":\"part-c003.snappy.parquet\"}}",
         }
     }
-    table_expected_log[table_name] = {
+    test_data.table_expected_log[table_name] = {
         ["_delta_log/00000000000000000000.json"] = {
             "{\"commitInfo\":\"some info\"}",
             "{\"add\":{\"path\":\"" .. generate_physical_address(table_path .. "part-c000.snappy.parquet") .. "\"}}",
@@ -164,15 +164,15 @@ for _, table_path in ipairs(test_table_paths) do
 end
 
 
--- Run Delta export
+-- Run Delta export test
 local delta_table_locations = delta_export.export_delta_log(
         action,
         test_table_paths,
         mock_object_writer,
-        mock_delta_client(table_logs_content)
+        mock_delta_client(test_data.table_logs_content)
 )
 
 -- Test results
 assert_lakefs_stats(test_table_paths, data_paths)
 assert_physical_address(delta_table_locations, test_table_paths)
-assert_delta_log_content(delta_table_locations, table_expected_log)
+assert_delta_log_content(delta_table_locations, test_data.table_expected_log)
