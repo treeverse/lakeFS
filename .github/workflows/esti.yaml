@@ -1085,6 +1085,9 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         working-directory: webui
         run: npx playwright install-deps chromium
+      - name: Health check
+        shell: bash
+        run: curl -kX GET http://localhost:8000/healthcheck
       - name: Playwright run
         env:
           BASE_URL: http://localhost:8000
