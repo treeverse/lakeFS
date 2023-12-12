@@ -1037,6 +1037,10 @@ jobs:
       LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     
     services:
+      dynamodb:
+        image: amazon/dynamodb-local:1.13.6
+        ports:
+          - '9000:8000'
       lakefs:
         image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
         credentials:
@@ -1054,10 +1058,6 @@ jobs:
           LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: ${{env.LAKEFS_INSTALLATION_SECRET_ACCESS_KEY }}
           LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
           LAKEFS_STATS_ENABLED: false
-      dynamodb:
-        image: amazon/dynamodb-local:1.13.6
-        ports:
-          - '9000:8000'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
