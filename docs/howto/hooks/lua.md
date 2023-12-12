@@ -517,8 +517,8 @@ hooks:
         local formats = require("formats")
         local delta_exporter = require("lakefs/catalogexport/delta_exporter")
 
-        local sc = aws.s3_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_key, args.aws.aws_region)
-        local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.aws_region)
+        local sc = aws.s3_client(args.aws.access_key_id, args.aws.secret_access_key, args.aws.region)
+        local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.region)
         local delta_table_locations = delta_exporter.export_delta_log(action, args.table_paths, sc.put_object, delta_client)
         
         for t, loc in pairs(delta_table_locations) do

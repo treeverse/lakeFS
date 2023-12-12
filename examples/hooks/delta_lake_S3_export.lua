@@ -5,7 +5,7 @@
         - lakefs.secret_access_key
         - aws.access_key_id
         - aws.secret_access_key
-        -
+        - aws.region
         - region
 ]]
 local aws = require("aws")
