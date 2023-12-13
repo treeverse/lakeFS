@@ -68,7 +68,6 @@ func newDatabricksClient(l *lua.State) *databricks.WorkspaceClient {
 	))
 }
 
-// (table_name, location, warehouse_id, catalog, schema_name)
 func registerExternalTable(client *DatabricksClient) lua.Function {
 	return func(l *lua.State) int {
 		tableName := lua.CheckString(l, 1)
