@@ -274,6 +274,10 @@ func (m *RefsFake) CreateBareRepository(_ context.Context, _ graveler.Repository
 	panic("implement me")
 }
 
+func (m *RefsFake) SetRepositoryReadOnly(_ context.Context, _ graveler.RepositoryID, _ bool) error {
+	panic("implement me")
+}
+
 func (m *RefsFake) ListCommits(_ context.Context, _ *graveler.RepositoryRecord) (graveler.CommitIterator, error) {
 	return m.ListCommitsRes, nil
 }

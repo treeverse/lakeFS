@@ -1513,6 +1513,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 			StorageNamespace: repo.StorageNamespace,
 			CreationDate:     creationDate,
 			DefaultBranch:    repo.DefaultBranch,
+			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}
 		results = append(results, r)
 	}
@@ -1753,6 +1754,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 			DefaultBranch:    repo.DefaultBranch,
 			Id:               repo.Name,
 			StorageNamespace: repo.StorageNamespace,
+			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}
 		writeResponse(w, r, http.StatusOK, response)
 
