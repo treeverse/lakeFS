@@ -1856,6 +1856,20 @@ func (mr *MockRefManagerMockRecorder) CreateRepository(ctx, repositoryID, reposi
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRepository", reflect.TypeOf((*MockRefManager)(nil).CreateRepository), ctx, repositoryID, repository)
 }
 
+// SetRepositoryReadOnly indicates an expected call of SetRepositoryReadOnly.
+func (m *MockRefManager) SetRepositoryReadOnly(ctx context.Context, repositoryID graveler.RepositoryID, readOnly bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetRepositoryReadOnly", ctx, repositoryID, readOnly)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetRepositoryReadOnly indicates an expected call of SetRepositoryReadOnly.
+func (mr *MockRefManagerMockRecorder) SetRepositoryReadOnly(ctx, repositoryID, readOnly bool) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRepositoryReadOnly", reflect.TypeOf((*MockRefManager)(nil).SetRepositoryReadOnly), ctx, repositoryID, readOnly)
+}
+
 // CreateTag mocks base method.
 func (m *MockRefManager) CreateTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID, commitID graveler.CommitID) error {
 	m.ctrl.T.Helper()

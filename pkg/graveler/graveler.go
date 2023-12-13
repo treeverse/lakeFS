@@ -497,6 +497,9 @@ type VersionController interface {
 	// GetRepositoryMetadata returns repository user metadata
 	GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (RepositoryMetadata, error)
 
+	// SetRepositoryReadOnly sets repository read only flag
+	SetRepositoryReadOnly(ctx context.Context, repositoryID RepositoryID, readOnly bool) error
+
 	// CreateBranch creates branch on repository pointing to ref
 	CreateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref) (*Branch, error)
 
@@ -777,6 +780,9 @@ type RefManager interface {
 
 	// GetRepositoryMetadata gets repository user metadata
 	GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (RepositoryMetadata, error)
+
+	// SetRepositoryReadOnly sets repository read only flag
+	SetRepositoryReadOnly(ctx context.Context, repositoryID RepositoryID, readOnly bool) error
 
 	// SetRepositoryMetadata updates repository user metadata using the updateFunc
 	SetRepositoryMetadata(ctx context.Context, repository *RepositoryRecord, updateFunc RepoMetadataUpdateFunc) error
@@ -1090,6 +1096,10 @@ func (g *Graveler) DeleteRepository(ctx context.Context, repositoryID Repository
 
 func (g *Graveler) GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (RepositoryMetadata, error) {
 	return g.RefManager.GetRepositoryMetadata(ctx, repositoryID)
+}
+
+func (g *Graveler) SetRepositoryReadOnly(ctx context.Context, repositoryID RepositoryID, readOnly bool) error {
+	return g.RefManager.SetRepositoryReadOnly(ctx, repositoryID, readOnly)
 }
 
 func (g *Graveler) WriteRange(ctx context.Context, repository *RepositoryRecord, it ValueIterator) (*RangeInfo, error) {

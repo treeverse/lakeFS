@@ -403,7 +403,7 @@ func (c *Catalog) log(ctx context.Context) logging.Logger {
 }
 
 // CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
-func (c *Catalog) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string, readOnly bool) (*Repository, error) {
+func (c *Catalog) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	storageNS := graveler.StorageNamespace(storageNamespace)
 	branchID := graveler.BranchID(branch)
@@ -422,7 +422,6 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 		StorageNamespace: storageNS.String(),
 		DefaultBranch:    branchID.String(),
 		CreationDate:     repo.CreationDate,
-		ReadOnly:         readOnly,
 	}
 	return catalogRepo, nil
 }
@@ -499,6 +498,16 @@ func (c *Catalog) GetRepositoryMetadata(ctx context.Context, repository string) 
 		return nil, err
 	}
 	return c.Store.GetRepositoryMetadata(ctx, repositoryID)
+}
+
+func (c *Catalog) SetRepositoryReadOnly(ctx context.Context, repository string, readOnly bool) error {
+	repositoryID := graveler.RepositoryID(repository)
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+	}); err != nil {
+		return err
+	}
+	return c.Store.SetRepositoryReadOnly(ctx, repositoryID, readOnly)
 }
 
 // ListRepositories list repository information, the bool returned is true when more repositories can be listed.

@@ -154,6 +154,10 @@ func (g *FakeGraveler) ListRepositories(ctx context.Context) (graveler.Repositor
 	return g.RepositoryIteratorFactory(), nil
 }
 
+func (g *FakeGraveler) SetRepositoryReadOnly(ctx context.Context, repositoryID graveler.RepositoryID, readOnly bool) error {
+	panic("implement me")
+}
+
 func (g *FakeGraveler) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
 	panic("implement me")
 }
