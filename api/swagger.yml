@@ -158,7 +158,6 @@ components:
         - id
         - default_branch
         - storage_namespace
-        - read_only
       properties:
         id:
           type: string
@@ -236,10 +235,6 @@ components:
           type: string
           example: "main"
         sample_data:
-          type: boolean
-          example: "true"
-          default: false
-        read_only:
           type: boolean
           example: "true"
           default: false
@@ -1530,6 +1525,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /read_only_repositories:
+    post:
+      tags:
+        - internal
+      operationId: createReadOnlyRepository
+      summary: create read-only repository
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepositoryCreation"
+      responses:
+        201:
+          description: repository
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Repository"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
         420:
           description: too many requests
         default:
