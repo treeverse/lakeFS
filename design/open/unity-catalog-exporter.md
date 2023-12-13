@@ -29,13 +29,14 @@ Once the above hook's run completed successfully, the tables could be read form 
 ## Misc.
 
 - Authentication with Databricks will require a [service principal](https://docs.databricks.com/en/dev-tools/service-principals.html)
-and an associated token to be provided to the hook's configurations. The Service Principal should have `Service principal: Manager`
-permission over itself (Workspace: Admin console -> Service principals -> <service principal> -> Permissions -> Grant access (<service principal>:
-Service principal: Manager), `Workspace access` and `Databricks SQL access` checked (Admin console -> Service principals -> <service principal> -> Configurations),
+and an associated [token](https://docs.databricks.com/en/dev-tools/service-principals.html#step-4-generate-a-databricks-personal-access-token-for-the-databricks-service-principal) to be provided to the hook's
+configurations. The Service Principal should have `Service principal: Manager`
+permission over itself (Workspace: Admin console -> Service principals -> `<service principal>` -> Permissions -> Grant access (`<service principal>`:
+Service principal: Manager), `Workspace access` and `Databricks SQL access` checked (Admin console -> Service principals -> `<service principal>` -> Configurations),
 a SQL warehouse that will run `CREATE EXTERNAL TABLE` queries, that allow the service principal to use it (SQL Warehouses ->
-<SQL warehouse> -> Permissions -> <service principal>: Can use), a Catalog that has granted a permission for the service principal
-to use it and the schema within it (Catalog -> <catalog name> -> Permissions -> Grant -> <service principal>: `USE CATALOG`, `USE SCHEMA`),
-a Schema with `CREATE TABLE` permission configured for the service principal (Catalog -> <catalog name> -> <schema name> -> Permissions
--> Grant -> <service principal>: `CREATE TABLE`)
-an External Location to the table's bucket (lakeFS's bucket) with `CREATE EXTERNAL TABLE` permission for the service principal,
+`<SQL warehouse>` -> Permissions -> `<service principal>`: Can use), a Catalog that has granted a permission for the service principal
+to use it and to create and use a schema within it (Catalog -> `<catalog name>` -> Permissions -> Grant -> `<service principal>`: `USE CATALOG`, `USE SCHEMA`, `CREATE SCHEMA`),
+a Schema with `CREATE TABLE` permission configured for the service principal (Catalog -> `<catalog name>` -> `<schema name>` -> Permissions
+-> Grant -> `<service principal>`: `CREATE TABLE`)
+and an **External Location** (Catalog -> External Data -> External Locations -> Create location) to the table's bucket (lakeFS's bucket) with `CREATE EXTERNAL TABLE` permission for the service principal,
 - The users will supply an existing catalog under which the schema and table will be created using the [Databricks Go SDK](https://docs.databricks.com/en/dev-tools/sdk-go.html).
