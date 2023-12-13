@@ -475,6 +475,7 @@ func (c *Catalog) GetRepository(ctx context.Context, repository string) (*Reposi
 		StorageNamespace: repo.StorageNamespace.String(),
 		DefaultBranch:    repo.DefaultBranchID.String(),
 		CreationDate:     repo.CreationDate,
+		ReadOnly:         repo.ReadOnly,
 	}
 	return catalogRepository, nil
 }
@@ -541,6 +542,7 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after
 			StorageNamespace: record.StorageNamespace.String(),
 			DefaultBranch:    record.DefaultBranchID.String(),
 			CreationDate:     record.CreationDate,
+			ReadOnly:         record.ReadOnly,
 		})
 		// collect limit +1 to return limit and has more
 		if len(repos) >= limit+1 {

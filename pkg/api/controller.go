@@ -1513,6 +1513,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 			StorageNamespace: repo.StorageNamespace,
 			CreationDate:     creationDate,
 			DefaultBranch:    repo.DefaultBranch,
+			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}
 		results = append(results, r)
 	}
@@ -1524,6 +1525,14 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 }
 
 func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, body apigen.CreateRepositoryJSONRequestBody, params apigen.CreateRepositoryParams) {
+	c.createRepository(w, r, body, params, false)
+}
+
+func (c *Controller) CreateReadOnlyRepository(w http.ResponseWriter, r *http.Request, body apigen.CreateReadOnlyRepositoryJSONRequestBody) {
+	c.createRepository(w, r, apigen.CreateRepositoryJSONRequestBody(body), apigen.CreateRepositoryParams{}, true)
+}
+
+func (c *Controller) createRepository(w http.ResponseWriter, r *http.Request, body apigen.CreateRepositoryJSONRequestBody, params apigen.CreateRepositoryParams, readOnly bool) {
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -1617,7 +1626,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
+	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, body.StorageNamespace, defaultBranch, readOnly)
 	if err != nil {
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", err))
 		return
@@ -1753,6 +1762,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 			DefaultBranch:    repo.DefaultBranch,
 			Id:               repo.Name,
 			StorageNamespace: repo.StorageNamespace,
+			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}
 		writeResponse(w, r, http.StatusOK, response)
 
