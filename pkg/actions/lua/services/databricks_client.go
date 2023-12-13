@@ -72,11 +72,11 @@ func registerExternalTable(client *DatabricksClient) lua.Function {
 	return func(l *lua.State) int {
 		tableName := lua.CheckString(l, 1)
 		location := lua.CheckString(l, 2)
-		warehouseId := lua.CheckString(l, 3)
+		warehouseID := lua.CheckString(l, 3)
 		catalogName := lua.CheckString(l, 4)
 		schemaName := lua.CheckString(l, 5)
 
-		status, err := client.createExternalTable(warehouseId, catalogName, schemaName, tableName, location)
+		status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
 				err = client.dropTable(catalogName, schemaName, tableName)
@@ -84,7 +84,7 @@ func registerExternalTable(client *DatabricksClient) lua.Function {
 					lua.Errorf(l, err.Error())
 					panic("failed dropping an existing table")
 				}
-				status, err = client.createExternalTable(warehouseId, catalogName, schemaName, tableName, location)
+				status, err = client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location)
 				if err != nil {
 					lua.Errorf(l, err.Error())
 					panic("failed creating table")
