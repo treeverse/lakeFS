@@ -360,8 +360,8 @@ func (m *Manager) SetRepositoryReadOnly(ctx context.Context, repositoryID gravel
 
 func (m *Manager) setRepositoryReadOnly(ctx context.Context, repoRecord *graveler.RepositoryRecord, readOnly bool) error {
 	repoRecord.ReadOnly = readOnly
-	repo := graveler.ProtoFromRepo(repoRecord)
-	return kv.SetMsg(ctx, m.kvStore, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repoRecord.RepositoryID)), repo)
+	logging.FromContext(ctx).WithFields(logging.Fields{"repository": repoRecord.RepositoryID, "read-only": repoRecord.ReadOnly}).Info("setRepositoryReadOnly")
+	return kv.SetMsg(ctx, m.kvStore, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repoRecord.RepositoryID)), graveler.ProtoFromRepo(repoRecord))
 }
 
 func (m *Manager) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
