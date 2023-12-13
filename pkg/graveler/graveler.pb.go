@@ -74,6 +74,18 @@ const (
 	BranchProtectionBlockedAction_COMMIT        BranchProtectionBlockedAction = 1
 )
 
+// Enum value maps for BranchProtectionBlockedAction.
+var (
+	BranchProtectionBlockedAction_name = map[int32]string{
+		0: "STAGING_WRITE",
+		1: "COMMIT",
+	}
+	BranchProtectionBlockedAction_value = map[string]int32{
+		"STAGING_WRITE": 0,
+		"COMMIT":        1,
+	}
+)
+
 func (x BranchProtectionBlockedAction) Enum() *BranchProtectionBlockedAction {
 	p := new(BranchProtectionBlockedAction)
 	*p = x
