@@ -189,6 +189,13 @@ func (x *RepositoryData) GetInstanceUid() string {
 	return ""
 }
 
+func (x *RepositoryData) GetReadOnly() bool {
+	if x != nil {
+		return x.ReadOnly
+	}
+	return false
+}
+
 type BranchData struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
