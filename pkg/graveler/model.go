@@ -128,7 +128,6 @@ func RepoFromProto(pb *RepositoryData) *RepositoryRecord {
 			CreationDate:     pb.CreationDate.AsTime(),
 			InstanceUID:      pb.InstanceUid,
 			State:            pb.State,
-			ReadOnly:         pb.ReadOnly,
 		},
 	}
 }
@@ -141,7 +140,6 @@ func ProtoFromRepo(repo *RepositoryRecord) *RepositoryData {
 		CreationDate:     timestamppb.New(repo.Repository.CreationDate),
 		State:            repo.State,
 		InstanceUid:      repo.InstanceUID,
-		ReadOnly:         repo.Repository.ReadOnly,
 	}
 }
 

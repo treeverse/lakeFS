@@ -1513,7 +1513,6 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 			StorageNamespace: repo.StorageNamespace,
 			CreationDate:     creationDate,
 			DefaultBranch:    repo.DefaultBranch,
-			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}
 		results = append(results, r)
 	}
@@ -1618,7 +1617,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, body.StorageNamespace, defaultBranch)
+	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
 	if err != nil {
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", err))
 		return
@@ -1754,7 +1753,6 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 			DefaultBranch:    repo.DefaultBranch,
 			Id:               repo.Name,
 			StorageNamespace: repo.StorageNamespace,
-			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}
 		writeResponse(w, r, http.StatusOK, response)
 
@@ -1785,24 +1783,6 @@ func (c *Controller) GetRepositoryMetadata(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	writeResponse(w, r, http.StatusOK, apigen.RepositoryMetadata{AdditionalProperties: metadata})
-}
-
-func (c *Controller) SetRepositoryReadOnly(w http.ResponseWriter, r *http.Request, repository string, readOnly bool) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.UpdateRepositoryAction,
-			Resource: permissions.RepoArn(repository),
-		},
-	}) {
-		return
-	}
-	ctx := r.Context()
-	c.LogAction(ctx, "set_repository_read_only", r, repository, "", "")
-	err := c.Catalog.SetRepositoryReadOnly(ctx, repository, readOnly)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusOK, nil)
 }
 
 func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Request, repository string) {

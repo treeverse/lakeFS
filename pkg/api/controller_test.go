@@ -103,11 +103,11 @@ func TestController_ListRepositoriesHandler(t *testing.T) {
 	t.Run("list some repos", func(t *testing.T) {
 		// write some repos
 		ctx := context.Background()
-		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
-		_, err = deps.catalog.CreateRepository(ctx, "foo2", onBlock(deps, "foo1"), "main")
+		_, err = deps.catalog.CreateRepository(ctx, "foo2", onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
-		_, err = deps.catalog.CreateRepository(ctx, "foo3", onBlock(deps, "foo1"), "main")
+		_, err = deps.catalog.CreateRepository(ctx, "foo3", onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 
 		resp, err := clt.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
@@ -188,7 +188,7 @@ func TestController_GetRepoHandler(t *testing.T) {
 
 	t.Run("get existing repo", func(t *testing.T) {
 		const testBranchName = "non-default"
-		_, err := deps.catalog.CreateRepository(context.Background(), "foo1", onBlock(deps, "foo1"), testBranchName)
+		_, err := deps.catalog.CreateRepository(context.Background(), "foo1", onBlock(deps, "foo1"), testBranchName, false)
 		testutil.Must(t, err)
 
 		resp, err := clt.GetRepositoryWithResponse(ctx, "foo1")
@@ -240,7 +240,7 @@ func TestController_LogCommitsMissingBranch(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", false)
 	testutil.Must(t, err)
 
 	resp, err := clt.LogCommitsWithResponse(ctx, repo, "otherbranch", &apigen.LogCommitsParams{})
@@ -297,7 +297,7 @@ func TestController_LogCommitsHandler(t *testing.T) {
 		tt := ttt
 		t.Run(tt.name, func(t *testing.T) {
 			repo := testUniqueRepoName()
-			_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+			_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 			testutil.Must(t, err)
 
 			const prefix = "foo/bar"
@@ -338,7 +338,7 @@ func TestController_LogCommitsParallelHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 
 	commits := 100
@@ -386,7 +386,7 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 
 	// prepare test data
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	const prefix = "foo/bar"
 	const totalCommits = 10
@@ -550,7 +550,7 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 	*/
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", false)
 	testutil.Must(t, err)
 
 	commitsMap := make(map[string]string)
@@ -713,7 +713,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 
 	t.Run("get existing commit", func(t *testing.T) {
 		ctx := context.Background()
-		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, "foo1", "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 		commit1, err := deps.catalog.Commit(ctx, "foo1", "main", "some message", DefaultUserID, nil, nil, nil)
@@ -737,7 +737,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 	t.Run("branch commit", func(t *testing.T) {
 		ctx := context.Background()
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 		commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
@@ -765,7 +765,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 	t.Run("tag commit", func(t *testing.T) {
 		ctx := context.Background()
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 		commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
@@ -790,7 +790,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 	t.Run("initial commit", func(t *testing.T) {
 		// validate a new repository's initial commit existence and structure
 		ctx := context.Background()
-		_, err := deps.catalog.CreateRepository(ctx, "foo2", onBlock(deps, "foo2"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, "foo2", onBlock(deps, "foo2"), "main", false)
 		testutil.Must(t, err)
 		resp, err := clt.GetCommitWithResponse(ctx, "foo2", "main")
 		verifyResponseOK(t, resp, err)
@@ -839,7 +839,7 @@ func TestController_CommitHandler(t *testing.T) {
 
 	t.Run("commit success", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		resp, err := clt.CommitWithResponse(ctx, repo, "main", &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
@@ -850,7 +850,7 @@ func TestController_CommitHandler(t *testing.T) {
 
 	t.Run("commit success with source metarange", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 
 		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
@@ -869,7 +869,7 @@ func TestController_CommitHandler(t *testing.T) {
 
 	t.Run("commit failure with source metarange and dirty branch", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 
 		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
@@ -894,7 +894,7 @@ func TestController_CommitHandler(t *testing.T) {
 
 	t.Run("commit failure empty branch", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 
 		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
@@ -912,7 +912,7 @@ func TestController_CommitHandler(t *testing.T) {
 
 	t.Run("commit success - with creation date", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		date := int64(1642626109)
@@ -928,7 +928,7 @@ func TestController_CommitHandler(t *testing.T) {
 
 	t.Run("protected branch", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.MustDo(t, "create repository", err)
 		rules := map[string]*graveler.BranchProtectionBlockedActions{
 			"main": {
@@ -999,7 +999,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 
 	t.Run("create repo duplicate", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1070,7 +1070,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 
 	t.Run("delete repo success", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 
 		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo)
@@ -1096,7 +1096,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 	t.Run("delete repo doesnt delete other repos", func(t *testing.T) {
 		names := []string{"rr0", "rr1", "rr11", "rr2"}
 		for _, name := range names {
-			_, err := deps.catalog.CreateRepository(ctx, name, onBlock(deps, "foo1"), "main")
+			_, err := deps.catalog.CreateRepository(ctx, name, onBlock(deps, "foo1"), "main", false)
 			testutil.Must(t, err)
 		}
 
@@ -1186,7 +1186,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 	t.Run("list branches only default", func(t *testing.T) {
 		ctx := context.Background()
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		resp, err := clt.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{
 			Amount: apiutil.Ptr(apigen.PaginationAmount(-1)),
@@ -1203,7 +1203,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 	t.Run("list branches pagination", func(t *testing.T) {
 		ctx := context.Background()
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo2"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo2"), "main", false)
 		testutil.Must(t, err)
 
 		// create the first "dummy" commit on main so that we can create branches from it
@@ -1260,7 +1260,7 @@ func TestController_ListTagsHandler(t *testing.T) {
 
 	// setup test data
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 	testutil.Must(t, err)
 	testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "obj1"}))
 	commitLog, err := deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil)
@@ -1342,7 +1342,7 @@ func TestController_GetBranchHandler(t *testing.T) {
 
 	const testBranch = "main"
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), testBranch)
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), testBranch, false)
 	testutil.Must(t, err)
 
 	t.Run("get default branch", func(t *testing.T) {
@@ -1386,7 +1386,7 @@ func TestController_BranchesDiffBranchHandler(t *testing.T) {
 	ctx := context.Background()
 	const testBranch = "main"
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), testBranch)
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), testBranch, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1436,7 +1436,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 	ctx := context.Background()
 	t.Run("create branch and diff refs success", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "a/b"}))
 		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil)
@@ -1474,7 +1474,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 
 	t.Run("create branch missing commit", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 			Name:   "main3",
@@ -1504,7 +1504,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 
 	t.Run("create branch conflict with branch", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 
 		resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
@@ -1521,7 +1521,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 
 	t.Run("create branch conflict with tag", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 
 		name := "tag123"
@@ -1542,7 +1542,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 
 	t.Run("create branch conflict with commit", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 
 		log, err := deps.catalog.GetCommit(ctx, repo, "main")
@@ -1568,7 +1568,7 @@ func TestController_DiffRefsHandler(t *testing.T) {
 	t.Run("diff prefix with and without delimiter", func(t *testing.T) {
 		repoName := testUniqueRepoName()
 		const newBranchName = "main2"
-		_, err := deps.catalog.CreateRepository(ctx, repoName, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repoName, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 
 		resp, err := clt.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{
@@ -1654,7 +1654,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
-	_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main", false)
 	testutil.Must(t, err)
 
 	t.Run("upload object", func(t *testing.T) {
@@ -1788,7 +1788,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("delete branch success", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "my-new-repo", "main", catalog.DBEntry{Path: "a/b"}))
 		_, err = deps.catalog.Commit(ctx, "my-new-repo", "main", "first commit", "test", nil, nil, nil)
@@ -1809,7 +1809,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 	})
 
 	t.Run("delete default branch", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo2", onBlock(deps, "foo2"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo2", onBlock(deps, "foo2"), "main", false)
 		testutil.Must(t, err)
 		resp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo2", "main")
 		if err != nil {
@@ -1836,7 +1836,7 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "some-bucket"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "some-bucket"), "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1933,7 +1933,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main", false)
 	testutil.Must(t, err)
 	dbEntries := []catalog.DBEntry{
 		{
@@ -2028,7 +2028,7 @@ func TestController_ObjectsHeadObjectHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2132,7 +2132,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2251,7 +2251,7 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2315,7 +2315,7 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2412,7 +2412,7 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 
 	repo := testUniqueRepoName()
 	ns := onBlock(deps, "bucket/prefix")
-	_, err := deps.catalog.CreateRepository(ctx, repo, ns, "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, ns, "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2533,7 +2533,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 
 	repo := testUniqueRepoName()
 	const branch = "main"
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "some-bucket/prefix"), branch)
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "some-bucket/prefix"), branch, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3174,7 +3174,7 @@ func TestController_MergeIntoExplicitBranch(t *testing.T) {
 
 	// setup env
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	_, err = deps.catalog.CreateBranch(ctx, repo, "branch1", "main")
 	testutil.Must(t, err)
@@ -3209,7 +3209,7 @@ func TestController_MergeDirtyBranch(t *testing.T) {
 
 	// setup env
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
 	testutil.Must(t, err)
@@ -3233,7 +3233,7 @@ func TestController_CreateTag(t *testing.T) {
 	ctx := context.Background()
 	// setup env
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 	commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
@@ -3351,7 +3351,7 @@ func TestController_Revert(t *testing.T) {
 	ctx := context.Background()
 	// setup env
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 	_, err = deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
@@ -3400,7 +3400,7 @@ func TestController_Revert(t *testing.T) {
 	t.Run("revert_no_parent", func(t *testing.T) {
 		repo := testUniqueRepoName()
 		// setup data - repo with one object committed
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "merge/foo/bar1", PhysicalAddress: "merge1bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
 		testutil.Must(t, err)
@@ -3431,7 +3431,7 @@ func TestController_RevertConflict(t *testing.T) {
 	ctx := context.Background()
 	// setup env
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 	firstCommit, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
@@ -3452,7 +3452,7 @@ func TestController_CherryPick(t *testing.T) {
 	ctx := context.Background()
 	// setup env
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 	_, err = deps.catalog.Commit(ctx, repo, "main", "message1", DefaultUserID, nil, nil, nil)
@@ -3709,7 +3709,7 @@ func TestController_GetPhysicalAddress(t *testing.T) {
 			ns     = "s3://foo-bucket1"
 			branch = "main"
 		)
-		_, err := deps.catalog.CreateRepository(ctx, repo, ns, branch)
+		_, err := deps.catalog.CreateRepository(ctx, repo, ns, branch, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -3820,7 +3820,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 
 	t.Run("uncommitted_data", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		const items = 3
 		for i := 0; i < items; i++ {
@@ -3833,7 +3833,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 
 	t.Run("committed_data", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		const items = 3
 		for i := 0; i < items; i++ {
@@ -3849,7 +3849,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 
 	t.Run("uncommitted_copy", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		const items = 3
 		for i := 0; i < items; i++ {
@@ -3879,7 +3879,7 @@ func TestController_ClientDisconnect(t *testing.T) {
 	// setup repository
 	ctx := context.Background()
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 
 	// prepare a client that will not wait for a response and timeout
@@ -4159,7 +4159,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main", false)
 	require.NoError(t, err)
 	_, err = deps.catalog.CreateBranch(ctx, repo, "alt", "main")
 	require.NoError(t, err)
@@ -4426,7 +4426,7 @@ func TestController_LocalAdapter_StageObject(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main", false)
 	require.NoError(t, err)
 	_, err = deps.catalog.CreateBranch(ctx, repo, "alt", "main")
 	require.NoError(t, err)
@@ -4469,7 +4469,7 @@ func TestController_BranchProtectionRules(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			currCtx := context.Background()
 			repo := testUniqueRepoName()
-			_, err := deps.catalog.CreateRepository(currCtx, repo, onBlock(deps, repo), "main")
+			_, err := deps.catalog.CreateRepository(currCtx, repo, onBlock(deps, repo), "main", false)
 			testutil.MustDo(t, "create repository", err)
 
 			respPreflight, err := tc.clt.CreateBranchProtectionRulePreflightWithResponse(currCtx, repo)
@@ -4527,7 +4527,7 @@ func TestController_GarbageCollectionRules(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			currCtx := context.Background()
 			repo := testUniqueRepoName()
-			_, err := deps.catalog.CreateRepository(currCtx, repo, onBlock(deps, repo), "main")
+			_, err := deps.catalog.CreateRepository(currCtx, repo, onBlock(deps, repo), "main", false)
 			testutil.MustDo(t, "create repository", err)
 
 			respPreflight, err := tc.clt.SetGarbageCollectionRulesPreflightWithResponse(currCtx, repo)
@@ -4565,7 +4565,7 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 
 	// setup repository with some commits
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 
 	const commits = 3

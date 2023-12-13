@@ -341,29 +341,6 @@ func (m *Manager) SetRepositoryMetadata(ctx context.Context, repo *graveler.Repo
 	return kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repo), []byte(graveler.RepoMetadataPath()), graveler.ProtoFromRepositoryMetadata(newMetadata), pred)
 }
 
-func (m *Manager) SetRepositoryReadOnly(ctx context.Context, repositoryID graveler.RepositoryID, readOnly bool) error {
-	repo, err := m.getRepository(ctx, repositoryID)
-	if err != nil {
-		return err
-	}
-
-	err = m.setRepositoryReadOnly(ctx, repo, readOnly)
-	if errors.Is(err, kv.ErrNotFound) { // Return nil map if not exists
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *Manager) setRepositoryReadOnly(ctx context.Context, repoRecord *graveler.RepositoryRecord, readOnly bool) error {
-	repoRecord.ReadOnly = readOnly
-	logging.FromContext(ctx).WithFields(logging.Fields{"repository": repoRecord.RepositoryID, "read-only": repoRecord.ReadOnly}).Info("setRepositoryReadOnly")
-	return kv.SetMsg(ctx, m.kvStore, graveler.RepositoriesPartition(), []byte(graveler.RepoPath(repoRecord.RepositoryID)), graveler.ProtoFromRepo(repoRecord))
-}
-
 func (m *Manager) ParseRef(ref graveler.Ref) (graveler.RawRef, error) {
 	return ParseRef(ref)
 }

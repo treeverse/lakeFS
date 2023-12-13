@@ -112,7 +112,6 @@ type RepositoryData struct {
 	CreationDate     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=creation_date,json=creationDate,proto3" json:"creation_date,omitempty"`
 	State            RepositoryState        `protobuf:"varint,5,opt,name=state,proto3,enum=io.treeverse.lakefs.graveler.RepositoryState" json:"state,omitempty"`
 	InstanceUid      string                 `protobuf:"bytes,6,opt,name=instance_uid,json=instanceUid,proto3" json:"instance_uid,omitempty"`
-	ReadOnly         bool                   `protobuf:"varint,7,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
 }
 
 func (x *RepositoryData) Reset() {
