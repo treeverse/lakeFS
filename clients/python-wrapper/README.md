@@ -30,15 +30,11 @@ Please follow the [installation procedure](#installation--usage) and afterward r
 ```python
 
 import lakefs
-from lakefs.client import Client, init
+from lakefs.client import Client
 
 # Using default client will attempt to authenticate with lakeFS server using configured credentials
 # If environment variables or .lakectl.yaml file exist 
-repo = lakefs.Repository(repository_id="my-repo")
-
-# Alternatively, provide explicit credentials and call client init method, which will initialize the default client
-init(username="<lakefs_access_key_id>", password="<lakefs_secret_access_key>", host="<lakefs_endpoint>")
-repo = lakefs.Repository(repository_id="my-repo")
+repo = lakefs.repository(repository_id="my-repo")
 
 # Or explicitly initialize and provide a Client object 
 clt = Client(username="<lakefs_access_key_id>", password="<lakefs_secret_access_key>", host="<lakefs_endpoint>")
