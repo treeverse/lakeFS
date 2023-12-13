@@ -100,7 +100,6 @@ local function export_delta_log(action, table_paths, write_object, delta_client,
         end
 
         -- Get the table delta log physical location
-        --local t_name = pathlib.parse(path)["base_name"]
         local table_src_path = pathlib.join("/", table_descriptors_path, path .. ".yaml")
         local table_descriptor = extractor.get_table_descriptor(lakefs, repo, commit_id, table_src_path)
         local table_name = table_descriptor.name
