@@ -158,7 +158,6 @@ components:
         - id
         - default_branch
         - storage_namespace
-        - read_only
       properties:
         id:
           type: string
@@ -236,10 +235,6 @@ components:
           type: string
           example: "main"
         sample_data:
-          type: boolean
-          example: "true"
-          default: false
-        read_only:
           type: boolean
           example: "true"
           default: false
@@ -2435,6 +2430,35 @@ paths:
       responses:
         204:
           description: repository deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/set_read_only/{read_only}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: read_only
+        required: true
+        schema:
+          type: boolean
+    get:
+      tags:
+        - repositories
+      operationId: setRepositoryReadOnly
+      summary: set repository read only value
+      responses:
+        200:
+          description: set repository read only value successfully
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
