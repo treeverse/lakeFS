@@ -11,19 +11,19 @@ local extractor = require("lakefs/catalogexport/table_extractor")
     - table_descriptors_path: the path under which the table descriptors reside (e.g. "_lakefs_tables").
       It's necessary that every <table path> in the provided `table_paths` will have a complementary
       `<table_descriptors_path>/<table path>.yaml` file describing the used Delta Table.
-    - table_paths: a mapping of table name to its location in the object storage
-        { <table name>: <physical location in the object storage> }
+    - table_paths: a mapping of exported Delta table logical paths to their locations in the object storage
+        { <delta table logical path>: <physical location in the object storage> }
     - databricks_client: a client to interact with databricks.
     - warehouse_id: Databricks warehouse ID
 
     Returns a "<table name>: status" map for registration of provided tables.
 ]]
-local function register_tables(action, table_descriptors_path, table_paths, databricks_client, warehouse_id)
+local function register_tables(action, table_descriptors_path, delta_table_paths, databricks_client, warehouse_id)
     local repo = action.repository_id
     local commit_id = action.commit_id
     local branch_id = action.branch_id
     local response = {}
-    for logical_path, physical_path in pairs(table_paths) do
+    for logical_path, physical_path in pairs(delta_table_paths) do
         local table_src_path = pathlib.join("/", table_descriptors_path, logical_path .. ".yaml")
         local table_descriptor = extractor.get_table_descriptor(lakefs, repo, commit_id, table_src_path)
         if table_descriptor.type ~= "delta" then
