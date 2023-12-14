@@ -3,8 +3,6 @@ package lua
 import (
 	"context"
 
-	"github.com/treeverse/lakefs/pkg/actions/lua/services"
-
 	"github.com/Shopify/go-lua"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/aes"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/hmac"
@@ -19,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/lua/net/url"
 	"github.com/treeverse/lakefs/pkg/actions/lua/path"
 	"github.com/treeverse/lakefs/pkg/actions/lua/regexp"
+	"github.com/treeverse/lakefs/pkg/actions/lua/services"
 	"github.com/treeverse/lakefs/pkg/actions/lua/storage/aws"
 	"github.com/treeverse/lakefs/pkg/actions/lua/storage/gcloud"
 	"github.com/treeverse/lakefs/pkg/actions/lua/strings"
