@@ -1,0 +1,62 @@
+name: Test Results PR Comment
+description: 'Post a comment on a PR with test results'
+inputs:
+  github-token:
+    description: 'GitHub token'
+    required: true
+  results-content:
+    description: 'Test results content in MD format'
+    required: true
+  comment-title:
+    description: 'Comment title - should be unique to allow replacing existing comment'
+    required: true
+  replace-existing-comments:
+    description: 'Remove existing comments'
+    required: false
+    default: 'true'
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/github-script@v6
+      env:
+        COMMENT_TITLE: ${{ inputs.comment-title }}
+        COMMENT_CONTENT: ${{ inputs.results-content }}
+        REPLACE_EXISTING_COMMENTS: ${{ inputs.replace-existing-comments }}
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const context = github.context;
+          const fs = require("fs");
+          // 1. Retrieve existing bot comments for the PR
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          })
+          const botComment = comments.find(comment => {
+            return comment.user.type === 'Bot' && comment.body.includes(process.env.COMMENT_TITLE)
+          })
+          // 2. Prepare format of the comment
+          const output = `
+            # ${process.env.COMMENT_TITLE}
+            
+            ${process.env.COMMENT_CONTENT}
+          `;
+
+          // 3. If we have a comment, update it, otherwise create a new one
+          if (botComment && process.env.REPLACE_EXISTING_COMMENTS !== 'true') {
+            github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: output
+            })
+          } else {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+          }
