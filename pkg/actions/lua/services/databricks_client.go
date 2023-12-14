@@ -54,12 +54,12 @@ func (dbc *DatabricksClient) createExternalTable(warehouseID, catalogName, schem
 	return esr.Status.State.String(), nil
 }
 
-func fullName(catalogName, schemaName, tableName string) string {
+func tableFullName(catalogName, schemaName, tableName string) string {
 	return fmt.Sprintf("%s.%s.%s", catalogName, schemaName, tableName)
 }
 
 func (dbc *DatabricksClient) dropTable(catalogName, schemaName, tableName string) error {
-	tableFullName := fullName(catalogName, schemaName, tableName)
+	tableFullName := tableFullName(catalogName, schemaName, tableName)
 	return dbc.workspaceClient.Tables.DeleteByFullName(dbc.ctx, tableFullName)
 }
 
