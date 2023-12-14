@@ -59,7 +59,7 @@ var (
 	ErrTooManyTries                 = errors.New("too many tries")
 	ErrSkipValueUpdate              = errors.New("skip value update")
 	ErrImport                       = wrapError(ErrUserVisible, "import error")
-	ErrReadOnlyRepository           = errors.New("read-only repository")
+	ErrReadOnlyRepository           = wrapError(ErrUserVisible, "read-only repository")
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.
