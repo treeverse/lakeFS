@@ -1530,18 +1530,25 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /read_only_repositories:
+  /internal/repositories:
     post:
       tags:
         - internal
-      operationId: createReadOnlyRepository
-      summary: create read-only repository
+      operationId: createInternalRepository
+      summary: create internal repository
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/RepositoryCreation"
+      parameters:
+        - in: query
+          name: read_only
+          schema:
+            type: boolean
+            default: false
+          description: If true, create a read-only repository
       responses:
         201:
           description: repository
@@ -1549,16 +1556,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Repository"
-        400:
-          $ref: "#/components/responses/ValidationError"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        409:
-          $ref: "#/components/responses/Conflict"
-        420:
-          description: too many requests
-        default:
-          $ref: "#/components/responses/ServerError"
 
   /user:
     get:

@@ -1528,8 +1528,8 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	c.createRepository(w, r, body, params, false)
 }
 
-func (c *Controller) CreateReadOnlyRepository(w http.ResponseWriter, r *http.Request, body apigen.CreateReadOnlyRepositoryJSONRequestBody) {
-	c.createRepository(w, r, apigen.CreateRepositoryJSONRequestBody(body), apigen.CreateRepositoryParams{}, true)
+func (c *Controller) CreateInternalRepository(w http.ResponseWriter, r *http.Request, body apigen.CreateInternalRepositoryJSONRequestBody, params apigen.CreateInternalRepositoryParams) {
+	c.createRepository(w, r, apigen.CreateRepositoryJSONRequestBody(body), apigen.CreateRepositoryParams{}, swag.BoolValue(params.ReadOnly))
 }
 
 func (c *Controller) createRepository(w http.ResponseWriter, r *http.Request, body apigen.CreateRepositoryJSONRequestBody, params apigen.CreateRepositoryParams, readOnly bool) {
