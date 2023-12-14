@@ -27,25 +27,21 @@ jobs:
         run: |
           echo "Enable next jobs based on secrets existence: ${{ env.ENABLE_NEXT_JOBS != '' }}"
           echo "secretsavailable=${{ env.ENABLE_NEXT_JOBS != '' }}" >> $GITHUB_OUTPUT
-  
-  extract-version:
-    name: Extract version
+      
+
+  gen-code:
+    name: Generate code from latest lakeFS app
     runs-on: ubuntu-20.04
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+
       - name: Extract version
         id: version
         shell: bash
         run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_OUTPUT
-
-  gen-code:
-    name: Generate code from latest lakeFS app
-    needs: [extract-version]
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Check-out code
-        uses: actions/checkout@v4
 
       - name: Restore cache
         uses: actions/cache@v3
@@ -65,7 +61,7 @@ jobs:
       - name: Generate code
         if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
-          make -j3 gen-api VERSION=${{ needs.extract-version.outputs.tag }}
+          make -j3 gen-api VERSION=${{ steps.version.outputs.tag }}
           make gen-ui
           tar -cf /tmp/generated.tar.gz ./pkg ./webui
 
@@ -77,11 +73,11 @@ jobs:
 
   deploy-image:
     name: Build and push Docker image
-    needs: [check-secrets, gen-code, extract-version]
+    needs: [check-secrets, gen-code]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     runs-on: ubuntu-latest-16-cores
     outputs:
-      tag: ${{ needs.extract-version.outputs.tag }}
+      tag: ${{ needs.gen-code.outputs.tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -111,8 +107,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ needs.extract-version.outputs.tag }}
-          build-args: VERSION=${{ needs.extract-version.outputs.tag }}
+          tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ needs.gen-code.outputs.tag }}
+          build-args: VERSION=${{ needs.gen-code.outputs.tag }}
           context: .
           cache-from: |
             type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs
