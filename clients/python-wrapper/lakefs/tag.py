@@ -17,8 +17,8 @@ class Tag(Reference):
     Class representing a tag in lakeFS.
     """
 
-    def __init__(self, repository_id: str, tag_id: str, client: Optional[Client] = None) -> None:
-        super().__init__(repository_id, tag_id, client)
+    def __init__(self, repository_id: str, tag_id: str, client: Optional[Client] = None):
+        super().__init__(repository_id, reference_id=tag_id, client=client)
 
     def create(self, source_ref_id: str | Reference, exist_ok: Optional[bool] = False) -> Tag:
         """

@@ -21,8 +21,8 @@ class Branch(Reference):
     Class representing a branch in lakeFS.
     """
 
-    def __init__(self, repository_id: str, branch_id: str, client: Optional[Client] = None) -> None:
-        super().__init__(repository_id, branch_id, client)
+    def __init__(self, repository_id: str, branch_id: str, client: Optional[Client] = None):
+        super().__init__(repository_id, reference_id=branch_id, client=client)
 
     def get_commit(self):
         """
