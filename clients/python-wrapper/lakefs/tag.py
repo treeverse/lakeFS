@@ -7,6 +7,7 @@ from typing import Optional
 
 import lakefs_sdk
 
+from lakefs.client import Client
 from lakefs.exceptions import api_exception_handler, LakeFSException, ConflictException
 from lakefs.reference import Reference
 
@@ -15,6 +16,9 @@ class Tag(Reference):
     """
     Class representing a tag in lakeFS.
     """
+
+    def __init__(self, repository_id: str, tag_id: str, client: Optional[Client] = None) -> None:
+        super().__init__(repository_id, tag_id, client)
 
     def create(self, source_ref_id: str | Reference, exist_ok: Optional[bool] = False) -> Tag:
         """

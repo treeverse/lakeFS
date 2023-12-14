@@ -50,7 +50,7 @@ todo_include_todos = True
 
 def skip(app, what, name, obj, would_skip, options):
     if name in ('__init__',):
-        return False
+        return True
     return would_skip
 
 

@@ -21,6 +21,9 @@ class Branch(Reference):
     Class representing a branch in lakeFS.
     """
 
+    def __init__(self, repository_id: str, branch_id: str, client: Optional[Client] = None) -> None:
+        super().__init__(repository_id, branch_id, client)
+
     def get_commit(self):
         """
         For branches override the default _get_commit method to ensure we always fetch the latest head
@@ -54,6 +57,7 @@ class Branch(Reference):
             if isinstance(e, ConflictException) and exist_ok:
                 return None
             return e
+
         if isinstance(source_reference_id, Reference):
             source_reference_id = source_reference_id.id
         branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=source_reference_id)
