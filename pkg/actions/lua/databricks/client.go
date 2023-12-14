@@ -1,4 +1,4 @@
-package services
+package databricks
 
 import (
 	"context"
@@ -21,7 +21,7 @@ var (
 	ErrInvalidTableNameLength = errors.New("invalid table name length")
 )
 
-type DatabricksClient struct {
+type Client struct {
 	workspaceClient *databricks.WorkspaceClient
 	ctx             context.Context
 }
@@ -37,7 +37,7 @@ func validateTableName(tableName string) error {
 	return nil
 }
 
-func (dbc *DatabricksClient) createExternalTable(warehouseID, catalogName, schemaName, tableName, location string) (string, error) {
+func (dbc *Client) createExternalTable(warehouseID, catalogName, schemaName, tableName, location string) (string, error) {
 	if err := validateTableName(tableName); err != nil {
 		return "", err
 	}
@@ -58,11 +58,11 @@ func tableFullName(catalogName, schemaName, tableName string) string {
 	return fmt.Sprintf("%s.%s.%s", catalogName, schemaName, tableName)
 }
 
-func (dbc *DatabricksClient) dropTable(catalogName, schemaName, tableName string) error {
+func (dbc *Client) dropTable(catalogName, schemaName, tableName string) error {
 	return dbc.workspaceClient.Tables.DeleteByFullName(dbc.ctx, tableFullName(catalogName, schemaName, tableName))
 }
 
-func (dbc *DatabricksClient) createOrGetSchema(catalogName, schemaName string) (*catalog.SchemaInfo, error) {
+func (dbc *Client) createOrGetSchema(catalogName, schemaName string) (*catalog.SchemaInfo, error) {
 	schemaInfo, err := dbc.workspaceClient.Schemas.Create(dbc.ctx, catalog.CreateSchema{
 		Name:        schemaName,
 		CatalogName: catalogName,
@@ -93,7 +93,7 @@ func newDatabricksClient(l *lua.State) *databricks.WorkspaceClient {
 	))
 }
 
-func registerExternalTable(client *DatabricksClient) lua.Function {
+func registerExternalTable(client *Client) lua.Function {
 	return func(l *lua.State) int {
 		tableName := lua.CheckString(l, 1)
 		location := lua.CheckString(l, 2)
@@ -124,7 +124,7 @@ func registerExternalTable(client *DatabricksClient) lua.Function {
 	}
 }
 
-func createSchema(client *DatabricksClient) lua.Function {
+func createSchema(client *Client) lua.Function {
 	return func(l *lua.State) int {
 		ref := lua.CheckString(l, 1)
 		catalogName := lua.CheckString(l, 2)
@@ -138,15 +138,15 @@ func createSchema(client *DatabricksClient) lua.Function {
 	}
 }
 
-var functions = map[string]func(client *DatabricksClient) lua.Function{
+var functions = map[string]func(client *Client) lua.Function{
 	"create_schema":           createSchema,
 	"register_external_table": registerExternalTable,
 }
 
-func newDatabricks(ctx context.Context) lua.Function {
+func newClient(ctx context.Context) lua.Function {
 	return func(l *lua.State) int {
 		workspaceClient := newDatabricksClient(l)
-		client := &DatabricksClient{workspaceClient: workspaceClient, ctx: ctx}
+		client := &Client{workspaceClient: workspaceClient, ctx: ctx}
 		l.NewTable()
 		for name, goFn := range functions {
 			l.PushGoFunction(goFn(client))

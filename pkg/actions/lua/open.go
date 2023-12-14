@@ -7,6 +7,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/aes"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/hmac"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/sha256"
+	"github.com/treeverse/lakefs/pkg/actions/lua/databricks"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/base64"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/hex"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/json"
@@ -17,7 +18,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/lua/net/url"
 	"github.com/treeverse/lakefs/pkg/actions/lua/path"
 	"github.com/treeverse/lakefs/pkg/actions/lua/regexp"
-	"github.com/treeverse/lakefs/pkg/actions/lua/services"
 	"github.com/treeverse/lakefs/pkg/actions/lua/storage/aws"
 	"github.com/treeverse/lakefs/pkg/actions/lua/storage/gcloud"
 	"github.com/treeverse/lakefs/pkg/actions/lua/strings"
@@ -48,7 +48,7 @@ func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	gcloud.Open(l, ctx)
 	url.Open(l)
 	formats.Open(l, ctx, cfg.LakeFSAddr)
-	services.Open(l, ctx)
+	databricks.Open(l, ctx)
 	if cfg.NetHTTPEnabled {
 		http.Open(l)
 	}

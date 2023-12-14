@@ -1,4 +1,4 @@
-package services
+package databricks
 
 import (
 	"context"
@@ -9,10 +9,10 @@ import (
 func Open(l *lua.State, ctx context.Context) {
 	open := func(l *lua.State) int {
 		lua.NewLibrary(l, []lua.RegistryFunction{
-			{Name: "databricks_client", Function: newDatabricks(ctx)},
+			{Name: "client", Function: newClient(ctx)},
 		})
 		return 1
 	}
-	lua.Require(l, "services", open, false)
+	lua.Require(l, "databricks", open, false)
 	l.Pop(1)
 }
