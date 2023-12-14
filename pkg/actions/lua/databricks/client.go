@@ -1,8 +1,10 @@
-package services
+package databricks
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/Shopify/go-lua"
@@ -12,12 +14,33 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
-type DatabricksClient struct {
+var r, _ = regexp.Compile("\\W")
+
+var (
+	ErrInvalidTableName       = errors.New("invalid table name")
+	ErrInvalidTableNameLength = errors.New("invalid table name length")
+)
+
+type Client struct {
 	workspaceClient *databricks.WorkspaceClient
 	ctx             context.Context
 }
 
-func (dbc *DatabricksClient) createExternalTable(warehouseID, catalogName, schemaName, tableName, location string) (string, error) {
+// https://docs.databricks.com/en/sql/language-manual/sql-ref-identifiers.html
+// https://docs.databricks.com/en/sql/language-manual/sql-ref-names.html
+func validateTableName(tableName string) error {
+	if r.Match([]byte(tableName)) {
+		return ErrInvalidTableName
+	} else if len(tableName) > 255 {
+		return ErrInvalidTableNameLength
+	}
+	return nil
+}
+
+func (dbc *Client) createExternalTable(warehouseID, catalogName, schemaName, tableName, location string) (string, error) {
+	if err := validateTableName(tableName); err != nil {
+		return "", err
+	}
 	statement := fmt.Sprintf(`CREATE EXTERNAL TABLE %s LOCATION '%s'`, tableName, location)
 	esr, err := dbc.workspaceClient.StatementExecution.ExecuteAndWait(dbc.ctx, sql.ExecuteStatementRequest{
 		WarehouseId: warehouseID,
@@ -31,29 +54,31 @@ func (dbc *DatabricksClient) createExternalTable(warehouseID, catalogName, schem
 	return esr.Status.State.String(), nil
 }
 
-func (dbc *DatabricksClient) dropTable(catalogName, schemaName, tableName string) error {
-	tableFullName := fmt.Sprintf("%s.%s.%s", catalogName, schemaName, tableName)
-	return dbc.workspaceClient.Tables.DeleteByFullName(dbc.ctx, tableFullName)
+func tableFullName(catalogName, schemaName, tableName string) string {
+	return fmt.Sprintf("%s.%s.%s", catalogName, schemaName, tableName)
 }
 
-func (dbc *DatabricksClient) getOrCreateSchema(catalogName, schemaName string) (string, error) {
-	// Full name of schema, in form of <catalog_name>.<schema_name>
-	schemaAns, err := dbc.workspaceClient.Schemas.GetByFullName(dbc.ctx, fmt.Sprintf("%s.%s", catalogName, schemaName))
+func (dbc *Client) dropTable(catalogName, schemaName, tableName string) error {
+	return dbc.workspaceClient.Tables.DeleteByFullName(dbc.ctx, tableFullName(catalogName, schemaName, tableName))
+}
+
+func (dbc *Client) createOrGetSchema(catalogName, schemaName string) (*catalog.SchemaInfo, error) {
+	schemaInfo, err := dbc.workspaceClient.Schemas.Create(dbc.ctx, catalog.CreateSchema{
+		Name:        schemaName,
+		CatalogName: catalogName,
+	})
 	if err != nil {
-		if strings.Contains(err.Error(), "does not exist") {
-			schemaAns, err = dbc.workspaceClient.Schemas.Create(dbc.ctx, catalog.CreateSchema{
-				Name:        schemaName,
-				CatalogName: catalogName,
-			})
+		if strings.Contains(err.Error(), "already exists") {
+			// Full name of schema, in form of <catalog_name>.<schema_name>
+			schemaInfo, err = dbc.workspaceClient.Schemas.GetByFullName(dbc.ctx, catalogName+"."+schemaName)
 			if err != nil {
-				return "", err
+				return nil, err
 			}
-			return schemaAns.Name, nil
-		} else {
-			return "", err
+			return schemaInfo, nil
 		}
+		return nil, err
 	}
-	return schemaAns.Name, nil
+	return schemaInfo, nil
 }
 
 func newDatabricksClient(l *lua.State) *databricks.WorkspaceClient {
@@ -68,7 +93,7 @@ func newDatabricksClient(l *lua.State) *databricks.WorkspaceClient {
 	))
 }
 
-func registerExternalTable(client *DatabricksClient) lua.Function {
+func registerExternalTable(client *Client) lua.Function {
 	return func(l *lua.State) int {
 		tableName := lua.CheckString(l, 1)
 		location := lua.CheckString(l, 2)
@@ -99,29 +124,29 @@ func registerExternalTable(client *DatabricksClient) lua.Function {
 	}
 }
 
-func createSchema(client *DatabricksClient) lua.Function {
+func createSchema(client *Client) lua.Function {
 	return func(l *lua.State) int {
 		ref := lua.CheckString(l, 1)
 		catalogName := lua.CheckString(l, 2)
-		schemaName, err := client.getOrCreateSchema(catalogName, ref)
+		schemaInfo, err := client.createOrGetSchema(catalogName, ref)
 		if err != nil {
 			lua.Errorf(l, err.Error())
 			panic(err.Error())
 		}
-		l.PushString(schemaName)
+		l.PushString(schemaInfo.Name)
 		return 1
 	}
 }
 
-var functions = map[string]func(client *DatabricksClient) lua.Function{
+var functions = map[string]func(client *Client) lua.Function{
 	"create_schema":           createSchema,
 	"register_external_table": registerExternalTable,
 }
 
-func newDatabricks(ctx context.Context) lua.Function {
+func newClient(ctx context.Context) lua.Function {
 	return func(l *lua.State) int {
 		workspaceClient := newDatabricksClient(l)
-		client := &DatabricksClient{workspaceClient: workspaceClient, ctx: ctx}
+		client := &Client{workspaceClient: workspaceClient, ctx: ctx}
 		l.NewTable()
 		for name, goFn := range functions {
 			l.PushGoFunction(goFn(client))
