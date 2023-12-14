@@ -54,29 +54,14 @@ func (dbc *DatabricksClient) createExternalTable(warehouseID, catalogName, schem
 	return esr.Status.State.String(), nil
 }
 
-func (dbc *DatabricksClient) dropTable(catalogName, schemaName, tableName string) error {
-	tableFullName := fmt.Sprintf("%s.%s.%s", catalogName, schemaName, tableName)
-	return dbc.workspaceClient.Tables.DeleteByFullName(dbc.ctx, tableFullName)
+func fullName(catalogName, schemaName, tableName string) string {
+	return fmt.Sprintf("%s.%s.%s", catalogName, schemaName, tableName)
 }
 
-//func (dbc *DatabricksClient) getOrCreateSchema(catalogName, schemaName string) (string, error) {
-//	// Full name of schema, in form of <catalog_name>.<schema_name>
-//	schemaAns, err := dbc.workspaceClient.Schemas.GetByFullName(dbc.ctx, catalogName+"."+schemaName)
-//	if err != nil {
-//		if strings.Contains(err.Error(), "does not exist") {
-//			schemaAns, err = dbc.workspaceClient.Schemas.Create(dbc.ctx, catalog.CreateSchema{
-//				Name:        schemaName,
-//				CatalogName: catalogName,
-//			})
-//			if err != nil {
-//				return "", err
-//			}
-//			return schemaAns.Name, nil
-//		}
-//		return "", err
-//	}
-//	return schemaAns.Name, nil
-//}
+func (dbc *DatabricksClient) dropTable(catalogName, schemaName, tableName string) error {
+	tableFullName := fullName(catalogName, schemaName, tableName)
+	return dbc.workspaceClient.Tables.DeleteByFullName(dbc.ctx, tableFullName)
+}
 
 func (dbc *DatabricksClient) createOrGetSchema(catalogName, schemaName string) (*catalog.SchemaInfo, error) {
 	schemaInfo, err := dbc.workspaceClient.Schemas.Create(dbc.ctx, catalog.CreateSchema{
@@ -84,7 +69,7 @@ func (dbc *DatabricksClient) createOrGetSchema(catalogName, schemaName string) (
 		CatalogName: catalogName,
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "does not exist") {
+		if strings.Contains(err.Error(), "already exists") {
 			// Full name of schema, in form of <catalog_name>.<schema_name>
 			schemaInfo, err = dbc.workspaceClient.Schemas.GetByFullName(dbc.ctx, catalogName+"."+schemaName)
 			if err != nil {
@@ -144,7 +129,6 @@ func createSchema(client *DatabricksClient) lua.Function {
 	return func(l *lua.State) int {
 		ref := lua.CheckString(l, 1)
 		catalogName := lua.CheckString(l, 2)
-		//schemaName, err := client.getOrCreateSchema(catalogName, ref)
 		schemaInfo, err := client.createOrGetSchema(catalogName, ref)
 		if err != nil {
 			lua.Errorf(l, err.Error())
