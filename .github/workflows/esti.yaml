@@ -27,13 +27,21 @@ jobs:
         run: |
           echo "Enable next jobs based on secrets existence: ${{ env.ENABLE_NEXT_JOBS != '' }}"
           echo "secretsavailable=${{ env.ENABLE_NEXT_JOBS != '' }}" >> $GITHUB_OUTPUT
+      
 
   gen-code:
     name: Generate code from latest lakeFS app
     runs-on: ubuntu-20.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_OUTPUT
 
       - name: Restore cache
         uses: actions/cache@v3
@@ -69,7 +77,7 @@ jobs:
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     runs-on: ubuntu-latest-16-cores
     outputs:
-      tag: ${{ steps.version.outputs.tag }}
+      tag: ${{ needs.gen-code.outputs.tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -89,11 +97,6 @@ jobs:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
 
-      - name: Extract version
-        shell: bash
-        run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_OUTPUT
-        id: version
-
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
@@ -104,8 +107,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}
-          build-args: VERSION=${{ steps.version.outputs.tag }}
+          tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ needs.gen-code.outputs.tag }}
+          build-args: VERSION=${{ needs.gen-code.outputs.tag }}
           context: .
           cache-from: |
             type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs
@@ -135,7 +138,7 @@ jobs:
 
   unified-gc-test:
     name: Test unified gc
-    needs: [ gen-code, deploy-image, login-to-amazon-ecr, build-spark3-metadata-client ]
+    needs: [ gen-code, deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-latest-8-cores
     services:
       lakefs:
@@ -226,7 +229,7 @@ jobs:
           AWS_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          ESTI_VERSION: ${{ steps.version.outputs.tag }}
+          ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
           ESTI_SETUP_LAKEFS: true
 
   deploy-rclone-export-image:
@@ -267,11 +270,11 @@ jobs:
 
   hadoopfs-tests:
     name: Test lakeFS Hadoop FileSystem
-    needs: deploy-image
+    needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -314,11 +317,11 @@ jobs:
 
   hadoopfs-s3a-mpu:
     name: Test lakeFS multipart upload with Hadoop S3A
-    needs: deploy-image
+    needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
 
     steps:
       - name: Check-out code
@@ -417,7 +420,7 @@ jobs:
 
   spark:
     name: Test lakeFS with Spark ${{ matrix.spark.tag }}.X
-    needs: [spark-prep, build-lakefs-hadoopfs, deploy-image]
+    needs: [spark-prep, build-lakefs-hadoopfs, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -428,7 +431,7 @@ jobs:
             sonnet_jar: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       SPARK_TAG: ${{ matrix.spark.tag }}
     steps:
       - name: Check-out code
@@ -446,7 +449,7 @@ jobs:
           name: spark-apps
           path: test/spark/app/target/
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
@@ -514,12 +517,12 @@ jobs:
         run: docker-compose logs --tail=2500 lakefs
   export:
     name: Test lakeFS rclone export functionality
-    needs: [deploy-image, deploy-rclone-export-image]
+    needs: [deploy-image, deploy-rclone-export-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       LAKEFS_TAG: ${{ needs.deploy-image.outputs.tag }}
       EXPORT_TAG: ${{ needs.deploy-rclone-export-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
 
     steps:
       - name: Check-out code
@@ -563,11 +566,11 @@ jobs:
 
   metastore-client-with-trino:
     name: Test metastore client commands using trino
-    needs: [gen-code, deploy-image]
+    needs: [gen-code, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -622,10 +625,10 @@ jobs:
   build-spark3-metadata-client:
     name: Build metadata client for Spark 3.x
     runs-on: ubuntu-latest-8-cores
-    needs: check-secrets
+    needs: [check-secrets, deploy-image, login-to-amazon-ecr]
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -661,11 +664,11 @@ jobs:
 
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x
-    needs: [deploy-image, build-spark3-metadata-client]
+    needs: [deploy-image, build-spark3-metadata-client, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       SPARK_TAG: 3.2.1
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
       - name: Check-out code
@@ -720,12 +723,11 @@ jobs:
 
   run-system-aws-s3-kv-dynamodb:
     name: Run latest lakeFS app on AWS S3 DynamoDB KV
-    needs: [gen-code, deploy-image]
+    needs: [gen-code, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      # Setting Account_ID as a secret as a way to avoid specifying it here
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       LAKEFS_DATABASE_CONNECTION_STRING: "" # Override lakeFS docker compose settings
@@ -747,12 +749,12 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           LAKEFS_DATABASE_TYPE: dynamodb
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          ESTI_VERSION: ${{ steps.version.outputs.tag }}
+          ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
           ESTI_DATABASE_KV_ENABLED: "true"
           ESTI_DATABASE_CONNECTION_STRING: "true"
 
@@ -776,12 +778,11 @@ jobs:
 
   run-system-aws-s3:
     name: Run latest lakeFS app on AWS S3
-    needs: [gen-code, deploy-image]
+    needs: [gen-code, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      # Setting Account_ID as a secret as a way to avoid specifying it here
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
@@ -802,12 +803,12 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           LAKEFS_DATABASE_TYPE: postgres
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          ESTI_VERSION: ${{ steps.version.outputs.tag }}
+          ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
 
       - name: Check files in S3 bucket
         run: |
@@ -829,12 +830,11 @@ jobs:
 
   run-system-gcp-gs:
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
-    needs: [gen-code, deploy-image]
+    needs: [gen-code, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      # Setting Account_ID as a secret as a way to avoid specifying it here
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
@@ -851,7 +851,7 @@ jobs:
           compose-file: esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           LAKEFS_BLOCKSTORE_TYPE: gs
           LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
@@ -865,12 +865,11 @@ jobs:
 
   run-system-azure-abfs:
     name: Run latest lakeFS app on Azure with Azure blobstore
-    needs: [gen-code, deploy-image]
+    needs: [gen-code, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      # Setting Account_ID as a secret as a way to avoid specifying it here
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -890,7 +889,7 @@ jobs:
           compose-file: esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: azure
           LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
@@ -908,12 +907,11 @@ jobs:
 
   run-system-azure-adls-gen2:
     name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2 and CosmosDB
-    needs: [gen-code, deploy-image]
+    needs: [gen-code, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      # Setting Account_ID as a secret as a way to avoid specifying it here
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -941,7 +939,7 @@ jobs:
           compose-file: esti/ops/docker-compose-external-db.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           LAKEFS_DATABASE_TYPE: cosmosdb
           LAKEFS_DATABASE_COSMOSDB_ENDPOINT: "https://${{ env.COSMOSDB_ACCOUNT }}.documents.azure.com"
           LAKEFS_DATABASE_COSMOSDB_DATABASE: ${{ env.COSMOSDB_DATABASE }}
@@ -972,7 +970,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       LAKEFS_INSTALLATION_ACCESS_KEY_ID: AKIAIOSFDNN7EXAMPLEQ
       LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
@@ -1007,6 +1005,10 @@ jobs:
       - name: Install dependencies
         working-directory: ./clients/python-wrapper
         run: pip install -r requirements.txt pytest pytest-md pytest-emoji
+
+      - name: Generate uniquifying value
+        id: unique
+        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
         
       - name: Run Python Wrapper Tests
         uses: pavelzw/pytest-action@v2
@@ -1031,10 +1033,6 @@ jobs:
       - login-to-amazon-ecr
     runs-on: ubuntu-latest-8-cores
     timeout-minutes: 20
-    env:
-      TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-    
     services:
       dynamodb:
         image: amazon/dynamodb-local:1.13.6
