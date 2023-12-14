@@ -59,8 +59,7 @@ func tableFullName(catalogName, schemaName, tableName string) string {
 }
 
 func (dbc *DatabricksClient) dropTable(catalogName, schemaName, tableName string) error {
-	tableFullName := tableFullName(catalogName, schemaName, tableName)
-	return dbc.workspaceClient.Tables.DeleteByFullName(dbc.ctx, tableFullName)
+	return dbc.workspaceClient.Tables.DeleteByFullName(dbc.ctx, tableFullName(catalogName, schemaName, tableName))
 }
 
 func (dbc *DatabricksClient) createOrGetSchema(catalogName, schemaName string) (*catalog.SchemaInfo, error) {
