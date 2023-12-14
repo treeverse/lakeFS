@@ -41,6 +41,17 @@ local function generate_physical_address(path)
     return "s3://" .. path
 end
 
+package.loaded["lakefs/catalogexport/table_extractor"] = {
+    get_table_descriptor = function(_, _, _, table_src_path)
+        local t_name_yaml = pathlib.parse(table_src_path)
+        assert(t_name_yaml["base_name"] == ".yaml")
+        local t_name = pathlib.parse(t_name_yaml["parent"])
+        return {
+            name = t_name["base_name"]
+        }
+    end
+}
+
 package.loaded.lakefs = {
     stat_object = function(_, _, path)
         local parsed_path = pathlib.parse(path)
@@ -80,9 +91,9 @@ local function assert_physical_address(delta_table_locations, table_paths)
 
     for _, table_path in ipairs(table_paths) do
         local table_name = pathlib.parse(table_path)["base_name"]
-        local table_loc = delta_table_locations[table_name]
+        local table_loc = delta_table_locations[table_path]
         if table_loc == nil then
-            error("missing table location: " .. table_name)
+            error("missing table location: " .. table_path)
         end
         local expected_location = pathlib.join("/", table_export_prefix, table_name)
         if expected_location ~= table_loc then
@@ -106,7 +117,8 @@ local function assert_lakefs_stats(table_paths, content_paths)
 end
 
 local function assert_delta_log_content(delta_table_locations, table_to_physical_content)
-    for table_name, table_loc in pairs(delta_table_locations) do
+    for table_path, table_loc in pairs(delta_table_locations) do
+        local table_name = pathlib.parse(table_path)["base_name"]
         local table_loc_key = utils.parse_storage_uri(table_loc).key
         local content_table = table_to_physical_content[table_name]
         if not content_table then
@@ -169,7 +181,8 @@ local delta_table_locations = delta_export.export_delta_log(
         action,
         test_table_paths,
         mock_object_writer,
-        mock_delta_client(test_data.table_logs_content)
+        mock_delta_client(test_data.table_logs_content),
+        "some_path"
 )
 
 -- Test results
