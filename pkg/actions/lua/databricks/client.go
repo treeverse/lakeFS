@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -37,8 +38,19 @@ func validateTableName(tableName string) error {
 	return nil
 }
 
+func validateTableLocation(tableLocation string) error {
+	_, err := url.ParseRequestURI(tableLocation)
+	return err
+}
+
+func validateTableInput(tableName, location string) error {
+	errName := validateTableName(tableName)
+	errLocation := validateTableLocation(location)
+	return errors.Join(errName, errLocation)
+}
+
 func (dbc *Client) createExternalTable(warehouseID, catalogName, schemaName, tableName, location string) (string, error) {
-	if err := validateTableName(tableName); err != nil {
+	if err := validateTableInput(tableName, location); err != nil {
 		return "", err
 	}
 	statement := fmt.Sprintf(`CREATE EXTERNAL TABLE %s LOCATION '%s'`, tableName, location)
