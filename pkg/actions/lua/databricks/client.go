@@ -93,16 +93,20 @@ func (dbc *Client) createOrGetSchema(catalogName, schemaName string) (*catalog.S
 	return schemaInfo, nil
 }
 
-func newDatabricksClient(l *lua.State) *databricks.WorkspaceClient {
+func newDatabricksClient(l *lua.State) (*databricks.WorkspaceClient, error) {
 	host := lua.CheckString(l, -2)
 	token := lua.CheckString(l, -1)
-	return databricks.Must(databricks.NewWorkspaceClient(
+	wsc, err := databricks.NewWorkspaceClient(
 		&databricks.Config{
 			Host:        host,
 			Token:       token,
 			Credentials: config.PatCredentials{},
 		},
-	))
+	)
+	if err != nil {
+		return nil, err
+	}
+	return wsc, err
 }
 
 func registerExternalTable(client *Client) lua.Function {
@@ -157,7 +161,11 @@ var functions = map[string]func(client *Client) lua.Function{
 
 func newClient(ctx context.Context) lua.Function {
 	return func(l *lua.State) int {
-		workspaceClient := newDatabricksClient(l)
+		workspaceClient, err := newDatabricksClient(l)
+		if err != nil {
+			lua.Errorf(l, err.Error())
+			panic("unreachable")
+		}
 		client := &Client{workspaceClient: workspaceClient, ctx: ctx}
 		l.NewTable()
 		for name, goFn := range functions {
