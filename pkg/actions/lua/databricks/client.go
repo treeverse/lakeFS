@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -19,6 +20,8 @@ var r = regexp.MustCompile(`\\W`)
 var (
 	ErrInvalidTableName       = errors.New("invalid table name")
 	ErrInvalidTableNameLength = errors.New("invalid table name length")
+	ErrTableDeletionFailure   = errors.New("failed dropping an existing table")
+	ErrTableCreationFailure   = errors.New("failed creating table")
 )
 
 type Client struct {
@@ -37,9 +40,20 @@ func validateTableName(tableName string) error {
 	return nil
 }
 
+func validateTableLocation(tableLocation string) error {
+	_, err := url.ParseRequestURI(tableLocation)
+	return err
+}
+
+func validateTableInput(tableName, location string) error {
+	errName := validateTableName(tableName)
+	errLocation := validateTableLocation(location)
+	return errors.Join(errName, errLocation)
+}
+
 func (dbc *Client) createExternalTable(warehouseID, catalogName, schemaName, tableName, location string) (string, error) {
-	if err := validateTableName(tableName); err != nil {
-		return "", err
+	if err := validateTableInput(tableName, location); err != nil {
+		return "", errors.Join(ErrTableCreationFailure, err)
 	}
 	statement := fmt.Sprintf(`CREATE EXTERNAL TABLE %s LOCATION '%s'`, tableName, location)
 	esr, err := dbc.workspaceClient.StatementExecution.ExecuteAndWait(dbc.ctx, sql.ExecuteStatementRequest{
@@ -49,7 +63,7 @@ func (dbc *Client) createExternalTable(warehouseID, catalogName, schemaName, tab
 		Statement:   statement,
 	})
 	if err != nil {
-		return "", err
+		return "", errors.Join(ErrTableCreationFailure, err)
 	}
 	return esr.Status.State.String(), nil
 }
@@ -59,7 +73,11 @@ func tableFullName(catalogName, schemaName, tableName string) string {
 }
 
 func (dbc *Client) dropTable(catalogName, schemaName, tableName string) error {
-	return dbc.workspaceClient.Tables.DeleteByFullName(dbc.ctx, tableFullName(catalogName, schemaName, tableName))
+	err := dbc.workspaceClient.Tables.DeleteByFullName(dbc.ctx, tableFullName(catalogName, schemaName, tableName))
+	if err != nil {
+		return errors.Join(ErrTableDeletionFailure, err)
+	}
+	return nil
 }
 
 func (dbc *Client) createOrGetSchema(catalogName, schemaName string) (*catalog.SchemaInfo, error) {
@@ -81,16 +99,20 @@ func (dbc *Client) createOrGetSchema(catalogName, schemaName string) (*catalog.S
 	return schemaInfo, nil
 }
 
-func newDatabricksClient(l *lua.State) *databricks.WorkspaceClient {
+func newDatabricksClient(l *lua.State) (*databricks.WorkspaceClient, error) {
 	host := lua.CheckString(l, -2)
 	token := lua.CheckString(l, -1)
-	return databricks.Must(databricks.NewWorkspaceClient(
+	wsc, err := databricks.NewWorkspaceClient(
 		&databricks.Config{
 			Host:        host,
 			Token:       token,
 			Credentials: config.PatCredentials{},
 		},
-	))
+	)
+	if err != nil {
+		return nil, err
+	}
+	return wsc, err
 }
 
 func registerExternalTable(client *Client) lua.Function {
@@ -107,16 +129,16 @@ func registerExternalTable(client *Client) lua.Function {
 				err = client.dropTable(catalogName, schemaName, tableName)
 				if err != nil {
 					lua.Errorf(l, err.Error())
-					panic("failed dropping an existing table")
+					panic("unreachable")
 				}
 				status, err = client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location)
 				if err != nil {
 					lua.Errorf(l, err.Error())
-					panic("failed creating table")
+					panic("unreachable")
 				}
 			} else {
 				lua.Errorf(l, err.Error())
-				panic("failed creating table")
+				panic("unreachable")
 			}
 		}
 		l.PushString(status)
@@ -124,14 +146,14 @@ func registerExternalTable(client *Client) lua.Function {
 	}
 }
 
-func createSchema(client *Client) lua.Function {
+func createOrGetSchema(client *Client) lua.Function {
 	return func(l *lua.State) int {
 		ref := lua.CheckString(l, 1)
 		catalogName := lua.CheckString(l, 2)
 		schemaInfo, err := client.createOrGetSchema(catalogName, ref)
 		if err != nil {
 			lua.Errorf(l, err.Error())
-			panic(err.Error())
+			panic("unreachable")
 		}
 		l.PushString(schemaInfo.Name)
 		return 1
@@ -139,13 +161,17 @@ func createSchema(client *Client) lua.Function {
 }
 
 var functions = map[string]func(client *Client) lua.Function{
-	"create_schema":           createSchema,
+	"create_or_get_schema":    createOrGetSchema,
 	"register_external_table": registerExternalTable,
 }
 
 func newClient(ctx context.Context) lua.Function {
 	return func(l *lua.State) int {
-		workspaceClient := newDatabricksClient(l)
+		workspaceClient, err := newDatabricksClient(l)
+		if err != nil {
+			lua.Errorf(l, err.Error())
+			panic("unreachable")
+		}
 		client := &Client{workspaceClient: workspaceClient, ctx: ctx}
 		l.NewTable()
 		for name, goFn := range functions {
