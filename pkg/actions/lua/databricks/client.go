@@ -15,7 +15,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
-var r, _ = regexp.Compile("\\W")
+var r = regexp.MustCompile(`\\W`)
 
 var (
 	ErrInvalidTableName       = errors.New("invalid table name")
