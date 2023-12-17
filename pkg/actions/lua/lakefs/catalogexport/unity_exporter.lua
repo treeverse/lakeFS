@@ -37,7 +37,7 @@ local function register_tables(action, table_descriptors_path, delta_table_paths
         if not table_name then
             error("table name is required to proceed with unity catalog export")
         end
-        local schema_name = databricks_client.create_schema(branch_id, catalog)
+        local schema_name = databricks_client.create_or_get_schema(branch_id, catalog)
         local status = databricks_client.register_external_table(table_name, physical_path, warehouse_id, catalog, schema_name)
         response[table_name] = status
     end
