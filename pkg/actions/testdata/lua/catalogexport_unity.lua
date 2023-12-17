@@ -129,7 +129,9 @@ local function db_client(schema_failure, tables)
     }
 end
 
--- Start tests
+---------------------------------
+---------- Begin tests ----------
+---------------------------------
 for _, test in ipairs(test_cases) do
     package.loaded["lakefs/catalogexport/unity_exporter"] = nil
     load_table_descriptor(test.tables)
