@@ -20,6 +20,8 @@ var r = regexp.MustCompile(`\\W`)
 var (
 	ErrInvalidTableName       = errors.New("invalid table name")
 	ErrInvalidTableNameLength = errors.New("invalid table name length")
+	ErrTableDeletionFailure   = errors.New("failed dropping an existing table")
+	ErrTableCreationFailure   = errors.New("failed creating table")
 )
 
 type Client struct {
@@ -51,7 +53,7 @@ func validateTableInput(tableName, location string) error {
 
 func (dbc *Client) createExternalTable(warehouseID, catalogName, schemaName, tableName, location string) (string, error) {
 	if err := validateTableInput(tableName, location); err != nil {
-		return "", err
+		return "", errors.Join(ErrTableCreationFailure, err)
 	}
 	statement := fmt.Sprintf(`CREATE EXTERNAL TABLE %s LOCATION '%s'`, tableName, location)
 	esr, err := dbc.workspaceClient.StatementExecution.ExecuteAndWait(dbc.ctx, sql.ExecuteStatementRequest{
@@ -61,7 +63,7 @@ func (dbc *Client) createExternalTable(warehouseID, catalogName, schemaName, tab
 		Statement:   statement,
 	})
 	if err != nil {
-		return "", err
+		return "", errors.Join(ErrTableCreationFailure, err)
 	}
 	return esr.Status.State.String(), nil
 }
@@ -71,7 +73,11 @@ func tableFullName(catalogName, schemaName, tableName string) string {
 }
 
 func (dbc *Client) dropTable(catalogName, schemaName, tableName string) error {
-	return dbc.workspaceClient.Tables.DeleteByFullName(dbc.ctx, tableFullName(catalogName, schemaName, tableName))
+	err := dbc.workspaceClient.Tables.DeleteByFullName(dbc.ctx, tableFullName(catalogName, schemaName, tableName))
+	if err != nil {
+		return errors.Join(ErrTableDeletionFailure, err)
+	}
+	return nil
 }
 
 func (dbc *Client) createOrGetSchema(catalogName, schemaName string) (*catalog.SchemaInfo, error) {
@@ -123,16 +129,16 @@ func registerExternalTable(client *Client) lua.Function {
 				err = client.dropTable(catalogName, schemaName, tableName)
 				if err != nil {
 					lua.Errorf(l, err.Error())
-					panic("failed dropping an existing table")
+					panic("unreachable")
 				}
 				status, err = client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location)
 				if err != nil {
 					lua.Errorf(l, err.Error())
-					panic("failed creating table")
+					panic("unreachable")
 				}
 			} else {
 				lua.Errorf(l, err.Error())
-				panic("failed creating table")
+				panic("unreachable")
 			}
 		}
 		l.PushString(status)
@@ -140,14 +146,14 @@ func registerExternalTable(client *Client) lua.Function {
 	}
 }
 
-func createSchema(client *Client) lua.Function {
+func createOrGetSchema(client *Client) lua.Function {
 	return func(l *lua.State) int {
 		ref := lua.CheckString(l, 1)
 		catalogName := lua.CheckString(l, 2)
 		schemaInfo, err := client.createOrGetSchema(catalogName, ref)
 		if err != nil {
 			lua.Errorf(l, err.Error())
-			panic(err.Error())
+			panic("unreachable")
 		}
 		l.PushString(schemaInfo.Name)
 		return 1
@@ -155,7 +161,7 @@ func createSchema(client *Client) lua.Function {
 }
 
 var functions = map[string]func(client *Client) lua.Function{
-	"create_schema":           createSchema,
+	"create_or_get_schema":    createOrGetSchema,
 	"register_external_table": registerExternalTable,
 }
 
