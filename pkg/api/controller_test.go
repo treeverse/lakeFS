@@ -235,6 +235,79 @@ func testCommitEntries(t *testing.T, ctx context.Context, cat *catalog.Catalog, 
 	return commit.Reference
 }
 
+func TestCommitReadOnlyRepo(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", true)
+	testutil.Must(t, err)
+	testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+	resp, err := clt.CommitWithResponse(ctx, repo, "main", &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "some message"})
+	testutil.Must(t, err)
+	if resp.JSON403 == nil {
+		t.Fatalf("expected error when trying to commit to read-only repo")
+	}
+}
+
+func TestCreateBranchReadOnlyRepo(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", true)
+	testutil.Must(t, err)
+	resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{})
+	testutil.Must(t, err)
+	if resp.JSON403 == nil {
+		t.Fatalf("expected error when trying to create a new branch for a read-only repo")
+	}
+}
+
+func TestDeleteBranchReadOnlyRepo(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", true)
+	testutil.Must(t, err)
+	resp, err := clt.DeleteBranchWithResponse(ctx, repo, "main")
+	testutil.Must(t, err)
+	if resp.JSON403 == nil {
+		t.Fatalf("expected error when trying to delete a branch for a read-only repo")
+	}
+}
+
+func TestCreateTagReadOnlyRepo(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", true)
+	testutil.Must(t, err)
+	resp, err := clt.CreateTagWithResponse(ctx, repo, apigen.CreateTagJSONRequestBody{})
+	testutil.Must(t, err)
+	if resp.JSON403 == nil {
+		t.Fatalf("expected error when trying to create a new tag for a read-only repo")
+	}
+}
+
+func TestDeleteTagReadOnlyRepo(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+	repoName := testUniqueRepoName()
+	resp, err := clt.CreateInternalRepositoryWithResponse(ctx, &apigen.CreateInternalRepositoryParams{ReadOnly: swag.Bool(true)}, apigen.CreateInternalRepositoryJSONRequestBody{
+		DefaultBranch:    apiutil.Ptr("main"),
+		Name:             repoName,
+		StorageNamespace: onBlock(deps, "foo-bucket-1"),
+	})
+	verifyResponseOK(t, resp, err)
+	println(swag.BoolValue(resp.JSON201.ReadOnly))
+	respo2, _ := clt.GetRepositoryWithResponse(ctx, repoName)
+	println(swag.BoolValue(respo2.JSON200.ReadOnly))
+	deleteTagResp, err := clt.DeleteTagWithResponse(ctx, repoName, "tag")
+	testutil.Must(t, err)
+	if deleteTagResp.JSON403 == nil {
+		t.Fatalf("expected error when trying to delete a tag for a read-only repo")
+	}
+}
+
 func TestController_LogCommitsMissingBranch(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()

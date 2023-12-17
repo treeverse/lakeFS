@@ -273,13 +273,14 @@ type RepositoryMetadata map[string]string
 
 const MetadataKeyLastImportTimeStamp = ".lakefs.last.import.timestamp"
 
-func NewRepository(storageNamespace StorageNamespace, defaultBranchID BranchID) Repository {
+func NewRepository(storageNamespace StorageNamespace, defaultBranchID BranchID, readOnly bool) Repository {
 	return Repository{
 		StorageNamespace: storageNamespace,
 		CreationDate:     time.Now().UTC(),
 		DefaultBranchID:  defaultBranchID,
 		State:            RepositoryState_ACTIVE,
 		InstanceUID:      NewRepoInstanceID(),
+		ReadOnly:         readOnly,
 	}
 }
 
@@ -483,7 +484,7 @@ type VersionController interface {
 	GetRepository(ctx context.Context, repositoryID RepositoryID) (*RepositoryRecord, error)
 
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
-	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*RepositoryRecord, error)
+	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID, readOnly bool) (*RepositoryRecord, error)
 
 	// CreateBareRepository stores a new Repository under RepositoryID with no initial branch or commit
 	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID) (*RepositoryRecord, error)
@@ -762,6 +763,9 @@ type LinkAddressIterator interface {
 type RefManager interface {
 	// GetRepository returns the Repository metadata object for the given RepositoryID
 	GetRepository(ctx context.Context, repositoryID RepositoryID) (*RepositoryRecord, error)
+
+	// GetRepositoryFromStore returns the Repository metadata object for the given RepositoryID directly from the store (without checking the cache)
+	GetRepositoryFromStore(ctx context.Context, repositoryID RepositoryID) (*RepositoryRecord, error)
 
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
 	CreateRepository(ctx context.Context, repositoryID RepositoryID, repository Repository) (*RepositoryRecord, error)
@@ -1052,13 +1056,13 @@ func (g *Graveler) GetRepository(ctx context.Context, repositoryID RepositoryID)
 	return g.RefManager.GetRepository(ctx, repositoryID)
 }
 
-func (g *Graveler) CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID) (*RepositoryRecord, error) {
-	_, err := g.RefManager.GetRepository(ctx, repositoryID)
+func (g *Graveler) CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID, readOnly bool) (*RepositoryRecord, error) {
+	_, err := g.RefManager.GetRepositoryFromStore(ctx, repositoryID)
 	if err != nil && !errors.Is(err, ErrRepositoryNotFound) {
 		return nil, err
 	}
 
-	repo := NewRepository(storageNamespace, branchID)
+	repo := NewRepository(storageNamespace, branchID, readOnly)
 	repository, err := g.RefManager.CreateRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
@@ -1072,7 +1076,7 @@ func (g *Graveler) CreateBareRepository(ctx context.Context, repositoryID Reposi
 		return nil, err
 	}
 
-	repo := NewRepository(storageNamespace, defaultBranchID)
+	repo := NewRepository(storageNamespace, defaultBranchID, false)
 	repository, err := g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err

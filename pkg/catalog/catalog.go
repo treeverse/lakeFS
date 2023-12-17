@@ -413,7 +413,7 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 	}); err != nil {
 		return nil, err
 	}
-	repo, err := c.Store.CreateRepository(ctx, repositoryID, storageNS, branchID)
+	repo, err := c.Store.CreateRepository(ctx, repositoryID, storageNS, branchID, readOnly)
 	if err != nil {
 		return nil, err
 	}
@@ -422,7 +422,7 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 		StorageNamespace: storageNS.String(),
 		DefaultBranch:    branchID.String(),
 		CreationDate:     repo.CreationDate,
-		ReadOnly:         readOnly,
+		ReadOnly:         repo.ReadOnly,
 	}
 	return catalogRepo, nil
 }

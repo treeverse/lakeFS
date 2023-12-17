@@ -142,6 +142,14 @@ func (m *Manager) GetRepository(ctx context.Context, repositoryID graveler.Repos
 	return rec.(*graveler.RepositoryRecord), nil
 }
 
+func (m *Manager) GetRepositoryFromStore(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
+	repo, err := m.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	return repo, nil
+}
+
 func (m *Manager) createBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
 	repoRecord := &graveler.RepositoryRecord{
 		RepositoryID: repositoryID,

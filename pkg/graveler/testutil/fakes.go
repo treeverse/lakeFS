@@ -328,6 +328,12 @@ func (m *RefsFake) GetRepository(_ context.Context, repositoryID graveler.Reposi
 	}, nil
 }
 
+func (m *RefsFake) GetRepositoryFromStore(_ context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
+	return &graveler.RepositoryRecord{
+		RepositoryID: repositoryID,
+	}, nil
+}
+
 func (m *RefsFake) CreateRepository(_ context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
 	return &graveler.RepositoryRecord{
 		RepositoryID: repositoryID,

@@ -2050,6 +2050,22 @@ func (mr *MockRefManagerMockRecorder) GetRepository(ctx, repositoryID interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepository", reflect.TypeOf((*MockRefManager)(nil).GetRepository), ctx, repositoryID)
 }
 
+
+// GetRepositoryFromStore mocks base method.
+func (m *MockRefManager) GetRepositoryFromStore(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRepositoryFromStore", ctx, repositoryID)
+	ret0, _ := ret[0].(*graveler.RepositoryRecord)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRepositoryFromStore indicates an expected call of GetRepositoryFromStore.
+func (mr *MockRefManagerMockRecorder) GetRepositoryFromStore(ctx, repositoryID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepositoryFromStore", reflect.TypeOf((*MockRefManager)(nil).GetRepositoryFromStore), ctx, repositoryID)
+}
+
 // GetRepositoryMetadata mocks base method.
 func (m *MockRefManager) GetRepositoryMetadata(ctx context.Context, repositoryID graveler.RepositoryID) (graveler.RepositoryMetadata, error) {
 	m.ctrl.T.Helper()

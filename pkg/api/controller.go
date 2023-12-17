@@ -1563,7 +1563,6 @@ func (c *Controller) createRepository(w http.ResponseWriter, r *http.Request, bo
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", graveler.ErrNotUnique))
 		return
 	}
-
 	sampleData := swag.BoolValue(body.SampleData)
 	c.LogAction(ctx, "create_repo", r, body.Name, "", "")
 	if sampleData {
@@ -1658,6 +1657,7 @@ func (c *Controller) createRepository(w http.ResponseWriter, r *http.Request, bo
 		DefaultBranch:    newRepo.DefaultBranch,
 		Id:               newRepo.Name,
 		StorageNamespace: newRepo.StorageNamespace,
+		ReadOnly:         swag.Bool(newRepo.ReadOnly),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -2258,7 +2258,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		cb(w, r, http.StatusNotFound, err)
 
 	case errors.Is(err, block.ErrForbidden),
-		errors.Is(err, graveler.ErrProtectedBranch):
+		errors.Is(err, graveler.ErrProtectedBranch),
+		errors.Is(err, graveler.ErrReadOnlyRepository):
 		cb(w, r, http.StatusForbidden, err)
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
