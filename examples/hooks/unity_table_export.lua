@@ -13,7 +13,7 @@ local sc = aws.s3_client(args.aws.access_key_id, args.aws.secret_access_key, arg
 
 -- Export Delta Lake tables export:
 local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.region)
-local delta_table_locations = delta_export.export_delta_log(action, args.table_paths, sc.put_object, delta_client, "_lakefs_tables")
+local delta_table_locations = delta_export.export_delta_log(action, args.table_defs, sc.put_object, delta_client, "_lakefs_tables")
 
 -- Register the exported table in Unity Catalog:
 local databricks_client = databricks.client(args.databricks_host, args.databricks_token)

@@ -51,6 +51,7 @@ func validateTableInput(tableName, location string) error {
 }
 
 func (client *Client) createExternalTable(warehouseID, catalogName, schemaName, tableName, location string) (string, error) {
+	tableName = strings.ReplaceAll(tableName, "-", "_")
 	if err := validateTableInput(tableName, location); err != nil {
 		return "", errors.Join(ErrTableCreationFailure, err)
 	}
