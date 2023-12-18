@@ -33,7 +33,7 @@ end
         - repository_id
         - commit_id
 
-   table_paths: ["path/to/table1", "path/to/table2", ...]
+   table_names: ["table1", "table2", ...]
 
     write_object: function(bucket, key, data)
 
@@ -41,7 +41,7 @@ end
         - get_table: function(repo, ref, prefix)
 
 ]]
-local function export_delta_log(action, table_paths, write_object, delta_client, table_descriptors_path)
+local function export_delta_log(action, table_names, write_object, delta_client, table_descriptors_path)
     local repo = action.repository_id
     local commit_id = action.commit_id
 
@@ -50,8 +50,18 @@ local function export_delta_log(action, table_paths, write_object, delta_client,
         error("failed getting storage namespace for repo " .. repo)
     end
     local response = {}
-    for _, path in ipairs(table_paths) do
-        local t = delta_client.get_table(repo, commit_id, path)
+    for _, table_name in ipairs(table_names) do
+
+        -- Get the table descriptor
+        local table_src_path = pathlib.join("/", table_descriptors_path, table_name .. ".yaml")
+        local table_descriptor = extractor.get_table_descriptor(lakefs, repo, commit_id, table_src_path)
+        local table_path = table_descriptor.path
+        if not table_path then
+            error("table path is required to proceed with Delta catalog export")
+        end
+
+        -- Get Delta table
+        local t = delta_client.get_table(repo, commit_id, table_path)
         local sortedKeys = utils.sortedKeys(t)
         --[[ Pairs of (version, map of json content):
                 (1,
@@ -82,7 +92,7 @@ local function export_delta_log(action, table_paths, write_object, delta_client,
                     p = entry.remove.path
                 end
                 if p ~= "" then
-                    local code, obj = lakefs.stat_object(repo, commit_id, pathlib.join("/",path, p))
+                    local code, obj = lakefs.stat_object(repo, commit_id, pathlib.join("/", table_path, p))
                     if code == 200 then
                         local obj_stat = json.unmarshal(obj)
                         local physical_path = obj_stat["physical_address"]
@@ -99,13 +109,6 @@ local function export_delta_log(action, table_paths, write_object, delta_client,
             table_log[keyGenerator()] = entry_log
         end
 
-        -- Get the table delta log physical location
-        local table_src_path = pathlib.join("/", table_descriptors_path, path .. ".yaml")
-        local table_descriptor = extractor.get_table_descriptor(lakefs, repo, commit_id, table_src_path)
-        local table_name = table_descriptor.name
-        if not table_name then
-            error("table name is required to proceed with Delta catalog export")
-        end
         local table_export_prefix = utils.get_storage_uri_prefix(ns, commit_id, action)
         local table_physical_path = pathlib.join("/", table_export_prefix, table_name)
         local table_log_physical_path = pathlib.join("/", table_physical_path, "_delta_log")
@@ -131,7 +134,7 @@ local function export_delta_log(action, table_paths, write_object, delta_client,
             local version_key = storage_props.key .. "/" .. entry_version
             write_object(storage_props.bucket, version_key, table_entry_string)
         end
-        response[path] = table_physical_path
+        response[table_name] = table_physical_path
     end
     return response
 end
