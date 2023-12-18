@@ -506,7 +506,7 @@ Example:
 
 ```yaml
 ---
-name: test_delta_exporter
+name: delta_exporter
 on:
   post-commit: null
 hooks:
@@ -536,6 +536,69 @@ hooks:
           secret_access_key: <LAKEFS_SECRET_ACCESS_KEY>
         table_paths:
           - my/delta/table/path
+```
+
+### `lakefs/catalogexport/unity_exporter`
+
+A package used to register exported Delta Lake tables to Databricks' Unity catalog.
+
+### `lakefs/catalogexport/unity_exporter.register_tables(action, table_descriptors_path, delta_table_paths, databricks_client, warehouse_id)`
+
+The function used to register exported Delta Lake tables in Databricks' Unity Catalog.
+The registration will use the following paths to register the table:
+`<catalog>.<branch name>.<table_name>` where the branch name will be used as the schema name.
+
+[//]: # (`<catalog>.<commit id>.<table_name>` where the commit id will be used as the schema name.)
+The return value is a table with mapping of table names to registration request status.
+
+Parameters:
+
+- `action`: The global action object
+- `table_descriptors_path`: The path under which the table descriptors of the provided `table_paths` reside.
+- `delta_table_paths`: Physical paths to table names mapping (e.g. `{"s3://mybucket/mytable1": "table1", "s3://mybucket/mytable2": "table2"}`)
+- `databricks_client`: A Databricks client that implements `create_or_get_schema: function(id, catalog_name)` and `register_external_table: function(table_name, physical_path, warehouse_id, catalog_name, schema_name)`
+- `warehouse_id`: Databricks warehouse ID.
+
+Example:
+The following registers an exported Delta Lake table to Unity Catalog.
+
+```yaml
+---
+name: unity_exporter
+on:
+  post-commit: null
+hooks:
+  - id: unity_export
+    type: lua
+    properties:
+      script: |
+        local databricks = require("databricks")
+        local unity_export = require("lakefs/catalogexport/unity_exporter")
+        
+        local delta_table_locations = {
+          ["s3://mybucket/mytable1"] = "table1",
+        }
+        -- Register the exported table in Unity Catalog:
+        local databricks_client = databricks.client(args.databricks_host, args.databricks_token)
+        local registration_statuses = unity_export.register_tables(action, "_lakefs_tables", delta_table_locations, databricks_client, args.warehouse_id)
+      
+        for t, status in pairs(registration_statuses) do
+          print("Unity catalog registration for table \"" .. t .. "\" completed with status: " .. status .. "\n")
+        end
+      args:
+        aws:
+          access_key_id: <AWS_ACCESS_KEY_ID>
+          secret_access_key: <AWS_SECRET_ACCESS_KEY>
+          region: us-east-1
+        lakefs:
+          access_key_id: <LAKEFS_ACCESS_KEY_ID> 
+          secret_access_key: <LAKEFS_SECRET_ACCESS_KEY>
+        table_paths:
+          - my/delta/table/path
+        databricks_host: <DATABRICKS_HOST_URL>
+        databricks_token: <SERVICE_PRINCIPAL_TOKEN>
+        warehouse_id: <WAREHOUSE_ID>
+        catalog: <CATALOG_NAME>
 ```
 
 For the table descriptor under the `_lakefs_tables/my/delta/table/path.yaml`:
