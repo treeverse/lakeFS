@@ -32,6 +32,18 @@ local test_cases = {
         error = "catalog name is required",
     },
     {
+        name = "failed_no_name",
+        tables = {
+            ["my_table_no_name"] = {
+                td = {
+                    type = "delta",
+                    catalog = "ok",
+                },
+            },
+        },
+        error = "table name is required",
+    },
+    {
         name = "failed_schema_creation",
         tables = {
             ["my_table_schema_failure"] = {
