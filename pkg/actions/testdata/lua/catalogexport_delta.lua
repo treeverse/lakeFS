@@ -49,6 +49,7 @@ package.loaded["lakefs/catalogexport/table_extractor"] = {
         assert(strings.has_suffix(t_name_yaml_base, ".yaml"))
         local t_name = strings.split(t_name_yaml_base, ".")[1]
         return {
+            name = t_name,
             path = t_name
         }
     end
