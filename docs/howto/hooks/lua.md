@@ -348,6 +348,76 @@ Returns an object-wise diff of uncommitted changes on `branch_id`.
 
 Returns a stat object for the given path under the given reference and repository.
 
+### `lakefs/catalogexport/glue_exporter.get_full_table_name(descriptor, action_info)`
+
+Generate glue table name.
+
+Parameters:
+
+- `descriptor(Table)`: Object from (e.g. _lakefs_tables/my_table.yaml).
+- `action_info(Table)`: The global action object.
+
+### `lakefs/catalogexport/delta_exporter`
+
+A package used to export Delta Lake tables from lakeFS to an external cloud storage.
+
+### `lakefs/catalogexport/delta_exporter.export_delta_log(action, table_names, writer, delta_client, table_descriptors_path)`
+
+The function used to export Delta Lake tables.
+The return value is a table with mapping of table names to external table location (from which it is possible to query the data).
+
+Parameters:
+
+- `action`: The global action object
+- `table_names`: Delta tables name list (e.g. `{"table1", "table2"}`)
+- `writer`: A writer function with `function(bucket, key, data)` signature, used to write the exported Delta Log (e.g. `aws/s3.s3_client.put_object`)
+- `delta_client`: A Delta Lake client that implements `get_table: function(repo, ref, prefix)`
+- `table_descriptors_path`: The path under which the table descriptors of the provided `table_names` reside
+
+Example:
+
+```yaml
+---
+name: test_delta_exporter
+on:
+  post-commit: null
+hooks:
+  - id: delta
+    type: lua
+    properties:
+      script: |
+        local aws = require("aws")
+        local formats = require("formats")
+        local delta_exporter = require("lakefs/catalogexport/delta_exporter")
+
+        local table_descriptors_path = "_lakefs_tables"
+        local sc = aws.s3_client(args.aws.access_key_id, args.aws.secret_access_key, args.aws.region)
+        local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.region)
+        local delta_table_locations = delta_exporter.export_delta_log(action, args.table_names, sc.put_object, delta_client, table_descriptors_path)
+        
+        for t, loc in pairs(delta_table_locations) do
+          print("Delta Lake exported table \"" .. t .. "\"'s location: " .. loc .. "\n")
+        end
+      args:
+        aws:
+          access_key_id: <AWS_ACCESS_KEY_ID>
+          secret_access_key: <AWS_SECRET_ACCESS_KEY>
+          region: us-east-1
+        lakefs:
+          access_key_id: <LAKEFS_ACCESS_KEY_ID> 
+          secret_access_key: <LAKEFS_SECRET_ACCESS_KEY>
+        table_names:
+          - mytable
+```
+
+For the table descriptor under the `_lakefs_tables/mytable.yaml`:
+```yaml
+---
+name: myTableActualName
+type: delta
+path: a/path/to/my/delta/table
+```
+
 ### `lakefs/catalogexport/table_extractor`
 
 Utility package to parse `_lakefs_tables/` descriptors.
@@ -474,75 +544,6 @@ local table_input = {
     "parquet.compression": "SNAPPY"
 }
 exporter.export_glue(glue, "my-db", "_lakefs_tables/animals.yaml", table_input, action, {debug=true})
-```
-
-### `lakefs/catalogexport/glue_exporter.get_full_table_name(descriptor, action_info)`
-
-Generate glue table name.
-
-Parameters:
-
-- `descriptor(Table)`: Object from (e.g. _lakefs_tables/my_table.yaml).
-- `action_info(Table)`: The global action object.
-
-### `lakefs/catalogexport/delta_exporter`
-
-A package used to export Delta Lake tables from lakeFS to an external cloud storage.
-
-### `lakefs/catalogexport/delta_exporter.export_delta_log(action, table_paths, writer, delta_client, table_descriptors_path)`
-
-The function used to export Delta Lake tables.
-The return value is a table with mapping of table names to external table location (from which it is possible to query the data).
-
-Parameters:
-
-- `action`: The global action object
-- `table_paths`: Paths list in lakeFS to Delta Tables (e.g. `{"path/to/table1", "path/to/table2"}`)
-- `writer`: A writer function with `function(bucket, key, data)` signature, used to write the exported Delta Log (e.g. `aws/s3.s3_client.put_object`)
-- `delta_client`: A Delta Lake client that implements `get_table: function(repo, ref, prefix)`
-- `table_descriptors_path`: The path under which the table descriptors of the provided `table_paths` reside  
-
-Example:
-
-```yaml
----
-name: test_delta_exporter
-on:
-  post-commit: null
-hooks:
-  - id: delta
-    type: lua
-    properties:
-      script: |
-        local aws = require("aws")
-        local formats = require("formats")
-        local delta_exporter = require("lakefs/catalogexport/delta_exporter")
-
-        local table_descriptors_path = "_lakefs_tables"
-        local sc = aws.s3_client(args.aws.access_key_id, args.aws.secret_access_key, args.aws.region)
-        local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.region)
-        local delta_table_locations = delta_exporter.export_delta_log(action, args.table_paths, sc.put_object, delta_client, table_descriptors_path)
-        
-        for t, loc in pairs(delta_table_locations) do
-          print("Delta Lake exported table \"" .. t .. "\"'s location: " .. loc .. "\n")
-        end
-      args:
-        aws:
-          access_key_id: <AWS_ACCESS_KEY_ID>
-          secret_access_key: <AWS_SECRET_ACCESS_KEY>
-          region: us-east-1
-        lakefs:
-          access_key_id: <LAKEFS_ACCESS_KEY_ID> 
-          secret_access_key: <LAKEFS_SECRET_ACCESS_KEY>
-        table_paths:
-          - my/delta/table/path
-```
-
-For the table descriptor under the `_lakefs_tables/my/delta/table/path.yaml`:
-```yaml
----
-name: myTableActualName
-type: delta
 ```
 
 ### `path/parse(path_string)`
