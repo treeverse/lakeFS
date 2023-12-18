@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+:bug: Bugs fixed:
+
+- Fix urllib3 dependency (#7170)
+
 ## v0.1.1
 
 :new: What's new:
