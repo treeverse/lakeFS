@@ -20,7 +20,7 @@ from lakefs.object import WriteableObject, WriteModes, ReadModes
 def test_object_read_seek(setup_repo, pre_sign):
     clt, repo = setup_repo
     data = b"test_data"
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+    obj = WriteableObject(repository_id=repo.properties.id, reference_id="main", path="test_obj", client=clt).upload(
         data=data, pre_sign=pre_sign)
 
     with obj.reader() as fd:
@@ -58,7 +58,7 @@ def test_object_read_seek(setup_repo, pre_sign):
 def test_object_upload_exists(setup_repo):
     clt, repo = setup_repo
     data = b"test_data"
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+    obj = WriteableObject(repository_id=repo.properties.id, reference_id="main", path="test_obj", client=clt).upload(
         data=data)
     with expect_exception_context(ObjectExistsException):
         obj.upload(data="some_other_data", mode='xb')
@@ -84,7 +84,7 @@ def test_object_upload_read_different_params(setup_repo, w_mode, r_mode, pre_sig
 
     # urllib3 encodes TextIOBase to ISO-8859-1, data should contain symbols that can be encoded as such
     data = b'test \x48\x65\x6c\x6c\x6f\x20\x57\x6f\x72\x6c\x64\x21'
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+    obj = WriteableObject(repository_id=repo.properties.id, reference_id="main", path="test_obj", client=clt).upload(
         data=data, mode=w_mode, pre_sign=pre_sign)
 
     with obj.reader(mode=r_mode) as fd:
@@ -98,7 +98,7 @@ def test_object_upload_read_different_params(setup_repo, w_mode, r_mode, pre_sig
 def test_object_copy(setup_repo):
     clt, repo = setup_repo
     data = "test_data"
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+    obj = WriteableObject(repository_id=repo.properties.id, reference_id="main", path="test_obj", client=clt).upload(
         data=data, metadata={"foo": "bar"})
 
     copy_name = "copy_obj"
@@ -194,7 +194,7 @@ def test_read_byte_by_byte(setup_repo):
     clt, repo = setup_repo
 
     data = b'test_data'
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+    obj = WriteableObject(repository_id=repo.properties.id, reference_id="main", path="test_obj", client=clt).upload(
         data=data, pre_sign=False)
     res = b""
     reader = obj.reader()
@@ -297,7 +297,7 @@ def test_read_xml(setup_repo, datafiles):
 def test_readline_no_newline(setup_repo):
     clt, repo = setup_repo
     data = b'test_data'
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+    obj = WriteableObject(repository_id=repo.properties.id, reference_id="main", path="test_obj", client=clt).upload(
         data=data, pre_sign=False)
 
     assert obj.reader().readline() == data
@@ -308,7 +308,7 @@ def test_readline_no_newline(setup_repo):
 def test_readline_partial_line_buffer(setup_repo):
     clt, repo = setup_repo
     data = "a" * 15 + "\n" + "b" * 25 + "\n" + "That is all folks! "
-    obj = WriteableObject(repository=repo.properties.id, reference="main", path="test_obj", client=clt).upload(
+    obj = WriteableObject(repository_id=repo.properties.id, reference_id="main", path="test_obj", client=clt).upload(
         data=data, pre_sign=False)
 
     with obj.reader(mode="r") as reader:
