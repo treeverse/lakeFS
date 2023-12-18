@@ -3,7 +3,7 @@ local pathlib = require("path")
 local json = require("encoding/json")
 local utils = require("lakefs/catalogexport/internal")
 local extractor = require("lakefs/catalogexport/table_extractor")
-
+local strings = require("strings")
 --[[
     delta_log_entry_key_generator returns a closure that returns a Delta Lake version key according to the Delta Lake
     protocol: https://github.com/delta-io/delta/blob/master/PROTOCOL.md#delta-log-entries
@@ -33,7 +33,7 @@ end
         - repository_id
         - commit_id
 
-   table_names: ["table1", "table2", ...]
+   table_def_names: ["table1.yaml", "table2", ...]
 
     write_object: function(bucket, key, data)
 
@@ -41,7 +41,7 @@ end
         - get_table: function(repo, ref, prefix)
 
 ]]
-local function export_delta_log(action, table_names, write_object, delta_client, table_descriptors_path)
+local function export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path)
     local repo = action.repository_id
     local commit_id = action.commit_id
 
@@ -50,14 +50,22 @@ local function export_delta_log(action, table_names, write_object, delta_client,
         error("failed getting storage namespace for repo " .. repo)
     end
     local response = {}
-    for _, table_name in ipairs(table_names) do
+    for _, table_name_yaml in ipairs(table_def_names) do
 
         -- Get the table descriptor
-        local table_src_path = pathlib.join("/", table_descriptors_path, table_name .. ".yaml")
+        local tny  = table_name_yaml
+        if not strings.has_suffix(tny, ".yaml") then
+            tny = tny .. ".yaml"
+        end
+        local table_src_path = pathlib.join("/", table_descriptors_path, tny)
         local table_descriptor = extractor.get_table_descriptor(lakefs, repo, commit_id, table_src_path)
         local table_path = table_descriptor.path
         if not table_path then
             error("table path is required to proceed with Delta catalog export")
+        end
+        local table_name = table_descriptor.name
+        if not table_name then
+            error("table name is required to proceed with Delta catalog export")
         end
 
         -- Get Delta table
@@ -134,7 +142,7 @@ local function export_delta_log(action, table_names, write_object, delta_client,
             local version_key = storage_props.key .. "/" .. entry_version
             write_object(storage_props.bucket, version_key, table_entry_string)
         end
-        response[table_name] = table_physical_path
+        response[table_name_yaml] = table_physical_path
     end
     return response
 end
