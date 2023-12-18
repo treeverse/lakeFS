@@ -78,7 +78,12 @@ Exporters are code packages accessible through [Lua integration]({% link howto/h
 
 - Symlink Exporter: Writes metadata for the table using Hive's [SymlinkTextInputFormat](https://svn.apache.org/repos/infra/websites/production/hive/content/javadocs/r2.1.1/api/org/apache/hadoop/hive/ql/io/SymlinkTextInputFormat.html)
 - AWS Glue Catalog (+ Athena) Exporter: Creates a table in Glue using Hive's format and updates the location to symlink files (reuses Symlink Exporter).
-- See a step by step guide on how to integrate with [Glue Exporter]({% link integrations/glue_metastore.md %})
+  - See a step-by-step guide on how to integrate with [Glue Exporter]({% link integrations/glue_metastore.md %})
+- Delta Lake table exporter.
+- Unity Catalog exporter: Registers a Delta Lake table in Unity Catalog. This is used in tandem with the Delta Lake exporter, i.e.
+the Delta Lake exporter should be used to export a Delta Lake table from lakeFS, and then provide the returned value to the Unity
+Catalog exporter to register it with Unity Catalog.
+  - See a step-by-step guide on how to integrate with [Unity Catalog Exporter]({% link integrations/unity_catalog.md %})
 
 #### Running an Exporter  
 
