@@ -37,7 +37,7 @@ and an associated [token](https://docs.databricks.com/en/dev-tools/service-princ
 2. The service principal should have `Service principal: Manager` over itself (Workspace: Admin console -> Service principals -> `<service principal>` -> Permissions -> Grant access (`<service principal>`:
    `Service principal: Manager`), `Workspace access` and `Databricks SQL access` checked (Admin console -> Service principals -> `<service principal>` -> Configurations).
 3. Allow the service principal to use your SQL warehouse (SQL Warehouses -> `<SQL warehouse>` -> Permissions -> `<service principal>`: `Can use`).
-4. 
+4. The catalog should grant the service principal permission to use it and to create and use a schema within it (Catalog -> `<catalog name>` -> Permissions -> Grant -> `<service principal>`: `USE CATALOG`, `USE SCHEMA`, `CREATE SCHEMA`).
 
 ### Add table descriptor
 
