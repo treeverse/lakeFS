@@ -37,9 +37,10 @@ and an associated [token](https://docs.databricks.com/en/dev-tools/service-princ
 2. The service principal should have `Service principal: Manager` over itself (Workspace: Admin console -> Service principals -> `<service principal>` -> Permissions -> Grant access (`<service principal>`:
    `Service principal: Manager`), `Workspace access` and `Databricks SQL access` checked (Admin console -> Service principals -> `<service principal>` -> Configurations).
 3. Allow the service principal to use your SQL warehouse (SQL Warehouses -> `<SQL warehouse>` -> Permissions -> `<service principal>`: `Can use`).
-4. The catalog should grant the service principal permission to use it and to create and use a schema within it (Catalog -> `<catalog name>` -> Permissions -> Grant -> `<service principal>`: `USE CATALOG`, `USE SCHEMA`, `CREATE SCHEMA`).
+4. The catalog should grant the service principal permissions to use it and to create and use a schema within it (Catalog -> `<catalog name>` -> Permissions -> Grant -> `<service principal>`: `USE CATALOG`, `USE SCHEMA`, `CREATE SCHEMA`).
+5. You should have a configured External Location (Catalog -> External Data -> External Locations -> Create location) to the exported table's bucket with
+   a `CREATE EXTERNAL TABLE` permission for the service principal.
 
-### Add table descriptor
+## Table descriptor
 
-Let's define a table, and commit it to lakeFS.
-Save the YAML below as `animals.yaml` and upload it to lakeFS. 
+In order to instruct the Unity Catalog exporter how to configure the table in the Unity Catalog
