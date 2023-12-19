@@ -51,7 +51,6 @@ func validateTableInput(tableName, location string) error {
 }
 
 func (client *Client) createExternalTable(warehouseID, catalogName, schemaName, tableName, location string) (string, error) {
-	tableName = strings.ReplaceAll(tableName, "-", "_")
 	if err := validateTableInput(tableName, location); err != nil {
 		return "", errors.Join(ErrTableCreationFailure, err)
 	}
@@ -113,11 +112,11 @@ func newDatabricksClient(l *lua.State) (*databricks.WorkspaceClient, error) {
 
 func (client *Client) RegisterExternalTable(l *lua.State) int {
 	tableName := lua.CheckString(l, 1)
+	tableName = strings.ReplaceAll(tableName, "-", "_")
 	location := lua.CheckString(l, 2)
 	warehouseID := lua.CheckString(l, 3)
 	catalogName := lua.CheckString(l, 4)
 	schemaName := lua.CheckString(l, 5)
-
 	status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location)
 	if err != nil {
 		if alreadyExists(err) {
