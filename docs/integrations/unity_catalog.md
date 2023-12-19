@@ -11,16 +11,16 @@ redirect_from: /using/unity_catalog.html
 
 ## Overview
 
-Databricks Unity Catalog is a centralized data governance platform for managing your data lakes.
-Using Unity Catalog you can easily search for and find data assets across all workspaces using a unified catalog. 
-Using Unity Catalog's external tables feature, it's possible to register a lakeFS-exported Delta Lake table and
-access it from the unified catalog.
-The following step-by-step guide will walk you through the step of configuring a [Lua hook]({% link howto/hooks/lua.md %})
-that exports Delta Lake tables from lakeFS, and then registers them in Unity Catalog.
+Databricks Unity Catalog serves as a centralized data governance platform, enabling efficient management of your data lakes.
+Through the Unity Catalog, you can seamlessly search for and locate data assets across all workspaces via a unified catalog.
+Leveraging the external tables feature within Unity Catalog, you can register a Delta Lake table exported from lakeFS and
+access it through the unified catalog. 
+The subsequent step-by-step guide will lead you through the process of configuring a [Lua hook]({% link howto/hooks/lua.md %})
+that exports Delta Lake tables from lakeFS, and subsequently registers them in Unity Catalog.
 
 ## Prerequisites
 
-Before starting, make sure you have:
+Before starting, ensure you have the following:
 
 1. Access to Unity Catalog
 2. An active lakeFS installation with S3 as the backing storage, and a repository in this installation.
@@ -30,27 +30,27 @@ Before starting, make sure you have:
 
 ### Databricks authentication
 
-Since the hook will eventually register a table in Unity Catalog, authentication is required with Databricks:
+Given that the hook will ultimately register a table in Unity Catalog, authentication with Databricks is imperative:
 
-1. The hook will authenticate with Databricks using a [Service Principal](https://docs.databricks.com/en/dev-tools/service-principals.html)
+1. The hook will authenticate with Databricks through a [Service Principal](https://docs.databricks.com/en/dev-tools/service-principals.html)
 and an associated [token](https://docs.databricks.com/en/dev-tools/service-principals.html#step-4-generate-a-databricks-personal-access-token-for-the-databricks-service-principal).
-2. The service principal should have `Service principal: Manager` over itself (Workspace: Admin console -> Service principals -> `<service principal>` -> Permissions -> Grant access (`<service principal>`:
-   `Service principal: Manager`), `Workspace access` and `Databricks SQL access` checked (Admin console -> Service principals -> `<service principal>` -> Configurations).
-3. Allow the service principal to use your SQL warehouse (SQL Warehouses -> `<SQL warehouse>` -> Permissions -> `<service principal>`: `Can use`).
+2. The service principal should possess `Service principal: Manager` privileges over itself (Workspace: Admin console -> Service principals -> `<service principal>` -> Permissions -> Grant access (`<service principal>`:
+   `Service principal: Manager`), with `Workspace access` and `Databricks SQL access` checked (Admin console -> Service principals -> `<service principal>` -> Configurations).
+3. Allow the service principal to utilize your SQL warehouse (SQL Warehouses -> `<SQL warehouse>` -> Permissions -> `<service principal>`: `Can use`).
 4. The catalog should grant the service principal permissions to use it and to create and use a schema within it (Catalog -> `<catalog name>` -> Permissions -> Grant -> `<service principal>`: `USE CATALOG`, `USE SCHEMA`, `CREATE SCHEMA`).
-5. You should have a configured External Location (Catalog -> External Data -> External Locations -> Create location) to the exported table's bucket with
-   a `CREATE EXTERNAL TABLE` permission for the service principal.
+5. Ensure the service principal has permissions to use the configured External Location (Catalog -> External Data -> External Locations -> Create location) for the exported table's bucket,
+with  `CREATE EXTERNAL TABLE` permission granted.
 
 ## Guide
 
 ### Table descriptor definition
 
-In order to instruct the Unity Catalog exporter how to configure the table in the catalog, you'll have to define its properties in the Delta Lake table descriptor.
-The table descriptor should have (at least) the following fields:
+To guide the Unity Catalog exporter in configuring the table in the catalog, define its properties in the Delta Lake table descriptor. 
+The table descriptor should include (at minimum) the following fields:
 1. `name`: The table name.
 2. `type`: Should be `delta`.
 3. `catalog`: The name of the catalog in which the table will be created.
-4. `path`: The path in lakeFS (starting from the root of the branch) in which the Delta Lake table is configured.
+4. `path`: The path in lakeFS (starting from the root of the branch) in which the Delta Lake table's data is found.
 
 Let's define the table descriptor and upload it to lakeFS:
 
@@ -110,7 +110,7 @@ df.write.format("delta").mode("overwrite").partitionBy("category", "country").sa
 > For code references check [delta_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportdelta_exporter) and 
 [unity_exporter]({% link howto/hooks/lua.md %}#lakefscatalogexportunity_exporter) docs.
 
-`unity_exporter.lua`:
+Create `unity_exporter.lua`:
 
 ```lua
 local aws = require("aws")
@@ -134,7 +134,7 @@ for t, status in pairs(registration_statuses) do
 end
 ```
 
-Upload the lua script to your main branch under `scripts/unity_exporter.lua`:
+Upload the lua script to the `main` branch under `scripts/unity_exporter.lua` and commit:
 
 ```bash
 lakectl fs upload lakefs://repo/main/scripts/unity_exporter.lua -s ./unity_exporter.lua && \
@@ -143,10 +143,10 @@ lakectl commit lakefs://repo/main -m "upload unity exporter script"
 
 ### Action configuration
 
-The following will define an action configuration that will run the above script after a commit was completed (`post-commit`)
-over the `main` branch.
+Define an action configuration that will run the above script after a commit is completed (`post-commit`) over the `main` branch.
 
-`unity_exports_action.yaml`
+Create `unity_exports_action.yaml`:
+
 ```yaml
 ---
 name: unity_exports
@@ -185,15 +185,18 @@ lakectl commit lakefs://repo/main -m "upload action and run it"
 ```
 
 The action has run and exported the `famous_people` Delta Lake table to the repo's storage namespace, and has register 
-the table as an external table in Unity Catalog under catalog `my-repo-name`, schema `main` (as the branch's name) and 
+the table as an external table in Unity Catalog under the catalog `my-repo-name`, schema `main` (as the branch's name) and 
 table name `famous_people`: `my-repo-name.main.famous_people`.
 
 ![Hooks log result in lakeFS UI]({{ site.baseurl }}/assets/img/unity_export_hook_result_log.png)
 
-### Databricks
+### Databricks Integration
 
-Once the table has been registered in Unity you can use your preferred way to [query the data](https://docs.databricks.com/en/query/index.html) 
-from the exported table under `my-repo-name.main.famous_people`, and view it in the Databricks's Catalog Explorer, or 
-fetch it using the Databricks CLI: `databricks tables get my-repo-name.main.famous_people`.
+After registering the table in Unity, you can leverage your preferred method to [query the data](https://docs.databricks.com/en/query/index.html) 
+from the exported table under `my-repo-name.main.famous_people`, and view it in the Databricks's Catalog Explorer, or
+retrieve it using the Databricks CLI with the following command: 
+```bash
+databricks tables get my-repo-name.main.famous_people
+```
 
 ![Unity Catalog Explorer view]({{ site.baseurl }}/assets/img/unity_exported_table_columns.png)
