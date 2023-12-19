@@ -427,11 +427,11 @@ Example:
 
 ```yaml
 ---
-name: test_delta_exporter
+name: delta_exporter
 on:
   post-commit: null
 hooks:
-  - id: delta
+  - id: delta_export
     type: lua
     properties:
       script: |
@@ -693,7 +693,7 @@ hooks:
         local unity_export = require("lakefs/catalogexport/unity_exporter")
         
         local delta_table_locations = {
-          ["s3://mybucket/mytable1"] = "table1",
+          ["table1"] = "s3://mybucket/mytable1",
         }
         -- Register the exported table in Unity Catalog:
         local databricks_client = databricks.client(args.databricks_host, args.databricks_token)
@@ -703,19 +703,9 @@ hooks:
           print("Unity catalog registration for table \"" .. t .. "\" completed with status: " .. status .. "\n")
         end
       args:
-        aws:
-          access_key_id: <AWS_ACCESS_KEY_ID>
-          secret_access_key: <AWS_SECRET_ACCESS_KEY>
-          region: us-east-1
-        lakefs:
-          access_key_id: <LAKEFS_ACCESS_KEY_ID> 
-          secret_access_key: <LAKEFS_SECRET_ACCESS_KEY>
-        table_paths:
-          - my/delta/table/path
         databricks_host: <DATABRICKS_HOST_URL>
         databricks_token: <SERVICE_PRINCIPAL_TOKEN>
         warehouse_id: <WAREHOUSE_ID>
-        catalog: <CATALOG_NAME>
 ```
 
 For the table descriptor under the `_lakefs_tables/my/delta/table/path.yaml`:
