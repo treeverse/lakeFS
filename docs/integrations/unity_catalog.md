@@ -54,7 +54,7 @@ The table descriptor should include (at minimum) the following fields:
 
 Let's define the table descriptor and upload it to lakeFS:
 
-1. Save the following as `famous-people-td.yaml`:
+Save the following as `famous-people-td.yaml`:
 
 ```yaml
 ---
