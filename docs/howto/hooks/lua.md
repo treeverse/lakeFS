@@ -679,41 +679,38 @@ Parameters:
 Example:
 The following registers an exported Delta Lake table to Unity Catalog.
 
-```yaml
----
-name: unity_exporter
-on:
-  post-commit: null
-hooks:
-  - id: unity_export
-    type: lua
-    properties:
-      script: |
-        local databricks = require("databricks")
-        local unity_export = require("lakefs/catalogexport/unity_exporter")
-        
-        local delta_table_locations = {
-          ["table1"] = "s3://mybucket/mytable1",
-        }
-        -- Register the exported table in Unity Catalog:
-        local databricks_client = databricks.client(args.databricks_host, args.databricks_token)
-        local registration_statuses = unity_export.register_tables(action, "_lakefs_tables", delta_table_locations, databricks_client, args.warehouse_id)
-      
-        for t, status in pairs(registration_statuses) do
-          print("Unity catalog registration for table \"" .. t .. "\" completed with status: " .. status .. "\n")
-        end
-      args:
-        databricks_host: <DATABRICKS_HOST_URL>
-        databricks_token: <SERVICE_PRINCIPAL_TOKEN>
-        warehouse_id: <WAREHOUSE_ID>
+```lua
+local databricks = require("databricks")
+local unity_export = require("lakefs/catalogexport/unity_exporter")
+
+local delta_table_locations = {
+  ["table1"] = "s3://mybucket/mytable1",
+}
+-- Register the exported table in Unity Catalog:
+local action_details = {
+  repository_id = "my-repo",
+  commit_id = "commit_id",
+  branch_id = "main",
+}
+local databricks_client = databricks.client("<DATABRICKS_HOST>", "<DATABRICKS_TOKEN>")
+local registration_statuses = unity_export.register_tables(action_details, "_lakefs_tables", delta_table_locations, databricks_client, "<WAREHOUSE_ID>")
+
+for t, status in pairs(registration_statuses) do
+  print("Unity catalog registration for table \"" .. t .. "\" completed with status: " .. status .. "\n")
+end
 ```
 
-For the table descriptor under the `_lakefs_tables/my/delta/table/path.yaml`:
+For the table descriptor under the `_lakefs_tables/delta-table-descriptor.yaml`:
 ```yaml
 ---
-name: myTableActualName
+name: my_table_name
 type: delta
+path: path/to/delta/table/data
+catalog: my-catalog
 ```
+
+For detailed step-by-step guide on how to use `unity_exporter.register_tables` as a part of a lakeFS action refer to
+the [Unity Catalog docs]({% link integrations/unity_catalog.md %}).
 
 ### `path/parse(path_string)`
 
