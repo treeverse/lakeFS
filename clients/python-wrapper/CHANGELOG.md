@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+
+## v0.1.2
+
 :bug: Bugs fixed:
 
 - Fix urllib3 dependency (#7170)
