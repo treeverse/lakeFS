@@ -224,7 +224,7 @@ Returns the SHA256 digest (string) of the given data
 
 Returns a table representing a Databricks client with the `register_external_table` and `create_or_get_schema` methods.
 
-### `databricks/client.create_or_get_schema(schema_name, catalog_name)`
+### `databricks/client.create_schema(schema_name, catalog_name, get_if_exists)`
 
 Creates a schema, or retrieves it if exists, in the configured Databricks host's Unity catalog.
 If a schema doesn't exist, a new schema with the given `schema_name` will be created under the given `catalog_name`.
@@ -232,15 +232,17 @@ Returns the created/fetched schema name.
 
 Parameters:
 
-- `schema_name`: The required schema name
-- `catalog_name`: The catalog name under which the schema will be created (or from which it will be fetched)
+- `schema_name(string)`: The required schema name
+- `catalog_name(string)`: The catalog name under which the schema will be created (or from which it will be fetched)
+- `get_if_exists(boolean)`: In case of failure due to an existing schema with the given `schema_name` in the given
+`catalog_name`, return the schema.
 
 Example:
 
 ```lua
 local databricks = require("databricks")
 local client = databricks.client("https://my-host.cloud.databricks.com", "my-service-principal-token")
-local schema_name = client.create_or_get_schema("main", "mycatalog")
+local schema_name = client.create_schema("main", "mycatalog", true)
 ```
 
 ### `databricks/client.register_external_table(table_name, physical_path, warehouse_id, catalog_name, schema_name)`
@@ -252,12 +254,12 @@ Returns the table's creation status.
 
 Parameters:
 
-- `table_name`: Table name.
-- `physical_path`: A location to which the external table will refer, e.g. `s3://mybucket/the/path/to/mytable`.
-- `warehouse_id`: The SQL warehouse ID used in Databricks to run the `CREATE TABLE` query (fetched from the SQL warehouse
+- `table_name(string)`: Table name.
+- `physical_path(string)`: A location to which the external table will refer, e.g. `s3://mybucket/the/path/to/mytable`.
+- `warehouse_id(string)`: The SQL warehouse ID used in Databricks to run the `CREATE TABLE` query (fetched from the SQL warehouse
 `Connection Details`, or by running `databricks warehouses get`, choosing your SQL warehouse and fetching its ID).
-- `catalog_name`: The name of the catalog under which a schema will be created (or fetched from).
-- `schema_name`: The name of the schema under which the table will be created.
+- `catalog_name(string)`: The name of the catalog under which a schema will be created (or fetched from).
+- `schema_name(string)`: The name of the schema under which the table will be created.
 
 Example:
 
@@ -670,11 +672,11 @@ The return value is a table with mapping of table names to registration request 
 
 Parameters:
 
-- `action`: The global action object
-- `table_descriptors_path`: The path under which the table descriptors of the provided `table_paths` reside.
-- `delta_table_paths`: Table names to physical paths mapping (e.g. `{ table1 = "s3://mybucket/mytable1", table2 = "s3://mybucket/mytable2" }`)
-- `databricks_client`: A Databricks client that implements `create_or_get_schema: function(id, catalog_name)` and `register_external_table: function(table_name, physical_path, warehouse_id, catalog_name, schema_name)`
-- `warehouse_id`: Databricks warehouse ID.
+- `action(table)`: The global action table
+- `table_descriptors_path(string)`: The path under which the table descriptors of the provided `table_paths` reside.
+- `delta_table_paths(table)`: Table names to physical paths mapping (e.g. `{ table1 = "s3://mybucket/mytable1", table2 = "s3://mybucket/mytable2" }`)
+- `databricks_client(table)`: A Databricks client that implements `create_or_get_schema: function(id, catalog_name)` and `register_external_table: function(table_name, physical_path, warehouse_id, catalog_name, schema_name)`
+- `warehouse_id(string)`: Databricks warehouse ID.
 
 Example:
 The following registers an exported Delta Lake table to Unity Catalog.
