@@ -82,7 +82,7 @@ func (client *Client) deleteTable(catalogName, schemaName, tableName string) err
 	return nil
 }
 
-func (client *Client) createOrGetSchema(catalogName, schemaName string, getIfExists bool) (*catalog.SchemaInfo, error) {
+func (client *Client) createSchema(catalogName, schemaName string, getIfExists bool) (*catalog.SchemaInfo, error) {
 	schemaInfo, err := client.workspaceClient.Schemas.Create(client.ctx, catalog.CreateSchema{
 		Name:        schemaName,
 		CatalogName: catalogName,
@@ -143,7 +143,7 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 	return 1
 }
 
-func (client *Client) CreateOrGetSchema(l *lua.State) int {
+func (client *Client) CreateSchema(l *lua.State) int {
 	ref := lua.CheckString(l, 1)
 	catalogName := lua.CheckString(l, 2)
 	getIfExists := lua.OptString(l, 3, "false")
@@ -152,7 +152,7 @@ func (client *Client) CreateOrGetSchema(l *lua.State) int {
 		lua.Errorf(l, "a non-boolean value was supplied as 'get_schema_if_exists'")
 		panic("unreachable")
 	}
-	schemaInfo, err := client.createOrGetSchema(catalogName, ref, getIfExistsB)
+	schemaInfo, err := client.createSchema(catalogName, ref, getIfExistsB)
 	if err != nil {
 		lua.Errorf(l, err.Error())
 		panic("unreachable")
@@ -175,7 +175,7 @@ func newClient(ctx context.Context) lua.Function {
 		client := &Client{workspaceClient: workspaceClient, ctx: ctx}
 		l.NewTable()
 		functions := map[string]lua.Function{
-			"create_or_get_schema":    client.CreateOrGetSchema,
+			"create_schema":           client.CreateSchema,
 			"register_external_table": client.RegisterExternalTable,
 		}
 		for name, goFn := range functions {
