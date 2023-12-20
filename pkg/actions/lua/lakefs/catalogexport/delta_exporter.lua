@@ -44,7 +44,9 @@ end
 local function export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path)
     local repo = action.repository_id
     local commit_id = action.commit_id
-
+    if not commit_id then
+        error("missing commit id")
+    end
     local ns = action.storage_namespace
     if ns == nil then
         error("failed getting storage namespace for repo " .. repo)

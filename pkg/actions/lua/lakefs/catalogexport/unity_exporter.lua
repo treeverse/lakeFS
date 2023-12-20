@@ -21,6 +21,9 @@ local extractor = require("lakefs/catalogexport/table_extractor")
 local function register_tables(action, table_descriptors_path, delta_table_paths, databricks_client, warehouse_id)
     local repo = action.repository_id
     local commit_id = action.commit_id
+    if not commit_id then
+        error("missing commit id")
+    end
     local branch_id = action.branch_id
     local response = {}
     for table_name_yaml, physical_path in pairs(delta_table_paths) do
