@@ -19,8 +19,7 @@ import (
 var identifierRegex = regexp.MustCompile(`\W`)
 
 var (
-	ErrInvalidTableName     = errors.New("invalid table name")
-	ErrTableCreationFailure = errors.New("table creation failure")
+	ErrInvalidTableName = errors.New("invalid table name")
 )
 
 type Client struct {
