@@ -14,8 +14,8 @@ from tests.utests.common import get_test_client, expect_exception_context
 
 class ObjectTestKWArgs:
     def __init__(self) -> None:
-        self.repository = "test_repo"
-        self.reference = "test_reference"
+        self.repository_id = "test_repo"
+        self.reference_id = "test_reference"
         self.path = "test_path"
 
 
@@ -119,8 +119,8 @@ class TestObjectReader:
         end_pos = ""
 
         def monkey_get_object(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
-            assert repository == test_kwargs.repository
-            assert ref == test_kwargs.reference
+            assert repository == test_kwargs.repository_id
+            assert ref == test_kwargs.reference_id
             assert path == test_kwargs.path
             assert presign
 
@@ -178,8 +178,8 @@ class TestObjectReader:
                 start_pos = 0
 
         def monkey_get_object(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
-            assert repository == test_kwargs.repository
-            assert ref == test_kwargs.reference
+            assert repository == test_kwargs.repository_id
+            assert ref == test_kwargs.reference_id
             assert path == test_kwargs.path
             assert range is None
             assert presign
