@@ -53,7 +53,7 @@ func validateTableInput(tableName, location string) error {
 
 func (client *Client) createExternalTable(warehouseID, catalogName, schemaName, tableName, location string) (string, error) {
 	if err := validateTableInput(tableName, location); err != nil {
-		return "", fmt.Errorf("external table creation failed: %w", err)
+		return "", fmt.Errorf("external table \"%s\" creation failed: %w", tableName, err)
 	}
 	statement := fmt.Sprintf(`CREATE EXTERNAL TABLE %s LOCATION '%s'`, tableName, location)
 	esr, err := client.workspaceClient.StatementExecution.ExecuteAndWait(client.ctx, sql.ExecuteStatementRequest{
@@ -63,7 +63,7 @@ func (client *Client) createExternalTable(warehouseID, catalogName, schemaName, 
 		Statement:   statement,
 	})
 	if err != nil {
-		return "", fmt.Errorf("external table creation failed: %w", err)
+		return "", fmt.Errorf("external table \"%s\" creation failed: %w", tableName, err)
 	}
 	return esr.Status.State.String(), nil
 }
@@ -75,7 +75,7 @@ func tableFullName(catalogName, schemaName, tableName string) string {
 func (client *Client) deleteTable(catalogName, schemaName, tableName string) error {
 	err := client.workspaceClient.Tables.DeleteByFullName(client.ctx, tableFullName(catalogName, schemaName, tableName))
 	if err != nil {
-		return fmt.Errorf("failed deleting an existing table: %w", err)
+		return fmt.Errorf("failed deleting an existing table \"%s\": %w", tableName, err)
 	}
 	return nil
 }
@@ -95,9 +95,9 @@ func (client *Client) createSchema(catalogName, schemaName string, getIfExists b
 		if err == nil {
 			return schemaInfo, nil
 		}
-		return nil, fmt.Errorf("failed getting schema: %w", err)
+		return nil, fmt.Errorf("failed getting schema \"%s\": %w", schemaName, err)
 	}
-	return nil, fmt.Errorf("failed creating schema: %w", err)
+	return nil, fmt.Errorf("failed creating schema \"%s\": %w", schemaName, err)
 }
 
 func newDatabricksClient(l *lua.State) (*databricks.WorkspaceClient, error) {
