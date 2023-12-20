@@ -41,7 +41,8 @@ local function register_tables(action, table_descriptors_path, delta_table_paths
         if not catalog then
             error("catalog name is required to proceed with unity catalog export")
         end
-        local schema_name = databricks_client.create_or_get_schema(branch_id, catalog)
+        local get_schema_if_exists = true
+        local schema_name = databricks_client.create_schema(branch_id, catalog, get_schema_if_exists)
         if not schema_name then
             error("failed creating/getting catalog's schema")
         end
