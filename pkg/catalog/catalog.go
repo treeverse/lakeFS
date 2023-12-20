@@ -1110,7 +1110,7 @@ func (c *Catalog) ResetEntries(ctx context.Context, repositoryID string, branch 
 	return c.Store.ResetPrefix(ctx, repository, branchID, keyPrefix, opts...)
 }
 
-func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, committer string, metadata Metadata, date *int64, sourceMetarange *string, opts ...graveler.SetOptionsFunc) (*CommitLog, error) {
+func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, committer string, metadata Metadata, date *int64, sourceMetarange *string, allowEmpty *bool, opts ...graveler.SetOptionsFunc) (*CommitLog, error) {
 	branchID := graveler.BranchID(branch)
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
@@ -1125,10 +1125,11 @@ func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, com
 	}
 
 	p := graveler.CommitParams{
-		Committer: committer,
-		Message:   message,
-		Date:      date,
-		Metadata:  map[string]string(metadata),
+		Committer:  committer,
+		Message:    message,
+		Date:       date,
+		Metadata:   map[string]string(metadata),
+		AllowEmpty: allowEmpty,
 	}
 	if sourceMetarange != nil {
 		x := graveler.MetaRangeID(*sourceMetarange)

@@ -2429,7 +2429,7 @@ func (m *MockCommittedManager) EXPECT() *MockCommittedManagerMockRecorder {
 }
 
 // Commit mocks base method.
-func (m *MockCommittedManager) Commit(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator, opts ...graveler.SetOptionsFunc) (graveler.MetaRangeID, graveler.DiffSummary, error) {
+func (m *MockCommittedManager) Commit(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator, allowEmpty bool, opts ...graveler.SetOptionsFunc) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, ns, baseMetaRangeID, changes}
 	for _, a := range opts {

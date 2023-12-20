@@ -448,6 +448,7 @@ type CommitParams struct {
 	Metadata Metadata
 	// SourceMetaRange - If exists, use it directly. Fail if branch has uncommitted changes
 	SourceMetaRange *MetaRangeID
+	AllowEmpty      *bool
 }
 
 type GarbageCollectionRunMetadata struct {
@@ -919,7 +920,7 @@ type CommittedManager interface {
 	// Commit is the act of taking an existing metaRange (snapshot) and applying a set of changes to it.
 	// A change is either an entity to write/overwrite, or a tombstone to mark a deletion
 	// it returns a new MetaRangeID that is expected to be immediately addressable
-	Commit(ctx context.Context, ns StorageNamespace, baseMetaRangeID MetaRangeID, changes ValueIterator, opts ...SetOptionsFunc) (MetaRangeID, DiffSummary, error)
+	Commit(ctx context.Context, ns StorageNamespace, baseMetaRangeID MetaRangeID, changes ValueIterator, allowEmpty bool, opts ...SetOptionsFunc) (MetaRangeID, DiffSummary, error)
 
 	// GetMetaRange returns information where metarangeID is stored.
 	GetMetaRange(ctx context.Context, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeAddress, error)
@@ -2020,7 +2021,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 			}
 			defer changes.Close()
 			// returns err if the commit is empty (no changes)
-			commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes)
+			commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes, *params.AllowEmpty)
 			if err != nil {
 				return nil, fmt.Errorf("commit: %w", err)
 			}

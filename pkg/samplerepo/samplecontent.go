@@ -112,7 +112,7 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat *cata
 	// if we succeeded, commit the changes
 	// commit changes
 	_, err = cat.Commit(ctx, repo.Name, repo.DefaultBranch, sampleRepoCommitMsg,
-		user.Username, map[string]string{}, swag.Int64(time.Now().Unix()), nil)
+		user.Username, map[string]string{}, swag.Int64(time.Now().Unix()), nil, nil)
 
 	return err
 }
