@@ -113,7 +113,7 @@ end
 -- Generates a mock databricks client
 local function db_client(schema_failure, tables)
     return {
-        create_or_get_schema = function(branch_id, catalog)
+        create_schema = function(branch_id, catalog, _)
             if schema_failure then
                 return nil
             end
