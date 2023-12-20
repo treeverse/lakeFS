@@ -287,7 +287,7 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string) {
 	}, postCreateBranchEvent)
 
 	// Delete branch
-	deleteBranchResp, err := client.DeleteBranchWithResponse(ctx, repo, testBranch)
+	deleteBranchResp, err := client.DeleteBranchWithResponse(ctx, repo, testBranch, &apigen.DeleteBranchParams{})
 
 	require.NoError(t, err, "failed to delete branch")
 	require.Equal(t, http.StatusNoContent, deleteBranchResp.StatusCode())
@@ -388,7 +388,7 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string) {
 	}, postCreateTagEvent)
 
 	// Delete tag
-	deleteTagResp, err := client.DeleteTagWithResponse(ctx, repo, tagID)
+	deleteTagResp, err := client.DeleteTagWithResponse(ctx, repo, tagID, &apigen.DeleteTagParams{})
 
 	require.NoError(t, err, "failed to delete tag")
 	require.Equal(t, http.StatusNoContent, deleteTagResp.StatusCode())
