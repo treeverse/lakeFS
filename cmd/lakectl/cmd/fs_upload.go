@@ -26,13 +26,14 @@ var fsUploadCmd = &cobra.Command{
 		contentType := Must(cmd.Flags().GetString("content-type"))
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		remotePath := pathURI.GetPath()
+		force := Must(cmd.Flags().GetBool("force"))
 		ctx := cmd.Context()
 
 		if !recursive { // Assume source is a single file
 			if strings.HasSuffix(remotePath, uri.PathSeparator) {
 				Die("target path is not a valid URI", 1)
 			}
-			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags.Presign)
+			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags.Presign, force)
 			if err != nil {
 				DieErr(err)
 			}
@@ -61,7 +62,7 @@ var fsUploadCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		err = s.Sync(fullPath, pathURI, c)
+		err = s.Sync(fullPath, pathURI, c, local.WithForce(force))
 		if err != nil {
 			DieErr(err)
 		}
@@ -75,7 +76,7 @@ var fsUploadCmd = &cobra.Command{
 	},
 }
 
-func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, preSign bool) (*apigen.ObjectStats, error) {
+func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, preSign bool, force bool) (*apigen.ObjectStats, error) {
 	fp := Must(OpenByPath(sourcePathname))
 	defer func() {
 		_ = fp.Close()
@@ -84,7 +85,7 @@ func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sou
 	if preSign {
 		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
 	}
-	return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
+	return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp, force)
 }
 
 //nolint:gochecknoinits
@@ -92,6 +93,7 @@ func init() {
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	_ = fsUploadCmd.MarkFlagRequired("source")
 	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
+	fsUploadCmd.Flags().BoolP("force", "f", false, "ignore repository and branch protections")
 	withRecursiveFlag(fsUploadCmd, "recursively copy all files under local source")
 	withSyncFlags(fsUploadCmd)
 

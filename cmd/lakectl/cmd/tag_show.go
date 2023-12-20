@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var tagShowCmd = &cobra.Command{
@@ -17,7 +18,7 @@ var tagShowCmd = &cobra.Command{
 		u := MustParseRefURI("tag URI", args[0])
 
 		ctx := cmd.Context()
-		resp, err := client.GetTagWithResponse(ctx, u.Repository, u.Ref)
+		resp, err := client.GetTagWithResponse(ctx, u.Repository, u.Ref, &apigen.GetTagParams{})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
 			Die("Bad response from server", 1)

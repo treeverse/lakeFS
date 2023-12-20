@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/go-openapi/swag"
 	"net/http"
 
 	"github.com/spf13/cobra"
@@ -31,6 +32,7 @@ var branchResetCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+		force := Must(cmd.Flags().GetBool("force"))
 
 		var reset apigen.ResetCreation
 		var confirmationMsg string
@@ -38,19 +40,22 @@ var branchResetCmd = &cobra.Command{
 		case len(prefix) > 0:
 			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all uncommitted changes from path: %s", prefix)
 			reset = apigen.ResetCreation{
-				Path: &prefix,
-				Type: "common_prefix",
+				Path:  &prefix,
+				Type:  "common_prefix",
+				Force: swag.Bool(force),
 			}
 		case len(object) > 0:
 			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all uncommitted changes for object: %s", object)
 			reset = apigen.ResetCreation{
-				Path: &object,
-				Type: "object",
+				Path:  &object,
+				Type:  "object",
+				Force: swag.Bool(force),
 			}
 		default:
 			confirmationMsg = "Are you sure you want to reset all uncommitted changes"
 			reset = apigen.ResetCreation{
-				Type: "reset",
+				Type:  "reset",
+				Force: swag.Bool(force),
 			}
 		}
 
@@ -70,6 +75,7 @@ func init() {
 
 	branchResetCmd.Flags().String("prefix", "", "prefix of the objects to be reset")
 	branchResetCmd.Flags().String("object", "", "path to object to be reset")
+	branchResetCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
 
 	branchCmd.AddCommand(branchResetCmd)
 }

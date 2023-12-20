@@ -44,6 +44,8 @@ var localCommitCmd = &cobra.Command{
 			DieErr(err)
 		}
 
+		force := Must(cmd.Flags().GetBool("force"))
+
 		if idx.ActiveOperation != "" {
 			fmt.Printf("Latest 'local %s' operation was interrupted, running 'local commit' operation now might lead to data loss.\n", idx.ActiveOperation)
 			confirmation, err := Confirm(cmd.Flags(), "Proceed")
@@ -112,7 +114,7 @@ var localCommitCmd = &cobra.Command{
 		}()
 		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(commitOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags)
-		err = s.Sync(idx.LocalPath(), remote, c)
+		err = s.Sync(idx.LocalPath(), remote, c, local.WithForce(force))
 		if err != nil {
 			DieErr(err)
 		}
@@ -143,6 +145,7 @@ var localCommitCmd = &cobra.Command{
 			Metadata: &apigen.CommitCreation_Metadata{
 				AdditionalProperties: kvPairs,
 			},
+			Force: swag.Bool(force),
 		})
 		DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusCreated)
 		commit := response.JSON201

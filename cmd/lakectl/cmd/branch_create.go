@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -27,10 +28,11 @@ var branchCreateCmd = &cobra.Command{
 		if sourceURI.Repository != u.Repository {
 			Die("source branch must be in the same repository", 1)
 		}
-
+		force := Must(cmd.Flags().GetBool("force"))
 		resp, err := client.CreateBranchWithResponse(cmd.Context(), u.Repository, apigen.CreateBranchJSONRequestBody{
 			Name:   u.Ref,
 			Source: sourceURI.Ref,
+			Force:  swag.Bool(force),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		fmt.Printf("created branch '%s' %s\n", u.Ref, string(resp.Body))
@@ -42,6 +44,7 @@ func init() {
 	branchCreateCmd.Flags().StringP("source", "s", "", "source branch uri")
 	_ = branchCreateCmd.MarkFlagRequired("source")
 	_ = branchCreateCmd.RegisterFlagCompletionFunc("source", ValidArgsRepository)
+	branchCreateCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
 
 	branchCmd.AddCommand(branchCreateCmd)
 }

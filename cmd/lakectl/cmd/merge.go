@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
@@ -48,11 +49,13 @@ var mergeCmd = &cobra.Command{
 		if strategy != "dest-wins" && strategy != "source-wins" && strategy != "" {
 			Die("Invalid strategy value. Expected \"dest-wins\" or \"source-wins\"", 1)
 		}
+		force := Must(cmd.Flags().GetBool("force"))
 
 		body := apigen.MergeIntoBranchJSONRequestBody{
 			Message:  &message,
 			Metadata: &apigen.Merge_Metadata{AdditionalProperties: kvPairs},
 			Strategy: &strategy,
+			Force:    swag.Bool(force),
 		}
 		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, body)
 		if resp != nil && resp.JSON409 != nil {

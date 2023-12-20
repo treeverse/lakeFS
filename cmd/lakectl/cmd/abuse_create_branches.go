@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
@@ -26,6 +27,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 		branchPrefix := Must(cmd.Flags().GetString("branch-prefix"))
 		amount := Must(cmd.Flags().GetInt("amount"))
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
+		force := Must(cmd.Flags().GetBool("force"))
 
 		client := getClient()
 
@@ -64,7 +66,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 		deleteGen.Run(func(input chan string, output chan stress.Result) {
 			for branch := range input {
 				start := time.Now()
-				_, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, branch)
+				_, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, branch, &apigen.DeleteBranchParams{Force: swag.Bool(force)})
 				output <- stress.Result{
 					Error: err,
 					Took:  time.Since(start),
@@ -114,4 +116,5 @@ func init() {
 	abuseCreateBranchesCmd.Flags().Bool("clean-only", false, "only clean up past runs")
 	abuseCreateBranchesCmd.Flags().Int("amount", abuseDefaultAmount, "amount of things to do")
 	abuseCreateBranchesCmd.Flags().Int("parallelism", abuseDefaultParallelism, "amount of things to do in parallel")
+	abuseCreateBranchesCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
 }

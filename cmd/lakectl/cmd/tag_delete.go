@@ -3,7 +3,9 @@ package cmd
 import (
 	"net/http"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var tagDeleteCmd = &cobra.Command{
@@ -20,12 +22,14 @@ var tagDeleteCmd = &cobra.Command{
 		u := MustParseRefURI("tag URI", args[0])
 
 		ctx := cmd.Context()
-		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref)
+		force := Must(cmd.Flags().GetBool("force"))
+		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref, &apigen.DeleteTagParams{Force: swag.Bool(force)})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
 //nolint:gochecknoinits
 func init() {
+	tagDeleteCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
 	tagCmd.AddCommand(tagDeleteCmd)
 }
