@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/go-openapi/swag"
 	"net/http"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
