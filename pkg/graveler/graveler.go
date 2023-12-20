@@ -1568,7 +1568,6 @@ func (g *Graveler) GetBranchProtectionRules(ctx context.Context, repository *Rep
 }
 
 func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repository *RepositoryRecord, rules *BranchProtectionRules, lastKnownChecksum *string) error {
-
 	return g.protectedBranchesManager.SetRules(ctx, repository, rules, lastKnownChecksum)
 }
 
