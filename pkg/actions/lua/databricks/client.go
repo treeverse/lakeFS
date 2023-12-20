@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/Shopify/go-lua"
@@ -146,13 +145,8 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 func (client *Client) CreateSchema(l *lua.State) int {
 	ref := lua.CheckString(l, 1)
 	catalogName := lua.CheckString(l, 2)
-	getIfExists := lua.OptString(l, 3, "false")
-	getIfExistsB, err := strconv.ParseBool(getIfExists)
-	if err != nil {
-		lua.Errorf(l, "a non-boolean value was supplied as 'get_schema_if_exists'")
-		panic("unreachable")
-	}
-	schemaInfo, err := client.createSchema(catalogName, ref, getIfExistsB)
+	getIfExists := l.ToBoolean(3)
+	schemaInfo, err := client.createSchema(catalogName, ref, getIfExists)
 	if err != nil {
 		lua.Errorf(l, err.Error())
 		panic("unreachable")
