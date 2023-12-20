@@ -46,13 +46,3 @@ html_theme_options = {
 # https://www.sphinx-doc.org/en/master/usage/extensions/todo.html#configuration
 
 todo_include_todos = True
-
-
-def skip(app, what, name, obj, would_skip, options):
-    if name in ('__init__',):
-        return False
-    return would_skip
-
-
-def setup(app):
-    app.connect('autodoc-skip-member', skip)

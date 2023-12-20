@@ -22,9 +22,9 @@ class Reference(_BaseLakeFSObject):
     _id: str
     _commit: Optional[Commit] = None
 
-    def __init__(self, repo_id: str, ref_id: str, client: Optional[Client] = None) -> None:
-        self._repo_id = repo_id
-        self._id = ref_id
+    def __init__(self, repository_id: str, reference_id: str, client: Optional[Client] = None) -> None:
+        self._repo_id = repository_id
+        self._id = reference_id
         super().__init__(client)
 
     @property

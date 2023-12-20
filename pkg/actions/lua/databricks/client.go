@@ -119,6 +119,7 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 	warehouseID := lua.CheckString(l, 3)
 	catalogName := lua.CheckString(l, 4)
 	schemaName := lua.CheckString(l, 5)
+
 	status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location)
 	if err != nil {
 		if alreadyExists(err) {
