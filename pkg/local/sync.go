@@ -71,9 +71,22 @@ func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, fla
 	}
 }
 
+type SyncOptions struct {
+	// Force set to true will ignore branch protection rule or repository read-only protection.
+	Force bool
+}
+
+type SyncOptionsFunc func(opts *SyncOptions)
+
+func WithForce(v bool) SyncOptionsFunc {
+	return func(opts *SyncOptions) {
+		opts.Force = v
+	}
+}
+
 // Sync - sync changes between remote and local directory given the Changes channel.
 // For each change, will apply download, upload or delete according to the change type and change source
-func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *Change) error {
+func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *Change, opts ...SyncOptionsFunc) error {
 	s.progressBar.Start()
 	defer s.progressBar.Stop()
 
@@ -81,7 +94,7 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	for i := 0; i < s.flags.Parallelism; i++ {
 		wg.Go(func() error {
 			for change := range changeSet {
-				if err := s.apply(ctx, rootPath, remote, change); err != nil {
+				if err := s.apply(ctx, rootPath, remote, change, opts...); err != nil {
 					return err
 				}
 			}
@@ -95,7 +108,7 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	return err
 }
 
-func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
+func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change, opts ...SyncOptionsFunc) error {
 	switch change.Type {
 	case ChangeTypeAdded, ChangeTypeModified:
 		switch change.Source {
@@ -106,7 +119,7 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 			}
 		case ChangeSourceLocal:
 			// we wrote something, upload it!
-			if err := s.upload(ctx, rootPath, remote, change.Path); err != nil {
+			if err := s.upload(ctx, rootPath, remote, change.Path, opts...); err != nil {
 				return fmt.Errorf("upload %s failed: %w", change.Path, err)
 			}
 		default:
@@ -120,7 +133,7 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 			}
 		} else {
 			// we deleted something, delete it on remote!
-			if err := s.deleteRemote(ctx, remote, change); err != nil {
+			if err := s.deleteRemote(ctx, remote, change, opts...); err != nil {
 				return fmt.Errorf("delete remote %s failed: %w", change.Path, err)
 			}
 		}
@@ -237,7 +250,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	return err
 }
 
-func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.URI, path string) error {
+func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.URI, path string, opts ...SyncOptionsFunc) error {
 	source := filepath.Join(rootPath, path)
 	if err := fileutil.VerifySafeFilename(source); err != nil {
 		return err
@@ -279,9 +292,13 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
 		return err
 	}
+	options := &SyncOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
 	// not pre-signed
 	_, err = helpers.ClientUpload(
-		ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
+		ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader, options.Force)
 	return err
 }
 
@@ -305,7 +322,7 @@ func (s *SyncManager) deleteLocal(rootPath string, change *Change) (err error) {
 	return nil
 }
 
-func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change *Change) (err error) {
+func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change *Change, opts ...SyncOptionsFunc) (err error) {
 	b := s.progressBar.AddSpinner("delete remote path: " + change.Path)
 	defer func() {
 		if err != nil {
@@ -316,8 +333,13 @@ func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change 
 		}
 	}()
 	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path))
+	options := &SyncOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
 	resp, err := s.client.DeleteObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.DeleteObjectParams{
-		Path: dest,
+		Path:  dest,
+		Force: swag.Bool(options.Force),
 	})
 	if err != nil {
 		return

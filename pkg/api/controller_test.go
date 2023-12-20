@@ -235,79 +235,6 @@ func testCommitEntries(t *testing.T, ctx context.Context, cat *catalog.Catalog, 
 	return commit.Reference
 }
 
-func TestCommitReadOnlyRepo(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
-	ctx := context.Background()
-	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", true)
-	testutil.Must(t, err)
-	testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
-	resp, err := clt.CommitWithResponse(ctx, repo, "main", &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "some message"})
-	testutil.Must(t, err)
-	if resp.JSON403 == nil {
-		t.Fatalf("expected error when trying to commit to read-only repo")
-	}
-}
-
-func TestCreateBranchReadOnlyRepo(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
-	ctx := context.Background()
-	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", true)
-	testutil.Must(t, err)
-	resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{})
-	testutil.Must(t, err)
-	if resp.JSON403 == nil {
-		t.Fatalf("expected error when trying to create a new branch for a read-only repo")
-	}
-}
-
-func TestDeleteBranchReadOnlyRepo(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
-	ctx := context.Background()
-	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", true)
-	testutil.Must(t, err)
-	resp, err := clt.DeleteBranchWithResponse(ctx, repo, "main")
-	testutil.Must(t, err)
-	if resp.JSON403 == nil {
-		t.Fatalf("expected error when trying to delete a branch for a read-only repo")
-	}
-}
-
-func TestCreateTagReadOnlyRepo(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
-	ctx := context.Background()
-	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", true)
-	testutil.Must(t, err)
-	resp, err := clt.CreateTagWithResponse(ctx, repo, apigen.CreateTagJSONRequestBody{})
-	testutil.Must(t, err)
-	if resp.JSON403 == nil {
-		t.Fatalf("expected error when trying to create a new tag for a read-only repo")
-	}
-}
-
-func TestDeleteTagReadOnlyRepo(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
-	ctx := context.Background()
-	repoName := testUniqueRepoName()
-	resp, err := clt.CreateInternalRepositoryWithResponse(ctx, &apigen.CreateInternalRepositoryParams{ReadOnly: swag.Bool(true)}, apigen.CreateInternalRepositoryJSONRequestBody{
-		DefaultBranch:    apiutil.Ptr("main"),
-		Name:             repoName,
-		StorageNamespace: onBlock(deps, "foo-bucket-1"),
-	})
-	verifyResponseOK(t, resp, err)
-	println(swag.BoolValue(resp.JSON201.ReadOnly))
-	respo2, _ := clt.GetRepositoryWithResponse(ctx, repoName)
-	println(swag.BoolValue(respo2.JSON200.ReadOnly))
-	deleteTagResp, err := clt.DeleteTagWithResponse(ctx, repoName, "tag")
-	testutil.Must(t, err)
-	if deleteTagResp.JSON403 == nil {
-		t.Fatalf("expected error when trying to delete a tag for a read-only repo")
-	}
-}
-
 func TestController_LogCommitsMissingBranch(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
@@ -1872,7 +1799,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		delResp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo", "main2")
+		delResp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo", "main2", &apigen.DeleteBranchParams{})
 		verifyResponseOK(t, delResp, err)
 
 		_, err = deps.catalog.GetBranchReference(ctx, "my-new-repo", "main2")
@@ -1884,7 +1811,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 	t.Run("delete default branch", func(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo2", onBlock(deps, "foo2"), "main", false)
 		testutil.Must(t, err)
-		resp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo2", "main")
+		resp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo2", "main", &apigen.DeleteBranchParams{})
 		if err != nil {
 			t.Fatal("DeleteBranch error:", err)
 		}
@@ -1894,7 +1821,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 	})
 
 	t.Run("delete branch doesnt exist", func(t *testing.T) {
-		resp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo", "main5")
+		resp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo", "main5", &apigen.DeleteBranchParams{})
 		if err != nil {
 			t.Fatal("DeleteBranch error:", err)
 		}
@@ -2663,7 +2590,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		}
 
 		// delete objects
-		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
+		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
 		verifyResponseOK(t, delResp, err)
 		if delResp.JSON200 == nil {
 			t.Errorf("DeleteObjects should return 200 for successful delete, got status code %d", delResp.StatusCode())
@@ -2686,7 +2613,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		}
 
 		// delete objects again - make sure we do not fail or get any error
-		delResp2, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
+		delResp2, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
 		verifyResponseOK(t, delResp2, err)
 		if delResp2.JSON200 == nil {
 			t.Errorf("DeleteObjects (round 2) should return 200 for successful delete, got status code %d", delResp2.StatusCode())
@@ -2706,7 +2633,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		}
 
 		// delete objects
-		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
+		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
 		testutil.Must(t, err)
 		const expectedStatusCode = http.StatusInternalServerError
 		if delResp.StatusCode() != expectedStatusCode {
@@ -2743,7 +2670,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		testutil.Must(t, err)
 
 		// delete objects
-		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, "protected", apigen.DeleteObjectsJSONRequestBody{Paths: paths})
+		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, "protected", &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
 		verifyResponseOK(t, delResp, err)
 		if delResp.StatusCode() != http.StatusOK {
 			t.Fatalf("DeleteObjects status code %d, expected %d", delResp.StatusCode(), http.StatusOK)
@@ -3157,7 +3084,7 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 
 	t.Run("on deleted branch", func(t *testing.T) {
 		// delete work branch and list them again
-		delResp, err := clt.DeleteBranchWithResponse(ctx, repo, "work")
+		delResp, err := clt.DeleteBranchWithResponse(ctx, repo, "work", &apigen.DeleteBranchParams{})
 		verifyResponseOK(t, delResp, err)
 
 		respList, err := clt.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{

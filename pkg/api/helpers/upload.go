@@ -23,7 +23,7 @@ import (
 )
 
 // ClientUpload uploads contents as a file via lakeFS
-func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*apigen.ObjectStats, error) {
+func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, force bool) (*apigen.ObjectStats, error) {
 	pr, pw := io.Pipe()
 	defer func() {
 		_ = pr.Close()
@@ -63,7 +63,8 @@ func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterfac
 	}()
 
 	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repoID, branchID, &apigen.UploadObjectParams{
-		Path: objPath,
+		Path:  objPath,
+		Force: swag.Bool(force),
 	}, mpContentType, pr, func(ctx context.Context, req *http.Request) error {
 		var metaKey string
 		for k, v := range metadata {
