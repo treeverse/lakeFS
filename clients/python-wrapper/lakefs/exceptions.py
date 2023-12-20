@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from typing import Optional, Callable
 
 import lakefs_sdk.exceptions
-from urllib3 import BaseHTTPResponse
+from urllib3 import HTTPResponse
 
 
 class LakeFSException(Exception):
@@ -128,7 +128,7 @@ def api_exception_handler(custom_handler: Optional[Callable[[LakeFSException], L
             raise lakefs_ex from e
 
 
-def handle_http_error(resp: BaseHTTPResponse) -> None:
+def handle_http_error(resp: HTTPResponse) -> None:
     """
     Handles http response and raises the appropriate lakeFS exception if needed
 
