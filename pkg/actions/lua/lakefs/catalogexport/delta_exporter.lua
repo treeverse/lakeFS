@@ -1,16 +1,16 @@
 local lakefs = require("lakefs")
-local formats = require("formats")
 local pathlib = require("path")
 local json = require("encoding/json")
 local utils = require("lakefs/catalogexport/internal")
+local extractor = require("lakefs/catalogexport/table_extractor")
 
 --[[
     delta_log_entry_key_generator returns a closure that returns a Delta Lake version key according to the Delta Lake
     protocol: https://github.com/delta-io/delta/blob/master/PROTOCOL.md#delta-log-entries
     Example:
         local gen = delta_log_entry_key_generator()
+        gen() -- 000000000000000000.json
         gen() -- 000000000000000001.json
-        gen() -- 000000000000000002.json
 ]]
 local function delta_log_entry_key_generator()
     local current = 0
@@ -41,7 +41,7 @@ end
         - get_table: function(repo, ref, prefix)
 
 ]]
-local function export_delta_log(action, table_paths, write_object, delta)
+local function export_delta_log(action, table_paths, write_object, delta_client, table_descriptors_path)
     local repo = action.repository_id
     local commit_id = action.commit_id
 
@@ -51,7 +51,7 @@ local function export_delta_log(action, table_paths, write_object, delta)
     end
     local response = {}
     for _, path in ipairs(table_paths) do
-        local t = delta.get_table(repo, commit_id, path)
+        local t = delta_client.get_table(repo, commit_id, path)
         local sortedKeys = utils.sortedKeys(t)
         --[[ Pairs of (version, map of json content):
                 (1,
@@ -100,9 +100,14 @@ local function export_delta_log(action, table_paths, write_object, delta)
         end
 
         -- Get the table delta log physical location
-        local t_name = pathlib.parse(path)["base_name"]
+        local table_src_path = pathlib.join("/", table_descriptors_path, path .. ".yaml")
+        local table_descriptor = extractor.get_table_descriptor(lakefs, repo, commit_id, table_src_path)
+        local table_name = table_descriptor.name
+        if not table_name then
+            error("table name is required to proceed with Delta catalog export")
+        end
         local table_export_prefix = utils.get_storage_uri_prefix(ns, commit_id, action)
-        local table_physical_path = pathlib.join("/", table_export_prefix, t_name)
+        local table_physical_path = pathlib.join("/", table_export_prefix, table_name)
         local table_log_physical_path = pathlib.join("/", table_physical_path, "_delta_log")
 
         -- Upload the log to this physical_address
@@ -126,7 +131,7 @@ local function export_delta_log(action, table_paths, write_object, delta)
             local version_key = storage_props.key .. "/" .. entry_version
             write_object(storage_props.bucket, version_key, table_entry_string)
         end
-        response[t_name] = table_physical_path
+        response[path] = table_physical_path
     end
     return response
 end

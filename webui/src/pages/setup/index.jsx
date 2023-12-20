@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect} from "react";
 import {useState} from "react";
-import {API_ENDPOINT, setup, SETUP_STATE_NOT_INITIALIZED, SETUP_STATE_INITIALIZED} from "../../lib/api";
+import {API_ENDPOINT, setup, SETUP_STATE_INITIALIZED} from "../../lib/api";
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {SetupComplete} from "./setupComplete";
@@ -27,7 +27,7 @@ const SetupContents = () => {
     }, [error, response]);
 
     const onSubmitUserConfiguration = useCallback(async (adminUser, userEmail, checked) => {
-        if (currentStep !== SETUP_STATE_NOT_INITIALIZED && !adminUser) {
+        if (!adminUser) {
             setSetupError("Please enter your admin username.");
             return;
         }

@@ -40,6 +40,7 @@ _WRITER_BUFFER_SIZE = 32 * 1024 * 1024
 
 ReadModes = Literal['r', 'rb']
 WriteModes = Literal['x', 'xb', 'w', 'wb']
+AllModes = Union[ReadModes, WriteModes]
 
 
 class LakeFSIOBase(_BaseLakeFSObject, IO):
@@ -47,12 +48,12 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
     Base class for the lakeFS Reader and Writer classes
     """
     _obj: StoredObject
-    _mode: ReadModes
+    _mode: AllModes
     _pos: int
     _pre_sign: Optional[bool] = None
     _is_closed: bool = False
 
-    def __init__(self, obj: StoredObject, mode: Union[ReadModes, WriteModes], pre_sign: Optional[bool] = None,
+    def __init__(self, obj: StoredObject, mode: AllModes, pre_sign: Optional[bool] = None,
                  client: Optional[Client] = None) -> None:
         self._obj = obj
         self._mode = mode
@@ -235,13 +236,16 @@ class ObjectReader(LakeFSIOBase):
             os.SEEK_SET or 0 (absolute file positioning);
             other values are os.SEEK_CUR or 1 (seek relative to the current position) and os.SEEK_END or 2
             (seek relative to the file’s end)
-            os.SEEK_END is not supported
         :raise OSError: if calculated new position is negative
+        :raise io.UnsupportedOperation: If whence value is unsupported
         """
         if whence == os.SEEK_SET:
             pos = offset
         elif whence == os.SEEK_CUR:
-            pos = offset - whence
+            pos = self._pos + offset
+        elif whence == os.SEEK_END:
+            size = self._obj.stat().size_bytes  # Seek end requires us to know the size of the file
+            pos = size + offset
         else:
             raise io.UnsupportedOperation(f"whence={whence} is not supported")
 
@@ -534,9 +538,9 @@ class StoredObject(_BaseLakeFSObject):
     _path: str
     _stats: Optional[ObjectInfo] = None
 
-    def __init__(self, repository: str, reference: str, path: str, client: Optional[Client] = None):
-        self._repo_id = repository
-        self._ref_id = reference
+    def __init__(self, repository_id: str, reference_id: str, path: str, client: Optional[Client] = None):
+        self._repo_id = repository_id
+        self._ref_id = reference_id
         self._path = path
         super().__init__(client)
 
@@ -640,7 +644,7 @@ class StoredObject(_BaseLakeFSObject):
                                                             dest_path=destination_path,
                                                             object_copy_creation=object_copy_creation)
 
-        return WriteableObject(repository=self._repo_id, reference=destination_branch_id, path=destination_path,
+        return WriteableObject(repository_id=self._repo_id, reference_id=destination_branch_id, path=destination_path,
                                client=self._client)
 
 
@@ -651,9 +655,9 @@ class WriteableObject(StoredObject):
     This Object is instantiated and returned upon invoking writer() on Branch reference type.
     """
 
-    def __init__(self, repository: str, reference: str, path: str,
+    def __init__(self, repository_id: str, reference_id: str, path: str,
                  client: Optional[Client] = None) -> None:
-        super().__init__(repository, reference, path, client=client)
+        super().__init__(repository_id, reference_id, path, client=client)
 
     def __repr__(self):
         return f'WriteableObject(repository="{self.repo}", reference="{self.ref}", path="{self.path}")'

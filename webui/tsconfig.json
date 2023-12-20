@@ -6,13 +6,14 @@
         "checkJs": false,
         "target": "ESNext",
         "isolatedModules": true,
-        "moduleResolution": "bundle",
+        "moduleResolution": "bundler",
         "allowSyntheticDefaultImports": true,
         "jsx": "preserve",
         "noEmit": true,
         "noImplicitAny": true,
         "strictNullChecks": true,
-        "alwaysStrict": true
+        "alwaysStrict": true,
+        "types": ["node"]
     },
-    "include": ["./src/**/*"]
+    "include": ["./src/**/*", "./playwright.config.ts", "./test/e2e/**/*.ts"],
 }

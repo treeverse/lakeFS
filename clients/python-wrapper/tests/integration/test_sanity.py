@@ -104,7 +104,7 @@ def test_object_sanity(setup_repo):
     data = b"test_data"
     path = "test_obj"
     metadata = {"foo": "bar"}
-    obj = lakefs.WriteableObject(repository=repo.properties.id, reference="main", path=path, client=clt).upload(
+    obj = lakefs.WriteableObject(repository_id=repo.properties.id, reference_id="main", path=path, client=clt).upload(
         data=data, metadata=metadata)
     with obj.reader() as fd:
         assert fd.read() == data

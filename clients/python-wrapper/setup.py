@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 NAME = "lakefs"
-VERSION = "0.1.0"
+VERSION = "0.1.2"
 # To install the library, run the following
 #
 # python setup.py install
@@ -13,8 +13,9 @@ PYTHON_REQUIRES = ">=3.9"
 REQUIRES = [
     "pydantic >= 1.10.5, < 2",
     "setuptools == 68.2.2",
-    "lakefs-sdk ~= 1.1.0",
+    "lakefs-sdk ~= 1.0",
     "pyyaml ~= 6.0.1",
+    "urllib3 >= 1.26"
 ]
 
 with open('README.md') as f:
@@ -30,7 +31,7 @@ setup(
     keywords=["OpenAPI", "OpenAPI-Generator", "lakeFS API", "Python Wrapper"],
     python_requires=">=3.9",
     install_requires=REQUIRES,
-    tests_require=["pytest ~= 7.4.3", "pytest-datafiles ~= 3.0.0"],
+    tests_require=["pytest ~= 7.4.3", "pytest-datafiles ~= 3.0.0", "pandas ~= 2.1.4", "pyarrow ~= 14.0.1"],
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     license="Apache 2.0",
