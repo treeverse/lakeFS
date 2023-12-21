@@ -43,7 +43,7 @@ class Branch(Reference):
 
             branch = lakefs.repository("<repository_name>").branch("<branch_name>").create("<source_reference>")
 
-        :param source_reference: The reference to create the branch from (reference ID or object)
+        :param source_reference: The reference to create the branch from (reference ID, Reference object or Commit object)
         :param exist_ok: If False will throw an exception if a branch by this name already exists. Otherwise,
             return the existing branch without creating a new one
         :return: The lakeFS SDK object representing the branch
