@@ -1933,6 +1933,8 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 	for _, opt := range opts {
 		opt(options)
 	}
+	fmt.Printf("options: %+v, readonly: %t\n", *options, repository.ReadOnly)
+
 	if !options.Force {
 		if repository.ReadOnly {
 			return "", ErrReadOnlyRepository

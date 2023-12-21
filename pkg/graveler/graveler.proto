@@ -17,6 +17,7 @@ message RepositoryData {
   google.protobuf.Timestamp creation_date = 4;
   RepositoryState state = 5;
   string instance_uid = 6;
+  bool read_only = 7;
 }
 
 message BranchData {

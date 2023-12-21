@@ -951,6 +951,20 @@ func TestController_CommitHandler(t *testing.T) {
 			t.Fatalf("Commit to protected branch should be forbidden (403), got %s", resp.Status())
 		}
 	})
+	t.Run("read only repo", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", true)
+		testutil.MustDo(t, "create repository", err)
+		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil})
+		testutil.MustDo(t, "commit to protected branch", err)
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+			Message: "committed to protected branch",
+		})
+		testutil.Must(t, err)
+		if resp.JSON403 == nil {
+			t.Fatalf("Commit to read-only repository should be forbidden (403), got %s", resp.Status())
+		}
+	})
 }
 
 func TestController_CreateRepositoryHandler(t *testing.T) {

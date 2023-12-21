@@ -3,6 +3,8 @@ package esti
 import (
 	"context"
 	"fmt"
+	"github.com/go-openapi/swag"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"net/http"
 	"sync"
 	"testing"
@@ -155,4 +157,20 @@ func TestCommitWithTombstone(t *testing.T) {
 	require.NoError(t, err, "failed to commit changes")
 	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
 		"failed to commit changes repo %s branch %s", repo, mainBranch)
+}
+
+func TestCommitReadOnlyRepo(t *testing.T) {
+	ctx := context.Background()
+	repoName := makeRepositoryName(t.Name())
+	storageNamespace := generateUniqueStorageNamespace(repoName)
+	resp, _ := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    apiutil.Ptr(mainBranch),
+		Name:             repoName,
+		StorageNamespace: storageNamespace,
+		ReadOnly:         swag.Bool(true),
+	})
+	if resp.StatusCode() != http.StatusForbidden {
+		t.Fatalf("expected 403 Forbidden for committing to read-only repo, got %d instead", resp.StatusCode())
+	}
+
 }

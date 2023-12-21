@@ -169,6 +169,31 @@ func TestLakectlCommit(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" show commit lakefs://"+repoName+"/"+lastCommitID+" --show-meta-range-id", false, "lakectl_show_commit_metarange", vars)
 }
 
+func TestLakectlReadOnlyRepo(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_404", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage+"-r", false, "lakectl_repo_create", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_initial", vars)
+
+	filePath := "ro_1k.1"
+	vars["FILE_PATH"] = filePath
+	RunCmdAndVerifyFailure(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath, false, "lakectl_fs_upload", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath+"-f", false, "lakectl_fs_upload", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch, false, "lakectl_commit_no_msg", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+"-f", false, "lakectl_commit_no_msg", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" branch create lakefs://"+repoName+"/test --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create_invalid", vars)
+	RunCmdAndVerifySuccess(t, Lakectl()+" branch create lakefs://"+repoName+"/test --source lakefs://"+repoName+"/"+mainBranch+" -f", false, "lakectl_branch_create", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" tag create lakefs://"+repoName+"/"+vars["TAG"]+" lakefs://"+repoName+"/"+mainBranch+"~1", false, "lakectl_tag_create", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag create lakefs://"+repoName+"/"+vars["TAG"]+" lakefs://"+repoName+"/"+mainBranch+"~1 -f", false, "lakectl_tag_create", vars)
+
+}
+
 func TestLakectlBranchAndTagValidation(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
