@@ -3,21 +3,25 @@ package io.treeverse.clients
 import io.treeverse.clients.LakeFSContext._
 import io.treeverse.lakefs.catalog.Entry
 import org.apache.commons.lang3.StringUtils
-import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.Writable
 import org.apache.hadoop.mapred.SplitLocationInfo
 import org.apache.hadoop.mapreduce._
 import org.apache.spark.TaskContext
-import org.slf4j.{Logger, LoggerFactory}
-import scalapb.{GeneratedMessage, GeneratedMessageCompanion}
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import scalapb.GeneratedMessage
+import scalapb.GeneratedMessageCompanion
 
-import java.io.{DataInput, DataOutput, File}
+import java.io.DataInput
+import java.io.DataOutput
+import java.io.File
 import java.net.URI
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks._
-import _root_.java.net.URL
-import org.apache.hadoop.conf.Configuration
 
 object GravelerSplit {
   val logger: Logger = LoggerFactory.getLogger(getClass.toString)
