@@ -38,7 +38,7 @@ def test_repository_sanity(storage_namespace, setup_repo):
         repo.delete()
 
 
-def test_branch_sanity(storage_namespace, setup_repo):
+def test_branch_sanity(setup_repo):
     _, repo = setup_repo
     branch_name = "test_branch"
 
@@ -72,16 +72,17 @@ def test_tag_sanity(setup_repo):
     with expect_exception_context(NotFoundException):
         tag.get_commit()
 
-    commit = repo.commit("main")
-    res = tag.create(commit.id)
+    branch = repo.branch("main")
+    commit = branch.get_commit()
+    res = tag.create(commit)
     assert res == tag
     assert tag.id == tag_name
-    assert tag.get_commit().metadata == commit.get_commit().metadata
-    assert tag.get_commit().message == commit.get_commit().message
+    assert tag.get_commit().metadata == commit.metadata
+    assert tag.get_commit().message == commit.message
 
     # Create again
     with expect_exception_context(ConflictException):
-        tag.create(tag_name)
+        tag.create(commit.id)
 
     # Create again with exist_ok
     tag2 = tag.create(tag_name, True)
@@ -97,6 +98,9 @@ def test_tag_sanity(setup_repo):
     # Delete twice
     with expect_exception_context(NotFoundException):
         tag.delete()
+
+    # Create again
+    tag.create(commit.id)
 
 
 def test_object_sanity(setup_repo):
