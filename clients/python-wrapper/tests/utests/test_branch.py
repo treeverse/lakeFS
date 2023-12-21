@@ -69,7 +69,7 @@ def test_branch_head(monkeypatch):
             return lakefs_sdk.Ref(commit_id=commit_id, id=branch.id)
 
         monkeypatch.setattr(branch._client.sdk_client.branches_api, "get_branch", monkey_get_branch)
-        res = branch.head()
+        res = branch.head
         assert res.id == commit_id
         assert res.repo_id == branch.repo_id
 
