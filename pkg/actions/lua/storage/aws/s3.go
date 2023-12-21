@@ -99,7 +99,7 @@ func deleteRecursive(c *S3Client) lua.Function {
 			// list objects to delete and delete them
 			listObjects, err := client.ListObjectsV2(c.ctx, input)
 			if err != nil {
-				lua.Errorf(l, err.Error())
+				lua.Errorf(l, "%s", err.Error())
 				panic("unreachable")
 			}
 
@@ -127,7 +127,7 @@ func deleteRecursive(c *S3Client) lua.Function {
 			input.ContinuationToken = listObjects.NextContinuationToken
 		}
 		if errs != nil {
-			lua.Errorf(l, errs.Error())
+			lua.Errorf(l, "%s", errs.Error())
 			panic("unreachable")
 		}
 		return 0
@@ -153,12 +153,12 @@ func getObject(c *S3Client) lua.Function {
 				l.PushBoolean(false) // exists
 				return 2
 			}
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 		l.PushString(string(data))
@@ -177,7 +177,7 @@ func putObject(c *S3Client) lua.Function {
 			Key:    aws.String(lua.CheckString(l, 2)),
 		})
 		if err != nil {
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 		return 0
@@ -192,7 +192,7 @@ func deleteObject(c *S3Client) lua.Function {
 			Key:    aws.String(lua.CheckString(l, 2)),
 		})
 		if err != nil {
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 		return 0
@@ -223,7 +223,7 @@ func listObjects(c *S3Client) lua.Function {
 			Prefix:            prefix,
 		})
 		if err != nil {
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 		results := make([]map[string]interface{}, 0)

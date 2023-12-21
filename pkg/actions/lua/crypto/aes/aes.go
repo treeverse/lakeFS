@@ -30,7 +30,7 @@ func encryptCBC(l *lua.State) int {
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 
@@ -39,7 +39,7 @@ func encryptCBC(l *lua.State) int {
 	ciphertext := make([]byte, aes.BlockSize+len(content))
 	iv := ciphertext[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 
@@ -57,7 +57,7 @@ func decryptCBC(l *lua.State) int {
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 
