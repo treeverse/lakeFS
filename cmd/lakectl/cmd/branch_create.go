@@ -44,7 +44,7 @@ func init() {
 	branchCreateCmd.Flags().StringP("source", "s", "", "source branch uri")
 	_ = branchCreateCmd.MarkFlagRequired("source")
 	_ = branchCreateCmd.RegisterFlagCompletionFunc("source", ValidArgsRepository)
-	branchCreateCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
+	branchCreateCmd.Flags().Bool("force", false, "ignore read-only protection on the repository")
 
 	branchCmd.AddCommand(branchCreateCmd)
 }

@@ -67,6 +67,6 @@ var tagCreateCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	tagCreateCmd.Flags().BoolP("override", "o", false, "override the tag if it exists")
-	tagCreateCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
+	tagCreateCmd.Flags().Bool("force", false, "ignore read-only protection on the repository")
 	tagCmd.AddCommand(tagCreateCmd)
 }

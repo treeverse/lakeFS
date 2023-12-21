@@ -63,5 +63,5 @@ func init() {
 	rootCmd.AddCommand(cherryPick)
 
 	cherryPick.Flags().IntP(ParentNumberFlagName, "m", 0, "the parent number (starting from 1) of the cherry-picked commit. The cherry-pick will apply the change relative to the specified parent.")
-	cherryPick.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
+	cherryPick.Flags().Bool("force", false, "ignore read-only protection on the repository")
 }

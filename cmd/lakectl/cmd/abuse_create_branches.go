@@ -116,5 +116,5 @@ func init() {
 	abuseCreateBranchesCmd.Flags().Bool("clean-only", false, "only clean up past runs")
 	abuseCreateBranchesCmd.Flags().Int("amount", abuseDefaultAmount, "amount of things to do")
 	abuseCreateBranchesCmd.Flags().Int("parallelism", abuseDefaultParallelism, "amount of things to do in parallel")
-	abuseCreateBranchesCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
+	abuseCreateBranchesCmd.Flags().Bool("force", false, "ignore read-only protection on the repository")
 }

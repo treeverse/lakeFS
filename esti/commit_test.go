@@ -6,6 +6,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 
@@ -161,15 +162,19 @@ func TestCommitWithTombstone(t *testing.T) {
 
 func TestCommitReadOnlyRepo(t *testing.T) {
 	ctx := context.Background()
-	repoName := makeRepositoryName(t.Name())
-	storageNamespace := generateUniqueStorageNamespace(repoName)
+	name := strings.ToLower(t.Name())
+	storageNamespace := generateUniqueStorageNamespace(name)
+	repoName := makeRepositoryName(name)
 	resp, _ := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 		DefaultBranch:    apiutil.Ptr(mainBranch),
 		Name:             repoName,
 		StorageNamespace: storageNamespace,
 		ReadOnly:         swag.Bool(true),
 	})
-	if resp.StatusCode() != http.StatusForbidden {
+	commitResp, _ := client.CommitWithResponse(ctx, repoName, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+		Message: "singleCommit",
+	})
+	if commitResp.StatusCode() != http.StatusForbidden {
 		t.Fatalf("expected 403 Forbidden for committing to read-only repo, got %d instead", resp.StatusCode())
 	}
 

@@ -178,7 +178,7 @@ func TestLakectlReadOnlyRepo(t *testing.T) {
 		"BRANCH":  mainBranch,
 	}
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_404", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage+"-r", false, "lakectl_repo_create", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage+" -r", false, "lakectl_repo_create", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_initial", vars)
 
 	filePath := "ro_1k.1"
