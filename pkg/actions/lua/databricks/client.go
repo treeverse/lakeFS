@@ -18,9 +18,7 @@ import (
 // identifierRegex https://docs.databricks.com/en/sql/language-manual/sql-ref-identifiers.html
 var identifierRegex = regexp.MustCompile(`\W`)
 
-var (
-	ErrInvalidTableName = errors.New("invalid table name")
-)
+var ErrInvalidTableName = errors.New("invalid table name")
 
 type Client struct {
 	workspaceClient *databricks.WorkspaceClient
@@ -124,16 +122,16 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 		if alreadyExists(err) {
 			err = client.deleteTable(catalogName, schemaName, tableName)
 			if err != nil {
-				lua.Errorf(l, err.Error())
+				lua.Errorf(l, "%s", err.Error())
 				panic("unreachable")
 			}
 			status, err = client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location)
 			if err != nil {
-				lua.Errorf(l, err.Error())
+				lua.Errorf(l, "%s", err.Error())
 				panic("unreachable")
 			}
 		} else {
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 	}
@@ -147,7 +145,7 @@ func (client *Client) CreateSchema(l *lua.State) int {
 	getIfExists := l.ToBoolean(3)
 	schemaInfo, err := client.createSchema(catalogName, ref, getIfExists)
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 	l.PushString(schemaInfo.Name)
@@ -162,7 +160,7 @@ func newClient(ctx context.Context) lua.Function {
 	return func(l *lua.State) int {
 		workspaceClient, err := newDatabricksClient(l)
 		if err != nil {
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 		client := &Client{workspaceClient: workspaceClient, ctx: ctx}
