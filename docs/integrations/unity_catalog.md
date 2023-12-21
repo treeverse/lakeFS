@@ -11,8 +11,8 @@ redirect_from: /using/unity_catalog.html
 
 ## Overview
 
-Databricks Unity Catalog serves as a centralized data governance platform, enabling efficient management of your data lakes.
-Through the Unity Catalog, you can seamlessly search for and locate data assets across all workspaces via a unified catalog.
+Databricks Unity Catalog serves as a centralized data governance platform for your data lakes.
+Through the Unity Catalog, you can search for and locate data assets across workspaces via a unified catalog.
 Leveraging the external tables feature within Unity Catalog, you can register a Delta Lake table exported from lakeFS and
 access it through the unified catalog. 
 The subsequent step-by-step guide will lead you through the process of configuring a [Lua hook]({% link howto/hooks/lua.md %})
@@ -30,16 +30,18 @@ Before starting, ensure you have the following:
 
 ### Databricks authentication
 
-Given that the hook will ultimately register a table in Unity Catalog, authentication with Databricks is imperative:
+Given that the hook will ultimately register a table in Unity Catalog, authentication with Databricks is imperative.
+Make sure that:
 
-1. The hook will authenticate with Databricks through a [Service Principal](https://docs.databricks.com/en/dev-tools/service-principals.html)
-and an associated [token](https://docs.databricks.com/en/dev-tools/service-principals.html#step-4-generate-a-databricks-personal-access-token-for-the-databricks-service-principal).
-2. The service principal should possess `Service principal: Manager` privileges over itself (Workspace: Admin console -> Service principals -> `<service principal>` -> Permissions -> Grant access (`<service principal>`:
+1. You have a Databricks [Service Principal](https://docs.databricks.com/en/dev-tools/service-principals.html).
+2. The Service principal has [token usage permissions](https://docs.databricks.com/en/dev-tools/service-principals.html#step-3-assign-workspace-level-permissions-to-the-databricks-service-principal),
+   and an associated [token](https://docs.databricks.com/en/dev-tools/service-principals.html#step-4-generate-a-databricks-personal-access-token-for-the-databricks-service-principal)
+   configured.
+3. The service principal has the `Service principal: Manager` privilege over itself (Workspace: Admin console -> Service principals -> `<service principal>` -> Permissions -> Grant access (`<service principal>`:
    `Service principal: Manager`), with `Workspace access` and `Databricks SQL access` checked (Admin console -> Service principals -> `<service principal>` -> Configurations).
-3. Allow the service principal to utilize your SQL warehouse (SQL Warehouses -> `<SQL warehouse>` -> Permissions -> `<service principal>`: `Can use`).
-4. The catalog should grant the service principal permissions to use it and to create and use a schema within it (Catalog -> `<catalog name>` -> Permissions -> Grant -> `<service principal>`: `USE CATALOG`, `USE SCHEMA`, `CREATE SCHEMA`).
-5. Ensure the service principal has permissions to use the configured External Location (Catalog -> External Data -> External Locations -> Create location) for the exported table's bucket,
-with  `CREATE EXTERNAL TABLE` permission granted.
+4. Your SQL warehouse allows the service principal to use it (SQL Warehouses -> `<SQL warehouse>` -> Permissions -> `<service principal>`: `Can use`).
+5. The catalog grants the `USE CATALOG`, `USE SCHEMA`, `CREATE SCHEMA` permissions to the service principal(Catalog -> `<catalog name>` -> Permissions -> Grant -> `<service principal>`: `USE CATALOG`, `USE SCHEMA`, `CREATE SCHEMA`).
+6. You have an _External Location_ configured, and the service principal has the `CREATE EXTERNAL TABLE` permission over it (Catalog -> External Data -> External Locations -> Create location).
 
 ## Guide
 
@@ -60,7 +62,7 @@ Save the following as `famous-people-td.yaml`:
 ---
 name: famous_people
 type: delta
-catalog: my-repo-name
+catalog: my-catalog-name
 path: tables/famous-people
 ```
 
@@ -185,18 +187,18 @@ lakectl commit lakefs://repo/main -m "upload action and run it"
 ```
 
 The action has run and exported the `famous_people` Delta Lake table to the repo's storage namespace, and has register 
-the table as an external table in Unity Catalog under the catalog `my-repo-name`, schema `main` (as the branch's name) and 
-table name `famous_people`: `my-repo-name.main.famous_people`.
+the table as an external table in Unity Catalog under the catalog `my-catalog-name`, schema `main` (as the branch's name) and 
+table name `famous_people`: `my-catalog-name.main.famous_people`.
 
 ![Hooks log result in lakeFS UI]({{ site.baseurl }}/assets/img/unity_export_hook_result_log.png)
 
 ### Databricks Integration
 
 After registering the table in Unity, you can leverage your preferred method to [query the data](https://docs.databricks.com/en/query/index.html) 
-from the exported table under `my-repo-name.main.famous_people`, and view it in the Databricks's Catalog Explorer, or
+from the exported table under `my-catalog-name.main.famous_people`, and view it in the Databricks's Catalog Explorer, or
 retrieve it using the Databricks CLI with the following command: 
 ```bash
-databricks tables get my-repo-name.main.famous_people
+databricks tables get my-catalog-name.main.famous_people
 ```
 
 ![Unity Catalog Explorer view]({{ site.baseurl }}/assets/img/unity_exported_table_columns.png)
