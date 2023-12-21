@@ -11,7 +11,7 @@ from lakefs.client import Client
 from lakefs.object import WriteableObject
 from lakefs.object import StoredObject
 from lakefs.import_manager import ImportManager
-from lakefs.reference import Reference, generate_listing
+from lakefs.reference import Reference, ReferenceType, generate_listing
 from lakefs.models import Change
 from lakefs.exceptions import api_exception_handler, ConflictException, LakeFSException, UnsupportedOperationException
 
@@ -31,7 +31,7 @@ class Branch(Reference):
         self._commit = None
         return super().get_commit()
 
-    def create(self, source_reference_id: str | Reference, exist_ok: bool = False) -> Branch:
+    def create(self, source_reference: ReferenceType, exist_ok: bool = False) -> Branch:
         """
         Create a new branch in lakeFS from this object
 
@@ -43,7 +43,7 @@ class Branch(Reference):
 
             branch = lakefs.repository("<repository_name>").branch("<branch_name>").create("<source_reference>")
 
-        :param source_reference_id: The reference to create the branch from
+        :param source_reference: The reference to create the branch from (reference ID or object)
         :param exist_ok: If False will throw an exception if a branch by this name already exists. Otherwise,
             return the existing branch without creating a new one
         :return: The lakeFS SDK object representing the branch
@@ -58,9 +58,8 @@ class Branch(Reference):
                 return None
             return e
 
-        if isinstance(source_reference_id, Reference):
-            source_reference_id = source_reference_id.id
-        branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=source_reference_id)
+        reference_id = source_reference if isinstance(source_reference, str) else source_reference.id
+        branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=reference_id)
         with api_exception_handler(handle_conflict):
             self._client.sdk_client.branches_api.create_branch(self._repo_id, branch_creation)
         return self
