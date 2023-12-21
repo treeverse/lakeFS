@@ -15,10 +15,12 @@ import java.io.{DataInput, DataOutput, File}
 import java.net.URI
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
+import scala.util.control.Breaks._
 
 object GravelerSplit {
   val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 }
+
 class GravelerSplit(
     var path: Path,
     var rangeID: String,
@@ -134,6 +136,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 }
 
 object LakeFSInputFormat {
+  val DummyFileName = "dummy"
   val logger: Logger = LoggerFactory.getLogger(getClass.toString)
   def read[Proto <: GeneratedMessage with scalapb.Message[Proto]](
       reader: SSTableReader[Proto]
@@ -248,12 +251,18 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
     val it = fs.listFiles(metadataPath, false)
     while (it.hasNext) {
       val file = it.next()
-      splits += new GravelerSplit(
-        file.getPath,
-        file.getPath.getName,
-        file.getLen,
-        false
-      )
+      breakable {
+        if (file.getPath.getName == DummyFileName) {
+          logger.debug(s"Skipping dummy file ${file.getPath}")
+          break
+        }
+        splits += new GravelerSplit(
+          file.getPath,
+          file.getPath.getName,
+          file.getLen,
+          false
+        )
+      }
     }
     logger.debug(s"Returning ${splits.size} splits")
     splits.asJava
