@@ -147,10 +147,10 @@ class LakeFSAllRangesInputFormatSpec
       )
       .thenReturn(
         new MockRemoteIterator(
-          Array("s3a://bucket/data/dummy",
-                "s3a://bucket/data/r1",
-                "s3a://bucket/data/r2",
-                "s3a://bucket/data/r3"
+          Array("s3a://bucket/_lakefs/dummy",
+                "s3a://bucket/_lakefs/r1",
+                "s3a://bucket/_lakefs/r2",
+                "s3a://bucket/_lakefs/r3"
                )
             .map(n => {
               val stat = new FileStatus()
