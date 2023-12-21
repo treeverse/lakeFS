@@ -16,6 +16,8 @@ import java.net.URI
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks._
+import _root_.java.net.URL
+import org.apache.hadoop.conf.Configuration
 
 object GravelerSplit {
   val logger: Logger = LoggerFactory.getLogger(getClass.toString)
@@ -210,6 +212,7 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
 }
 
 class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
+  var fileSystemGetter: (URI, Configuration) => FileSystem = FileSystem.get
   import LakeFSInputFormat._
   override def getSplits(job: JobContext): java.util.List[InputSplit] = {
     val conf = job.getConfiguration
@@ -237,7 +240,7 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
       storageNamespace = apiClient.getStorageNamespace(repoName, StorageClientType.HadoopFS)
     }
     val namespaceURI = URI.create(storageNamespace)
-    val fs = FileSystem.get(namespaceURI, conf)
+    val fs = fileSystemGetter(namespaceURI, conf)
     fs.getStatus(new Path(namespaceURI)) // Will throw an exception if namespace doesn't exist
 
     val metadataURI =
