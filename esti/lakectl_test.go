@@ -185,11 +185,11 @@ func TestLakectlReadOnlyRepo(t *testing.T) {
 	vars["FILE_PATH"] = filePath
 	//upload file
 	RunCmdAndVerifyFailure(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath, false, "link object to backing store: request failed (403 Forbidden)\nError executing command.\n", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath+"-f", false, "lakectl_fs_upload", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath+" -f", false, "lakectl_fs_upload", vars)
 
 	//commit
 	RunCmdAndVerifyFailure(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch, false, "lakectl_commit_no_msg", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+"-f", false, "lakectl_commit_no_msg", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -f", false, "lakectl_commit_no_msg", vars)
 
 	// create branch
 	RunCmdAndVerifyFailure(t, Lakectl()+" branch create lakefs://"+repoName+"/test --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create_invalid", vars)
