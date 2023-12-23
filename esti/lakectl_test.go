@@ -183,7 +183,7 @@ func TestLakectlReadOnlyRepo(t *testing.T) {
 
 	filePath := "ro_1k.1"
 	vars["FILE_PATH"] = filePath
-	RunCmdAndVerifyFailure(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath, false, "lakectl_fs_upload", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath, false, "\"link object to backing store: request failed (403 Forbidden)\\nError executing command.\\n\"", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath+"-f", false, "lakectl_fs_upload", vars)
 	RunCmdAndVerifyFailure(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch, false, "lakectl_commit_no_msg", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+"-f", false, "lakectl_commit_no_msg", vars)

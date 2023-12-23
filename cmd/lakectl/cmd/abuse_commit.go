@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
@@ -24,6 +25,7 @@ var abuseCommitCmd = &cobra.Command{
 		u := MustParseBranchURI("branch URI", args[0])
 		amount := Must(cmd.Flags().GetInt("amount"))
 		gapDuration := Must(cmd.Flags().GetDuration("gap"))
+		force := Must(cmd.Flags().GetBool("force"))
 
 		fmt.Println("Source branch:", u)
 
@@ -51,7 +53,7 @@ var abuseCommitCmd = &cobra.Command{
 			for work := range input {
 				start := time.Now()
 				resp, err := client.CommitWithResponse(ctx, u.Repository, u.Ref, &apigen.CommitParams{},
-					apigen.CommitJSONRequestBody(apigen.CommitCreation{Message: work}))
+					apigen.CommitJSONRequestBody(apigen.CommitCreation{Message: work, Force: swag.Bool(force)}))
 				if err == nil && resp.StatusCode() != http.StatusOK {
 					err = helpers.ResponseAsError(resp)
 				}
@@ -75,6 +77,6 @@ func init() {
 
 	abuseCommitCmd.Flags().Int("amount", abuseDefaultParallelism, "amount of commits to do")
 	abuseCommitCmd.Flags().Duration("gap", defaultGap, "duration to wait between commits")
-
+	abuseCommitCmd.Flags().Bool("force", false, "ignore read-only protection on the repository")
 	abuseCmd.AddCommand(abuseCommitCmd)
 }

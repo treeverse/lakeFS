@@ -3,15 +3,15 @@ package esti
 import (
 	"context"
 	"fmt"
-	"github.com/go-openapi/swag"
-	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"net/http"
 	"strings"
 	"sync"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 func TestCommitSingle(t *testing.T) {
