@@ -30,6 +30,7 @@ var tagDeleteCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
+	AssignAutoConfirmFlag(tagDeleteCmd.Flags())
 	tagDeleteCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
 	tagCmd.AddCommand(tagDeleteCmd)
 }

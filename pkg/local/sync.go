@@ -287,14 +287,15 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		file:   f,
 		reader: b.Reader(f),
 	}
-	if s.flags.Presign {
-		_, err = helpers.ClientUploadPreSign(
-			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
-		return err
-	}
+
 	options := &SyncOptions{}
 	for _, opt := range opts {
 		opt(options)
+	}
+	if s.flags.Presign {
+		_, err = helpers.ClientUploadPreSign(
+			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader, options.Force)
+		return err
 	}
 	// not pre-signed
 	_, err = helpers.ClientUpload(

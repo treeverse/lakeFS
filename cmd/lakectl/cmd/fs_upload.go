@@ -83,7 +83,7 @@ func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sou
 	}()
 	objectPath := apiutil.Value(destURI.Path)
 	if preSign {
-		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
+		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp, force)
 	}
 	return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp, force)
 }
