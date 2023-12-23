@@ -1939,15 +1939,14 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 		if repository.ReadOnly {
 			return "", ErrReadOnlyRepository
 		}
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_COMMIT)
 		if err != nil {
 			return "", err
 		}
 		if isProtected {
-			return "", ErrWriteToProtectedBranch
+			return "", ErrCommitToProtectedBranch
 		}
 	}
-
 	storageNamespace = repository.StorageNamespace
 
 	err := g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {

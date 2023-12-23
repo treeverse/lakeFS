@@ -1274,7 +1274,7 @@ func TestGravelerCommit(t *testing.T) {
 				metadata:  graveler.Metadata{},
 			},
 			values:      values,
-			expectedErr: graveler.ErrWriteToProtectedBranch,
+			expectedErr: graveler.ErrCommitToProtectedBranch,
 		},
 		{
 			name: "valid commit with staging and sealed",

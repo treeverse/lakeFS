@@ -956,14 +956,21 @@ func TestController_CommitHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", true)
 		testutil.MustDo(t, "create repository", err)
 		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil})
+		require.Error(t, err, "read-only repository")
+		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}, graveler.WithForce(true))
 		testutil.MustDo(t, "commit to protected branch", err)
 		resp, err := clt.CommitWithResponse(ctx, repo, "main", &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
-			Message: "committed to protected branch",
+			Message: "committed to read-only repository",
 		})
 		testutil.Must(t, err)
 		if resp.JSON403 == nil {
 			t.Fatalf("Commit to read-only repository should be forbidden (403), got %s", resp.Status())
 		}
+		resp, err = clt.CommitWithResponse(ctx, repo, "main", &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+			Message: "committed to read-only repository",
+			Force:   swag.Bool(true),
+		})
+		verifyResponseOK(t, resp, err)
 	})
 }
 
@@ -1573,6 +1580,30 @@ func TestController_CreateBranchHandler(t *testing.T) {
 			t.Fatal("CreateBranch expected conflict, got", resp.Status())
 		}
 	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", true)
+		testutil.Must(t, err)
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "a/b"}, graveler.WithForce(true)))
+		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, graveler.WithForce(true))
+		testutil.Must(t, err)
+
+		const newBranchName = "main2"
+		resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+			Name:   newBranchName,
+			Source: "main",
+		})
+		if resp.JSON403 == nil {
+			t.Fatal("CreateBranch expected 403 forbidden, got", resp.Status())
+		}
+		resp, err = clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+			Name:   newBranchName,
+			Source: "main",
+			Force:  swag.Bool(true),
+		})
+		verifyResponseOK(t, resp, err)
+	})
 }
 
 func TestController_DiffRefsHandler(t *testing.T) {
@@ -1795,6 +1826,31 @@ func TestController_UploadObjectHandler(t *testing.T) {
 			t.Fatalf("error message should state missing 'content' key")
 		}
 	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		repoName := "my-new-read-only-repo"
+		_, err := deps.catalog.CreateRepository(ctx, repoName, onBlock(deps, "foo2"), "main", true)
+		testutil.Must(t, err)
+		// write
+		contentType, buf := writeMultipart("content", "bar", "hello world!")
+		b, err := clt.UploadObjectWithBodyWithResponse(ctx, repoName, "main", &apigen.UploadObjectParams{
+			Path: "foo/bar",
+		}, contentType, buf)
+		if b.JSON403 == nil {
+			t.Fatalf("expected 403 forbidden for UploadObject, got %d", b.StatusCode())
+		}
+		contentType, buf = writeMultipart("content", "bar", "hello world!")
+		b, err = clt.UploadObjectWithBodyWithResponse(ctx, repoName, "main", &apigen.UploadObjectParams{
+			Path:  "foo/bar",
+			Force: swag.Bool(true),
+		}, contentType, buf)
+		if b.StatusCode() == 500 {
+			t.Fatalf("got 500 while uploading: %v", b.JSONDefault)
+		}
+		if b.StatusCode() != 201 {
+			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
+		}
+	})
 }
 
 func TestController_DeleteBranchHandler(t *testing.T) {
@@ -1841,6 +1897,32 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		}
 		if resp.JSON404 == nil {
 			t.Fatal("DeleteBranch expected not found")
+		}
+	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		repoName := "read-only-repo"
+		_, err := deps.catalog.CreateRepository(ctx, repoName, onBlock(deps, "foo1"), "main", true)
+		testutil.Must(t, err)
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, repoName, "main", catalog.DBEntry{Path: "a/b"}, graveler.WithForce(true)))
+		_, err = deps.catalog.Commit(ctx, repoName, "main", "first commit", "test", nil, nil, nil, graveler.WithForce(true))
+		testutil.Must(t, err)
+
+		_, err = deps.catalog.CreateBranch(ctx, repoName, "main2", "main", graveler.WithForce(true))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		delResp, err := clt.DeleteBranchWithResponse(ctx, repoName, "main2", &apigen.DeleteBranchParams{})
+		if delResp.JSON403 == nil {
+			t.Fatalf("expected 403 forbidden for DeleteBranch, got %d", delResp.StatusCode())
+		}
+		delResp, err = clt.DeleteBranchWithResponse(ctx, repoName, "main2", &apigen.DeleteBranchParams{Force: swag.Bool(true)})
+		verifyResponseOK(t, delResp, err)
+
+		_, err = deps.catalog.GetBranchReference(ctx, repoName, "main2")
+		if !errors.Is(err, graveler.ErrNotFound) {
+			t.Fatalf("expected branch to be gone, instead got error: %s", err)
 		}
 	})
 }
@@ -2322,6 +2404,57 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 			t.Fatal("Missing content type should be successful, got status", resp.Status())
 		}
 	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepo := testUniqueRepoName()
+		path := "foo/bar"
+		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepo, onBlock(deps, "bucket/prefix"), "main", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(content), readOnlyRepo, "main")
+		if resp.JSON403 == nil {
+			t.Fatalf("Expected 403 forbidden error for UploadObject on read-only repository, got %d", resp.StatusCode())
+		}
+
+		var b bytes.Buffer
+		w := multipart.NewWriter(&b)
+		contentWriter, err := w.CreateFormFile("content", filepath.Base(path))
+		if err != nil {
+			t.Fatal("CreateFormFile:", err)
+		}
+		if _, err := io.Copy(contentWriter, strings.NewReader(content)); err != nil {
+			t.Fatal("CreateFormFile write content:", err)
+		}
+		if err := w.Close(); err != nil {
+			t.Fatal("Close multipart writer:", err)
+		}
+
+		resp, err = clt.UploadObjectWithBodyWithResponse(ctx, readOnlyRepo, "main", &apigen.UploadObjectParams{
+			Path:  path,
+			Force: swag.Bool(true),
+		}, w.FormDataContentType(), &b)
+		verifyResponseOK(t, resp, err)
+
+		sizeBytes := apiutil.Value(resp.JSON201.SizeBytes)
+		const expectedSize = 38
+		if sizeBytes != expectedSize {
+			t.Fatalf("expected %d bytes to be written, got back %d", expectedSize, sizeBytes)
+		}
+
+		// download it
+		rresp, err := clt.GetObjectWithResponse(ctx, readOnlyRepo, "main", &apigen.GetObjectParams{Path: path})
+		verifyResponseOK(t, rresp, err)
+		result := string(rresp.Body)
+		if len(result) != expectedSize {
+			t.Fatalf("expected %d bytes to be read, got back %d", expectedSize, len(result))
+		}
+		etag := rresp.HTTPResponse.Header.Get("ETag")
+		const expectedEtag = "7e70ed4aa82063dd88ca47e91a8c6e09"
+		if etag != httputil.ETag(expectedEtag) {
+			t.Fatalf("got unexpected etag: %s - expected %s", etag, httputil.ETag(expectedEtag))
+		}
+	})
 }
 
 func TestController_ObjectsStageObjectHandler(t *testing.T) {
@@ -2416,6 +2549,44 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 		testutil.Must(t, err)
 		if resp.JSON400 == nil {
 			t.Fatalf("Wrong storage adapter should return 400, got status %s [%d]\n\tbody: %s", resp.Status(), resp.StatusCode(), string(resp.Body))
+		}
+	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepo, onBlock(deps, "bucket/prefix"), "main", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		const expectedSizeBytes = 38
+		resp, err := clt.StageObjectWithResponse(ctx, readOnlyRepo, "main", &apigen.StageObjectParams{Path: "foo/bar"}, apigen.StageObjectJSONRequestBody{
+			Checksum:        "afb0689fe58b82c5f762991453edbbec",
+			PhysicalAddress: onBlock(deps, "another-bucket/some/location"),
+			SizeBytes:       expectedSizeBytes,
+		})
+		if resp.JSON403 == nil {
+			t.Fatalf("expected 403 forbidden status for StageObject for read-only repository, got %d", resp.StatusCode())
+		}
+
+		resp, err = clt.StageObjectWithResponse(ctx, readOnlyRepo, "main", &apigen.StageObjectParams{Path: "foo/bar"}, apigen.StageObjectJSONRequestBody{
+			Checksum:        "afb0689fe58b82c5f762991453edbbec",
+			PhysicalAddress: onBlock(deps, "another-bucket/some/location"),
+			SizeBytes:       expectedSizeBytes,
+			Force:           swag.Bool(true),
+		})
+		verifyResponseOK(t, resp, err)
+
+		sizeBytes := apiutil.Value(resp.JSON201.SizeBytes)
+		if sizeBytes != expectedSizeBytes {
+			t.Fatalf("expected %d bytes to be written, got back %d", expectedSizeBytes, sizeBytes)
+		}
+
+		// get back info
+		statResp, err := clt.StatObjectWithResponse(ctx, readOnlyRepo, "main", &apigen.StatObjectParams{Path: "foo/bar"})
+		verifyResponseOK(t, statResp, err)
+		objectStat := statResp.JSON200
+		if objectStat.PhysicalAddress != onBlock(deps, "another-bucket/some/location") {
+			t.Fatalf("unexpected physical address: %s", objectStat.PhysicalAddress)
 		}
 	})
 }
@@ -2515,6 +2686,7 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, resp, err)
 	})
+
 	t.Run("link expired address", func(t *testing.T) {
 		address := upload.DefaultPathProvider.NewPath()
 		dir, _ := path.Split(address)
@@ -2538,6 +2710,49 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 		if resp.HTTPResponse.StatusCode != expectedStatusCode {
 			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
 		}
+	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepo := testUniqueRepoName()
+		readOnlyns := onBlock(deps, "bucket/prefix2")
+		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepo, readOnlyns, "main", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, readOnlyRepo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar2"})
+		verifyResponseOK(t, linkResp, err)
+		if linkResp.JSON200 == nil {
+			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
+		}
+		const expectedSizeBytes = 38
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, readOnlyRepo, "main", &apigen.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+			},
+		})
+		if resp.JSON403 == nil {
+			t.Fatalf("LinkPhysicalAddress non 403 response - status code %d", resp.StatusCode())
+		}
+		linkResp, err = clt.GetPhysicalAddressWithResponse(ctx, readOnlyRepo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar3"})
+		verifyResponseOK(t, linkResp, err)
+		if linkResp.JSON200 == nil {
+			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
+		}
+		resp, err = clt.LinkPhysicalAddressWithResponse(ctx, readOnlyRepo, "main", &apigen.LinkPhysicalAddressParams{
+			Path: "foo/bar3",
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbed",
+			SizeBytes: expectedSizeBytes,
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+			},
+			Force: swag.Bool(true),
+		})
+		verifyResponseOK(t, resp, err)
 	})
 }
 
@@ -2704,6 +2919,73 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		sort.Strings(paths)
 		if diff := deep.Equal(paths, errPaths); diff != nil {
 			t.Fatalf("DeleteObjects errors path difference: %s", diff)
+		}
+	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepo := testUniqueRepoName()
+		const branch = "main"
+		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepo, onBlock(deps, "some-bucket/prefix2"), branch, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		const content = "hello world this is my awesome content"
+		var b bytes.Buffer
+		w := multipart.NewWriter(&b)
+		contentWriter, err := w.CreateFormFile("content", filepath.Base("foo/bar"))
+		if err != nil {
+			t.Fatal("CreateFormFile:", err)
+		}
+		if _, err := io.Copy(contentWriter, strings.NewReader(content)); err != nil {
+			t.Fatal("CreateFormFile write content:", err)
+		}
+		if err := w.Close(); err != nil {
+			t.Fatal("Close multipart writer:", err)
+		}
+
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, readOnlyRepo, "main", &apigen.UploadObjectParams{
+			Path:  "foo/bar",
+			Force: swag.Bool(true),
+		}, w.FormDataContentType(), &b)
+		verifyResponseOK(t, resp, err)
+
+		sizeBytes := apiutil.Value(resp.JSON201.SizeBytes)
+		if sizeBytes != 38 {
+			t.Fatalf("expected 38 bytes to be written, got back %d", sizeBytes)
+		}
+
+		// download it
+		rresp, err := clt.GetObjectWithResponse(ctx, readOnlyRepo, branch, &apigen.GetObjectParams{Path: "foo/bar"})
+		verifyResponseOK(t, rresp, err)
+		result := string(rresp.Body)
+		if len(result) != 38 {
+			t.Fatalf("expected 38 bytes to be read, got back %d", len(result))
+		}
+		etag := rresp.HTTPResponse.Header.Get("ETag")
+		const expectedEtag = "7e70ed4aa82063dd88ca47e91a8c6e09"
+		if etag != httputil.ETag(expectedEtag) {
+			t.Fatalf("got unexpected etag: %s - expected %s", etag, httputil.ETag(expectedEtag))
+		}
+
+		// delete it
+		delResp, err := clt.DeleteObjectWithResponse(ctx, readOnlyRepo, branch, &apigen.DeleteObjectParams{Path: "foo/bar"})
+		if delResp.JSON403 == nil {
+			t.Fatalf("expected DeleteObject to fail with 403 forbidden, got %d", delResp.StatusCode())
+		}
+
+		delResp, err = clt.DeleteObjectWithResponse(ctx, readOnlyRepo, branch, &apigen.DeleteObjectParams{Path: "foo/bar",
+			Force: swag.Bool(true)})
+		verifyResponseOK(t, delResp, err)
+
+		// get it
+		statResp, err := clt.StatObjectWithResponse(ctx, readOnlyRepo, branch, &apigen.StatObjectParams{Path: "foo/bar"})
+		testutil.Must(t, err)
+		if statResp == nil {
+			t.Fatal("StatObject missing response")
+		}
+		if statResp.JSON404 == nil {
+			t.Fatalf("expected file to be gone now")
 		}
 	})
 }
@@ -3354,6 +3636,28 @@ func TestController_CreateTag(t *testing.T) {
 			t.Errorf("Create tag again should conflict, got %v", tagResp)
 		}
 	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepo, onBlock(deps, readOnlyRepo), "main", true)
+		testutil.Must(t, err)
+		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, readOnlyRepo, "main", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}, graveler.WithForce(true)))
+		commit1, err := deps.catalog.Commit(ctx, readOnlyRepo, "main", "some message", DefaultUserID, nil, nil, nil, graveler.WithForce(true))
+		testutil.Must(t, err)
+		tagResp, err := clt.CreateTagWithResponse(ctx, readOnlyRepo, apigen.CreateTagJSONRequestBody{
+			Id:  "tag1",
+			Ref: commit1.Reference,
+		})
+		if tagResp.JSON403 == nil {
+			t.Errorf("Create tag to read-only repo should fail with 403 forbidden, got (status code: %d): %s", tagResp.StatusCode(), tagResp.Body)
+		}
+		tagResp, err = clt.CreateTagWithResponse(ctx, readOnlyRepo, apigen.CreateTagJSONRequestBody{
+			Id:    "tag1",
+			Ref:   commit1.Reference,
+			Force: swag.Bool(true),
+		})
+		verifyResponseOK(t, tagResp, err)
+	})
 }
 
 func testUniqueRepoName() string {
@@ -3437,6 +3741,21 @@ func TestController_Revert(t *testing.T) {
 		if revertResp.JSON409 == nil || revertResp.JSON409.Message != graveler.ErrRevertMergeNoParent.Error() {
 			t.Errorf("Revert dirty merge no parent specified was expected, got %+v", revertResp)
 		}
+	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepository := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepository, onBlock(deps, readOnlyRepository), "main", true)
+		testutil.Must(t, err)
+		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, readOnlyRepository, "main", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}, graveler.WithForce(true)))
+		_, err = deps.catalog.Commit(ctx, readOnlyRepository, "main", "some message", DefaultUserID, nil, nil, nil, graveler.WithForce(true))
+		testutil.Must(t, err)
+		revertResp, err := clt.RevertBranchWithResponse(ctx, readOnlyRepository, "main", apigen.RevertBranchJSONRequestBody{Ref: "main"})
+		if revertResp.JSON403 == nil {
+			t.Errorf("Revert should fail with 403 forbidden for read-only repository, got (status code: %d): %s", revertResp.StatusCode(), revertResp.Body)
+		}
+		revertResp, err = clt.RevertBranchWithResponse(ctx, readOnlyRepository, "main", apigen.RevertBranchJSONRequestBody{Ref: "main", Force: swag.Bool(true)})
+		verifyResponseOK(t, revertResp, err)
 	})
 }
 
@@ -3620,6 +3939,26 @@ func TestController_CherryPick(t *testing.T) {
 		if resp.JSON409 == nil {
 			t.Error("expected to get a conflict")
 		}
+	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepository := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepository, onBlock(deps, readOnlyRepository), "main", true)
+		testutil.Must(t, err)
+		for _, name := range []string{"branch1", "dest-branch1"} {
+			_, err = deps.catalog.CreateBranch(ctx, readOnlyRepository, name, "main", graveler.WithForce(true))
+			testutil.Must(t, err)
+		}
+		testutil.MustDo(t, "create entry bar2", deps.catalog.CreateEntry(ctx, readOnlyRepository, "branch1", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 2, Checksum: "cksum2"}, graveler.WithForce(true)))
+		_, err = deps.catalog.Commit(ctx, readOnlyRepository, "branch1", "message2", DefaultUserID, nil, nil, nil, graveler.WithForce(true))
+		testutil.Must(t, err)
+
+		cherryResponse, err := clt.CherryPickWithResponse(ctx, readOnlyRepository, "dest-branch1", apigen.CherryPickJSONRequestBody{Ref: "branch1"})
+		if cherryResponse.JSON403 == nil {
+			t.Fatalf("expected 403 to get forbidden error, got %d instead", cherryResponse.StatusCode())
+		}
+		cherryResponse, err = clt.CherryPickWithResponse(ctx, readOnlyRepository, "dest-branch1", apigen.CherryPickJSONRequestBody{Ref: "branch1", Force: swag.Bool(true)})
+		verifyResponseOK(t, cherryResponse, err)
 	})
 }
 
@@ -4316,6 +4655,72 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON400)
+	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepository := testUniqueRepoName()
+		_, err = deps.catalog.CreateRepository(ctx, readOnlyRepository, onBlock(deps, "bucket/prefix"), "main", true)
+		require.NoError(t, err)
+		_, err = deps.catalog.CreateBranch(ctx, readOnlyRepository, "alt", "main", graveler.WithForce(true))
+		require.NoError(t, err)
+
+		const (
+			srcPath  = "foo/bar"
+			destPath = "foo/bar-shallow-copy"
+		)
+		uploadContentForce := func(t *testing.T, repository, branch, objPath string) apigen.ObjectStats {
+			t.Helper()
+			const content = "hello world this is my awesome content"
+			var b bytes.Buffer
+			w := multipart.NewWriter(&b)
+			contentWriter, err := w.CreateFormFile("content", filepath.Base(objPath))
+			if err != nil {
+				t.Fatal("CreateFormFile:", err)
+			}
+			if _, err := io.Copy(contentWriter, strings.NewReader(content)); err != nil {
+				t.Fatal("CreateFormFile write content:", err)
+			}
+			if err := w.Close(); err != nil {
+				t.Fatal("Close multipart writer:", err)
+			}
+
+			uploadResp, err := clt.UploadObjectWithBodyWithResponse(ctx, readOnlyRepository, branch, &apigen.UploadObjectParams{
+				Path:  objPath,
+				Force: swag.Bool(true),
+			}, w.FormDataContentType(), &b)
+			verifyResponseOK(t, uploadResp, err)
+			require.NotNil(t, uploadResp.JSON201)
+			require.Equal(t, len(content), int(apiutil.Value(uploadResp.JSON201.SizeBytes)))
+			return *uploadResp.JSON201
+		}
+		objStat := uploadContentForce(t, readOnlyRepository, "main", srcPath)
+		copyResp, err := clt.CopyObjectWithResponse(ctx, readOnlyRepository, "main", &apigen.CopyObjectParams{
+			DestPath: destPath,
+		}, apigen.CopyObjectJSONRequestBody{
+			SrcPath: srcPath,
+		})
+		if copyResp.JSON403 == nil {
+			t.Fatalf("expected 403 forbidden for CopyObject on read-only repository, got %d instead", copyResp.StatusCode())
+		}
+		copyResp, err = clt.CopyObjectWithResponse(ctx, readOnlyRepository, "main", &apigen.CopyObjectParams{
+			DestPath: destPath,
+		}, apigen.CopyObjectJSONRequestBody{
+			SrcPath: srcPath,
+			Force:   swag.Bool(true),
+		})
+		verifyResponseOK(t, copyResp, err)
+
+		// Verify the creation path, date and physical address are different
+		copyStat := copyResp.JSON201
+		require.NotNil(t, copyStat)
+		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
+		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
+		require.Equal(t, destPath, copyStat.Path)
+
+		// get back info
+		statResp, err := clt.StatObjectWithResponse(ctx, readOnlyRepository, "main", &apigen.StatObjectParams{Path: destPath})
+		verifyResponseOK(t, statResp, err)
+		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
 }
 

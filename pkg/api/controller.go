@@ -2508,7 +2508,6 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_commit", r, repository, branch, "")
-
 	user, err := auth.GetUser(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusUnauthorized, "missing user")

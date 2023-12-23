@@ -502,7 +502,7 @@ func TestGravelerCommit_v2(t *testing.T) {
 	t.Run("commit with sealed tokens", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		var updatedSealedBranch graveler.Branch
-		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_STAGING_WRITE).Return(false, nil)
+		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
 
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
 			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
@@ -544,7 +544,7 @@ func TestGravelerCommit_v2(t *testing.T) {
 	t.Run("commit no changes", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		var updatedSealedBranch graveler.Branch
-		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_STAGING_WRITE).Return(false, nil)
+		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
 			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				branchTest := branch1
@@ -581,7 +581,7 @@ func TestGravelerCommit_v2(t *testing.T) {
 
 	t.Run("commit failed retryUpdateBranch", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
-		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_STAGING_WRITE).Return(false, nil)
+		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
 
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
 			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
