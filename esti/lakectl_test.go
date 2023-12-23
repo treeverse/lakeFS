@@ -194,7 +194,7 @@ func TestLakectlReadOnlyRepo(t *testing.T) {
 
 	// create branch
 	RunCmdAndVerifyFailure(t, Lakectl()+" branch create lakefs://"+repoName+"/test --source lakefs://"+repoName+"/"+mainBranch, false, "Source ref: lakefs://"+repoName+"/"+mainBranch+"\nread-only repository\n403 Forbidden\n", vars)
-	RunCmdAndVerifySuccess(t, Lakectl()+" branch create lakefs://"+repoName+"/test --source lakefs://"+repoName+"/"+mainBranch+" -f", false, "lakectl_branch_create", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/test --source lakefs://"+repoName+"/"+mainBranch+" -f", false, "lakectl_branch_create", vars)
 
 	//create tag
 	RunCmdAndVerifyFailure(t, Lakectl()+" tag create lakefs://"+repoName+"/"+vars["TAG"]+" lakefs://"+repoName+"/"+mainBranch+"~1", false, "read-only repository\n403 Forbidden\n", vars)
