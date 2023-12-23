@@ -175,6 +175,7 @@ func TestLakectlReadOnlyRepo(t *testing.T) {
 	vars := map[string]string{
 		"REPO":          repoName,
 		"STORAGE":       storage,
+		"BRANCH":        mainBranch,
 		"SOURCE_BRANCH": mainBranch,
 		"DEST_BRANCH":   "test",
 		"TAG":           "test",
