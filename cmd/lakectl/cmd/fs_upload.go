@@ -93,7 +93,7 @@ func init() {
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	_ = fsUploadCmd.MarkFlagRequired("source")
 	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
-	fsUploadCmd.Flags().Bool("force", false, "ignore repository and branch protections")
+	fsUploadCmd.Flags().BoolP("force", "f", false, "ignore repository read-only protections")
 	withRecursiveFlag(fsUploadCmd, "recursively copy all files under local source")
 	withSyncFlags(fsUploadCmd)
 

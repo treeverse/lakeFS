@@ -32,7 +32,7 @@ var branchDeleteCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	AssignAutoConfirmFlag(branchDeleteCmd.Flags())
-	branchDeleteCmd.Flags().Bool("force", false, "ignore read-only protection on the repository")
+	branchDeleteCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
 
 	branchCmd.AddCommand(branchDeleteCmd)
 }

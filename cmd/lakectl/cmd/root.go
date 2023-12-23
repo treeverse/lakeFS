@@ -225,7 +225,7 @@ func withMetadataFlag(cmd *cobra.Command) {
 func withCommitFlags(cmd *cobra.Command, allowEmptyMessage bool) {
 	withMessageFlags(cmd, allowEmptyMessage)
 	withMetadataFlag(cmd)
-	cmd.Flags().Bool("force", false, "ignore repository and branch protections")
+	cmd.Flags().BoolP("force", "f", false, "ignore repository and branch protections")
 }
 
 func getCommitFlags(cmd *cobra.Command) (string, map[string]string) {

@@ -62,7 +62,7 @@ func init() {
 	AssignAutoConfirmFlag(branchRevertCmd.Flags())
 
 	branchRevertCmd.Flags().IntP(ParentNumberFlagName, "m", 0, "the parent number (starting from 1) of the mainline. The revert will reverse the change relative to the specified parent.")
-	branchRevertCmd.Flags().Bool("force", false, "ignore read-only protection on the repository")
+	branchRevertCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
 
 	branchCmd.AddCommand(branchRevertCmd)
 }

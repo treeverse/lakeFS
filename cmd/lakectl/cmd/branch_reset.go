@@ -75,7 +75,7 @@ func init() {
 
 	branchResetCmd.Flags().String("prefix", "", "prefix of the objects to be reset")
 	branchResetCmd.Flags().String("object", "", "path to object to be reset")
-	branchResetCmd.Flags().Bool("force", false, "ignore read-only protection on the repository")
+	branchResetCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
 
 	branchCmd.AddCommand(branchResetCmd)
 }

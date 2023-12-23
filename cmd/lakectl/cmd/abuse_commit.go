@@ -77,6 +77,6 @@ func init() {
 
 	abuseCommitCmd.Flags().Int("amount", abuseDefaultParallelism, "amount of commits to do")
 	abuseCommitCmd.Flags().Duration("gap", defaultGap, "duration to wait between commits")
-	abuseCommitCmd.Flags().Bool("force", false, "ignore read-only protection on the repository")
+	abuseCommitCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
 	abuseCmd.AddCommand(abuseCommitCmd)
 }

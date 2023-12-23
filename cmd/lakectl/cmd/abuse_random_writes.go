@@ -82,5 +82,5 @@ func init() {
 	abuseRandomWritesCmd.Flags().String("prefix", "abuse/", "prefix to create paths under")
 	abuseRandomWritesCmd.Flags().Int("amount", abuseDefaultAmount, "amount of writes to do")
 	abuseRandomWritesCmd.Flags().Int("parallelism", abuseDefaultParallelism, "amount of writes to do in parallel")
-	abuseRandomWritesCmd.Flags().Bool("force", false, "ignore read-only protection on the repository")
+	abuseRandomWritesCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
 }
