@@ -173,9 +173,11 @@ func TestLakectlReadOnlyRepo(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
-		"REPO":    repoName,
-		"STORAGE": storage,
-		"BRANCH":  mainBranch,
+		"REPO":          repoName,
+		"STORAGE":       storage,
+		"SOURCE_BRANCH": mainBranch,
+		"DEST_BRANCH":   "test",
+		"TAG":           "test",
 	}
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_404", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage+" -r", false, "lakectl_repo_create", vars)
@@ -201,11 +203,11 @@ func TestLakectlReadOnlyRepo(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag create lakefs://"+repoName+"/"+vars["TAG"]+" lakefs://"+repoName+"/"+mainBranch+"~1 -f", false, "lakectl_tag_create", vars)
 
 	// delete branch
-	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/test -y", false, "Branch: lakefs://"+repoName+"/"+mainBranch+"\nread-only repository\n403 Forbidden\n", vars)
-	RunCmdAndVerifySuccess(t, Lakectl()+" branch delete lakefs://"+repoName+"/test -y -f", false, "Branch: lakefs://"+mainBranch+"/test", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+vars["DEST_BRANCH"]+" -y", false, "Branch: lakefs://"+repoName+"/"+mainBranch+"\nread-only repository\n403 Forbidden\n", vars)
+	RunCmdAndVerifySuccess(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+vars["DEST_BRANCH"]+" -y -f", false, "Branch: lakefs://"+repoName+"/"+vars["DEST_BRANCH"], vars)
 
 	//delete tag
-	RunCmdAndVerifyFailure(t, Lakectl()+" tag delete lakefs://"+repoName+"/"+vars["TAG"]+" -y", false, "read-only repository\\n403 Forbidden\\n\"", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" tag delete lakefs://"+repoName+"/"+vars["TAG"]+" -y", false, "read-only repository\n403 Forbidden\n", vars)
 	RunCmdAndVerifySuccess(t, Lakectl()+" tag delete lakefs://"+repoName+"/"+vars["TAG"]+" -y -f", false, "", vars)
 }
 
