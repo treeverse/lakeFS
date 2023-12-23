@@ -204,7 +204,7 @@ func TestLakectlReadOnlyRepo(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag create lakefs://"+repoName+"/"+vars["TAG"]+" lakefs://"+repoName+"/"+mainBranch+"~1 -f", false, "lakectl_tag_create", vars)
 
 	// delete branch
-	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+vars["DEST_BRANCH"]+" -y", false, "Branch: lakefs://"+repoName+"/"+mainBranch+"\nread-only repository\n403 Forbidden\n", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+vars["DEST_BRANCH"]+" -y", false, "Branch: lakefs://"+repoName+"/"+vars["DEST_BRANCH"]+"\nread-only repository\n403 Forbidden\n", vars)
 	RunCmdAndVerifySuccess(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+vars["DEST_BRANCH"]+" -y -f", false, "Branch: lakefs://"+repoName+"/"+vars["DEST_BRANCH"], vars)
 
 	//delete tag
