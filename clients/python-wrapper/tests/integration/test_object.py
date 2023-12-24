@@ -358,3 +358,23 @@ def test_write_read_csv(setup_repo):
             assert row == columns
         else:
             assert row == sample_data[i - 1]
+
+
+def test_write_object_with_failure(setup_repo):
+    _, repo = setup_repo
+    obj = repo.branch("main").object("test_object")
+
+    try:
+        with obj.writer() as writer:
+            writer.write("Hello World!")
+            raise ValueError("Bad thing happened")
+    except ValueError:
+        pass
+
+    # Verify writer is closed
+    with expect_exception_context(ValueError):
+        writer.write("test")
+
+    # Check that the object does not exist in lakeFS after exception
+    with expect_exception_context(NotFoundException):
+        obj.stat()

@@ -84,9 +84,20 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
 
     def close(self) -> None:
         """
-        Closes the current file descriptor for IO operations
+        Finalizes any existing operations on object and close open descriptors
+        Inheriting classes need to implement _finalize() and _close() respectfully
         """
         self._is_closed = True
+        self._finalize()
+        self._close()
+
+    @abstractmethod
+    def _finalize(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _close(self) -> None:
+        raise NotImplementedError
 
     def fileno(self) -> int:
         """
@@ -159,7 +170,13 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
         return self
 
     def __exit__(self, typ, value, traceback) -> bool:
-        self.close()
+        if typ is None:  # Perform logic in case no exception was raised
+            self.close()
+
+        else:
+            self._is_closed = True
+            self._close()  # perform logic regardless of exception
+
         return False  # Don't suppress an exception
 
     @abstractmethod
@@ -182,7 +199,6 @@ class ObjectReader(LakeFSIOBase):
     ObjectReader provides read-only functionality for lakeFS objects with IO semantics.
     This Object is instantiated and returned for immutable reference types (Commit, Tag...)
     """
-
     _readlines_buf: io.BytesIO
 
     def __init__(self, obj: StoredObject, mode: ReadModes, pre_sign: Optional[bool] = None,
@@ -191,7 +207,6 @@ class ObjectReader(LakeFSIOBase):
             raise ValueError(f"invalid read mode: '{mode}'. ReadModes: {ReadModes}")
 
         self._readlines_buf = io.BytesIO(b"")
-
         super().__init__(obj, mode, pre_sign, client)
 
     @property
@@ -311,6 +326,17 @@ class ObjectReader(LakeFSIOBase):
         Nothing to do for reader
         """
 
+    def _finalize(self) -> None:
+        """
+        Nothing to do for reader
+        """
+
+    def _close(self):
+        """
+        Close open descriptors
+        """
+        self._readlines_buf.close()
+
     @staticmethod
     def _get_range_string(start, read_bytes=None):
         if start == 0 and read_bytes is None:
@@ -408,15 +434,18 @@ class ObjectWriter(LakeFSIOBase):
         self._pos += count
         return count
 
-    def close(self) -> None:
+    def _finalize(self) -> None:
         """
-        Write the data to the lakeFS server and close open descriptors
+        Write the data to the lakeFS server
         """
         stats = self._upload_presign() if self.pre_sign else self._upload_raw()
         self._obj_stats = ObjectInfo(**stats.dict())
 
+    def _close(self) -> None:
+        """
+        Close open descriptors
+        """
         self._fd.close()
-        super().close()
 
     @staticmethod
     def _extract_etag_from_response(headers) -> str:
