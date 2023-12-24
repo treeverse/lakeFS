@@ -408,8 +408,7 @@ def test_writer_with_failure(setup_repo):
         writer.write("test")
 
     # Check that the object does not exist in lakeFS after exception
-    with expect_exception_context(NotFoundException):
-        obj.stat()
+    assert not obj.exists()
 
 
 def test_writer_discard(setup_repo):
