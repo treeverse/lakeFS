@@ -5,7 +5,7 @@
 :new: What's new:
 
 - Delta Lake Catalog Exporter (#7078)
-- Unity Catalog Export (#7167)
+- Unity Catalog Exporter (#7167)
 - Playwright E2E testing infra for GUI (#7158)
 
 # v1.3.1
