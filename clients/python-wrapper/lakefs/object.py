@@ -557,7 +557,7 @@ class ObjectWriter(LakeFSIOBase):
                                headers=headers)
         handle_http_error(resp)
 
-        etag = ObjectWriter._extract_etag_from_response(resp.getheaders())
+        etag = ObjectWriter._extract_etag_from_response(resp.headers)
         size_bytes = self._pos
         staging_metadata = StagingMetadata(staging=staging_location,
                                            size_bytes=size_bytes,
