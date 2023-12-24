@@ -174,10 +174,10 @@ func TestCopyObject(t *testing.T) {
 
 		copyResp, err = client.CopyObjectWithResponse(ctx, repoName, "main", &apigen.CopyObjectParams{
 			DestPath: destPath,
-			Force:    swag.Bool(true),
 		}, apigen.CopyObjectJSONRequestBody{
 			SrcPath: largeObject,
 			SrcRef:  &srcBranch,
+			Force:   swag.Bool(true),
 		})
 		require.NoError(t, err, "failed to copy")
 		require.NotNil(t, copyResp.JSON201)

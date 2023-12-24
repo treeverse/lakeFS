@@ -4183,12 +4183,6 @@ paths:
         required: true
         schema:
           type: string
-      - in: query
-        name: force
-        required: false
-        schema:
-          type: boolean
-          default: false
     post:
       tags:
         - objects
