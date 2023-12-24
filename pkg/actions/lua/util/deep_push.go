@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/Shopify/go-lua"
@@ -96,7 +95,7 @@ func forwardOnReflect(l *lua.State, val interface{}) {
 		}
 
 	default:
-		lua.Errorf(l, fmt.Sprintf("contains unsupported type: %T", val))
+		lua.Errorf(l, "contains unsupported type: %T", val)
 		panic("unreachable")
 	}
 }

@@ -30,7 +30,7 @@ func match(l *lua.State) int {
 
 	matched, err := regexp.MatchString(pattern, s)
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 
@@ -49,7 +49,7 @@ func compile(l *lua.State) int {
 	expr := lua.CheckString(l, 1)
 	re, err := regexp.Compile(expr)
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 
