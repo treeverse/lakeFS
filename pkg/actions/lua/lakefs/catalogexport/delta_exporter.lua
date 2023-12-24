@@ -4,6 +4,7 @@ local json = require("encoding/json")
 local utils = require("lakefs/catalogexport/internal")
 local extractor = require("lakefs/catalogexport/table_extractor")
 local strings = require("strings")
+local url = require("net/url")
 --[[
     delta_log_entry_key_generator returns a closure that returns a Delta Lake version key according to the Delta Lake
     protocol: https://github.com/delta-io/delta/blob/master/PROTOCOL.md#delta-log-entries
@@ -102,7 +103,9 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                     p = entry.remove.path
                 end
                 if p ~= "" then
-                    local code, obj = lakefs.stat_object(repo, commit_id, pathlib.join("/", table_path, p))
+                    local unescaped_path = url.query_unescape(p)
+                    unescaped_path = pathlib.join("/", table_path, unescaped_path)
+                    local code, obj = lakefs.stat_object(repo, commit_id, unescaped_path)
                     if code == 200 then
                         local obj_stat = json.unmarshal(obj)
                         local physical_path = obj_stat["physical_address"]
@@ -111,6 +114,8 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                         elseif entry.remove ~= nil then
                             entry.remove.path = physical_path
                         end
+                    else
+                        error("failed stat_object with code: " .. tostring(code) .. ", and path: " .. unescaped_path)
                     end
                 end
                 local entry_m = json.marshal(entry)
