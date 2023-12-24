@@ -4,7 +4,7 @@ Module containing lakeFS reference implementation
 
 from __future__ import annotations
 
-from typing import Optional, Generator
+from typing import Optional, Generator, Union
 
 import lakefs_sdk
 
@@ -101,7 +101,7 @@ class Reference(_BaseLakeFSObject):
         return self._commit
 
     def diff(self,
-             other_ref: str | Reference,
+             other_ref: ReferenceType,
              max_amount: Optional[int] = None,
              after: Optional[str] = None,
              prefix: Optional[str] = None,
@@ -120,9 +120,7 @@ class Reference(_BaseLakeFSObject):
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
-        other_ref_id = other_ref
-        if isinstance(other_ref, Reference):
-            other_ref_id = other_ref.id
+        other_ref_id = other_ref if isinstance(other_ref, str) else other_ref.id
         for diff in generate_listing(self._client.sdk_client.refs_api.diff_refs,
                                      repository=self._repo_id,
                                      left_ref=self._id,
@@ -134,24 +132,23 @@ class Reference(_BaseLakeFSObject):
                                      **kwargs):
             yield Change(**diff.dict())
 
-    def merge_into(self, destination_branch_id: str | Reference, **kwargs) -> str:
+    def merge_into(self, destination_branch: ReferenceType, **kwargs) -> str:
         """
         Merge this reference into destination branch
 
-        :param destination_branch_id: The ID of the merge destination
+        :param destination_branch: The merge destination (either ID or branch object)
         :param kwargs: Additional Keyword Arguments to send to the server
         :return: The reference id of the merge commit
         :raise NotFoundException: if reference by this id does not exist, or branch doesn't exist
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
-        if isinstance(destination_branch_id, Reference):
-            destination_branch_id = destination_branch_id.id
+        branch_id = destination_branch if isinstance(destination_branch, str) else destination_branch.id
         with api_exception_handler():
             merge = lakefs_sdk.Merge(**kwargs)
             res = self._client.sdk_client.refs_api.merge_into_branch(self._repo_id,
                                                                      self._id,
-                                                                     destination_branch_id,
+                                                                     branch_id,
                                                                      merge=merge)
             return res.reference
 
@@ -191,3 +188,6 @@ def generate_listing(func, *args, max_amount: Optional[int] = None, **kwargs):
                     max_amount -= 1
                     if max_amount <= 0:
                         return
+
+
+ReferenceType = Union[str, Reference, Commit]

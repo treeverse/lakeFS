@@ -3,22 +3,30 @@ package io.treeverse.clients
 import io.treeverse.clients.LakeFSContext._
 import io.treeverse.lakefs.catalog.Entry
 import org.apache.commons.lang3.StringUtils
-import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.Writable
 import org.apache.hadoop.mapred.SplitLocationInfo
 import org.apache.hadoop.mapreduce._
 import org.apache.spark.TaskContext
-import org.slf4j.{Logger, LoggerFactory}
-import scalapb.{GeneratedMessage, GeneratedMessageCompanion}
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import scalapb.GeneratedMessage
+import scalapb.GeneratedMessageCompanion
 
-import java.io.{DataInput, DataOutput, File}
+import java.io.DataInput
+import java.io.DataOutput
+import java.io.File
 import java.net.URI
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
+import scala.util.control.Breaks._
 
 object GravelerSplit {
   val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 }
+
 class GravelerSplit(
     var path: Path,
     var rangeID: String,
@@ -134,6 +142,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 }
 
 object LakeFSInputFormat {
+  val DummyFileName = "dummy"
   val logger: Logger = LoggerFactory.getLogger(getClass.toString)
   def read[Proto <: GeneratedMessage with scalapb.Message[Proto]](
       reader: SSTableReader[Proto]
@@ -207,6 +216,7 @@ class LakeFSCommitInputFormat extends LakeFSBaseInputFormat {
 }
 
 class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
+  var fileSystemGetter: (URI, Configuration) => FileSystem = FileSystem.get
   import LakeFSInputFormat._
   override def getSplits(job: JobContext): java.util.List[InputSplit] = {
     val conf = job.getConfiguration
@@ -234,7 +244,7 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
       storageNamespace = apiClient.getStorageNamespace(repoName, StorageClientType.HadoopFS)
     }
     val namespaceURI = URI.create(storageNamespace)
-    val fs = FileSystem.get(namespaceURI, conf)
+    val fs = fileSystemGetter(namespaceURI, conf)
     fs.getStatus(new Path(namespaceURI)) // Will throw an exception if namespace doesn't exist
 
     val metadataURI =
@@ -248,12 +258,18 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
     val it = fs.listFiles(metadataPath, false)
     while (it.hasNext) {
       val file = it.next()
-      splits += new GravelerSplit(
-        file.getPath,
-        file.getPath.getName,
-        file.getLen,
-        false
-      )
+      breakable {
+        if (file.getPath.getName == DummyFileName) {
+          logger.debug(s"Skipping dummy file ${file.getPath}")
+          break
+        }
+        splits += new GravelerSplit(
+          file.getPath,
+          file.getPath.getName,
+          file.getLen,
+          false
+        )
+      }
     }
     logger.debug(s"Returning ${splits.size} splits")
     splits.asJava

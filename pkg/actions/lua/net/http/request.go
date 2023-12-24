@@ -127,7 +127,7 @@ func pushResponseHeader(l *lua.State, header http.Header) {
 
 func check(l *lua.State, err error) {
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 }

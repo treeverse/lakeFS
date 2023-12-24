@@ -35,6 +35,7 @@ func (dc *DeltaClient) fetchS3Table(repo, ref, prefix string, awsProps *storage.
 	}
 	return dc.buildLog(table)
 }
+
 func (dc *DeltaClient) getS3DeltaTable(repo, ref, prefix string, awsProps *storage.AWSProperties) (delta.Log, error) {
 	config := delta.Config{StoreType: string(s3StorageType)}
 	u := fmt.Sprintf("lakefs://%s/%s/%s", repo, ref, prefix)
@@ -49,6 +50,7 @@ func (dc *DeltaClient) getS3DeltaTable(repo, ref, prefix string, awsProps *stora
 	store := deltaStore.Store(s3LogStore)
 	return delta.ForTableWithStore(u, config, &delta.SystemClock{}, &store)
 }
+
 func (dc *DeltaClient) buildLog(table delta.Log) (map[int64][]string, error) {
 	s, err := table.Snapshot()
 	if err != nil {
@@ -97,7 +99,7 @@ func getTable(client *DeltaClient) lua.Function {
 		prefix := lua.CheckString(l, 3)
 		tableLog, err := client.fetchTableLog(repo, ref, prefix)
 		if err != nil {
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("failed fetching table log")
 		}
 		luautil.DeepPush(l, tableLog)

@@ -92,7 +92,7 @@ func deleteTable(c *GlueClient) lua.Function {
 			CatalogId:    catalogID,
 		})
 		if err != nil {
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 
@@ -129,7 +129,7 @@ func updateTable(c *GlueClient) lua.Function {
 		var tableInput types.TableInput
 		err := json.Unmarshal([]byte(tableInputJSON), &tableInput)
 		if err != nil {
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 
@@ -142,7 +142,7 @@ func updateTable(c *GlueClient) lua.Function {
 		})
 
 		if err != nil {
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 		return 0
@@ -158,7 +158,7 @@ func createTable(c *GlueClient) lua.Function {
 		var tableInput types.TableInput
 		err := json.Unmarshal([]byte(tableInputJSON), &tableInput)
 		if err != nil {
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 		// check if catalog ID provided
@@ -174,7 +174,7 @@ func createTable(c *GlueClient) lua.Function {
 			CatalogId:    catalogID,
 		})
 		if err != nil {
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 		return 0
@@ -202,20 +202,20 @@ func getTable(c *GlueClient) lua.Function {
 				l.PushBoolean(false) // exists
 				return 2
 			}
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 		// Marshal the GetTableOutput struct to JSON.
 		jsonBytes, err := json.Marshal(resp)
 		if err != nil {
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 		// Unmarshal the JSON to a map.
 		var itemMap map[string]interface{}
 		err = json.Unmarshal(jsonBytes, &itemMap)
 		if err != nil {
-			lua.Errorf(l, err.Error())
+			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
 		util.DeepPush(l, itemMap)

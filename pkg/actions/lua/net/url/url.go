@@ -24,7 +24,7 @@ func parse(l *lua.State) int {
 	rawURL := lua.CheckString(l, 1)
 	u, err := neturl.Parse(rawURL)
 	if err != nil {
-		lua.Errorf(l, err.Error())
+		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
 	return util.DeepPush(l, map[string]string{

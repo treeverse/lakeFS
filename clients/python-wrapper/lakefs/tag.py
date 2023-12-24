@@ -9,7 +9,7 @@ import lakefs_sdk
 
 from lakefs.client import Client
 from lakefs.exceptions import api_exception_handler, LakeFSException, ConflictException
-from lakefs.reference import Reference
+from lakefs.reference import Reference, ReferenceType
 
 
 class Tag(Reference):
@@ -20,19 +20,18 @@ class Tag(Reference):
     def __init__(self, repository_id: str, tag_id: str, client: Optional[Client] = None):
         super().__init__(repository_id, reference_id=tag_id, client=client)
 
-    def create(self, source_ref_id: str | Reference, exist_ok: Optional[bool] = False) -> Tag:
+    def create(self, source_ref: ReferenceType, exist_ok: Optional[bool] = False) -> Tag:
         """
-        Create a tag from the given source_ref_id
+        Create a tag from the given source_ref
 
-        :param source_ref_id: The reference id to create the tag on
+        :param source_ref: The reference to create the tag on (either ID or Reference object)
         :param exist_ok: If True returns the existing Tag reference otherwise raises exception
         :return: A lakeFS SDK Tag object
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise NotFoundException: if source_ref_id doesn't exist on the lakeFS server
         :raise ServerException: for any other errors.
         """
-        if isinstance(source_ref_id, Reference):
-            source_ref_id = source_ref_id.id
+        source_ref_id = source_ref if isinstance(source_ref, str) else source_ref.id
         tag_creation = lakefs_sdk.TagCreation(id=self.id, ref=source_ref_id)
 
         def handle_conflict(e: LakeFSException):
