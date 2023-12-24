@@ -2021,7 +2021,11 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 			}
 			defer changes.Close()
 			// returns err if the commit is empty (no changes)
-			commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes, *params.AllowEmpty)
+			var allowEmpty = false
+			if params.AllowEmpty != nil {
+				allowEmpty = *params.AllowEmpty
+			}
+			commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes, allowEmpty)
 			if err != nil {
 				return nil, fmt.Errorf("commit: %w", err)
 			}
