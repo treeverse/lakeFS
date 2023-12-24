@@ -367,9 +367,12 @@ func TestLuaRunTable(t *testing.T) {
 			Output: "testdata/lua/catalogexport_hive_partition_pager.output",
 		},
 		{
-			Name:   "catalogexport_delta",
-			Input:  "testdata/lua/catalogexport_delta.lua",
-			Output: "",
+			Name:  "catalogexport_delta",
+			Input: "testdata/lua/catalogexport_delta.lua",
+		},
+		{
+			Name:  "catalogexport_unity",
+			Input: "testdata/lua/catalogexport_unity.lua",
 		},
 	}
 
