@@ -947,7 +947,7 @@ func TestController_CommitHandler(t *testing.T) {
 			Message: "committed to protected branch",
 		})
 		testutil.Must(t, err)
-		if resp.JSON403 == nil {
+		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("Commit to protected branch should be forbidden (403), got %s", resp.Status())
 		}
 	})
@@ -958,12 +958,12 @@ func TestController_CommitHandler(t *testing.T) {
 		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil})
 		require.Error(t, err, "read-only repository")
 		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}, graveler.WithForce(true))
-		testutil.MustDo(t, "commit to protected branch", err)
+		testutil.MustDo(t, "create entry", err)
 		resp, err := clt.CommitWithResponse(ctx, repo, "main", &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 			Message: "committed to read-only repository",
 		})
 		testutil.Must(t, err)
-		if resp.JSON403 == nil {
+		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("Commit to read-only repository should be forbidden (403), got %s", resp.Status())
 		}
 		resp, err = clt.CommitWithResponse(ctx, repo, "main", &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
@@ -1594,7 +1594,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 			Name:   newBranchName,
 			Source: "main",
 		})
-		if resp.JSON403 == nil {
+		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatal("CreateBranch expected 403 forbidden, got", resp.Status())
 		}
 		resp, err = clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
@@ -1844,10 +1844,10 @@ func TestController_UploadObjectHandler(t *testing.T) {
 			Path:  "foo/bar",
 			Force: swag.Bool(true),
 		}, contentType, buf)
-		if b.StatusCode() == 500 {
-			t.Fatalf("got 500 while uploading: %v", b.JSONDefault)
+		if b.StatusCode() == http.StatusInternalServerError {
+			t.Fatalf("got internal server error (500) while uploading: %v", b.JSONDefault)
 		}
-		if b.StatusCode() != 201 {
+		if b.StatusCode() != http.StatusCreated {
 			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
 		}
 	})
@@ -2413,7 +2413,7 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		resp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(content), readOnlyRepo, "main")
-		if resp.JSON403 == nil {
+		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("Expected 403 forbidden error for UploadObject on read-only repository, got %d", resp.StatusCode())
 		}
 
@@ -2428,6 +2428,14 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 		}
 		if err := w.Close(); err != nil {
 			t.Fatal("Close multipart writer:", err)
+		}
+
+		resp, err = clt.UploadObjectWithBodyWithResponse(ctx, readOnlyRepo, "main", &apigen.UploadObjectParams{
+			Path: path,
+		}, w.FormDataContentType(), &b)
+
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("Expected 403 forbidden error for UploadObject on read-only repository, got %d instead", resp.StatusCode())
 		}
 
 		resp, err = clt.UploadObjectWithBodyWithResponse(ctx, readOnlyRepo, "main", &apigen.UploadObjectParams{
@@ -2564,7 +2572,7 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 			PhysicalAddress: onBlock(deps, "another-bucket/some/location"),
 			SizeBytes:       expectedSizeBytes,
 		})
-		if resp.JSON403 == nil {
+		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("expected 403 forbidden status for StageObject for read-only repository, got %d", resp.StatusCode())
 		}
 
@@ -2734,7 +2742,7 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
 			},
 		})
-		if resp.JSON403 == nil {
+		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("LinkPhysicalAddress non 403 response - status code %d", resp.StatusCode())
 		}
 		linkResp, err = clt.GetPhysicalAddressWithResponse(ctx, readOnlyRepo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar3"})
