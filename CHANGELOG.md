@@ -1,5 +1,13 @@
 # Changelog
 
+# v1.4.0
+
+:new: What's new:
+
+- Delta Lake Catalog Exporter (#7078)
+- Unity Catalog Export (#7167)
+- Playwright E2E testing infra for GUI (#7158)
+
 # v1.3.1
 
 :bug: Bugs fixed:
