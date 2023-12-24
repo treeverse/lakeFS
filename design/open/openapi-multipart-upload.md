@@ -22,7 +22,7 @@ Initiation of Upload: The API will allow clients to initiate a multipart upload 
 
 Uploading Parts: Clients can upload individual parts of the file in parallel or in sequence. Each part will be based on the presigned URL provided by the initial call.
 
-Support for Large Files: The API will handle files of substantial sizes, ensuring that large datasets can be uploaded without issues. Minimum part size will be 5M.
+Support for Large Files: The API will handle files of substantial sizes, ensuring that large datasets can be uploaded without issues. Minimum part size will be 5M, except for the last block.
 
 Data Integrity Checks: Each uploaded part will require the client to store the ETag as done today for presigned URL upload. The value of the ETag will be provided when the upload of all the parts is completed.
 
