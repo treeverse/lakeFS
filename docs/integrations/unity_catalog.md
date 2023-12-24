@@ -18,6 +18,9 @@ access it through the unified catalog.
 The subsequent step-by-step guide will lead you through the process of configuring a [Lua hook]({% link howto/hooks/lua.md %})
 that exports Delta Lake tables from lakeFS, and subsequently registers them in Unity Catalog.
 
+{: .note}
+> Currently, Unity Catalog export feature exclusively supports AWS S3 as the underlying storage solution. It's planned to [support other cloud providers soon](https://github.com/treeverse/lakeFS/issues/7199).
+
 ## Prerequisites
 
 Before starting, ensure you have the following:
