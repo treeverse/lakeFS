@@ -36,7 +36,7 @@ Cancelation: In order to cancel partial upload of multipart request, the client 
 
 **Paths for multipart upload operations**
 
-```yaml=
+```yaml
   /repositories/{repository}/branches/{branch}/staging/multipart:
     parameters:
       - in: path
@@ -128,7 +128,7 @@ Cancelation: In order to cancel partial upload of multipart request, the client 
 
 **Schemas used by operations**
 
-```yaml=
+```yaml
 components:
   schemas:
     MultipartUpload:
@@ -170,7 +170,7 @@ components:
 Presign support is a capability lakectl discover before switching to use presign for upload or download from lakeFS.
 The multipart upload support will be part of the storage capability add `pre_sign_support_parts` optional field that when set to `true` the user can perform multipart upload using the new API.
 
-```yaml=
+```yaml
     StorageConfig:
       type: object
       required:
