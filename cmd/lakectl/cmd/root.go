@@ -189,8 +189,7 @@ func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.
 	}
 
 	presign := getPresignMode(cmd, client)
-	ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
-	return local.SyncFlags{Parallelism: parallelism, Presign: presign, Force: ignore}
+	return local.SyncFlags{Parallelism: parallelism, Presign: presign}
 }
 
 // getSyncArgs parses arguments to extract a remote URI and deduces the local path.

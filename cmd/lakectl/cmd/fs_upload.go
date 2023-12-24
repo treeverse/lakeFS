@@ -23,11 +23,12 @@ var fsUploadCmd = &cobra.Command{
 		client := getClient()
 		pathURI, _ := getSyncArgs(args, true, false)
 		syncFlags := getSyncFlags(cmd, client)
+		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
+		syncFlags.Force = ignore
 		source := Must(cmd.Flags().GetString("source"))
 		contentType := Must(cmd.Flags().GetString("content-type"))
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		remotePath := pathURI.GetPath()
-		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 		ctx := cmd.Context()
 
 		if !recursive { // Assume source is a single file

@@ -32,6 +32,8 @@ var localCommitCmd = &cobra.Command{
 		client := getClient()
 		_, localPath := getSyncArgs(args, false, false)
 		syncFlags := getSyncFlags(cmd, client)
+		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
+		syncFlags.Force = ignore
 		message, kvPairs := getCommitFlags(cmd)
 
 		idx, err := local.ReadIndex(localPath)
@@ -43,8 +45,6 @@ var localCommitCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-
-		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 
 		if idx.ActiveOperation != "" {
 			fmt.Printf("Latest 'local %s' operation was interrupted, running 'local commit' operation now might lead to data loss.\n", idx.ActiveOperation)

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
@@ -57,7 +56,7 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 		// execute the restore operation
 		client := getClient()
 		ctx := cmd.Context()
-		manifest.Force = swag.Bool(Must(cmd.Flags().GetBool("force")))
+		manifest.Force = Must(cmd.Flags().GetBool(ignoreFlagName))
 
 		resp, err := client.RestoreSubmitWithResponse(ctx, repoURI.Repository, apigen.RestoreSubmitJSONRequestBody(manifest))
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusAccepted)
