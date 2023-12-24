@@ -54,6 +54,10 @@ def test_object_read_seek(setup_repo, pre_sign):
         with expect_exception_context(io.UnsupportedOperation):
             fd.seek(0, 10)
 
+    assert fd.closed
+    # Close a second time should not fail
+    fd.close()
+
 
 def test_object_upload_exists(setup_repo):
     clt, repo = setup_repo
@@ -134,6 +138,9 @@ def test_writer(setup_repo):
             obj.stat()
 
     assert obj.reader().read() == b"Hello World!"
+
+    # try to close writer again
+    writer.close()
 
 
 @pytest.mark.parametrize("w_mode", get_args(WriteModes))
@@ -360,7 +367,7 @@ def test_write_read_csv(setup_repo):
             assert row == sample_data[i - 1]
 
 
-def test_write_object_with_failure(setup_repo):
+def test_writer_with_failure(setup_repo):
     _, repo = setup_repo
     obj = repo.branch("main").object("test_object")
 
@@ -378,3 +385,15 @@ def test_write_object_with_failure(setup_repo):
     # Check that the object does not exist in lakeFS after exception
     with expect_exception_context(NotFoundException):
         obj.stat()
+
+
+def test_writer_discard(setup_repo):
+    _, repo = setup_repo
+    obj = repo.branch("main").object("test_object")
+
+    with obj.writer() as writer:
+        writer.write("Hello World!")
+        writer.discard()
+        assert writer.closed
+
+    assert not obj.exists()

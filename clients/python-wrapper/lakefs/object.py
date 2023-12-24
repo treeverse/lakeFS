@@ -87,6 +87,9 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
         Finalizes any existing operations on object and close open descriptors
         Inheriting classes need to implement _finalize() and _close() respectfully
         """
+        if self._is_closed:
+            return
+
         self._is_closed = True
         self._finalize()
         self._close()
@@ -433,6 +436,14 @@ class ObjectWriter(LakeFSIOBase):
         count = self._fd.write(contents)
         self._pos += count
         return count
+
+    def discard(self) -> None:
+        """
+        Discards of the write buffer and closes writer
+        """
+        if not self._fd.closed:
+            self._fd.close()
+        self._is_closed = True
 
     def _finalize(self) -> None:
         """
