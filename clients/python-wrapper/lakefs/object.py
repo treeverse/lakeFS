@@ -86,7 +86,7 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
     def close(self) -> None:
         """
         Finalizes any existing operations on object and close open descriptors
-        Inheriting classes need to implement _finalize() and _close() respectfully
+        Inheriting classes need to implement _abort() and _close() respectively.
         """
         if self._is_closed:
             return
