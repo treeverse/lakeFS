@@ -57,19 +57,19 @@ def test_object_read_seek(setup_repo, pre_sign):
     assert fd.closed
 
     # read after close
-    with expect_exception_context(ValueError):
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
         fd.read(10)
 
     # seek after close
-    with expect_exception_context(ValueError):
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
         fd.seek(10)
 
     # readline after close
-    with expect_exception_context(ValueError):
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
         fd.readline()
 
     # flush after close
-    with expect_exception_context(ValueError):
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
         fd.flush()
 
     # Close a second time should not fail
@@ -160,11 +160,11 @@ def test_writer(setup_repo):
     writer.close()
 
     # write after close
-    with expect_exception_context(ValueError):
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
         writer.write("test")
 
     # flush after close
-    with expect_exception_context(ValueError):
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
         writer.flush()
 
 
@@ -404,7 +404,7 @@ def test_writer_with_failure(setup_repo):
         pass
 
     # Verify writer is closed
-    with expect_exception_context(ValueError):
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
         writer.write("test")
 
     # Check that the object does not exist in lakeFS after exception
