@@ -1,15 +1,19 @@
 package esti
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
+	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
@@ -165,17 +169,55 @@ func TestCommitReadOnlyRepo(t *testing.T) {
 	name := strings.ToLower(t.Name())
 	storageNamespace := generateUniqueStorageNamespace(name)
 	repoName := makeRepositoryName(name)
-	resp, _ := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+	resp, err := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 		DefaultBranch:    apiutil.Ptr(mainBranch),
 		Name:             repoName,
 		StorageNamespace: storageNamespace,
 		ReadOnly:         swag.Bool(true),
 	})
+	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, storageNamespace)
+	require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+		"create repository '%s', storage '%s'", name, storageNamespace)
+	defer tearDownTest(repoName)
+
 	commitResp, _ := client.CommitWithResponse(ctx, repoName, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "singleCommit",
 	})
 	if commitResp.StatusCode() != http.StatusForbidden {
 		t.Fatalf("expected 403 Forbidden for committing to read-only repo, got %d instead", resp.StatusCode())
 	}
+
+	const objPath = "1.txt"
+	objContent := randstr.String(randomDataContentLength)
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	contentWriter, err := w.CreateFormFile("content", filepath.Base(objPath))
+	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+	_, err = contentWriter.Write([]byte(objContent))
+	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+	err = w.Close()
+	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+	uploadResp, err := client.UploadObjectWithBodyWithResponse(ctx, repoName, mainBranch, &apigen.UploadObjectParams{
+		Path:  objPath,
+		Force: swag.Bool(true),
+	}, w.FormDataContentType(), &b)
+	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+	err = verifyResponse(uploadResp.HTTPResponse, uploadResp.Body)
+	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+
+	commitResp, err = client.CommitWithResponse(ctx, repoName, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+		Message: "singleCommit",
+	})
+	require.NoError(t, err, "failed to commit changes")
+	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+		"failed to commit changes repo %s branch %s", repoName, mainBranch)
+
+	getObjResp, err := client.GetObjectWithResponse(ctx, repoName, mainBranch, &apigen.GetObjectParams{Path: objPath})
+	require.NoError(t, err, "failed to get object")
+	require.NoErrorf(t, verifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
+		"failed to get object repo %s branch %s path %s", repoName, mainBranch, objPath)
+
+	body := string(getObjResp.Body)
+	require.Equalf(t, objContent, body, "path: %s, expected: %s, actual:%s", objPath, objContent, body)
 
 }

@@ -8,10 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
 )
@@ -122,6 +124,78 @@ func TestCopyObject(t *testing.T) {
 		statResp, err := client.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: destPath})
 		require.NoError(t, err)
 		require.Equal(t, http.StatusNotFound, statResp.StatusCode())
+	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		name := strings.ToLower(t.Name())
+		storageNamespace := generateUniqueStorageNamespace(name)
+		repoName := makeRepositoryName(name)
+		resp, err := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    apiutil.Ptr(mainBranch),
+			Name:             repoName,
+			StorageNamespace: storageNamespace,
+			ReadOnly:         swag.Bool(true),
+		})
+		require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, storageNamespace)
+		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+			"create repository '%s', storage '%s'", name, storageNamespace)
+		defer tearDownTest(repoName)
+
+		importPath := getImportPath(t)
+
+		const ingestionBranch = "test-copy"
+
+		_ = testImportNew(t, ctx, repoName, ingestionBranch,
+			[]apigen.ImportLocation{{Path: importPath, Type: "common_prefix"}},
+			map[string]string{"created_by": "import"},
+		)
+
+		res, err := client.StatObjectWithResponse(ctx, repoName, ingestionBranch, &apigen.StatObjectParams{
+			Path: largeObject,
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, res.StatusCode())
+
+		objStat := res.JSON200
+		destPath := "foo"
+		srcBranch := ingestionBranch
+		copyResp, err := client.CopyObjectWithResponse(ctx, repoName, "main", &apigen.CopyObjectParams{
+			DestPath: destPath,
+		}, apigen.CopyObjectJSONRequestBody{
+			SrcPath: largeObject,
+			SrcRef:  &srcBranch,
+		})
+		if copyResp.JSON403 == nil {
+			t.Fatalf("expected 403 forbidden error for CopyObject on read-only repository, got %d status code instead", copyResp.StatusCode())
+		}
+
+		copyResp, err = client.CopyObjectWithResponse(ctx, repoName, "main", &apigen.CopyObjectParams{
+			DestPath: destPath,
+			Force:    swag.Bool(true),
+		}, apigen.CopyObjectJSONRequestBody{
+			SrcPath: largeObject,
+			SrcRef:  &srcBranch,
+		})
+		require.NoError(t, err, "failed to copy")
+		require.NotNil(t, copyResp.JSON201)
+
+		// Verify the creation path, date and physical address are different
+		copyStat := copyResp.JSON201
+		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
+		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
+		require.Equal(t, destPath, copyStat.Path)
+
+		// Verify all else is equal
+		objStat.Mtime = copyStat.Mtime
+		objStat.Path = copyStat.Path
+		objStat.PhysicalAddress = copyStat.PhysicalAddress
+		require.Nil(t, deep.Equal(objStat, copyStat))
+
+		// get back info
+		statResp, err := client.StatObjectWithResponse(ctx, repoName, "main", &apigen.StatObjectParams{Path: destPath})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, statResp.StatusCode())
+		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
 }
 

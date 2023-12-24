@@ -1,14 +1,21 @@
 package esti
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"mime/multipart"
 	"net/http"
+	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 func found(ctx context.Context, repo, ref, path string) (bool, error) {
@@ -63,6 +70,54 @@ func TestDeleteCommitted(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, getResp.StatusCode())
 
 	f, err = found(ctx, repo, mainBranch, objPath)
+	assert.NoError(t, err)
+	assert.False(t, f, "deleted object found")
+}
+
+func TestDeleteObjectsReadOnlyRepository(t *testing.T) {
+	ctx := context.Background()
+	name := strings.ToLower(t.Name())
+	storageNamespace := generateUniqueStorageNamespace(name)
+	repoName := makeRepositoryName(name)
+	resp, err := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    apiutil.Ptr(mainBranch),
+		Name:             repoName,
+		StorageNamespace: storageNamespace,
+		ReadOnly:         swag.Bool(true),
+	})
+	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, storageNamespace)
+	require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+		"create repository '%s', storage '%s'", name, storageNamespace)
+	defer tearDownTest(repoName)
+
+	const objPath = "1.txt"
+	objContent := randstr.String(randomDataContentLength)
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	contentWriter, err := w.CreateFormFile("content", filepath.Base(objPath))
+	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+	_, err = contentWriter.Write([]byte(objContent))
+	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+	err = w.Close()
+	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+	uploadResp, err := client.UploadObjectWithBodyWithResponse(ctx, repoName, mainBranch, &apigen.UploadObjectParams{
+		Path:  objPath,
+		Force: swag.Bool(true),
+	}, w.FormDataContentType(), &b)
+	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+	err = verifyResponse(uploadResp.HTTPResponse, uploadResp.Body)
+	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+
+	deleteResp, err := client.DeleteObjectWithResponse(ctx, repoName, mainBranch, &apigen.DeleteObjectParams{Path: objPath})
+	if deleteResp.JSON403 == nil {
+		t.Fatalf("expected 403 forbidden error for trying to delete an object from a read-only repository, got %d instead", deleteResp.StatusCode())
+	}
+
+	deleteResp, err = client.DeleteObjectWithResponse(ctx, repoName, mainBranch, &apigen.DeleteObjectParams{Path: objPath, Force: swag.Bool(true)})
+	require.NoError(t, err, "failed to delete object")
+	require.Equal(t, http.StatusNoContent, deleteResp.StatusCode())
+
+	f, err := found(ctx, repoName, mainBranch, objPath)
 	assert.NoError(t, err)
 	assert.False(t, f, "deleted object found")
 }
