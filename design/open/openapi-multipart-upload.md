@@ -60,14 +60,12 @@ Cancelation: In order to cancel partial upload of multipart request, the client 
         description: number of parts required to upload
         schema:
           type: integer
-          minimum: 1
-          maximum: 1000
     post:
       tags:
         - staging
       operationId: createMultipartUpload
       summary: Initiate a multipart upload
-      description: Initiates a multipart upload and returns an upload ID with presigned URLs for each part. Part numbers starts with 1 (limit to 1000 parts). Each part minimum size is 5M.
+      description: Initiates a multipart upload and returns an upload ID with presigned URLs for each part. Part numbers starts with 1. Each part minimum size is 5M.
       responses:
         200:
           description: Multipart upload initiated
@@ -150,8 +148,6 @@ components:
       properties:
         part_number:
           type: integer
-          minimum: 1
-          maximum: 1000
         etag:
           type: string
       required:
@@ -210,7 +206,7 @@ The multipart upload support will be part of the storage capability add `pre_sig
 
 - **S3 block adapter exclusive:** Uploading files in multiple parts (multipart upload) is only available when using the S3 block adapter. This feature isn't currently supported with other storage options.
 - **Part size and count restrictions:** There are limits on how you can split your file for upload:
-    - **Maximum parts:** You can split your file into a maximum of 1000 parts.
+    - **Maximum parts:** You can split your file into a maximum of 10000 parts.
     - **Minimum part size:** Each part must be at least 5MB in size. This is a temporary constraint and isn't currently configurable or discoverable. It will become an option when additional storage options are supported.
 - **Initiating the upload:** When starting a multipart upload, you'll need to specify the total number of parts in your request. It reduce the requests for each part presigned URL when the client already knows the size.
 - **Presigning part:** Presigned of a specific part URL for upload will not be supported. This will block unknown size upload using this API.
