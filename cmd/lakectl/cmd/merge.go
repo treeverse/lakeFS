@@ -49,13 +49,13 @@ var mergeCmd = &cobra.Command{
 		if strategy != "dest-wins" && strategy != "source-wins" && strategy != "" {
 			Die("Invalid strategy value. Expected \"dest-wins\" or \"source-wins\"", 1)
 		}
-		force := Must(cmd.Flags().GetBool("force"))
+		ignore := Must(cmd.Flags().GetBool("ignore"))
 
 		body := apigen.MergeIntoBranchJSONRequestBody{
 			Message:  &message,
 			Metadata: &apigen.Merge_Metadata{AdditionalProperties: kvPairs},
 			Strategy: &strategy,
-			Force:    swag.Bool(force),
+			Force:    swag.Bool(ignore),
 		}
 		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, body)
 		if resp != nil && resp.JSON409 != nil {

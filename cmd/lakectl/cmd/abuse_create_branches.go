@@ -27,7 +27,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 		branchPrefix := Must(cmd.Flags().GetString("branch-prefix"))
 		amount := Must(cmd.Flags().GetInt("amount"))
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
-		force := Must(cmd.Flags().GetBool("force"))
+		ignore := Must(cmd.Flags().GetBool("ignore"))
 
 		client := getClient()
 
@@ -66,7 +66,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 		deleteGen.Run(func(input chan string, output chan stress.Result) {
 			for branch := range input {
 				start := time.Now()
-				_, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, branch, &apigen.DeleteBranchParams{Force: swag.Bool(force)})
+				_, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, branch, &apigen.DeleteBranchParams{Force: swag.Bool(ignore)})
 				output <- stress.Result{
 					Error: err,
 					Took:  time.Since(start),
@@ -116,5 +116,5 @@ func init() {
 	abuseCreateBranchesCmd.Flags().Bool("clean-only", false, "only clean up past runs")
 	abuseCreateBranchesCmd.Flags().Int("amount", abuseDefaultAmount, "amount of things to do")
 	abuseCreateBranchesCmd.Flags().Int("parallelism", abuseDefaultParallelism, "amount of things to do in parallel")
-	abuseCreateBranchesCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
+	abuseCreateBranchesCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
 }

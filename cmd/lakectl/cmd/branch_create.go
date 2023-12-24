@@ -28,11 +28,11 @@ var branchCreateCmd = &cobra.Command{
 		if sourceURI.Repository != u.Repository {
 			Die("source branch must be in the same repository", 1)
 		}
-		force := Must(cmd.Flags().GetBool("force"))
+		ignore := Must(cmd.Flags().GetBool("ignore"))
 		resp, err := client.CreateBranchWithResponse(cmd.Context(), u.Repository, apigen.CreateBranchJSONRequestBody{
 			Name:   u.Ref,
 			Source: sourceURI.Ref,
-			Force:  swag.Bool(force),
+			Force:  swag.Bool(ignore),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		fmt.Printf("created branch '%s' %s\n", u.Ref, string(resp.Body))
@@ -44,7 +44,7 @@ func init() {
 	branchCreateCmd.Flags().StringP("source", "s", "", "source branch uri")
 	_ = branchCreateCmd.MarkFlagRequired("source")
 	_ = branchCreateCmd.RegisterFlagCompletionFunc("source", ValidArgsRepository)
-	branchCreateCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
+	branchCreateCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
 
 	branchCmd.AddCommand(branchCreateCmd)
 }

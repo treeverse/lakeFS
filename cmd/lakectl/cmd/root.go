@@ -183,7 +183,8 @@ func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.
 	}
 
 	presign := getPresignMode(cmd, client)
-	return local.SyncFlags{Parallelism: parallelism, Presign: presign}
+	ignore := Must(cmd.Flags().GetBool("ignore"))
+	return local.SyncFlags{Parallelism: parallelism, Presign: presign, Force: ignore}
 }
 
 // getSyncArgs parses arguments to extract a remote URI and deduces the local path.
@@ -225,7 +226,7 @@ func withMetadataFlag(cmd *cobra.Command) {
 func withCommitFlags(cmd *cobra.Command, allowEmptyMessage bool) {
 	withMessageFlags(cmd, allowEmptyMessage)
 	withMetadataFlag(cmd)
-	cmd.Flags().BoolP("force", "f", false, "ignore repository and branch protections")
+	cmd.Flags().Bool("ignore", false, "ignore repository and branch protections")
 }
 
 func getCommitFlags(cmd *cobra.Command) (string, map[string]string) {

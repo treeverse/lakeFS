@@ -25,7 +25,7 @@ var fsRmCmd = &cobra.Command{
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		concurrency := Must(cmd.Flags().GetInt("concurrency"))
 		pathURI := MustParsePathURI("path URI", args[0])
-		force := Must(cmd.Flags().GetBool("force"))
+		ignore := Must(cmd.Flags().GetBool("ignore"))
 		client := getClient()
 		if !recursive {
 			// Delete a single object in the main thread
@@ -52,7 +52,7 @@ var fsRmCmd = &cobra.Command{
 		paths := make(chan string)
 		deleteWg.Add(concurrency)
 		for i := 0; i < concurrency; i++ {
-			go deleteObjectWorker(cmd.Context(), client, pathURI.Repository, pathURI.Ref, paths, errors, &deleteWg, force)
+			go deleteObjectWorker(cmd.Context(), client, pathURI.Repository, pathURI.Ref, paths, errors, &deleteWg, ignore)
 		}
 
 		prefix := *pathURI.Path
@@ -133,7 +133,7 @@ func init() {
 	const defaultConcurrency = 50
 	withRecursiveFlag(fsRmCmd, "recursively delete all objects under the specified path")
 	fsRmCmd.Flags().IntP("concurrency", "C", defaultConcurrency, "max concurrent single delete operations to send to the lakeFS server")
-	fsRmCmd.Flags().BoolP("force", "f", false, "ignore repository read-only protections")
+	fsRmCmd.Flags().Bool("ignore", false, "ignore repository read-only protections")
 
 	fsCmd.AddCommand(fsRmCmd)
 }

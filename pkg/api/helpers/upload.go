@@ -19,11 +19,12 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
 // ClientUpload uploads contents as a file via lakeFS
-func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, force bool) (*apigen.ObjectStats, error) {
+func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, opts ...graveler.SetOptionsFunc) (*apigen.ObjectStats, error) {
 	pr, pw := io.Pipe()
 	defer func() {
 		_ = pr.Close()
@@ -62,9 +63,13 @@ func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterfac
 		}
 	}()
 
+	options := &graveler.SetOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
 	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repoID, branchID, &apigen.UploadObjectParams{
 		Path:  objPath,
-		Force: swag.Bool(force),
+		Force: swag.Bool(options.Force),
 	}, mpContentType, pr, func(ctx context.Context, req *http.Request) error {
 		var metaKey string
 		for k, v := range metadata {
@@ -87,16 +92,20 @@ func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterfac
 	return resp.JSON201, nil
 }
 
-func ClientUploadPreSign(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, force bool) (*apigen.ObjectStats, error) {
+func ClientUploadPreSign(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, opts ...graveler.SetOptionsFunc) (*apigen.ObjectStats, error) {
 	// calculate size using seek
 	contentLength, err := contents.Seek(0, io.SeekEnd)
 	if err != nil {
 		return nil, err
 	}
 
+	options := &graveler.SetOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
 	// upload loop, retry on conflict
 	for {
-		stats, err := clientUploadPreSignHelper(ctx, client, repoID, branchID, objPath, metadata, contentType, contents, contentLength, force)
+		stats, err := clientUploadPreSignHelper(ctx, client, repoID, branchID, objPath, metadata, contentType, contents, contentLength, options.Force)
 		if errors.Is(err, ErrConflict) {
 			continue
 		}

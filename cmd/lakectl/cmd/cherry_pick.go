@@ -28,7 +28,7 @@ var cherryPick = &cobra.Command{
 		ref := MustParseRefURI("commit URI", args[0])
 		branch := MustParseBranchURI("branch URI", args[1])
 		fmt.Println("Branch:", branch)
-		force := Must(cmd.Flags().GetBool("force"))
+		ignore := Must(cmd.Flags().GetBool("ignore"))
 
 		if branch.Repository != ref.Repository {
 			Die("Repository mismatch for destination branch and cherry-pick ref", 1)
@@ -47,7 +47,7 @@ var cherryPick = &cobra.Command{
 		resp, err := clt.CherryPickWithResponse(cmd.Context(), branch.Repository, branch.Ref, apigen.CherryPickJSONRequestBody{
 			Ref:          ref.Ref,
 			ParentNumber: &parentNumber,
-			Force:        swag.Bool(force),
+			Force:        swag.Bool(ignore),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
@@ -63,5 +63,5 @@ func init() {
 	rootCmd.AddCommand(cherryPick)
 
 	cherryPick.Flags().IntP(ParentNumberFlagName, "m", 0, "the parent number (starting from 1) of the cherry-picked commit. The cherry-pick will apply the change relative to the specified parent.")
-	cherryPick.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
+	cherryPick.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
 }

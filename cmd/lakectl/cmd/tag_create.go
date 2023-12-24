@@ -28,14 +28,14 @@ var tagCreateCmd = &cobra.Command{
 
 		client := getClient()
 		ctx := cmd.Context()
-		override := Must(cmd.Flags().GetBool("override"))
 		force := Must(cmd.Flags().GetBool("force"))
+		ignore := Must(cmd.Flags().GetBool("ignore"))
 
 		if tagURI.Repository != commitURI.Repository {
 			Die("both references must belong to the same repository", 1)
 		}
 
-		if override {
+		if force {
 			// checking the validity of the commitRef before deleting the old one
 			res, err := client.GetCommitWithResponse(ctx, tagURI.Repository, commitURI.Ref)
 			DieOnErrorOrUnexpectedStatusCode(res, err, http.StatusOK)
@@ -43,7 +43,7 @@ var tagCreateCmd = &cobra.Command{
 				Die("Bad response from server", 1)
 			}
 
-			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref, &apigen.DeleteTagParams{Force: swag.Bool(force)})
+			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref, &apigen.DeleteTagParams{Force: swag.Bool(ignore)})
 			if err != nil && (resp == nil || resp.JSON404 == nil) {
 				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 			}
@@ -52,7 +52,7 @@ var tagCreateCmd = &cobra.Command{
 		resp, err := client.CreateTagWithResponse(ctx, tagURI.Repository, apigen.CreateTagJSONRequestBody{
 			Id:    tagURI.Ref,
 			Ref:   commitURI.Ref,
-			Force: swag.Bool(force),
+			Force: swag.Bool(ignore),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
@@ -66,7 +66,7 @@ var tagCreateCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	tagCreateCmd.Flags().BoolP("override", "o", false, "override the tag if it exists")
-	tagCreateCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
+	tagCreateCmd.Flags().BoolP("force", "f", false, "override the tag if it exists")
+	tagCreateCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
 	tagCmd.AddCommand(tagCreateCmd)
 }

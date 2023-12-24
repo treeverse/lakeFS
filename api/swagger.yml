@@ -691,6 +691,20 @@ components:
           type: string
         branches_meta_range_id:
           type: string
+
+    RefsRestore:
+      type: object
+      required:
+        - branches_meta_range_id
+        - tags_meta_range_id
+        - commits_meta_range_id
+      properties:
+        commits_meta_range_id:
+          type: string
+        tags_meta_range_id:
+          type: string
+        branches_meta_range_id:
+          type: string
         force:
           type: boolean
           default: false
@@ -2764,7 +2778,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RefsDump"
+              $ref: "#/components/schemas/RefsRestore"
       responses:
         200:
           description: refs successfully loaded
@@ -2852,7 +2866,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RefsDump"
+              $ref: "#/components/schemas/RefsRestore"
       responses:
         202:
           description: restore task created
@@ -2976,12 +2990,6 @@ paths:
         required: true
         schema:
           type: string
-      - in: query
-        name: force
-        required: false
-        schema:
-          type: boolean
-          default: false
     get:
       tags:
         - tags
@@ -3007,6 +3015,12 @@ paths:
         - tags
       operationId: deleteTag
       summary: delete tag
+      parameters:
+        - in: query
+          name: force
+          required: false
+          schema:
+            type: boolean
       responses:
         204:
           description: tag deleted successfully

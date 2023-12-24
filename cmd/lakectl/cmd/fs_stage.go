@@ -27,7 +27,7 @@ The object location must be outside the repository's storage namespace`,
 		checksum, _ := flags.GetString("checksum")
 		contentType, _ := flags.GetString("content-type")
 		meta, metaErr := getKV(cmd, "meta")
-		force := Must(flags.GetBool("force"))
+		ignore := Must(flags.GetBool("ignore"))
 
 		var mtime *int64
 		if mtimeSeconds != 0 {
@@ -45,7 +45,7 @@ The object location must be outside the repository's storage namespace`,
 			PhysicalAddress: location,
 			SizeBytes:       size,
 			ContentType:     &contentType,
-			Force:           swag.Bool(force),
+			Force:           swag.Bool(ignore),
 		}
 		if metaErr == nil {
 			metadata := apigen.ObjectUserMetadata{
@@ -74,7 +74,7 @@ func init() {
 	fsStageCmd.Flags().Int64("mtime", 0, "Object modified time (Unix Epoch in seconds). Defaults to current time")
 	fsStageCmd.Flags().String("content-type", "", "MIME type of contents")
 	fsStageCmd.Flags().StringSlice("meta", []string{}, "key value pairs in the form of key=value")
-	fsStageCmd.Flags().BoolP("force", "f", false, "ignore repository read-only protections")
+	fsStageCmd.Flags().Bool("ignore", false, "ignore repository read-only protections")
 	_ = fsStageCmd.MarkFlagRequired("location")
 	_ = fsStageCmd.MarkFlagRequired("size")
 	_ = fsStageCmd.MarkFlagRequired("checksum")

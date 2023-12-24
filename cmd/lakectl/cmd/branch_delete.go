@@ -20,11 +20,11 @@ var branchDeleteCmd = &cobra.Command{
 		if err != nil || !confirmation {
 			Die("Delete branch aborted", 1)
 		}
-		force := Must(cmd.Flags().GetBool("force"))
+		ignore := Must(cmd.Flags().GetBool("ignore"))
 		client := getClient()
 		u := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", u)
-		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref, &apigen.DeleteBranchParams{Force: swag.Bool(force)})
+		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref, &apigen.DeleteBranchParams{Force: swag.Bool(ignore)})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
@@ -32,7 +32,7 @@ var branchDeleteCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	AssignAutoConfirmFlag(branchDeleteCmd.Flags())
-	branchDeleteCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
+	branchDeleteCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
 
 	branchCmd.AddCommand(branchDeleteCmd)
 }

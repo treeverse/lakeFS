@@ -41,7 +41,7 @@ var commitCmd = &cobra.Command{
 		branchURI := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", branchURI)
 
-		force := Must(cmd.Flags().GetBool("force"))
+		ignore := Must(cmd.Flags().GetBool("ignore"))
 
 		// do commit
 		metadata := apigen.CommitCreation_Metadata{
@@ -52,7 +52,7 @@ var commitCmd = &cobra.Command{
 			Message:  message,
 			Metadata: &metadata,
 			Date:     datePtr,
-			Force:    swag.Bool(force),
+			Force:    swag.Bool(ignore),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {

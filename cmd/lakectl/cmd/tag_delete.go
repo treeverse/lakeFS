@@ -22,8 +22,8 @@ var tagDeleteCmd = &cobra.Command{
 		u := MustParseRefURI("tag URI", args[0])
 
 		ctx := cmd.Context()
-		force := Must(cmd.Flags().GetBool("force"))
-		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref, &apigen.DeleteTagParams{Force: swag.Bool(force)})
+		ignore := Must(cmd.Flags().GetBool("ignore"))
+		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref, &apigen.DeleteTagParams{Force: swag.Bool(ignore)})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
@@ -31,6 +31,6 @@ var tagDeleteCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	AssignAutoConfirmFlag(tagDeleteCmd.Flags())
-	tagDeleteCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
+	tagDeleteCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
 	tagCmd.AddCommand(tagDeleteCmd)
 }

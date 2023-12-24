@@ -25,7 +25,7 @@ var abuseCommitCmd = &cobra.Command{
 		u := MustParseBranchURI("branch URI", args[0])
 		amount := Must(cmd.Flags().GetInt("amount"))
 		gapDuration := Must(cmd.Flags().GetDuration("gap"))
-		force := Must(cmd.Flags().GetBool("force"))
+		ignore := Must(cmd.Flags().GetBool("ignore"))
 
 		fmt.Println("Source branch:", u)
 
@@ -53,7 +53,7 @@ var abuseCommitCmd = &cobra.Command{
 			for work := range input {
 				start := time.Now()
 				resp, err := client.CommitWithResponse(ctx, u.Repository, u.Ref, &apigen.CommitParams{},
-					apigen.CommitJSONRequestBody(apigen.CommitCreation{Message: work, Force: swag.Bool(force)}))
+					apigen.CommitJSONRequestBody(apigen.CommitCreation{Message: work, Force: swag.Bool(ignore)}))
 				if err == nil && resp.StatusCode() != http.StatusOK {
 					err = helpers.ResponseAsError(resp)
 				}
@@ -77,6 +77,6 @@ func init() {
 
 	abuseCommitCmd.Flags().Int("amount", abuseDefaultParallelism, "amount of commits to do")
 	abuseCommitCmd.Flags().Duration("gap", defaultGap, "duration to wait between commits")
-	abuseCommitCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
+	abuseCommitCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
 	abuseCmd.AddCommand(abuseCommitCmd)
 }

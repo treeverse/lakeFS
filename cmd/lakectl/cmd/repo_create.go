@@ -29,7 +29,7 @@ var repoCreateCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		readonlyRepository, err := cmd.Flags().GetBool("read-only")
+		readonlyRepository := Must(cmd.Flags().GetBool("read-only"))
 		if err != nil {
 			DieErr(err)
 		}

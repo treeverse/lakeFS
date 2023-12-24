@@ -1106,7 +1106,7 @@ func (g *Graveler) WriteRange(ctx context.Context, repository *RepositoryRecord,
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force && repository.ReadOnly {
+	if repository.ReadOnly && !options.Force {
 		return nil, ErrReadOnlyRepository
 	}
 	return g.CommittedManager.WriteRange(ctx, repository.StorageNamespace, it)
@@ -1117,7 +1117,7 @@ func (g *Graveler) WriteMetaRange(ctx context.Context, repository *RepositoryRec
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force && repository.ReadOnly {
+	if repository.ReadOnly && !options.Force {
 		return nil, ErrReadOnlyRepository
 	}
 	return g.CommittedManager.WriteMetaRange(ctx, repository.StorageNamespace, ranges)
@@ -1132,7 +1132,7 @@ func (g *Graveler) WriteMetaRangeByIterator(ctx context.Context, repository *Rep
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force && repository.ReadOnly {
+	if repository.ReadOnly && !options.Force {
 		return nil, ErrReadOnlyRepository
 	}
 	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace, it, nil)
@@ -1152,7 +1152,7 @@ func (g *Graveler) CreateBranch(ctx context.Context, repository *RepositoryRecor
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force && repository.ReadOnly {
+	if repository.ReadOnly && !options.Force {
 		return nil, ErrReadOnlyRepository
 	}
 	reference, err := g.Dereference(ctx, repository, ref)
@@ -1220,7 +1220,7 @@ func (g *Graveler) UpdateBranch(ctx context.Context, repository *RepositoryRecor
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force && repository.ReadOnly {
+	if repository.ReadOnly && !options.Force {
 		return nil, ErrReadOnlyRepository
 	}
 	reference, err := g.Dereference(ctx, repository, ref)
@@ -1315,7 +1315,7 @@ func (g *Graveler) CreateTag(ctx context.Context, repository *RepositoryRecord, 
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force && repository.ReadOnly {
+	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
 
@@ -1373,7 +1373,7 @@ func (g *Graveler) DeleteTag(ctx context.Context, repository *RepositoryRecord, 
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force && repository.ReadOnly {
+	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
 	storageNamespace := repository.StorageNamespace
@@ -1454,7 +1454,7 @@ func (g *Graveler) DeleteBranch(ctx context.Context, repository *RepositoryRecor
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force && repository.ReadOnly {
+	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
 	if repository.DefaultBranchID == branchID {
@@ -1649,25 +1649,24 @@ func (g *Graveler) GetRangeIDByKey(ctx context.Context, repository *RepositoryRe
 }
 
 func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, value Value, opts ...SetOptionsFunc) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force {
-		if repository.ReadOnly {
-			return ErrReadOnlyRepository
-		}
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
-		if err != nil {
-			return err
-		}
-		if isProtected {
-			return ErrWriteToProtectedBranch
-		}
+	if repository.ReadOnly && !options.Force {
+		return ErrReadOnlyRepository
 	}
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "set"})
-	err := g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
+	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
 		if !options.IfAbsent {
 			return g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
 		}
@@ -1743,25 +1742,24 @@ func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repo
 }
 
 func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, opts ...SetOptionsFunc) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force {
-		if repository.ReadOnly {
-			return ErrReadOnlyRepository
-		}
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
-		if err != nil {
-			return err
-		}
-		if isProtected {
-			return ErrWriteToProtectedBranch
-		}
+	if repository.ReadOnly && !options.Force {
+		return ErrReadOnlyRepository
 	}
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "delete"})
-	err := g.safeBranchWrite(ctx, log, repository, branchID,
+	err = g.safeBranchWrite(ctx, log, repository, branchID,
 		safeBranchWriteOptions{}, func(branch *Branch) error {
 			return g.deleteUnsafe(ctx, repository, branch, key, nil)
 		}, "delete")
@@ -1771,21 +1769,20 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 // DeleteBatch delete batch of keys. Keys length is limited to DeleteKeysMaxSize. Return error can be of type
 // 'multi-error' holds DeleteError with each key/error that failed as part of the batch.
 func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, keys []Key, opts ...SetOptionsFunc) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force {
-		if repository.ReadOnly {
-			return ErrReadOnlyRepository
-		}
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
-		if err != nil {
-			return err
-		}
-		if isProtected {
-			return ErrWriteToProtectedBranch
-		}
+	if repository.ReadOnly && !options.Force {
+		return ErrReadOnlyRepository
 	}
 
 	if len(keys) > DeleteKeysMaxSize {
@@ -1794,7 +1791,7 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 
 	var m *multierror.Error
 	log := g.log(ctx).WithField("operation", "delete_keys")
-	err := g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{}, func(branch *Branch) error {
+	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{}, func(branch *Branch) error {
 		var cachedMetaRangeID MetaRangeID // used to cache the committed branch metarange ID
 		for _, key := range keys {
 			err := g.deleteUnsafe(ctx, repository, branch, key, &cachedMetaRangeID)
@@ -1929,27 +1926,24 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 	var storageNamespace StorageNamespace
 	var sealedToDrop []StagingToken
 
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_COMMIT)
+	if err != nil {
+		return "", err
+	}
+	if isProtected {
+		return "", ErrCommitToProtectedBranch
+	}
+
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
-	fmt.Printf("options: %+v, readonly: %t\n", *options, repository.ReadOnly)
-
-	if !options.Force {
-		if repository.ReadOnly {
-			return "", ErrReadOnlyRepository
-		}
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_COMMIT)
-		if err != nil {
-			return "", err
-		}
-		if isProtected {
-			return "", ErrCommitToProtectedBranch
-		}
+	if repository.ReadOnly && !options.Force {
+		return "", ErrReadOnlyRepository
 	}
 	storageNamespace = repository.StorageNamespace
 
-	err := g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
+	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		if params.SourceMetaRange != nil {
 			empty, err := g.isStagingEmpty(ctx, repository, branch)
 			if err != nil {
@@ -2132,7 +2126,7 @@ func (g *Graveler) AddCommit(ctx context.Context, repository *RepositoryRecord, 
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force && repository.ReadOnly {
+	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
 	}
 
@@ -2232,25 +2226,24 @@ func (g *Graveler) dropTokens(ctx context.Context, tokens ...StagingToken) {
 }
 
 func (g *Graveler) Reset(ctx context.Context, repository *RepositoryRecord, branchID BranchID, opts ...SetOptionsFunc) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force {
-		if repository.ReadOnly {
-			return ErrReadOnlyRepository
-		}
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
-		if err != nil {
-			return err
-		}
-		if isProtected {
-			return ErrWriteToProtectedBranch
-		}
+	if repository.ReadOnly && !options.Force {
+		return ErrReadOnlyRepository
 	}
 
 	tokensToDrop := make([]StagingToken, 0)
-	err := g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
+	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		// Save current branch tokens for drop
 		tokensToDrop = append(tokensToDrop, branch.StagingToken)
 		tokensToDrop = append(tokensToDrop, branch.SealedTokens...)
@@ -2296,21 +2289,20 @@ func (g *Graveler) resetKey(ctx context.Context, repository *RepositoryRecord, b
 }
 
 func (g *Graveler) ResetKey(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, opts ...SetOptionsFunc) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force {
-		if repository.ReadOnly {
-			return ErrReadOnlyRepository
-		}
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
-		if err != nil {
-			return err
-		}
-		if isProtected {
-			return ErrWriteToProtectedBranch
-		}
+	if repository.ReadOnly && !options.Force {
+		return ErrReadOnlyRepository
 	}
 
 	branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
@@ -2341,28 +2333,27 @@ func (g *Graveler) ResetKey(ctx context.Context, repository *RepositoryRecord, b
 }
 
 func (g *Graveler) ResetPrefix(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, opts ...SetOptionsFunc) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force {
-		if repository.ReadOnly {
-			return ErrReadOnlyRepository
-		}
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
-		if err != nil {
-			return err
-		}
-		if isProtected {
-			return ErrWriteToProtectedBranch
-		}
+	if repository.ReadOnly && !options.Force {
+		return ErrReadOnlyRepository
 	}
 
 	// New sealed tokens list after change includes current staging token
 	newSealedTokens := make([]StagingToken, 0)
 	newStagingToken := GenerateStagingToken(repository.RepositoryID, branchID)
 
-	err := g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
+	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		newSealedTokens = []StagingToken{branch.StagingToken}
 		newSealedTokens = append(newSealedTokens, branch.SealedTokens...)
 
@@ -2415,21 +2406,20 @@ type CommitIDAndSummary struct {
 // That is, try to apply the diff from C2 to C1 on the tip of the branch.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the revert is done.
 func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams, opts ...SetOptionsFunc) (CommitID, error) {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return "", err
+	}
+	if isProtected {
+		return "", ErrWriteToProtectedBranch
+	}
+
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force {
-		if repository.ReadOnly {
-			return "", ErrReadOnlyRepository
-		}
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
-		if err != nil {
-			return "", err
-		}
-		if isProtected {
-			return "", ErrWriteToProtectedBranch
-		}
+	if repository.ReadOnly && !options.Force {
+		return "", ErrReadOnlyRepository
 	}
 	commitRecord, err := g.dereferenceCommit(ctx, repository, ref)
 	if err != nil {
@@ -2508,21 +2498,20 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 // CherryPick creates a new commit on the given branch, with the changes from the given commit.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the cherry-pick is done.
 func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber *int, committer string, opts ...SetOptionsFunc) (CommitID, error) {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return "", err
+	}
+	if isProtected {
+		return "", ErrWriteToProtectedBranch
+	}
+
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force {
-		if repository.ReadOnly {
-			return "", ErrReadOnlyRepository
-		}
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
-		if err != nil {
-			return "", err
-		}
-		if isProtected {
-			return "", ErrWriteToProtectedBranch
-		}
+	if repository.ReadOnly && !options.Force {
+		return "", ErrReadOnlyRepository
 	}
 
 	commitRecord, err := g.dereferenceCommit(ctx, repository, ref)
@@ -2612,21 +2601,20 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 }
 
 func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string, opts ...SetOptionsFunc) (CommitID, error) {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, destination, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return "", err
+	}
+	if isProtected {
+		return "", ErrWriteToProtectedBranch
+	}
+
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force {
-		if repository.ReadOnly {
-			return "", ErrReadOnlyRepository
-		}
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, destination, BranchProtectionBlockedAction_STAGING_WRITE)
-		if err != nil {
-			return "", err
-		}
-		if isProtected {
-			return "", ErrWriteToProtectedBranch
-		}
+	if repository.ReadOnly && !options.Force {
+		return "", ErrReadOnlyRepository
 	}
 
 	var (
@@ -2636,7 +2624,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 	)
 
 	storageNamespace := repository.StorageNamespace
-	err := g.prepareForCommitIDUpdate(ctx, repository, destination, "merge")
+	err = g.prepareForCommitIDUpdate(ctx, repository, destination, "merge")
 	if err != nil {
 		return "", err
 	}
@@ -2790,21 +2778,20 @@ func (g *Graveler) retryRepoMetadataUpdate(ctx context.Context, repository *Repo
 }
 
 func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams, prefixes []Prefix, opts ...SetOptionsFunc) (CommitID, error) {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, destination, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return "", err
+	}
+	if isProtected {
+		return "", ErrWriteToProtectedBranch
+	}
+
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force {
-		if repository.ReadOnly {
-			return "", ErrReadOnlyRepository
-		}
-		isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, destination, BranchProtectionBlockedAction_STAGING_WRITE)
-		if err != nil {
-			return "", err
-		}
-		if isProtected {
-			return "", ErrWriteToProtectedBranch
-		}
+	if repository.ReadOnly && !options.Force {
+		return "", ErrReadOnlyRepository
 	}
 
 	var (
@@ -2814,7 +2801,7 @@ func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, des
 	)
 
 	storageNamespace := repository.StorageNamespace
-	err := g.prepareForCommitIDUpdate(ctx, repository, destination, "import")
+	err = g.prepareForCommitIDUpdate(ctx, repository, destination, "import")
 	if err != nil {
 		return "", err
 	}
@@ -3049,7 +3036,7 @@ func (g *Graveler) LoadCommits(ctx context.Context, repository *RepositoryRecord
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force && repository.ReadOnly {
+	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
 
@@ -3101,7 +3088,7 @@ func (g *Graveler) LoadBranches(ctx context.Context, repository *RepositoryRecor
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force && repository.ReadOnly {
+	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
 	iter, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
@@ -3137,7 +3124,7 @@ func (g *Graveler) LoadTags(ctx context.Context, repository *RepositoryRecord, m
 	for _, opt := range opts {
 		opt(options)
 	}
-	if !options.Force && repository.ReadOnly {
+	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
 	iter, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)

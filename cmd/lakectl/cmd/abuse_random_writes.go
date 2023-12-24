@@ -25,7 +25,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 		amount := Must(cmd.Flags().GetInt("amount"))
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
 		prefix := Must(cmd.Flags().GetString("prefix"))
-		force := Must(cmd.Flags().GetBool("force"))
+		ignore := Must(cmd.Flags().GetBool("ignore"))
 
 		fmt.Println("Source branch:", u)
 		generator := stress.NewGenerator("stage object", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
@@ -53,7 +53,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 			Checksum:        checksum,
 			PhysicalAddress: addr,
 			SizeBytes:       size,
-			Force:           swag.Bool(force),
+			Force:           swag.Bool(ignore),
 		}
 
 		// execute the things!
@@ -82,5 +82,5 @@ func init() {
 	abuseRandomWritesCmd.Flags().String("prefix", "abuse/", "prefix to create paths under")
 	abuseRandomWritesCmd.Flags().Int("amount", abuseDefaultAmount, "amount of writes to do")
 	abuseRandomWritesCmd.Flags().Int("parallelism", abuseDefaultParallelism, "amount of writes to do in parallel")
-	abuseRandomWritesCmd.Flags().BoolP("force", "f", false, "ignore read-only protection on the repository")
+	abuseRandomWritesCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
 }

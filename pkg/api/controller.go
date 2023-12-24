@@ -1513,7 +1513,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 			StorageNamespace: repo.StorageNamespace,
 			CreationDate:     creationDate,
 			DefaultBranch:    repo.DefaultBranch,
-			ReadOnly:         repo.ReadOnly,
+			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}
 		results = append(results, r)
 	}
@@ -1649,7 +1649,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		DefaultBranch:    newRepo.DefaultBranch,
 		Id:               newRepo.Name,
 		StorageNamespace: newRepo.StorageNamespace,
-		ReadOnly:         newRepo.ReadOnly,
+		ReadOnly:         swag.Bool(newRepo.ReadOnly),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -1754,7 +1754,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 			DefaultBranch:    repo.DefaultBranch,
 			Id:               repo.Name,
 			StorageNamespace: repo.StorageNamespace,
-			ReadOnly:         repo.ReadOnly,
+			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}
 		writeResponse(w, r, http.StatusOK, response)
 
@@ -4253,7 +4253,7 @@ func (c *Controller) DeleteTag(w http.ResponseWriter, r *http.Request, repositor
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, tag string, _ apigen.GetTagParams) {
+func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, tag string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.ReadTagAction,

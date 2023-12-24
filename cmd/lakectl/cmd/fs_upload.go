@@ -9,6 +9,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -26,14 +27,14 @@ var fsUploadCmd = &cobra.Command{
 		contentType := Must(cmd.Flags().GetString("content-type"))
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		remotePath := pathURI.GetPath()
-		force := Must(cmd.Flags().GetBool("force"))
+		ignore := Must(cmd.Flags().GetBool("ignore"))
 		ctx := cmd.Context()
 
 		if !recursive { // Assume source is a single file
 			if strings.HasSuffix(remotePath, uri.PathSeparator) {
 				Die("target path is not a valid URI", 1)
 			}
-			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags.Presign, force)
+			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags.Presign, ignore)
 			if err != nil {
 				DieErr(err)
 			}
@@ -62,7 +63,7 @@ var fsUploadCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		err = s.Sync(fullPath, pathURI, c, local.WithForce(force))
+		err = s.Sync(fullPath, pathURI, c)
 		if err != nil {
 			DieErr(err)
 		}
@@ -83,9 +84,9 @@ func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sou
 	}()
 	objectPath := apiutil.Value(destURI.Path)
 	if preSign {
-		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp, force)
+		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp, graveler.WithForce(force))
 	}
-	return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp, force)
+	return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp, graveler.WithForce(force))
 }
 
 //nolint:gochecknoinits
@@ -93,7 +94,7 @@ func init() {
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	_ = fsUploadCmd.MarkFlagRequired("source")
 	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
-	fsUploadCmd.Flags().BoolP("force", "f", false, "ignore repository read-only protections")
+	fsUploadCmd.Flags().Bool("ignore", false, "ignore repository read-only protections")
 	withRecursiveFlag(fsUploadCmd, "recursively copy all files under local source")
 	withSyncFlags(fsUploadCmd)
 
