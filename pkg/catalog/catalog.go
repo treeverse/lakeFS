@@ -2120,7 +2120,7 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 	return c.Store.GetRange(ctx, repository, graveler.RangeID(rangeID))
 }
 
-func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, importID string, params ImportRequest, logger logging.Logger, opts ...graveler.SetOptionsFunc) error {
+func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, importID string, params ImportRequest, logger logging.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background()) // Need a new context for the async operations
 	defer cancel()
 
@@ -2167,7 +2167,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 
 	var ranges []*graveler.RangeInfo
 	for importItr.hasMore {
-		rangeInfo, err := c.Store.WriteRange(ctx, repository, importItr)
+		rangeInfo, err := c.Store.WriteRange(ctx, repository, importItr, graveler.WithForce(params.Force))
 		if err != nil {
 			importError := fmt.Errorf("write range: %w", err)
 			importManager.SetError(importError)
@@ -2182,7 +2182,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 	}
 
 	// Create metarange
-	metarange, err := c.Store.WriteMetaRange(ctx, repository, ranges)
+	metarange, err := c.Store.WriteMetaRange(ctx, repository, ranges, graveler.WithForce(params.Force))
 	if err != nil {
 		importError := fmt.Errorf("create metarange: %w", err)
 		importManager.SetError(importError)
@@ -2201,7 +2201,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 		Committer: params.Commit.Committer,
 		Message:   params.Commit.CommitMessage,
 		Metadata:  map[string]string(params.Commit.Metadata),
-	}, prefixes, opts...)
+	}, prefixes, graveler.WithForce(params.Force))
 	if err != nil {
 		importError := fmt.Errorf("merge import: %w", err)
 		importManager.SetError(importError)
@@ -2228,7 +2228,7 @@ func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, i
 	return nil
 }
 
-func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, params ImportRequest, opts ...graveler.SetOptionsFunc) (string, error) {
+func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, params ImportRequest) (string, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return "", err
@@ -2243,7 +2243,7 @@ func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, par
 	// Run import
 	go func() {
 		logger := c.log(ctx).WithField("import_id", id)
-		err = c.importAsync(repository, branchID, id, params, logger, opts...)
+		err = c.importAsync(repository, branchID, id, params, logger)
 		if err != nil {
 			logger.WithError(err).Error("import failure")
 		}
