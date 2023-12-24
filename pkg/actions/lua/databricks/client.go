@@ -112,6 +112,7 @@ func newDatabricksClient(l *lua.State) (*databricks.WorkspaceClient, error) {
 
 func (client *Client) RegisterExternalTable(l *lua.State) int {
 	tableName := lua.CheckString(l, 1)
+	tableName = strings.ReplaceAll(tableName, "-", "_")
 	location := lua.CheckString(l, 2)
 	warehouseID := lua.CheckString(l, 3)
 	catalogName := lua.CheckString(l, 4)
