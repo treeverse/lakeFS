@@ -487,7 +487,7 @@ class ObjectWriter(LakeFSIOBase):
 
     def _abort(self) -> None:
         """
-        Close open descriptors
+        Close open descriptors but create nothing on lakeFS.
         """
         if not self._fd.closed:
             self._fd.close()
