@@ -83,3 +83,100 @@ func TestCacheRace(t *testing.T) {
 	close(start)
 	wg.Wait()
 }
+
+// Spy manages a setFn that always returns a constant and spies on whether
+// it was called.
+type Spy struct {
+	value  interface{}
+	called bool
+}
+
+func NewSpy(value interface{}) *Spy {
+	return &Spy{
+		value:  value,
+		called: false,
+	}
+}
+
+// MakeSetFn returns a SetFn that remembers it was called and returns the
+// configured value.
+func (s *Spy) MakeSetFn() cache.SetFn {
+	return cache.SetFn(func() (interface{}, error) {
+		s.called = true
+		return s.value, nil
+	})
+}
+
+// ResetCalled forgets whether the SetFn was called.
+func (s *Spy) ResetCalled() {
+	s.called = false
+}
+
+// Called returns true if the SetFn was called.
+func (s *Spy) Called() bool {
+	return s.called
+}
+
+func TestCacheGetSetWithExpiry(t *testing.T) {
+	const (
+		cacheSize = 100
+		value     = 17
+		// fastExpiry should be long enough for some code to
+		// execute, but short enough to allow waiting for it a few
+		// times.
+		fastExpiry = time.Millisecond * 5
+		// slowExpiry should not expire before the test is done.
+		slowExpiry = time.Hour * 5
+	)
+
+	c := cache.NewCache(cacheSize, time.Millisecond, cache.NewJitterFn(time.Millisecond))
+
+	spy := NewSpy(value)
+	setFn := spy.MakeSetFn()
+
+	_, err := c.GetOrSetWithExpiry("long-lived", setFn, slowExpiry)
+	if err != nil {
+		t.Errorf("Failed to GetSet long-lived: %s", err)
+	}
+	if !spy.Called() {
+		t.Error("Expected to call SetFn for long-lived")
+	}
+	spy.ResetCalled()
+
+	_, err = c.GetOrSetWithExpiry("short-lived", setFn, fastExpiry)
+	if err != nil {
+		t.Errorf("Failed to GetSet short-lived: %s", err)
+	}
+	if !spy.Called() {
+		t.Error("Expected to call SetFn for short-lived")
+	}
+	spy.ResetCalled()
+
+	_, err = c.GetOrSetWithExpiry("short-lived", setFn, fastExpiry)
+	if err != nil {
+		t.Errorf("Failed to GetSet short-lived: %s", err)
+	}
+	if spy.Called() {
+		t.Error("Expected not to call SetFn for short-lived so soon after")
+	}
+	spy.ResetCalled()
+
+	time.Sleep(2 * fastExpiry)
+	_, err = c.GetOrSetWithExpiry("short-lived", setFn, fastExpiry)
+	if err != nil {
+		t.Errorf("Failed to GetSet short-lived: %s", err)
+	}
+	if !spy.Called() {
+		t.Error("Expected to call SetFn after expiry for short-lived")
+	}
+	spy.ResetCalled()
+
+	_, err = c.GetOrSetWithExpiry("long-lived", setFn, slowExpiry)
+	if err != nil {
+		t.Errorf("Failed to GetSet long-lived: %s", err)
+	}
+	if spy.Called() {
+		t.Error("Expected not to call SetFn again for long-lived")
+	}
+	spy.ResetCalled()
+}

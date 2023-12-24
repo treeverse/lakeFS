@@ -15,10 +15,9 @@ type Cache interface {
 }
 
 type GetSetCache struct {
-	lru          *lru.Cache
-	computations *ChanOnlyOne
-	jitterFn     JitterFn
-	baseExpiry   time.Duration
+	lru               *lru.Cache
+	computations      *ChanOnlyOne
+	defaultExpiryFunc func() time.Duration
 }
 
 func NewCache(size int, expiry time.Duration, jitterFn JitterFn) *GetSetCache {
@@ -26,12 +25,17 @@ func NewCache(size int, expiry time.Duration, jitterFn JitterFn) *GetSetCache {
 	return &GetSetCache{
 		lru:          c,
 		computations: NewChanOnlyOne(),
-		jitterFn:     jitterFn,
-		baseExpiry:   expiry,
+		defaultExpiryFunc: func() time.Duration {
+			return expiry + jitterFn()
+		},
 	}
 }
 
 func (c *GetSetCache) GetOrSet(k interface{}, setFn SetFn) (v interface{}, err error) {
+	return c.GetOrSetWithExpiry(k, setFn, c.defaultExpiryFunc())
+}
+
+func (c *GetSetCache) GetOrSetWithExpiry(k interface{}, setFn SetFn, expiry time.Duration) (v interface{}, err error) {
 	if v, ok := c.lru.Get(k); ok {
 		return v, nil
 	}
@@ -40,7 +44,7 @@ func (c *GetSetCache) GetOrSet(k interface{}, setFn SetFn) (v interface{}, err e
 		if err != nil { // Don't cache errors
 			return nil, err
 		}
-		c.lru.AddEx(k, v, c.baseExpiry+c.jitterFn())
+		c.lru.AddEx(k, v, expiry)
 		return v, nil
 	})
 }
