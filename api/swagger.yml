@@ -158,7 +158,6 @@ components:
         - id
         - default_branch
         - storage_namespace
-        - read_only
       properties:
         id:
           type: string
