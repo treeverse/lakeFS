@@ -55,6 +55,23 @@ def test_object_read_seek(setup_repo, pre_sign):
             fd.seek(0, 10)
 
     assert fd.closed
+
+    # read after close
+    with expect_exception_context(ValueError):
+        fd.read(10)
+
+    # seek after close
+    with expect_exception_context(ValueError):
+        fd.seek(10)
+
+    # readline after close
+    with expect_exception_context(ValueError):
+        fd.readline()
+
+    # flush after close
+    with expect_exception_context(ValueError):
+        fd.flush()
+
     # Close a second time should not fail
     fd.close()
 
@@ -141,6 +158,14 @@ def test_writer(setup_repo):
 
     # try to close writer again
     writer.close()
+
+    # write after close
+    with expect_exception_context(ValueError):
+        writer.write("test")
+
+    # flush after close
+    with expect_exception_context(ValueError):
+        writer.flush()
 
 
 @pytest.mark.parametrize("w_mode", get_args(WriteModes))

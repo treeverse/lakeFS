@@ -92,15 +92,20 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
             return
 
         self._is_closed = True
-        self._finalize()
         self._close()
 
     @abstractmethod
-    def _finalize(self) -> None:
+    def _close(self) -> None:
+        """
+        Specific implementation of the close method
+        """
         raise NotImplementedError
 
     @abstractmethod
-    def _close(self) -> None:
+    def _abort(self) -> None:
+        """
+        Specific implementation for when the IO object should be discarded
+        """
         raise NotImplementedError
 
     def fileno(self) -> int:
@@ -179,7 +184,7 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
 
         else:
             self._is_closed = True
-            self._close()  # perform logic regardless of exception
+            self._abort()  # perform logic regardless of exception
 
         return False  # Don't suppress an exception
 
@@ -255,9 +260,13 @@ class ObjectReader(LakeFSIOBase):
             os.SEEK_SET or 0 (absolute file positioning);
             other values are os.SEEK_CUR or 1 (seek relative to the current position) and os.SEEK_END or 2
             (seek relative to the file’s end)
+        :raise ValueError: if reader is closed
         :raise OSError: if calculated new position is negative
         :raise io.UnsupportedOperation: If whence value is unsupported
         """
+        if self.closed:
+            raise ValueError("I/O operation on closed file")
+
         if whence == os.SEEK_SET:
             pos = offset
         elif whence == os.SEEK_CUR:
@@ -298,11 +307,15 @@ class ObjectReader(LakeFSIOBase):
         :param n: How many bytes to read. If read_bytes is None, will read from current position to end.
             If current position + read_bytes > object size.
         :return: The bytes read
+        :raise ValueError: if reader is closed
         :raise OSError: if read_bytes is non-positive
         :raise ObjectNotFoundException: if repository id, reference id or object path does not exist
         :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
         :raise ServerException: for any other errors
         """
+        if self.closed:
+            raise ValueError("I/O operation on closed file")
+
         if n and n <= 0:
             raise OSError("read_bytes must be a positive integer")
 
@@ -317,7 +330,14 @@ class ObjectReader(LakeFSIOBase):
         Read and return a line from the stream.
 
         :param limit: If limit > -1 returns at most limit bytes
+        :raise ValueError: if reader is closed
+        :raise ObjectNotFoundException: if repository id, reference id or object path does not exist
+        :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
+        :raise ServerException: for any other errors
         """
+        if self.closed:
+            raise ValueError("I/O operation on closed file")
+
         if self._readlines_buf.getbuffer().nbytes == 0:
             self._readlines_buf = io.BytesIO(self._read(self._get_range_string(0)))
         self._readlines_buf.seek(self._pos)
@@ -328,18 +348,23 @@ class ObjectReader(LakeFSIOBase):
     def flush(self) -> None:
         """
         Nothing to do for reader
-        """
 
-    def _finalize(self) -> None:
+        :raise ValueError: if reader is closed
         """
-        Nothing to do for reader
-        """
+        if self.closed:
+            raise ValueError("I/O operation on closed file")
 
-    def _close(self):
+    def _close(self) -> None:
         """
         Close open descriptors
         """
         self._readlines_buf.close()
+
+    def _abort(self):
+        """
+        Closes reader
+        """
+        self._close()
 
     @staticmethod
     def _get_range_string(start, read_bytes=None):
@@ -413,7 +438,13 @@ class ObjectWriter(LakeFSIOBase):
         """
         Flush buffer to file. Prevent flush if total write size is still smaller than _BUFFER_SIZE so that we avoid
         unnecessary write to disk.
+
+        :raise ValueError: if writer is closed
         """
+
+        if self.closed:
+            raise ValueError("I/O operation on closed file")
+
         # Don't flush buffer to file if we didn't exceed buffer size
         # We want to avoid using the file if possible
         if self._pos > _WRITER_BUFFER_SIZE:
@@ -425,6 +456,7 @@ class ObjectWriter(LakeFSIOBase):
 
         :param s: The data to write
         :return: The number of bytes written to buffer
+        :raise ValueError: if writer is closed
         """
         binary_mode = 'b' in self._mode
         if binary_mode and isinstance(s, str):
@@ -446,14 +478,15 @@ class ObjectWriter(LakeFSIOBase):
             self._fd.close()
         self._is_closed = True
 
-    def _finalize(self) -> None:
+    def _close(self) -> None:
         """
         Write the data to the lakeFS server
         """
         stats = self._upload_presign() if self.pre_sign else self._upload_raw()
         self._obj_stats = ObjectInfo(**stats.dict())
+        self._fd.close()
 
-    def _close(self) -> None:
+    def _abort(self) -> None:
         """
         Close open descriptors
         """
