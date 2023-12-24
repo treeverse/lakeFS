@@ -474,8 +474,7 @@ class ObjectWriter(LakeFSIOBase):
         """
         Discards of the write buffer and closes writer
         """
-        if not self._fd.closed:
-            self._fd.close()
+        self._abort()
         self._is_closed = True
 
     def _close(self) -> None:
@@ -490,7 +489,8 @@ class ObjectWriter(LakeFSIOBase):
         """
         Close open descriptors
         """
-        self._fd.close()
+        if not self._fd.closed:
+            self._fd.close()
 
     @staticmethod
     def _extract_etag_from_response(headers) -> str:
