@@ -104,6 +104,9 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                 end
                 if p ~= "" then
                     local unescaped_path = url.query_unescape(p)
+                    if not unescaped_path then
+                        error("failed unescaping path: " .. p)
+                    end
                     unescaped_path = pathlib.join("/", table_path, unescaped_path)
                     local code, obj = lakefs.stat_object(repo, commit_id, unescaped_path)
                     if code == 200 then
