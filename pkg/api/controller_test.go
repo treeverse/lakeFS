@@ -2438,6 +2438,16 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 			t.Fatalf("Expected 403 forbidden error for UploadObject on read-only repository, got %d instead", resp.StatusCode())
 		}
 
+		contentWriter, err = w.CreateFormFile("content", filepath.Base(path))
+		if err != nil {
+			t.Fatal("CreateFormFile:", err)
+		}
+		if _, err := io.Copy(contentWriter, strings.NewReader(content)); err != nil {
+			t.Fatal("CreateFormFile write content:", err)
+		}
+		if err := w.Close(); err != nil {
+			t.Fatal("Close multipart writer:", err)
+		}
 		resp, err = clt.UploadObjectWithBodyWithResponse(ctx, readOnlyRepo, "main", &apigen.UploadObjectParams{
 			Path:  path,
 			Force: swag.Bool(true),
