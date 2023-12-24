@@ -133,7 +133,7 @@ func init() {
 	const defaultConcurrency = 50
 	withRecursiveFlag(fsRmCmd, "recursively delete all objects under the specified path")
 	fsRmCmd.Flags().IntP("concurrency", "C", defaultConcurrency, "max concurrent single delete operations to send to the lakeFS server")
-	fsRmCmd.Flags().Bool("ignore", false, "ignore repository read-only protections")
+	fsRmCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
 
 	fsCmd.AddCommand(fsRmCmd)
 }
