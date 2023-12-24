@@ -29,7 +29,7 @@ var tagCreateCmd = &cobra.Command{
 		client := getClient()
 		ctx := cmd.Context()
 		force := Must(cmd.Flags().GetBool("force"))
-		ignore := Must(cmd.Flags().GetBool("ignore"))
+		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 
 		if tagURI.Repository != commitURI.Repository {
 			Die("both references must belong to the same repository", 1)
@@ -67,6 +67,6 @@ var tagCreateCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	tagCreateCmd.Flags().BoolP("force", "f", false, "override the tag if it exists")
-	tagCreateCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
+	withIgnoreFlag(tagCreateCmd)
 	tagCmd.AddCommand(tagCreateCmd)
 }

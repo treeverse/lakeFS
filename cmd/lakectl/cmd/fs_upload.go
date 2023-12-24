@@ -27,7 +27,7 @@ var fsUploadCmd = &cobra.Command{
 		contentType := Must(cmd.Flags().GetString("content-type"))
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		remotePath := pathURI.GetPath()
-		ignore := Must(cmd.Flags().GetBool("ignore"))
+		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 		ctx := cmd.Context()
 
 		if !recursive { // Assume source is a single file
@@ -94,9 +94,9 @@ func init() {
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	_ = fsUploadCmd.MarkFlagRequired("source")
 	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
-	fsUploadCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
 	withRecursiveFlag(fsUploadCmd, "recursively copy all files under local source")
 	withSyncFlags(fsUploadCmd)
+	withIgnoreFlag(fsUploadCmd)
 
 	fsCmd.AddCommand(fsUploadCmd)
 }

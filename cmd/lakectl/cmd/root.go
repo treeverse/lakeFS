@@ -126,6 +126,7 @@ const (
 	recursiveFlagShort  = "r"
 	presignFlagName     = "pre-sign"
 	parallelismFlagName = "parallelism"
+	ignoreFlagName      = "ignore"
 
 	defaultSyncParallelism = 25
 	defaultSyncPresign     = true
@@ -156,6 +157,11 @@ func withPresignFlag(cmd *cobra.Command) {
 		"Use pre-signed URLs when downloading/uploading data (recommended)")
 }
 
+func withIgnoreFlag(cmd *cobra.Command) {
+	cmd.Flags().Bool(ignoreFlagName, false,
+		"ignore read-only protection on the repository")
+}
+
 func withSyncFlags(cmd *cobra.Command) {
 	withParallelismFlag(cmd)
 	withPresignFlag(cmd)
@@ -183,7 +189,7 @@ func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.
 	}
 
 	presign := getPresignMode(cmd, client)
-	ignore := Must(cmd.Flags().GetBool("ignore"))
+	ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 	return local.SyncFlags{Parallelism: parallelism, Presign: presign, Force: ignore}
 }
 
@@ -226,7 +232,7 @@ func withMetadataFlag(cmd *cobra.Command) {
 func withCommitFlags(cmd *cobra.Command, allowEmptyMessage bool) {
 	withMessageFlags(cmd, allowEmptyMessage)
 	withMetadataFlag(cmd)
-	cmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
+	cmd.Flags().Bool(ignoreFlagName, false, "ignore read-only protection on the repository")
 }
 
 func getCommitFlags(cmd *cobra.Command) (string, map[string]string) {

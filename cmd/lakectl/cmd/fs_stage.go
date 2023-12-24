@@ -74,7 +74,7 @@ func init() {
 	fsStageCmd.Flags().Int64("mtime", 0, "Object modified time (Unix Epoch in seconds). Defaults to current time")
 	fsStageCmd.Flags().String("content-type", "", "MIME type of contents")
 	fsStageCmd.Flags().StringSlice("meta", []string{}, "key value pairs in the form of key=value")
-	fsStageCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
+	withIgnoreFlag(fsStageCmd)
 	_ = fsStageCmd.MarkFlagRequired("location")
 	_ = fsStageCmd.MarkFlagRequired("size")
 	_ = fsStageCmd.MarkFlagRequired("checksum")

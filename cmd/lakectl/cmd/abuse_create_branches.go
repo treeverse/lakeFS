@@ -27,7 +27,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 		branchPrefix := Must(cmd.Flags().GetString("branch-prefix"))
 		amount := Must(cmd.Flags().GetInt("amount"))
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
-		ignore := Must(cmd.Flags().GetBool("ignore"))
+		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 
 		client := getClient()
 
@@ -116,5 +116,5 @@ func init() {
 	abuseCreateBranchesCmd.Flags().Bool("clean-only", false, "only clean up past runs")
 	abuseCreateBranchesCmd.Flags().Int("amount", abuseDefaultAmount, "amount of things to do")
 	abuseCreateBranchesCmd.Flags().Int("parallelism", abuseDefaultParallelism, "amount of things to do in parallel")
-	abuseCreateBranchesCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
+	withIgnoreFlag(abuseCreateBranchesCmd)
 }

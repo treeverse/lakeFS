@@ -20,7 +20,7 @@ var branchDeleteCmd = &cobra.Command{
 		if err != nil || !confirmation {
 			Die("Delete branch aborted", 1)
 		}
-		ignore := Must(cmd.Flags().GetBool("ignore"))
+		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 		client := getClient()
 		u := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", u)
@@ -32,7 +32,7 @@ var branchDeleteCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	AssignAutoConfirmFlag(branchDeleteCmd.Flags())
-	branchDeleteCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
+	withIgnoreFlag(branchDeleteCmd)
 
 	branchCmd.AddCommand(branchDeleteCmd)
 }

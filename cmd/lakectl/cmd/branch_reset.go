@@ -32,7 +32,7 @@ var branchResetCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		ignore := Must(cmd.Flags().GetBool("ignore"))
+		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 
 		var reset apigen.ResetCreation
 		var confirmationMsg string
@@ -75,7 +75,7 @@ func init() {
 
 	branchResetCmd.Flags().String("prefix", "", "prefix of the objects to be reset")
 	branchResetCmd.Flags().String("object", "", "path to object to be reset")
-	branchResetCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
+	withIgnoreFlag(branchResetCmd)
 
 	branchCmd.AddCommand(branchResetCmd)
 }

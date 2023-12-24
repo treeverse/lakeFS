@@ -28,7 +28,7 @@ var cherryPick = &cobra.Command{
 		ref := MustParseRefURI("commit URI", args[0])
 		branch := MustParseBranchURI("branch URI", args[1])
 		fmt.Println("Branch:", branch)
-		ignore := Must(cmd.Flags().GetBool("ignore"))
+		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 
 		if branch.Repository != ref.Repository {
 			Die("Repository mismatch for destination branch and cherry-pick ref", 1)
@@ -63,5 +63,5 @@ func init() {
 	rootCmd.AddCommand(cherryPick)
 
 	cherryPick.Flags().IntP(ParentNumberFlagName, "m", 0, "the parent number (starting from 1) of the cherry-picked commit. The cherry-pick will apply the change relative to the specified parent.")
-	cherryPick.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
+	withIgnoreFlag(cherryPick)
 }

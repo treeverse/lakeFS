@@ -25,7 +25,7 @@ var abuseCommitCmd = &cobra.Command{
 		u := MustParseBranchURI("branch URI", args[0])
 		amount := Must(cmd.Flags().GetInt("amount"))
 		gapDuration := Must(cmd.Flags().GetDuration("gap"))
-		ignore := Must(cmd.Flags().GetBool("ignore"))
+		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 
 		fmt.Println("Source branch:", u)
 
@@ -77,6 +77,6 @@ func init() {
 
 	abuseCommitCmd.Flags().Int("amount", abuseDefaultParallelism, "amount of commits to do")
 	abuseCommitCmd.Flags().Duration("gap", defaultGap, "duration to wait between commits")
-	abuseCommitCmd.Flags().Bool("ignore", false, "ignore read-only protection on the repository")
+	withIgnoreFlag(abuseCommitCmd)
 	abuseCmd.AddCommand(abuseCommitCmd)
 }

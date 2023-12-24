@@ -2406,14 +2406,6 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string
 	return c.Store.SaveGarbageCollectionCommits(ctx, repository)
 }
 
-func (c *Catalog) IsReadOnlyRepository(ctx context.Context, repositoryID string) (bool, error) {
-	repository, err := c.getRepository(ctx, repositoryID)
-	if err != nil {
-		return false, err
-	}
-	return repository.ReadOnly, nil
-}
-
 // GCUncommittedMark Marks the *next* item to be scanned by the paginated call to PrepareGCUncommitted
 type GCUncommittedMark struct {
 	BranchID graveler.BranchID `json:"branch"`

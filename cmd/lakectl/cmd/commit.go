@@ -41,7 +41,7 @@ var commitCmd = &cobra.Command{
 		branchURI := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", branchURI)
 
-		ignore := Must(cmd.Flags().GetBool("ignore"))
+		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 
 		// do commit
 		metadata := apigen.CommitCreation_Metadata{

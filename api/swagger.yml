@@ -172,7 +172,7 @@ components:
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
         read_only:
           type: boolean
-          description: Whether the repository is a read-only repository
+          description: Whether the repository is a read-only repository- not relevant for bare repositories
 
     RepositoryMetadata:
       type: object

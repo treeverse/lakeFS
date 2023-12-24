@@ -44,7 +44,7 @@ var localCommitCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		ignore := Must(cmd.Flags().GetBool("ignore"))
+		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 
 		if idx.ActiveOperation != "" {
 			fmt.Printf("Latest 'local %s' operation was interrupted, running 'local commit' operation now might lead to data loss.\n", idx.ActiveOperation)
