@@ -207,6 +207,7 @@ func TestCommitReadOnlyRepo(t *testing.T) {
 
 	commitResp, err = client.CommitWithResponse(ctx, repoName, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "singleCommit",
+		Force:   swag.Bool(true),
 	})
 	require.NoError(t, err, "failed to commit changes")
 	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),

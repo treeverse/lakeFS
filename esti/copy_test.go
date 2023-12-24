@@ -38,6 +38,7 @@ func TestCopyObject(t *testing.T) {
 		_ = testImportNew(t, ctx, repo, ingestionBranch,
 			[]apigen.ImportLocation{{Path: importPath, Type: "common_prefix"}},
 			map[string]string{"created_by": "import"},
+			false,
 		)
 
 		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &apigen.StatObjectParams{
@@ -85,6 +86,7 @@ func TestCopyObject(t *testing.T) {
 		_ = testImportNew(t, ctx, repo, ingestionBranch,
 			[]apigen.ImportLocation{{Path: importPath, Type: "common_prefix"}},
 			map[string]string{"created_by": "import"},
+			false,
 		)
 
 		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &apigen.StatObjectParams{
@@ -148,6 +150,7 @@ func TestCopyObject(t *testing.T) {
 		_ = testImportNew(t, ctx, repoName, ingestionBranch,
 			[]apigen.ImportLocation{{Path: importPath, Type: "common_prefix"}},
 			map[string]string{"created_by": "import"},
+			true,
 		)
 
 		res, err := client.StatObjectWithResponse(ctx, repoName, ingestionBranch, &apigen.StatObjectParams{
