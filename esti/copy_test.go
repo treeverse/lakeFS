@@ -168,7 +168,7 @@ func TestCopyObject(t *testing.T) {
 			SrcPath: largeObject,
 			SrcRef:  &srcBranch,
 		})
-		if copyResp.JSON403 == nil {
+		if copyResp.StatusCode() == http.StatusForbidden {
 			t.Fatalf("expected 403 forbidden error for CopyObject on read-only repository, got %d status code instead", copyResp.StatusCode())
 		}
 
