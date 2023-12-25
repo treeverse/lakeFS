@@ -1134,6 +1134,27 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("delete read-only repository", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", true)
+		testutil.Must(t, err)
+
+		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("expected status code 403 for deleting a read-only repository, got %d instead", resp.StatusCode())
+		}
+
+		resp, err = clt.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{Force: swag.Bool(true)})
+		verifyResponseOK(t, resp, err)
+
+		// delete again to expect repository not found
+		resp, err = clt.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
+		testutil.Must(t, err)
+		if resp.JSON404 == nil {
+			t.Fatalf("expected repository to be gone (404), instead got status: %s", resp.Status())
+		}
+	})
 }
 
 func TestController_GetRepositoryMetadataHandler(t *testing.T) {
