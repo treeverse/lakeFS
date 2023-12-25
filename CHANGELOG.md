@@ -1,5 +1,12 @@
 # Changelog
 
+# v1.4.0
+
+:new: What's new:
+
+- Delta Lake Catalog Exporter (#7078)
+- Unity Catalog Exporter (#7167)
+
 # v1.3.1
 
 :bug: Bugs fixed:
