@@ -80,4 +80,12 @@ public class StagingMetadataTest {
         // TODO: test contentType
     }
 
+    /**
+     * Test the property 'force'
+     */
+    @Test
+    public void forceTest() {
+        // TODO: test force
+    }
+
 }

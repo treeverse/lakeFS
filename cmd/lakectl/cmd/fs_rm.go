@@ -96,7 +96,7 @@ func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesIn
 	for objPath := range paths {
 		objs = append(objs, objPath)
 		if len(objs) >= deleteChunkSize {
-			resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, apigen.DeleteObjectsJSONRequestBody{
+			resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{
 				Paths: objs,
 			})
 			err = RetrieveError(resp, err)
@@ -108,7 +108,7 @@ func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesIn
 		}
 	}
 	if len(objs) > 0 {
-		resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, apigen.DeleteObjectsJSONRequestBody{
+		resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{
 			Paths: objs,
 		})
 		err = RetrieveError(resp, err)

@@ -64,7 +64,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 		deleteGen.Run(func(input chan string, output chan stress.Result) {
 			for branch := range input {
 				start := time.Now()
-				_, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, branch)
+				_, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, branch, &apigen.DeleteBranchParams{})
 				output <- stress.Result{
 					Error: err,
 					Took:  time.Since(start),

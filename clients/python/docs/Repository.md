@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **creation_date** | **int** | Unix Epoch in seconds | 
 **default_branch** | **str** |  | 
 **storage_namespace** | **str** | Filesystem URI to store the underlying data in (e.g. \&quot;s3://my-bucket/some/path/\&quot;) | 
+**read_only** | **bool** | Whether the repository is a read-only repository- not relevant for bare repositories | [optional] 
 
 ## Example
 

@@ -44,6 +44,10 @@ public class CommitCreation {
   @SerializedName(SERIALIZED_NAME_DATE)
   private Long date;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
 
   public CommitCreation message(String message) {
     
@@ -122,6 +126,29 @@ public class CommitCreation {
   }
 
 
+  public CommitCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -133,12 +160,13 @@ public class CommitCreation {
     CommitCreation commitCreation = (CommitCreation) o;
     return Objects.equals(this.message, commitCreation.message) &&
         Objects.equals(this.metadata, commitCreation.metadata) &&
-        Objects.equals(this.date, commitCreation.date);
+        Objects.equals(this.date, commitCreation.date) &&
+        Objects.equals(this.force, commitCreation.force);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(message, metadata, date);
+    return Objects.hash(message, metadata, date, force);
   }
 
   @Override
@@ -148,6 +176,7 @@ public class CommitCreation {
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("    date: ").append(toIndentedString(date)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("}");
     return sb.toString();
   }

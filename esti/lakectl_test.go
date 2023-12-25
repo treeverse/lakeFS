@@ -3,13 +3,13 @@ package esti
 import (
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var emptyVars = make(map[string]string)

@@ -108,6 +108,7 @@ public class Example {
 | **201** | the cherry-pick commit |  -  |
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Conflict Found |  -  |
 | **420** | too many requests |  -  |
@@ -205,6 +206,7 @@ public class Example {
 | **201** | reference |  -  |
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
 | **420** | too many requests |  -  |
@@ -212,7 +214,7 @@ public class Example {
 
 <a id="deleteBranch"></a>
 # **deleteBranch**
-> deleteBranch(repository, branch).execute();
+> deleteBranch(repository, branch).force(force).execute();
 
 delete branch
 
@@ -261,8 +263,10 @@ public class Example {
     BranchesApi apiInstance = new BranchesApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
+    Boolean force = false; // Boolean | 
     try {
       apiInstance.deleteBranch(repository, branch)
+            .force(force)
             .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling BranchesApi#deleteBranch");
@@ -281,6 +285,7 @@ public class Example {
 |------------- | ------------- | ------------- | -------------|
 | **repository** | **String**|  | |
 | **branch** | **String**|  | |
+| **force** | **Boolean**|  | [optional] [default to false] |
 
 ### Return type
 
@@ -701,6 +706,7 @@ null (empty response body)
 |-------------|-------------|------------------|
 | **204** | reset successful |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
@@ -798,6 +804,7 @@ null (empty response body)
 | **204** | revert successful |  -  |
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Conflict Found |  -  |
 | **420** | too many requests |  -  |

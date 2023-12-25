@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** | ID of tag to create | 
 **ref** | **str** | the commit to tag | 
+**force** | **bool** |  | [optional] [default to False]
 
 ## Example
 

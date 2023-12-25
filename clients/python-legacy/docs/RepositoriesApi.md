@@ -90,6 +90,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         storage_namespace="s3://example-bucket/",
         default_branch="main",
         sample_data=True,
+        read_only=True,
     ) # RepositoryCreation | 
     bare = False # bool | If true, create a bare repository with no initial commit and branch (optional) if omitted the server will use the default value of False
 
@@ -315,11 +316,20 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = repositories_api.RepositoriesApi(api_client)
     repository = "repository_example" # str | 
+    force = False # bool | Bypass read-only protection and delete the repository (optional) if omitted the server will use the default value of False
 
     # example passing only required values which don't have defaults set
     try:
         # delete repository
         api_instance.delete_repository(repository)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling RepositoriesApi->delete_repository: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # delete repository
+        api_instance.delete_repository(repository, force=force)
     except lakefs_client.ApiException as e:
         print("Exception when calling RepositoriesApi->delete_repository: %s\n" % e)
 ```
@@ -330,6 +340,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
+ **force** | **bool**| Bypass read-only protection and delete the repository | [optional] if omitted the server will use the default value of False
 
 ### Return type
 
@@ -1232,7 +1243,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **restore_submit**
-> TaskInfo restore_submit(repository, refs_dump)
+> TaskInfo restore_submit(repository, refs_restore)
 
 Restore repository from a dump in the object store
 
@@ -1248,7 +1259,7 @@ Restore repository from a dump in the object store
 import time
 import lakefs_client
 from lakefs_client.api import repositories_api
-from lakefs_client.model.refs_dump import RefsDump
+from lakefs_client.model.refs_restore import RefsRestore
 from lakefs_client.model.error import Error
 from lakefs_client.model.task_info import TaskInfo
 from pprint import pprint
@@ -1297,16 +1308,17 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = repositories_api.RepositoriesApi(api_client)
     repository = "repository_example" # str | 
-    refs_dump = RefsDump(
+    refs_restore = RefsRestore(
         commits_meta_range_id="commits_meta_range_id_example",
         tags_meta_range_id="tags_meta_range_id_example",
         branches_meta_range_id="branches_meta_range_id_example",
-    ) # RefsDump | 
+        force=False,
+    ) # RefsRestore | 
 
     # example passing only required values which don't have defaults set
     try:
         # Restore repository from a dump in the object store
-        api_response = api_instance.restore_submit(repository, refs_dump)
+        api_response = api_instance.restore_submit(repository, refs_restore)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling RepositoriesApi->restore_submit: %s\n" % e)
@@ -1318,7 +1330,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
- **refs_dump** | [**RefsDump**](RefsDump.md)|  |
+ **refs_restore** | [**RefsRestore**](RefsRestore.md)|  |
 
 ### Return type
 
@@ -1340,6 +1352,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **202** | restore task created |  -  |
 **400** | Validation Error |  -  |
+**403** | Forbidden |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |

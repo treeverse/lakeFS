@@ -68,6 +68,10 @@ public class RepositoryCreation {
   @SerializedName(SERIALIZED_NAME_SAMPLE_DATA)
   private Boolean sampleData = false;
 
+  public static final String SERIALIZED_NAME_READ_ONLY = "read_only";
+  @SerializedName(SERIALIZED_NAME_READ_ONLY)
+  private Boolean readOnly = false;
+
   public RepositoryCreation() {
   }
 
@@ -154,6 +158,27 @@ public class RepositoryCreation {
     this.sampleData = sampleData;
   }
 
+
+  public RepositoryCreation readOnly(Boolean readOnly) {
+    
+    this.readOnly = readOnly;
+    return this;
+  }
+
+   /**
+   * Get readOnly
+   * @return readOnly
+  **/
+  @javax.annotation.Nullable
+  public Boolean getReadOnly() {
+    return readOnly;
+  }
+
+
+  public void setReadOnly(Boolean readOnly) {
+    this.readOnly = readOnly;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -212,13 +237,14 @@ public class RepositoryCreation {
     return Objects.equals(this.name, repositoryCreation.name) &&
         Objects.equals(this.storageNamespace, repositoryCreation.storageNamespace) &&
         Objects.equals(this.defaultBranch, repositoryCreation.defaultBranch) &&
-        Objects.equals(this.sampleData, repositoryCreation.sampleData)&&
+        Objects.equals(this.sampleData, repositoryCreation.sampleData) &&
+        Objects.equals(this.readOnly, repositoryCreation.readOnly)&&
         Objects.equals(this.additionalProperties, repositoryCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, storageNamespace, defaultBranch, sampleData, additionalProperties);
+    return Objects.hash(name, storageNamespace, defaultBranch, sampleData, readOnly, additionalProperties);
   }
 
   @Override
@@ -229,6 +255,7 @@ public class RepositoryCreation {
     sb.append("    storageNamespace: ").append(toIndentedString(storageNamespace)).append("\n");
     sb.append("    defaultBranch: ").append(toIndentedString(defaultBranch)).append("\n");
     sb.append("    sampleData: ").append(toIndentedString(sampleData)).append("\n");
+    sb.append("    readOnly: ").append(toIndentedString(readOnly)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -256,6 +283,7 @@ public class RepositoryCreation {
     openapiFields.add("storage_namespace");
     openapiFields.add("default_branch");
     openapiFields.add("sample_data");
+    openapiFields.add("read_only");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

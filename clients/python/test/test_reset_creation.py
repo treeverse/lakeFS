@@ -40,7 +40,8 @@ class TestResetCreation(unittest.TestCase):
         if include_optional :
             return ResetCreation(
                 type = 'object', 
-                path = ''
+                path = '', 
+                force = True
             )
         else :
             return ResetCreation(

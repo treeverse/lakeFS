@@ -282,6 +282,10 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrWriteToProtectedBranch))
 		return
 	}
+	if errors.Is(err, graveler.ErrReadOnlyRepository) {
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrReadOnlyRepository))
+		return
+	}
 	if err != nil {
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return

@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **sizeBytes** | **Long** |  | 
 **userMetadata** | **Map&lt;String, String&gt;** |  |  [optional]
 **contentType** | **String** | Object media type |  [optional]
+**force** | **Boolean** |  |  [optional]
 
 
 

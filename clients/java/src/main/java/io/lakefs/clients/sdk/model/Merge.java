@@ -66,6 +66,10 @@ public class Merge {
   @SerializedName(SERIALIZED_NAME_STRATEGY)
   private String strategy;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
   public Merge() {
   }
 
@@ -139,6 +143,27 @@ public class Merge {
     this.strategy = strategy;
   }
 
+
+  public Merge force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -196,13 +221,14 @@ public class Merge {
     Merge merge = (Merge) o;
     return Objects.equals(this.message, merge.message) &&
         Objects.equals(this.metadata, merge.metadata) &&
-        Objects.equals(this.strategy, merge.strategy)&&
+        Objects.equals(this.strategy, merge.strategy) &&
+        Objects.equals(this.force, merge.force)&&
         Objects.equals(this.additionalProperties, merge.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(message, metadata, strategy, additionalProperties);
+    return Objects.hash(message, metadata, strategy, force, additionalProperties);
   }
 
   @Override
@@ -212,6 +238,7 @@ public class Merge {
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("    strategy: ").append(toIndentedString(strategy)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -238,6 +265,7 @@ public class Merge {
     openapiFields.add("message");
     openapiFields.add("metadata");
     openapiFields.add("strategy");
+    openapiFields.add("force");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

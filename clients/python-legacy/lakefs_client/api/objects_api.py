@@ -136,6 +136,7 @@ class ObjectsApi(object):
                     'repository',
                     'branch',
                     'path',
+                    'force',
                 ],
                 'required': [
                     'repository',
@@ -161,16 +162,20 @@ class ObjectsApi(object):
                         (str,),
                     'path':
                         (str,),
+                    'force':
+                        (bool,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'branch': 'branch',
                     'path': 'path',
+                    'force': 'force',
                 },
                 'location_map': {
                     'repository': 'path',
                     'branch': 'path',
                     'path': 'query',
+                    'force': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -203,6 +208,7 @@ class ObjectsApi(object):
                     'repository',
                     'branch',
                     'path_list',
+                    'force',
                 ],
                 'required': [
                     'repository',
@@ -228,15 +234,19 @@ class ObjectsApi(object):
                         (str,),
                     'path_list':
                         (PathList,),
+                    'force':
+                        (bool,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'branch': 'branch',
+                    'force': 'force',
                 },
                 'location_map': {
                     'repository': 'path',
                     'branch': 'path',
                     'path_list': 'body',
+                    'force': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -676,6 +686,7 @@ class ObjectsApi(object):
                     'path',
                     'storage_class',
                     'if_none_match',
+                    'force',
                     'content',
                 ],
                 'required': [
@@ -713,6 +724,8 @@ class ObjectsApi(object):
                         (str,),
                     'if_none_match':
                         (str,),
+                    'force':
+                        (bool,),
                     'content':
                         (file_type,),
                 },
@@ -722,6 +735,7 @@ class ObjectsApi(object):
                     'path': 'path',
                     'storage_class': 'storageClass',
                     'if_none_match': 'If-None-Match',
+                    'force': 'force',
                     'content': 'content',
                 },
                 'location_map': {
@@ -730,6 +744,7 @@ class ObjectsApi(object):
                     'path': 'query',
                     'storage_class': 'query',
                     'if_none_match': 'header',
+                    'force': 'query',
                     'content': 'form',
                 },
                 'collection_format_map': {
@@ -845,6 +860,7 @@ class ObjectsApi(object):
             path (str): relative to the branch
 
         Keyword Args:
+            force (bool): [optional] if omitted the server will use the default value of False
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -918,6 +934,7 @@ class ObjectsApi(object):
             path_list (PathList):
 
         Keyword Args:
+            force (bool): [optional] if omitted the server will use the default value of False
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -1365,6 +1382,7 @@ class ObjectsApi(object):
         Keyword Args:
             storage_class (str): Deprecated, this capability will not be supported in future releases.. [optional]
             if_none_match (str): Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases. . [optional]
+            force (bool): [optional] if omitted the server will use the default value of False
             content (file_type): Only a single file per upload which must be named \\\"content\\\".. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.

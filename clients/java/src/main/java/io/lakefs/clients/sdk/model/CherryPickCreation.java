@@ -60,6 +60,10 @@ public class CherryPickCreation {
   @SerializedName(SERIALIZED_NAME_PARENT_NUMBER)
   private Integer parentNumber;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
   public CherryPickCreation() {
   }
 
@@ -102,6 +106,27 @@ public class CherryPickCreation {
 
   public void setParentNumber(Integer parentNumber) {
     this.parentNumber = parentNumber;
+  }
+
+
+  public CherryPickCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
   }
 
   /**
@@ -160,13 +185,14 @@ public class CherryPickCreation {
     }
     CherryPickCreation cherryPickCreation = (CherryPickCreation) o;
     return Objects.equals(this.ref, cherryPickCreation.ref) &&
-        Objects.equals(this.parentNumber, cherryPickCreation.parentNumber)&&
+        Objects.equals(this.parentNumber, cherryPickCreation.parentNumber) &&
+        Objects.equals(this.force, cherryPickCreation.force)&&
         Objects.equals(this.additionalProperties, cherryPickCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ref, parentNumber, additionalProperties);
+    return Objects.hash(ref, parentNumber, force, additionalProperties);
   }
 
   @Override
@@ -175,6 +201,7 @@ public class CherryPickCreation {
     sb.append("class CherryPickCreation {\n");
     sb.append("    ref: ").append(toIndentedString(ref)).append("\n");
     sb.append("    parentNumber: ").append(toIndentedString(parentNumber)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -200,6 +227,7 @@ public class CherryPickCreation {
     openapiFields = new HashSet<String>();
     openapiFields.add("ref");
     openapiFields.add("parent_number");
+    openapiFields.add("force");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

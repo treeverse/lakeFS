@@ -171,6 +171,7 @@ const (
 	ERRLakeFSNotSupported
 	ERRLakeFSWrongEndpoint
 	ErrWriteToProtectedBranch
+	ErrReadOnlyRepository
 )
 
 type errorCodeMap map[APIErrorCode]APIError
@@ -756,6 +757,11 @@ var Codes = errorCodeMap{
 	ErrWriteToProtectedBranch: {
 		Code:           "ErrWriteToProtectedBranch",
 		Description:    "Attempted to write to a protected branch",
+		HTTPStatusCode: http.StatusForbidden,
+	},
+	ErrReadOnlyRepository: {
+		Code:           "ErrReadOnlyRepository",
+		Description:    "Attempted to write to a read-only repository",
 		HTTPStatusCode: http.StatusForbidden,
 	},
 }

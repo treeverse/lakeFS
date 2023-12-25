@@ -56,15 +56,15 @@ func (g *FakeGraveler) CreateBareRepository(_ context.Context, _ graveler.Reposi
 	panic("implement me")
 }
 
-func (g *FakeGraveler) LoadCommits(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.MetaRangeID) error {
+func (g *FakeGraveler) LoadCommits(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.MetaRangeID, _ ...graveler.SetOptionsFunc) error {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) LoadBranches(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.MetaRangeID) error {
+func (g *FakeGraveler) LoadBranches(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.MetaRangeID, _ ...graveler.SetOptionsFunc) error {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) LoadTags(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.MetaRangeID) error {
+func (g *FakeGraveler) LoadTags(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.MetaRangeID, _ ...graveler.SetOptionsFunc) error {
 	panic("implement me")
 }
 
@@ -117,11 +117,11 @@ func (g *FakeGraveler) Set(_ context.Context, repository *graveler.RepositoryRec
 	return nil
 }
 
-func (g *FakeGraveler) Delete(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key) error {
+func (g *FakeGraveler) Delete(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, _ ...graveler.SetOptionsFunc) error {
 	return nil
 }
 
-func (g *FakeGraveler) DeleteBatch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, keys []graveler.Key) error {
+func (g *FakeGraveler) DeleteBatch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, keys []graveler.Key, _ ...graveler.SetOptionsFunc) error {
 	return nil
 }
 
@@ -143,7 +143,7 @@ func (g *FakeGraveler) GetRepository(ctx context.Context, repositoryID graveler.
 	return &graveler.RepositoryRecord{RepositoryID: repositoryID}, nil
 }
 
-func (g *FakeGraveler) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.RepositoryRecord, error) {
+func (g *FakeGraveler) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID, readOnly bool) (*graveler.RepositoryRecord, error) {
 	panic("implement me")
 }
 
@@ -154,15 +154,15 @@ func (g *FakeGraveler) ListRepositories(ctx context.Context) (graveler.Repositor
 	return g.RepositoryIteratorFactory(), nil
 }
 
-func (g *FakeGraveler) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
+func (g *FakeGraveler) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID, opts ...graveler.SetOptionsFunc) error {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) CreateBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error) {
+func (g *FakeGraveler) CreateBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref, _ ...graveler.SetOptionsFunc) (*graveler.Branch, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) UpdateBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error) {
+func (g *FakeGraveler) UpdateBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref, _ ...graveler.SetOptionsFunc) (*graveler.Branch, error) {
 	panic("implement me")
 }
 
@@ -190,11 +190,11 @@ func (g *FakeGraveler) GetTag(ctx context.Context, repository *graveler.Reposito
 	panic("implement me")
 }
 
-func (g *FakeGraveler) CreateTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID, commitID graveler.CommitID) error {
+func (g *FakeGraveler) CreateTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID, commitID graveler.CommitID, _ ...graveler.SetOptionsFunc) error {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) DeleteTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID) error {
+func (g *FakeGraveler) DeleteTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID, _ ...graveler.SetOptionsFunc) error {
 	panic("implement me")
 }
 
@@ -216,19 +216,19 @@ func (g *FakeGraveler) ListBranches(_ context.Context, _ *graveler.RepositoryRec
 	return g.BranchIteratorFactory(), nil
 }
 
-func (g *FakeGraveler) DeleteBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) error {
+func (g *FakeGraveler) DeleteBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, _ ...graveler.SetOptionsFunc) error {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) Commit(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, _ graveler.CommitParams) (graveler.CommitID, error) {
+func (g *FakeGraveler) Commit(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, _ graveler.CommitParams, _ ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) WriteRange(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.ValueIterator) (*graveler.RangeInfo, error) {
+func (g *FakeGraveler) WriteRange(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.ValueIterator, _ ...graveler.SetOptionsFunc) (*graveler.RangeInfo, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) WriteMetaRange(ctx context.Context, repository *graveler.RepositoryRecord, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
+func (g *FakeGraveler) WriteMetaRange(ctx context.Context, repository *graveler.RepositoryRecord, ranges []*graveler.RangeInfo, _ ...graveler.SetOptionsFunc) (*graveler.MetaRangeInfo, error) {
 	panic("implement me")
 }
 
@@ -240,23 +240,23 @@ func (g *FakeGraveler) Dereference(ctx context.Context, repository *graveler.Rep
 	panic("implement me")
 }
 
-func (g *FakeGraveler) Reset(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) error {
+func (g *FakeGraveler) Reset(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, _ ...graveler.SetOptionsFunc) error {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) ResetKey(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key) error {
+func (g *FakeGraveler) ResetKey(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, _ ...graveler.SetOptionsFunc) error {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) ResetPrefix(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key) error {
+func (g *FakeGraveler) ResetPrefix(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, _ ...graveler.SetOptionsFunc) error {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) Revert(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, _ graveler.Ref, _ int, _ graveler.CommitParams) (graveler.CommitID, error) {
+func (g *FakeGraveler) Revert(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, _ graveler.Ref, _ int, _ graveler.CommitParams, _ ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
 	panic("implement me")
 }
 
-func (g *FakeGraveler) Merge(ctx context.Context, repository *graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, _ graveler.CommitParams, strategy string) (graveler.CommitID, error) {
+func (g *FakeGraveler) Merge(ctx context.Context, repository *graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, _ graveler.CommitParams, strategy string, _ ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
 	panic("implement me")
 }
 
@@ -289,7 +289,7 @@ func (g *FakeGraveler) SetHooksHandler(handler graveler.HooksHandler) {
 	g.hooks = handler
 }
 
-func (g *FakeGraveler) AddCommit(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
+func (g *FakeGraveler) AddCommit(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
 	panic("implement me")
 }
 
@@ -297,7 +297,7 @@ func (g *FakeGraveler) AddCommitNoLock(_ context.Context, _ *graveler.Repository
 	panic("implement me")
 }
 
-func (g *FakeGraveler) WriteMetaRangeByIterator(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.ValueIterator) (*graveler.MetaRangeID, error) {
+func (g *FakeGraveler) WriteMetaRangeByIterator(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.ValueIterator, opts ...graveler.SetOptionsFunc) (*graveler.MetaRangeID, error) {
 	panic("implement me")
 }
 

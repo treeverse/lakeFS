@@ -1521,7 +1521,7 @@ Name | Type | Description  | Notes
 
 <a name="restoreRefs"></a>
 # **restoreRefs**
-> restoreRefs(repository, refsDump)
+> restoreRefs(repository, refsRestore)
 
 Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 
@@ -1569,9 +1569,9 @@ public class Example {
 
     InternalApi apiInstance = new InternalApi(defaultClient);
     String repository = "repository_example"; // String | 
-    RefsDump refsDump = new RefsDump(); // RefsDump | 
+    RefsRestore refsRestore = new RefsRestore(); // RefsRestore | 
     try {
-      apiInstance.restoreRefs(repository, refsDump);
+      apiInstance.restoreRefs(repository, refsRestore);
     } catch (ApiException e) {
       System.err.println("Exception when calling InternalApi#restoreRefs");
       System.err.println("Status code: " + e.getCode());
@@ -1588,7 +1588,7 @@ public class Example {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
- **refsDump** | [**RefsDump**](RefsDump.md)|  |
+ **refsRestore** | [**RefsRestore**](RefsRestore.md)|  |
 
 ### Return type
 

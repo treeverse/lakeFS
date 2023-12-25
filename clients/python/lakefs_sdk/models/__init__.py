@@ -78,6 +78,7 @@ from lakefs_sdk.models.range_metadata import RangeMetadata
 from lakefs_sdk.models.ref import Ref
 from lakefs_sdk.models.ref_list import RefList
 from lakefs_sdk.models.refs_dump import RefsDump
+from lakefs_sdk.models.refs_restore import RefsRestore
 from lakefs_sdk.models.repository import Repository
 from lakefs_sdk.models.repository_creation import RepositoryCreation
 from lakefs_sdk.models.repository_dump_status import RepositoryDumpStatus

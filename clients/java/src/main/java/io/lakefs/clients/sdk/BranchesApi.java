@@ -185,6 +185,7 @@ public class BranchesApi {
             <tr><td> 201 </td><td> the cherry-pick commit </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -205,6 +206,7 @@ public class BranchesApi {
             <tr><td> 201 </td><td> the cherry-pick commit </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -226,6 +228,7 @@ public class BranchesApi {
             <tr><td> 201 </td><td> the cherry-pick commit </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -247,6 +250,7 @@ public class BranchesApi {
             <tr><td> 201 </td><td> the cherry-pick commit </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -271,6 +275,7 @@ public class BranchesApi {
         <tr><td> 201 </td><td> the cherry-pick commit </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Conflict Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -378,6 +383,7 @@ public class BranchesApi {
             <tr><td> 201 </td><td> reference </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -398,6 +404,7 @@ public class BranchesApi {
             <tr><td> 201 </td><td> reference </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -419,6 +426,7 @@ public class BranchesApi {
             <tr><td> 201 </td><td> reference </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -440,6 +448,7 @@ public class BranchesApi {
             <tr><td> 201 </td><td> reference </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -463,6 +472,7 @@ public class BranchesApi {
         <tr><td> 201 </td><td> reference </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -472,7 +482,7 @@ public class BranchesApi {
     public APIcreateBranchRequest createBranch(String repository, BranchCreation branchCreation) {
         return new APIcreateBranchRequest(repository, branchCreation);
     }
-    private okhttp3.Call deleteBranchCall(String repository, String branch, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteBranchCall(String repository, String branch, Boolean force, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -499,6 +509,10 @@ public class BranchesApi {
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
+        if (force != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("force", force));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -519,7 +533,7 @@ public class BranchesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call deleteBranchValidateBeforeCall(String repository, String branch, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteBranchValidateBeforeCall(String repository, String branch, Boolean force, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling deleteBranch(Async)");
@@ -530,19 +544,19 @@ public class BranchesApi {
             throw new ApiException("Missing the required parameter 'branch' when calling deleteBranch(Async)");
         }
 
-        return deleteBranchCall(repository, branch, _callback);
+        return deleteBranchCall(repository, branch, force, _callback);
 
     }
 
 
-    private ApiResponse<Void> deleteBranchWithHttpInfo(String repository, String branch) throws ApiException {
-        okhttp3.Call localVarCall = deleteBranchValidateBeforeCall(repository, branch, null);
+    private ApiResponse<Void> deleteBranchWithHttpInfo(String repository, String branch, Boolean force) throws ApiException {
+        okhttp3.Call localVarCall = deleteBranchValidateBeforeCall(repository, branch, force, null);
         return localVarApiClient.execute(localVarCall);
     }
 
-    private okhttp3.Call deleteBranchAsync(String repository, String branch, final ApiCallback<Void> _callback) throws ApiException {
+    private okhttp3.Call deleteBranchAsync(String repository, String branch, Boolean force, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = deleteBranchValidateBeforeCall(repository, branch, _callback);
+        okhttp3.Call localVarCall = deleteBranchValidateBeforeCall(repository, branch, force, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
@@ -550,10 +564,21 @@ public class BranchesApi {
     public class APIdeleteBranchRequest {
         private final String repository;
         private final String branch;
+        private Boolean force;
 
         private APIdeleteBranchRequest(String repository, String branch) {
             this.repository = repository;
             this.branch = branch;
+        }
+
+        /**
+         * Set force
+         * @param force  (optional, default to false)
+         * @return APIdeleteBranchRequest
+         */
+        public APIdeleteBranchRequest force(Boolean force) {
+            this.force = force;
+            return this;
         }
 
         /**
@@ -573,7 +598,7 @@ public class BranchesApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return deleteBranchCall(repository, branch, _callback);
+            return deleteBranchCall(repository, branch, force, _callback);
         }
 
         /**
@@ -591,7 +616,7 @@ public class BranchesApi {
          </table>
          */
         public void execute() throws ApiException {
-            deleteBranchWithHttpInfo(repository, branch);
+            deleteBranchWithHttpInfo(repository, branch, force);
         }
 
         /**
@@ -610,7 +635,7 @@ public class BranchesApi {
          </table>
          */
         public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
-            return deleteBranchWithHttpInfo(repository, branch);
+            return deleteBranchWithHttpInfo(repository, branch, force);
         }
 
         /**
@@ -630,7 +655,7 @@ public class BranchesApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
-            return deleteBranchAsync(repository, branch, _callback);
+            return deleteBranchAsync(repository, branch, force, _callback);
         }
     }
 
@@ -1395,6 +1420,7 @@ public class BranchesApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> reset successful </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -1412,6 +1438,7 @@ public class BranchesApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> reset successful </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -1430,6 +1457,7 @@ public class BranchesApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> reset successful </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -1449,6 +1477,7 @@ public class BranchesApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 204 </td><td> reset successful </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -1471,6 +1500,7 @@ public class BranchesApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> reset successful </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -1582,6 +1612,7 @@ public class BranchesApi {
             <tr><td> 204 </td><td> revert successful </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1601,6 +1632,7 @@ public class BranchesApi {
             <tr><td> 204 </td><td> revert successful </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1621,6 +1653,7 @@ public class BranchesApi {
             <tr><td> 204 </td><td> revert successful </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1642,6 +1675,7 @@ public class BranchesApi {
             <tr><td> 204 </td><td> revert successful </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -1666,6 +1700,7 @@ public class BranchesApi {
         <tr><td> 204 </td><td> revert successful </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Conflict Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>

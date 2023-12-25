@@ -19,8 +19,8 @@ import re  # noqa: F401
 import json
 
 
-
-from pydantic import BaseModel, Field, StrictInt, StrictStr
+from typing import Optional
+from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr
 
 class Repository(BaseModel):
     """
@@ -30,7 +30,8 @@ class Repository(BaseModel):
     creation_date: StrictInt = Field(..., description="Unix Epoch in seconds")
     default_branch: StrictStr = Field(...)
     storage_namespace: StrictStr = Field(..., description="Filesystem URI to store the underlying data in (e.g. \"s3://my-bucket/some/path/\")")
-    __properties = ["id", "creation_date", "default_branch", "storage_namespace"]
+    read_only: Optional[StrictBool] = Field(None, description="Whether the repository is a read-only repository- not relevant for bare repositories")
+    __properties = ["id", "creation_date", "default_branch", "storage_namespace", "read_only"]
 
     class Config:
         """Pydantic configuration"""
@@ -71,7 +72,8 @@ class Repository(BaseModel):
             "id": obj.get("id"),
             "creation_date": obj.get("creation_date"),
             "default_branch": obj.get("default_branch"),
-            "storage_namespace": obj.get("storage_namespace")
+            "storage_namespace": obj.get("storage_namespace"),
+            "read_only": obj.get("read_only")
         })
         return _obj
 

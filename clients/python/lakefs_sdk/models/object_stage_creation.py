@@ -20,7 +20,7 @@ import json
 
 
 from typing import Dict, Optional
-from pydantic import BaseModel, Field, StrictInt, StrictStr
+from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr
 
 class ObjectStageCreation(BaseModel):
     """
@@ -32,7 +32,8 @@ class ObjectStageCreation(BaseModel):
     mtime: Optional[StrictInt] = Field(None, description="Unix Epoch in seconds")
     metadata: Optional[Dict[str, StrictStr]] = None
     content_type: Optional[StrictStr] = Field(None, description="Object media type")
-    __properties = ["physical_address", "checksum", "size_bytes", "mtime", "metadata", "content_type"]
+    force: Optional[StrictBool] = False
+    __properties = ["physical_address", "checksum", "size_bytes", "mtime", "metadata", "content_type", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -75,7 +76,8 @@ class ObjectStageCreation(BaseModel):
             "size_bytes": obj.get("size_bytes"),
             "mtime": obj.get("mtime"),
             "metadata": obj.get("metadata"),
-            "content_type": obj.get("content_type")
+            "content_type": obj.get("content_type"),
+            "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj
 

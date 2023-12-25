@@ -74,6 +74,7 @@ from lakefs_client.model.range_metadata import RangeMetadata
 from lakefs_client.model.ref import Ref
 from lakefs_client.model.ref_list import RefList
 from lakefs_client.model.refs_dump import RefsDump
+from lakefs_client.model.refs_restore import RefsRestore
 from lakefs_client.model.repository import Repository
 from lakefs_client.model.repository_creation import RepositoryCreation
 from lakefs_client.model.repository_dump_status import RepositoryDumpStatus

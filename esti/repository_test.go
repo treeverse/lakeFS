@@ -30,7 +30,7 @@ func TestRepositoryBasicOps(t *testing.T) {
 
 	// delete repositories
 	for _, repo := range repos {
-		resp, err := client.DeleteRepositoryWithResponse(ctx, repo)
+		resp, err := client.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
 		require.NoErrorf(t, err, "failed to delete repository %s, storage %s", repo)
 		require.Equal(t, http.StatusNoContent, resp.StatusCode())
 	}

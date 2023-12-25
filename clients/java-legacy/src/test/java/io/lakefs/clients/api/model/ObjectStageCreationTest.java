@@ -91,4 +91,12 @@ public class ObjectStageCreationTest {
         // TODO: test contentType
     }
 
+    /**
+     * Test the property 'force'
+     */
+    @Test
+    public void forceTest() {
+        // TODO: test force
+    }
+
 }

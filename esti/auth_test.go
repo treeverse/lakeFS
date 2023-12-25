@@ -85,7 +85,7 @@ func TestSuperPermissions(t *testing.T) {
 	require.Equal(t, http.StatusOK, resMerge.StatusCode(), "Super unexpectedly failed to merge branch")
 
 	// deleting the repository should succeed and result in no content response
-	resDeleteRepo, err := superClient.DeleteRepositoryWithResponse(ctx, repo)
+	resDeleteRepo, err := superClient.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
 	require.NoError(t, err, "Super failed while testing delete repository")
 	require.Equal(t, http.StatusNoContent, resDeleteRepo.StatusCode(), "Super unexpectedly did not receive \"no content\" response while deleting repo")
 
@@ -134,7 +134,7 @@ func TestWriterPermissions(t *testing.T) {
 	require.Equal(t, http.StatusOK, resMerge.StatusCode(), "Writer unexpectedly failed to merge branch")
 
 	// attempting to delete the repository should be unauthorized
-	resDeleteRepo, err := writerClient.DeleteRepositoryWithResponse(ctx, repo)
+	resDeleteRepo, err := writerClient.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
 	require.NoError(t, err, "Writer failed while testing delete repository")
 	require.Equal(t, http.StatusUnauthorized, resDeleteRepo.StatusCode(), "Writer unexpectedly did not receive unauthorized response while deleting repo")
 
@@ -173,7 +173,7 @@ func TestReaderPermissions(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, resAddBranch.StatusCode(), "Reader unexpectedly did not receive unauthorized response while creating branch")
 
 	// attempting to delete the repository should be unauthorized
-	resDeleteRepo, err := readerClient.DeleteRepositoryWithResponse(ctx, repo)
+	resDeleteRepo, err := readerClient.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
 	require.NoError(t, err, "Reader failed while testing delete repository")
 	require.Equal(t, http.StatusUnauthorized, resDeleteRepo.StatusCode(), "Reader unexpectedly did not receive unauthorized response while deleting repo")
 }

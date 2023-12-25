@@ -66,6 +66,10 @@ public class CommitCreation {
   @SerializedName(SERIALIZED_NAME_DATE)
   private Long date;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
   public CommitCreation() {
   }
 
@@ -139,6 +143,27 @@ public class CommitCreation {
     this.date = date;
   }
 
+
+  public CommitCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -196,13 +221,14 @@ public class CommitCreation {
     CommitCreation commitCreation = (CommitCreation) o;
     return Objects.equals(this.message, commitCreation.message) &&
         Objects.equals(this.metadata, commitCreation.metadata) &&
-        Objects.equals(this.date, commitCreation.date)&&
+        Objects.equals(this.date, commitCreation.date) &&
+        Objects.equals(this.force, commitCreation.force)&&
         Objects.equals(this.additionalProperties, commitCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(message, metadata, date, additionalProperties);
+    return Objects.hash(message, metadata, date, force, additionalProperties);
   }
 
   @Override
@@ -212,6 +238,7 @@ public class CommitCreation {
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("    date: ").append(toIndentedString(date)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -238,6 +265,7 @@ public class CommitCreation {
     openapiFields.add("message");
     openapiFields.add("metadata");
     openapiFields.add("date");
+    openapiFields.add("force");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

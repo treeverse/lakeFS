@@ -56,6 +56,10 @@ public class ObjectStageCreation {
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
   private String contentType;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
 
   public ObjectStageCreation physicalAddress(String physicalAddress) {
     
@@ -203,6 +207,29 @@ public class ObjectStageCreation {
   }
 
 
+  public ObjectStageCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -217,12 +244,13 @@ public class ObjectStageCreation {
         Objects.equals(this.sizeBytes, objectStageCreation.sizeBytes) &&
         Objects.equals(this.mtime, objectStageCreation.mtime) &&
         Objects.equals(this.metadata, objectStageCreation.metadata) &&
-        Objects.equals(this.contentType, objectStageCreation.contentType);
+        Objects.equals(this.contentType, objectStageCreation.contentType) &&
+        Objects.equals(this.force, objectStageCreation.force);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(physicalAddress, checksum, sizeBytes, mtime, metadata, contentType);
+    return Objects.hash(physicalAddress, checksum, sizeBytes, mtime, metadata, contentType, force);
   }
 
   @Override
@@ -235,6 +263,7 @@ public class ObjectStageCreation {
     sb.append("    mtime: ").append(toIndentedString(mtime)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("    contentType: ").append(toIndentedString(contentType)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("}");
     return sb.toString();
   }

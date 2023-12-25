@@ -85,6 +85,7 @@ class Merge(ModelNormal):
             'message': (str,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
             'strategy': (str,),  # noqa: E501
+            'force': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -96,6 +97,7 @@ class Merge(ModelNormal):
         'message': 'message',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
         'strategy': 'strategy',  # noqa: E501
+        'force': 'force',  # noqa: E501
     }
 
     read_only_vars = {
@@ -142,6 +144,7 @@ class Merge(ModelNormal):
             message (str): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             strategy (str): In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict. [optional]  # noqa: E501
+            force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -226,6 +229,7 @@ class Merge(ModelNormal):
             message (str): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             strategy (str): In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict. [optional]  # noqa: E501
+            force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

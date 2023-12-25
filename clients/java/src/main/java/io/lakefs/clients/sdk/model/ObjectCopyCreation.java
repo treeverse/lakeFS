@@ -60,6 +60,10 @@ public class ObjectCopyCreation {
   @SerializedName(SERIALIZED_NAME_SRC_REF)
   private String srcRef;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
   public ObjectCopyCreation() {
   }
 
@@ -102,6 +106,27 @@ public class ObjectCopyCreation {
 
   public void setSrcRef(String srcRef) {
     this.srcRef = srcRef;
+  }
+
+
+  public ObjectCopyCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
   }
 
   /**
@@ -160,13 +185,14 @@ public class ObjectCopyCreation {
     }
     ObjectCopyCreation objectCopyCreation = (ObjectCopyCreation) o;
     return Objects.equals(this.srcPath, objectCopyCreation.srcPath) &&
-        Objects.equals(this.srcRef, objectCopyCreation.srcRef)&&
+        Objects.equals(this.srcRef, objectCopyCreation.srcRef) &&
+        Objects.equals(this.force, objectCopyCreation.force)&&
         Objects.equals(this.additionalProperties, objectCopyCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(srcPath, srcRef, additionalProperties);
+    return Objects.hash(srcPath, srcRef, force, additionalProperties);
   }
 
   @Override
@@ -175,6 +201,7 @@ public class ObjectCopyCreation {
     sb.append("class ObjectCopyCreation {\n");
     sb.append("    srcPath: ").append(toIndentedString(srcPath)).append("\n");
     sb.append("    srcRef: ").append(toIndentedString(srcRef)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -200,6 +227,7 @@ public class ObjectCopyCreation {
     openapiFields = new HashSet<String>();
     openapiFields.add("src_path");
     openapiFields.add("src_ref");
+    openapiFields.add("force");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

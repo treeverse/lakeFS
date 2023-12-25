@@ -67,4 +67,12 @@ public class CommitCreationTest {
         // TODO: test date
     }
 
+    /**
+     * Test the property 'force'
+     */
+    @Test
+    public void forceTest() {
+        // TODO: test force
+    }
+
 }

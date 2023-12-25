@@ -53,4 +53,12 @@ public class BranchCreationTest {
         // TODO: test source
     }
 
+    /**
+     * Test the property 'force'
+     */
+    @Test
+    public void forceTest() {
+        // TODO: test force
+    }
+
 }

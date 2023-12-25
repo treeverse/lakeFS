@@ -60,4 +60,12 @@ public class ImportCreationTest {
         // TODO: test commit
     }
 
+    /**
+     * Test the property 'force'
+     */
+    @Test
+    public void forceTest() {
+        // TODO: test force
+    }
+
 }

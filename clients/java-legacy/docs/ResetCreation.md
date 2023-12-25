@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **type** | [**TypeEnum**](#TypeEnum) |  | 
 **path** | **String** |  |  [optional]
+**force** | **Boolean** |  |  [optional]
 
 
 

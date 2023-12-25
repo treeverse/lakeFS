@@ -164,6 +164,13 @@ func checkForDeleteError(log logging.Logger, key string, err error) *serde.Delet
 			Key:     key,
 			Message: fmt.Sprintf("error deleting object: %s", apiErr.Description),
 		}
+	case errors.Is(err, graveler.ErrReadOnlyRepository):
+		apiErr := gerrors.Codes.ToAPIErr(gerrors.ErrReadOnlyRepository)
+		return &serde.DeleteError{
+			Code:    apiErr.Code,
+			Key:     key,
+			Message: fmt.Sprintf("error deleting object: %s", apiErr.Description),
+		}
 	case errors.Is(err, catalog.ErrPathRequiredValue):
 		// issue #1706 - https://github.com/treeverse/lakeFS/issues/1706
 		// Spark trying to delete the path "main/", which we map to branch "main" with an empty path.

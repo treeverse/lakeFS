@@ -465,6 +465,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
             "key": "key_example",
         },
         strategy="strategy_example",
+        force=False,
     ) # Merge |  (optional)
 
     # example passing only required values which don't have defaults set

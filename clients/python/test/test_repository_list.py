@@ -49,7 +49,8 @@ class TestRepositoryList(unittest.TestCase):
                         id = '', 
                         creation_date = 56, 
                         default_branch = '', 
-                        storage_namespace = '', )
+                        storage_namespace = '', 
+                        read_only = True, )
                     ]
             )
         else :
@@ -64,7 +65,8 @@ class TestRepositoryList(unittest.TestCase):
                         id = '', 
                         creation_date = 56, 
                         default_branch = '', 
-                        storage_namespace = '', )
+                        storage_namespace = '', 
+                        read_only = True, )
                     ],
         )
         """

@@ -10,6 +10,7 @@
 |**message** | **String** |  |  |
 |**metadata** | **Map&lt;String, String&gt;** |  |  [optional] |
 |**date** | **Long** | set date to override creation date in the commit (Unix Epoch in seconds) |  [optional] |
+|**force** | **Boolean** |  |  [optional] |
 
 
 

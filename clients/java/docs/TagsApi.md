@@ -102,6 +102,7 @@ public class Example {
 | **201** | tag |  -  |
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
 | **420** | too many requests |  -  |
@@ -109,7 +110,7 @@ public class Example {
 
 <a id="deleteTag"></a>
 # **deleteTag**
-> deleteTag(repository, tag).execute();
+> deleteTag(repository, tag).force(force).execute();
 
 delete tag
 
@@ -158,8 +159,10 @@ public class Example {
     TagsApi apiInstance = new TagsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String tag = "tag_example"; // String | 
+    Boolean force = true; // Boolean | 
     try {
       apiInstance.deleteTag(repository, tag)
+            .force(force)
             .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling TagsApi#deleteTag");
@@ -178,6 +181,7 @@ public class Example {
 |------------- | ------------- | ------------- | -------------|
 | **repository** | **String**|  | |
 | **tag** | **String**|  | |
+| **force** | **Boolean**|  | [optional] |
 
 ### Return type
 
@@ -197,6 +201,7 @@ null (empty response body)
 |-------------|-------------|------------------|
 | **204** | tag deleted successfully |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |

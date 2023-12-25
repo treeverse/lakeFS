@@ -41,6 +41,10 @@ public class ImportCreation {
   @SerializedName(SERIALIZED_NAME_COMMIT)
   private CommitCreation commit;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
 
   public ImportCreation paths(List<ImportLocation> paths) {
     
@@ -93,6 +97,29 @@ public class ImportCreation {
   }
 
 
+  public ImportCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -103,12 +130,13 @@ public class ImportCreation {
     }
     ImportCreation importCreation = (ImportCreation) o;
     return Objects.equals(this.paths, importCreation.paths) &&
-        Objects.equals(this.commit, importCreation.commit);
+        Objects.equals(this.commit, importCreation.commit) &&
+        Objects.equals(this.force, importCreation.force);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(paths, commit);
+    return Objects.hash(paths, commit, force);
   }
 
   @Override
@@ -117,6 +145,7 @@ public class ImportCreation {
     sb.append("class ImportCreation {\n");
     sb.append("    paths: ").append(toIndentedString(paths)).append("\n");
     sb.append("    commit: ").append(toIndentedString(commit)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -103,11 +103,11 @@ func TestController_ListRepositoriesHandler(t *testing.T) {
 	t.Run("list some repos", func(t *testing.T) {
 		// write some repos
 		ctx := context.Background()
-		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
-		_, err = deps.catalog.CreateRepository(ctx, "foo2", onBlock(deps, "foo1"), "main")
+		_, err = deps.catalog.CreateRepository(ctx, "foo2", onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
-		_, err = deps.catalog.CreateRepository(ctx, "foo3", onBlock(deps, "foo1"), "main")
+		_, err = deps.catalog.CreateRepository(ctx, "foo3", onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 
 		resp, err := clt.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
@@ -188,7 +188,7 @@ func TestController_GetRepoHandler(t *testing.T) {
 
 	t.Run("get existing repo", func(t *testing.T) {
 		const testBranchName = "non-default"
-		_, err := deps.catalog.CreateRepository(context.Background(), "foo1", onBlock(deps, "foo1"), testBranchName)
+		_, err := deps.catalog.CreateRepository(context.Background(), "foo1", onBlock(deps, "foo1"), testBranchName, false)
 		testutil.Must(t, err)
 
 		resp, err := clt.GetRepositoryWithResponse(ctx, "foo1")
@@ -240,7 +240,7 @@ func TestController_LogCommitsMissingBranch(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", false)
 	testutil.Must(t, err)
 
 	resp, err := clt.LogCommitsWithResponse(ctx, repo, "otherbranch", &apigen.LogCommitsParams{})
@@ -297,7 +297,7 @@ func TestController_LogCommitsHandler(t *testing.T) {
 		tt := ttt
 		t.Run(tt.name, func(t *testing.T) {
 			repo := testUniqueRepoName()
-			_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+			_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 			testutil.Must(t, err)
 
 			const prefix = "foo/bar"
@@ -338,7 +338,7 @@ func TestController_LogCommitsParallelHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 
 	commits := 100
@@ -386,7 +386,7 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 
 	// prepare test data
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	const prefix = "foo/bar"
 	const totalCommits = 10
@@ -550,7 +550,7 @@ func TestController_CommitsGetBranchCommitLogByPath(t *testing.T) {
 	*/
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", false)
 	testutil.Must(t, err)
 
 	commitsMap := make(map[string]string)
@@ -713,7 +713,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 
 	t.Run("get existing commit", func(t *testing.T) {
 		ctx := context.Background()
-		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, "foo1", "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 		commit1, err := deps.catalog.Commit(ctx, "foo1", "main", "some message", DefaultUserID, nil, nil, nil)
@@ -737,7 +737,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 	t.Run("branch commit", func(t *testing.T) {
 		ctx := context.Background()
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 		commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
@@ -765,7 +765,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 	t.Run("tag commit", func(t *testing.T) {
 		ctx := context.Background()
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 		commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
@@ -790,7 +790,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 	t.Run("initial commit", func(t *testing.T) {
 		// validate a new repository's initial commit existence and structure
 		ctx := context.Background()
-		_, err := deps.catalog.CreateRepository(ctx, "foo2", onBlock(deps, "foo2"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, "foo2", onBlock(deps, "foo2"), "main", false)
 		testutil.Must(t, err)
 		resp, err := clt.GetCommitWithResponse(ctx, "foo2", "main")
 		verifyResponseOK(t, resp, err)
@@ -839,7 +839,7 @@ func TestController_CommitHandler(t *testing.T) {
 
 	t.Run("commit success", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		resp, err := clt.CommitWithResponse(ctx, repo, "main", &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
@@ -850,7 +850,7 @@ func TestController_CommitHandler(t *testing.T) {
 
 	t.Run("commit success with source metarange", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 
 		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
@@ -869,7 +869,7 @@ func TestController_CommitHandler(t *testing.T) {
 
 	t.Run("commit failure with source metarange and dirty branch", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 
 		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
@@ -894,7 +894,7 @@ func TestController_CommitHandler(t *testing.T) {
 
 	t.Run("commit failure empty branch", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 
 		_, err = deps.catalog.CreateBranch(ctx, repo, "foo-branch", "main")
@@ -912,7 +912,7 @@ func TestController_CommitHandler(t *testing.T) {
 
 	t.Run("commit success - with creation date", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.MustDo(t, fmt.Sprintf("create repo %s", repo), err)
 		testutil.MustDo(t, fmt.Sprintf("commit bar on %s", repo), deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		date := int64(1642626109)
@@ -928,7 +928,7 @@ func TestController_CommitHandler(t *testing.T) {
 
 	t.Run("protected branch", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.MustDo(t, "create repository", err)
 		rules := map[string]*graveler.BranchProtectionBlockedActions{
 			"main": {
@@ -947,9 +947,30 @@ func TestController_CommitHandler(t *testing.T) {
 			Message: "committed to protected branch",
 		})
 		testutil.Must(t, err)
-		if resp.JSON403 == nil {
+		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("Commit to protected branch should be forbidden (403), got %s", resp.Status())
 		}
+	})
+	t.Run("read only repo", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", true)
+		testutil.MustDo(t, "create repository", err)
+		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil})
+		require.Error(t, err, "read-only repository")
+		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}, graveler.WithForce(true))
+		testutil.MustDo(t, "create entry", err)
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+			Message: "committed to read-only repository",
+		})
+		testutil.Must(t, err)
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("Commit to read-only repository should be forbidden (403), got %s", resp.Status())
+		}
+		resp, err = clt.CommitWithResponse(ctx, repo, "main", &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+			Message: "committed to read-only repository",
+			Force:   swag.Bool(true),
+		})
+		verifyResponseOK(t, resp, err)
 	})
 }
 
@@ -999,7 +1020,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 
 	t.Run("create repo duplicate", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1070,14 +1091,14 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 
 	t.Run("delete repo success", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 
-		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo)
+		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
 		verifyResponseOK(t, resp, err)
 
 		// delete again to expect repository not found
-		resp, err = clt.DeleteRepositoryWithResponse(ctx, repo)
+		resp, err = clt.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
 		testutil.Must(t, err)
 		if resp.JSON404 == nil {
 			t.Fatalf("expected repository to be gone (404), instead got status: %s", resp.Status())
@@ -1086,7 +1107,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 
 	t.Run("delete repo doesnt exist", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo)
+		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
 		testutil.Must(t, err)
 		if resp.StatusCode() == http.StatusOK {
 			t.Fatalf("DeleteRepository should fail on non existing repository, got %d", resp.StatusCode())
@@ -1096,12 +1117,12 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 	t.Run("delete repo doesnt delete other repos", func(t *testing.T) {
 		names := []string{"rr0", "rr1", "rr11", "rr2"}
 		for _, name := range names {
-			_, err := deps.catalog.CreateRepository(ctx, name, onBlock(deps, "foo1"), "main")
+			_, err := deps.catalog.CreateRepository(ctx, name, onBlock(deps, "foo1"), "main", false)
 			testutil.Must(t, err)
 		}
 
 		// delete one repository and check that all rest are there
-		resp, err := clt.DeleteRepositoryWithResponse(ctx, "rr1")
+		resp, err := clt.DeleteRepositoryWithResponse(ctx, "rr1", &apigen.DeleteRepositoryParams{})
 		verifyResponseOK(t, resp, err)
 		for _, name := range names {
 			if name == "rr1" {
@@ -1111,6 +1132,27 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error getting other repo: %s", err)
 			}
+		}
+	})
+
+	t.Run("delete read-only repository", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", true)
+		testutil.Must(t, err)
+
+		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("expected status code 403 for deleting a read-only repository, got %d instead", resp.StatusCode())
+		}
+
+		resp, err = clt.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{Force: swag.Bool(true)})
+		verifyResponseOK(t, resp, err)
+
+		// delete again to expect repository not found
+		resp, err = clt.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
+		testutil.Must(t, err)
+		if resp.JSON404 == nil {
+			t.Fatalf("expected repository to be gone (404), instead got status: %s", resp.Status())
 		}
 	})
 }
@@ -1186,7 +1228,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 	t.Run("list branches only default", func(t *testing.T) {
 		ctx := context.Background()
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		resp, err := clt.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{
 			Amount: apiutil.Ptr(apigen.PaginationAmount(-1)),
@@ -1203,7 +1245,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 	t.Run("list branches pagination", func(t *testing.T) {
 		ctx := context.Background()
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo2"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo2"), "main", false)
 		testutil.Must(t, err)
 
 		// create the first "dummy" commit on main so that we can create branches from it
@@ -1260,7 +1302,7 @@ func TestController_ListTagsHandler(t *testing.T) {
 
 	// setup test data
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 	testutil.Must(t, err)
 	testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "obj1"}))
 	commitLog, err := deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil)
@@ -1342,7 +1384,7 @@ func TestController_GetBranchHandler(t *testing.T) {
 
 	const testBranch = "main"
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), testBranch)
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), testBranch, false)
 	testutil.Must(t, err)
 
 	t.Run("get default branch", func(t *testing.T) {
@@ -1386,7 +1428,7 @@ func TestController_BranchesDiffBranchHandler(t *testing.T) {
 	ctx := context.Background()
 	const testBranch = "main"
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), testBranch)
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), testBranch, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1436,7 +1478,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 	ctx := context.Background()
 	t.Run("create branch and diff refs success", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "a/b"}))
 		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil)
@@ -1474,7 +1516,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 
 	t.Run("create branch missing commit", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 			Name:   "main3",
@@ -1504,7 +1546,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 
 	t.Run("create branch conflict with branch", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 
 		resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
@@ -1521,7 +1563,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 
 	t.Run("create branch conflict with tag", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 
 		name := "tag123"
@@ -1542,7 +1584,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 
 	t.Run("create branch conflict with commit", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 
 		log, err := deps.catalog.GetCommit(ctx, repo, "main")
@@ -1559,6 +1601,30 @@ func TestController_CreateBranchHandler(t *testing.T) {
 			t.Fatal("CreateBranch expected conflict, got", resp.Status())
 		}
 	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", true)
+		testutil.Must(t, err)
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "a/b"}, graveler.WithForce(true)))
+		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, graveler.WithForce(true))
+		testutil.Must(t, err)
+
+		const newBranchName = "main2"
+		resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+			Name:   newBranchName,
+			Source: "main",
+		})
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatal("CreateBranch expected 403 forbidden, got", resp.Status())
+		}
+		resp, err = clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+			Name:   newBranchName,
+			Source: "main",
+			Force:  swag.Bool(true),
+		})
+		verifyResponseOK(t, resp, err)
+	})
 }
 
 func TestController_DiffRefsHandler(t *testing.T) {
@@ -1568,7 +1634,7 @@ func TestController_DiffRefsHandler(t *testing.T) {
 	t.Run("diff prefix with and without delimiter", func(t *testing.T) {
 		repoName := testUniqueRepoName()
 		const newBranchName = "main2"
-		_, err := deps.catalog.CreateRepository(ctx, repoName, onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repoName, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 
 		resp, err := clt.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{
@@ -1654,7 +1720,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
-	_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main", false)
 	testutil.Must(t, err)
 
 	t.Run("upload object", func(t *testing.T) {
@@ -1781,6 +1847,31 @@ func TestController_UploadObjectHandler(t *testing.T) {
 			t.Fatalf("error message should state missing 'content' key")
 		}
 	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		repoName := "my-new-read-only-repo"
+		_, err := deps.catalog.CreateRepository(ctx, repoName, onBlock(deps, "foo2"), "main", true)
+		testutil.Must(t, err)
+		// write
+		contentType, buf := writeMultipart("content", "bar", "hello world!")
+		b, err := clt.UploadObjectWithBodyWithResponse(ctx, repoName, "main", &apigen.UploadObjectParams{
+			Path: "foo/bar",
+		}, contentType, buf)
+		if b.JSON403 == nil {
+			t.Fatalf("expected 403 forbidden for UploadObject, got %d", b.StatusCode())
+		}
+		contentType, buf = writeMultipart("content", "bar", "hello world!")
+		b, err = clt.UploadObjectWithBodyWithResponse(ctx, repoName, "main", &apigen.UploadObjectParams{
+			Path:  "foo/bar",
+			Force: swag.Bool(true),
+		}, contentType, buf)
+		if b.StatusCode() == http.StatusInternalServerError {
+			t.Fatalf("got internal server error (500) while uploading: %v", b.JSONDefault)
+		}
+		if b.StatusCode() != http.StatusCreated {
+			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
+		}
+	})
 }
 
 func TestController_DeleteBranchHandler(t *testing.T) {
@@ -1788,7 +1879,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("delete branch success", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "my-new-repo", "main", catalog.DBEntry{Path: "a/b"}))
 		_, err = deps.catalog.Commit(ctx, "my-new-repo", "main", "first commit", "test", nil, nil, nil)
@@ -1799,7 +1890,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		delResp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo", "main2")
+		delResp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo", "main2", &apigen.DeleteBranchParams{})
 		verifyResponseOK(t, delResp, err)
 
 		_, err = deps.catalog.GetBranchReference(ctx, "my-new-repo", "main2")
@@ -1809,9 +1900,9 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 	})
 
 	t.Run("delete default branch", func(t *testing.T) {
-		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo2", onBlock(deps, "foo2"), "main")
+		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo2", onBlock(deps, "foo2"), "main", false)
 		testutil.Must(t, err)
-		resp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo2", "main")
+		resp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo2", "main", &apigen.DeleteBranchParams{})
 		if err != nil {
 			t.Fatal("DeleteBranch error:", err)
 		}
@@ -1821,12 +1912,38 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 	})
 
 	t.Run("delete branch doesnt exist", func(t *testing.T) {
-		resp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo", "main5")
+		resp, err := clt.DeleteBranchWithResponse(ctx, "my-new-repo", "main5", &apigen.DeleteBranchParams{})
 		if err != nil {
 			t.Fatal("DeleteBranch error:", err)
 		}
 		if resp.JSON404 == nil {
 			t.Fatal("DeleteBranch expected not found")
+		}
+	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		repoName := "read-only-repo"
+		_, err := deps.catalog.CreateRepository(ctx, repoName, onBlock(deps, "foo1"), "main", true)
+		testutil.Must(t, err)
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, repoName, "main", catalog.DBEntry{Path: "a/b"}, graveler.WithForce(true)))
+		_, err = deps.catalog.Commit(ctx, repoName, "main", "first commit", "test", nil, nil, nil, graveler.WithForce(true))
+		testutil.Must(t, err)
+
+		_, err = deps.catalog.CreateBranch(ctx, repoName, "main2", "main", graveler.WithForce(true))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		delResp, err := clt.DeleteBranchWithResponse(ctx, repoName, "main2", &apigen.DeleteBranchParams{})
+		if delResp.JSON403 == nil {
+			t.Fatalf("expected 403 forbidden for DeleteBranch, got %d", delResp.StatusCode())
+		}
+		delResp, err = clt.DeleteBranchWithResponse(ctx, repoName, "main2", &apigen.DeleteBranchParams{Force: swag.Bool(true)})
+		verifyResponseOK(t, delResp, err)
+
+		_, err = deps.catalog.GetBranchReference(ctx, repoName, "main2")
+		if !errors.Is(err, graveler.ErrNotFound) {
+			t.Fatalf("expected branch to be gone, instead got error: %s", err)
 		}
 	})
 }
@@ -1836,7 +1953,7 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "some-bucket"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "some-bucket"), "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1933,7 +2050,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main", false)
 	testutil.Must(t, err)
 	dbEntries := []catalog.DBEntry{
 		{
@@ -2028,7 +2145,7 @@ func TestController_ObjectsHeadObjectHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2132,7 +2249,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "ns1"), "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2251,7 +2368,7 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2308,6 +2425,75 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 			t.Fatal("Missing content type should be successful, got status", resp.Status())
 		}
 	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepo := testUniqueRepoName()
+		path := "foo/bar"
+		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepo, onBlock(deps, "bucket/prefix"), "main", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(content), readOnlyRepo, "main")
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("Expected 403 forbidden error for UploadObject on read-only repository, got %d", resp.StatusCode())
+		}
+
+		var b bytes.Buffer
+		w := multipart.NewWriter(&b)
+		contentWriter, err := w.CreateFormFile("content", filepath.Base(path))
+		if err != nil {
+			t.Fatal("CreateFormFile:", err)
+		}
+		if _, err := io.Copy(contentWriter, strings.NewReader(content)); err != nil {
+			t.Fatal("CreateFormFile write content:", err)
+		}
+		if err := w.Close(); err != nil {
+			t.Fatal("Close multipart writer:", err)
+		}
+
+		resp, err = clt.UploadObjectWithBodyWithResponse(ctx, readOnlyRepo, "main", &apigen.UploadObjectParams{
+			Path: path,
+		}, w.FormDataContentType(), &b)
+
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("Expected 403 forbidden error for UploadObject on read-only repository, got %d instead", resp.StatusCode())
+		}
+
+		contentWriter, err = w.CreateFormFile("content", filepath.Base(path))
+		if err != nil {
+			t.Fatal("CreateFormFile:", err)
+		}
+		if _, err := io.Copy(contentWriter, strings.NewReader(content)); err != nil {
+			t.Fatal("CreateFormFile write content:", err)
+		}
+		if err := w.Close(); err != nil {
+			t.Fatal("Close multipart writer:", err)
+		}
+		resp, err = clt.UploadObjectWithBodyWithResponse(ctx, readOnlyRepo, "main", &apigen.UploadObjectParams{
+			Path:  path,
+			Force: swag.Bool(true),
+		}, w.FormDataContentType(), &b)
+		verifyResponseOK(t, resp, err)
+
+		sizeBytes := apiutil.Value(resp.JSON201.SizeBytes)
+		const expectedSize = 38
+		if sizeBytes != expectedSize {
+			t.Fatalf("expected %d bytes to be written, got back %d", expectedSize, sizeBytes)
+		}
+
+		// download it
+		rresp, err := clt.GetObjectWithResponse(ctx, readOnlyRepo, "main", &apigen.GetObjectParams{Path: path})
+		verifyResponseOK(t, rresp, err)
+		result := string(rresp.Body)
+		if len(result) != expectedSize {
+			t.Fatalf("expected %d bytes to be read, got back %d", expectedSize, len(result))
+		}
+		etag := rresp.HTTPResponse.Header.Get("ETag")
+		const expectedEtag = "7e70ed4aa82063dd88ca47e91a8c6e09"
+		if etag != httputil.ETag(expectedEtag) {
+			t.Fatalf("got unexpected etag: %s - expected %s", etag, httputil.ETag(expectedEtag))
+		}
+	})
 }
 
 func TestController_ObjectsStageObjectHandler(t *testing.T) {
@@ -2315,7 +2501,7 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2404,6 +2590,44 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 			t.Fatalf("Wrong storage adapter should return 400, got status %s [%d]\n\tbody: %s", resp.Status(), resp.StatusCode(), string(resp.Body))
 		}
 	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepo, onBlock(deps, "bucket/prefix"), "main", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		const expectedSizeBytes = 38
+		resp, err := clt.StageObjectWithResponse(ctx, readOnlyRepo, "main", &apigen.StageObjectParams{Path: "foo/bar"}, apigen.StageObjectJSONRequestBody{
+			Checksum:        "afb0689fe58b82c5f762991453edbbec",
+			PhysicalAddress: onBlock(deps, "another-bucket/some/location"),
+			SizeBytes:       expectedSizeBytes,
+		})
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("expected 403 forbidden status for StageObject for read-only repository, got %d", resp.StatusCode())
+		}
+
+		resp, err = clt.StageObjectWithResponse(ctx, readOnlyRepo, "main", &apigen.StageObjectParams{Path: "foo/bar"}, apigen.StageObjectJSONRequestBody{
+			Checksum:        "afb0689fe58b82c5f762991453edbbec",
+			PhysicalAddress: onBlock(deps, "another-bucket/some/location"),
+			SizeBytes:       expectedSizeBytes,
+			Force:           swag.Bool(true),
+		})
+		verifyResponseOK(t, resp, err)
+
+		sizeBytes := apiutil.Value(resp.JSON201.SizeBytes)
+		if sizeBytes != expectedSizeBytes {
+			t.Fatalf("expected %d bytes to be written, got back %d", expectedSizeBytes, sizeBytes)
+		}
+
+		// get back info
+		statResp, err := clt.StatObjectWithResponse(ctx, readOnlyRepo, "main", &apigen.StatObjectParams{Path: "foo/bar"})
+		verifyResponseOK(t, statResp, err)
+		objectStat := statResp.JSON200
+		if objectStat.PhysicalAddress != onBlock(deps, "another-bucket/some/location") {
+			t.Fatalf("unexpected physical address: %s", objectStat.PhysicalAddress)
+		}
+	})
 }
 
 func TestController_LinkPhysicalAddressHandler(t *testing.T) {
@@ -2412,7 +2636,7 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 
 	repo := testUniqueRepoName()
 	ns := onBlock(deps, "bucket/prefix")
-	_, err := deps.catalog.CreateRepository(ctx, repo, ns, "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, ns, "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2501,6 +2725,7 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, resp, err)
 	})
+
 	t.Run("link expired address", func(t *testing.T) {
 		address := upload.DefaultPathProvider.NewPath()
 		dir, _ := path.Split(address)
@@ -2525,6 +2750,49 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
 		}
 	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepo := testUniqueRepoName()
+		readOnlyns := onBlock(deps, "bucket/prefix2")
+		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepo, readOnlyns, "main", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, readOnlyRepo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar2"})
+		verifyResponseOK(t, linkResp, err)
+		if linkResp.JSON200 == nil {
+			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
+		}
+		const expectedSizeBytes = 38
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, readOnlyRepo, "main", &apigen.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+			},
+		})
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("LinkPhysicalAddress non 403 response - status code %d", resp.StatusCode())
+		}
+		linkResp, err = clt.GetPhysicalAddressWithResponse(ctx, readOnlyRepo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar3"})
+		verifyResponseOK(t, linkResp, err)
+		if linkResp.JSON200 == nil {
+			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
+		}
+		resp, err = clt.LinkPhysicalAddressWithResponse(ctx, readOnlyRepo, "main", &apigen.LinkPhysicalAddressParams{
+			Path: "foo/bar3",
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbed",
+			SizeBytes: expectedSizeBytes,
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+			},
+			Force: swag.Bool(true),
+		})
+		verifyResponseOK(t, resp, err)
+	})
 }
 
 func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
@@ -2533,7 +2801,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 
 	repo := testUniqueRepoName()
 	const branch = "main"
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "some-bucket/prefix"), branch)
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "some-bucket/prefix"), branch, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2590,7 +2858,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		}
 
 		// delete objects
-		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
+		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
 		verifyResponseOK(t, delResp, err)
 		if delResp.JSON200 == nil {
 			t.Errorf("DeleteObjects should return 200 for successful delete, got status code %d", delResp.StatusCode())
@@ -2613,7 +2881,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		}
 
 		// delete objects again - make sure we do not fail or get any error
-		delResp2, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
+		delResp2, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
 		verifyResponseOK(t, delResp2, err)
 		if delResp2.JSON200 == nil {
 			t.Errorf("DeleteObjects (round 2) should return 200 for successful delete, got status code %d", delResp2.StatusCode())
@@ -2633,7 +2901,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		}
 
 		// delete objects
-		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
+		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
 		testutil.Must(t, err)
 		const expectedStatusCode = http.StatusInternalServerError
 		if delResp.StatusCode() != expectedStatusCode {
@@ -2670,7 +2938,7 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		testutil.Must(t, err)
 
 		// delete objects
-		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, "protected", apigen.DeleteObjectsJSONRequestBody{Paths: paths})
+		delResp, err := clt.DeleteObjectsWithResponse(ctx, repo, "protected", &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{Paths: paths})
 		verifyResponseOK(t, delResp, err)
 		if delResp.StatusCode() != http.StatusOK {
 			t.Fatalf("DeleteObjects status code %d, expected %d", delResp.StatusCode(), http.StatusOK)
@@ -2690,6 +2958,73 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 		sort.Strings(paths)
 		if diff := deep.Equal(paths, errPaths); diff != nil {
 			t.Fatalf("DeleteObjects errors path difference: %s", diff)
+		}
+	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepo := testUniqueRepoName()
+		const branch = "main"
+		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepo, onBlock(deps, "some-bucket/prefix2"), branch, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		const content = "hello world this is my awesome content"
+		var b bytes.Buffer
+		w := multipart.NewWriter(&b)
+		contentWriter, err := w.CreateFormFile("content", filepath.Base("foo/bar"))
+		if err != nil {
+			t.Fatal("CreateFormFile:", err)
+		}
+		if _, err := io.Copy(contentWriter, strings.NewReader(content)); err != nil {
+			t.Fatal("CreateFormFile write content:", err)
+		}
+		if err := w.Close(); err != nil {
+			t.Fatal("Close multipart writer:", err)
+		}
+
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, readOnlyRepo, "main", &apigen.UploadObjectParams{
+			Path:  "foo/bar",
+			Force: swag.Bool(true),
+		}, w.FormDataContentType(), &b)
+		verifyResponseOK(t, resp, err)
+
+		sizeBytes := apiutil.Value(resp.JSON201.SizeBytes)
+		if sizeBytes != 38 {
+			t.Fatalf("expected 38 bytes to be written, got back %d", sizeBytes)
+		}
+
+		// download it
+		rresp, err := clt.GetObjectWithResponse(ctx, readOnlyRepo, branch, &apigen.GetObjectParams{Path: "foo/bar"})
+		verifyResponseOK(t, rresp, err)
+		result := string(rresp.Body)
+		if len(result) != 38 {
+			t.Fatalf("expected 38 bytes to be read, got back %d", len(result))
+		}
+		etag := rresp.HTTPResponse.Header.Get("ETag")
+		const expectedEtag = "7e70ed4aa82063dd88ca47e91a8c6e09"
+		if etag != httputil.ETag(expectedEtag) {
+			t.Fatalf("got unexpected etag: %s - expected %s", etag, httputil.ETag(expectedEtag))
+		}
+
+		// delete it
+		delResp, err := clt.DeleteObjectWithResponse(ctx, readOnlyRepo, branch, &apigen.DeleteObjectParams{Path: "foo/bar"})
+		if delResp.JSON403 == nil {
+			t.Fatalf("expected DeleteObject to fail with 403 forbidden, got %d", delResp.StatusCode())
+		}
+
+		delResp, err = clt.DeleteObjectWithResponse(ctx, readOnlyRepo, branch, &apigen.DeleteObjectParams{Path: "foo/bar",
+			Force: swag.Bool(true)})
+		verifyResponseOK(t, delResp, err)
+
+		// get it
+		statResp, err := clt.StatObjectWithResponse(ctx, readOnlyRepo, branch, &apigen.StatObjectParams{Path: "foo/bar"})
+		testutil.Must(t, err)
+		if statResp == nil {
+			t.Fatal("StatObject missing response")
+		}
+		if statResp.JSON404 == nil {
+			t.Fatalf("expected file to be gone now")
 		}
 	})
 }
@@ -3084,7 +3419,7 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 
 	t.Run("on deleted branch", func(t *testing.T) {
 		// delete work branch and list them again
-		delResp, err := clt.DeleteBranchWithResponse(ctx, repo, "work")
+		delResp, err := clt.DeleteBranchWithResponse(ctx, repo, "work", &apigen.DeleteBranchParams{})
 		verifyResponseOK(t, delResp, err)
 
 		respList, err := clt.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
@@ -3174,7 +3509,7 @@ func TestController_MergeIntoExplicitBranch(t *testing.T) {
 
 	// setup env
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	_, err = deps.catalog.CreateBranch(ctx, repo, "branch1", "main")
 	testutil.Must(t, err)
@@ -3209,7 +3544,7 @@ func TestController_MergeDirtyBranch(t *testing.T) {
 
 	// setup env
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
 	testutil.Must(t, err)
@@ -3233,7 +3568,7 @@ func TestController_CreateTag(t *testing.T) {
 	ctx := context.Background()
 	// setup env
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 	commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
@@ -3340,6 +3675,28 @@ func TestController_CreateTag(t *testing.T) {
 			t.Errorf("Create tag again should conflict, got %v", tagResp)
 		}
 	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepo, onBlock(deps, readOnlyRepo), "main", true)
+		testutil.Must(t, err)
+		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, readOnlyRepo, "main", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}, graveler.WithForce(true)))
+		commit1, err := deps.catalog.Commit(ctx, readOnlyRepo, "main", "some message", DefaultUserID, nil, nil, nil, graveler.WithForce(true))
+		testutil.Must(t, err)
+		tagResp, err := clt.CreateTagWithResponse(ctx, readOnlyRepo, apigen.CreateTagJSONRequestBody{
+			Id:  "tag1",
+			Ref: commit1.Reference,
+		})
+		if tagResp.JSON403 == nil {
+			t.Errorf("Create tag to read-only repo should fail with 403 forbidden, got (status code: %d): %s", tagResp.StatusCode(), tagResp.Body)
+		}
+		tagResp, err = clt.CreateTagWithResponse(ctx, readOnlyRepo, apigen.CreateTagJSONRequestBody{
+			Id:    "tag1",
+			Ref:   commit1.Reference,
+			Force: swag.Bool(true),
+		})
+		verifyResponseOK(t, tagResp, err)
+	})
 }
 
 func testUniqueRepoName() string {
@@ -3351,7 +3708,7 @@ func TestController_Revert(t *testing.T) {
 	ctx := context.Background()
 	// setup env
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 	_, err = deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
@@ -3400,7 +3757,7 @@ func TestController_Revert(t *testing.T) {
 	t.Run("revert_no_parent", func(t *testing.T) {
 		repo := testUniqueRepoName()
 		// setup data - repo with one object committed
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "merge/foo/bar1", PhysicalAddress: "merge1bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
 		testutil.Must(t, err)
@@ -3424,6 +3781,21 @@ func TestController_Revert(t *testing.T) {
 			t.Errorf("Revert dirty merge no parent specified was expected, got %+v", revertResp)
 		}
 	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepository := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepository, onBlock(deps, readOnlyRepository), "main", true)
+		testutil.Must(t, err)
+		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, readOnlyRepository, "main", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}, graveler.WithForce(true)))
+		_, err = deps.catalog.Commit(ctx, readOnlyRepository, "main", "some message", DefaultUserID, nil, nil, nil, graveler.WithForce(true))
+		testutil.Must(t, err)
+		revertResp, err := clt.RevertBranchWithResponse(ctx, readOnlyRepository, "main", apigen.RevertBranchJSONRequestBody{Ref: "main"})
+		if revertResp.JSON403 == nil {
+			t.Errorf("Revert should fail with 403 forbidden for read-only repository, got (status code: %d): %s", revertResp.StatusCode(), revertResp.Body)
+		}
+		revertResp, err = clt.RevertBranchWithResponse(ctx, readOnlyRepository, "main", apigen.RevertBranchJSONRequestBody{Ref: "main", Force: swag.Bool(true)})
+		verifyResponseOK(t, revertResp, err)
+	})
 }
 
 func TestController_RevertConflict(t *testing.T) {
@@ -3431,7 +3803,7 @@ func TestController_RevertConflict(t *testing.T) {
 	ctx := context.Background()
 	// setup env
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 	firstCommit, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
@@ -3452,7 +3824,7 @@ func TestController_CherryPick(t *testing.T) {
 	ctx := context.Background()
 	// setup env
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
 	_, err = deps.catalog.Commit(ctx, repo, "main", "message1", DefaultUserID, nil, nil, nil)
@@ -3607,6 +3979,26 @@ func TestController_CherryPick(t *testing.T) {
 			t.Error("expected to get a conflict")
 		}
 	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepository := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepository, onBlock(deps, readOnlyRepository), "main", true)
+		testutil.Must(t, err)
+		for _, name := range []string{"branch1", "dest-branch1"} {
+			_, err = deps.catalog.CreateBranch(ctx, readOnlyRepository, name, "main", graveler.WithForce(true))
+			testutil.Must(t, err)
+		}
+		testutil.MustDo(t, "create entry bar2", deps.catalog.CreateEntry(ctx, readOnlyRepository, "branch1", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 2, Checksum: "cksum2"}, graveler.WithForce(true)))
+		_, err = deps.catalog.Commit(ctx, readOnlyRepository, "branch1", "message2", DefaultUserID, nil, nil, nil, graveler.WithForce(true))
+		testutil.Must(t, err)
+
+		cherryResponse, err := clt.CherryPickWithResponse(ctx, readOnlyRepository, "dest-branch1", apigen.CherryPickJSONRequestBody{Ref: "branch1"})
+		if cherryResponse.JSON403 == nil {
+			t.Fatalf("expected 403 to get forbidden error, got %d instead", cherryResponse.StatusCode())
+		}
+		cherryResponse, err = clt.CherryPickWithResponse(ctx, readOnlyRepository, "dest-branch1", apigen.CherryPickJSONRequestBody{Ref: "branch1", Force: swag.Bool(true)})
+		verifyResponseOK(t, cherryResponse, err)
+	})
 }
 
 func TestController_UpdatePolicy(t *testing.T) {
@@ -3709,7 +4101,7 @@ func TestController_GetPhysicalAddress(t *testing.T) {
 			ns     = "s3://foo-bucket1"
 			branch = "main"
 		)
-		_, err := deps.catalog.CreateRepository(ctx, repo, ns, branch)
+		_, err := deps.catalog.CreateRepository(ctx, repo, ns, branch, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -3820,7 +4212,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 
 	t.Run("uncommitted_data", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		const items = 3
 		for i := 0; i < items; i++ {
@@ -3833,7 +4225,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 
 	t.Run("committed_data", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		const items = 3
 		for i := 0; i < items; i++ {
@@ -3849,7 +4241,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 
 	t.Run("uncommitted_copy", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		const items = 3
 		for i := 0; i < items; i++ {
@@ -3879,7 +4271,7 @@ func TestController_ClientDisconnect(t *testing.T) {
 	// setup repository
 	ctx := context.Background()
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 
 	// prepare a client that will not wait for a response and timeout
@@ -4159,7 +4551,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main", false)
 	require.NoError(t, err)
 	_, err = deps.catalog.CreateBranch(ctx, repo, "alt", "main")
 	require.NoError(t, err)
@@ -4303,6 +4695,72 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON400)
 	})
+
+	t.Run("read-only repository", func(t *testing.T) {
+		readOnlyRepository := testUniqueRepoName()
+		_, err = deps.catalog.CreateRepository(ctx, readOnlyRepository, onBlock(deps, "bucket/prefix"), "main", true)
+		require.NoError(t, err)
+		_, err = deps.catalog.CreateBranch(ctx, readOnlyRepository, "alt", "main", graveler.WithForce(true))
+		require.NoError(t, err)
+
+		const (
+			srcPath  = "foo/bar"
+			destPath = "foo/bar-shallow-copy"
+		)
+		uploadContentForce := func(t *testing.T, repository, branch, objPath string) apigen.ObjectStats {
+			t.Helper()
+			const content = "hello world this is my awesome content"
+			var b bytes.Buffer
+			w := multipart.NewWriter(&b)
+			contentWriter, err := w.CreateFormFile("content", filepath.Base(objPath))
+			if err != nil {
+				t.Fatal("CreateFormFile:", err)
+			}
+			if _, err := io.Copy(contentWriter, strings.NewReader(content)); err != nil {
+				t.Fatal("CreateFormFile write content:", err)
+			}
+			if err := w.Close(); err != nil {
+				t.Fatal("Close multipart writer:", err)
+			}
+
+			uploadResp, err := clt.UploadObjectWithBodyWithResponse(ctx, readOnlyRepository, branch, &apigen.UploadObjectParams{
+				Path:  objPath,
+				Force: swag.Bool(true),
+			}, w.FormDataContentType(), &b)
+			verifyResponseOK(t, uploadResp, err)
+			require.NotNil(t, uploadResp.JSON201)
+			require.Equal(t, len(content), int(apiutil.Value(uploadResp.JSON201.SizeBytes)))
+			return *uploadResp.JSON201
+		}
+		objStat := uploadContentForce(t, readOnlyRepository, "main", srcPath)
+		copyResp, err := clt.CopyObjectWithResponse(ctx, readOnlyRepository, "main", &apigen.CopyObjectParams{
+			DestPath: destPath,
+		}, apigen.CopyObjectJSONRequestBody{
+			SrcPath: srcPath,
+		})
+		if copyResp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("expected 403 forbidden for CopyObject on read-only repository, got %d instead", copyResp.StatusCode())
+		}
+		copyResp, err = clt.CopyObjectWithResponse(ctx, readOnlyRepository, "main", &apigen.CopyObjectParams{
+			DestPath: destPath,
+		}, apigen.CopyObjectJSONRequestBody{
+			SrcPath: srcPath,
+			Force:   swag.Bool(true),
+		})
+		verifyResponseOK(t, copyResp, err)
+
+		// Verify the creation path, date and physical address are different
+		copyStat := copyResp.JSON201
+		require.NotNil(t, copyStat)
+		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
+		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
+		require.Equal(t, destPath, copyStat.Path)
+
+		// get back info
+		statResp, err := clt.StatObjectWithResponse(ctx, readOnlyRepository, "main", &apigen.StatObjectParams{Path: destPath})
+		verifyResponseOK(t, statResp, err)
+		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
+	})
 }
 
 func TestController_OtfDiff(t *testing.T) {
@@ -4426,7 +4884,7 @@ func TestController_LocalAdapter_StageObject(t *testing.T) {
 	ctx := context.Background()
 
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main", false)
 	require.NoError(t, err)
 	_, err = deps.catalog.CreateBranch(ctx, repo, "alt", "main")
 	require.NoError(t, err)
@@ -4469,7 +4927,7 @@ func TestController_BranchProtectionRules(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			currCtx := context.Background()
 			repo := testUniqueRepoName()
-			_, err := deps.catalog.CreateRepository(currCtx, repo, onBlock(deps, repo), "main")
+			_, err := deps.catalog.CreateRepository(currCtx, repo, onBlock(deps, repo), "main", false)
 			testutil.MustDo(t, "create repository", err)
 
 			respPreflight, err := tc.clt.CreateBranchProtectionRulePreflightWithResponse(currCtx, repo)
@@ -4527,7 +4985,7 @@ func TestController_GarbageCollectionRules(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			currCtx := context.Background()
 			repo := testUniqueRepoName()
-			_, err := deps.catalog.CreateRepository(currCtx, repo, onBlock(deps, repo), "main")
+			_, err := deps.catalog.CreateRepository(currCtx, repo, onBlock(deps, repo), "main", false)
 			testutil.MustDo(t, "create repository", err)
 
 			respPreflight, err := tc.clt.SetGarbageCollectionRulesPreflightWithResponse(currCtx, repo)
@@ -4565,7 +5023,7 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 
 	// setup repository with some commits
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main")
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 
 	const commits = 3

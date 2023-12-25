@@ -86,6 +86,10 @@ public class ResetCreation {
   @SerializedName(SERIALIZED_NAME_PATH)
   private String path;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
 
   public ResetCreation type(TypeEnum type) {
     
@@ -133,6 +137,29 @@ public class ResetCreation {
   }
 
 
+  public ResetCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -143,12 +170,13 @@ public class ResetCreation {
     }
     ResetCreation resetCreation = (ResetCreation) o;
     return Objects.equals(this.type, resetCreation.type) &&
-        Objects.equals(this.path, resetCreation.path);
+        Objects.equals(this.path, resetCreation.path) &&
+        Objects.equals(this.force, resetCreation.force);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, path);
+    return Objects.hash(type, path, force);
   }
 
   @Override
@@ -157,6 +185,7 @@ public class ResetCreation {
     sb.append("class ResetCreation {\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("    path: ").append(toIndentedString(path)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("}");
     return sb.toString();
   }

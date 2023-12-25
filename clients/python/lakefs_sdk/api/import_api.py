@@ -340,6 +340,7 @@ class ImportApi(object):
             '202': "ImportCreationResponse",
             '400': "Error",
             '401': "Error",
+            '403': "Error",
             '404': "Error",
             '420': None,
         }
