@@ -235,7 +235,6 @@ func TestGravelerMerge(t *testing.T) {
 				return err
 			}).Times(1)
 
-		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_STAGING_WRITE).Return(false, nil)
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: nil, // tombstone
