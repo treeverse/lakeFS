@@ -3,7 +3,8 @@ local pathlib = require("path")
 local json = require("encoding/json")
 local utils = require("lakefs/catalogexport/internal")
 local extractor = require("lakefs/catalogexport/table_extractor")
-
+local strings = require("strings")
+local url = require("net/url")
 --[[
     delta_log_entry_key_generator returns a closure that returns a Delta Lake version key according to the Delta Lake
     protocol: https://github.com/delta-io/delta/blob/master/PROTOCOL.md#delta-log-entries
@@ -33,7 +34,7 @@ end
         - repository_id
         - commit_id
 
-   table_paths: ["path/to/table1", "path/to/table2", ...]
+   table_def_names: ["table1.yaml", "table2", ...]
 
     write_object: function(bucket, key, data)
 
@@ -41,17 +42,37 @@ end
         - get_table: function(repo, ref, prefix)
 
 ]]
-local function export_delta_log(action, table_paths, write_object, delta_client, table_descriptors_path)
+local function export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path)
     local repo = action.repository_id
     local commit_id = action.commit_id
-
+    if not commit_id then
+        error("missing commit id")
+    end
     local ns = action.storage_namespace
     if ns == nil then
         error("failed getting storage namespace for repo " .. repo)
     end
     local response = {}
-    for _, path in ipairs(table_paths) do
-        local t = delta_client.get_table(repo, commit_id, path)
+    for _, table_name_yaml in ipairs(table_def_names) do
+
+        -- Get the table descriptor
+        local tny  = table_name_yaml
+        if not strings.has_suffix(tny, ".yaml") then
+            tny = tny .. ".yaml"
+        end
+        local table_src_path = pathlib.join("/", table_descriptors_path, tny)
+        local table_descriptor = extractor.get_table_descriptor(lakefs, repo, commit_id, table_src_path)
+        local table_path = table_descriptor.path
+        if not table_path then
+            error("table path is required to proceed with Delta catalog export")
+        end
+        local table_name = table_descriptor.name
+        if not table_name then
+            error("table name is required to proceed with Delta catalog export")
+        end
+
+        -- Get Delta table
+        local t = delta_client.get_table(repo, commit_id, table_path)
         local sortedKeys = utils.sortedKeys(t)
         --[[ Pairs of (version, map of json content):
                 (1,
@@ -82,7 +103,12 @@ local function export_delta_log(action, table_paths, write_object, delta_client,
                     p = entry.remove.path
                 end
                 if p ~= "" then
-                    local code, obj = lakefs.stat_object(repo, commit_id, pathlib.join("/",path, p))
+                    local unescaped_path = url.query_unescape(p)
+                    if not unescaped_path then
+                        error("failed unescaping path: " .. p)
+                    end
+                    unescaped_path = pathlib.join("/", table_path, unescaped_path)
+                    local code, obj = lakefs.stat_object(repo, commit_id, unescaped_path)
                     if code == 200 then
                         local obj_stat = json.unmarshal(obj)
                         local physical_path = obj_stat["physical_address"]
@@ -91,6 +117,8 @@ local function export_delta_log(action, table_paths, write_object, delta_client,
                         elseif entry.remove ~= nil then
                             entry.remove.path = physical_path
                         end
+                    else
+                        error("failed stat_object with code: " .. tostring(code) .. ", and path: " .. unescaped_path)
                     end
                 end
                 local entry_m = json.marshal(entry)
@@ -99,13 +127,6 @@ local function export_delta_log(action, table_paths, write_object, delta_client,
             table_log[keyGenerator()] = entry_log
         end
 
-        -- Get the table delta log physical location
-        local table_src_path = pathlib.join("/", table_descriptors_path, path .. ".yaml")
-        local table_descriptor = extractor.get_table_descriptor(lakefs, repo, commit_id, table_src_path)
-        local table_name = table_descriptor.name
-        if not table_name then
-            error("table name is required to proceed with Delta catalog export")
-        end
         local table_export_prefix = utils.get_storage_uri_prefix(ns, commit_id, action)
         local table_physical_path = pathlib.join("/", table_export_prefix, table_name)
         local table_log_physical_path = pathlib.join("/", table_physical_path, "_delta_log")
@@ -131,7 +152,7 @@ local function export_delta_log(action, table_paths, write_object, delta_client,
             local version_key = storage_props.key .. "/" .. entry_version
             write_object(storage_props.bucket, version_key, table_entry_string)
         end
-        response[path] = table_physical_path
+        response[table_name_yaml] = table_physical_path
     end
     return response
 end

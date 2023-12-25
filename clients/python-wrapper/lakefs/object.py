@@ -57,9 +57,10 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
                  client: Optional[Client] = None) -> None:
         self._obj = obj
         self._mode = mode
-        self._pre_sign = pre_sign if pre_sign is not None else client.storage_config.pre_sign_support
         self._pos = 0
         super().__init__(client)
+        # must be set after super().__init__ to ensure the client is properly initialized.
+        self._pre_sign = pre_sign if pre_sign is not None else self._client.storage_config.pre_sign_support
 
     @property
     def mode(self) -> str:

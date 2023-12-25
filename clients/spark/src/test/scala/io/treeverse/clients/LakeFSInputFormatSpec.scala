@@ -13,6 +13,14 @@ import scala.collection.JavaConverters._
 
 import scala.collection.mutable
 import org.scalatest.OneInstancePerTest
+import org.checkerframework.checker.units.qual.m
+import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.fs.LocatedFileStatus
+import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.BlockLocation
+import org.apache.hadoop.fs.FileStatus
+import org.apache.hadoop.fs.RemoteIterator
+import org.apache.hadoop.fs.BatchedRemoteIterator
 
 object LakeFSInputFormatSpec {
   def getItem(rangeID: String): Item[RangeData] = new Item(
@@ -25,7 +33,7 @@ object LakeFSInputFormatSpec {
   )
 }
 
-class LakeFSInputFormatSpec
+class LakeFSCommitInputFormatSpec
     extends AnyFunSpec
     with Matchers
     with MockitoSugar
@@ -98,5 +106,63 @@ class LakeFSInputFormatSpec
         Set("r1", "r2", "r3", "r4", "r5")
       )
     }
+  }
+}
+private class MockRemoteIterator[FileStatus](iterator: Iterator[FileStatus])
+    extends RemoteIterator[FileStatus] {
+
+  override def hasNext(): Boolean = iterator.hasNext
+
+  override def next(): FileStatus = iterator.next
+}
+
+class LakeFSAllRangesInputFormatSpec
+    extends AnyFunSpec
+    with Matchers
+    with MockitoSugar
+    with OneInstancePerTest {
+  val repoName = "repo1"
+
+  val inputFormat = new LakeFSAllRangesInputFormat()
+  val mockFileSystem = mock[FileSystem]
+  val mockClient = mock[ApiClient]
+  inputFormat.apiClientGetter = (APIConfigurations) => mockClient
+  inputFormat.fileSystemGetter = (URI, Configuration) => mockFileSystem
+  val context = mock[JobContext]
+  val conf = mock[Configuration]
+  Mockito.when(conf.get(LakeFSContext.LAKEFS_CONF_JOB_REPO_NAME_KEY)).thenReturn(repoName)
+  Mockito.when(context.getConfiguration()).thenReturn(conf)
+  Mockito
+    .when(mockClient.getStorageNamespace(repoName, StorageClientType.HadoopFS))
+    .thenReturn("s3a://bucket/")
+  Mockito
+    .when(mockFileSystem.exists(mockito.Matchers.eq(new Path("s3a://bucket/_lakefs"))))
+    .thenReturn(true)
+  it("should return ranges files as splits") {
+    Mockito
+      .when(
+        mockFileSystem.listFiles(mockito.Matchers.eq(new Path("s3a://bucket/_lakefs")),
+                                 mockito.Matchers.eq(false)
+                                )
+      )
+      .thenReturn(
+        new MockRemoteIterator(
+          Array("s3a://bucket/_lakefs/dummy",
+                "s3a://bucket/_lakefs/r1",
+                "s3a://bucket/_lakefs/r2",
+                "s3a://bucket/_lakefs/r3"
+               )
+            .map(n => {
+              val stat = new FileStatus()
+              stat.setPath(new Path(n))
+              new LocatedFileStatus(stat, Array[BlockLocation]())
+            })
+            .toIterator
+        )
+      )
+    val splits = inputFormat.getSplits(context)
+    splits.asScala.toList.map(_.asInstanceOf[GravelerSplit].rangeID).toSet should be(
+      Set("r1", "r2", "r3")
+    )
   }
 }

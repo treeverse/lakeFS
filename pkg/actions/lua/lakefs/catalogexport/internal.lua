@@ -1,7 +1,5 @@
 local url = require("net/url")
 local pathlib = require("path")
-local lakefs = require("lakefs")
-local json = require("encoding/json")
 local DEFAULT_SHORT_DIGEST_LEN=6
 
 local function deepcopy(orig)

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+:new: What's new:
+
+- Allow creating reference types using Commit object (#7190)
 
 ## v0.1.2
 
