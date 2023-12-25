@@ -6,6 +6,11 @@
 
 - Allow creating reference types using Commit object (#7190)
 
+:bug: Bugs fixed:
+
+- Fix object access of uninitialized client (#7196)
+- Handling file buffers on exceptions (#7195)
+
 ## v0.1.2
 
 :bug: Bugs fixed:

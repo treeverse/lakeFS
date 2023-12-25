@@ -17,6 +17,12 @@ REQUIRES = [
     "pyyaml ~= 6.0.1",
     "urllib3 >= 1.26"
 ]
+TEST_REQUIRES = [
+    "pytest ~= 7.4.3",
+    "pytest-datafiles ~= 3.0.0",
+    "pandas ~= 2.1.4",
+    "pyarrow ~= 14.0.1"
+]
 
 with open('README.md') as f:
     long_description = f.read()
@@ -31,7 +37,7 @@ setup(
     keywords=["OpenAPI", "OpenAPI-Generator", "lakeFS API", "Python Wrapper"],
     python_requires=">=3.9",
     install_requires=REQUIRES,
-    tests_require=["pytest ~= 7.4.3", "pytest-datafiles ~= 3.0.0", "pandas ~= 2.1.4", "pyarrow ~= 14.0.1"],
+    tests_require=TEST_REQUIRES,
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     license="Apache 2.0",
