@@ -4738,7 +4738,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		}, apigen.CopyObjectJSONRequestBody{
 			SrcPath: srcPath,
 		})
-		if copyResp.StatusCode() == http.StatusForbidden {
+		if copyResp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("expected 403 forbidden for CopyObject on read-only repository, got %d instead", copyResp.StatusCode())
 		}
 		copyResp, err = clt.CopyObjectWithResponse(ctx, readOnlyRepository, "main", &apigen.CopyObjectParams{
