@@ -210,5 +210,6 @@ The multipart upload support will be part of the storage capability add `pre_sig
     - **Maximum parts:** You can split your file into a maximum of 10000 parts.
     - **Minimum part size:** Each part must be at least 5MB in size. This is a temporary constraint and isn't currently configurable or discoverable. It will become an option when additional storage options are supported.
 - **Initiating the upload:** When starting a multipart upload, you'll need to specify the total number of parts in your request. It reduce the requests for each part presigned URL when the client already knows the size.
-- **Presigning part:** Presigned of a specific part URL for upload will not be supported. This will block unknown size upload using this API.
-- **Limited support:** Other blockadapters lack native multipart upload support; emulation required, similar to S3 gateway.
+- **Presigning part:** Request for a presigned URL of a specific part number will not be supported. This will block unknown size upload using this API.
+- **Limited support:** Request for list upload parts will be be provided at this point.
+
