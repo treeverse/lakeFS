@@ -159,6 +159,7 @@ components:
       properties:
         parts:
           type: array
+          description: "List of uploaded parts, should be ordered by ascending part number"
           items:
             $ref: "#/components/schemas/UploadPart"
       required:
