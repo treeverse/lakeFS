@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
@@ -33,8 +32,6 @@ var branchRevertCmd = &cobra.Command{
 		fmt.Println("Branch:", u)
 		hasParentNumber := cmd.Flags().Changed(ParentNumberFlagName)
 		parentNumber := Must(cmd.Flags().GetInt(ParentNumberFlagName))
-		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
-
 		if hasParentNumber && parentNumber <= 0 {
 			Die("parent number must be number greater than 0, if specified", 1)
 		}
@@ -49,7 +46,6 @@ var branchRevertCmd = &cobra.Command{
 			resp, err := clt.RevertBranchWithResponse(cmd.Context(), u.Repository, u.Ref, apigen.RevertBranchJSONRequestBody{
 				ParentNumber: parentNumber,
 				Ref:          commitRef,
-				Force:        swag.Bool(ignore),
 			})
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 			fmt.Printf("commit %s successfully reverted\n", commitRef)
@@ -62,7 +58,6 @@ func init() {
 	AssignAutoConfirmFlag(branchRevertCmd.Flags())
 
 	branchRevertCmd.Flags().IntP(ParentNumberFlagName, "m", 0, "the parent number (starting from 1) of the mainline. The revert will reverse the change relative to the specified parent.")
-	withIgnoreFlag(branchRevertCmd)
 
 	branchCmd.AddCommand(branchRevertCmd)
 }

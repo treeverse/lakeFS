@@ -7,7 +7,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
@@ -25,7 +24,6 @@ var abuseRandomWritesCmd = &cobra.Command{
 		amount := Must(cmd.Flags().GetInt("amount"))
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
 		prefix := Must(cmd.Flags().GetString("prefix"))
-		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 
 		fmt.Println("Source branch:", u)
 		generator := stress.NewGenerator("stage object", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
@@ -53,7 +51,6 @@ var abuseRandomWritesCmd = &cobra.Command{
 			Checksum:        checksum,
 			PhysicalAddress: addr,
 			SizeBytes:       size,
-			Force:           swag.Bool(ignore),
 		}
 
 		// execute the things!
@@ -82,5 +79,4 @@ func init() {
 	abuseRandomWritesCmd.Flags().String("prefix", "abuse/", "prefix to create paths under")
 	abuseRandomWritesCmd.Flags().Int("amount", abuseDefaultAmount, "amount of writes to do")
 	abuseRandomWritesCmd.Flags().Int("parallelism", abuseDefaultParallelism, "amount of writes to do in parallel")
-	withIgnoreFlag(abuseRandomWritesCmd)
 }

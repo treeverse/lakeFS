@@ -3,7 +3,6 @@ package cmd
 import (
 	"net/http"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
@@ -22,15 +21,12 @@ var tagDeleteCmd = &cobra.Command{
 		u := MustParseRefURI("tag URI", args[0])
 
 		ctx := cmd.Context()
-		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
-		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref, &apigen.DeleteTagParams{Force: swag.Bool(ignore)})
+		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref, &apigen.DeleteTagParams{})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
 
 //nolint:gochecknoinits
 func init() {
-	AssignAutoConfirmFlag(tagDeleteCmd.Flags())
-	withIgnoreFlag(tagDeleteCmd)
 	tagCmd.AddCommand(tagDeleteCmd)
 }

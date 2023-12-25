@@ -8,7 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
@@ -25,7 +24,6 @@ var abuseCommitCmd = &cobra.Command{
 		u := MustParseBranchURI("branch URI", args[0])
 		amount := Must(cmd.Flags().GetInt("amount"))
 		gapDuration := Must(cmd.Flags().GetDuration("gap"))
-		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 
 		fmt.Println("Source branch:", u)
 
@@ -53,7 +51,7 @@ var abuseCommitCmd = &cobra.Command{
 			for work := range input {
 				start := time.Now()
 				resp, err := client.CommitWithResponse(ctx, u.Repository, u.Ref, &apigen.CommitParams{},
-					apigen.CommitJSONRequestBody(apigen.CommitCreation{Message: work, Force: swag.Bool(ignore)}))
+					apigen.CommitJSONRequestBody(apigen.CommitCreation{Message: work}))
 				if err == nil && resp.StatusCode() != http.StatusOK {
 					err = helpers.ResponseAsError(resp)
 				}
@@ -77,6 +75,6 @@ func init() {
 
 	abuseCommitCmd.Flags().Int("amount", abuseDefaultParallelism, "amount of commits to do")
 	abuseCommitCmd.Flags().Duration("gap", defaultGap, "duration to wait between commits")
-	withIgnoreFlag(abuseCommitCmd)
+
 	abuseCmd.AddCommand(abuseCommitCmd)
 }

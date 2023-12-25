@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -28,7 +27,6 @@ var cherryPick = &cobra.Command{
 		ref := MustParseRefURI("commit URI", args[0])
 		branch := MustParseBranchURI("branch URI", args[1])
 		fmt.Println("Branch:", branch)
-		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 
 		if branch.Repository != ref.Repository {
 			Die("Repository mismatch for destination branch and cherry-pick ref", 1)
@@ -47,7 +45,6 @@ var cherryPick = &cobra.Command{
 		resp, err := clt.CherryPickWithResponse(cmd.Context(), branch.Repository, branch.Ref, apigen.CherryPickJSONRequestBody{
 			Ref:          ref.Ref,
 			ParentNumber: &parentNumber,
-			Force:        swag.Bool(ignore),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 
@@ -63,5 +60,4 @@ func init() {
 	rootCmd.AddCommand(cherryPick)
 
 	cherryPick.Flags().IntP(ParentNumberFlagName, "m", 0, "the parent number (starting from 1) of the cherry-picked commit. The cherry-pick will apply the change relative to the specified parent.")
-	withIgnoreFlag(cherryPick)
 }

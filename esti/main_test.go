@@ -116,7 +116,7 @@ func deleteAllRepositories(ctx context.Context, client apigen.ClientWithResponse
 
 	var errs *multierror.Error
 	for _, id := range repositoriesToDelete {
-		resp, err := client.DeleteRepositoryWithResponse(ctx, id)
+		resp, err := client.DeleteRepositoryWithResponse(ctx, id, &apigen.DeleteRepositoryParams{})
 		if err != nil {
 			errs = multierror.Append(errs, fmt.Errorf("delete repository: %s, err: %w", id, err))
 		} else if resp.StatusCode() != http.StatusNoContent {

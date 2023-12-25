@@ -152,7 +152,7 @@ func TestSanityAPI(t *testing.T) {
 	require.Len(t, diffResp.JSON200.Results, 0, "no diff between main and branch1")
 
 	log.Debug("delete test repository")
-	deleteRepoResp, err := client.DeleteRepositoryWithResponse(ctx, repo)
+	deleteRepoResp, err := client.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
 	require.NoError(t, err, "failed to delete repository")
 	require.Equal(t, http.StatusNoContent, deleteRepoResp.StatusCode())
 }

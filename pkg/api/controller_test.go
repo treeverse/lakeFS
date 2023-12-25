@@ -1094,11 +1094,11 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 
-		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo)
+		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
 		verifyResponseOK(t, resp, err)
 
 		// delete again to expect repository not found
-		resp, err = clt.DeleteRepositoryWithResponse(ctx, repo)
+		resp, err = clt.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
 		testutil.Must(t, err)
 		if resp.JSON404 == nil {
 			t.Fatalf("expected repository to be gone (404), instead got status: %s", resp.Status())
@@ -1107,7 +1107,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 
 	t.Run("delete repo doesnt exist", func(t *testing.T) {
 		repo := testUniqueRepoName()
-		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo)
+		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
 		testutil.Must(t, err)
 		if resp.StatusCode() == http.StatusOK {
 			t.Fatalf("DeleteRepository should fail on non existing repository, got %d", resp.StatusCode())
@@ -1122,7 +1122,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 		}
 
 		// delete one repository and check that all rest are there
-		resp, err := clt.DeleteRepositoryWithResponse(ctx, "rr1")
+		resp, err := clt.DeleteRepositoryWithResponse(ctx, "rr1", &apigen.DeleteRepositoryParams{})
 		verifyResponseOK(t, resp, err)
 		for _, name := range names {
 			if name == "rr1" {

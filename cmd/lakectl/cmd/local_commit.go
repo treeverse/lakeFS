@@ -32,8 +32,6 @@ var localCommitCmd = &cobra.Command{
 		client := getClient()
 		_, localPath := getSyncArgs(args, false, false)
 		syncFlags := getSyncFlags(cmd, client)
-		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
-		syncFlags.Force = ignore
 		message, kvPairs := getCommitFlags(cmd)
 
 		idx, err := local.ReadIndex(localPath)
@@ -145,7 +143,6 @@ var localCommitCmd = &cobra.Command{
 			Metadata: &apigen.CommitCreation_Metadata{
 				AdditionalProperties: kvPairs,
 			},
-			Force: swag.Bool(ignore),
 		})
 		DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusCreated)
 		commit := response.JSON201

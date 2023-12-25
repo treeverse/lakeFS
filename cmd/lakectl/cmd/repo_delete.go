@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 // repoDeleteCmd represents the delete repo command
@@ -23,7 +24,7 @@ var repoDeleteCmd = &cobra.Command{
 		if err != nil || !confirmation {
 			DieFmt("Delete Repository '%s' aborted\n", u.Repository)
 		}
-		resp, err := clt.DeleteRepositoryWithResponse(cmd.Context(), u.Repository)
+		resp, err := clt.DeleteRepositoryWithResponse(cmd.Context(), u.Repository, &apigen.DeleteRepositoryParams{})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 		fmt.Printf("Repository '%s' deleted\n", u.Repository)
 	},

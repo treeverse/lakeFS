@@ -7,7 +7,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -25,7 +24,6 @@ var fsRmCmd = &cobra.Command{
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		concurrency := Must(cmd.Flags().GetInt("concurrency"))
 		pathURI := MustParsePathURI("path URI", args[0])
-		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 		client := getClient()
 		if !recursive {
 			// Delete a single object in the main thread
@@ -52,7 +50,7 @@ var fsRmCmd = &cobra.Command{
 		paths := make(chan string)
 		deleteWg.Add(concurrency)
 		for i := 0; i < concurrency; i++ {
-			go deleteObjectWorker(cmd.Context(), client, pathURI.Repository, pathURI.Ref, paths, errors, &deleteWg, ignore)
+			go deleteObjectWorker(cmd.Context(), client, pathURI.Repository, pathURI.Ref, paths, errors, &deleteWg)
 		}
 
 		prefix := *pathURI.Path
@@ -92,13 +90,13 @@ var fsRmCmd = &cobra.Command{
 	},
 }
 
-func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesInterface, repository, branch string, paths <-chan string, errors chan<- error, wg *sync.WaitGroup, force bool) {
+func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesInterface, repository, branch string, paths <-chan string, errors chan<- error, wg *sync.WaitGroup) {
 	defer wg.Done()
 	objs := make([]string, 0, deleteChunkSize)
 	for objPath := range paths {
 		objs = append(objs, objPath)
 		if len(objs) >= deleteChunkSize {
-			resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, &apigen.DeleteObjectsParams{Force: swag.Bool(force)}, apigen.DeleteObjectsJSONRequestBody{
+			resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{
 				Paths: objs,
 			})
 			err = RetrieveError(resp, err)
@@ -110,7 +108,7 @@ func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesIn
 		}
 	}
 	if len(objs) > 0 {
-		resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, &apigen.DeleteObjectsParams{Force: swag.Bool(force)}, apigen.DeleteObjectsJSONRequestBody{
+		resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{
 			Paths: objs,
 		})
 		err = RetrieveError(resp, err)
@@ -133,7 +131,6 @@ func init() {
 	const defaultConcurrency = 50
 	withRecursiveFlag(fsRmCmd, "recursively delete all objects under the specified path")
 	fsRmCmd.Flags().IntP("concurrency", "C", defaultConcurrency, "max concurrent single delete operations to send to the lakeFS server")
-	withIgnoreFlag(fsRmCmd)
 
 	fsCmd.AddCommand(fsRmCmd)
 }

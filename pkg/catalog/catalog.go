@@ -482,14 +482,14 @@ func (c *Catalog) GetRepository(ctx context.Context, repository string) (*Reposi
 }
 
 // DeleteRepository delete a repository
-func (c *Catalog) DeleteRepository(ctx context.Context, repository string) error {
+func (c *Catalog) DeleteRepository(ctx context.Context, repository string, opts ...graveler.SetOptionsFunc) error {
 	repositoryID := graveler.RepositoryID(repository)
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
 		return err
 	}
-	return c.Store.DeleteRepository(ctx, repositoryID)
+	return c.Store.DeleteRepository(ctx, repositoryID, opts...)
 }
 
 // GetRepositoryMetadata get repository metadata

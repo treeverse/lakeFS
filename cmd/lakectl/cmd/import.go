@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-openapi/swag"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -35,7 +34,6 @@ var importCmd = &cobra.Command{
 		to := Must(flags.GetString("to"))
 		toURI := MustParsePathURI("lakeFS path URI", to)
 		message, metadata := getCommitFlags(cmd)
-		ignore := Must(flags.GetBool("ignore"))
 
 		ctx := cmd.Context()
 		client := getClient()
@@ -61,7 +59,6 @@ var importCmd = &cobra.Command{
 					Type:        "common_prefix",
 				},
 			},
-			Force: swag.Bool(ignore),
 		}
 		if len(metadata) > 0 {
 			body.Commit.Metadata = &apigen.CommitCreation_Metadata{AdditionalProperties: metadata}

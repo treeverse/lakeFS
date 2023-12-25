@@ -280,10 +280,18 @@ func (m *Manager) deleteRepository(ctx context.Context, repo *graveler.Repositor
 	return m.kvStore.Delete(ctx, []byte(graveler.RepositoriesPartition()), []byte(graveler.RepoPath(repo.RepositoryID)))
 }
 
-func (m *Manager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
+func (m *Manager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID, opts ...graveler.SetOptionsFunc) error {
 	repo, err := m.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
+	}
+
+	options := &graveler.SetOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	if repo.ReadOnly && !options.Force {
+		return graveler.ErrReadOnlyRepository
 	}
 
 	// Set repository state to deleted and then perform background delete.

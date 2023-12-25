@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
@@ -20,11 +19,10 @@ var branchDeleteCmd = &cobra.Command{
 		if err != nil || !confirmation {
 			Die("Delete branch aborted", 1)
 		}
-		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 		client := getClient()
 		u := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", u)
-		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref, &apigen.DeleteBranchParams{Force: swag.Bool(ignore)})
+		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref, &apigen.DeleteBranchParams{})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }
@@ -32,7 +30,6 @@ var branchDeleteCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	AssignAutoConfirmFlag(branchDeleteCmd.Flags())
-	withIgnoreFlag(branchDeleteCmd)
 
 	branchCmd.AddCommand(branchDeleteCmd)
 }

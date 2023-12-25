@@ -103,18 +103,18 @@ func (c *CommittedFake) Commit(_ context.Context, _ graveler.StorageNamespace, b
 	return c.MetaRangeID, c.DiffSummary, nil
 }
 
-func (c *CommittedFake) WriteMetaRangeByIterator(context.Context, graveler.StorageNamespace, graveler.ValueIterator, graveler.Metadata, ...graveler.SetOptionsFunc) (*graveler.MetaRangeID, error) {
+func (c *CommittedFake) WriteMetaRangeByIterator(context.Context, graveler.StorageNamespace, graveler.ValueIterator, graveler.Metadata) (*graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return nil, c.Err
 	}
 	return &c.MetaRangeID, nil
 }
 
-func (c *CommittedFake) WriteRange(context.Context, graveler.StorageNamespace, graveler.ValueIterator, ...graveler.SetOptionsFunc) (*graveler.RangeInfo, error) {
+func (c *CommittedFake) WriteRange(context.Context, graveler.StorageNamespace, graveler.ValueIterator) (*graveler.RangeInfo, error) {
 	return &c.RangeInfo, nil
 }
 
-func (c *CommittedFake) WriteMetaRange(context.Context, graveler.StorageNamespace, []*graveler.RangeInfo, ...graveler.SetOptionsFunc) (*graveler.MetaRangeInfo, error) {
+func (c *CommittedFake) WriteMetaRange(context.Context, graveler.StorageNamespace, []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
 	return &graveler.MetaRangeInfo{ID: c.MetaRangeID}, nil
 }
 
@@ -339,7 +339,7 @@ func (m *RefsFake) ListRepositories(context.Context) (graveler.RepositoryIterato
 	return m.ListRepositoriesRes, nil
 }
 
-func (m *RefsFake) DeleteRepository(context.Context, graveler.RepositoryID) error {
+func (m *RefsFake) DeleteRepository(context.Context, graveler.RepositoryID, ...graveler.SetOptionsFunc) error {
 	return nil
 }
 

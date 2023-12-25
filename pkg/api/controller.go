@@ -1717,7 +1717,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 	return err
 }
 
-func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, repository string) {
+func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, repository string, params apigen.DeleteRepositoryParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DeleteRepositoryAction,
@@ -1728,7 +1728,7 @@ func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, re
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_repo", r, repository, "", "")
-	err := c.Catalog.DeleteRepository(ctx, repository)
+	err := c.Catalog.DeleteRepository(ctx, repository, graveler.WithForce(swag.BoolValue(params.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

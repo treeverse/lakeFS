@@ -3,13 +3,13 @@ package esti
 import (
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var emptyVars = make(map[string]string)
@@ -167,49 +167,6 @@ func TestLakectlCommit(t *testing.T) {
 
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" show commit lakefs://"+repoName+"/"+lastCommitID, false, "lakectl_show_commit", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" show commit lakefs://"+repoName+"/"+lastCommitID+" --show-meta-range-id", false, "lakectl_show_commit_metarange", vars)
-}
-
-func TestLakectlReadOnlyRepo(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
-	vars := map[string]string{
-		"REPO":          repoName,
-		"STORAGE":       storage,
-		"BRANCH":        mainBranch,
-		"SOURCE_BRANCH": mainBranch,
-		"DEST_BRANCH":   "test",
-		"TAG":           "tag",
-	}
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_404", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage+" -r", false, "lakectl_repo_create", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_initial", vars)
-
-	filePath := "ro_1k.1"
-	vars["FILE_PATH"] = filePath
-
-	//upload file
-	RunCmdAndVerifyFailure(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath, false, "link object to backing store: request failed (403 Forbidden)\nError executing command.\n", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath+" --ignore", false, "lakectl_fs_upload", vars)
-
-	//commit
-	RunCmdAndVerifyFailure(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" --allow-empty-message -m \" \"", false, "Branch: lakefs://"+repoName+"/"+mainBranch+"\nread-only repository, will need to use force\n403 Forbidden\n", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" --allow-empty-message -m \" \" --ignore", false, "lakectl_commit_with_empty_msg_flag", vars)
-
-	// create branch
-	RunCmdAndVerifyFailure(t, Lakectl()+" branch create lakefs://"+repoName+"/test --source lakefs://"+repoName+"/"+mainBranch, false, "Source ref: lakefs://"+repoName+"/"+mainBranch+"\nread-only repository, will need to use force\n403 Forbidden\n", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/test --source lakefs://"+repoName+"/"+mainBranch+" --ignore", false, "lakectl_branch_create", vars)
-
-	//create tag
-	RunCmdAndVerifyFailure(t, Lakectl()+" tag create lakefs://"+repoName+"/"+vars["TAG"]+" lakefs://"+repoName+"/"+mainBranch+"~1", false, "read-only repository, will need to use force\n403 Forbidden\n", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag create lakefs://"+repoName+"/"+vars["TAG"]+" lakefs://"+repoName+"/"+mainBranch+"~1 --ignore", false, "lakectl_tag_create", vars)
-
-	// delete branch
-	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+vars["DEST_BRANCH"]+" -y", false, "Branch: lakefs://"+repoName+"/"+vars["DEST_BRANCH"]+"\nread-only repository, will need to use force\n403 Forbidden\n", vars)
-	RunCmdAndVerifySuccess(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+vars["DEST_BRANCH"]+" -y --ignore", false, "Branch: lakefs://"+repoName+"/"+vars["DEST_BRANCH"]+"\n", vars)
-
-	//delete tag
-	RunCmdAndVerifyFailure(t, Lakectl()+" tag delete lakefs://"+repoName+"/"+vars["TAG"]+" -y", false, "read-only repository, will need to use force\n403 Forbidden\n", vars)
-	RunCmdAndVerifySuccess(t, Lakectl()+" tag delete lakefs://"+repoName+"/"+vars["TAG"]+" -y --ignore", false, "", vars)
 }
 
 func TestLakectlBranchAndTagValidation(t *testing.T) {

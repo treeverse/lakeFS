@@ -2481,6 +2481,13 @@ paths:
         - repositories
       operationId: deleteRepository
       summary: delete repository
+      parameters:
+        - in: query
+          name: force
+          schema:
+            type: boolean
+            default: false
+          description: Bypass read-only protection and delete the repository
       responses:
         204:
           description: repository deleted successfully

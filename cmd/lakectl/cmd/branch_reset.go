@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
@@ -32,7 +31,6 @@ var branchResetCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 
 		var reset apigen.ResetCreation
 		var confirmationMsg string
@@ -40,22 +38,19 @@ var branchResetCmd = &cobra.Command{
 		case len(prefix) > 0:
 			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all uncommitted changes from path: %s", prefix)
 			reset = apigen.ResetCreation{
-				Path:  &prefix,
-				Type:  "common_prefix",
-				Force: swag.Bool(ignore),
+				Path: &prefix,
+				Type: "common_prefix",
 			}
 		case len(object) > 0:
 			confirmationMsg = fmt.Sprintf("Are you sure you want to reset all uncommitted changes for object: %s", object)
 			reset = apigen.ResetCreation{
-				Path:  &object,
-				Type:  "object",
-				Force: swag.Bool(ignore),
+				Path: &object,
+				Type: "object",
 			}
 		default:
 			confirmationMsg = "Are you sure you want to reset all uncommitted changes"
 			reset = apigen.ResetCreation{
-				Type:  "reset",
-				Force: swag.Bool(ignore),
+				Type: "reset",
 			}
 		}
 
@@ -75,7 +70,6 @@ func init() {
 
 	branchResetCmd.Flags().String("prefix", "", "prefix of the objects to be reset")
 	branchResetCmd.Flags().String("object", "", "path to object to be reset")
-	withIgnoreFlag(branchResetCmd)
 
 	branchCmd.AddCommand(branchResetCmd)
 }

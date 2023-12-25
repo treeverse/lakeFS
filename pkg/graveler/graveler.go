@@ -501,7 +501,7 @@ type VersionController interface {
 	ListRepositories(ctx context.Context) (RepositoryIterator, error)
 
 	// DeleteRepository deletes the repository
-	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
+	DeleteRepository(ctx context.Context, repositoryID RepositoryID, opts ...SetOptionsFunc) error
 
 	// GetRepositoryMetadata returns repository user metadata
 	GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (RepositoryMetadata, error)
@@ -782,7 +782,7 @@ type RefManager interface {
 	ListRepositories(ctx context.Context) (RepositoryIterator, error)
 
 	// DeleteRepository deletes the repository
-	DeleteRepository(ctx context.Context, repositoryID RepositoryID) error
+	DeleteRepository(ctx context.Context, repositoryID RepositoryID, opts ...SetOptionsFunc) error
 
 	// GetRepositoryMetadata gets repository user metadata
 	GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (RepositoryMetadata, error)
@@ -887,14 +887,14 @@ type CommittedManager interface {
 	Exists(ctx context.Context, ns StorageNamespace, id MetaRangeID) (bool, error)
 
 	// WriteMetaRangeByIterator flushes the iterator to a new MetaRange and returns the created ID.
-	WriteMetaRangeByIterator(ctx context.Context, ns StorageNamespace, it ValueIterator, metadata Metadata, opts ...SetOptionsFunc) (*MetaRangeID, error)
+	WriteMetaRangeByIterator(ctx context.Context, ns StorageNamespace, it ValueIterator, metadata Metadata) (*MetaRangeID, error)
 
 	// WriteRange creates a new Range from the iterator values.
 	// Keeps Range closing logic, so might not exhaust the iterator.
-	WriteRange(ctx context.Context, ns StorageNamespace, it ValueIterator, opts ...SetOptionsFunc) (*RangeInfo, error)
+	WriteRange(ctx context.Context, ns StorageNamespace, it ValueIterator) (*RangeInfo, error)
 
 	// WriteMetaRange creates a new MetaRange from the given Ranges.
-	WriteMetaRange(ctx context.Context, ns StorageNamespace, ranges []*RangeInfo, opts ...SetOptionsFunc) (*MetaRangeInfo, error)
+	WriteMetaRange(ctx context.Context, ns StorageNamespace, ranges []*RangeInfo) (*MetaRangeInfo, error)
 
 	// List takes a given tree and returns an ValueIterator
 	List(ctx context.Context, ns StorageNamespace, rangeID MetaRangeID) (ValueIterator, error)
@@ -1093,8 +1093,8 @@ func (g *Graveler) ListRepositories(ctx context.Context) (RepositoryIterator, er
 	return g.RefManager.ListRepositories(ctx)
 }
 
-func (g *Graveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID) error {
-	return g.RefManager.DeleteRepository(ctx, repositoryID)
+func (g *Graveler) DeleteRepository(ctx context.Context, repositoryID RepositoryID, opts ...SetOptionsFunc) error {
+	return g.RefManager.DeleteRepository(ctx, repositoryID, opts...)
 }
 
 func (g *Graveler) GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (RepositoryMetadata, error) {

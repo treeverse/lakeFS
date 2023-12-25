@@ -1913,17 +1913,17 @@ func (mr *MockRefManagerMockRecorder) DeleteExpiredLinkAddresses(ctx, repository
 }
 
 // DeleteRepository mocks base method.
-func (m *MockRefManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
+func (m *MockRefManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteRepository", ctx, repositoryID)
+	ret := m.ctrl.Call(m, "DeleteRepository", ctx, repositoryID, opts)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteRepository indicates an expected call of DeleteRepository.
-func (mr *MockRefManagerMockRecorder) DeleteRepository(ctx, repositoryID interface{}) *gomock.Call {
+func (mr *MockRefManagerMockRecorder) DeleteRepository(ctx, repositoryID, opts interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRepository", reflect.TypeOf((*MockRefManager)(nil).DeleteRepository), ctx, repositoryID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRepository", reflect.TypeOf((*MockRefManager)(nil).DeleteRepository), ctx, repositoryID, opts)
 }
 
 // DeleteTag mocks base method.
@@ -2475,48 +2475,48 @@ func (mr *MockCommittedManagerMockRecorder) Merge(ctx, ns, destination, source, 
 }
 
 // WriteMetaRange mocks base method.
-func (m *MockCommittedManager) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, ranges []*graveler.RangeInfo, opts ...graveler.SetOptionsFunc) (*graveler.MetaRangeInfo, error) {
+func (m *MockCommittedManager) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteMetaRange", ctx, ns, ranges, opts)
+	ret := m.ctrl.Call(m, "WriteMetaRange", ctx, ns, ranges)
 	ret0, _ := ret[0].(*graveler.MetaRangeInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // WriteMetaRange indicates an expected call of WriteMetaRange.
-func (mr *MockCommittedManagerMockRecorder) WriteMetaRange(ctx, ns, ranges, opts interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) WriteMetaRange(ctx, ns, ranges interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMetaRange", reflect.TypeOf((*MockCommittedManager)(nil).WriteMetaRange), ctx, ns, ranges, opts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMetaRange", reflect.TypeOf((*MockCommittedManager)(nil).WriteMetaRange), ctx, ns, ranges)
 }
 
 // WriteMetaRangeByIterator mocks base method.
-func (m *MockCommittedManager) WriteMetaRangeByIterator(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator, metadata graveler.Metadata, opts ...graveler.SetOptionsFunc) (*graveler.MetaRangeID, error) {
+func (m *MockCommittedManager) WriteMetaRangeByIterator(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator, metadata graveler.Metadata) (*graveler.MetaRangeID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteMetaRangeByIterator", ctx, ns, it, metadata, opts)
+	ret := m.ctrl.Call(m, "WriteMetaRangeByIterator", ctx, ns, it, metadata)
 	ret0, _ := ret[0].(*graveler.MetaRangeID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // WriteMetaRangeByIterator indicates an expected call of WriteMetaRangeByIterator.
-func (mr *MockCommittedManagerMockRecorder) WriteMetaRangeByIterator(ctx, ns, it, metadata, opts interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) WriteMetaRangeByIterator(ctx, ns, it, metadata interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMetaRangeByIterator", reflect.TypeOf((*MockCommittedManager)(nil).WriteMetaRangeByIterator), ctx, ns, it, metadata, opts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMetaRangeByIterator", reflect.TypeOf((*MockCommittedManager)(nil).WriteMetaRangeByIterator), ctx, ns, it, metadata)
 }
 
 // WriteRange mocks base method.
-func (m *MockCommittedManager) WriteRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator, opts ...graveler.SetOptionsFunc) (*graveler.RangeInfo, error) {
+func (m *MockCommittedManager) WriteRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteRange", ctx, ns, it, opts)
+	ret := m.ctrl.Call(m, "WriteRange", ctx, ns, it)
 	ret0, _ := ret[0].(*graveler.RangeInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // WriteRange indicates an expected call of WriteRange.
-func (mr *MockCommittedManagerMockRecorder) WriteRange(ctx, ns, it, opts interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) WriteRange(ctx, ns, it interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteRange", reflect.TypeOf((*MockCommittedManager)(nil).WriteRange), ctx, ns, it, opts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteRange", reflect.TypeOf((*MockCommittedManager)(nil).WriteRange), ctx, ns, it)
 }
 
 // MockStagingManager is a mock of StagingManager interface.

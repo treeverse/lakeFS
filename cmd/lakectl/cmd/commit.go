@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -41,8 +40,6 @@ var commitCmd = &cobra.Command{
 		branchURI := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", branchURI)
 
-		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
-
 		// do commit
 		metadata := apigen.CommitCreation_Metadata{
 			AdditionalProperties: kvPairs,
@@ -52,7 +49,6 @@ var commitCmd = &cobra.Command{
 			Message:  message,
 			Metadata: &metadata,
 			Date:     datePtr,
-			Force:    swag.Bool(ignore),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {

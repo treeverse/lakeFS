@@ -9,7 +9,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
-	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -23,8 +22,6 @@ var fsUploadCmd = &cobra.Command{
 		client := getClient()
 		pathURI, _ := getSyncArgs(args, true, false)
 		syncFlags := getSyncFlags(cmd, client)
-		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
-		syncFlags.Force = ignore
 		source := Must(cmd.Flags().GetString("source"))
 		contentType := Must(cmd.Flags().GetString("content-type"))
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
@@ -35,7 +32,7 @@ var fsUploadCmd = &cobra.Command{
 			if strings.HasSuffix(remotePath, uri.PathSeparator) {
 				Die("target path is not a valid URI", 1)
 			}
-			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags.Presign, ignore)
+			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags.Presign)
 			if err != nil {
 				DieErr(err)
 			}
@@ -78,16 +75,16 @@ var fsUploadCmd = &cobra.Command{
 	},
 }
 
-func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, preSign bool, force bool) (*apigen.ObjectStats, error) {
+func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, preSign bool) (*apigen.ObjectStats, error) {
 	fp := Must(OpenByPath(sourcePathname))
 	defer func() {
 		_ = fp.Close()
 	}()
 	objectPath := apiutil.Value(destURI.Path)
 	if preSign {
-		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp, graveler.WithForce(force))
+		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
 	}
-	return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp, graveler.WithForce(force))
+	return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
 }
 
 //nolint:gochecknoinits
@@ -97,7 +94,6 @@ func init() {
 	fsUploadCmd.Flags().StringP("content-type", "", "", "MIME type of contents")
 	withRecursiveFlag(fsUploadCmd, "recursively copy all files under local source")
 	withSyncFlags(fsUploadCmd)
-	withIgnoreFlag(fsUploadCmd)
 
 	fsCmd.AddCommand(fsUploadCmd)
 }

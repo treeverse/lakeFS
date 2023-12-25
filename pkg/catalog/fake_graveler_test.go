@@ -154,7 +154,7 @@ func (g *FakeGraveler) ListRepositories(ctx context.Context) (graveler.Repositor
 	return g.RepositoryIteratorFactory(), nil
 }
 
-func (g *FakeGraveler) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
+func (g *FakeGraveler) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID, opts ...graveler.SetOptionsFunc) error {
 	panic("implement me")
 }
 

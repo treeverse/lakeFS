@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
@@ -29,7 +28,6 @@ var tagCreateCmd = &cobra.Command{
 		client := getClient()
 		ctx := cmd.Context()
 		force := Must(cmd.Flags().GetBool("force"))
-		ignore := Must(cmd.Flags().GetBool(ignoreFlagName))
 
 		if tagURI.Repository != commitURI.Repository {
 			Die("both references must belong to the same repository", 1)
@@ -43,16 +41,15 @@ var tagCreateCmd = &cobra.Command{
 				Die("Bad response from server", 1)
 			}
 
-			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref, &apigen.DeleteTagParams{Force: swag.Bool(ignore)})
+			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref, &apigen.DeleteTagParams{})
 			if err != nil && (resp == nil || resp.JSON404 == nil) {
 				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 			}
 		}
 
 		resp, err := client.CreateTagWithResponse(ctx, tagURI.Repository, apigen.CreateTagJSONRequestBody{
-			Id:    tagURI.Ref,
-			Ref:   commitURI.Ref,
-			Force: swag.Bool(ignore),
+			Id:  tagURI.Ref,
+			Ref: commitURI.Ref,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
@@ -67,6 +64,5 @@ var tagCreateCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	tagCreateCmd.Flags().BoolP("force", "f", false, "override the tag if it exists")
-	withIgnoreFlag(tagCreateCmd)
 	tagCmd.AddCommand(tagCreateCmd)
 }

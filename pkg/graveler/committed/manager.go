@@ -61,7 +61,7 @@ func (c *committedManager) List(ctx context.Context, ns graveler.StorageNamespac
 	return NewValueIterator(it), nil
 }
 
-func (c *committedManager) WriteRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator, _ ...graveler.SetOptionsFunc) (*graveler.RangeInfo, error) {
+func (c *committedManager) WriteRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
 	writer, err := c.RangeManager.GetWriter(ctx, Namespace(ns), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating range writer: %w", err)
@@ -106,7 +106,7 @@ func (c *committedManager) WriteRange(ctx context.Context, ns graveler.StorageNa
 	}, nil
 }
 
-func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, ranges []*graveler.RangeInfo, _ ...graveler.SetOptionsFunc) (*graveler.MetaRangeInfo, error) {
+func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
 	writer := c.metaRangeManager.NewWriter(ctx, ns, nil)
 	defer func() {
 		if err := writer.Abort(); err != nil {
@@ -142,7 +142,7 @@ func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.Stora
 	}, nil
 }
 
-func (c *committedManager) WriteMetaRangeByIterator(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator, metadata graveler.Metadata, _ ...graveler.SetOptionsFunc) (*graveler.MetaRangeID, error) {
+func (c *committedManager) WriteMetaRangeByIterator(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator, metadata graveler.Metadata) (*graveler.MetaRangeID, error) {
 	writer := c.metaRangeManager.NewWriter(ctx, ns, metadata)
 	defer func() {
 		if err := writer.Abort(); err != nil {

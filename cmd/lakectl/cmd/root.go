@@ -126,7 +126,6 @@ const (
 	recursiveFlagShort  = "r"
 	presignFlagName     = "pre-sign"
 	parallelismFlagName = "parallelism"
-	ignoreFlagName      = "ignore"
 
 	defaultSyncParallelism = 25
 	defaultSyncPresign     = true
@@ -155,11 +154,6 @@ func withParallelismFlag(cmd *cobra.Command) {
 func withPresignFlag(cmd *cobra.Command) {
 	cmd.Flags().Bool(presignFlagName, defaultSyncPresign,
 		"Use pre-signed URLs when downloading/uploading data (recommended)")
-}
-
-func withIgnoreFlag(cmd *cobra.Command) {
-	cmd.Flags().Bool(ignoreFlagName, false,
-		"ignore read-only protection on the repository")
 }
 
 func withSyncFlags(cmd *cobra.Command) {
@@ -231,7 +225,6 @@ func withMetadataFlag(cmd *cobra.Command) {
 func withCommitFlags(cmd *cobra.Command, allowEmptyMessage bool) {
 	withMessageFlags(cmd, allowEmptyMessage)
 	withMetadataFlag(cmd)
-	cmd.Flags().Bool(ignoreFlagName, false, "ignore read-only protection on the repository")
 }
 
 func getCommitFlags(cmd *cobra.Command) (string, map[string]string) {
