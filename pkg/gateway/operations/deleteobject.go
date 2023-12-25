@@ -79,6 +79,7 @@ func (controller *DeleteObject) Handle(w http.ResponseWriter, req *http.Request,
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrWriteToProtectedBranch))
 	case errors.Is(err, graveler.ErrReadOnlyRepository):
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrReadOnlyRepository))
+		return
 	case err != nil:
 		lg.WithError(err).Error("could not delete object")
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
