@@ -19,12 +19,11 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
-	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
 // ClientUpload uploads contents as a file via lakeFS
-func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, opts ...graveler.SetOptionsFunc) (*apigen.ObjectStats, error) {
+func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*apigen.ObjectStats, error) {
 	pr, pw := io.Pipe()
 	defer func() {
 		_ = pr.Close()
@@ -63,13 +62,8 @@ func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterfac
 		}
 	}()
 
-	options := &graveler.SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
 	resp, err := client.UploadObjectWithBodyWithResponse(ctx, repoID, branchID, &apigen.UploadObjectParams{
-		Path:  objPath,
-		Force: swag.Bool(options.Force),
+		Path: objPath,
 	}, mpContentType, pr, func(ctx context.Context, req *http.Request) error {
 		var metaKey string
 		for k, v := range metadata {
@@ -92,20 +86,16 @@ func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterfac
 	return resp.JSON201, nil
 }
 
-func ClientUploadPreSign(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, opts ...graveler.SetOptionsFunc) (*apigen.ObjectStats, error) {
+func ClientUploadPreSign(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*apigen.ObjectStats, error) {
 	// calculate size using seek
 	contentLength, err := contents.Seek(0, io.SeekEnd)
 	if err != nil {
 		return nil, err
 	}
 
-	options := &graveler.SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
 	// upload loop, retry on conflict
 	for {
-		stats, err := clientUploadPreSignHelper(ctx, client, repoID, branchID, objPath, metadata, contentType, contents, contentLength, options.Force)
+		stats, err := clientUploadPreSignHelper(ctx, client, repoID, branchID, objPath, metadata, contentType, contents, contentLength)
 		if errors.Is(err, ErrConflict) {
 			continue
 		}
@@ -126,7 +116,7 @@ func isAzureBlobURL(u string) bool {
 
 // clientUploadPreSignHelper helper func to get physical address an upload content. Special case if conflict that
 // ErrConflict is returned where a re-try is required.
-func clientUploadPreSignHelper(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID string, branchID string, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, contentLength int64, force bool) (*apigen.ObjectStats, error) {
+func clientUploadPreSignHelper(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID string, branchID string, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, contentLength int64) (*apigen.ObjectStats, error) {
 	stagingLocation, err := getPhysicalAddress(ctx, client, repoID, branchID, &apigen.GetPhysicalAddressParams{
 		Path:    objPath,
 		Presign: swag.Bool(true),
@@ -179,7 +169,6 @@ func clientUploadPreSignHelper(ctx context.Context, client apigen.ClientWithResp
 			AdditionalProperties: metadata,
 		},
 		ContentType: apiutil.Ptr(contentType),
-		Force:       swag.Bool(force),
 	}
 	linkResp, err := client.LinkPhysicalAddressWithResponse(ctx, repoID, branchID,
 		&apigen.LinkPhysicalAddressParams{

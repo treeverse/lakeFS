@@ -20,7 +20,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/fileutil"
-	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
 )
@@ -279,12 +278,12 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 
 	if s.flags.Presign {
 		_, err = helpers.ClientUploadPreSign(
-			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader, graveler.WithForce(s.flags.Force))
+			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
 		return err
 	}
 	// not pre-signed
 	_, err = helpers.ClientUpload(
-		ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader, graveler.WithForce(s.flags.Force))
+		ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
 	return err
 }
 
@@ -321,8 +320,7 @@ func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change 
 	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path))
 
 	resp, err := s.client.DeleteObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.DeleteObjectParams{
-		Path:  dest,
-		Force: swag.Bool(s.flags.Force),
+		Path: dest,
 	})
 	if err != nil {
 		return

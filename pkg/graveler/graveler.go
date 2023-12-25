@@ -189,7 +189,7 @@ type SetOptions struct {
 	// MaxTries set number of times we try to perform the operation before we fail with BranchWriteMaxTries.
 	// By default, 0 - we try BranchWriteMaxTries
 	MaxTries int
-	// Force set to true will ignore branch protection rule or repository read-only protection.
+	// Force set to true will bypass repository read-only protection.
 	Force bool
 }
 
@@ -2406,14 +2406,6 @@ type CommitIDAndSummary struct {
 // That is, try to apply the diff from C2 to C1 on the tip of the branch.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the revert is done.
 func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams, opts ...SetOptionsFunc) (CommitID, error) {
-	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
-	if err != nil {
-		return "", err
-	}
-	if isProtected {
-		return "", ErrWriteToProtectedBranch
-	}
-
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -2498,14 +2490,6 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 // CherryPick creates a new commit on the given branch, with the changes from the given commit.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the cherry-pick is done.
 func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber *int, committer string, opts ...SetOptionsFunc) (CommitID, error) {
-	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
-	if err != nil {
-		return "", err
-	}
-	if isProtected {
-		return "", ErrWriteToProtectedBranch
-	}
-
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -2601,14 +2585,6 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 }
 
 func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string, opts ...SetOptionsFunc) (CommitID, error) {
-	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, destination, BranchProtectionBlockedAction_STAGING_WRITE)
-	if err != nil {
-		return "", err
-	}
-	if isProtected {
-		return "", ErrWriteToProtectedBranch
-	}
-
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -2624,7 +2600,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 	)
 
 	storageNamespace := repository.StorageNamespace
-	err = g.prepareForCommitIDUpdate(ctx, repository, destination, "merge")
+	err := g.prepareForCommitIDUpdate(ctx, repository, destination, "merge")
 	if err != nil {
 		return "", err
 	}
@@ -2778,14 +2754,6 @@ func (g *Graveler) retryRepoMetadataUpdate(ctx context.Context, repository *Repo
 }
 
 func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams, prefixes []Prefix, opts ...SetOptionsFunc) (CommitID, error) {
-	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, destination, BranchProtectionBlockedAction_STAGING_WRITE)
-	if err != nil {
-		return "", err
-	}
-	if isProtected {
-		return "", ErrWriteToProtectedBranch
-	}
-
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -2801,7 +2769,7 @@ func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, des
 	)
 
 	storageNamespace := repository.StorageNamespace
-	err = g.prepareForCommitIDUpdate(ctx, repository, destination, "import")
+	err := g.prepareForCommitIDUpdate(ctx, repository, destination, "import")
 	if err != nil {
 		return "", err
 	}
