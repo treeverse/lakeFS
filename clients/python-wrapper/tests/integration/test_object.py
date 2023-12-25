@@ -54,6 +54,27 @@ def test_object_read_seek(setup_repo, pre_sign):
         with expect_exception_context(io.UnsupportedOperation):
             fd.seek(0, 10)
 
+    assert fd.closed
+
+    # read after close
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
+        fd.read(10)
+
+    # seek after close
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
+        fd.seek(10)
+
+    # readline after close
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
+        fd.readline()
+
+    # flush after close
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
+        fd.flush()
+
+    # Close a second time should not fail
+    fd.close()
+
 
 def test_object_upload_exists(setup_repo):
     clt, repo = setup_repo
@@ -134,6 +155,17 @@ def test_writer(setup_repo):
             obj.stat()
 
     assert obj.reader().read() == b"Hello World!"
+
+    # try to close writer again
+    writer.close()
+
+    # write after close
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
+        writer.write("test")
+
+    # flush after close
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
+        writer.flush()
 
 
 @pytest.mark.parametrize("w_mode", get_args(WriteModes))
@@ -358,3 +390,56 @@ def test_write_read_csv(setup_repo):
             assert row == columns
         else:
             assert row == sample_data[i - 1]
+
+
+def test_reader_with_failure(setup_repo):
+    _, repo = setup_repo
+    obj = repo.branch("main").object("test_object")
+
+    try:
+        with obj.writer() as writer:
+            writer.write("Hello World!")
+            raise ValueError("Bad thing happened")
+    except ValueError:
+        pass
+
+    # Verify writer is closed
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
+        writer.write("test")
+
+    # Check that the object does not exist in lakeFS after exception
+    assert not obj.exists()
+
+
+def test_writer_with_failure(setup_repo):
+    clt, repo = setup_repo
+    data = b"test_data"
+    obj = WriteableObject(repository_id=repo.properties.id,
+                          reference_id="main",
+                          path="test_obj",
+                          client=clt).upload(data=data)
+
+    try:
+        with obj.reader() as reader:
+            reader.read()
+            raise ValueError("Bad thing happened")
+    except ValueError:
+        pass
+
+    assert reader.closed
+
+    # Verify exception when trying to read is closed
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
+        reader.read()
+
+
+def test_writer_discard(setup_repo):
+    _, repo = setup_repo
+    obj = repo.branch("main").object("test_object")
+
+    with obj.writer() as writer:
+        writer.write("Hello World!")
+        writer.discard()
+        assert writer.closed
+
+    assert not obj.exists()

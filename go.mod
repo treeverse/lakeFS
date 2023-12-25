@@ -82,6 +82,7 @@ require (
 	github.com/aws/smithy-go v1.18.1
 	github.com/benburkert/dns v0.0.0-20190225204957-d356cf78cdfc
 	github.com/csimplestring/delta-go v0.0.0-20231105162402-9b93ca02cedf
+	github.com/databricks/databricks-sdk-go v0.26.2
 	github.com/dgraph-io/badger/v4 v4.2.0
 	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/go-co-op/gocron v1.35.2
@@ -124,7 +125,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.2 // indirect
 	github.com/barweiss/go-tuple v1.1.2 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
-	github.com/databricks/databricks-sdk-go v0.26.2 // indirect
 	github.com/deckarep/golang-set/v2 v2.5.0 // indirect
 	github.com/fraugster/parquet-go v0.12.0 // indirect
 	github.com/getsentry/sentry-go v0.16.0 // indirect
@@ -254,4 +254,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20231203131847-a5acc36c8ba5
+replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20231224145418-d3dda453818f

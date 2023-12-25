@@ -6,7 +6,6 @@ import urllib3
 import pytest
 
 import lakefs_sdk.api
-from lakefs_sdk.rest import RESTResponse
 
 from lakefs.object import ReadModes
 from tests.utests.common import get_test_client, expect_exception_context
@@ -177,22 +176,22 @@ class TestObjectReader:
                 # Read whole file
                 start_pos = 0
 
-        def monkey_get_object(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
-            assert repository == test_kwargs.repository_id
-            assert ref == test_kwargs.reference_id
-            assert path == test_kwargs.path
-            assert range is None
-            assert presign
-            return b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82"
+                def monkey_get_object(_, repository, ref, path, range, presign, **__):  # pylint: disable=W0622
+                    assert repository == test_kwargs.repository_id
+                    assert ref == test_kwargs.reference_id
+                    assert path == test_kwargs.path
+                    assert range is None
+                    assert presign
+                    return b"test \xcf\x84o\xcf\x81\xce\xbdo\xcf\x82"
 
-        monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "get_object", monkey_get_object)
-        res = fd.read()
-        if 'b' not in mode:
-            assert res == data.decode('utf-8')
-        else:
-            assert res == data
+                monkeypatch.setattr(lakefs_sdk.api.ObjectsApi, "get_object", monkey_get_object)
+                res = fd.read()
+                if 'b' not in mode:
+                    assert res == data.decode('utf-8')
+                else:
+                    assert res == data
 
-        assert fd.tell() == start_pos + object_stats.size_bytes
+                assert fd.tell() == start_pos + object_stats.size_bytes
 
     def test_read_invalid_mode(self, monkeypatch, tmp_path):
         test_kwargs = ObjectTestKWArgs()
@@ -209,7 +208,7 @@ class TestWriteableObject:
             staging_location = StagingTestLocation()
             monkeypatch.setattr(lakefs_sdk.api.StagingApi, "get_physical_address", lambda *args: staging_location)
             monkeypatch.setattr(urllib3, "request",
-                                lambda *args, **kwargs: RESTResponse(urllib3.response.HTTPResponse(status=201)))
+                                lambda *args, **kwargs: urllib3.response.HTTPResponse(status=201))
 
             def monkey_link_physical_address(*_, staging_metadata: lakefs_sdk.StagingMetadata, **__):
                 assert staging_metadata.size_bytes == len(data)
