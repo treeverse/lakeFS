@@ -195,6 +195,7 @@ public class ObjectsApi {
             <tr><td> 201 </td><td> Copy object response </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -214,6 +215,7 @@ public class ObjectsApi {
             <tr><td> 201 </td><td> Copy object response </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -234,6 +236,7 @@ public class ObjectsApi {
             <tr><td> 201 </td><td> Copy object response </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -254,6 +257,7 @@ public class ObjectsApi {
             <tr><td> 201 </td><td> Copy object response </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -278,6 +282,7 @@ public class ObjectsApi {
         <tr><td> 201 </td><td> Copy object response </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
@@ -286,7 +291,7 @@ public class ObjectsApi {
     public APIcopyObjectRequest copyObject(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation) {
         return new APIcopyObjectRequest(repository, branch, destPath, objectCopyCreation);
     }
-    private okhttp3.Call deleteObjectCall(String repository, String branch, String path, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteObjectCall(String repository, String branch, String path, Boolean force, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -317,6 +322,10 @@ public class ObjectsApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("path", path));
         }
 
+        if (force != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("force", force));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -337,7 +346,7 @@ public class ObjectsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call deleteObjectValidateBeforeCall(String repository, String branch, String path, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteObjectValidateBeforeCall(String repository, String branch, String path, Boolean force, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling deleteObject(Async)");
@@ -353,19 +362,19 @@ public class ObjectsApi {
             throw new ApiException("Missing the required parameter 'path' when calling deleteObject(Async)");
         }
 
-        return deleteObjectCall(repository, branch, path, _callback);
+        return deleteObjectCall(repository, branch, path, force, _callback);
 
     }
 
 
-    private ApiResponse<Void> deleteObjectWithHttpInfo(String repository, String branch, String path) throws ApiException {
-        okhttp3.Call localVarCall = deleteObjectValidateBeforeCall(repository, branch, path, null);
+    private ApiResponse<Void> deleteObjectWithHttpInfo(String repository, String branch, String path, Boolean force) throws ApiException {
+        okhttp3.Call localVarCall = deleteObjectValidateBeforeCall(repository, branch, path, force, null);
         return localVarApiClient.execute(localVarCall);
     }
 
-    private okhttp3.Call deleteObjectAsync(String repository, String branch, String path, final ApiCallback<Void> _callback) throws ApiException {
+    private okhttp3.Call deleteObjectAsync(String repository, String branch, String path, Boolean force, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = deleteObjectValidateBeforeCall(repository, branch, path, _callback);
+        okhttp3.Call localVarCall = deleteObjectValidateBeforeCall(repository, branch, path, force, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
@@ -374,11 +383,22 @@ public class ObjectsApi {
         private final String repository;
         private final String branch;
         private final String path;
+        private Boolean force;
 
         private APIdeleteObjectRequest(String repository, String branch, String path) {
             this.repository = repository;
             this.branch = branch;
             this.path = path;
+        }
+
+        /**
+         * Set force
+         * @param force  (optional, default to false)
+         * @return APIdeleteObjectRequest
+         */
+        public APIdeleteObjectRequest force(Boolean force) {
+            this.force = force;
+            return this;
         }
 
         /**
@@ -398,7 +418,7 @@ public class ObjectsApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return deleteObjectCall(repository, branch, path, _callback);
+            return deleteObjectCall(repository, branch, path, force, _callback);
         }
 
         /**
@@ -416,7 +436,7 @@ public class ObjectsApi {
          </table>
          */
         public void execute() throws ApiException {
-            deleteObjectWithHttpInfo(repository, branch, path);
+            deleteObjectWithHttpInfo(repository, branch, path, force);
         }
 
         /**
@@ -435,7 +455,7 @@ public class ObjectsApi {
          </table>
          */
         public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
-            return deleteObjectWithHttpInfo(repository, branch, path);
+            return deleteObjectWithHttpInfo(repository, branch, path, force);
         }
 
         /**
@@ -455,7 +475,7 @@ public class ObjectsApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
-            return deleteObjectAsync(repository, branch, path, _callback);
+            return deleteObjectAsync(repository, branch, path, force, _callback);
         }
     }
 
@@ -480,7 +500,7 @@ public class ObjectsApi {
     public APIdeleteObjectRequest deleteObject(String repository, String branch, String path) {
         return new APIdeleteObjectRequest(repository, branch, path);
     }
-    private okhttp3.Call deleteObjectsCall(String repository, String branch, PathList pathList, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteObjectsCall(String repository, String branch, PathList pathList, Boolean force, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -507,6 +527,10 @@ public class ObjectsApi {
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
+        if (force != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("force", force));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -528,7 +552,7 @@ public class ObjectsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call deleteObjectsValidateBeforeCall(String repository, String branch, PathList pathList, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteObjectsValidateBeforeCall(String repository, String branch, PathList pathList, Boolean force, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling deleteObjects(Async)");
@@ -544,20 +568,20 @@ public class ObjectsApi {
             throw new ApiException("Missing the required parameter 'pathList' when calling deleteObjects(Async)");
         }
 
-        return deleteObjectsCall(repository, branch, pathList, _callback);
+        return deleteObjectsCall(repository, branch, pathList, force, _callback);
 
     }
 
 
-    private ApiResponse<ObjectErrorList> deleteObjectsWithHttpInfo(String repository, String branch, PathList pathList) throws ApiException {
-        okhttp3.Call localVarCall = deleteObjectsValidateBeforeCall(repository, branch, pathList, null);
+    private ApiResponse<ObjectErrorList> deleteObjectsWithHttpInfo(String repository, String branch, PathList pathList, Boolean force) throws ApiException {
+        okhttp3.Call localVarCall = deleteObjectsValidateBeforeCall(repository, branch, pathList, force, null);
         Type localVarReturnType = new TypeToken<ObjectErrorList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call deleteObjectsAsync(String repository, String branch, PathList pathList, final ApiCallback<ObjectErrorList> _callback) throws ApiException {
+    private okhttp3.Call deleteObjectsAsync(String repository, String branch, PathList pathList, Boolean force, final ApiCallback<ObjectErrorList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = deleteObjectsValidateBeforeCall(repository, branch, pathList, _callback);
+        okhttp3.Call localVarCall = deleteObjectsValidateBeforeCall(repository, branch, pathList, force, _callback);
         Type localVarReturnType = new TypeToken<ObjectErrorList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -567,11 +591,22 @@ public class ObjectsApi {
         private final String repository;
         private final String branch;
         private final PathList pathList;
+        private Boolean force;
 
         private APIdeleteObjectsRequest(String repository, String branch, PathList pathList) {
             this.repository = repository;
             this.branch = branch;
             this.pathList = pathList;
+        }
+
+        /**
+         * Set force
+         * @param force  (optional, default to false)
+         * @return APIdeleteObjectsRequest
+         */
+        public APIdeleteObjectsRequest force(Boolean force) {
+            this.force = force;
+            return this;
         }
 
         /**
@@ -591,7 +626,7 @@ public class ObjectsApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return deleteObjectsCall(repository, branch, pathList, _callback);
+            return deleteObjectsCall(repository, branch, pathList, force, _callback);
         }
 
         /**
@@ -610,7 +645,7 @@ public class ObjectsApi {
          </table>
          */
         public ObjectErrorList execute() throws ApiException {
-            ApiResponse<ObjectErrorList> localVarResp = deleteObjectsWithHttpInfo(repository, branch, pathList);
+            ApiResponse<ObjectErrorList> localVarResp = deleteObjectsWithHttpInfo(repository, branch, pathList, force);
             return localVarResp.getData();
         }
 
@@ -630,7 +665,7 @@ public class ObjectsApi {
          </table>
          */
         public ApiResponse<ObjectErrorList> executeWithHttpInfo() throws ApiException {
-            return deleteObjectsWithHttpInfo(repository, branch, pathList);
+            return deleteObjectsWithHttpInfo(repository, branch, pathList, force);
         }
 
         /**
@@ -650,7 +685,7 @@ public class ObjectsApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<ObjectErrorList> _callback) throws ApiException {
-            return deleteObjectsAsync(repository, branch, pathList, _callback);
+            return deleteObjectsAsync(repository, branch, pathList, force, _callback);
         }
     }
 
@@ -1834,7 +1869,7 @@ public class ObjectsApi {
     public APIstatObjectRequest statObject(String repository, String ref, String path) {
         return new APIstatObjectRequest(repository, ref, path);
     }
-    private okhttp3.Call uploadObjectCall(String repository, String branch, String path, String storageClass, String ifNoneMatch, File content, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call uploadObjectCall(String repository, String branch, String path, String storageClass, String ifNoneMatch, Boolean force, File content, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -1873,6 +1908,10 @@ public class ObjectsApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("storageClass", storageClass));
         }
 
+        if (force != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("force", force));
+        }
+
         if (ifNoneMatch != null) {
             localVarHeaderParams.put("If-None-Match", localVarApiClient.parameterToString(ifNoneMatch));
         }
@@ -1899,7 +1938,7 @@ public class ObjectsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call uploadObjectValidateBeforeCall(String repository, String branch, String path, String storageClass, String ifNoneMatch, File content, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call uploadObjectValidateBeforeCall(String repository, String branch, String path, String storageClass, String ifNoneMatch, Boolean force, File content, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling uploadObject(Async)");
@@ -1915,20 +1954,20 @@ public class ObjectsApi {
             throw new ApiException("Missing the required parameter 'path' when calling uploadObject(Async)");
         }
 
-        return uploadObjectCall(repository, branch, path, storageClass, ifNoneMatch, content, _callback);
+        return uploadObjectCall(repository, branch, path, storageClass, ifNoneMatch, force, content, _callback);
 
     }
 
 
-    private ApiResponse<ObjectStats> uploadObjectWithHttpInfo(String repository, String branch, String path, String storageClass, String ifNoneMatch, File content) throws ApiException {
-        okhttp3.Call localVarCall = uploadObjectValidateBeforeCall(repository, branch, path, storageClass, ifNoneMatch, content, null);
+    private ApiResponse<ObjectStats> uploadObjectWithHttpInfo(String repository, String branch, String path, String storageClass, String ifNoneMatch, Boolean force, File content) throws ApiException {
+        okhttp3.Call localVarCall = uploadObjectValidateBeforeCall(repository, branch, path, storageClass, ifNoneMatch, force, content, null);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call uploadObjectAsync(String repository, String branch, String path, String storageClass, String ifNoneMatch, File content, final ApiCallback<ObjectStats> _callback) throws ApiException {
+    private okhttp3.Call uploadObjectAsync(String repository, String branch, String path, String storageClass, String ifNoneMatch, Boolean force, File content, final ApiCallback<ObjectStats> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = uploadObjectValidateBeforeCall(repository, branch, path, storageClass, ifNoneMatch, content, _callback);
+        okhttp3.Call localVarCall = uploadObjectValidateBeforeCall(repository, branch, path, storageClass, ifNoneMatch, force, content, _callback);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -1940,6 +1979,7 @@ public class ObjectsApi {
         private final String path;
         private String storageClass;
         private String ifNoneMatch;
+        private Boolean force;
         private File content;
 
         private APIuploadObjectRequest(String repository, String branch, String path) {
@@ -1965,6 +2005,16 @@ public class ObjectsApi {
          */
         public APIuploadObjectRequest ifNoneMatch(String ifNoneMatch) {
             this.ifNoneMatch = ifNoneMatch;
+            return this;
+        }
+
+        /**
+         * Set force
+         * @param force  (optional, default to false)
+         * @return APIuploadObjectRequest
+         */
+        public APIuploadObjectRequest force(Boolean force) {
+            this.force = force;
             return this;
         }
 
@@ -1997,7 +2047,7 @@ public class ObjectsApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return uploadObjectCall(repository, branch, path, storageClass, ifNoneMatch, content, _callback);
+            return uploadObjectCall(repository, branch, path, storageClass, ifNoneMatch, force, content, _callback);
         }
 
         /**
@@ -2018,7 +2068,7 @@ public class ObjectsApi {
          </table>
          */
         public ObjectStats execute() throws ApiException {
-            ApiResponse<ObjectStats> localVarResp = uploadObjectWithHttpInfo(repository, branch, path, storageClass, ifNoneMatch, content);
+            ApiResponse<ObjectStats> localVarResp = uploadObjectWithHttpInfo(repository, branch, path, storageClass, ifNoneMatch, force, content);
             return localVarResp.getData();
         }
 
@@ -2040,7 +2090,7 @@ public class ObjectsApi {
          </table>
          */
         public ApiResponse<ObjectStats> executeWithHttpInfo() throws ApiException {
-            return uploadObjectWithHttpInfo(repository, branch, path, storageClass, ifNoneMatch, content);
+            return uploadObjectWithHttpInfo(repository, branch, path, storageClass, ifNoneMatch, force, content);
         }
 
         /**
@@ -2062,7 +2112,7 @@ public class ObjectsApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<ObjectStats> _callback) throws ApiException {
-            return uploadObjectAsync(repository, branch, path, storageClass, ifNoneMatch, content, _callback);
+            return uploadObjectAsync(repository, branch, path, storageClass, ifNoneMatch, force, content, _callback);
         }
     }
 

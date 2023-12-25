@@ -25,7 +25,7 @@ from lakefs_client.model_utils import (  # noqa: F401
 from lakefs_client.model.branch_protection_rule import BranchProtectionRule
 from lakefs_client.model.error import Error
 from lakefs_client.model.garbage_collection_rules import GarbageCollectionRules
-from lakefs_client.model.refs_dump import RefsDump
+from lakefs_client.model.refs_restore import RefsRestore
 from lakefs_client.model.repository import Repository
 from lakefs_client.model.repository_creation import RepositoryCreation
 from lakefs_client.model.repository_dump_status import RepositoryDumpStatus
@@ -180,6 +180,7 @@ class RepositoriesApi(object):
             params_map={
                 'all': [
                     'repository',
+                    'force',
                 ],
                 'required': [
                     'repository',
@@ -199,12 +200,16 @@ class RepositoriesApi(object):
                 'openapi_types': {
                     'repository':
                         (str,),
+                    'force':
+                        (bool,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
+                    'force': 'force',
                 },
                 'location_map': {
                     'repository': 'path',
+                    'force': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -701,11 +706,11 @@ class RepositoriesApi(object):
             params_map={
                 'all': [
                     'repository',
-                    'refs_dump',
+                    'refs_restore',
                 ],
                 'required': [
                     'repository',
-                    'refs_dump',
+                    'refs_restore',
                 ],
                 'nullable': [
                 ],
@@ -722,15 +727,15 @@ class RepositoriesApi(object):
                 'openapi_types': {
                     'repository':
                         (str,),
-                    'refs_dump':
-                        (RefsDump,),
+                    'refs_restore':
+                        (RefsRestore,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                 },
                 'location_map': {
                     'repository': 'path',
-                    'refs_dump': 'body',
+                    'refs_restore': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -1023,6 +1028,7 @@ class RepositoriesApi(object):
             repository (str):
 
         Keyword Args:
+            force (bool): Bypass read-only protection and delete the repository. [optional] if omitted the server will use the default value of False
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -1600,7 +1606,7 @@ class RepositoriesApi(object):
     def restore_submit(
         self,
         repository,
-        refs_dump,
+        refs_restore,
         **kwargs
     ):
         """Restore repository from a dump in the object store  # noqa: E501
@@ -1608,12 +1614,12 @@ class RepositoriesApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.restore_submit(repository, refs_dump, async_req=True)
+        >>> thread = api.restore_submit(repository, refs_restore, async_req=True)
         >>> result = thread.get()
 
         Args:
             repository (str):
-            refs_dump (RefsDump):
+            refs_restore (RefsRestore):
 
         Keyword Args:
             _return_http_data_only (bool): response data without head status
@@ -1662,8 +1668,8 @@ class RepositoriesApi(object):
         kwargs['_host_index'] = kwargs.get('_host_index')
         kwargs['repository'] = \
             repository
-        kwargs['refs_dump'] = \
-            refs_dump
+        kwargs['refs_restore'] = \
+            refs_restore
         return self.restore_submit_endpoint.call_with_http_info(**kwargs)
 
     def set_branch_protection_rules(

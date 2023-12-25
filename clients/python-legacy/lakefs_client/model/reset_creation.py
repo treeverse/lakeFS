@@ -89,6 +89,7 @@ class ResetCreation(ModelNormal):
         return {
             'type': (str,),  # noqa: E501
             'path': (str,),  # noqa: E501
+            'force': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -99,6 +100,7 @@ class ResetCreation(ModelNormal):
     attribute_map = {
         'type': 'type',  # noqa: E501
         'path': 'path',  # noqa: E501
+        'force': 'force',  # noqa: E501
     }
 
     read_only_vars = {
@@ -146,6 +148,7 @@ class ResetCreation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             path (str): [optional]  # noqa: E501
+            force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -232,6 +235,7 @@ class ResetCreation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             path (str): [optional]  # noqa: E501
+            force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

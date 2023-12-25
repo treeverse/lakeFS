@@ -60,6 +60,10 @@ public class RevertCreation {
   @SerializedName(SERIALIZED_NAME_PARENT_NUMBER)
   private Integer parentNumber;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
   public RevertCreation() {
   }
 
@@ -102,6 +106,27 @@ public class RevertCreation {
 
   public void setParentNumber(Integer parentNumber) {
     this.parentNumber = parentNumber;
+  }
+
+
+  public RevertCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
   }
 
   /**
@@ -160,13 +185,14 @@ public class RevertCreation {
     }
     RevertCreation revertCreation = (RevertCreation) o;
     return Objects.equals(this.ref, revertCreation.ref) &&
-        Objects.equals(this.parentNumber, revertCreation.parentNumber)&&
+        Objects.equals(this.parentNumber, revertCreation.parentNumber) &&
+        Objects.equals(this.force, revertCreation.force)&&
         Objects.equals(this.additionalProperties, revertCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ref, parentNumber, additionalProperties);
+    return Objects.hash(ref, parentNumber, force, additionalProperties);
   }
 
   @Override
@@ -175,6 +201,7 @@ public class RevertCreation {
     sb.append("class RevertCreation {\n");
     sb.append("    ref: ").append(toIndentedString(ref)).append("\n");
     sb.append("    parentNumber: ").append(toIndentedString(parentNumber)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -200,6 +227,7 @@ public class RevertCreation {
     openapiFields = new HashSet<String>();
     openapiFields.add("ref");
     openapiFields.add("parent_number");
+    openapiFields.add("force");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

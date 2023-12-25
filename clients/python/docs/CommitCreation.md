@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **message** | **str** |  | 
 **metadata** | **Dict[str, str]** |  | [optional] 
 **var_date** | **int** | set date to override creation date in the commit (Unix Epoch in seconds) | [optional] 
+**force** | **bool** |  | [optional] [default to False]
 
 ## Example
 

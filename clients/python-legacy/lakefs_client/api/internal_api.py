@@ -36,6 +36,7 @@ from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.prepare_gc_uncommitted_request import PrepareGCUncommittedRequest
 from lakefs_client.model.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse
 from lakefs_client.model.refs_dump import RefsDump
+from lakefs_client.model.refs_restore import RefsRestore
 from lakefs_client.model.setup import Setup
 from lakefs_client.model.setup_state import SetupState
 from lakefs_client.model.stats_events_list import StatsEventsList
@@ -1000,11 +1001,11 @@ class InternalApi(object):
             params_map={
                 'all': [
                     'repository',
-                    'refs_dump',
+                    'refs_restore',
                 ],
                 'required': [
                     'repository',
-                    'refs_dump',
+                    'refs_restore',
                 ],
                 'nullable': [
                 ],
@@ -1021,15 +1022,15 @@ class InternalApi(object):
                 'openapi_types': {
                     'repository':
                         (str,),
-                    'refs_dump':
-                        (RefsDump,),
+                    'refs_restore':
+                        (RefsRestore,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                 },
                 'location_map': {
                     'repository': 'path',
-                    'refs_dump': 'body',
+                    'refs_restore': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -2445,7 +2446,7 @@ class InternalApi(object):
     def restore_refs(
         self,
         repository,
-        refs_dump,
+        refs_restore,
         **kwargs
     ):
         """Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations   # noqa: E501
@@ -2453,12 +2454,12 @@ class InternalApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.restore_refs(repository, refs_dump, async_req=True)
+        >>> thread = api.restore_refs(repository, refs_restore, async_req=True)
         >>> result = thread.get()
 
         Args:
             repository (str):
-            refs_dump (RefsDump):
+            refs_restore (RefsRestore):
 
         Keyword Args:
             _return_http_data_only (bool): response data without head status
@@ -2507,8 +2508,8 @@ class InternalApi(object):
         kwargs['_host_index'] = kwargs.get('_host_index')
         kwargs['repository'] = \
             repository
-        kwargs['refs_dump'] = \
-            refs_dump
+        kwargs['refs_restore'] = \
+            refs_restore
         return self.restore_refs_endpoint.call_with_http_info(**kwargs)
 
     def set_garbage_collection_rules_preflight(

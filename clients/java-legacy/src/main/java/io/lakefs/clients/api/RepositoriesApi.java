@@ -30,7 +30,7 @@ import java.io.IOException;
 import io.lakefs.clients.api.model.BranchProtectionRule;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionRules;
-import io.lakefs.clients.api.model.RefsDump;
+import io.lakefs.clients.api.model.RefsRestore;
 import io.lakefs.clients.api.model.Repository;
 import io.lakefs.clients.api.model.RepositoryCreation;
 import io.lakefs.clients.api.model.RepositoryDumpStatus;
@@ -329,6 +329,7 @@ public class RepositoriesApi {
     /**
      * Build call for deleteRepository
      * @param repository  (required)
+     * @param force Bypass read-only protection and delete the repository (optional, default to false)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -342,7 +343,7 @@ public class RepositoriesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call deleteRepositoryCall(String repository, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call deleteRepositoryCall(String repository, Boolean force, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -354,6 +355,10 @@ public class RepositoriesApi {
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (force != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("force", force));
+        }
 
         final String[] localVarAccepts = {
             "application/json"
@@ -374,7 +379,7 @@ public class RepositoriesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call deleteRepositoryValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteRepositoryValidateBeforeCall(String repository, Boolean force, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -382,7 +387,7 @@ public class RepositoriesApi {
         }
         
 
-        okhttp3.Call localVarCall = deleteRepositoryCall(repository, _callback);
+        okhttp3.Call localVarCall = deleteRepositoryCall(repository, force, _callback);
         return localVarCall;
 
     }
@@ -391,6 +396,7 @@ public class RepositoriesApi {
      * delete repository
      * 
      * @param repository  (required)
+     * @param force Bypass read-only protection and delete the repository (optional, default to false)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -402,14 +408,15 @@ public class RepositoriesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void deleteRepository(String repository) throws ApiException {
-        deleteRepositoryWithHttpInfo(repository);
+    public void deleteRepository(String repository, Boolean force) throws ApiException {
+        deleteRepositoryWithHttpInfo(repository, force);
     }
 
     /**
      * delete repository
      * 
      * @param repository  (required)
+     * @param force Bypass read-only protection and delete the repository (optional, default to false)
      * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -422,8 +429,8 @@ public class RepositoriesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> deleteRepositoryWithHttpInfo(String repository) throws ApiException {
-        okhttp3.Call localVarCall = deleteRepositoryValidateBeforeCall(repository, null);
+    public ApiResponse<Void> deleteRepositoryWithHttpInfo(String repository, Boolean force) throws ApiException {
+        okhttp3.Call localVarCall = deleteRepositoryValidateBeforeCall(repository, force, null);
         return localVarApiClient.execute(localVarCall);
     }
 
@@ -431,6 +438,7 @@ public class RepositoriesApi {
      * delete repository (asynchronously)
      * 
      * @param repository  (required)
+     * @param force Bypass read-only protection and delete the repository (optional, default to false)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -444,9 +452,9 @@ public class RepositoriesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call deleteRepositoryAsync(String repository, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call deleteRepositoryAsync(String repository, Boolean force, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = deleteRepositoryValidateBeforeCall(repository, _callback);
+        okhttp3.Call localVarCall = deleteRepositoryValidateBeforeCall(repository, force, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
@@ -1521,7 +1529,7 @@ public class RepositoriesApi {
     /**
      * Build call for restoreSubmit
      * @param repository  (required)
-     * @param refsDump  (required)
+     * @param refsRestore  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -1530,13 +1538,14 @@ public class RepositoriesApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 202 </td><td> restore task created </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call restoreSubmitCall(String repository, RefsDump refsDump, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = refsDump;
+    public okhttp3.Call restoreSubmitCall(String repository, RefsRestore refsRestore, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = refsRestore;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/restore"
@@ -1567,20 +1576,20 @@ public class RepositoriesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call restoreSubmitValidateBeforeCall(String repository, RefsDump refsDump, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call restoreSubmitValidateBeforeCall(String repository, RefsRestore refsRestore, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling restoreSubmit(Async)");
         }
         
-        // verify the required parameter 'refsDump' is set
-        if (refsDump == null) {
-            throw new ApiException("Missing the required parameter 'refsDump' when calling restoreSubmit(Async)");
+        // verify the required parameter 'refsRestore' is set
+        if (refsRestore == null) {
+            throw new ApiException("Missing the required parameter 'refsRestore' when calling restoreSubmit(Async)");
         }
         
 
-        okhttp3.Call localVarCall = restoreSubmitCall(repository, refsDump, _callback);
+        okhttp3.Call localVarCall = restoreSubmitCall(repository, refsRestore, _callback);
         return localVarCall;
 
     }
@@ -1589,7 +1598,7 @@ public class RepositoriesApi {
      * Restore repository from a dump in the object store
      * 
      * @param repository  (required)
-     * @param refsDump  (required)
+     * @param refsRestore  (required)
      * @return TaskInfo
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -1597,13 +1606,14 @@ public class RepositoriesApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 202 </td><td> restore task created </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public TaskInfo restoreSubmit(String repository, RefsDump refsDump) throws ApiException {
-        ApiResponse<TaskInfo> localVarResp = restoreSubmitWithHttpInfo(repository, refsDump);
+    public TaskInfo restoreSubmit(String repository, RefsRestore refsRestore) throws ApiException {
+        ApiResponse<TaskInfo> localVarResp = restoreSubmitWithHttpInfo(repository, refsRestore);
         return localVarResp.getData();
     }
 
@@ -1611,7 +1621,7 @@ public class RepositoriesApi {
      * Restore repository from a dump in the object store
      * 
      * @param repository  (required)
-     * @param refsDump  (required)
+     * @param refsRestore  (required)
      * @return ApiResponse&lt;TaskInfo&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -1619,13 +1629,14 @@ public class RepositoriesApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 202 </td><td> restore task created </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<TaskInfo> restoreSubmitWithHttpInfo(String repository, RefsDump refsDump) throws ApiException {
-        okhttp3.Call localVarCall = restoreSubmitValidateBeforeCall(repository, refsDump, null);
+    public ApiResponse<TaskInfo> restoreSubmitWithHttpInfo(String repository, RefsRestore refsRestore) throws ApiException {
+        okhttp3.Call localVarCall = restoreSubmitValidateBeforeCall(repository, refsRestore, null);
         Type localVarReturnType = new TypeToken<TaskInfo>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -1634,7 +1645,7 @@ public class RepositoriesApi {
      * Restore repository from a dump in the object store (asynchronously)
      * 
      * @param repository  (required)
-     * @param refsDump  (required)
+     * @param refsRestore  (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -1643,14 +1654,15 @@ public class RepositoriesApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 202 </td><td> restore task created </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call restoreSubmitAsync(String repository, RefsDump refsDump, final ApiCallback<TaskInfo> _callback) throws ApiException {
+    public okhttp3.Call restoreSubmitAsync(String repository, RefsRestore refsRestore, final ApiCallback<TaskInfo> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = restoreSubmitValidateBeforeCall(repository, refsDump, _callback);
+        okhttp3.Call localVarCall = restoreSubmitValidateBeforeCall(repository, refsRestore, _callback);
         Type localVarReturnType = new TypeToken<TaskInfo>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

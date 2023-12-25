@@ -40,7 +40,8 @@ class TestTagCreation(unittest.TestCase):
         if include_optional :
             return TagCreation(
                 id = '', 
-                ref = ''
+                ref = '', 
+                force = True
             )
         else :
             return TagCreation(

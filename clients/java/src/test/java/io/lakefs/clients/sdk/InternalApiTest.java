@@ -28,6 +28,7 @@ import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedRequest;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedResponse;
 import io.lakefs.clients.sdk.model.RefsDump;
+import io.lakefs.clients.sdk.model.RefsRestore;
 import io.lakefs.clients.sdk.model.Setup;
 import io.lakefs.clients.sdk.model.SetupState;
 import io.lakefs.clients.sdk.model.StatsEventsList;
@@ -270,8 +271,8 @@ public class InternalApiTest {
     @Test
     public void restoreRefsTest() throws ApiException {
         String repository = null;
-        RefsDump refsDump = null;
-        api.restoreRefs(repository, refsDump)
+        RefsRestore refsRestore = null;
+        api.restoreRefs(repository, refsRestore)
                 .execute();
         // TODO: test validations
     }

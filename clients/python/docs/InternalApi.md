@@ -1790,7 +1790,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **restore_refs**
-> restore_refs(repository, refs_dump)
+> restore_refs(repository, refs_restore)
 
 Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 
@@ -1806,7 +1806,7 @@ Restore repository refs (tags, commits, branches) from object store. Deprecated:
 import time
 import os
 import lakefs_sdk
-from lakefs_sdk.models.refs_dump import RefsDump
+from lakefs_sdk.models.refs_restore import RefsRestore
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
 
@@ -1855,11 +1855,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = lakefs_sdk.InternalApi(api_client)
     repository = 'repository_example' # str | 
-    refs_dump = lakefs_sdk.RefsDump() # RefsDump | 
+    refs_restore = lakefs_sdk.RefsRestore() # RefsRestore | 
 
     try:
         # Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
-        api_instance.restore_refs(repository, refs_dump)
+        api_instance.restore_refs(repository, refs_restore)
     except Exception as e:
         print("Exception when calling InternalApi->restore_refs: %s\n" % e)
 ```
@@ -1872,7 +1872,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
- **refs_dump** | [**RefsDump**](RefsDump.md)|  | 
+ **refs_restore** | [**RefsRestore**](RefsRestore.md)|  | 
 
 ### Return type
 

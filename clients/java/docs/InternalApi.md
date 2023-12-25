@@ -1540,7 +1540,7 @@ public class Example {
 
 <a id="restoreRefs"></a>
 # **restoreRefs**
-> restoreRefs(repository, refsDump).execute();
+> restoreRefs(repository, refsRestore).execute();
 
 Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 
@@ -1588,9 +1588,9 @@ public class Example {
 
     InternalApi apiInstance = new InternalApi(defaultClient);
     String repository = "repository_example"; // String | 
-    RefsDump refsDump = new RefsDump(); // RefsDump | 
+    RefsRestore refsRestore = new RefsRestore(); // RefsRestore | 
     try {
-      apiInstance.restoreRefs(repository, refsDump)
+      apiInstance.restoreRefs(repository, refsRestore)
             .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling InternalApi#restoreRefs");
@@ -1608,7 +1608,7 @@ public class Example {
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
 | **repository** | **String**|  | |
-| **refsDump** | [**RefsDump**](RefsDump.md)|  | |
+| **refsRestore** | [**RefsRestore**](RefsRestore.md)|  | |
 
 ### Return type
 

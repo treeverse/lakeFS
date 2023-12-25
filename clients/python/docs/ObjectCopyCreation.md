@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **src_path** | **str** | path of the copied object relative to the ref | 
 **src_ref** | **str** | a reference, if empty uses the provided branch as ref | [optional] 
+**force** | **bool** |  | [optional] [default to False]
 
 ## Example
 

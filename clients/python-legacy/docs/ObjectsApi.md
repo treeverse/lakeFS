@@ -86,6 +86,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     object_copy_creation = ObjectCopyCreation(
         src_path="src_path_example",
         src_ref="src_ref_example",
+        force=False,
     ) # ObjectCopyCreation | 
 
     # example passing only required values which don't have defaults set
@@ -128,6 +129,7 @@ Name | Type | Description  | Notes
 **201** | Copy object response |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
@@ -200,11 +202,20 @@ with lakefs_client.ApiClient(configuration) as api_client:
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
     path = "path_example" # str | relative to the branch
+    force = False # bool |  (optional) if omitted the server will use the default value of False
 
     # example passing only required values which don't have defaults set
     try:
         # delete object. Missing objects will not return a NotFound error.
         api_instance.delete_object(repository, branch, path)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling ObjectsApi->delete_object: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # delete object. Missing objects will not return a NotFound error.
+        api_instance.delete_object(repository, branch, path, force=force)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->delete_object: %s\n" % e)
 ```
@@ -217,6 +228,7 @@ Name | Type | Description  | Notes
  **repository** | **str**|  |
  **branch** | **str**|  |
  **path** | **str**| relative to the branch |
+ **force** | **bool**|  | [optional] if omitted the server will use the default value of False
 
 ### Return type
 
@@ -317,11 +329,21 @@ with lakefs_client.ApiClient(configuration) as api_client:
             "paths_example",
         ],
     ) # PathList | 
+    force = False # bool |  (optional) if omitted the server will use the default value of False
 
     # example passing only required values which don't have defaults set
     try:
         # delete objects. Missing objects will not return a NotFound error.
         api_response = api_instance.delete_objects(repository, branch, path_list)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling ObjectsApi->delete_objects: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # delete objects. Missing objects will not return a NotFound error.
+        api_response = api_instance.delete_objects(repository, branch, path_list, force=force)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->delete_objects: %s\n" % e)
@@ -335,6 +357,7 @@ Name | Type | Description  | Notes
  **repository** | **str**|  |
  **branch** | **str**|  |
  **path_list** | [**PathList**](PathList.md)|  |
+ **force** | **bool**|  | [optional] if omitted the server will use the default value of False
 
 ### Return type
 
@@ -1052,6 +1075,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     path = "path_example" # str | relative to the branch
     storage_class = "storageClass_example" # str | Deprecated, this capability will not be supported in future releases. (optional)
     if_none_match = "*" # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases.  (optional)
+    force = False # bool |  (optional) if omitted the server will use the default value of False
     content = open('/path/to/file', 'rb') # file_type | Only a single file per upload which must be named \\\"content\\\". (optional)
 
     # example passing only required values which don't have defaults set
@@ -1064,7 +1088,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.upload_object(repository, branch, path, storage_class=storage_class, if_none_match=if_none_match, content=content)
+        api_response = api_instance.upload_object(repository, branch, path, storage_class=storage_class, if_none_match=if_none_match, force=force, content=content)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->upload_object: %s\n" % e)
@@ -1080,6 +1104,7 @@ Name | Type | Description  | Notes
  **path** | **str**| relative to the branch |
  **storage_class** | **str**| Deprecated, this capability will not be supported in future releases. | [optional]
  **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet. Deprecated, this capability will not be supported in future releases.  | [optional]
+ **force** | **bool**|  | [optional] if omitted the server will use the default value of False
  **content** | **file_type**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional]
 
 ### Return type

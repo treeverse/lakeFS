@@ -20,7 +20,7 @@ import json
 
 
 from typing import Dict, Optional
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import BaseModel, Field, StrictBool, StrictStr
 
 class Merge(BaseModel):
     """
@@ -29,7 +29,8 @@ class Merge(BaseModel):
     message: Optional[StrictStr] = None
     metadata: Optional[Dict[str, StrictStr]] = None
     strategy: Optional[StrictStr] = Field(None, description="In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict")
-    __properties = ["message", "metadata", "strategy"]
+    force: Optional[StrictBool] = False
+    __properties = ["message", "metadata", "strategy", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -69,7 +70,8 @@ class Merge(BaseModel):
         _obj = Merge.parse_obj({
             "message": obj.get("message"),
             "metadata": obj.get("metadata"),
-            "strategy": obj.get("strategy")
+            "strategy": obj.get("strategy"),
+            "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj
 

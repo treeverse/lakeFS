@@ -69,4 +69,12 @@ public class RepositoryCreationTest {
         // TODO: test sampleData
     }
 
+    /**
+     * Test the property 'readOnly'
+     */
+    @Test
+    public void readOnlyTest() {
+        // TODO: test readOnly
+    }
+
 }

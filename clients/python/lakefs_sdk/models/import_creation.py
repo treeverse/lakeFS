@@ -19,8 +19,8 @@ import re  # noqa: F401
 import json
 
 
-from typing import List
-from pydantic import BaseModel, Field, conlist
+from typing import List, Optional
+from pydantic import BaseModel, Field, StrictBool, conlist
 from lakefs_sdk.models.commit_creation import CommitCreation
 from lakefs_sdk.models.import_location import ImportLocation
 
@@ -30,7 +30,8 @@ class ImportCreation(BaseModel):
     """
     paths: conlist(ImportLocation) = Field(...)
     commit: CommitCreation = Field(...)
-    __properties = ["paths", "commit"]
+    force: Optional[StrictBool] = False
+    __properties = ["paths", "commit", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -79,7 +80,8 @@ class ImportCreation(BaseModel):
 
         _obj = ImportCreation.parse_obj({
             "paths": [ImportLocation.from_dict(_item) for _item in obj.get("paths")] if obj.get("paths") is not None else None,
-            "commit": CommitCreation.from_dict(obj.get("commit")) if obj.get("commit") is not None else None
+            "commit": CommitCreation.from_dict(obj.get("commit")) if obj.get("commit") is not None else None,
+            "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj
 

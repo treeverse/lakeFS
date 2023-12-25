@@ -48,7 +48,8 @@ class TestStagingMetadata(unittest.TestCase):
                 user_metadata = {
                     'key' : ''
                     }, 
-                content_type = ''
+                content_type = '', 
+                force = True
             )
         else :
             return StagingMetadata(

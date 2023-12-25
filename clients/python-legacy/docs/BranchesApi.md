@@ -84,6 +84,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     cherry_pick_creation = CherryPickCreation(
         ref="ref_example",
         parent_number=1,
+        force=False,
     ) # CherryPickCreation | 
 
     # example passing only required values which don't have defaults set
@@ -125,6 +126,7 @@ Name | Type | Description  | Notes
 **201** | the cherry-pick commit |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Conflict Found |  -  |
 **420** | too many requests |  -  |
@@ -200,6 +202,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     branch_creation = BranchCreation(
         name="name_example",
         source="source_example",
+        force=False,
     ) # BranchCreation | 
 
     # example passing only required values which don't have defaults set
@@ -240,6 +243,7 @@ Name | Type | Description  | Notes
 **201** | reference |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Resource Conflicts With Target |  -  |
 **420** | too many requests |  -  |
@@ -312,11 +316,20 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = branches_api.BranchesApi(api_client)
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
+    force = False # bool |  (optional) if omitted the server will use the default value of False
 
     # example passing only required values which don't have defaults set
     try:
         # delete branch
         api_instance.delete_branch(repository, branch)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling BranchesApi->delete_branch: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # delete branch
+        api_instance.delete_branch(repository, branch, force=force)
     except lakefs_client.ApiException as e:
         print("Exception when calling BranchesApi->delete_branch: %s\n" % e)
 ```
@@ -328,6 +341,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **branch** | **str**|  |
+ **force** | **bool**|  | [optional] if omitted the server will use the default value of False
 
 ### Return type
 
@@ -785,6 +799,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     reset_creation = ResetCreation(
         type="object",
         path="path_example",
+        force=False,
     ) # ResetCreation | 
 
     # example passing only required values which don't have defaults set
@@ -824,6 +839,7 @@ void (empty response body)
 |-------------|-------------|------------------|
 **204** | reset successful |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
@@ -899,6 +915,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     revert_creation = RevertCreation(
         ref="ref_example",
         parent_number=1,
+        force=False,
     ) # RevertCreation | 
 
     # example passing only required values which don't have defaults set
@@ -939,6 +956,7 @@ void (empty response body)
 **204** | revert successful |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Conflict Found |  -  |
 **420** | too many requests |  -  |

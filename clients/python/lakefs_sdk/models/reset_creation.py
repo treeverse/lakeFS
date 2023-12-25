@@ -20,7 +20,7 @@ import json
 
 
 from typing import Optional
-from pydantic import BaseModel, Field, StrictStr, validator
+from pydantic import BaseModel, Field, StrictBool, StrictStr, validator
 
 class ResetCreation(BaseModel):
     """
@@ -28,7 +28,8 @@ class ResetCreation(BaseModel):
     """
     type: StrictStr = Field(...)
     path: Optional[StrictStr] = None
-    __properties = ["type", "path"]
+    force: Optional[StrictBool] = False
+    __properties = ["type", "path", "force"]
 
     @validator('type')
     def type_validate_enum(cls, value):
@@ -74,7 +75,8 @@ class ResetCreation(BaseModel):
 
         _obj = ResetCreation.parse_obj({
             "type": obj.get("type"),
-            "path": obj.get("path")
+            "path": obj.get("path"),
+            "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj
 

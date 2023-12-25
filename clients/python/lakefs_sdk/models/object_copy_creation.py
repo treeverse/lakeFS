@@ -20,7 +20,7 @@ import json
 
 
 from typing import Optional
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import BaseModel, Field, StrictBool, StrictStr
 
 class ObjectCopyCreation(BaseModel):
     """
@@ -28,7 +28,8 @@ class ObjectCopyCreation(BaseModel):
     """
     src_path: StrictStr = Field(..., description="path of the copied object relative to the ref")
     src_ref: Optional[StrictStr] = Field(None, description="a reference, if empty uses the provided branch as ref")
-    __properties = ["src_path", "src_ref"]
+    force: Optional[StrictBool] = False
+    __properties = ["src_path", "src_ref", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -67,7 +68,8 @@ class ObjectCopyCreation(BaseModel):
 
         _obj = ObjectCopyCreation.parse_obj({
             "src_path": obj.get("src_path"),
-            "src_ref": obj.get("src_ref")
+            "src_ref": obj.get("src_ref"),
+            "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj
 

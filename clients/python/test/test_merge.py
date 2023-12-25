@@ -43,7 +43,8 @@ class TestMerge(unittest.TestCase):
                 metadata = {
                     'key' : ''
                     }, 
-                strategy = ''
+                strategy = '', 
+                force = True
             )
         else :
             return Merge(

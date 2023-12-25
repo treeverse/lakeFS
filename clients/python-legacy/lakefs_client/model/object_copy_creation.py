@@ -84,6 +84,7 @@ class ObjectCopyCreation(ModelNormal):
         return {
             'src_path': (str,),  # noqa: E501
             'src_ref': (str,),  # noqa: E501
+            'force': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -94,6 +95,7 @@ class ObjectCopyCreation(ModelNormal):
     attribute_map = {
         'src_path': 'src_path',  # noqa: E501
         'src_ref': 'src_ref',  # noqa: E501
+        'force': 'force',  # noqa: E501
     }
 
     read_only_vars = {
@@ -141,6 +143,7 @@ class ObjectCopyCreation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             src_ref (str): a reference, if empty uses the provided branch as ref. [optional]  # noqa: E501
+            force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -227,6 +230,7 @@ class ObjectCopyCreation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             src_ref (str): a reference, if empty uses the provided branch as ref. [optional]  # noqa: E501
+            force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

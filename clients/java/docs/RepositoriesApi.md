@@ -211,7 +211,7 @@ null (empty response body)
 
 <a id="deleteRepository"></a>
 # **deleteRepository**
-> deleteRepository(repository).execute();
+> deleteRepository(repository).force(force).execute();
 
 delete repository
 
@@ -259,8 +259,10 @@ public class Example {
 
     RepositoriesApi apiInstance = new RepositoriesApi(defaultClient);
     String repository = "repository_example"; // String | 
+    Boolean force = false; // Boolean | Bypass read-only protection and delete the repository
     try {
       apiInstance.deleteRepository(repository)
+            .force(force)
             .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling RepositoriesApi#deleteRepository");
@@ -278,6 +280,7 @@ public class Example {
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
 | **repository** | **String**|  | |
+| **force** | **Boolean**| Bypass read-only protection and delete the repository | [optional] [default to false] |
 
 ### Return type
 
@@ -1059,7 +1062,7 @@ public class Example {
 
 <a id="restoreSubmit"></a>
 # **restoreSubmit**
-> TaskInfo restoreSubmit(repository, refsDump).execute();
+> TaskInfo restoreSubmit(repository, refsRestore).execute();
 
 Restore repository from a dump in the object store
 
@@ -1107,9 +1110,9 @@ public class Example {
 
     RepositoriesApi apiInstance = new RepositoriesApi(defaultClient);
     String repository = "repository_example"; // String | 
-    RefsDump refsDump = new RefsDump(); // RefsDump | 
+    RefsRestore refsRestore = new RefsRestore(); // RefsRestore | 
     try {
-      TaskInfo result = apiInstance.restoreSubmit(repository, refsDump)
+      TaskInfo result = apiInstance.restoreSubmit(repository, refsRestore)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -1128,7 +1131,7 @@ public class Example {
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
 | **repository** | **String**|  | |
-| **refsDump** | [**RefsDump**](RefsDump.md)|  | |
+| **refsRestore** | [**RefsRestore**](RefsRestore.md)|  | |
 
 ### Return type
 
@@ -1148,6 +1151,7 @@ public class Example {
 |-------------|-------------|------------------|
 | **202** | restore task created |  -  |
 | **400** | Validation Error |  -  |
+| **403** | Forbidden |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **0** | Internal Server Error |  -  |

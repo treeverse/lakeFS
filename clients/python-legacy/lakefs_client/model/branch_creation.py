@@ -84,6 +84,7 @@ class BranchCreation(ModelNormal):
         return {
             'name': (str,),  # noqa: E501
             'source': (str,),  # noqa: E501
+            'force': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -94,6 +95,7 @@ class BranchCreation(ModelNormal):
     attribute_map = {
         'name': 'name',  # noqa: E501
         'source': 'source',  # noqa: E501
+        'force': 'force',  # noqa: E501
     }
 
     read_only_vars = {
@@ -141,6 +143,7 @@ class BranchCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,6 +231,7 @@ class BranchCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

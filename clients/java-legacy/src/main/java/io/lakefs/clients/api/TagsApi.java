@@ -70,6 +70,7 @@ public class TagsApi {
         <tr><td> 201 </td><td> tag </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -139,6 +140,7 @@ public class TagsApi {
         <tr><td> 201 </td><td> tag </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -163,6 +165,7 @@ public class TagsApi {
         <tr><td> 201 </td><td> tag </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -189,6 +192,7 @@ public class TagsApi {
         <tr><td> 201 </td><td> tag </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -206,6 +210,7 @@ public class TagsApi {
      * Build call for deleteTag
      * @param repository  (required)
      * @param tag  (required)
+     * @param force  (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -214,12 +219,13 @@ public class TagsApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> tag deleted successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call deleteTagCall(String repository, String tag, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call deleteTagCall(String repository, String tag, Boolean force, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -232,6 +238,10 @@ public class TagsApi {
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (force != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("force", force));
+        }
 
         final String[] localVarAccepts = {
             "application/json"
@@ -252,7 +262,7 @@ public class TagsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call deleteTagValidateBeforeCall(String repository, String tag, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteTagValidateBeforeCall(String repository, String tag, Boolean force, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -265,7 +275,7 @@ public class TagsApi {
         }
         
 
-        okhttp3.Call localVarCall = deleteTagCall(repository, tag, _callback);
+        okhttp3.Call localVarCall = deleteTagCall(repository, tag, force, _callback);
         return localVarCall;
 
     }
@@ -275,19 +285,21 @@ public class TagsApi {
      * 
      * @param repository  (required)
      * @param tag  (required)
+     * @param force  (optional)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> tag deleted successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void deleteTag(String repository, String tag) throws ApiException {
-        deleteTagWithHttpInfo(repository, tag);
+    public void deleteTag(String repository, String tag, Boolean force) throws ApiException {
+        deleteTagWithHttpInfo(repository, tag, force);
     }
 
     /**
@@ -295,6 +307,7 @@ public class TagsApi {
      * 
      * @param repository  (required)
      * @param tag  (required)
+     * @param force  (optional)
      * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -302,13 +315,14 @@ public class TagsApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> tag deleted successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> deleteTagWithHttpInfo(String repository, String tag) throws ApiException {
-        okhttp3.Call localVarCall = deleteTagValidateBeforeCall(repository, tag, null);
+    public ApiResponse<Void> deleteTagWithHttpInfo(String repository, String tag, Boolean force) throws ApiException {
+        okhttp3.Call localVarCall = deleteTagValidateBeforeCall(repository, tag, force, null);
         return localVarApiClient.execute(localVarCall);
     }
 
@@ -317,6 +331,7 @@ public class TagsApi {
      * 
      * @param repository  (required)
      * @param tag  (required)
+     * @param force  (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -325,14 +340,15 @@ public class TagsApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 204 </td><td> tag deleted successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call deleteTagAsync(String repository, String tag, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call deleteTagAsync(String repository, String tag, Boolean force, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = deleteTagValidateBeforeCall(repository, tag, _callback);
+        okhttp3.Call localVarCall = deleteTagValidateBeforeCall(repository, tag, force, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }

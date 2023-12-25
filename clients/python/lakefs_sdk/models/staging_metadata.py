@@ -20,7 +20,7 @@ import json
 
 
 from typing import Dict, Optional
-from pydantic import BaseModel, Field, StrictInt, StrictStr
+from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr
 from lakefs_sdk.models.staging_location import StagingLocation
 
 class StagingMetadata(BaseModel):
@@ -32,7 +32,8 @@ class StagingMetadata(BaseModel):
     size_bytes: StrictInt = Field(...)
     user_metadata: Optional[Dict[str, StrictStr]] = None
     content_type: Optional[StrictStr] = Field(None, description="Object media type")
-    __properties = ["staging", "checksum", "size_bytes", "user_metadata", "content_type"]
+    force: Optional[StrictBool] = False
+    __properties = ["staging", "checksum", "size_bytes", "user_metadata", "content_type", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -77,7 +78,8 @@ class StagingMetadata(BaseModel):
             "checksum": obj.get("checksum"),
             "size_bytes": obj.get("size_bytes"),
             "user_metadata": obj.get("user_metadata"),
-            "content_type": obj.get("content_type")
+            "content_type": obj.get("content_type"),
+            "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj
 

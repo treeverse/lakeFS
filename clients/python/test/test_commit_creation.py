@@ -43,7 +43,8 @@ class TestCommitCreation(unittest.TestCase):
                 metadata = {
                     'key' : ''
                     }, 
-                var_date = 56
+                var_date = 56, 
+                force = True
             )
         else :
             return CommitCreation(

@@ -78,6 +78,10 @@ public class ObjectStageCreation {
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
   private String contentType;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
   public ObjectStageCreation() {
   }
 
@@ -214,6 +218,27 @@ public class ObjectStageCreation {
     this.contentType = contentType;
   }
 
+
+  public ObjectStageCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -274,13 +299,14 @@ public class ObjectStageCreation {
         Objects.equals(this.sizeBytes, objectStageCreation.sizeBytes) &&
         Objects.equals(this.mtime, objectStageCreation.mtime) &&
         Objects.equals(this.metadata, objectStageCreation.metadata) &&
-        Objects.equals(this.contentType, objectStageCreation.contentType)&&
+        Objects.equals(this.contentType, objectStageCreation.contentType) &&
+        Objects.equals(this.force, objectStageCreation.force)&&
         Objects.equals(this.additionalProperties, objectStageCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(physicalAddress, checksum, sizeBytes, mtime, metadata, contentType, additionalProperties);
+    return Objects.hash(physicalAddress, checksum, sizeBytes, mtime, metadata, contentType, force, additionalProperties);
   }
 
   @Override
@@ -293,6 +319,7 @@ public class ObjectStageCreation {
     sb.append("    mtime: ").append(toIndentedString(mtime)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("    contentType: ").append(toIndentedString(contentType)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -322,6 +349,7 @@ public class ObjectStageCreation {
     openapiFields.add("mtime");
     openapiFields.add("metadata");
     openapiFields.add("content_type");
+    openapiFields.add("force");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

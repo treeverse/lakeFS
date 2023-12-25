@@ -64,7 +64,9 @@ public class ObjectsApiTest {
         String repository = null;
         String branch = null;
         String path = null;
+        Boolean force = null;
         api.deleteObject(repository, branch, path)
+                .force(force)
                 .execute();
         // TODO: test validations
     }
@@ -79,7 +81,9 @@ public class ObjectsApiTest {
         String repository = null;
         String branch = null;
         PathList pathList = null;
+        Boolean force = null;
         ObjectErrorList response = api.deleteObjects(repository, branch, pathList)
+                .force(force)
                 .execute();
         // TODO: test validations
     }
@@ -190,10 +194,12 @@ public class ObjectsApiTest {
         String path = null;
         String storageClass = null;
         String ifNoneMatch = null;
+        Boolean force = null;
         File content = null;
         ObjectStats response = api.uploadObject(repository, branch, path)
                 .storageClass(storageClass)
                 .ifNoneMatch(ifNoneMatch)
+                .force(force)
                 .content(content)
                 .execute();
         // TODO: test validations
