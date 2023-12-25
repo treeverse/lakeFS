@@ -521,7 +521,7 @@ func TestGravelerCommit_v2(t *testing.T) {
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
 		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
-		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any(), nil).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, nil)
+		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any(), []graveler.SetOptionsFunc{}).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, nil)
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).Return(graveler.CommitID(""), nil)
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken1).Return(nil)
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken2).Return(nil)
@@ -563,7 +563,7 @@ func TestGravelerCommit_v2(t *testing.T) {
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
 		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
-		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any(), nil).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, graveler.ErrNoChanges)
+		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any(), []graveler.SetOptionsFunc{}).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, graveler.ErrNoChanges)
 
 		val, err := test.Sut.Commit(ctx, repository, branch1ID, graveler.CommitParams{})
 
@@ -632,7 +632,7 @@ func TestGravelerImport(t *testing.T) {
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch1ID)).Times(1).Return(rawRefCommit1, nil)
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
-		test.CommittedManager.EXPECT().Import(ctx, repository.StorageNamespace, mr1ID, mr2ID, nil, nil).Times(1).Return(mr4ID, nil)
+		test.CommittedManager.EXPECT().Import(ctx, repository.StorageNamespace, mr1ID, mr2ID, nil, []graveler.SetOptionsFunc{}).Times(1).Return(mr4ID, nil)
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
 			require.Equal(t, mr4ID, commit.MetaRangeID)
 			return commit4ID, nil
