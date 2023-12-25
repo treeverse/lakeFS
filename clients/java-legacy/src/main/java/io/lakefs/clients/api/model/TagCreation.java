@@ -38,6 +38,10 @@ public class TagCreation {
   @SerializedName(SERIALIZED_NAME_REF)
   private String ref;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
 
   public TagCreation id(String id) {
     
@@ -85,6 +89,29 @@ public class TagCreation {
   }
 
 
+  public TagCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -95,12 +122,13 @@ public class TagCreation {
     }
     TagCreation tagCreation = (TagCreation) o;
     return Objects.equals(this.id, tagCreation.id) &&
-        Objects.equals(this.ref, tagCreation.ref);
+        Objects.equals(this.ref, tagCreation.ref) &&
+        Objects.equals(this.force, tagCreation.force);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, ref);
+    return Objects.hash(id, ref, force);
   }
 
   @Override
@@ -109,6 +137,7 @@ public class TagCreation {
     sb.append("class TagCreation {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    ref: ").append(toIndentedString(ref)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("}");
     return sb.toString();
   }

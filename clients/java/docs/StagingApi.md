@@ -206,6 +206,7 @@ public class Example {
 | **200** | object metadata |  -  |
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Internal Server Error |  -  |
 | **409** | conflict with a commit, try here |  -  |
 | **420** | too many requests |  -  |

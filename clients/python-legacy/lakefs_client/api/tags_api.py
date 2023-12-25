@@ -120,6 +120,7 @@ class TagsApi(object):
                 'all': [
                     'repository',
                     'tag',
+                    'force',
                 ],
                 'required': [
                     'repository',
@@ -142,14 +143,18 @@ class TagsApi(object):
                         (str,),
                     'tag':
                         (str,),
+                    'force':
+                        (bool,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'tag': 'tag',
+                    'force': 'force',
                 },
                 'location_map': {
                     'repository': 'path',
                     'tag': 'path',
+                    'force': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -388,6 +393,7 @@ class TagsApi(object):
             tag (str):
 
         Keyword Args:
+            force (bool): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

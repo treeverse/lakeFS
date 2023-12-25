@@ -118,6 +118,7 @@ Name | Type | Description  | Notes
 **201** | tag |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Resource Conflicts With Target |  -  |
 **420** | too many requests |  -  |
@@ -126,7 +127,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **delete_tag**
-> delete_tag(repository, tag)
+> delete_tag(repository, tag, force=force)
 
 delete tag
 
@@ -191,10 +192,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     api_instance = lakefs_sdk.TagsApi(api_client)
     repository = 'repository_example' # str | 
     tag = 'tag_example' # str | 
+    force = True # bool |  (optional)
 
     try:
         # delete tag
-        api_instance.delete_tag(repository, tag)
+        api_instance.delete_tag(repository, tag, force=force)
     except Exception as e:
         print("Exception when calling TagsApi->delete_tag: %s\n" % e)
 ```
@@ -208,6 +210,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
  **tag** | **str**|  | 
+ **force** | **bool**|  | [optional] 
 
 ### Return type
 
@@ -228,6 +231,7 @@ void (empty response body)
 |-------------|-------------|------------------|
 **204** | tag deleted successfully |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |

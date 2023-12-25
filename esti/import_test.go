@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -149,7 +150,7 @@ func TestImport(t *testing.T) {
 			Path:        importPath,
 			Type:        catalog.ImportPathTypePrefix,
 		}}
-		importID := testImportNew(t, ctx, repoName, branch, paths, nil)
+		importID := testImportNew(t, ctx, repoName, branch, paths, nil, false)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix, branch, importFilesToCheck, expectedContentLength)
 
 		// Verify we cannot cancel a completed import
@@ -192,7 +193,7 @@ func TestImport(t *testing.T) {
 			Path:        importPathParent,
 			Type:        catalog.ImportPathTypePrefix,
 		}}
-		_ = testImportNew(t, ctx, repoName, branch, paths, metadata)
+		_ = testImportNew(t, ctx, repoName, branch, paths, metadata, false)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", branch, importFilesToCheck, expectedContentLength)
 	})
 
@@ -215,7 +216,7 @@ func TestImport(t *testing.T) {
 			Type:        catalog.ImportPathTypePrefix,
 		})
 
-		_ = testImportNew(t, ctx, repoName, branch, paths, metadata)
+		_ = testImportNew(t, ctx, repoName, branch, paths, metadata, false)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix, branch, importFilesToCheck, expectedContentLength)
 	})
 
@@ -241,15 +242,16 @@ func TestImport(t *testing.T) {
 				})
 			}
 		}
-		_ = testImportNew(t, ctx, repoName, branch, paths, nil)
+		_ = testImportNew(t, ctx, repoName, branch, paths, nil, false)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix, branch, importFilesToCheck, expectedContentLength)
 	})
 }
 
-func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch string, paths []apigen.ImportLocation, metadata map[string]string) string {
+func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch string, paths []apigen.ImportLocation, metadata map[string]string, force bool) string {
 	createResp, err := client.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{
 		Name:   importBranch,
 		Source: "main",
+		Force:  swag.Bool(force),
 	})
 	require.NoError(t, err, "failed to create branch", importBranch)
 	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", importBranch)
@@ -259,6 +261,7 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 			Message: "created by import",
 		},
 		Paths: paths,
+		Force: swag.Bool(force),
 	}
 	if len(metadata) > 0 {
 		body.Commit.Metadata = &apigen.CommitCreation_Metadata{AdditionalProperties: metadata}

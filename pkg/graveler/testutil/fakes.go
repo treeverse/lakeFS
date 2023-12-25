@@ -80,21 +80,21 @@ func (c *CommittedFake) Compare(context.Context, graveler.StorageNamespace, grav
 	return c.DiffIterator, nil
 }
 
-func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID, _ graveler.MergeStrategy) (graveler.MetaRangeID, error) {
+func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID, _ graveler.MergeStrategy, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}
 	return c.MetaRangeID, nil
 }
 
-func (c *CommittedFake) Import(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.MetaRangeID, _ []graveler.Prefix) (graveler.MetaRangeID, error) {
+func (c *CommittedFake) Import(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.MetaRangeID, _ []graveler.Prefix, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}
 	return c.MetaRangeID, nil
 }
 
-func (c *CommittedFake) Commit(_ context.Context, _ graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
+func (c *CommittedFake) Commit(_ context.Context, _ graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	if c.Err != nil {
 		return "", graveler.DiffSummary{}, c.Err
 	}
@@ -339,7 +339,7 @@ func (m *RefsFake) ListRepositories(context.Context) (graveler.RepositoryIterato
 	return m.ListRepositoriesRes, nil
 }
 
-func (m *RefsFake) DeleteRepository(context.Context, graveler.RepositoryID) error {
+func (m *RefsFake) DeleteRepository(context.Context, graveler.RepositoryID, ...graveler.SetOptionsFunc) error {
 	return nil
 }
 

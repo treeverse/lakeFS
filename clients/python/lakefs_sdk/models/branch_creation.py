@@ -19,8 +19,8 @@ import re  # noqa: F401
 import json
 
 
-
-from pydantic import BaseModel, Field, StrictStr
+from typing import Optional
+from pydantic import BaseModel, Field, StrictBool, StrictStr
 
 class BranchCreation(BaseModel):
     """
@@ -28,7 +28,8 @@ class BranchCreation(BaseModel):
     """
     name: StrictStr = Field(...)
     source: StrictStr = Field(...)
-    __properties = ["name", "source"]
+    force: Optional[StrictBool] = False
+    __properties = ["name", "source", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -67,7 +68,8 @@ class BranchCreation(BaseModel):
 
         _obj = BranchCreation.parse_obj({
             "name": obj.get("name"),
-            "source": obj.get("source")
+            "source": obj.get("source"),
+            "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj
 

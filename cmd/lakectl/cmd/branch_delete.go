@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var branchDeleteCmd = &cobra.Command{
@@ -21,7 +22,7 @@ var branchDeleteCmd = &cobra.Command{
 		client := getClient()
 		u := MustParseBranchURI("branch URI", args[0])
 		fmt.Println("Branch:", u)
-		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref)
+		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref, &apigen.DeleteBranchParams{})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }

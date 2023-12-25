@@ -48,7 +48,7 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 		if err != nil {
 			DieErr(err)
 		}
-		var manifest apigen.RefsDump
+		var manifest apigen.RefsRestore
 		err = json.Unmarshal(data, &manifest)
 		if err != nil {
 			DieErr(err)

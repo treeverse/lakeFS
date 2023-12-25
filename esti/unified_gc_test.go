@@ -149,7 +149,7 @@ func TestUnifiedGC(t *testing.T) {
 	for _, e := range uncommittedDeleteEvents {
 		gcTestDeleteObject(t, ctx, e.branch, e.key)
 	}
-	deleteRes, err := client.DeleteBranchWithResponse(ctx, RepoName, "dev2")
+	deleteRes, err := client.DeleteBranchWithResponse(ctx, RepoName, "dev2", &apigen.DeleteBranchParams{})
 	testutil.MustDo(t, "Delete dev2 branch", err)
 	require.Falsef(t, deleteRes.StatusCode() > 299, "Unexpected status code %d in delete branch dev2", deleteRes.StatusCode())
 	revertRes, err := client.ResetBranchWithResponse(ctx, RepoName, "dev", apigen.ResetBranchJSONRequestBody{Type: "reset"})

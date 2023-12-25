@@ -10,6 +10,7 @@ Make tag ID point at this REF.
 |------------ | ------------- | ------------- | -------------|
 |**id** | **String** | ID of tag to create |  |
 |**ref** | **String** | the commit to tag |  |
+|**force** | **Boolean** |  |  [optional] |
 
 
 

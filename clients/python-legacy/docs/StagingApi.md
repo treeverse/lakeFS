@@ -214,6 +214,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
             "key": "key_example",
         },
         content_type="content_type_example",
+        force=False,
     ) # StagingMetadata | 
 
     # example passing only required values which don't have defaults set
@@ -256,6 +257,7 @@ Name | Type | Description  | Notes
 **200** | object metadata |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Internal Server Error |  -  |
 **409** | conflict with a commit, try here |  -  |
 **420** | too many requests |  -  |

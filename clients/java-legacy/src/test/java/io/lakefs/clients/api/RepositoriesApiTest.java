@@ -17,7 +17,7 @@ import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.BranchProtectionRule;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionRules;
-import io.lakefs.clients.api.model.RefsDump;
+import io.lakefs.clients.api.model.RefsRestore;
 import io.lakefs.clients.api.model.Repository;
 import io.lakefs.clients.api.model.RepositoryCreation;
 import io.lakefs.clients.api.model.RepositoryDumpStatus;
@@ -83,7 +83,8 @@ public class RepositoriesApiTest {
     @Test
     public void deleteRepositoryTest() throws ApiException {
         String repository = null;
-                api.deleteRepository(repository);
+        Boolean force = null;
+                api.deleteRepository(repository, force);
         // TODO: test validations
     }
     
@@ -222,8 +223,8 @@ public class RepositoriesApiTest {
     @Test
     public void restoreSubmitTest() throws ApiException {
         String repository = null;
-        RefsDump refsDump = null;
-                TaskInfo response = api.restoreSubmit(repository, refsDump);
+        RefsRestore refsRestore = null;
+                TaskInfo response = api.restoreSubmit(repository, refsRestore);
         // TODO: test validations
     }
     

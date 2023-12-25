@@ -81,7 +81,7 @@ func (t *Loader) Run() error {
 	_ = t.Reader.Close()
 	if t.Config.RepoName == "" && !t.Config.KeepRepo {
 		ctx := context.Background()
-		resp, err := apiClient.DeleteRepositoryWithResponse(ctx, t.NewRepoName)
+		resp, err := apiClient.DeleteRepositoryWithResponse(ctx, t.NewRepoName, &apigen.DeleteRepositoryParams{})
 		if err != nil {
 			return err
 		}

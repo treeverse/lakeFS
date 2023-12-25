@@ -111,13 +111,14 @@ public class Example {
 | **201** | Copy object response |  -  |
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteObject"></a>
 # **deleteObject**
-> deleteObject(repository, branch, path).execute();
+> deleteObject(repository, branch, path).force(force).execute();
 
 delete object. Missing objects will not return a NotFound error.
 
@@ -167,8 +168,10 @@ public class Example {
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
+    Boolean force = false; // Boolean | 
     try {
       apiInstance.deleteObject(repository, branch, path)
+            .force(force)
             .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#deleteObject");
@@ -188,6 +191,7 @@ public class Example {
 | **repository** | **String**|  | |
 | **branch** | **String**|  | |
 | **path** | **String**| relative to the branch | |
+| **force** | **Boolean**|  | [optional] [default to false] |
 
 ### Return type
 
@@ -214,7 +218,7 @@ null (empty response body)
 
 <a id="deleteObjects"></a>
 # **deleteObjects**
-> ObjectErrorList deleteObjects(repository, branch, pathList).execute();
+> ObjectErrorList deleteObjects(repository, branch, pathList).force(force).execute();
 
 delete objects. Missing objects will not return a NotFound error.
 
@@ -264,8 +268,10 @@ public class Example {
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     PathList pathList = new PathList(); // PathList | 
+    Boolean force = false; // Boolean | 
     try {
       ObjectErrorList result = apiInstance.deleteObjects(repository, branch, pathList)
+            .force(force)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -286,6 +292,7 @@ public class Example {
 | **repository** | **String**|  | |
 | **branch** | **String**|  | |
 | **pathList** | [**PathList**](PathList.md)|  | |
+| **force** | **Boolean**|  | [optional] [default to false] |
 
 ### Return type
 
@@ -836,7 +843,7 @@ public class Example {
 
 <a id="uploadObject"></a>
 # **uploadObject**
-> ObjectStats uploadObject(repository, branch, path).storageClass(storageClass).ifNoneMatch(ifNoneMatch).content(content).execute();
+> ObjectStats uploadObject(repository, branch, path).storageClass(storageClass).ifNoneMatch(ifNoneMatch).force(force).content(content).execute();
 
 
 
@@ -888,11 +895,13 @@ public class Example {
     String path = "path_example"; // String | relative to the branch
     String storageClass = "storageClass_example"; // String | Deprecated, this capability will not be supported in future releases.
     String ifNoneMatch = "*"; // String | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases. 
+    Boolean force = false; // Boolean | 
     File content = new File("/path/to/file"); // File | Only a single file per upload which must be named \\\"content\\\".
     try {
       ObjectStats result = apiInstance.uploadObject(repository, branch, path)
             .storageClass(storageClass)
             .ifNoneMatch(ifNoneMatch)
+            .force(force)
             .content(content)
             .execute();
       System.out.println(result);
@@ -916,6 +925,7 @@ public class Example {
 | **path** | **String**| relative to the branch | |
 | **storageClass** | **String**| Deprecated, this capability will not be supported in future releases. | [optional] |
 | **ifNoneMatch** | **String**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet. Deprecated, this capability will not be supported in future releases.  | [optional] |
+| **force** | **Boolean**|  | [optional] [default to false] |
 | **content** | **File**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional] |
 
 ### Return type

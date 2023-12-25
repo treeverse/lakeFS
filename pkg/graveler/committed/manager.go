@@ -178,7 +178,7 @@ func (c *committedManager) Diff(ctx context.Context, ns graveler.StorageNamespac
 	return NewDiffValueIterator(ctx, leftIt, rightIt), nil
 }
 
-func (c *committedManager) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID, prefixes []graveler.Prefix) (graveler.MetaRangeID, error) {
+func (c *committedManager) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID, prefixes []graveler.Prefix, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
 	destIt, err := c.metaRangeManager.NewMetaRangeIterator(ctx, ns, destination)
 	if err != nil {
 		return "", fmt.Errorf("get destination iterator: %w", err)
@@ -196,7 +196,7 @@ func (c *committedManager) Import(ctx context.Context, ns graveler.StorageNamesp
 	return c.merge(ctx, mctx)
 }
 
-func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, strategy graveler.MergeStrategy) (graveler.MetaRangeID, error) {
+func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, strategy graveler.MergeStrategy, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
 	if source == base {
 		// no changes on source
 		return "", graveler.ErrNoChanges
@@ -277,7 +277,7 @@ func (c *committedManager) merge(ctx context.Context, mctx mergeContext) (gravel
 	return *newID, err
 }
 
-func (c *committedManager) Commit(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
+func (c *committedManager) Commit(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	mwWriter := c.metaRangeManager.NewWriter(ctx, ns, nil)
 	defer func() {
 		err := mwWriter.Abort()

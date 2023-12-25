@@ -57,7 +57,9 @@ public class TagsApiTest {
     public void deleteTagTest() throws ApiException {
         String repository = null;
         String tag = null;
+        Boolean force = null;
         api.deleteTag(repository, tag)
+                .force(force)
                 .execute();
         // TODO: test validations
     }

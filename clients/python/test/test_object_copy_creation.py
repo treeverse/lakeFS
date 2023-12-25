@@ -40,7 +40,8 @@ class TestObjectCopyCreation(unittest.TestCase):
         if include_optional :
             return ObjectCopyCreation(
                 src_path = '', 
-                src_ref = ''
+                src_ref = '', 
+                force = True
             )
         else :
             return ObjectCopyCreation(

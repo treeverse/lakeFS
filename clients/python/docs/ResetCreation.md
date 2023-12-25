@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **type** | **str** |  | 
 **path** | **str** |  | [optional] 
+**force** | **bool** |  | [optional] [default to False]
 
 ## Example
 

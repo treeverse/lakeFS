@@ -41,7 +41,7 @@ var tagCreateCmd = &cobra.Command{
 				Die("Bad response from server", 1)
 			}
 
-			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref)
+			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref, &apigen.DeleteTagParams{})
 			if err != nil && (resp == nil || resp.JSON404 == nil) {
 				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 			}

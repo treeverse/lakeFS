@@ -156,7 +156,7 @@ func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request)
 	})
 }
 
-func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body apigen.DeleteObjectsJSONRequestBody, repository, branch string) {
+func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body apigen.DeleteObjectsJSONRequestBody, repository, branch string, params apigen.DeleteObjectsParams) {
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_objects", r, repository, branch, "")
 
@@ -189,7 +189,7 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 	}
 
 	// batch delete the entries we allow to delete
-	delErr := c.Catalog.DeleteEntries(ctx, repository, branch, pathsToDelete)
+	delErr := c.Catalog.DeleteEntries(ctx, repository, branch, pathsToDelete, graveler.WithForce(swag.BoolValue(params.Force)))
 	delErrs := graveler.NewMapDeleteErrors(delErr)
 	for _, objectPath := range pathsToDelete {
 		// set err to the specific error when possible
@@ -201,7 +201,8 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 		switch {
 		case errors.Is(err, graveler.ErrNotFound):
 			lg.WithError(err).Debug("tried to delete a non-existent object")
-		case errors.Is(err, graveler.ErrWriteToProtectedBranch):
+		case errors.Is(err, graveler.ErrWriteToProtectedBranch),
+			errors.Is(err, graveler.ErrReadOnlyRepository):
 			errs = append(errs, apigen.ObjectError{
 				Path:       swag.String(objectPath),
 				StatusCode: http.StatusForbidden,
@@ -395,7 +396,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 	entry := entryBuilder.Build()
 
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -1513,6 +1514,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 			StorageNamespace: repo.StorageNamespace,
 			CreationDate:     creationDate,
 			DefaultBranch:    repo.DefaultBranch,
+			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}
 		results = append(results, r)
 	}
@@ -1554,7 +1556,6 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", graveler.ErrNotUnique))
 		return
 	}
-
 	sampleData := swag.BoolValue(body.SampleData)
 	c.LogAction(ctx, "create_repo", r, body.Name, "", "")
 	if sampleData {
@@ -1617,7 +1618,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, body.StorageNamespace, defaultBranch)
+	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
 	if err != nil {
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", err))
 		return
@@ -1649,6 +1650,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		DefaultBranch:    newRepo.DefaultBranch,
 		Id:               newRepo.Name,
 		StorageNamespace: newRepo.StorageNamespace,
+		ReadOnly:         swag.Bool(newRepo.ReadOnly),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -1716,7 +1718,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 	return err
 }
 
-func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, repository string) {
+func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, repository string, params apigen.DeleteRepositoryParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DeleteRepositoryAction,
@@ -1727,7 +1729,7 @@ func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, re
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_repo", r, repository, "", "")
-	err := c.Catalog.DeleteRepository(ctx, repository)
+	err := c.Catalog.DeleteRepository(ctx, repository, graveler.WithForce(swag.BoolValue(params.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -1753,6 +1755,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 			DefaultBranch:    repo.DefaultBranch,
 			Id:               repo.Name,
 			StorageNamespace: repo.StorageNamespace,
+			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}
 		writeResponse(w, r, http.StatusOK, response)
 
@@ -2165,7 +2168,8 @@ func (c *Controller) CreateBranch(w http.ResponseWriter, r *http.Request, body a
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "create_branch", r, repository, body.Name, "")
-	commitLog, err := c.Catalog.CreateBranch(ctx, repository, body.Name, body.Source)
+
+	commitLog, err := c.Catalog.CreateBranch(ctx, repository, body.Name, body.Source, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2173,7 +2177,7 @@ func (c *Controller) CreateBranch(w http.ResponseWriter, r *http.Request, body a
 	_, _ = io.WriteString(w, commitLog.Reference)
 }
 
-func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, repository, branch string) {
+func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, repository, branch string, body apigen.DeleteBranchParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DeleteBranchAction,
@@ -2184,7 +2188,8 @@ func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, reposi
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_branch", r, repository, branch, "")
-	err := c.Catalog.DeleteBranch(ctx, repository, branch)
+
+	err := c.Catalog.DeleteBranch(ctx, repository, branch, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2248,7 +2253,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		cb(w, r, http.StatusNotFound, err)
 
 	case errors.Is(err, block.ErrForbidden),
-		errors.Is(err, graveler.ErrProtectedBranch):
+		errors.Is(err, graveler.ErrProtectedBranch),
+		errors.Is(err, graveler.ErrReadOnlyRepository):
 		cb(w, r, http.StatusForbidden, err)
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
@@ -2320,16 +2326,17 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ap
 		return
 	}
 	ctx := r.Context()
+
 	c.LogAction(ctx, "reset_branch", r, repository, branch, "")
 
 	var err error
 	switch body.Type {
 	case entryTypeCommonPrefix:
-		err = c.Catalog.ResetEntries(ctx, repository, branch, swag.StringValue(body.Path))
+		err = c.Catalog.ResetEntries(ctx, repository, branch, swag.StringValue(body.Path), graveler.WithForce(swag.BoolValue(body.Force)))
 	case "reset":
-		err = c.Catalog.ResetBranch(ctx, repository, branch)
+		err = c.Catalog.ResetBranch(ctx, repository, branch, graveler.WithForce(swag.BoolValue(body.Force)))
 	case entryTypeObject:
-		err = c.Catalog.ResetEntry(ctx, repository, branch, swag.StringValue(body.Path))
+		err = c.Catalog.ResetEntry(ctx, repository, branch, swag.StringValue(body.Path), graveler.WithForce(swag.BoolValue(body.Force)))
 	default:
 		writeError(w, r, http.StatusNotFound, "reset type not found")
 	}
@@ -2382,6 +2389,7 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ap
 
 	ctx := r.Context()
 	c.LogAction(ctx, "import", r, repository, branch, "")
+
 	user, err := auth.GetUser(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusUnauthorized, "missing user")
@@ -2411,6 +2419,7 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ap
 			Committer:     user.Committer(),
 			Metadata:      metadata,
 		},
+		Force: swag.BoolValue(body.Force),
 	})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -2510,7 +2519,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 		metadata = body.Metadata.AdditionalProperties
 	}
 
-	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange)
+	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2589,8 +2598,7 @@ func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_object", r, repository, branch, "")
-
-	err := c.Catalog.DeleteEntry(ctx, repository, branch, params.Path)
+	err := c.Catalog.DeleteEntry(ctx, repository, branch, params.Path, graveler.WithForce(swag.BoolValue(params.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2740,7 +2748,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 	entry := entryBuilder.Build()
 
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithIfAbsent(!allowOverwrite))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithIfAbsent(!allowOverwrite), graveler.WithForce(swag.BoolValue(params.Force)))
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		writeError(w, r, http.StatusPreconditionFailed, "path already exists")
 		return
@@ -2826,7 +2834,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 	}
 	entry := entryBuilder.Build()
 
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2890,7 +2898,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 	}
 
 	// copy entry
-	entry, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath)
+	entry, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2932,6 +2940,7 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body a
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "revert_branch", r, repository, branch, "")
+
 	user, err := auth.GetUser(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusUnauthorized, "user not found")
@@ -2941,7 +2950,7 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body a
 		Reference:    body.Ref,
 		Committer:    user.Committer(),
 		ParentNumber: body.ParentNumber,
-	})
+	}, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2970,6 +2979,7 @@ func (c *Controller) CherryPick(w http.ResponseWriter, r *http.Request, body api
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "cherry_pick", r, repository, branch, body.Ref)
+
 	user, err := auth.GetUser(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusUnauthorized, "user not found")
@@ -2979,7 +2989,7 @@ func (c *Controller) CherryPick(w http.ResponseWriter, r *http.Request, body api
 		Reference:    body.Ref,
 		Committer:    user.Committer(),
 		ParentNumber: body.ParentNumber,
-	})
+	}, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3353,17 +3363,17 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body ap
 	}
 
 	// load commits
-	err = c.Catalog.LoadCommits(ctx, repo.Name, body.CommitsMetaRangeId)
+	err = c.Catalog.LoadCommits(ctx, repo.Name, body.CommitsMetaRangeId, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
-	err = c.Catalog.LoadBranches(ctx, repo.Name, body.BranchesMetaRangeId)
+	err = c.Catalog.LoadBranches(ctx, repo.Name, body.BranchesMetaRangeId, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
-	err = c.Catalog.LoadTags(ctx, repo.Name, body.TagsMetaRangeId)
+	err = c.Catalog.LoadTags(ctx, repo.Name, body.TagsMetaRangeId, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3496,7 +3506,7 @@ func (c *Controller) RestoreSubmit(w http.ResponseWriter, r *http.Request, body 
 		TagsMetarangeId:     body.TagsMetaRangeId,
 		BranchesMetarangeId: body.BranchesMetaRangeId,
 	}
-	taskID, err := c.Catalog.RestoreRepositorySubmit(ctx, repository, info)
+	taskID, err := c.Catalog.RestoreRepositorySubmit(ctx, repository, info, graveler.WithForce(swag.BoolValue(body.Force)))
 	if errors.Is(err, catalog.ErrNonEmptyRepository) {
 		writeError(w, r, http.StatusBadRequest, "can only restore into a bare repository")
 		return
@@ -4132,7 +4142,8 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		user.Committer(),
 		swag.StringValue(body.Message),
 		metadata,
-		swag.StringValue(body.Strategy))
+		swag.StringValue(body.Strategy),
+		graveler.WithForce(swag.BoolValue(body.Force)))
 
 	if errors.Is(err, graveler.ErrConflictFound) {
 		writeResponse(w, r, http.StatusConflict, apigen.MergeResult{
@@ -4214,7 +4225,7 @@ func (c *Controller) CreateTag(w http.ResponseWriter, r *http.Request, body apig
 	ctx := r.Context()
 	c.LogAction(ctx, "create_tag", r, repository, body.Id, "")
 
-	commitID, err := c.Catalog.CreateTag(ctx, repository, body.Id, body.Ref)
+	commitID, err := c.Catalog.CreateTag(ctx, repository, body.Id, body.Ref, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -4225,7 +4236,7 @@ func (c *Controller) CreateTag(w http.ResponseWriter, r *http.Request, body apig
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
-func (c *Controller) DeleteTag(w http.ResponseWriter, r *http.Request, repository, tag string) {
+func (c *Controller) DeleteTag(w http.ResponseWriter, r *http.Request, repository, tag string, params apigen.DeleteTagParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.DeleteTagAction,
@@ -4236,7 +4247,7 @@ func (c *Controller) DeleteTag(w http.ResponseWriter, r *http.Request, repositor
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_tag", r, repository, tag, "")
-	err := c.Catalog.DeleteTag(ctx, repository, tag)
+	err := c.Catalog.DeleteTag(ctx, repository, tag, graveler.WithForce(swag.BoolValue(params.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

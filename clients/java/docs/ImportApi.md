@@ -201,6 +201,7 @@ public class Example {
 | **202** | Import started |  -  |
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |

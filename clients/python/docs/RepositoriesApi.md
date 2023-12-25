@@ -241,7 +241,7 @@ void (empty response body)
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **delete_repository**
-> delete_repository(repository)
+> delete_repository(repository, force=force)
 
 delete repository
 
@@ -305,10 +305,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = lakefs_sdk.RepositoriesApi(api_client)
     repository = 'repository_example' # str | 
+    force = False # bool | Bypass read-only protection and delete the repository (optional) (default to False)
 
     try:
         # delete repository
-        api_instance.delete_repository(repository)
+        api_instance.delete_repository(repository, force=force)
     except Exception as e:
         print("Exception when calling RepositoriesApi->delete_repository: %s\n" % e)
 ```
@@ -321,6 +322,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
+ **force** | **bool**| Bypass read-only protection and delete the repository | [optional] [default to False]
 
 ### Return type
 
@@ -1236,7 +1238,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **restore_submit**
-> TaskInfo restore_submit(repository, refs_dump)
+> TaskInfo restore_submit(repository, refs_restore)
 
 Restore repository from a dump in the object store
 
@@ -1252,7 +1254,7 @@ Restore repository from a dump in the object store
 import time
 import os
 import lakefs_sdk
-from lakefs_sdk.models.refs_dump import RefsDump
+from lakefs_sdk.models.refs_restore import RefsRestore
 from lakefs_sdk.models.task_info import TaskInfo
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -1302,11 +1304,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = lakefs_sdk.RepositoriesApi(api_client)
     repository = 'repository_example' # str | 
-    refs_dump = lakefs_sdk.RefsDump() # RefsDump | 
+    refs_restore = lakefs_sdk.RefsRestore() # RefsRestore | 
 
     try:
         # Restore repository from a dump in the object store
-        api_response = api_instance.restore_submit(repository, refs_dump)
+        api_response = api_instance.restore_submit(repository, refs_restore)
         print("The response of RepositoriesApi->restore_submit:\n")
         pprint(api_response)
     except Exception as e:
@@ -1321,7 +1323,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
- **refs_dump** | [**RefsDump**](RefsDump.md)|  | 
+ **refs_restore** | [**RefsRestore**](RefsRestore.md)|  | 
 
 ### Return type
 
@@ -1342,6 +1344,7 @@ Name | Type | Description  | Notes
 |-------------|-------------|------------------|
 **202** | restore task created |  -  |
 **400** | Validation Error |  -  |
+**403** | Forbidden |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **0** | Internal Server Error |  -  |

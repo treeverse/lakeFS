@@ -42,7 +42,8 @@ class TestRepositoryCreation(unittest.TestCase):
                 name = 'wr1c2v7s6djuy1zmeto', 
                 storage_namespace = 's3://example-bucket/', 
                 default_branch = 'main', 
-                sample_data = True
+                sample_data = True, 
+                read_only = True
             )
         else :
             return RepositoryCreation(

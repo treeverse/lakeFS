@@ -26,7 +26,7 @@ from typing import Dict, List, Optional
 
 from lakefs_sdk.models.branch_protection_rule import BranchProtectionRule
 from lakefs_sdk.models.garbage_collection_rules import GarbageCollectionRules
-from lakefs_sdk.models.refs_dump import RefsDump
+from lakefs_sdk.models.refs_restore import RefsRestore
 from lakefs_sdk.models.repository import Repository
 from lakefs_sdk.models.repository_creation import RepositoryCreation
 from lakefs_sdk.models.repository_dump_status import RepositoryDumpStatus
@@ -346,17 +346,19 @@ class RepositoriesApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def delete_repository(self, repository : StrictStr, **kwargs) -> None:  # noqa: E501
+    def delete_repository(self, repository : StrictStr, force : Annotated[Optional[StrictBool], Field(description="Bypass read-only protection and delete the repository")] = None, **kwargs) -> None:  # noqa: E501
         """delete repository  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.delete_repository(repository, async_req=True)
+        >>> thread = api.delete_repository(repository, force, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
+        :param force: Bypass read-only protection and delete the repository
+        :type force: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request. If one
@@ -371,20 +373,22 @@ class RepositoriesApi(object):
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
             raise ValueError("Error! Please call the delete_repository_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.delete_repository_with_http_info(repository, **kwargs)  # noqa: E501
+        return self.delete_repository_with_http_info(repository, force, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def delete_repository_with_http_info(self, repository : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
+    def delete_repository_with_http_info(self, repository : StrictStr, force : Annotated[Optional[StrictBool], Field(description="Bypass read-only protection and delete the repository")] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """delete repository  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.delete_repository_with_http_info(repository, async_req=True)
+        >>> thread = api.delete_repository_with_http_info(repository, force, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
+        :param force: Bypass read-only protection and delete the repository
+        :type force: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -413,7 +417,8 @@ class RepositoriesApi(object):
         _params = locals()
 
         _all_params = [
-            'repository'
+            'repository',
+            'force'
         ]
         _all_params.extend(
             [
@@ -447,6 +452,9 @@ class RepositoriesApi(object):
 
         # process the query parameters
         _query_params = []
+        if _params.get('force') is not None:  # noqa: E501
+            _query_params.append(('force', _params['force']))
+
         # process the header parameters
         _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
@@ -1634,19 +1642,19 @@ class RepositoriesApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def restore_submit(self, repository : StrictStr, refs_dump : RefsDump, **kwargs) -> TaskInfo:  # noqa: E501
+    def restore_submit(self, repository : StrictStr, refs_restore : RefsRestore, **kwargs) -> TaskInfo:  # noqa: E501
         """Restore repository from a dump in the object store  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.restore_submit(repository, refs_dump, async_req=True)
+        >>> thread = api.restore_submit(repository, refs_restore, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
-        :param refs_dump: (required)
-        :type refs_dump: RefsDump
+        :param refs_restore: (required)
+        :type refs_restore: RefsRestore
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request. If one
@@ -1661,22 +1669,22 @@ class RepositoriesApi(object):
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
             raise ValueError("Error! Please call the restore_submit_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.restore_submit_with_http_info(repository, refs_dump, **kwargs)  # noqa: E501
+        return self.restore_submit_with_http_info(repository, refs_restore, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def restore_submit_with_http_info(self, repository : StrictStr, refs_dump : RefsDump, **kwargs) -> ApiResponse:  # noqa: E501
+    def restore_submit_with_http_info(self, repository : StrictStr, refs_restore : RefsRestore, **kwargs) -> ApiResponse:  # noqa: E501
         """Restore repository from a dump in the object store  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.restore_submit_with_http_info(repository, refs_dump, async_req=True)
+        >>> thread = api.restore_submit_with_http_info(repository, refs_restore, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
-        :param refs_dump: (required)
-        :type refs_dump: RefsDump
+        :param refs_restore: (required)
+        :type refs_restore: RefsRestore
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -1706,7 +1714,7 @@ class RepositoriesApi(object):
 
         _all_params = [
             'repository',
-            'refs_dump'
+            'refs_restore'
         ]
         _all_params.extend(
             [
@@ -1747,8 +1755,8 @@ class RepositoriesApi(object):
         _files = {}
         # process the body parameter
         _body_params = None
-        if _params['refs_dump'] is not None:
-            _body_params = _params['refs_dump']
+        if _params['refs_restore'] is not None:
+            _body_params = _params['refs_restore']
 
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
@@ -1767,6 +1775,7 @@ class RepositoriesApi(object):
         _response_types_map = {
             '202': "TaskInfo",
             '400': "Error",
+            '403': "Error",
             '401': "Error",
             '404': "Error",
         }

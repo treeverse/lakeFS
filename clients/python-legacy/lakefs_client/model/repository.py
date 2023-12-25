@@ -86,6 +86,7 @@ class Repository(ModelNormal):
             'creation_date': (int,),  # noqa: E501
             'default_branch': (str,),  # noqa: E501
             'storage_namespace': (str,),  # noqa: E501
+            'read_only': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -98,6 +99,7 @@ class Repository(ModelNormal):
         'creation_date': 'creation_date',  # noqa: E501
         'default_branch': 'default_branch',  # noqa: E501
         'storage_namespace': 'storage_namespace',  # noqa: E501
+        'read_only': 'read_only',  # noqa: E501
     }
 
     read_only_vars = {
@@ -147,6 +149,7 @@ class Repository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            read_only (bool): Whether the repository is a read-only repository- not relevant for bare repositories. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -238,6 +241,7 @@ class Repository(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            read_only (bool): Whether the repository is a read-only repository- not relevant for bare repositories. [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

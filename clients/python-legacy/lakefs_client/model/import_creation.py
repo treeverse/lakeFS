@@ -92,6 +92,7 @@ class ImportCreation(ModelNormal):
         return {
             'paths': ([ImportLocation],),  # noqa: E501
             'commit': (CommitCreation,),  # noqa: E501
+            'force': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -102,6 +103,7 @@ class ImportCreation(ModelNormal):
     attribute_map = {
         'paths': 'paths',  # noqa: E501
         'commit': 'commit',  # noqa: E501
+        'force': 'force',  # noqa: E501
     }
 
     read_only_vars = {
@@ -149,6 +151,7 @@ class ImportCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -236,6 +239,7 @@ class ImportCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

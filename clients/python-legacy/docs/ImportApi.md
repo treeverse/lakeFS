@@ -202,7 +202,9 @@ with lakefs_client.ApiClient(configuration) as api_client:
                 "key": "key_example",
             },
             date=1,
+            force=False,
         ),
+        force=False,
     ) # ImportCreation | 
 
     # example passing only required values which don't have defaults set
@@ -244,6 +246,7 @@ Name | Type | Description  | Notes
 **202** | Import started |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |

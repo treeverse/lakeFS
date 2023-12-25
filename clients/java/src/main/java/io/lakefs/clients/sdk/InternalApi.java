@@ -41,6 +41,7 @@ import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedRequest;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedResponse;
 import io.lakefs.clients.sdk.model.RefsDump;
+import io.lakefs.clients.sdk.model.RefsRestore;
 import io.lakefs.clients.sdk.model.Setup;
 import io.lakefs.clients.sdk.model.SetupState;
 import io.lakefs.clients.sdk.model.StatsEventsList;
@@ -3047,7 +3048,7 @@ public class InternalApi {
     public APIprepareGarbageCollectionUncommittedRequest prepareGarbageCollectionUncommitted(String repository) {
         return new APIprepareGarbageCollectionUncommittedRequest(repository);
     }
-    private okhttp3.Call restoreRefsCall(String repository, RefsDump refsDump, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call restoreRefsCall(String repository, RefsRestore refsRestore, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -3061,7 +3062,7 @@ public class InternalApi {
             basePath = null;
         }
 
-        Object localVarPostBody = refsDump;
+        Object localVarPostBody = refsRestore;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/refs/restore"
@@ -3094,41 +3095,41 @@ public class InternalApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call restoreRefsValidateBeforeCall(String repository, RefsDump refsDump, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call restoreRefsValidateBeforeCall(String repository, RefsRestore refsRestore, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling restoreRefs(Async)");
         }
 
-        // verify the required parameter 'refsDump' is set
-        if (refsDump == null) {
-            throw new ApiException("Missing the required parameter 'refsDump' when calling restoreRefs(Async)");
+        // verify the required parameter 'refsRestore' is set
+        if (refsRestore == null) {
+            throw new ApiException("Missing the required parameter 'refsRestore' when calling restoreRefs(Async)");
         }
 
-        return restoreRefsCall(repository, refsDump, _callback);
+        return restoreRefsCall(repository, refsRestore, _callback);
 
     }
 
 
-    private ApiResponse<Void> restoreRefsWithHttpInfo(String repository, RefsDump refsDump) throws ApiException {
-        okhttp3.Call localVarCall = restoreRefsValidateBeforeCall(repository, refsDump, null);
+    private ApiResponse<Void> restoreRefsWithHttpInfo(String repository, RefsRestore refsRestore) throws ApiException {
+        okhttp3.Call localVarCall = restoreRefsValidateBeforeCall(repository, refsRestore, null);
         return localVarApiClient.execute(localVarCall);
     }
 
-    private okhttp3.Call restoreRefsAsync(String repository, RefsDump refsDump, final ApiCallback<Void> _callback) throws ApiException {
+    private okhttp3.Call restoreRefsAsync(String repository, RefsRestore refsRestore, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = restoreRefsValidateBeforeCall(repository, refsDump, _callback);
+        okhttp3.Call localVarCall = restoreRefsValidateBeforeCall(repository, refsRestore, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
 
     public class APIrestoreRefsRequest {
         private final String repository;
-        private final RefsDump refsDump;
+        private final RefsRestore refsRestore;
 
-        private APIrestoreRefsRequest(String repository, RefsDump refsDump) {
+        private APIrestoreRefsRequest(String repository, RefsRestore refsRestore) {
             this.repository = repository;
-            this.refsDump = refsDump;
+            this.refsRestore = refsRestore;
         }
 
         /**
@@ -3148,7 +3149,7 @@ public class InternalApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return restoreRefsCall(repository, refsDump, _callback);
+            return restoreRefsCall(repository, refsRestore, _callback);
         }
 
         /**
@@ -3166,7 +3167,7 @@ public class InternalApi {
          </table>
          */
         public void execute() throws ApiException {
-            restoreRefsWithHttpInfo(repository, refsDump);
+            restoreRefsWithHttpInfo(repository, refsRestore);
         }
 
         /**
@@ -3185,7 +3186,7 @@ public class InternalApi {
          </table>
          */
         public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
-            return restoreRefsWithHttpInfo(repository, refsDump);
+            return restoreRefsWithHttpInfo(repository, refsRestore);
         }
 
         /**
@@ -3205,7 +3206,7 @@ public class InternalApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
-            return restoreRefsAsync(repository, refsDump, _callback);
+            return restoreRefsAsync(repository, refsRestore, _callback);
         }
     }
 
@@ -3213,7 +3214,7 @@ public class InternalApi {
      * Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
      * 
      * @param repository  (required)
-     * @param refsDump  (required)
+     * @param refsRestore  (required)
      * @return APIrestoreRefsRequest
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -3226,8 +3227,8 @@ public class InternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public APIrestoreRefsRequest restoreRefs(String repository, RefsDump refsDump) {
-        return new APIrestoreRefsRequest(repository, refsDump);
+    public APIrestoreRefsRequest restoreRefs(String repository, RefsRestore refsRestore) {
+        return new APIrestoreRefsRequest(repository, refsRestore);
     }
     private okhttp3.Call setGarbageCollectionRulesPreflightCall(String repository, final ApiCallback _callback) throws ApiException {
         String basePath = null;

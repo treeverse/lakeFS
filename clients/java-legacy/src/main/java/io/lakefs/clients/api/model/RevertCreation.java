@@ -37,6 +37,10 @@ public class RevertCreation {
   @SerializedName(SERIALIZED_NAME_PARENT_NUMBER)
   private Integer parentNumber;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
 
   public RevertCreation ref(String ref) {
     
@@ -84,6 +88,29 @@ public class RevertCreation {
   }
 
 
+  public RevertCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -94,12 +121,13 @@ public class RevertCreation {
     }
     RevertCreation revertCreation = (RevertCreation) o;
     return Objects.equals(this.ref, revertCreation.ref) &&
-        Objects.equals(this.parentNumber, revertCreation.parentNumber);
+        Objects.equals(this.parentNumber, revertCreation.parentNumber) &&
+        Objects.equals(this.force, revertCreation.force);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ref, parentNumber);
+    return Objects.hash(ref, parentNumber, force);
   }
 
   @Override
@@ -108,6 +136,7 @@ public class RevertCreation {
     sb.append("class RevertCreation {\n");
     sb.append("    ref: ").append(toIndentedString(ref)).append("\n");
     sb.append("    parentNumber: ").append(toIndentedString(parentNumber)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("}");
     return sb.toString();
   }

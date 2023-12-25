@@ -67,4 +67,12 @@ public class MergeTest {
         // TODO: test strategy
     }
 
+    /**
+     * Test the property 'force'
+     */
+    @Test
+    public void forceTest() {
+        // TODO: test force
+    }
+
 }

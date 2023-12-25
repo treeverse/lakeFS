@@ -79,6 +79,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     tag_creation = TagCreation(
         id="id_example",
         ref="ref_example",
+        force=False,
     ) # TagCreation | 
 
     # example passing only required values which don't have defaults set
@@ -119,6 +120,7 @@ Name | Type | Description  | Notes
 **201** | tag |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Resource Conflicts With Target |  -  |
 **420** | too many requests |  -  |
@@ -191,11 +193,20 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = tags_api.TagsApi(api_client)
     repository = "repository_example" # str | 
     tag = "tag_example" # str | 
+    force = True # bool |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
         # delete tag
         api_instance.delete_tag(repository, tag)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling TagsApi->delete_tag: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # delete tag
+        api_instance.delete_tag(repository, tag, force=force)
     except lakefs_client.ApiException as e:
         print("Exception when calling TagsApi->delete_tag: %s\n" % e)
 ```
@@ -207,6 +218,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **tag** | **str**|  |
+ **force** | **bool**|  | [optional]
 
 ### Return type
 
@@ -228,6 +240,7 @@ void (empty response body)
 |-------------|-------------|------------------|
 **204** | tag deleted successfully |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |

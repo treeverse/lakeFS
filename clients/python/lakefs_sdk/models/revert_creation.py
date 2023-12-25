@@ -19,8 +19,8 @@ import re  # noqa: F401
 import json
 
 
-
-from pydantic import BaseModel, Field, StrictInt, StrictStr
+from typing import Optional
+from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr
 
 class RevertCreation(BaseModel):
     """
@@ -28,7 +28,8 @@ class RevertCreation(BaseModel):
     """
     ref: StrictStr = Field(..., description="the commit to revert, given by a ref")
     parent_number: StrictInt = Field(..., description="when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.")
-    __properties = ["ref", "parent_number"]
+    force: Optional[StrictBool] = False
+    __properties = ["ref", "parent_number", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -67,7 +68,8 @@ class RevertCreation(BaseModel):
 
         _obj = RevertCreation.parse_obj({
             "ref": obj.get("ref"),
-            "parent_number": obj.get("parent_number")
+            "parent_number": obj.get("parent_number"),
+            "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj
 
