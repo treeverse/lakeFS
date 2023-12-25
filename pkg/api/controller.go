@@ -201,7 +201,8 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 		switch {
 		case errors.Is(err, graveler.ErrNotFound):
 			lg.WithError(err).Debug("tried to delete a non-existent object")
-		case errors.Is(err, graveler.ErrWriteToProtectedBranch):
+		case errors.Is(err, graveler.ErrWriteToProtectedBranch),
+			errors.Is(err, graveler.ErrReadOnlyRepository):
 			errs = append(errs, apigen.ObjectError{
 				Path:       swag.String(objectPath),
 				StatusCode: http.StatusForbidden,
