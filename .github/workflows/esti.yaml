@@ -1021,7 +1021,7 @@ jobs:
           verbose: true
           emoji: true
           job-summary: true
-          custom-arguments: './clients/python-wrapper/tests/integration -rP'
+          custom-arguments: './clients/python-wrapper/tests/integration -rP -We'
           click-to-expand: true
           report-title: 'Python Wrapper System Tests Report'
 

@@ -51,7 +51,6 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
     _mode: AllModes
     _pos: int
     _pre_sign: Optional[bool] = None
-    _is_closed: bool = False
 
     def __init__(self, obj: StoredObject, mode: AllModes, pre_sign: Optional[bool] = None,
                  client: Optional[Client] = None) -> None:
@@ -76,18 +75,18 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
         """
         return self._obj.path
 
-    @property
-    def closed(self) -> bool:
-        """
-        Returns True after the object is closed
-        """
-        return self._is_closed
-
     def close(self) -> None:
         """
-        Closes the current file descriptor for IO operations
+        Finalizes any existing operations on object and close open descriptors
+        Inheriting classes need to override close() as needed.
         """
-        self._is_closed = True
+
+    @abstractmethod
+    def _abort(self) -> None:
+        """
+        Specific implementation for when the IO object should be discarded
+        """
+        raise NotImplementedError
 
     def fileno(self) -> int:
         """
@@ -160,7 +159,12 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
         return self
 
     def __exit__(self, typ, value, traceback) -> bool:
-        self.close()
+        if typ is None:  # Perform logic in case no exception was raised
+            self.close()
+
+        else:
+            self._abort()  # perform logic regardless of exception
+
         return False  # Don't suppress an exception
 
     @abstractmethod
@@ -183,7 +187,6 @@ class ObjectReader(LakeFSIOBase):
     ObjectReader provides read-only functionality for lakeFS objects with IO semantics.
     This Object is instantiated and returned for immutable reference types (Commit, Tag...)
     """
-
     _readlines_buf: io.BytesIO
 
     def __init__(self, obj: StoredObject, mode: ReadModes, pre_sign: Optional[bool] = None,
@@ -191,9 +194,9 @@ class ObjectReader(LakeFSIOBase):
         if mode not in get_args(ReadModes):
             raise ValueError(f"invalid read mode: '{mode}'. ReadModes: {ReadModes}")
 
-        self._readlines_buf = io.BytesIO(b"")
-
         super().__init__(obj, mode, pre_sign, client)
+        self._readlines_buf = io.BytesIO(b"")
+        self._is_closed = False
 
     @property
     def pre_sign(self):
@@ -203,6 +206,22 @@ class ObjectReader(LakeFSIOBase):
         if self._pre_sign is None:
             self._pre_sign = self._client.storage_config.pre_sign_support
         return self._pre_sign
+
+    @pre_sign.setter
+    def pre_sign(self, value: bool) -> None:
+        """
+        Set the pre_sign mode to value
+
+        :param value: The new value for pre_sign mode
+        """
+        self._pre_sign = value
+
+    @property
+    def closed(self) -> bool:
+        """
+        Returns True after the object is closed
+        """
+        return self._is_closed
 
     def readable(self) -> bool:
         """
@@ -237,9 +256,13 @@ class ObjectReader(LakeFSIOBase):
             os.SEEK_SET or 0 (absolute file positioning);
             other values are os.SEEK_CUR or 1 (seek relative to the current position) and os.SEEK_END or 2
             (seek relative to the file’s end)
+        :raise ValueError: if reader is closed
         :raise OSError: if calculated new position is negative
         :raise io.UnsupportedOperation: If whence value is unsupported
         """
+        if self._is_closed:
+            raise ValueError("I/O operation on closed file")
+
         if whence == os.SEEK_SET:
             pos = offset
         elif whence == os.SEEK_CUR:
@@ -280,11 +303,15 @@ class ObjectReader(LakeFSIOBase):
         :param n: How many bytes to read. If read_bytes is None, will read from current position to end.
             If current position + read_bytes > object size.
         :return: The bytes read
+        :raise ValueError: if reader is closed
         :raise OSError: if read_bytes is non-positive
         :raise ObjectNotFoundException: if repository id, reference id or object path does not exist
         :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
         :raise ServerException: for any other errors
         """
+        if self._is_closed:
+            raise ValueError("I/O operation on closed file")
+
         if n and n <= 0:
             raise OSError("read_bytes must be a positive integer")
 
@@ -299,7 +326,14 @@ class ObjectReader(LakeFSIOBase):
         Read and return a line from the stream.
 
         :param limit: If limit > -1 returns at most limit bytes
+        :raise ValueError: if reader is closed
+        :raise ObjectNotFoundException: if repository id, reference id or object path does not exist
+        :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
+        :raise ServerException: for any other errors
         """
+        if self._is_closed:
+            raise ValueError("I/O operation on closed file")
+
         if self._readlines_buf.getbuffer().nbytes == 0:
             self._readlines_buf = io.BytesIO(self._read(self._get_range_string(0)))
         self._readlines_buf.seek(self._pos)
@@ -310,7 +344,27 @@ class ObjectReader(LakeFSIOBase):
     def flush(self) -> None:
         """
         Nothing to do for reader
+
+        :raise ValueError: if reader is closed
         """
+        if self._is_closed:
+            raise ValueError("I/O operation on closed file")
+
+    def close(self) -> None:
+        """
+        Close open descriptors
+        """
+        if self._is_closed:
+            return
+
+        self._is_closed = True
+        self._readlines_buf.close()
+
+    def _abort(self):
+        """
+        Closes reader
+        """
+        self.close()
 
     @staticmethod
     def _get_range_string(start, read_bytes=None):
@@ -380,11 +434,24 @@ class ObjectWriter(LakeFSIOBase):
         """
         self._pre_sign = value
 
+    @property
+    def closed(self) -> bool:
+        """
+        Returns True after the object is closed
+        """
+        return self._fd.closed
+
     def flush(self) -> None:
         """
         Flush buffer to file. Prevent flush if total write size is still smaller than _BUFFER_SIZE so that we avoid
         unnecessary write to disk.
+
+        :raise ValueError: if writer is closed
         """
+
+        if self._fd.closed:
+            raise ValueError("I/O operation on closed file")
+
         # Don't flush buffer to file if we didn't exceed buffer size
         # We want to avoid using the file if possible
         if self._pos > _WRITER_BUFFER_SIZE:
@@ -396,6 +463,7 @@ class ObjectWriter(LakeFSIOBase):
 
         :param s: The data to write
         :return: The number of bytes written to buffer
+        :raise ValueError: if writer is closed
         """
         binary_mode = 'b' in self._mode
         if binary_mode and isinstance(s, str):
@@ -409,15 +477,29 @@ class ObjectWriter(LakeFSIOBase):
         self._pos += count
         return count
 
+    def discard(self) -> None:
+        """
+        Discards of the write buffer and closes writer
+        """
+        self._abort()
+
     def close(self) -> None:
         """
-        Write the data to the lakeFS server and close open descriptors
+        Write the data to the lakeFS server
         """
+        if self._fd.closed:
+            return
+
         stats = self._upload_presign() if self.pre_sign else self._upload_raw()
         self._obj_stats = ObjectInfo(**stats.dict())
-
         self._fd.close()
-        super().close()
+
+    def _abort(self) -> None:
+        """
+        Close open descriptors but create nothing on lakeFS.
+        """
+        if not self._fd.closed:
+            self._fd.close()
 
     @staticmethod
     def _extract_etag_from_response(headers) -> str:
@@ -484,7 +566,7 @@ class ObjectWriter(LakeFSIOBase):
                                headers=headers)
         handle_http_error(resp)
 
-        etag = ObjectWriter._extract_etag_from_response(resp.getheaders())
+        etag = ObjectWriter._extract_etag_from_response(resp.headers)
         size_bytes = self._pos
         staging_metadata = StagingMetadata(staging=staging_location,
                                            size_bytes=size_bytes,
