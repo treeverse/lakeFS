@@ -39,6 +39,7 @@ const (
 	ReadTagAction                             = "fs:ReadTag"
 	ListTagsAction                            = "fs:ListTags"
 	ReadConfigAction                          = "fs:ReadConfig"
+	ByPassReadOnlyRepoProtection              = "fs:ByPassReadOnlyRepoProtection"
 	ReadUserAction                            = "auth:ReadUser"
 	CreateUserAction                          = "auth:CreateUser"
 	DeleteUserAction                          = "auth:DeleteUser"

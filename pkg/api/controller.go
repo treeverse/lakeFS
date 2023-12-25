@@ -157,6 +157,15 @@ func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request)
 }
 
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body apigen.DeleteObjectsJSONRequestBody, repository, branch string, params apigen.DeleteObjectsParams) {
+	if (swag.BoolValue(params.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
+		return
+	}
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_objects", r, repository, branch, "")
 
@@ -327,7 +336,13 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 			Action:   permissions.WriteObjectAction,
 			Resource: permissions.ObjectArn(repository, params.Path),
 		},
-	}) {
+	}) || (swag.BoolValue(body.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 
@@ -1724,7 +1739,13 @@ func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, re
 			Action:   permissions.DeleteRepositoryAction,
 			Resource: permissions.RepoArn(repository),
 		},
-	}) {
+	}) || (swag.BoolValue(params.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 	ctx := r.Context()
@@ -2163,7 +2184,13 @@ func (c *Controller) CreateBranch(w http.ResponseWriter, r *http.Request, body a
 			Action:   permissions.CreateBranchAction,
 			Resource: permissions.BranchArn(repository, body.Name),
 		},
-	}) {
+	}) || (swag.BoolValue(body.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 	ctx := r.Context()
@@ -2183,7 +2210,13 @@ func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, reposi
 			Action:   permissions.DeleteBranchAction,
 			Resource: permissions.BranchArn(repository, branch),
 		},
-	}) {
+	}) || (swag.BoolValue(body.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 	ctx := r.Context()
@@ -2322,7 +2355,13 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ap
 			Action:   permissions.RevertBranchAction,
 			Resource: permissions.BranchArn(repository, branch),
 		},
-	}) {
+	}) || (swag.BoolValue(body.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 	ctx := r.Context()
@@ -2504,7 +2543,13 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 			Action:   permissions.CreateCommitAction,
 			Resource: permissions.BranchArn(repository, branch),
 		},
-	}) {
+	}) || (swag.BoolValue(body.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 	ctx := r.Context()
@@ -2593,7 +2638,13 @@ func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, reposi
 			Action:   permissions.DeleteObjectAction,
 			Resource: permissions.ObjectArn(repository, params.Path),
 		},
-	}) {
+	}) || (swag.BoolValue(params.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 	ctx := r.Context()
@@ -2627,7 +2678,13 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 			Action:   permissions.WriteObjectAction,
 			Resource: permissions.ObjectArn(repository, params.Path),
 		},
-	}) {
+	}) || (swag.BoolValue(params.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 	ctx := r.Context()
@@ -2787,7 +2844,13 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 			Action:   permissions.WriteObjectAction,
 			Resource: permissions.ObjectArn(repository, params.Path),
 		},
-	}) {
+	}) || (swag.BoolValue(body.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 	ctx := r.Context()
@@ -2869,7 +2932,13 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 				},
 			},
 		},
-	}) {
+	}) || (swag.BoolValue(body.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 
@@ -2935,7 +3004,13 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body a
 			Action:   permissions.RevertBranchAction,
 			Resource: permissions.BranchArn(repository, branch),
 		},
-	}) {
+	}) || (swag.BoolValue(body.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 	ctx := r.Context()
@@ -2974,7 +3049,13 @@ func (c *Controller) CherryPick(w http.ResponseWriter, r *http.Request, body api
 				},
 			},
 		},
-	}) {
+	}) || (swag.BoolValue(body.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 	ctx := r.Context()
@@ -3340,7 +3421,13 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body ap
 				},
 			},
 		},
-	}) {
+	}) || (swag.BoolValue(body.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 	ctx := r.Context()
@@ -3494,7 +3581,13 @@ func (c *Controller) RestoreSubmit(w http.ResponseWriter, r *http.Request, body 
 				},
 			},
 		},
-	}) {
+	}) || (swag.BoolValue(body.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 
@@ -4122,7 +4215,13 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 			Action:   permissions.CreateCommitAction,
 			Resource: permissions.BranchArn(repository, destinationBranch),
 		},
-	}) {
+	}) || (swag.BoolValue(body.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 	ctx := r.Context()
@@ -4219,7 +4318,13 @@ func (c *Controller) CreateTag(w http.ResponseWriter, r *http.Request, body apig
 			Action:   permissions.CreateTagAction,
 			Resource: permissions.TagArn(repository, body.Id),
 		},
-	}) {
+	}) || (swag.BoolValue(body.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 	ctx := r.Context()
@@ -4242,7 +4347,13 @@ func (c *Controller) DeleteTag(w http.ResponseWriter, r *http.Request, repositor
 			Action:   permissions.DeleteTagAction,
 			Resource: permissions.TagArn(repository, tag),
 		},
-	}) {
+	}) || (swag.BoolValue(params.Force) &&
+		!c.authorize(w, r, permissions.Node{
+			Permission: permissions.Permission{
+				Action:   permissions.ByPassReadOnlyRepoProtection,
+				Resource: permissions.RepoArn(repository),
+			},
+		})) {
 		return
 	}
 	ctx := r.Context()
