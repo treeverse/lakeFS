@@ -240,11 +240,12 @@ class Branch(_BaseBranch):
     def transact(self, commit_message: str = "", commit_metadata: Optional[Dict] = None) -> _Transaction:
         """
         Create a transaction for multiple operations.
-        Transaction allows performing multiple modifications to the branch without actually affecting it until the
-        transaction is completed and is similar to how database transactions operate.
-        This is equivalent to the following steps:
+        Transaction allows for multiple modifications to be performed atomically on a branch,
+        similar to a database transaction.
+        It ensures that the branch remains unaffected until the transaction is successfully completed.
+        The process includes:
 
-        1. Create a ephemeral branch from this branch
+        1. Creating an ephemeral branch from this branch
         2. Perform object operations on ephemeral branch
         3. Commit changes
         4. Merge back to source branch
@@ -344,6 +345,8 @@ class Transaction:
         self._commit_metadata = commit_metadata
         self._source_branch = branch_id
         self._client = client
+        self._tx = None
+        self._tx_branch = None
 
     def __enter__(self):
         self._tx = _Transaction(self._repo_id, self._source_branch, self._commit_message, self._commit_metadata,

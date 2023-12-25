@@ -22,7 +22,7 @@ class ServerException(LakeFSException):
     """
     status_code: int
     reason: str
-    message: str
+    body: dict
 
     def __init__(self, status=None, reason=None, body=None):
         self.status_code = status
