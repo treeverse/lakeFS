@@ -5,6 +5,7 @@
 :new: What's new:
 
 - Allow creating reference types using Commit object (#7190)
+- Implement Transactions (#7202)
 
 :bug: Bugs fixed:
 

@@ -46,11 +46,11 @@ def test_branch_sanity(setup_repo):
     new_branch = repo.branch(branch_name).create("main")
     assert new_branch.repo_id == repo.properties.id
     assert new_branch.id == branch_name
-    assert new_branch.head().id == main_branch.head().id
+    assert new_branch.head.id == main_branch.head.id
 
     new_branch.delete()
     with expect_exception_context(NotFoundException):
-        new_branch.head()
+        new_branch.head  # pylint: disable=pointless-statement
 
 
 def test_ref_sanity(setup_repo):

@@ -41,7 +41,7 @@ def test_repository_listings(setup_repo_with_branches_and_tags, attr):
 
 
 def test_repositories(storage_namespace):
-    repo_base_name = f"test-repo{uuid.uuid1()}-"
+    repo_base_name = f"test-repo{uuid.uuid4()}-"
     for i in range(10):
         lakefs.repository(f"{repo_base_name}{i}").create(storage_namespace=f"{storage_namespace}-{i}")
 
