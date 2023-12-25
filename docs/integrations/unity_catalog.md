@@ -31,6 +31,9 @@ Before starting, ensure you have the following:
 4. AWS Credentials with S3 access.
 5. lakeFS credentials with access to your Delta Tables.
 
+{: .note}
+> Supported from lakeFS v1.4.0
+
 ### Databricks authentication
 
 Given that the hook will ultimately register a table in Unity Catalog, authentication with Databricks is imperative.
