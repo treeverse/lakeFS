@@ -332,6 +332,79 @@ for row in csv.reader(obj.reader(mode='r')):
 ['3', 'Carol', 'carol@example.com']
 ```
 
+### Importing data into lakeFS
+
+The new SDK makes it much easier to import existing data from the object store into lakeFS, using the new ImportManager
+
+```python
+import lakefs
+
+branch = lakefs.repository("example-repo").repo.branch("experiment3")
+
+# We can import data from multiple sources in a single import process
+# The following example initializes a new ImportManager and adds 2 source types; A prefix and an object.
+importer = branch.import_data(commit_message="added public S3 data") \ 
+    .prefix("s3://example-bucket1/path1/", destination="datasets/path1/") \
+    .object("s3://example-bucket1/path2/imported_obj", destination="datasets/path2/imported_obj")
+
+# run() is a convenience method that blocks until the import is reported as done, raising an exception if it fails.
+importer.run()
+
+```
+
+Alternatively we can call `start()` and `status()` ourselves for an async version of the above
+
+```python
+import time
+
+# Async version
+importer.start()
+status = importer.start()
+
+while not status.completed or status.error is None:
+        time.sleep(3)  # or whatever interval you choose
+        status = importer.status()
+
+if status.error:
+    # handle!
+    
+print(f"imported a total of {status.ingested_objects} objects!")
+
+```
+
+#### Output
+```
+imported a total of 25478 objects!
+```
+
+### Transactions
+
+Transactions is a new feature in the High Level SDK. It allows performing a sequence of operations on a branch as an atomic unit, similarly to how database transactions work.
+Under the hood, the transaction creates an ephemeral branch from the source branch, performs all the operation on that branch, and merges it back to the source branch once the transaction is completed.
+Transactions are currently supported as a context manager only.
+
+```python
+import lakefs
+
+branch = lakefs.repository("example-repo").repo.branch("experiment3")
+
+with branch.transact(commit_message="my transaction") as tx:
+    for obj in tx.objects(prefix="prefix_to_delete/"):  # Delete some objects
+        obj.delete()
+
+    # Create new object
+    tx.object("new_object").upload("new object data")
+
+print(len(list(branch.objects(prefix="prefix_to_delete/"))))
+print(branch.object("new_object").exists())
+```
+
+#### Output
+```
+0
+True
+```
+
 ### Python SDK documentation and API reference
 
 For the documentation of lakeFS’s Python package and full api reference, see [https://pydocs-lakefs.lakefs.io](https://pydocs-lakefs.lakefs.io)
