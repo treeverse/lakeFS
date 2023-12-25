@@ -392,7 +392,7 @@ def test_write_read_csv(setup_repo):
             assert row == sample_data[i - 1]
 
 
-def test_writer_with_failure(setup_repo):
+def test_reader_with_failure(setup_repo):
     _, repo = setup_repo
     obj = repo.branch("main").object("test_object")
 
@@ -409,6 +409,28 @@ def test_writer_with_failure(setup_repo):
 
     # Check that the object does not exist in lakeFS after exception
     assert not obj.exists()
+
+
+def test_writer_with_failure(setup_repo):
+    clt, repo = setup_repo
+    data = b"test_data"
+    obj = WriteableObject(repository_id=repo.properties.id,
+                          reference_id="main",
+                          path="test_obj",
+                          client=clt).upload(data=data)
+
+    try:
+        with obj.reader() as reader:
+            reader.read()
+            raise ValueError("Bad thing happened")
+    except ValueError:
+        pass
+
+    assert reader.closed
+
+    # Verify exception when trying to read is closed
+    with expect_exception_context(ValueError, "I/O operation on closed file"):
+        reader.read()
 
 
 def test_writer_discard(setup_repo):

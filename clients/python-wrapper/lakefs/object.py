@@ -51,7 +51,6 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
     _mode: AllModes
     _pos: int
     _pre_sign: Optional[bool] = None
-    _is_closed: bool = False
 
     def __init__(self, obj: StoredObject, mode: AllModes, pre_sign: Optional[bool] = None,
                  client: Optional[Client] = None) -> None:
@@ -76,30 +75,11 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
         """
         return self._obj.path
 
-    @property
-    def closed(self) -> bool:
-        """
-        Returns True after the object is closed
-        """
-        return self._is_closed
-
     def close(self) -> None:
         """
         Finalizes any existing operations on object and close open descriptors
-        Inheriting classes need to implement _abort() and _close() respectively.
+        Inheriting classes need to override close() as needed.
         """
-        if self._is_closed:
-            return
-
-        self._is_closed = True
-        self._close()
-
-    @abstractmethod
-    def _close(self) -> None:
-        """
-        Specific implementation of the close method
-        """
-        raise NotImplementedError
 
     @abstractmethod
     def _abort(self) -> None:
@@ -183,7 +163,6 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
             self.close()
 
         else:
-            self._is_closed = True
             self._abort()  # perform logic regardless of exception
 
         return False  # Don't suppress an exception
@@ -215,8 +194,9 @@ class ObjectReader(LakeFSIOBase):
         if mode not in get_args(ReadModes):
             raise ValueError(f"invalid read mode: '{mode}'. ReadModes: {ReadModes}")
 
-        self._readlines_buf = io.BytesIO(b"")
         super().__init__(obj, mode, pre_sign, client)
+        self._readlines_buf = io.BytesIO(b"")
+        self._is_closed = False
 
     @property
     def pre_sign(self):
@@ -226,6 +206,22 @@ class ObjectReader(LakeFSIOBase):
         if self._pre_sign is None:
             self._pre_sign = self._client.storage_config.pre_sign_support
         return self._pre_sign
+
+    @pre_sign.setter
+    def pre_sign(self, value: bool) -> None:
+        """
+        Set the pre_sign mode to value
+
+        :param value: The new value for pre_sign mode
+        """
+        self._pre_sign = value
+
+    @property
+    def closed(self) -> bool:
+        """
+        Returns True after the object is closed
+        """
+        return self._is_closed
 
     def readable(self) -> bool:
         """
@@ -264,7 +260,7 @@ class ObjectReader(LakeFSIOBase):
         :raise OSError: if calculated new position is negative
         :raise io.UnsupportedOperation: If whence value is unsupported
         """
-        if self.closed:
+        if self._is_closed:
             raise ValueError("I/O operation on closed file")
 
         if whence == os.SEEK_SET:
@@ -313,7 +309,7 @@ class ObjectReader(LakeFSIOBase):
         :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
         :raise ServerException: for any other errors
         """
-        if self.closed:
+        if self._is_closed:
             raise ValueError("I/O operation on closed file")
 
         if n and n <= 0:
@@ -335,7 +331,7 @@ class ObjectReader(LakeFSIOBase):
         :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
         :raise ServerException: for any other errors
         """
-        if self.closed:
+        if self._is_closed:
             raise ValueError("I/O operation on closed file")
 
         if self._readlines_buf.getbuffer().nbytes == 0:
@@ -351,20 +347,24 @@ class ObjectReader(LakeFSIOBase):
 
         :raise ValueError: if reader is closed
         """
-        if self.closed:
+        if self._is_closed:
             raise ValueError("I/O operation on closed file")
 
-    def _close(self) -> None:
+    def close(self) -> None:
         """
         Close open descriptors
         """
+        if self._is_closed:
+            return
+
+        self._is_closed = True
         self._readlines_buf.close()
 
     def _abort(self):
         """
         Closes reader
         """
-        self._close()
+        self.close()
 
     @staticmethod
     def _get_range_string(start, read_bytes=None):
@@ -434,6 +434,13 @@ class ObjectWriter(LakeFSIOBase):
         """
         self._pre_sign = value
 
+    @property
+    def closed(self) -> bool:
+        """
+        Returns True after the object is closed
+        """
+        return self._fd.closed
+
     def flush(self) -> None:
         """
         Flush buffer to file. Prevent flush if total write size is still smaller than _BUFFER_SIZE so that we avoid
@@ -442,7 +449,7 @@ class ObjectWriter(LakeFSIOBase):
         :raise ValueError: if writer is closed
         """
 
-        if self.closed:
+        if self._fd.closed:
             raise ValueError("I/O operation on closed file")
 
         # Don't flush buffer to file if we didn't exceed buffer size
@@ -475,12 +482,14 @@ class ObjectWriter(LakeFSIOBase):
         Discards of the write buffer and closes writer
         """
         self._abort()
-        self._is_closed = True
 
-    def _close(self) -> None:
+    def close(self) -> None:
         """
         Write the data to the lakeFS server
         """
+        if self._fd.closed:
+            return
+
         stats = self._upload_presign() if self.pre_sign else self._upload_raw()
         self._obj_stats = ObjectInfo(**stats.dict())
         self._fd.close()
