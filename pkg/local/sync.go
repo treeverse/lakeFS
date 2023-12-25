@@ -32,7 +32,6 @@ const (
 type SyncFlags struct {
 	Parallelism int
 	Presign     bool
-	Force       bool
 }
 
 func getMtimeFromStats(stats apigen.ObjectStats) (int64, error) {
@@ -275,7 +274,6 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		file:   f,
 		reader: b.Reader(f),
 	}
-
 	if s.flags.Presign {
 		_, err = helpers.ClientUploadPreSign(
 			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
@@ -318,7 +316,6 @@ func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change 
 		}
 	}()
 	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path))
-
 	resp, err := s.client.DeleteObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.DeleteObjectParams{
 		Path: dest,
 	})
