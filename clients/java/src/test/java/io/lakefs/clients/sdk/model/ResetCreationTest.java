@@ -53,4 +53,12 @@ public class ResetCreationTest {
         // TODO: test path
     }
 
+    /**
+     * Test the property 'force'
+     */
+    @Test
+    public void forceTest() {
+        // TODO: test force
+    }
+
 }

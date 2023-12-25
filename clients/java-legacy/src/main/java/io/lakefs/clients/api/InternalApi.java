@@ -41,6 +41,7 @@ import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.PrepareGCUncommittedRequest;
 import io.lakefs.clients.api.model.PrepareGCUncommittedResponse;
 import io.lakefs.clients.api.model.RefsDump;
+import io.lakefs.clients.api.model.RefsRestore;
 import io.lakefs.clients.api.model.Setup;
 import io.lakefs.clients.api.model.SetupState;
 import io.lakefs.clients.api.model.StatsEventsList;
@@ -2258,7 +2259,7 @@ public class InternalApi {
     /**
      * Build call for restoreRefs
      * @param repository  (required)
-     * @param refsDump  (required)
+     * @param refsRestore  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -2273,8 +2274,8 @@ public class InternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call restoreRefsCall(String repository, RefsDump refsDump, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = refsDump;
+    public okhttp3.Call restoreRefsCall(String repository, RefsRestore refsRestore, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = refsRestore;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/refs/restore"
@@ -2305,20 +2306,20 @@ public class InternalApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call restoreRefsValidateBeforeCall(String repository, RefsDump refsDump, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call restoreRefsValidateBeforeCall(String repository, RefsRestore refsRestore, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling restoreRefs(Async)");
         }
         
-        // verify the required parameter 'refsDump' is set
-        if (refsDump == null) {
-            throw new ApiException("Missing the required parameter 'refsDump' when calling restoreRefs(Async)");
+        // verify the required parameter 'refsRestore' is set
+        if (refsRestore == null) {
+            throw new ApiException("Missing the required parameter 'refsRestore' when calling restoreRefs(Async)");
         }
         
 
-        okhttp3.Call localVarCall = restoreRefsCall(repository, refsDump, _callback);
+        okhttp3.Call localVarCall = restoreRefsCall(repository, refsRestore, _callback);
         return localVarCall;
 
     }
@@ -2327,7 +2328,7 @@ public class InternalApi {
      * Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
      * 
      * @param repository  (required)
-     * @param refsDump  (required)
+     * @param refsRestore  (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -2340,15 +2341,15 @@ public class InternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public void restoreRefs(String repository, RefsDump refsDump) throws ApiException {
-        restoreRefsWithHttpInfo(repository, refsDump);
+    public void restoreRefs(String repository, RefsRestore refsRestore) throws ApiException {
+        restoreRefsWithHttpInfo(repository, refsRestore);
     }
 
     /**
      * Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
      * 
      * @param repository  (required)
-     * @param refsDump  (required)
+     * @param refsRestore  (required)
      * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -2362,8 +2363,8 @@ public class InternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Void> restoreRefsWithHttpInfo(String repository, RefsDump refsDump) throws ApiException {
-        okhttp3.Call localVarCall = restoreRefsValidateBeforeCall(repository, refsDump, null);
+    public ApiResponse<Void> restoreRefsWithHttpInfo(String repository, RefsRestore refsRestore) throws ApiException {
+        okhttp3.Call localVarCall = restoreRefsValidateBeforeCall(repository, refsRestore, null);
         return localVarApiClient.execute(localVarCall);
     }
 
@@ -2371,7 +2372,7 @@ public class InternalApi {
      * Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations  (asynchronously)
      * 
      * @param repository  (required)
-     * @param refsDump  (required)
+     * @param refsRestore  (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -2386,9 +2387,9 @@ public class InternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call restoreRefsAsync(String repository, RefsDump refsDump, final ApiCallback<Void> _callback) throws ApiException {
+    public okhttp3.Call restoreRefsAsync(String repository, RefsRestore refsRestore, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = restoreRefsValidateBeforeCall(repository, refsDump, _callback);
+        okhttp3.Call localVarCall = restoreRefsValidateBeforeCall(repository, refsRestore, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }

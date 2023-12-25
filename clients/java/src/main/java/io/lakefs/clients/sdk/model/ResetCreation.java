@@ -109,6 +109,10 @@ public class ResetCreation {
   @SerializedName(SERIALIZED_NAME_PATH)
   private String path;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
   public ResetCreation() {
   }
 
@@ -151,6 +155,27 @@ public class ResetCreation {
 
   public void setPath(String path) {
     this.path = path;
+  }
+
+
+  public ResetCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
   }
 
   /**
@@ -209,13 +234,14 @@ public class ResetCreation {
     }
     ResetCreation resetCreation = (ResetCreation) o;
     return Objects.equals(this.type, resetCreation.type) &&
-        Objects.equals(this.path, resetCreation.path)&&
+        Objects.equals(this.path, resetCreation.path) &&
+        Objects.equals(this.force, resetCreation.force)&&
         Objects.equals(this.additionalProperties, resetCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, path, additionalProperties);
+    return Objects.hash(type, path, force, additionalProperties);
   }
 
   @Override
@@ -224,6 +250,7 @@ public class ResetCreation {
     sb.append("class ResetCreation {\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("    path: ").append(toIndentedString(path)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -249,6 +276,7 @@ public class ResetCreation {
     openapiFields = new HashSet<String>();
     openapiFields.add("type");
     openapiFields.add("path");
+    openapiFields.add("force");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

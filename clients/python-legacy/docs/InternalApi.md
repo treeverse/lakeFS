@@ -1802,7 +1802,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **restore_refs**
-> restore_refs(repository, refs_dump)
+> restore_refs(repository, refs_restore)
 
 Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 
@@ -1818,7 +1818,7 @@ Restore repository refs (tags, commits, branches) from object store. Deprecated:
 import time
 import lakefs_client
 from lakefs_client.api import internal_api
-from lakefs_client.model.refs_dump import RefsDump
+from lakefs_client.model.refs_restore import RefsRestore
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -1866,16 +1866,17 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = internal_api.InternalApi(api_client)
     repository = "repository_example" # str | 
-    refs_dump = RefsDump(
+    refs_restore = RefsRestore(
         commits_meta_range_id="commits_meta_range_id_example",
         tags_meta_range_id="tags_meta_range_id_example",
         branches_meta_range_id="branches_meta_range_id_example",
-    ) # RefsDump | 
+        force=False,
+    ) # RefsRestore | 
 
     # example passing only required values which don't have defaults set
     try:
         # Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
-        api_instance.restore_refs(repository, refs_dump)
+        api_instance.restore_refs(repository, refs_restore)
     except lakefs_client.ApiException as e:
         print("Exception when calling InternalApi->restore_refs: %s\n" % e)
 ```
@@ -1886,7 +1887,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
- **refs_dump** | [**RefsDump**](RefsDump.md)|  |
+ **refs_restore** | [**RefsRestore**](RefsRestore.md)|  |
 
 ### Return type
 
@@ -2247,6 +2248,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
             key="key_example",
         ),
         content_type="content_type_example",
+        force=False,
     ) # ObjectStageCreation | 
 
     # example passing only required values which don't have defaults set

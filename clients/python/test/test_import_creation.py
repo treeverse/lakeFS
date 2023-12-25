@@ -50,7 +50,9 @@ class TestImportCreation(unittest.TestCase):
                     metadata = {
                         'key' : ''
                         }, 
-                    date = 56, )
+                    date = 56, 
+                    force = True, ), 
+                force = True
             )
         else :
             return ImportCreation(
@@ -65,7 +67,8 @@ class TestImportCreation(unittest.TestCase):
                     metadata = {
                         'key' : ''
                         }, 
-                    date = 56, ),
+                    date = 56, 
+                    force = True, ),
         )
         """
 

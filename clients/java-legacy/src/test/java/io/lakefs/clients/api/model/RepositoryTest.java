@@ -72,4 +72,12 @@ public class RepositoryTest {
         // TODO: test storageNamespace
     }
 
+    /**
+     * Test the property 'readOnly'
+     */
+    @Test
+    public void readOnlyTest() {
+        // TODO: test readOnly
+    }
+
 }

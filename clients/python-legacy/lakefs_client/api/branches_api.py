@@ -194,6 +194,7 @@ class BranchesApi(object):
                 'all': [
                     'repository',
                     'branch',
+                    'force',
                 ],
                 'required': [
                     'repository',
@@ -216,14 +217,18 @@ class BranchesApi(object):
                         (str,),
                     'branch':
                         (str,),
+                    'force':
+                        (bool,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'branch': 'branch',
+                    'force': 'force',
                 },
                 'location_map': {
                     'repository': 'path',
                     'branch': 'path',
+                    'force': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -758,6 +763,7 @@ class BranchesApi(object):
             branch (str):
 
         Keyword Args:
+            force (bool): [optional] if omitted the server will use the default value of False
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

@@ -64,6 +64,10 @@ public class ImportCreation {
   @SerializedName(SERIALIZED_NAME_COMMIT)
   private CommitCreation commit;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
   public ImportCreation() {
   }
 
@@ -114,6 +118,27 @@ public class ImportCreation {
 
   public void setCommit(CommitCreation commit) {
     this.commit = commit;
+  }
+
+
+  public ImportCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
   }
 
   /**
@@ -172,13 +197,14 @@ public class ImportCreation {
     }
     ImportCreation importCreation = (ImportCreation) o;
     return Objects.equals(this.paths, importCreation.paths) &&
-        Objects.equals(this.commit, importCreation.commit)&&
+        Objects.equals(this.commit, importCreation.commit) &&
+        Objects.equals(this.force, importCreation.force)&&
         Objects.equals(this.additionalProperties, importCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(paths, commit, additionalProperties);
+    return Objects.hash(paths, commit, force, additionalProperties);
   }
 
   @Override
@@ -187,6 +213,7 @@ public class ImportCreation {
     sb.append("class ImportCreation {\n");
     sb.append("    paths: ").append(toIndentedString(paths)).append("\n");
     sb.append("    commit: ").append(toIndentedString(commit)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -212,6 +239,7 @@ public class ImportCreation {
     openapiFields = new HashSet<String>();
     openapiFields.add("paths");
     openapiFields.add("commit");
+    openapiFields.add("force");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

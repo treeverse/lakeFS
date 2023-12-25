@@ -60,6 +60,10 @@ public class BranchCreation {
   @SerializedName(SERIALIZED_NAME_SOURCE)
   private String source;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
   public BranchCreation() {
   }
 
@@ -102,6 +106,27 @@ public class BranchCreation {
 
   public void setSource(String source) {
     this.source = source;
+  }
+
+
+  public BranchCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
   }
 
   /**
@@ -160,13 +185,14 @@ public class BranchCreation {
     }
     BranchCreation branchCreation = (BranchCreation) o;
     return Objects.equals(this.name, branchCreation.name) &&
-        Objects.equals(this.source, branchCreation.source)&&
+        Objects.equals(this.source, branchCreation.source) &&
+        Objects.equals(this.force, branchCreation.force)&&
         Objects.equals(this.additionalProperties, branchCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, source, additionalProperties);
+    return Objects.hash(name, source, force, additionalProperties);
   }
 
   @Override
@@ -175,6 +201,7 @@ public class BranchCreation {
     sb.append("class BranchCreation {\n");
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    source: ").append(toIndentedString(source)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -200,6 +227,7 @@ public class BranchCreation {
     openapiFields = new HashSet<String>();
     openapiFields.add("name");
     openapiFields.add("source");
+    openapiFields.add("force");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

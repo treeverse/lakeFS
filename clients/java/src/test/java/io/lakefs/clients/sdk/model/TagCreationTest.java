@@ -53,4 +53,12 @@ public class TagCreationTest {
         // TODO: test ref
     }
 
+    /**
+     * Test the property 'force'
+     */
+    @Test
+    public void forceTest() {
+        // TODO: test force
+    }
+
 }

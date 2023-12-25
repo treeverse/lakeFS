@@ -20,7 +20,7 @@ import warnings
 from pydantic import validate_arguments, ValidationError
 from typing_extensions import Annotated
 
-from pydantic import Field, StrictStr, conint
+from pydantic import Field, StrictBool, StrictStr, conint
 
 from typing import Optional
 
@@ -196,6 +196,7 @@ class BranchesApi(object):
             '201': "Commit",
             '400': "Error",
             '401': "Error",
+            '403': "Error",
             '404': "Error",
             '409': "Error",
             '420': None,
@@ -353,6 +354,7 @@ class BranchesApi(object):
             '201': "str",
             '400': "Error",
             '401': "Error",
+            '403': "Error",
             '404': "Error",
             '409': "Error",
             '420': None,
@@ -376,19 +378,21 @@ class BranchesApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def delete_branch(self, repository : StrictStr, branch : StrictStr, **kwargs) -> None:  # noqa: E501
+    def delete_branch(self, repository : StrictStr, branch : StrictStr, force : Optional[StrictBool] = None, **kwargs) -> None:  # noqa: E501
         """delete branch  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.delete_branch(repository, branch, async_req=True)
+        >>> thread = api.delete_branch(repository, branch, force, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
         :param branch: (required)
         :type branch: str
+        :param force:
+        :type force: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request. If one
@@ -403,22 +407,24 @@ class BranchesApi(object):
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
             raise ValueError("Error! Please call the delete_branch_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.delete_branch_with_http_info(repository, branch, **kwargs)  # noqa: E501
+        return self.delete_branch_with_http_info(repository, branch, force, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def delete_branch_with_http_info(self, repository : StrictStr, branch : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
+    def delete_branch_with_http_info(self, repository : StrictStr, branch : StrictStr, force : Optional[StrictBool] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """delete branch  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.delete_branch_with_http_info(repository, branch, async_req=True)
+        >>> thread = api.delete_branch_with_http_info(repository, branch, force, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
         :param branch: (required)
         :type branch: str
+        :param force:
+        :type force: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -448,7 +454,8 @@ class BranchesApi(object):
 
         _all_params = [
             'repository',
-            'branch'
+            'branch',
+            'force'
         ]
         _all_params.extend(
             [
@@ -485,6 +492,9 @@ class BranchesApi(object):
 
         # process the query parameters
         _query_params = []
+        if _params.get('force') is not None:  # noqa: E501
+            _query_params.append(('force', _params['force']))
+
         # process the header parameters
         _header_params = dict(_params.get('_headers', {}))
         # process the form parameters

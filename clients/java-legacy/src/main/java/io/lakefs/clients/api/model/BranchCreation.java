@@ -37,6 +37,10 @@ public class BranchCreation {
   @SerializedName(SERIALIZED_NAME_SOURCE)
   private String source;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
 
   public BranchCreation name(String name) {
     
@@ -84,6 +88,29 @@ public class BranchCreation {
   }
 
 
+  public BranchCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -94,12 +121,13 @@ public class BranchCreation {
     }
     BranchCreation branchCreation = (BranchCreation) o;
     return Objects.equals(this.name, branchCreation.name) &&
-        Objects.equals(this.source, branchCreation.source);
+        Objects.equals(this.source, branchCreation.source) &&
+        Objects.equals(this.force, branchCreation.force);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, source);
+    return Objects.hash(name, source, force);
   }
 
   @Override
@@ -108,6 +136,7 @@ public class BranchCreation {
     sb.append("class BranchCreation {\n");
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    source: ").append(toIndentedString(source)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("}");
     return sb.toString();
   }

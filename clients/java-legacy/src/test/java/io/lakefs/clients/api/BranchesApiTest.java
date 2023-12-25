@@ -85,7 +85,8 @@ public class BranchesApiTest {
     public void deleteBranchTest() throws ApiException {
         String repository = null;
         String branch = null;
-                api.deleteBranch(repository, branch);
+        Boolean force = null;
+                api.deleteBranch(repository, branch, force);
         // TODO: test validations
     }
     

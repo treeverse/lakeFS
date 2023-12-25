@@ -30,7 +30,7 @@ import java.io.IOException;
 import io.lakefs.clients.sdk.model.BranchProtectionRule;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.GarbageCollectionRules;
-import io.lakefs.clients.sdk.model.RefsDump;
+import io.lakefs.clients.sdk.model.RefsRestore;
 import io.lakefs.clients.sdk.model.Repository;
 import io.lakefs.clients.sdk.model.RepositoryCreation;
 import io.lakefs.clients.sdk.model.RepositoryDumpStatus;
@@ -441,7 +441,7 @@ public class RepositoriesApi {
     public APIdeleteGCRulesRequest deleteGCRules(String repository) {
         return new APIdeleteGCRulesRequest(repository);
     }
-    private okhttp3.Call deleteRepositoryCall(String repository, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteRepositoryCall(String repository, Boolean force, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -467,6 +467,10 @@ public class RepositoriesApi {
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
+        if (force != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("force", force));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -487,34 +491,45 @@ public class RepositoriesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call deleteRepositoryValidateBeforeCall(String repository, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteRepositoryValidateBeforeCall(String repository, Boolean force, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling deleteRepository(Async)");
         }
 
-        return deleteRepositoryCall(repository, _callback);
+        return deleteRepositoryCall(repository, force, _callback);
 
     }
 
 
-    private ApiResponse<Void> deleteRepositoryWithHttpInfo(String repository) throws ApiException {
-        okhttp3.Call localVarCall = deleteRepositoryValidateBeforeCall(repository, null);
+    private ApiResponse<Void> deleteRepositoryWithHttpInfo(String repository, Boolean force) throws ApiException {
+        okhttp3.Call localVarCall = deleteRepositoryValidateBeforeCall(repository, force, null);
         return localVarApiClient.execute(localVarCall);
     }
 
-    private okhttp3.Call deleteRepositoryAsync(String repository, final ApiCallback<Void> _callback) throws ApiException {
+    private okhttp3.Call deleteRepositoryAsync(String repository, Boolean force, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = deleteRepositoryValidateBeforeCall(repository, _callback);
+        okhttp3.Call localVarCall = deleteRepositoryValidateBeforeCall(repository, force, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
 
     public class APIdeleteRepositoryRequest {
         private final String repository;
+        private Boolean force;
 
         private APIdeleteRepositoryRequest(String repository) {
             this.repository = repository;
+        }
+
+        /**
+         * Set force
+         * @param force Bypass read-only protection and delete the repository (optional, default to false)
+         * @return APIdeleteRepositoryRequest
+         */
+        public APIdeleteRepositoryRequest force(Boolean force) {
+            this.force = force;
+            return this;
         }
 
         /**
@@ -533,7 +548,7 @@ public class RepositoriesApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return deleteRepositoryCall(repository, _callback);
+            return deleteRepositoryCall(repository, force, _callback);
         }
 
         /**
@@ -550,7 +565,7 @@ public class RepositoriesApi {
          </table>
          */
         public void execute() throws ApiException {
-            deleteRepositoryWithHttpInfo(repository);
+            deleteRepositoryWithHttpInfo(repository, force);
         }
 
         /**
@@ -568,7 +583,7 @@ public class RepositoriesApi {
          </table>
          */
         public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
-            return deleteRepositoryWithHttpInfo(repository);
+            return deleteRepositoryWithHttpInfo(repository, force);
         }
 
         /**
@@ -587,7 +602,7 @@ public class RepositoriesApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
-            return deleteRepositoryAsync(repository, _callback);
+            return deleteRepositoryAsync(repository, force, _callback);
         }
     }
 
@@ -2050,7 +2065,7 @@ public class RepositoriesApi {
     public APIrestoreStatusRequest restoreStatus(String repository, String taskId) {
         return new APIrestoreStatusRequest(repository, taskId);
     }
-    private okhttp3.Call restoreSubmitCall(String repository, RefsDump refsDump, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call restoreSubmitCall(String repository, RefsRestore refsRestore, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -2064,7 +2079,7 @@ public class RepositoriesApi {
             basePath = null;
         }
 
-        Object localVarPostBody = refsDump;
+        Object localVarPostBody = refsRestore;
 
         // create path and map variables
         String localVarPath = "/repositories/{repository}/restore"
@@ -2097,31 +2112,31 @@ public class RepositoriesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call restoreSubmitValidateBeforeCall(String repository, RefsDump refsDump, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call restoreSubmitValidateBeforeCall(String repository, RefsRestore refsRestore, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling restoreSubmit(Async)");
         }
 
-        // verify the required parameter 'refsDump' is set
-        if (refsDump == null) {
-            throw new ApiException("Missing the required parameter 'refsDump' when calling restoreSubmit(Async)");
+        // verify the required parameter 'refsRestore' is set
+        if (refsRestore == null) {
+            throw new ApiException("Missing the required parameter 'refsRestore' when calling restoreSubmit(Async)");
         }
 
-        return restoreSubmitCall(repository, refsDump, _callback);
+        return restoreSubmitCall(repository, refsRestore, _callback);
 
     }
 
 
-    private ApiResponse<TaskInfo> restoreSubmitWithHttpInfo(String repository, RefsDump refsDump) throws ApiException {
-        okhttp3.Call localVarCall = restoreSubmitValidateBeforeCall(repository, refsDump, null);
+    private ApiResponse<TaskInfo> restoreSubmitWithHttpInfo(String repository, RefsRestore refsRestore) throws ApiException {
+        okhttp3.Call localVarCall = restoreSubmitValidateBeforeCall(repository, refsRestore, null);
         Type localVarReturnType = new TypeToken<TaskInfo>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call restoreSubmitAsync(String repository, RefsDump refsDump, final ApiCallback<TaskInfo> _callback) throws ApiException {
+    private okhttp3.Call restoreSubmitAsync(String repository, RefsRestore refsRestore, final ApiCallback<TaskInfo> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = restoreSubmitValidateBeforeCall(repository, refsDump, _callback);
+        okhttp3.Call localVarCall = restoreSubmitValidateBeforeCall(repository, refsRestore, _callback);
         Type localVarReturnType = new TypeToken<TaskInfo>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -2129,11 +2144,11 @@ public class RepositoriesApi {
 
     public class APIrestoreSubmitRequest {
         private final String repository;
-        private final RefsDump refsDump;
+        private final RefsRestore refsRestore;
 
-        private APIrestoreSubmitRequest(String repository, RefsDump refsDump) {
+        private APIrestoreSubmitRequest(String repository, RefsRestore refsRestore) {
             this.repository = repository;
-            this.refsDump = refsDump;
+            this.refsRestore = refsRestore;
         }
 
         /**
@@ -2146,13 +2161,14 @@ public class RepositoriesApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 202 </td><td> restore task created </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return restoreSubmitCall(repository, refsDump, _callback);
+            return restoreSubmitCall(repository, refsRestore, _callback);
         }
 
         /**
@@ -2164,13 +2180,14 @@ public class RepositoriesApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 202 </td><td> restore task created </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
         public TaskInfo execute() throws ApiException {
-            ApiResponse<TaskInfo> localVarResp = restoreSubmitWithHttpInfo(repository, refsDump);
+            ApiResponse<TaskInfo> localVarResp = restoreSubmitWithHttpInfo(repository, refsRestore);
             return localVarResp.getData();
         }
 
@@ -2183,13 +2200,14 @@ public class RepositoriesApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 202 </td><td> restore task created </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
         public ApiResponse<TaskInfo> executeWithHttpInfo() throws ApiException {
-            return restoreSubmitWithHttpInfo(repository, refsDump);
+            return restoreSubmitWithHttpInfo(repository, refsRestore);
         }
 
         /**
@@ -2202,13 +2220,14 @@ public class RepositoriesApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 202 </td><td> restore task created </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<TaskInfo> _callback) throws ApiException {
-            return restoreSubmitAsync(repository, refsDump, _callback);
+            return restoreSubmitAsync(repository, refsRestore, _callback);
         }
     }
 
@@ -2216,20 +2235,21 @@ public class RepositoriesApi {
      * Restore repository from a dump in the object store
      * 
      * @param repository  (required)
-     * @param refsDump  (required)
+     * @param refsRestore  (required)
      * @return APIrestoreSubmitRequest
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 202 </td><td> restore task created </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public APIrestoreSubmitRequest restoreSubmit(String repository, RefsDump refsDump) {
-        return new APIrestoreSubmitRequest(repository, refsDump);
+    public APIrestoreSubmitRequest restoreSubmit(String repository, RefsRestore refsRestore) {
+        return new APIrestoreSubmitRequest(repository, refsRestore);
     }
     private okhttp3.Call setBranchProtectionRulesCall(String repository, List<BranchProtectionRule> branchProtectionRule, String ifMatch, final ApiCallback _callback) throws ApiException {
         String basePath = null;

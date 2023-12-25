@@ -40,7 +40,8 @@ class TestBranchCreation(unittest.TestCase):
         if include_optional :
             return BranchCreation(
                 name = '', 
-                source = ''
+                source = '', 
+                force = True
             )
         else :
             return BranchCreation(

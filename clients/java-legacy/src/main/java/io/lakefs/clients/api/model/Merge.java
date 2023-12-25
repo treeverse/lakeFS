@@ -44,6 +44,10 @@ public class Merge {
   @SerializedName(SERIALIZED_NAME_STRATEGY)
   private String strategy;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
 
   public Merge message(String message) {
     
@@ -122,6 +126,29 @@ public class Merge {
   }
 
 
+  public Merge force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -133,12 +160,13 @@ public class Merge {
     Merge merge = (Merge) o;
     return Objects.equals(this.message, merge.message) &&
         Objects.equals(this.metadata, merge.metadata) &&
-        Objects.equals(this.strategy, merge.strategy);
+        Objects.equals(this.strategy, merge.strategy) &&
+        Objects.equals(this.force, merge.force);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(message, metadata, strategy);
+    return Objects.hash(message, metadata, strategy, force);
   }
 
   @Override
@@ -148,6 +176,7 @@ public class Merge {
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("    strategy: ").append(toIndentedString(strategy)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("}");
     return sb.toString();
   }

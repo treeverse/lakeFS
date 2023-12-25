@@ -59,6 +59,6 @@ jobs:
           verbose: true
           emoji: true
           job-summary: true
-          custom-arguments: './clients/python-wrapper/tests/utests -q'
+          custom-arguments: './clients/python-wrapper/tests/utests -q -We'
           click-to-expand: true
           report-title: 'Python Wrapper Unit Tests Report'

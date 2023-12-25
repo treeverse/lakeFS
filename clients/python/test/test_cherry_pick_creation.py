@@ -40,7 +40,8 @@ class TestCherryPickCreation(unittest.TestCase):
         if include_optional :
             return CherryPickCreation(
                 ref = '', 
-                parent_number = 56
+                parent_number = 56, 
+                force = True
             )
         else :
             return CherryPickCreation(

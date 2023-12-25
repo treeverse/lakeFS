@@ -54,6 +54,10 @@ public class StagingMetadata {
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
   private String contentType;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
 
   public StagingMetadata staging(StagingLocation staging) {
     
@@ -178,6 +182,29 @@ public class StagingMetadata {
   }
 
 
+  public StagingMetadata force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -191,12 +218,13 @@ public class StagingMetadata {
         Objects.equals(this.checksum, stagingMetadata.checksum) &&
         Objects.equals(this.sizeBytes, stagingMetadata.sizeBytes) &&
         Objects.equals(this.userMetadata, stagingMetadata.userMetadata) &&
-        Objects.equals(this.contentType, stagingMetadata.contentType);
+        Objects.equals(this.contentType, stagingMetadata.contentType) &&
+        Objects.equals(this.force, stagingMetadata.force);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(staging, checksum, sizeBytes, userMetadata, contentType);
+    return Objects.hash(staging, checksum, sizeBytes, userMetadata, contentType, force);
   }
 
   @Override
@@ -208,6 +236,7 @@ public class StagingMetadata {
     sb.append("    sizeBytes: ").append(toIndentedString(sizeBytes)).append("\n");
     sb.append("    userMetadata: ").append(toIndentedString(userMetadata)).append("\n");
     sb.append("    contentType: ").append(toIndentedString(contentType)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("}");
     return sb.toString();
   }

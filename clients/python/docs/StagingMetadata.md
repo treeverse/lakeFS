@@ -11,6 +11,7 @@ Name | Type | Description | Notes
 **size_bytes** | **int** |  | 
 **user_metadata** | **Dict[str, str]** |  | [optional] 
 **content_type** | **str** | Object media type | [optional] 
+**force** | **bool** |  | [optional] [default to False]
 
 ## Example
 

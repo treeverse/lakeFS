@@ -53,4 +53,12 @@ public class ObjectCopyCreationTest {
         // TODO: test srcRef
     }
 
+    /**
+     * Test the property 'force'
+     */
+    @Test
+    public void forceTest() {
+        // TODO: test force
+    }
+
 }

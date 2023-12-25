@@ -20,7 +20,7 @@ import json
 
 
 from typing import Dict, Optional
-from pydantic import BaseModel, Field, StrictInt, StrictStr
+from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr
 
 class CommitCreation(BaseModel):
     """
@@ -29,7 +29,8 @@ class CommitCreation(BaseModel):
     message: StrictStr = Field(...)
     metadata: Optional[Dict[str, StrictStr]] = None
     var_date: Optional[StrictInt] = Field(None, alias="date", description="set date to override creation date in the commit (Unix Epoch in seconds)")
-    __properties = ["message", "metadata", "date"]
+    force: Optional[StrictBool] = False
+    __properties = ["message", "metadata", "date", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -69,7 +70,8 @@ class CommitCreation(BaseModel):
         _obj = CommitCreation.parse_obj({
             "message": obj.get("message"),
             "metadata": obj.get("metadata"),
-            "var_date": obj.get("date")
+            "var_date": obj.get("date"),
+            "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj
 

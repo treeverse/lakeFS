@@ -9,6 +9,7 @@
 |------------ | ------------- | ------------- | -------------|
 |**paths** | [**List&lt;ImportLocation&gt;**](ImportLocation.md) |  |  |
 |**commit** | [**CommitCreation**](CommitCreation.md) |  |  |
+|**force** | **Boolean** |  |  [optional] |
 
 
 

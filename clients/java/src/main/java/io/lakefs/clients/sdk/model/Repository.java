@@ -68,6 +68,10 @@ public class Repository {
   @SerializedName(SERIALIZED_NAME_STORAGE_NAMESPACE)
   private String storageNamespace;
 
+  public static final String SERIALIZED_NAME_READ_ONLY = "read_only";
+  @SerializedName(SERIALIZED_NAME_READ_ONLY)
+  private Boolean readOnly;
+
   public Repository() {
   }
 
@@ -154,6 +158,27 @@ public class Repository {
     this.storageNamespace = storageNamespace;
   }
 
+
+  public Repository readOnly(Boolean readOnly) {
+    
+    this.readOnly = readOnly;
+    return this;
+  }
+
+   /**
+   * Whether the repository is a read-only repository- not relevant for bare repositories
+   * @return readOnly
+  **/
+  @javax.annotation.Nullable
+  public Boolean getReadOnly() {
+    return readOnly;
+  }
+
+
+  public void setReadOnly(Boolean readOnly) {
+    this.readOnly = readOnly;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -212,13 +237,14 @@ public class Repository {
     return Objects.equals(this.id, repository.id) &&
         Objects.equals(this.creationDate, repository.creationDate) &&
         Objects.equals(this.defaultBranch, repository.defaultBranch) &&
-        Objects.equals(this.storageNamespace, repository.storageNamespace)&&
+        Objects.equals(this.storageNamespace, repository.storageNamespace) &&
+        Objects.equals(this.readOnly, repository.readOnly)&&
         Objects.equals(this.additionalProperties, repository.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, creationDate, defaultBranch, storageNamespace, additionalProperties);
+    return Objects.hash(id, creationDate, defaultBranch, storageNamespace, readOnly, additionalProperties);
   }
 
   @Override
@@ -229,6 +255,7 @@ public class Repository {
     sb.append("    creationDate: ").append(toIndentedString(creationDate)).append("\n");
     sb.append("    defaultBranch: ").append(toIndentedString(defaultBranch)).append("\n");
     sb.append("    storageNamespace: ").append(toIndentedString(storageNamespace)).append("\n");
+    sb.append("    readOnly: ").append(toIndentedString(readOnly)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -256,6 +283,7 @@ public class Repository {
     openapiFields.add("creation_date");
     openapiFields.add("default_branch");
     openapiFields.add("storage_namespace");
+    openapiFields.add("read_only");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

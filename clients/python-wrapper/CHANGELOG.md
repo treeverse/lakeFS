@@ -2,9 +2,17 @@
 
 ## Unreleased
 
+## v0.2.0
+
 :new: What's new:
 
 - Allow creating reference types using Commit object (#7190)
+- Implement Transactions (#7202)
+
+:bug: Bugs fixed:
+
+- Fix object access of uninitialized client (#7196)
+- Handling file buffers on exceptions (#7195)
 
 ## v0.1.2
 

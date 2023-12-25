@@ -19,8 +19,8 @@ import re  # noqa: F401
 import json
 
 
-
-from pydantic import BaseModel, Field, StrictStr
+from typing import Optional
+from pydantic import BaseModel, Field, StrictBool, StrictStr
 
 class TagCreation(BaseModel):
     """
@@ -28,7 +28,8 @@ class TagCreation(BaseModel):
     """
     id: StrictStr = Field(..., description="ID of tag to create")
     ref: StrictStr = Field(..., description="the commit to tag")
-    __properties = ["id", "ref"]
+    force: Optional[StrictBool] = False
+    __properties = ["id", "ref", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -67,7 +68,8 @@ class TagCreation(BaseModel):
 
         _obj = TagCreation.parse_obj({
             "id": obj.get("id"),
-            "ref": obj.get("ref")
+            "ref": obj.get("ref"),
+            "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj
 

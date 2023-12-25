@@ -170,6 +170,9 @@ components:
         storage_namespace:
           type: string
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
+        read_only:
+          type: boolean
+          description: Whether the repository is a read-only repository- not relevant for bare repositories
 
     RepositoryMetadata:
       type: object
@@ -232,6 +235,10 @@ components:
           type: string
           example: "main"
         sample_data:
+          type: boolean
+          example: "true"
+          default: false
+        read_only:
           type: boolean
           example: "true"
           default: false
@@ -316,6 +323,9 @@ components:
         src_ref:
           type: string
           description: a reference, if empty uses the provided branch as ref
+        force:
+          type: boolean
+          default: false
 
     ObjectStageCreation:
       type: object
@@ -340,6 +350,9 @@ components:
         content_type:
           type: string
           description: Object media type
+        force:
+          type: boolean
+          default: false
 
     ObjectUserMetadata:
       type: object
@@ -471,6 +484,9 @@ components:
           enum: [object, common_prefix, reset]
         path:
           type: string
+        force:
+          type: boolean
+          default: false
 
     RevertCreation:
       type: object
@@ -484,6 +500,9 @@ components:
         parent_number:
           type: integer
           description: when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.
+        force:
+          type: boolean
+          default: false
 
     CherryPickCreation:
       type: object
@@ -498,6 +517,9 @@ components:
           description: |
             when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff.
             The destination branch is parent 1, which is the default behaviour.
+        force:
+          type: boolean
+          default: false
 
     Commit:
       type: object
@@ -558,6 +580,9 @@ components:
           description: set date to override creation date in the commit (Unix Epoch in seconds)
           type: integer
           format: int64
+        force:
+          type: boolean
+          default: false
 
     Merge:
       type: object
@@ -571,6 +596,9 @@ components:
         strategy:
           description: In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict
           type: string
+        force:
+          type: boolean
+          default: false
 
     BranchCreation:
       type: object
@@ -582,6 +610,9 @@ components:
           type: string
         source:
           type: string
+        force:
+          type: boolean
+          default: false
 
     TagCreation:
       type: object
@@ -596,6 +627,9 @@ components:
         ref:
           type: string
           description: the commit to tag
+        force:
+          type: boolean
+          default: false
 
     TaskInfo:
       type: object
@@ -657,6 +691,23 @@ components:
           type: string
         branches_meta_range_id:
           type: string
+
+    RefsRestore:
+      type: object
+      required:
+        - branches_meta_range_id
+        - tags_meta_range_id
+        - commits_meta_range_id
+      properties:
+        commits_meta_range_id:
+          type: string
+        tags_meta_range_id:
+          type: string
+        branches_meta_range_id:
+          type: string
+        force:
+          type: boolean
+          default: false
 
     StorageURI:
       description: URI to a path in a storage provider (e.g. "s3://bucket1/path/to/object")
@@ -1204,6 +1255,9 @@ components:
         content_type:
           type: string
           description: Object media type
+        force:
+          type: boolean
+          default: false
       required:
         - staging
         - checksum
@@ -1322,6 +1376,9 @@ components:
             $ref: "#/components/schemas/ImportLocation"
         commit:
           $ref: "#/components/schemas/CommitCreation"
+        force:
+          type: boolean
+          default: false
       example:
         paths:
           - path: s3://my-bucket/production/collections/
@@ -2424,6 +2481,13 @@ paths:
         - repositories
       operationId: deleteRepository
       summary: delete repository
+      parameters:
+        - in: query
+          name: force
+          schema:
+            type: boolean
+            default: false
+          description: Bypass read-only protection and delete the repository
       responses:
         204:
           description: repository deleted successfully
@@ -2721,7 +2785,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RefsDump"
+              $ref: "#/components/schemas/RefsRestore"
       responses:
         200:
           description: refs successfully loaded
@@ -2735,7 +2799,6 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-
 
   /repositories/{repository}/dump:
     parameters:
@@ -2810,7 +2873,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RefsDump"
+              $ref: "#/components/schemas/RefsRestore"
       responses:
         202:
           description: restore task created
@@ -2820,6 +2883,8 @@ paths:
                 $ref: "#/components/schemas/TaskInfo"
         400:
           $ref: "#/components/responses/ValidationError"
+        403:
+          $ref: "#/components/responses/Forbidden"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -2909,6 +2974,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         409:
@@ -2955,11 +3022,19 @@ paths:
         - tags
       operationId: deleteTag
       summary: delete tag
+      parameters:
+        - in: query
+          name: force
+          required: false
+          schema:
+            type: boolean
       responses:
         204:
           description: tag deleted successfully
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         420:
@@ -3020,6 +3095,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         409:
@@ -3188,6 +3265,13 @@ paths:
         - branches
       operationId: deleteBranch
       summary: delete branch
+      parameters:
+        - in: query
+          name: force
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         204:
           description: branch deleted successfully
@@ -3217,6 +3301,8 @@ paths:
           description: reset successful
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         420:
@@ -3254,6 +3340,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         409:
@@ -3301,6 +3389,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         409:
@@ -3757,6 +3847,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/ServerError"
         409:
@@ -3831,6 +3923,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         420:
@@ -3990,6 +4084,12 @@ paths:
           schema:
             type: string
             pattern: '^\*$' # Currently, only "*" is supported
+        - in: query
+          name: force
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         201:
           description: object metadata
@@ -4016,6 +4116,13 @@ paths:
         - objects
       operationId: deleteObject
       summary: delete object. Missing objects will not return a NotFound error.
+      parameters:
+        - in: query
+          name: force
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         204:
           description: object deleted successfully
@@ -4042,6 +4149,12 @@ paths:
         required: true
         schema:
           type: string
+      - in: query
+        name: force
+        required: false
+        schema:
+          type: boolean
+          default: false
     post:
       tags:
         - objects
@@ -4112,6 +4225,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         420:

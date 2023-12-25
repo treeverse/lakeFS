@@ -60,6 +60,10 @@ public class TagCreation {
   @SerializedName(SERIALIZED_NAME_REF)
   private String ref;
 
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
+
   public TagCreation() {
   }
 
@@ -102,6 +106,27 @@ public class TagCreation {
 
   public void setRef(String ref) {
     this.ref = ref;
+  }
+
+
+  public TagCreation force(Boolean force) {
+    
+    this.force = force;
+    return this;
+  }
+
+   /**
+   * Get force
+   * @return force
+  **/
+  @javax.annotation.Nullable
+  public Boolean getForce() {
+    return force;
+  }
+
+
+  public void setForce(Boolean force) {
+    this.force = force;
   }
 
   /**
@@ -160,13 +185,14 @@ public class TagCreation {
     }
     TagCreation tagCreation = (TagCreation) o;
     return Objects.equals(this.id, tagCreation.id) &&
-        Objects.equals(this.ref, tagCreation.ref)&&
+        Objects.equals(this.ref, tagCreation.ref) &&
+        Objects.equals(this.force, tagCreation.force)&&
         Objects.equals(this.additionalProperties, tagCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, ref, additionalProperties);
+    return Objects.hash(id, ref, force, additionalProperties);
   }
 
   @Override
@@ -175,6 +201,7 @@ public class TagCreation {
     sb.append("class TagCreation {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    ref: ").append(toIndentedString(ref)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -200,6 +227,7 @@ public class TagCreation {
     openapiFields = new HashSet<String>();
     openapiFields.add("id");
     openapiFields.add("ref");
+    openapiFields.add("force");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

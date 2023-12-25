@@ -79,6 +79,7 @@ docs/Ref.md
 docs/RefList.md
 docs/RefsApi.md
 docs/RefsDump.md
+docs/RefsRestore.md
 docs/RepositoriesApi.md
 docs/Repository.md
 docs/RepositoryCreation.md
@@ -196,6 +197,7 @@ lakefs_client/model/range_metadata.py
 lakefs_client/model/ref.py
 lakefs_client/model/ref_list.py
 lakefs_client/model/refs_dump.py
+lakefs_client/model/refs_restore.py
 lakefs_client/model/repository.py
 lakefs_client/model/repository_creation.py
 lakefs_client/model/repository_dump_status.py
@@ -306,6 +308,7 @@ test/test_ref.py
 test/test_ref_list.py
 test/test_refs_api.py
 test/test_refs_dump.py
+test/test_refs_restore.py
 test/test_repositories_api.py
 test/test_repository.py
 test/test_repository_creation.py

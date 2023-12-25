@@ -53,4 +53,12 @@ public class RevertCreationTest {
         // TODO: test parentNumber
     }
 
+    /**
+     * Test the property 'force'
+     */
+    @Test
+    public void forceTest() {
+        // TODO: test force
+    }
+
 }

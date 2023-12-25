@@ -40,7 +40,8 @@ class TestRevertCreation(unittest.TestCase):
         if include_optional :
             return RevertCreation(
                 ref = '', 
-                parent_number = 56
+                parent_number = 56, 
+                force = True
             )
         else :
             return RevertCreation(

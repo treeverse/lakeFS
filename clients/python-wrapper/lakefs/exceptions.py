@@ -2,6 +2,7 @@
 Exceptions module
 """
 import http
+import json
 from contextlib import contextmanager
 from typing import Optional, Callable
 
@@ -21,21 +22,25 @@ class ServerException(LakeFSException):
     """
     status_code: int
     reason: str
+    body: dict
 
-    def __init__(self, status=None, reason=None):
+    def __init__(self, status=None, reason=None, body=None):
         self.status_code = status
-        self.message = reason
+        self.reason = reason
+        if body is not None:
+            try:  # Try to get message from body
+                self.body = json.loads(body)
+            except ValueError:
+                pass
+
+    def __str__(self):
+        return f"code: {self.status_code}, reason: {self.reason}, body: {self.body}"
 
 
 class NotFoundException(ServerException):
     """
     Resource could not be found on lakeFS server
     """
-
-    def __init__(self, status=None, reason=None):
-        self.status_code = status
-        self.reason = reason
-        super().__init__(status, reason)
 
 
 class ForbiddenException(ServerException):
@@ -47,6 +52,12 @@ class ForbiddenException(ServerException):
 class NoAuthenticationFound(LakeFSException):
     """
     Raised when no authentication method could be found on Client instantiation
+    """
+
+
+class BadRequestException(ServerException):
+    """
+    Bad Request
     """
 
 
@@ -98,7 +109,14 @@ class ImportManagerException(LakeFSException):
     """
 
 
+class TransactionException(LakeFSException):
+    """
+    Exceptions during the transaction commit logic
+    """
+
+
 _STATUS_CODE_TO_EXCEPTION = {
+    http.HTTPStatus.BAD_REQUEST.value: BadRequestException,
     http.HTTPStatus.UNAUTHORIZED.value: NotAuthorizedException,
     http.HTTPStatus.FORBIDDEN.value: ForbiddenException,
     http.HTTPStatus.NOT_FOUND.value: NotFoundException,
@@ -120,7 +138,7 @@ def api_exception_handler(custom_handler: Optional[Callable[[LakeFSException], L
     try:
         yield
     except lakefs_sdk.ApiException as e:
-        lakefs_ex = _STATUS_CODE_TO_EXCEPTION.get(e.status, ServerException)(e.status, e.reason)
+        lakefs_ex = _STATUS_CODE_TO_EXCEPTION.get(e.status, ServerException)(e.status, e.reason, e.body)
         if custom_handler is not None:
             lakefs_ex = custom_handler(lakefs_ex)
 

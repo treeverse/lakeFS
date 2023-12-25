@@ -20,7 +20,7 @@ import json
 
 
 from typing import Optional
-from pydantic import BaseModel, Field, StrictInt, StrictStr
+from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr
 
 class CherryPickCreation(BaseModel):
     """
@@ -28,7 +28,8 @@ class CherryPickCreation(BaseModel):
     """
     ref: StrictStr = Field(..., description="the commit to cherry-pick, given by a ref")
     parent_number: Optional[StrictInt] = Field(None, description="when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff. The destination branch is parent 1, which is the default behaviour. ")
-    __properties = ["ref", "parent_number"]
+    force: Optional[StrictBool] = False
+    __properties = ["ref", "parent_number", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -67,7 +68,8 @@ class CherryPickCreation(BaseModel):
 
         _obj = CherryPickCreation.parse_obj({
             "ref": obj.get("ref"),
-            "parent_number": obj.get("parent_number")
+            "parent_number": obj.get("parent_number"),
+            "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj
 
