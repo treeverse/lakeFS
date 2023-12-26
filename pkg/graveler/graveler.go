@@ -2494,6 +2494,7 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 	for _, opt := range opts {
 		opt(options)
 	}
+	// cherry-pick demo
 	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
 	}
