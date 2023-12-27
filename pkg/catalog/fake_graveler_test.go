@@ -236,7 +236,7 @@ func (g *FakeGraveler) GetCommit(ctx context.Context, repository *graveler.Repos
 	panic("implement me")
 }
 
-func (g *FakeGraveler) IsImmutableReference(_ context.Context, _ *graveler.RepositoryID, _ graveler.Ref) (bool, error) {
+func (g *FakeGraveler) IsImmutableReference(_ context.Context, _ graveler.RepositoryID, _ graveler.Ref) (bool, error) {
 	panic("implement me")
 }
 
