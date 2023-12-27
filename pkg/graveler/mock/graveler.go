@@ -657,21 +657,6 @@ func (mr *MockVersionControllerMockRecorder) Import(ctx, repository, destination
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockVersionController)(nil).Import), varargs...)
 }
 
-// IsImmutableReference mocks base method.
-func (m *MockVersionController) IsImmutableReference(ctx context.Context, repository graveler.RepositoryID, ref graveler.Ref) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsImmutableReference", ctx, repository, ref)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsImmutableReference indicates an expected call of IsImmutableReference.
-func (mr *MockVersionControllerMockRecorder) IsImmutableReference(ctx, repository, ref interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsImmutableReference", reflect.TypeOf((*MockVersionController)(nil).IsImmutableReference), ctx, repository, ref)
-}
-
 // IsLinkAddressExpired mocks base method.
 func (m *MockVersionController) IsLinkAddressExpired(address *graveler.LinkAddressData) (bool, error) {
 	m.ctrl.T.Helper()

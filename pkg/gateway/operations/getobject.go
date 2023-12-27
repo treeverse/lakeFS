@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -110,7 +111,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(code))
 		return
 	}
-	canCache, err := o.Catalog.Store.IsImmutableReference(ctx, graveler.RepositoryID(o.Repository.Name), graveler.Ref(o.Reference))
+	canCache, err := isImmutableReference(ctx, o.Catalog.Store, o.Repository.Name, o.Reference)
 	if err != nil {
 		o.Log(req).WithError(err).Warn("could not check if reference is immutable")
 	} else if !canCache {
@@ -137,4 +138,16 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write response body for object")
 	}
+}
+
+func isImmutableReference(ctx context.Context, store catalog.Store, repositoryID string, ref string) (bool, error) {
+	repo, err := store.GetRepository(ctx, graveler.RepositoryID(repositoryID))
+	if err != nil {
+		return false, err
+	}
+	resolvedRef, err := store.Dereference(ctx, repo, graveler.Ref(ref))
+	if err != nil {
+		return false, err
+	}
+	return resolvedRef.BranchID == "", nil
 }

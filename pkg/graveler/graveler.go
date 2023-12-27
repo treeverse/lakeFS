@@ -551,9 +551,6 @@ type VersionController interface {
 	// GetCommit returns the Commit metadata object for the given CommitID
 	GetCommit(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (*Commit, error)
 
-	// IsImmutableReference returns true if the reference is immutable (commit/tag)
-	IsImmutableReference(ctx context.Context, repository RepositoryID, ref Ref) (bool, error)
-
 	// Dereference returns the resolved ref information based on 'ref' reference
 	Dereference(ctx context.Context, repository *RepositoryRecord, ref Ref) (*ResolvedRef, error)
 
@@ -1426,18 +1423,6 @@ func (g *Graveler) DeleteTag(ctx context.Context, repository *RepositoryRecord, 
 
 func (g *Graveler) ListTags(ctx context.Context, repository *RepositoryRecord) (TagIterator, error) {
 	return g.RefManager.ListTags(ctx, repository)
-}
-
-func (g *Graveler) IsImmutableReference(ctx context.Context, repositoryID RepositoryID, ref Ref) (bool, error) {
-	repo, err := g.GetRepository(ctx, repositoryID)
-	if err != nil {
-		return false, err
-	}
-	resolvedRef, err := g.Dereference(ctx, repo, ref)
-	if err != nil {
-		return false, err
-	}
-	return resolvedRef.BranchID == "", nil
 }
 
 func (g *Graveler) Dereference(ctx context.Context, repository *RepositoryRecord, ref Ref) (*ResolvedRef, error) {
