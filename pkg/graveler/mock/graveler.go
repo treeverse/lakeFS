@@ -2431,7 +2431,7 @@ func (m *MockCommittedManager) EXPECT() *MockCommittedManagerMockRecorder {
 // Commit mocks base method.
 func (m *MockCommittedManager) Commit(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator, allowEmpty bool, opts ...graveler.SetOptionsFunc) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, ns, baseMetaRangeID, changes}
+	varargs := []interface{}{ctx, ns, baseMetaRangeID, changes, allowEmpty}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
@@ -2443,9 +2443,9 @@ func (m *MockCommittedManager) Commit(ctx context.Context, ns graveler.StorageNa
 }
 
 // Commit indicates an expected call of Commit.
-func (mr *MockCommittedManagerMockRecorder) Commit(ctx, ns, baseMetaRangeID, changes interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) Commit(ctx, ns, baseMetaRangeID, changes, allowEmpty interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, ns, baseMetaRangeID, changes}, opts...)
+	varargs := append([]interface{}{ctx, ns, baseMetaRangeID, changes, allowEmpty}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockCommittedManager)(nil).Commit), varargs...)
 }
 

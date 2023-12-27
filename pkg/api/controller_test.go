@@ -1619,7 +1619,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", true)
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "a/b"}, graveler.WithForce(true)))
-		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, graveler.WithForce(true))
+		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, nil, graveler.WithForce(true))
 		testutil.Must(t, err)
 
 		const newBranchName = "main2"
@@ -1938,7 +1938,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repoName, onBlock(deps, "foo1"), "main", true)
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, repoName, "main", catalog.DBEntry{Path: "a/b"}, graveler.WithForce(true)))
-		_, err = deps.catalog.Commit(ctx, repoName, "main", "first commit", "test", nil, nil, nil, graveler.WithForce(true))
+		_, err = deps.catalog.Commit(ctx, repoName, "main", "first commit", "test", nil, nil, nil, nil, graveler.WithForce(true))
 		testutil.Must(t, err)
 
 		_, err = deps.catalog.CreateBranch(ctx, repoName, "main2", "main", graveler.WithForce(true))
@@ -3693,7 +3693,7 @@ func TestController_CreateTag(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepo, onBlock(deps, readOnlyRepo), "main", true)
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, readOnlyRepo, "main", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}, graveler.WithForce(true)))
-		commit1, err := deps.catalog.Commit(ctx, readOnlyRepo, "main", "some message", DefaultUserID, nil, nil, nil, graveler.WithForce(true))
+		commit1, err := deps.catalog.Commit(ctx, readOnlyRepo, "main", "some message", DefaultUserID, nil, nil, nil, nil, graveler.WithForce(true))
 		testutil.Must(t, err)
 		tagResp, err := clt.CreateTagWithResponse(ctx, readOnlyRepo, apigen.CreateTagJSONRequestBody{
 			Id:  "tag1",
@@ -3799,7 +3799,7 @@ func TestController_Revert(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepository, onBlock(deps, readOnlyRepository), "main", true)
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, readOnlyRepository, "main", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}, graveler.WithForce(true)))
-		_, err = deps.catalog.Commit(ctx, readOnlyRepository, "main", "some message", DefaultUserID, nil, nil, nil, graveler.WithForce(true))
+		_, err = deps.catalog.Commit(ctx, readOnlyRepository, "main", "some message", DefaultUserID, nil, nil, nil, nil, graveler.WithForce(true))
 		testutil.Must(t, err)
 		revertResp, err := clt.RevertBranchWithResponse(ctx, readOnlyRepository, "main", apigen.RevertBranchJSONRequestBody{Ref: "main"})
 		if revertResp.JSON403 == nil {
@@ -4001,7 +4001,7 @@ func TestController_CherryPick(t *testing.T) {
 			testutil.Must(t, err)
 		}
 		testutil.MustDo(t, "create entry bar2", deps.catalog.CreateEntry(ctx, readOnlyRepository, "branch1", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 2, Checksum: "cksum2"}, graveler.WithForce(true)))
-		_, err = deps.catalog.Commit(ctx, readOnlyRepository, "branch1", "message2", DefaultUserID, nil, nil, nil, graveler.WithForce(true))
+		_, err = deps.catalog.Commit(ctx, readOnlyRepository, "branch1", "message2", DefaultUserID, nil, nil, nil, nil, graveler.WithForce(true))
 		testutil.Must(t, err)
 
 		cherryResponse, err := clt.CherryPickWithResponse(ctx, readOnlyRepository, "dest-branch1", apigen.CherryPickJSONRequestBody{Ref: "branch1"})
