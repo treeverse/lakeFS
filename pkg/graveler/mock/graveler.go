@@ -658,7 +658,7 @@ func (mr *MockVersionControllerMockRecorder) Import(ctx, repository, destination
 }
 
 // IsImmutableReference mocks base method.
-func (m *MockVersionController) IsImmutableReference(ctx context.Context, repository *graveler.RepositoryRecord, ref graveler.Ref) (bool, error) {
+func (m *MockVersionController) IsImmutableReference(ctx context.Context, repository graveler.RepositoryID, ref graveler.Ref) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsImmutableReference", ctx, repository, ref)
 	ret0, _ := ret[0].(bool)
