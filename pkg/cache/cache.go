@@ -10,14 +10,21 @@ import (
 type JitterFn func() time.Duration
 type SetFn func() (v interface{}, err error)
 
+// SetWithExpiry is a function called to set a value in the cache.  It
+// returns the desired value and when to expire it from the cache.  The
+// cache default expiration value is used if it returns a zero expiration.
+type SetFnWithExpiry func() (v interface{}, expiry time.Duration, err error)
+
 type Cache interface {
 	GetOrSet(k interface{}, setFn SetFn) (v interface{}, err error)
+	GetOrSetWithExpiry(k interface{}, setFn SetFnWithExpiry) (v interface{}, err error)
 }
 
 type GetSetCache struct {
-	lru               *lru.Cache
-	computations      *ChanOnlyOne
-	defaultExpiryFunc func() time.Duration
+	lru          *lru.Cache
+	computations *ChanOnlyOne
+	expiry       time.Duration
+	jitterFn     JitterFn
 }
 
 func NewCache(size int, expiry time.Duration, jitterFn JitterFn) *GetSetCache {
@@ -25,24 +32,30 @@ func NewCache(size int, expiry time.Duration, jitterFn JitterFn) *GetSetCache {
 	return &GetSetCache{
 		lru:          c,
 		computations: NewChanOnlyOne(),
-		defaultExpiryFunc: func() time.Duration {
-			return expiry + jitterFn()
-		},
+		expiry:       expiry,
+		jitterFn:     jitterFn,
 	}
 }
 
 func (c *GetSetCache) GetOrSet(k interface{}, setFn SetFn) (v interface{}, err error) {
-	return c.GetOrSetWithExpiry(k, setFn, c.defaultExpiryFunc())
+	setFnWithDefaultExpiry := SetFnWithExpiry(func() (interface{}, time.Duration, error) {
+		v, err := setFn()
+		return v, 0, err
+	})
+	return c.GetOrSetWithExpiry(k, setFnWithDefaultExpiry)
 }
 
-func (c *GetSetCache) GetOrSetWithExpiry(k interface{}, setFn SetFn, expiry time.Duration) (v interface{}, err error) {
+func (c *GetSetCache) GetOrSetWithExpiry(k interface{}, setFn SetFnWithExpiry) (v interface{}, err error) {
 	if v, ok := c.lru.Get(k); ok {
 		return v, nil
 	}
 	return c.computations.Compute(k, func() (interface{}, error) {
-		v, err = setFn()
+		v, expiry, err := setFn()
 		if err != nil { // Don't cache errors
 			return nil, err
+		}
+		if expiry == 0 {
+			expiry = c.expiry + c.jitterFn()
 		}
 		c.lru.AddEx(k, v, expiry)
 		return v, nil

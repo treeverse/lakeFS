@@ -88,22 +88,24 @@ func TestCacheRace(t *testing.T) {
 // it was called.
 type Spy struct {
 	value  interface{}
+	expiry time.Duration
 	called bool
 }
 
-func NewSpy(value interface{}) *Spy {
+func NewSpy(value interface{}, expiry time.Duration) *Spy {
 	return &Spy{
 		value:  value,
+		expiry: expiry,
 		called: false,
 	}
 }
 
 // MakeSetFn returns a SetFn that remembers it was called and returns the
 // configured value.
-func (s *Spy) MakeSetFn() cache.SetFn {
-	return cache.SetFn(func() (interface{}, error) {
+func (s *Spy) MakeSetFn() cache.SetFnWithExpiry {
+	return cache.SetFnWithExpiry(func() (interface{}, time.Duration, error) {
 		s.called = true
-		return s.value, nil
+		return s.value, s.expiry, nil
 	})
 }
 
@@ -131,52 +133,54 @@ func TestCacheGetSetWithExpiry(t *testing.T) {
 
 	c := cache.NewCache(cacheSize, time.Millisecond, cache.NewJitterFn(time.Millisecond))
 
-	spy := NewSpy(value)
-	setFn := spy.MakeSetFn()
+	fastSpy := NewSpy(value, fastExpiry)
+	fastSetFn := fastSpy.MakeSetFn()
+	slowSpy := NewSpy(value, slowExpiry)
+	slowSetFn := slowSpy.MakeSetFn()
 
-	_, err := c.GetOrSetWithExpiry("long-lived", setFn, slowExpiry)
+	_, err := c.GetOrSetWithExpiry("long-lived", slowSetFn)
 	if err != nil {
 		t.Errorf("Failed to GetSet long-lived: %s", err)
 	}
-	if !spy.Called() {
+	if !slowSpy.Called() {
 		t.Error("Expected to call SetFn for long-lived")
 	}
-	spy.ResetCalled()
+	slowSpy.ResetCalled()
 
-	_, err = c.GetOrSetWithExpiry("short-lived", setFn, fastExpiry)
+	_, err = c.GetOrSetWithExpiry("short-lived", fastSetFn)
 	if err != nil {
 		t.Errorf("Failed to GetSet short-lived: %s", err)
 	}
-	if !spy.Called() {
+	if !fastSpy.Called() {
 		t.Error("Expected to call SetFn for short-lived")
 	}
-	spy.ResetCalled()
+	fastSpy.ResetCalled()
 
-	_, err = c.GetOrSetWithExpiry("short-lived", setFn, fastExpiry)
+	_, err = c.GetOrSetWithExpiry("short-lived", fastSetFn)
 	if err != nil {
 		t.Errorf("Failed to GetSet short-lived: %s", err)
 	}
-	if spy.Called() {
+	if fastSpy.Called() {
 		t.Error("Expected not to call SetFn for short-lived so soon after")
 	}
-	spy.ResetCalled()
+	fastSpy.ResetCalled()
 
 	time.Sleep(2 * fastExpiry)
-	_, err = c.GetOrSetWithExpiry("short-lived", setFn, fastExpiry)
+	_, err = c.GetOrSetWithExpiry("short-lived", fastSetFn)
 	if err != nil {
 		t.Errorf("Failed to GetSet short-lived: %s", err)
 	}
-	if !spy.Called() {
+	if !fastSpy.Called() {
 		t.Error("Expected to call SetFn after expiry for short-lived")
 	}
-	spy.ResetCalled()
+	fastSpy.ResetCalled()
 
-	_, err = c.GetOrSetWithExpiry("long-lived", setFn, slowExpiry)
+	_, err = c.GetOrSetWithExpiry("long-lived", slowSetFn)
 	if err != nil {
 		t.Errorf("Failed to GetSet long-lived: %s", err)
 	}
-	if spy.Called() {
+	if slowSpy.Called() {
 		t.Error("Expected not to call SetFn again for long-lived")
 	}
-	spy.ResetCalled()
+	slowSpy.ResetCalled()
 }
