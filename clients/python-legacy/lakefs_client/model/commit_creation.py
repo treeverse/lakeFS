@@ -85,6 +85,7 @@ class CommitCreation(ModelNormal):
             'message': (str,),  # noqa: E501
             'metadata': ({str: (str,)},),  # noqa: E501
             'date': (int,),  # noqa: E501
+            'allow_empty': (bool,),  # noqa: E501
             'force': (bool,),  # noqa: E501
         }
 
@@ -97,6 +98,7 @@ class CommitCreation(ModelNormal):
         'message': 'message',  # noqa: E501
         'metadata': 'metadata',  # noqa: E501
         'date': 'date',  # noqa: E501
+        'allow_empty': 'allow_empty',  # noqa: E501
         'force': 'force',  # noqa: E501
     }
 
@@ -146,6 +148,7 @@ class CommitCreation(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             metadata ({str: (str,)}): [optional]  # noqa: E501
             date (int): set date to override creation date in the commit (Unix Epoch in seconds). [optional]  # noqa: E501
+            allow_empty (bool): sets whether a commit can contain no changes. [optional] if omitted the server will use the default value of False  # noqa: E501
             force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
@@ -234,6 +237,7 @@ class CommitCreation(ModelNormal):
                                 _visited_composed_classes = (Animal,)
             metadata ({str: (str,)}): [optional]  # noqa: E501
             date (int): set date to override creation date in the commit (Unix Epoch in seconds). [optional]  # noqa: E501
+            allow_empty (bool): sets whether a commit can contain no changes. [optional] if omitted the server will use the default value of False  # noqa: E501
             force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 

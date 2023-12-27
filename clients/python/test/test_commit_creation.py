@@ -44,6 +44,7 @@ class TestCommitCreation(unittest.TestCase):
                     'key' : ''
                     }, 
                 var_date = 56, 
+                allow_empty = True, 
                 force = True
             )
         else :

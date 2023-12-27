@@ -81,6 +81,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
             "key": "key_example",
         },
         date=1,
+        allow_empty=False,
         force=False,
     ) # CommitCreation | 
     source_metarange = "source_metarange_example" # str | The source metarange to commit. Branch must not have uncommitted changes. (optional)

@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 **message** | **str** |  | 
 **metadata** | **{str: (str,)}** |  | [optional] 
 **date** | **int** | set date to override creation date in the commit (Unix Epoch in seconds) | [optional] 
+**allow_empty** | **bool** | sets whether a commit can contain no changes | [optional]  if omitted the server will use the default value of False
 **force** | **bool** |  | [optional]  if omitted the server will use the default value of False
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
