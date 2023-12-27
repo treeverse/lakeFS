@@ -110,7 +110,12 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(code))
 		return
 	}
-
+	canCache, err := o.Catalog.Store.IsImmutableReference(ctx, graveler.RepositoryID(o.Repository.Name), graveler.Ref(o.Reference))
+	if err != nil {
+		o.Log(req).WithError(err).Warn("could not check if reference is immutable")
+	} else if !canCache {
+		o.SetHeader(w, "Cache-Control", "no-cache")
+	}
 	o.SetHeader(w, "Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
 	o.SetHeader(w, "ETag", httputil.ETag(entry.Checksum))
 	o.SetHeader(w, "Content-Type", entry.ContentType)

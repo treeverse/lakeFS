@@ -236,6 +236,10 @@ func (g *FakeGraveler) GetCommit(ctx context.Context, repository *graveler.Repos
 	panic("implement me")
 }
 
+func (g *FakeGraveler) IsImmutableReference(_ context.Context, _ *graveler.RepositoryID, _ graveler.Ref) (bool, error) {
+	panic("implement me")
+}
+
 func (g *FakeGraveler) Dereference(ctx context.Context, repository *graveler.RepositoryRecord, ref graveler.Ref) (*graveler.ResolvedRef, error) {
 	panic("implement me")
 }
