@@ -64,7 +64,7 @@ See [testing documentation](https://github.com/treeverse/lakeFS/blob/master/clie
 
 ## Documentation
 
-[lakeFS Python SDK](http://pydocs-lakefs.lakefs.io/) 
+[lakeFS Python SDK](https://pydocs-lakefs.lakefs.io/) 
 
 ## Author
 
