@@ -168,6 +168,7 @@ type LogParams struct {
 	Limit         bool
 	FirstParent   bool
 	Since         *time.Time
+	StopAt        string
 }
 
 type ExpireResult struct {
@@ -1380,7 +1381,7 @@ func listCommitsWithoutPaths(it graveler.CommitIterator, params LogParams) ([]*C
 
 func foundAllCommits(params LogParams, commits []*CommitLog) bool {
 	return (params.Limit && len(commits) >= params.Amount) ||
-		len(commits) >= params.Amount+1
+		len(commits) >= params.Amount+1 || (len(commits) > 0 && commits[len(commits)-1].Reference == params.StopAt)
 }
 
 func CommitRecordToLog(val *graveler.CommitRecord) *CommitLog {

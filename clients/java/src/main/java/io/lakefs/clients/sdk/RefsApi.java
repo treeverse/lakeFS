@@ -538,7 +538,7 @@ public class RefsApi {
     public APIfindMergeBaseRequest findMergeBase(String repository, String sourceRef, String destinationBranch) {
         return new APIfindMergeBaseRequest(repository, sourceRef, destinationBranch);
     }
-    private okhttp3.Call logCommitsCall(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, Boolean firstParent, OffsetDateTime since, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call logCommitsCall(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, Boolean firstParent, OffsetDateTime since, String stopAt, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -593,6 +593,10 @@ public class RefsApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("since", since));
         }
 
+        if (stopAt != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("stop_at", stopAt));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -613,7 +617,7 @@ public class RefsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call logCommitsValidateBeforeCall(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, Boolean firstParent, OffsetDateTime since, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call logCommitsValidateBeforeCall(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, Boolean firstParent, OffsetDateTime since, String stopAt, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling logCommits(Async)");
@@ -624,20 +628,20 @@ public class RefsApi {
             throw new ApiException("Missing the required parameter 'ref' when calling logCommits(Async)");
         }
 
-        return logCommitsCall(repository, ref, after, amount, objects, prefixes, limit, firstParent, since, _callback);
+        return logCommitsCall(repository, ref, after, amount, objects, prefixes, limit, firstParent, since, stopAt, _callback);
 
     }
 
 
-    private ApiResponse<CommitList> logCommitsWithHttpInfo(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, Boolean firstParent, OffsetDateTime since) throws ApiException {
-        okhttp3.Call localVarCall = logCommitsValidateBeforeCall(repository, ref, after, amount, objects, prefixes, limit, firstParent, since, null);
+    private ApiResponse<CommitList> logCommitsWithHttpInfo(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, Boolean firstParent, OffsetDateTime since, String stopAt) throws ApiException {
+        okhttp3.Call localVarCall = logCommitsValidateBeforeCall(repository, ref, after, amount, objects, prefixes, limit, firstParent, since, stopAt, null);
         Type localVarReturnType = new TypeToken<CommitList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call logCommitsAsync(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, Boolean firstParent, OffsetDateTime since, final ApiCallback<CommitList> _callback) throws ApiException {
+    private okhttp3.Call logCommitsAsync(String repository, String ref, String after, Integer amount, List<String> objects, List<String> prefixes, Boolean limit, Boolean firstParent, OffsetDateTime since, String stopAt, final ApiCallback<CommitList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = logCommitsValidateBeforeCall(repository, ref, after, amount, objects, prefixes, limit, firstParent, since, _callback);
+        okhttp3.Call localVarCall = logCommitsValidateBeforeCall(repository, ref, after, amount, objects, prefixes, limit, firstParent, since, stopAt, _callback);
         Type localVarReturnType = new TypeToken<CommitList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -653,6 +657,7 @@ public class RefsApi {
         private Boolean limit;
         private Boolean firstParent;
         private OffsetDateTime since;
+        private String stopAt;
 
         private APIlogCommitsRequest(String repository, String ref) {
             this.repository = repository;
@@ -730,6 +735,16 @@ public class RefsApi {
         }
 
         /**
+         * Set stopAt
+         * @param stopAt Commit ID to stop at (optional)
+         * @return APIlogCommitsRequest
+         */
+        public APIlogCommitsRequest stopAt(String stopAt) {
+            this.stopAt = stopAt;
+            return this;
+        }
+
+        /**
          * Build call for logCommits
          * @param _callback ApiCallback API callback
          * @return Call to execute
@@ -745,7 +760,7 @@ public class RefsApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return logCommitsCall(repository, ref, after, amount, objects, prefixes, limit, firstParent, since, _callback);
+            return logCommitsCall(repository, ref, after, amount, objects, prefixes, limit, firstParent, since, stopAt, _callback);
         }
 
         /**
@@ -763,7 +778,7 @@ public class RefsApi {
          </table>
          */
         public CommitList execute() throws ApiException {
-            ApiResponse<CommitList> localVarResp = logCommitsWithHttpInfo(repository, ref, after, amount, objects, prefixes, limit, firstParent, since);
+            ApiResponse<CommitList> localVarResp = logCommitsWithHttpInfo(repository, ref, after, amount, objects, prefixes, limit, firstParent, since, stopAt);
             return localVarResp.getData();
         }
 
@@ -782,7 +797,7 @@ public class RefsApi {
          </table>
          */
         public ApiResponse<CommitList> executeWithHttpInfo() throws ApiException {
-            return logCommitsWithHttpInfo(repository, ref, after, amount, objects, prefixes, limit, firstParent, since);
+            return logCommitsWithHttpInfo(repository, ref, after, amount, objects, prefixes, limit, firstParent, since, stopAt);
         }
 
         /**
@@ -801,7 +816,7 @@ public class RefsApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<CommitList> _callback) throws ApiException {
-            return logCommitsAsync(repository, ref, after, amount, objects, prefixes, limit, firstParent, since, _callback);
+            return logCommitsAsync(repository, ref, after, amount, objects, prefixes, limit, firstParent, since, stopAt, _callback);
         }
     }
 

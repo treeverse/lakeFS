@@ -93,6 +93,7 @@ public class RefsApiTest {
         Boolean limit = null;
         Boolean firstParent = null;
         OffsetDateTime since = null;
+        String stopAt = null;
         CommitList response = api.logCommits(repository, ref)
                 .after(after)
                 .amount(amount)
@@ -101,6 +102,7 @@ public class RefsApiTest {
                 .limit(limit)
                 .firstParent(firstParent)
                 .since(since)
+                .stopAt(stopAt)
                 .execute();
         // TODO: test validations
     }

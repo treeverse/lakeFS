@@ -238,6 +238,7 @@ class RefsApi(object):
                     'limit',
                     'first_parent',
                     'since',
+                    'stop_at',
                 ],
                 'required': [
                     'repository',
@@ -280,6 +281,8 @@ class RefsApi(object):
                         (bool,),
                     'since':
                         (datetime,),
+                    'stop_at':
+                        (str,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
@@ -291,6 +294,7 @@ class RefsApi(object):
                     'limit': 'limit',
                     'first_parent': 'first_parent',
                     'since': 'since',
+                    'stop_at': 'stop_at',
                 },
                 'location_map': {
                     'repository': 'path',
@@ -302,6 +306,7 @@ class RefsApi(object):
                     'limit': 'query',
                     'first_parent': 'query',
                     'since': 'query',
+                    'stop_at': 'query',
                 },
                 'collection_format_map': {
                     'objects': 'multi',
@@ -567,6 +572,7 @@ class RefsApi(object):
             limit (bool): limit the number of items in return to 'amount'. Without further indication on actual number of items.. [optional]
             first_parent (bool): if set to true, follow only the first parent upon reaching a merge commit. [optional]
             since (datetime): Show commits more recent than a specific date-time. [optional]
+            stop_at (str): Commit ID to stop at. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

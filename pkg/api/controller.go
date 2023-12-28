@@ -3722,6 +3722,7 @@ func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, reposito
 		Limit:         swag.BoolValue(params.Limit),
 		FirstParent:   swag.BoolValue(params.FirstParent),
 		Since:         params.Since,
+		StopAt:        swag.StringValue(params.StopAt),
 	})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
