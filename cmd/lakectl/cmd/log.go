@@ -83,6 +83,7 @@ var logCmd = &cobra.Command{
 		firstParent := Must(cmd.Flags().GetBool("first-parent"))
 		objects := Must(cmd.Flags().GetStringSlice("objects"))
 		prefixes := Must(cmd.Flags().GetStringSlice("prefixes"))
+		stopAt := Must(cmd.Flags().GetString("stop-at"))
 
 		if slices.Contains(objects, "") {
 			Die("Objects list contains empty string!", 1)
@@ -104,6 +105,7 @@ var logCmd = &cobra.Command{
 			Amount:      apiutil.Ptr(apigen.PaginationAmount(amountForPagination)),
 			Limit:       &limit,
 			FirstParent: &firstParent,
+			StopAt:      &stopAt,
 		}
 		if len(objects) > 0 {
 			logCommitsParams.Objects = &objects
@@ -179,4 +181,5 @@ func init() {
 	logCmd.Flags().StringSlice("objects", nil, "show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together")
 	logCmd.Flags().StringSlice("prefixes", nil, "show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together")
 	logCmd.Flags().String("since", "", "show results since this date-time (RFC3339 format)")
+	logCmd.Flags().String("stop-at", "", "stop at this commit ID (included in results)")
 }
