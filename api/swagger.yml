@@ -3215,6 +3215,8 @@ paths:
       responses:
         204:
           description: reset successful
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
