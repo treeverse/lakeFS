@@ -3156,6 +3156,11 @@ paths:
           schema:
             type: string
             format: date-time
+        - in: query
+          name: stop_at
+          description: a reference to stop at
+          schema:
+            type: string
       responses:
         200:
           description: commit log

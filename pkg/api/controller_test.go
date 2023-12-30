@@ -390,13 +390,15 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 	testutil.Must(t, err)
 	const prefix = "foo/bar"
 	const totalCommits = 10
+	commits := make([]*catalog.CommitLog, totalCommits)
 	for i := 0; i < totalCommits; i++ {
 		n := strconv.Itoa(i + 1)
 		p := prefix + n
 		err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
 		testutil.MustDo(t, "create entry "+p, err)
-		_, err = deps.catalog.Commit(ctx, repo, "main", "commit"+n, "some_user", nil, nil, nil)
+		commit, err := deps.catalog.Commit(ctx, repo, "main", "commit"+n, "some_user", nil, nil, nil)
 		testutil.MustDo(t, "commit "+p, err)
+		commits[i] = commit
 	}
 
 	tests := []struct {
@@ -407,6 +409,7 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 		prefixes        []string
 		expectedCommits []string
 		expectedMore    bool
+		stopAt          string
 	}{
 		{
 			name:            "log",
@@ -471,6 +474,12 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 			expectedCommits: []string{"commit10", "commit1"},
 			expectedMore:    false,
 		},
+		{
+			name:            "stop_at",
+			expectedCommits: []string{"commit10", "commit9"},
+			expectedMore:    false,
+			stopAt:          commits[8].Reference,
+		},
 	}
 
 	for _, tt := range tests {
@@ -489,6 +498,9 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 			}
 			if tt.amount > 0 {
 				params.Amount = apiutil.Ptr(apigen.PaginationAmount(tt.amount))
+			}
+			if tt.stopAt != "" {
+				params.StopAt = &tt.stopAt
 			}
 
 			resp, err := clt.LogCommitsWithResponse(ctx, repo, "main", params)
