@@ -2986,6 +2986,14 @@ paths:
           format: date-time
           type: string
         style: form
+      - description: a reference to stop at
+        explode: true
+        in: query
+        name: stop_at
+        required: false
+        schema:
+          type: string
+        style: form
       responses:
         "200":
           content:

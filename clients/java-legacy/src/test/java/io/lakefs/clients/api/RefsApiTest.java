@@ -96,7 +96,8 @@ public class RefsApiTest {
         Boolean limit = null;
         Boolean firstParent = null;
         OffsetDateTime since = null;
-                CommitList response = api.logCommits(repository, ref, after, amount, objects, prefixes, limit, firstParent, since);
+        String stopAt = null;
+                CommitList response = api.logCommits(repository, ref, after, amount, objects, prefixes, limit, firstParent, since, stopAt);
         // TODO: test validations
     }
     
