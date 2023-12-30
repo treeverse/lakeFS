@@ -56,8 +56,8 @@ Cancelation: In order to cancel partial upload of multipart request, the client 
         schema:
           type: string
       - in: query
-        name: parts
-        description: number of parts required to upload
+        name: presigned_parts
+        description: number of presigned URL parts required to upload
         schema:
           type: integer
     post:
@@ -65,7 +65,7 @@ Cancelation: In order to cancel partial upload of multipart request, the client 
         - staging
       operationId: createMultipartUpload
       summary: Initiate a multipart upload
-      description: Initiates a multipart upload and returns an upload ID with presigned URLs for each part. Part numbers starts with 1. Each part minimum size is 5M.
+      description: Initiates a multipart upload and returns an upload ID with presigned URLs for each part. Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part).
       responses:
         200:
           description: Multipart upload initiated
@@ -213,3 +213,8 @@ The multipart upload support will be part of the storage capability add `pre_sig
 - **Presigning part:** Request for a presigned URL of a specific part number will not be supported. This will block unknown size upload using this API.
 - **Limited support:** Request for list upload parts will not be provided at this point.
 
+## Next steps
+
+None of the returned URLs has to be used, it is fine to ask for more than are needed.
+In future we may add an _additional_ API call to URLs for uploading more parts.
+This will allow more "streaming" uses, for instance as parallels to how Hadoop S3A uses the S3 MPU API and how the AWS SDKs upload manager handle streaming.
