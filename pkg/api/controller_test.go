@@ -390,7 +390,7 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 	testutil.Must(t, err)
 	const prefix = "foo/bar"
 	const totalCommits = 10
-	commitsMap := map[string]*catalog.CommitLog{}
+	commits := make([]*catalog.CommitLog, totalCommits)
 	for i := 0; i < totalCommits; i++ {
 		n := strconv.Itoa(i + 1)
 		p := prefix + n
@@ -398,7 +398,7 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 		testutil.MustDo(t, "create entry "+p, err)
 		commit, err := deps.catalog.Commit(ctx, repo, "main", "commit"+n, "some_user", nil, nil, nil)
 		testutil.MustDo(t, "commit "+p, err)
-		commitsMap["commit"+n] = commit
+		commits[i] = commit
 	}
 
 	tests := []struct {
@@ -478,7 +478,7 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 			name:            "stop_at",
 			expectedCommits: []string{"commit10", "commit9"},
 			expectedMore:    false,
-			stopAt:          commitsMap["commit9"].Reference,
+			stopAt:          commits[8].Reference,
 		},
 	}
 

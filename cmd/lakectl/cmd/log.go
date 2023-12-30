@@ -181,5 +181,5 @@ func init() {
 	logCmd.Flags().StringSlice("objects", nil, "show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together")
 	logCmd.Flags().StringSlice("prefixes", nil, "show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together")
 	logCmd.Flags().String("since", "", "show results since this date-time (RFC3339 format)")
-	logCmd.Flags().String("stop-at", "", "stop at this commit ID (included in results)")
+	logCmd.Flags().String("stop-at", "", "a Ref to stop at (included in results)")
 }

@@ -278,7 +278,7 @@ public class Example {
     Boolean limit = true; // Boolean | limit the number of items in return to 'amount'. Without further indication on actual number of items.
     Boolean firstParent = true; // Boolean | if set to true, follow only the first parent upon reaching a merge commit
     OffsetDateTime since = OffsetDateTime.now(); // OffsetDateTime | Show commits more recent than a specific date-time
-    String stopAt = "stopAt_example"; // String | Commit ID to stop at
+    String stopAt = "stopAt_example"; // String | a reference to stop at
     try {
       CommitList result = apiInstance.logCommits(repository, ref)
             .after(after)
@@ -315,7 +315,7 @@ public class Example {
 | **limit** | **Boolean**| limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. | [optional] |
 | **firstParent** | **Boolean**| if set to true, follow only the first parent upon reaching a merge commit | [optional] |
 | **since** | **OffsetDateTime**| Show commits more recent than a specific date-time | [optional] |
-| **stopAt** | **String**| Commit ID to stop at | [optional] |
+| **stopAt** | **String**| a reference to stop at | [optional] |
 
 ### Return type
 

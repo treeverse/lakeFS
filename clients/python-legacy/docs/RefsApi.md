@@ -331,7 +331,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     limit = True # bool | limit the number of items in return to 'amount'. Without further indication on actual number of items. (optional)
     first_parent = True # bool | if set to true, follow only the first parent upon reaching a merge commit (optional)
     since = dateutil_parser('1970-01-01T00:00:00.00Z') # datetime | Show commits more recent than a specific date-time (optional)
-    stop_at = "stop_at_example" # str | Commit ID to stop at (optional)
+    stop_at = "stop_at_example" # str | a reference to stop at (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -365,7 +365,7 @@ Name | Type | Description  | Notes
  **limit** | **bool**| limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. | [optional]
  **first_parent** | **bool**| if set to true, follow only the first parent upon reaching a merge commit | [optional]
  **since** | **datetime**| Show commits more recent than a specific date-time | [optional]
- **stop_at** | **str**| Commit ID to stop at | [optional]
+ **stop_at** | **str**| a reference to stop at | [optional]
 
 ### Return type
 

@@ -2986,7 +2986,7 @@ paths:
           format: date-time
           type: string
         style: form
-      - description: Commit ID to stop at
+      - description: a reference to stop at
         explode: true
         in: query
         name: stop_at

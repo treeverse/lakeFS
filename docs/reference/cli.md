@@ -2675,7 +2675,7 @@ lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg
       --prefixes strings     show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together
       --show-meta-range-id   also show meta range ID
       --since string         show results since this date-time (RFC3339 format)
-      --stop-at string       stop at this commit ID (included in results)
+      --stop-at string       a Ref to stop at (included in results)
 ```
 
 

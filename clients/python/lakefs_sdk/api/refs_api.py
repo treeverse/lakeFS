@@ -406,7 +406,7 @@ class RefsApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def log_commits(self, repository : StrictStr, ref : StrictStr, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, objects : Annotated[Optional[conlist(StrictStr)], Field(description="list of paths, each element is a path of a specific object")] = None, prefixes : Annotated[Optional[conlist(StrictStr)], Field(description="list of paths, each element is a path of a prefix")] = None, limit : Annotated[Optional[StrictBool], Field(description="limit the number of items in return to 'amount'. Without further indication on actual number of items.")] = None, first_parent : Annotated[Optional[StrictBool], Field(description="if set to true, follow only the first parent upon reaching a merge commit")] = None, since : Annotated[Optional[datetime], Field(description="Show commits more recent than a specific date-time")] = None, stop_at : Annotated[Optional[StrictStr], Field(description="Commit ID to stop at")] = None, **kwargs) -> CommitList:  # noqa: E501
+    def log_commits(self, repository : StrictStr, ref : StrictStr, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, objects : Annotated[Optional[conlist(StrictStr)], Field(description="list of paths, each element is a path of a specific object")] = None, prefixes : Annotated[Optional[conlist(StrictStr)], Field(description="list of paths, each element is a path of a prefix")] = None, limit : Annotated[Optional[StrictBool], Field(description="limit the number of items in return to 'amount'. Without further indication on actual number of items.")] = None, first_parent : Annotated[Optional[StrictBool], Field(description="if set to true, follow only the first parent upon reaching a merge commit")] = None, since : Annotated[Optional[datetime], Field(description="Show commits more recent than a specific date-time")] = None, stop_at : Annotated[Optional[StrictStr], Field(description="a reference to stop at")] = None, **kwargs) -> CommitList:  # noqa: E501
         """get commit log from ref. If both objects and prefixes are empty, return all commits.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -433,7 +433,7 @@ class RefsApi(object):
         :type first_parent: bool
         :param since: Show commits more recent than a specific date-time
         :type since: datetime
-        :param stop_at: Commit ID to stop at
+        :param stop_at: a reference to stop at
         :type stop_at: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
@@ -452,7 +452,7 @@ class RefsApi(object):
         return self.log_commits_with_http_info(repository, ref, after, amount, objects, prefixes, limit, first_parent, since, stop_at, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def log_commits_with_http_info(self, repository : StrictStr, ref : StrictStr, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, objects : Annotated[Optional[conlist(StrictStr)], Field(description="list of paths, each element is a path of a specific object")] = None, prefixes : Annotated[Optional[conlist(StrictStr)], Field(description="list of paths, each element is a path of a prefix")] = None, limit : Annotated[Optional[StrictBool], Field(description="limit the number of items in return to 'amount'. Without further indication on actual number of items.")] = None, first_parent : Annotated[Optional[StrictBool], Field(description="if set to true, follow only the first parent upon reaching a merge commit")] = None, since : Annotated[Optional[datetime], Field(description="Show commits more recent than a specific date-time")] = None, stop_at : Annotated[Optional[StrictStr], Field(description="Commit ID to stop at")] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def log_commits_with_http_info(self, repository : StrictStr, ref : StrictStr, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, objects : Annotated[Optional[conlist(StrictStr)], Field(description="list of paths, each element is a path of a specific object")] = None, prefixes : Annotated[Optional[conlist(StrictStr)], Field(description="list of paths, each element is a path of a prefix")] = None, limit : Annotated[Optional[StrictBool], Field(description="limit the number of items in return to 'amount'. Without further indication on actual number of items.")] = None, first_parent : Annotated[Optional[StrictBool], Field(description="if set to true, follow only the first parent upon reaching a merge commit")] = None, since : Annotated[Optional[datetime], Field(description="Show commits more recent than a specific date-time")] = None, stop_at : Annotated[Optional[StrictStr], Field(description="a reference to stop at")] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """get commit log from ref. If both objects and prefixes are empty, return all commits.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -479,7 +479,7 @@ class RefsApi(object):
         :type first_parent: bool
         :param since: Show commits more recent than a specific date-time
         :type since: datetime
-        :param stop_at: Commit ID to stop at
+        :param stop_at: a reference to stop at
         :type stop_at: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional

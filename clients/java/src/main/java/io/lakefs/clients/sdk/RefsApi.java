@@ -736,7 +736,7 @@ public class RefsApi {
 
         /**
          * Set stopAt
-         * @param stopAt Commit ID to stop at (optional)
+         * @param stopAt a reference to stop at (optional)
          * @return APIlogCommitsRequest
          */
         public APIlogCommitsRequest stopAt(String stopAt) {

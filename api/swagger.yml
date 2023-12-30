@@ -3158,7 +3158,7 @@ paths:
             format: date-time
         - in: query
           name: stop_at
-          description: Commit ID to stop at
+          description: a reference to stop at
           schema:
             type: string
       responses:
