@@ -174,7 +174,9 @@ components:
 ### Support and discover
 
 Presign support is a capability lakectl discover before switching to use presign for upload or download from lakeFS.
-The multipart upload support will be part of the storage capability add `pre_sign_support_parts` optional field that when set to `true` the user can perform multipart upload using the new API.
+The multipart upload support will be part of the storage capability add `multipart_upload_support` optional field that when set to `true` the user can perform multipart upload using the new API.
+The client will need to check also for `pre_sign_support` in order to request multipart upload with `presigned_parts`.
+Currently as we only support multipart upload for persigned configuration, the server will turn off multipart upload support when presigned is false.
 
 ```yaml
     StorageConfig:
