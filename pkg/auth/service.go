@@ -163,8 +163,11 @@ func (s *AuthService) ListKVPaged(ctx context.Context, protoType protoreflect.Me
 	p := &model.Paginator{}
 	for len(entries) < amount && it.Next() {
 		entry := it.Entry()
-		value := entry.Value
-		entries = append(entries, value)
+		// skip nil entries (deleted), kv can hold nil values
+		if entry == nil {
+			continue
+		}
+		entries = append(entries, entry.Value)
 		if len(entries) == amount {
 			p.NextPageToken = strings.TrimPrefix(string(entry.Key), string(prefix))
 			break

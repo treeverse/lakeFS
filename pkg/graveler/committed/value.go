@@ -53,7 +53,7 @@ func MarshalValue(v *graveler.Value) ([]byte, error) {
 	return ret, nil
 }
 
-// MustMarshalValue an MarshalValue that will panic on error
+// MustMarshalValue a MarshalValue that will panic on error
 func MustMarshalValue(v *graveler.Value) []byte {
 	val, err := MarshalValue(v)
 	if err != nil {
