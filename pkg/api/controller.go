@@ -2338,7 +2338,8 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ap
 	case entryTypeObject:
 		err = c.Catalog.ResetEntry(ctx, repository, branch, swag.StringValue(body.Path), graveler.WithForce(swag.BoolValue(body.Force)))
 	default:
-		writeError(w, r, http.StatusNotFound, "reset type not found")
+		writeError(w, r, http.StatusBadRequest, "unknown reset type")
+		return
 	}
 	if c.handleAPIError(ctx, w, r, err) {
 		return
