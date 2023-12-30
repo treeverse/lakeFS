@@ -87,6 +87,11 @@ Cancelation: In order to cancel partial upload of multipart request, the client 
         required: true
         schema:
           type: string
+      - in: path
+        name: uploadId
+        required: true
+        schema:
+          type: string
       - in: query
         name: path
         description: relative to the branch
