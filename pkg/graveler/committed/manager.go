@@ -75,7 +75,11 @@ func (c *committedManager) WriteRange(ctx context.Context, ns graveler.StorageNa
 	}()
 
 	for it.Next() {
-		record := *it.Value()
+		record := it.Value()
+		// skip nil value (kv can hold value nil) and tombstones
+		if record == nil || record.Value == nil {
+			continue
+		}
 		v, err := MarshalValue(record.Value)
 		if err != nil {
 			return nil, err
