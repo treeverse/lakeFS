@@ -16,7 +16,7 @@ This proposal outlines the development of Open API endpoints to enable multipart
 
 ## Features and Functionalities
 
-In order to minimaize the scope of this feature and understand the benefits before supporting all blockstores, this feature will be scoped to S3 blockstore and only if presigned capability is enabled.
+To minimize the scope of this feature and understand the benefits before supporting all blockstores, this feature will be scoped to S3 blockstore and only if presigned capability is enabled.
 
 Initiation of Upload: The API will allow clients to initiate a multipart upload session, assigning a unique upload ID for subsequent operations. The client will require pass the number of parts it requires and the call will provide a set of URLs to upload each part.
 
