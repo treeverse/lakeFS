@@ -212,7 +212,7 @@ Currently as we only support multipart upload for persigned configuration, the s
 
 ## Limitations
 
-- **S3 block adapter exclusive:** Uploading files in multiple parts (multipart upload) is only available when using the S3 block adapter. This feature isn't currently supported with other storage options.
+- **S3 block adapter exclusive:** Uploading files in multiple parts (multipart upload) is only available when using the S3 block adapter. This feature isn't currently supported with other storage options. This exclude tha multipart upload support we provide by our S3 gateway where we provide implementation above each storage.
 - **Part size and count restrictions:** There are limits on how you can split your file for upload:
     - **Maximum parts:** You can split your file into a maximum of 10000 parts.
     - **Minimum part size:** Each part must be at least 5MB in size. This is a temporary constraint and isn't currently configurable or discoverable. It will become an option when additional storage options are supported.
