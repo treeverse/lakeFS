@@ -1209,6 +1209,13 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 	if err != nil {
 		return nil, false, fmt.Errorf("branch ref: %w", err)
 	}
+	if params.StopAt != "" {
+		stopAtCommitID, err := c.dereferenceCommitID(ctx, repository, graveler.Ref(params.StopAt))
+		if err != nil {
+			return nil, false, fmt.Errorf("stop_at: %w", err)
+		}
+		params.StopAt = stopAtCommitID.String()
+	}
 	it, err := c.Store.Log(ctx, repository, commitID, params.FirstParent, params.Since)
 	if err != nil {
 		return nil, false, err

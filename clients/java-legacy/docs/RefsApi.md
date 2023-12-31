@@ -270,8 +270,8 @@ public class Example {
     List<String> prefixes = Arrays.asList(); // List<String> | list of paths, each element is a path of a prefix
     Boolean limit = true; // Boolean | limit the number of items in return to 'amount'. Without further indication on actual number of items.
     Boolean firstParent = true; // Boolean | if set to true, follow only the first parent upon reaching a merge commit
-    OffsetDateTime since = OffsetDateTime.now(); // OffsetDateTime | Show commits more recent than a specific date-time
-    String stopAt = "stopAt_example"; // String | a reference to stop at
+    OffsetDateTime since = OffsetDateTime.now(); // OffsetDateTime | Show commits more recent than a specific date-time. In case used with stop_at parameter, will stop at the first commit that meets any of the conditions.
+    String stopAt = "stopAt_example"; // String | A reference to stop at. In case used with since parameter, will stop at the first commit that meets any of the conditions.
     try {
       CommitList result = apiInstance.logCommits(repository, ref, after, amount, objects, prefixes, limit, firstParent, since, stopAt);
       System.out.println(result);
@@ -298,8 +298,8 @@ Name | Type | Description  | Notes
  **prefixes** | [**List&lt;String&gt;**](String.md)| list of paths, each element is a path of a prefix | [optional]
  **limit** | **Boolean**| limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. | [optional]
  **firstParent** | **Boolean**| if set to true, follow only the first parent upon reaching a merge commit | [optional]
- **since** | **OffsetDateTime**| Show commits more recent than a specific date-time | [optional]
- **stopAt** | **String**| a reference to stop at | [optional]
+ **since** | **OffsetDateTime**| Show commits more recent than a specific date-time. In case used with stop_at parameter, will stop at the first commit that meets any of the conditions. | [optional]
+ **stopAt** | **String**| A reference to stop at. In case used with since parameter, will stop at the first commit that meets any of the conditions. | [optional]
 
 ### Return type
 
