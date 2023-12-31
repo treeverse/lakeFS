@@ -14,6 +14,7 @@
     "serve": "vite preview",
     "test": "vitest run",
     "test-watch": "vitest",
+    "e2e:dev": "npx playwright test --project common --ui",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "typesync": "typesync"
   },

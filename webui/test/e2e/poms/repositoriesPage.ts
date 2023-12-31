@@ -4,13 +4,21 @@ export class RepositoriesPage {
     private page: Page;
 
     public noRepositoriesTitleLocator: Locator;
+    public readOnlyIndicatorLocator: Locator;
+    public uploadButtonLocator: Locator;
 
     constructor(page: Page) {
         this.page = page;
         this.noRepositoriesTitleLocator = this.page.getByText("Welcome to LakeFS!");
+        this.readOnlyIndicatorLocator = this.page.locator("text=Read-only");
+        this.uploadButtonLocator = this.page.locator("text=Upload Object");
     }
 
     async goto(): Promise<void> {
         await this.page.goto("/repositories");
+    }
+
+    async goToRepository(repoName: string): Promise<void> {
+        await this.page.click(`text=${repoName}`);
     }
 }
