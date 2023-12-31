@@ -1095,7 +1095,7 @@ jobs:
         env:
           BASE_URL: http://localhost:8000
         working-directory: webui
-        run: npx playwright test --project=${matrix.playwright-project}
+        run: npx playwright test --project=${{matrix.playwright-project}}
       - uses: actions/upload-artifact@v3
         if: (success() || failure())
         with:
@@ -1111,7 +1111,7 @@ jobs:
       - uses: actions/github-script@v6
         if: ${{ github.event_name == 'pull_request' && (success() || failure()) }}
         env:
-          PLAYWRIGHT_PROJECT: "DynamoDB Local - Local Block Adapter"
+          PLAYWRIGHT_PROJECT: "DynamoDB Local - Local Block Adapter - ${{matrix.playwright-project}}"
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
