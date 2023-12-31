@@ -121,17 +121,14 @@ df.write.format("delta").mode("overwrite").partitionBy("category", "country").sa
 Create `unity_exporter.lua`:
 
 ```lua
-local aws = require("aws")
 local formats = require("formats")
 local databricks = require("databricks")
 local delta_export = require("lakefs/catalogexport/delta_exporter")
 local unity_export = require("lakefs/catalogexport/unity_exporter")
 
-local sc = aws.s3_client(args.aws.access_key_id, args.aws.secret_access_key, args.aws.region)
-
 -- Export Delta Lake tables export:
 local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.region)
-local delta_table_locations = delta_export.export_delta_log(action, args.table_defs, sc.put_object, delta_client, "_lakefs_tables")
+local delta_table_locations = delta_export.export_delta_log(action, args.table_defs, delta_client, "_lakefs_tables")
 
 -- Register the exported table in Unity Catalog:
 local databricks_client = databricks.client(args.databricks_host, args.databricks_token)
@@ -167,10 +164,6 @@ hooks:
     properties:
       script_path: scripts/unity_exporter.lua
       args:
-        aws:
-          access_key_id: <AWS_ACCESS_KEY_ID>
-          secret_access_key: <AWS_SECRET_ACCESS_KEY>
-          region: <AWS_REGION>
         lakefs: # provide credentials of a user that has access to the script and Delta Table
           access_key_id: <LAKEFS_ACCESS_KEY_ID> 
           secret_access_key: <LAKEFS_SECRET_ACCESS_KEY>
