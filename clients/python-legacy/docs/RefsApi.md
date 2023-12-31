@@ -330,8 +330,8 @@ with lakefs_client.ApiClient(configuration) as api_client:
     ] # [str] | list of paths, each element is a path of a prefix (optional)
     limit = True # bool | limit the number of items in return to 'amount'. Without further indication on actual number of items. (optional)
     first_parent = True # bool | if set to true, follow only the first parent upon reaching a merge commit (optional)
-    since = dateutil_parser('1970-01-01T00:00:00.00Z') # datetime | Show commits more recent than a specific date-time (optional)
-    stop_at = "stop_at_example" # str | a reference to stop at (optional)
+    since = dateutil_parser('1970-01-01T00:00:00.00Z') # datetime | Show commits more recent than a specific date-time. In case used with stop_at parameter, will stop at the first commit that meets any of the conditions. (optional)
+    stop_at = "stop_at_example" # str | A reference to stop at. In case used with since parameter, will stop at the first commit that meets any of the conditions. (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -364,8 +364,8 @@ Name | Type | Description  | Notes
  **prefixes** | **[str]**| list of paths, each element is a path of a prefix | [optional]
  **limit** | **bool**| limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. | [optional]
  **first_parent** | **bool**| if set to true, follow only the first parent upon reaching a merge commit | [optional]
- **since** | **datetime**| Show commits more recent than a specific date-time | [optional]
- **stop_at** | **str**| a reference to stop at | [optional]
+ **since** | **datetime**| Show commits more recent than a specific date-time. In case used with stop_at parameter, will stop at the first commit that meets any of the conditions. | [optional]
+ **stop_at** | **str**| A reference to stop at. In case used with since parameter, will stop at the first commit that meets any of the conditions. | [optional]
 
 ### Return type
 

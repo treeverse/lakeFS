@@ -410,8 +410,8 @@ public class RefsApi {
      * @param prefixes list of paths, each element is a path of a prefix (optional)
      * @param limit limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. (optional)
      * @param firstParent if set to true, follow only the first parent upon reaching a merge commit (optional)
-     * @param since Show commits more recent than a specific date-time (optional)
-     * @param stopAt a reference to stop at (optional)
+     * @param since Show commits more recent than a specific date-time. In case used with stop_at parameter, will stop at the first commit that meets any of the conditions. (optional)
+     * @param stopAt A reference to stop at. In case used with since parameter, will stop at the first commit that meets any of the conditions. (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -519,8 +519,8 @@ public class RefsApi {
      * @param prefixes list of paths, each element is a path of a prefix (optional)
      * @param limit limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. (optional)
      * @param firstParent if set to true, follow only the first parent upon reaching a merge commit (optional)
-     * @param since Show commits more recent than a specific date-time (optional)
-     * @param stopAt a reference to stop at (optional)
+     * @param since Show commits more recent than a specific date-time. In case used with stop_at parameter, will stop at the first commit that meets any of the conditions. (optional)
+     * @param stopAt A reference to stop at. In case used with since parameter, will stop at the first commit that meets any of the conditions. (optional)
      * @return CommitList
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -549,8 +549,8 @@ public class RefsApi {
      * @param prefixes list of paths, each element is a path of a prefix (optional)
      * @param limit limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. (optional)
      * @param firstParent if set to true, follow only the first parent upon reaching a merge commit (optional)
-     * @param since Show commits more recent than a specific date-time (optional)
-     * @param stopAt a reference to stop at (optional)
+     * @param since Show commits more recent than a specific date-time. In case used with stop_at parameter, will stop at the first commit that meets any of the conditions. (optional)
+     * @param stopAt A reference to stop at. In case used with since parameter, will stop at the first commit that meets any of the conditions. (optional)
      * @return ApiResponse&lt;CommitList&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -580,8 +580,8 @@ public class RefsApi {
      * @param prefixes list of paths, each element is a path of a prefix (optional)
      * @param limit limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. (optional)
      * @param firstParent if set to true, follow only the first parent upon reaching a merge commit (optional)
-     * @param since Show commits more recent than a specific date-time (optional)
-     * @param stopAt a reference to stop at (optional)
+     * @param since Show commits more recent than a specific date-time. In case used with stop_at parameter, will stop at the first commit that meets any of the conditions. (optional)
+     * @param stopAt A reference to stop at. In case used with since parameter, will stop at the first commit that meets any of the conditions. (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object

@@ -726,7 +726,7 @@ public class RefsApi {
 
         /**
          * Set since
-         * @param since Show commits more recent than a specific date-time (optional)
+         * @param since Show commits more recent than a specific date-time. In case used with stop_at parameter, will stop at the first commit that meets any of the conditions. (optional)
          * @return APIlogCommitsRequest
          */
         public APIlogCommitsRequest since(OffsetDateTime since) {
@@ -736,7 +736,7 @@ public class RefsApi {
 
         /**
          * Set stopAt
-         * @param stopAt a reference to stop at (optional)
+         * @param stopAt A reference to stop at. In case used with since parameter, will stop at the first commit that meets any of the conditions. (optional)
          * @return APIlogCommitsRequest
          */
         public APIlogCommitsRequest stopAt(String stopAt) {
