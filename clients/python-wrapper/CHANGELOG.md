@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+:bug: Bugs fixed:
+
+- Fix transaction cleanup (#7227)
+
 ## v0.2.0
 
 :new: What's new:

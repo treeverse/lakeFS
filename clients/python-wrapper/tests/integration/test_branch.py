@@ -123,6 +123,13 @@ def test_transaction(setup_repo):
     log = list(test_branch.log(amount=1))
     assert log[0].message == f"Merge transaction {tx_id} to branch"
 
+    # Verify transaction branch is deleted when no changes are made
+    with test_branch.transact(commit_message="my transaction") as tx:
+        pass
+
+    with expect_exception_context(NotFoundException):
+        tx.get_commit()
+
 
 def test_transaction_failure(setup_repo):
     _, repo = setup_repo

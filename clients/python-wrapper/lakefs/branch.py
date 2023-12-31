@@ -356,11 +356,10 @@ class Transaction:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
-            if len(list(self._tx.uncommitted(amount=1))) == 0:
-                return  # Do nothing if tx is empty
-
-            self._tx_branch.commit(message=self._tx.commit_message, metadata=self._tx.commit_metadata)
-            self._tx_branch.merge_into(self._source_branch, message=f"Merge transaction {self._tx.id} to branch")
-            self._tx_branch.delete()
+            if len(list(self._tx.uncommitted(amount=1))) > 0:
+                self._tx_branch.commit(message=self._tx.commit_message, metadata=self._tx.commit_metadata)
+                self._tx_branch.merge_into(self._source_branch, message=f"Merge transaction {self._tx.id} to branch")
         except LakeFSException as e:
             raise TransactionException(f"Failed committing transaction {self._tx.id}: {e}") from e
+
+        self._tx_branch.delete()
