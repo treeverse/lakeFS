@@ -1033,6 +1033,12 @@ jobs:
       - login-to-amazon-ecr
     runs-on: ubuntu-latest-8-cores
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        playwright-project:
+          - common
+          - readonly
     services:
       dynamodb:
         image: amazon/dynamodb-local:1.13.6
@@ -1089,7 +1095,7 @@ jobs:
         env:
           BASE_URL: http://localhost:8000
         working-directory: webui
-        run: npx playwright test --project=common
+        run: npx playwright test --project=${matrix.playwright-project}
       - uses: actions/upload-artifact@v3
         if: (success() || failure())
         with:
