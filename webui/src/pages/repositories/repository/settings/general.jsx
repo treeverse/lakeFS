@@ -97,7 +97,7 @@ const SettingsContainer = () => {
                     <Form.Label column md={{span:3}} className="mb-3">
                         Read-only
                     </Form.Label>
-                    <Col md={{span:4}}>
+                    <Col md={{span:4}} style={{paddingTop: 8 }}>
                         <Form.Check checked={repo?.read_only} disabled={true} type="checkbox"/>
                     </Col>
                 </Row>
