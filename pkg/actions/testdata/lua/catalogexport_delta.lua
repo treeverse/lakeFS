@@ -185,9 +185,9 @@ end
 local delta_table_locations = delta_export.export_delta_log(
         action,
         test_table_names,
-        mock_object_writer,
         mock_delta_client(test_data.table_logs_content),
-        "some_path"
+        "some_path",
+        mock_object_writer
 )
 
 -- Test results

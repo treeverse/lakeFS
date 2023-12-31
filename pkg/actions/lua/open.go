@@ -2,7 +2,6 @@ package lua
 
 import (
 	"context"
-
 	"github.com/Shopify/go-lua"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/aes"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/hmac"
@@ -14,6 +13,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/parquet"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/yaml"
 	"github.com/treeverse/lakefs/pkg/actions/lua/formats"
+	"github.com/treeverse/lakefs/pkg/actions/lua/lakefs/block_adapter"
 	"github.com/treeverse/lakefs/pkg/actions/lua/net/http"
 	"github.com/treeverse/lakefs/pkg/actions/lua/net/url"
 	"github.com/treeverse/lakefs/pkg/actions/lua/path"
@@ -49,6 +49,7 @@ func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	url.Open(l)
 	formats.Open(l, ctx, cfg.LakeFSAddr)
 	databricks.Open(l, ctx)
+	block_adapter.Open(l, cfg.BlockStore)
 	if cfg.NetHTTPEnabled {
 		http.Open(l)
 	}

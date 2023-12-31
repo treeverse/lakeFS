@@ -5,6 +5,9 @@ local utils = require("lakefs/catalogexport/internal")
 local extractor = require("lakefs/catalogexport/table_extractor")
 local strings = require("strings")
 local url = require("net/url")
+
+local block_adapter = require("lakefs/block_adapter")
+
 --[[
     delta_log_entry_key_generator returns a closure that returns a Delta Lake version key according to the Delta Lake
     protocol: https://github.com/delta-io/delta/blob/master/PROTOCOL.md#delta-log-entries
@@ -42,7 +45,7 @@ end
         - get_table: function(repo, ref, prefix)
 
 ]]
-local function export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path)
+local function export_delta_log(action, table_def_names, delta_client, table_descriptors_path, write_object)
     local repo = action.repository_id
     local commit_id = action.commit_id
     if not commit_id then
@@ -52,6 +55,7 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
     if ns == nil then
         error("failed getting storage namespace for repo " .. repo)
     end
+    local block_adapter_client = block_adapter.new(ns)
     local response = {}
     for _, table_name_yaml in ipairs(table_def_names) do
 
@@ -149,8 +153,16 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
             for _, content_entry in ipairs(table_entry) do
                 table_entry_string = table_entry_string .. content_entry
             end
-            local version_key = storage_props.key .. "/" .. entry_version
-            write_object(storage_props.bucket, version_key, table_entry_string)
+            if not write_object then
+                local key_uri_prefix = utils.get_key_uri_prefix(commit_id, action)
+                block_adapter_client.put_object(
+                        pathlib.join("/", key_uri_prefix, table_name, "_delta_log", entry_version),
+                        table_entry_string
+                )
+            else
+                local version_key = storage_props.key .. "/" .. entry_version
+                write_object(storage_props.bucket, version_key, table_entry_string)
+            end
         end
         response[table_name_yaml] = table_physical_path
     end
