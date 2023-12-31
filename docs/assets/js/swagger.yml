@@ -3152,13 +3152,13 @@ paths:
             type: boolean
         - in: query
           name: since
-          description: Show commits more recent than a specific date-time
+          description: Show commits more recent than a specific date-time. In case used with stop_at parameter, will stop at the first commit that meets any of the conditions.
           schema:
             type: string
             format: date-time
         - in: query
           name: stop_at
-          description: a reference to stop at
+          description: A reference to stop at. In case used with since parameter, will stop at the first commit that meets any of the conditions.
           schema:
             type: string
       responses:

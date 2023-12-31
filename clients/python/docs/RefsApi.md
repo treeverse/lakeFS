@@ -322,8 +322,8 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     prefixes = ['prefixes_example'] # List[str] | list of paths, each element is a path of a prefix (optional)
     limit = True # bool | limit the number of items in return to 'amount'. Without further indication on actual number of items. (optional)
     first_parent = True # bool | if set to true, follow only the first parent upon reaching a merge commit (optional)
-    since = '2013-10-20T19:20:30+01:00' # datetime | Show commits more recent than a specific date-time (optional)
-    stop_at = 'stop_at_example' # str | a reference to stop at (optional)
+    since = '2013-10-20T19:20:30+01:00' # datetime | Show commits more recent than a specific date-time. In case used with stop_at parameter, will stop at the first commit that meets any of the conditions. (optional)
+    stop_at = 'stop_at_example' # str | A reference to stop at. In case used with since parameter, will stop at the first commit that meets any of the conditions. (optional)
 
     try:
         # get commit log from ref. If both objects and prefixes are empty, return all commits.
@@ -349,8 +349,8 @@ Name | Type | Description  | Notes
  **prefixes** | [**List[str]**](str.md)| list of paths, each element is a path of a prefix | [optional] 
  **limit** | **bool**| limit the number of items in return to &#39;amount&#39;. Without further indication on actual number of items. | [optional] 
  **first_parent** | **bool**| if set to true, follow only the first parent upon reaching a merge commit | [optional] 
- **since** | **datetime**| Show commits more recent than a specific date-time | [optional] 
- **stop_at** | **str**| a reference to stop at | [optional] 
+ **since** | **datetime**| Show commits more recent than a specific date-time. In case used with stop_at parameter, will stop at the first commit that meets any of the conditions. | [optional] 
+ **stop_at** | **str**| A reference to stop at. In case used with since parameter, will stop at the first commit that meets any of the conditions. | [optional] 
 
 ### Return type
 
