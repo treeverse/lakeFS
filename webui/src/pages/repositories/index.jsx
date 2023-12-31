@@ -8,6 +8,7 @@ import InputGroup from "react-bootstrap/InputGroup";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Modal from "react-bootstrap/Modal";
 import Spinner from "react-bootstrap/Spinner";
+import Stack from "react-bootstrap/Stack";
 
 import {RepoIcon, SearchIcon} from "@primer/octicons-react";
 import dayjs from "dayjs";
@@ -21,6 +22,7 @@ import {Paginator} from "../../lib/components/pagination";
 import Container from "react-bootstrap/Container";
 import {Link} from "../../lib/components/nav";
 import {useRouter} from "../../lib/hooks/router";
+import {ReadOnlyBadge} from "../../lib/components/badges";
 
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
@@ -146,18 +148,21 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo
     return (
         <div>
             {results.map(repo => (
-                <Row key={repo.id}>
+                <Row key={repo.id} className="repository-item">
                     <Col className={"mb-2 mt-2"}>
                         <Card>
                             <Card.Body>
-                                <h5>
-                                    <Link href={{
-                                        pathname: `/repositories/:repoId/objects`,
-                                        params: {repoId: repo.id}
-                                    }}>
-                                        {repo.id}
-                                    </Link>
-                                </h5>
+                                <Stack direction="horizontal" gap={2} className="d-flex align-items-center">
+                                    <h5>
+                                        <Link href={{
+                                            pathname: `/repositories/:repoId/objects`,
+                                            params: {repoId: repo.id}
+                                        }}>
+                                            {repo.id}
+                                        </Link>
+                                    </h5>
+                                    <ReadOnlyBadge readOnly={repo?.read_only} style={{ marginBottom: 5 }} />
+                                </Stack>
                                 <p>
                                     <small>
                                         created at <code>{dayjs.unix(repo.creation_date).toISOString()}</code> ({dayjs.unix(repo.creation_date).fromNow()})<br/>

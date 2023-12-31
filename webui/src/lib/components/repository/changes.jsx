@@ -69,7 +69,7 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
     if (itemType.response === TreeItemType.Object) {
         return <>
             <ObjectTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo}
-                                depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} repo={repo}
+                                depth={depth === 0 ? 0 : depth + 1} onRevert={!repo?.read_only ? onRevert : null} repo={repo}
                                 diffExpanded={diffExpanded} onClickExpandDiff={() => setDiffExpanded(!diffExpanded)}/>
             {diffExpanded && <tr key={"row-" + entry.path} className={"leaf-entry-row"}>
                 <td className="objects-diff" colSpan={4}>

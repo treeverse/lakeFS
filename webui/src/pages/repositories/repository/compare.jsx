@@ -163,7 +163,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                     {(compareReference.type === RefTypeBranch && reference.type === RefTypeBranch) &&
                         <MergeButton
                             repo={repo}
-                            disabled={((compareReference.id === reference.id) || emptyDiff)}
+                            disabled={((compareReference.id === reference.id) || emptyDiff || repo?.read_only)}
                             source={compareReference.id}
                             dest={reference.id}
                             onDone={refresh}

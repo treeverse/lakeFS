@@ -93,9 +93,17 @@ const SettingsContainer = () => {
                         <Form.Control readOnly value={repo.default_branch} type="text"/>
                     </Col>
                 </Row>
+                <Row>
+                    <Form.Label column md={{span:3}} className="mb-3">
+                        Read-only
+                    </Form.Label>
+                    <Col md={{span:4}}>
+                        <Form.Check checked={repo?.read_only} disabled={true} type="checkbox"/>
+                    </Col>
+                </Row>
             </Container>
 
-            <Button variant="danger" className="mt-3" onClick={() => setShowDeleteModal(!showingDeleteModal)}>
+            <Button variant="danger" className="mt-3" disabled={repo?.read_only} onClick={() => setShowDeleteModal(!showingDeleteModal)}>
                 <TrashIcon/> Delete Repository
             </Button>
 
