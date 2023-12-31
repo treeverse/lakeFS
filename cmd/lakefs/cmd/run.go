@@ -204,6 +204,7 @@ var runCmd = &cobra.Command{
 			bufferedCollector,
 			actions.Config(cfg.Actions),
 			cfg.ListenAddress,
+			blockStore,
 		)
 
 		// wire actions into entry catalog

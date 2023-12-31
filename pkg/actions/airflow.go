@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/block"
 	"net/http"
 	"net/url"
 	"path"
@@ -56,7 +57,7 @@ var (
 	errAirflowHookDAGFailed     = errors.New("airflow hook DAG failed")
 )
 
-func NewAirflowHook(h ActionHook, action *Action, cfg Config, endpoint *http.Server, _ string, _ stats.Collector) (Hook, error) {
+func NewAirflowHook(h ActionHook, action *Action, cfg Config, endpoint *http.Server, _ string, _ stats.Collector, _ block.Adapter) (Hook, error) {
 	airflowHook := Airflow{
 		HookBase: HookBase{
 			ID:         h.ID,

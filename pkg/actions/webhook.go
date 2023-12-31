@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/block"
 	"net/http"
 	"net/http/httputil"
 	"time"
@@ -36,7 +37,7 @@ var (
 	errWebhookWrongFormat   = errors.New("webhook wrong format")
 )
 
-func NewWebhook(h ActionHook, action *Action, cfg Config, e *http.Server, _ string, _ stats.Collector) (Hook, error) {
+func NewWebhook(h ActionHook, action *Action, cfg Config, e *http.Server, _ string, _ stats.Collector, _ block.Adapter) (Hook, error) {
 	url, ok := h.Properties[webhookURLPropertyKey]
 	if !ok {
 		return nil, fmt.Errorf("missing url: %w", errWebhookWrongFormat)

@@ -2,6 +2,7 @@ package lua
 
 import (
 	"context"
+	"github.com/treeverse/lakefs/pkg/block"
 	"io"
 	"runtime"
 	"strconv"
@@ -351,6 +352,7 @@ func BaseOpen(buf io.StringWriter) glua.Function {
 type OpenSafeConfig struct {
 	NetHTTPEnabled bool
 	LakeFSAddr     string // The domain (or "authority:port") that lakeFS listens to
+	BlockStore     block.Adapter
 }
 
 func OpenSafe(l *glua.State, ctx context.Context, cfg OpenSafeConfig, buf io.StringWriter) {

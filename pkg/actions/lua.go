@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/block"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -31,6 +32,7 @@ type LuaHook struct {
 	Args          map[string]interface{}
 	collector     stats.Collector
 	serverAddress string
+	blockStore    block.Adapter
 }
 
 func applyRecord(l *lua.State, actionName, hookID string, record graveler.HookRecord) {
@@ -93,6 +95,7 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 	osc := lualibs.OpenSafeConfig{
 		NetHTTPEnabled: h.Config.Lua.NetHTTPEnabled,
 		LakeFSAddr:     h.serverAddress,
+		BlockStore:     h.blockStore,
 	}
 	lualibs.OpenSafe(l, ctx, osc, &loggingBuffer{buf: buf, ctx: ctx})
 	injectHookContext(l, ctx, user, h.Endpoint, h.Args)
@@ -196,7 +199,7 @@ func DescendArgs(args interface{}, getter EnvGetter) (interface{}, error) {
 	}
 }
 
-func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, serverAddress string, collector stats.Collector) (Hook, error) {
+func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, serverAddress string, collector stats.Collector, blockStore block.Adapter) (Hook, error) {
 	// optional args
 	args := make(map[string]interface{})
 	argsVal, hasArgs := h.Properties["args"]
@@ -234,9 +237,10 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, server
 				Config:     cfg,
 				Endpoint:   e,
 			},
-			Script:    script,
-			Args:      args,
-			collector: collector,
+			Script:     script,
+			Args:       args,
+			collector:  collector,
+			blockStore: blockStore,
 		}, nil
 	} else if !errors.Is(err, errMissingKey) {
 		// 'script' was provided but is empty or of the wrong type.
@@ -262,5 +266,6 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, server
 		Args:          args,
 		collector:     collector,
 		serverAddress: serverAddress,
+		blockStore:    blockStore,
 	}, nil
 }

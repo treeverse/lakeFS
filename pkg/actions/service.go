@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/block"
 	"net/http"
 	"sync"
 	"time"
@@ -63,6 +64,7 @@ type StoreService struct {
 	cfg           Config
 	endpoint      *http.Server
 	serverAddress string
+	blockStore    block.Adapter
 }
 
 type Task struct {
@@ -218,7 +220,7 @@ type Service interface {
 	graveler.HooksHandler
 }
 
-func NewService(ctx context.Context, store Store, source Source, writer OutputWriter, idGen IDGenerator, stats stats.Collector, cfg Config, serverAddress string) *StoreService {
+func NewService(ctx context.Context, store Store, source Source, writer OutputWriter, idGen IDGenerator, stats stats.Collector, cfg Config, serverAddress string, blockStore block.Adapter) *StoreService {
 	ctx, cancel := context.WithCancel(ctx)
 	return &StoreService{
 		Store:         store,
@@ -231,6 +233,7 @@ func NewService(ctx context.Context, store Store, source Source, writer OutputWr
 		stats:         stats,
 		cfg:           cfg,
 		serverAddress: serverAddress,
+		blockStore:    blockStore,
 	}
 }
 
@@ -316,7 +319,7 @@ func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task
 	for actionIdx, action := range actions {
 		var actionTasks []*Task
 		for hookIdx, hook := range action.Hooks {
-			h, err := NewHook(hook, action, s.cfg, s.endpoint, s.serverAddress, s.stats)
+			h, err := NewHook(hook, action, s.cfg, s.endpoint, s.serverAddress, s.stats, s.blockStore)
 			if err != nil {
 				return nil, err
 			}
