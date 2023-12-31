@@ -67,10 +67,15 @@ local function parse_storage_uri(uri)
     }
 end
 
-local function get_storage_uri_prefix(storage_ns, commit_id, action_info)
+local function get_key_uri_prefix(commit_id, action_info)
     local branch_or_tag = ref_from_branch_or_tag(action_info)
     local sha = short_digest(commit_id)
-    return pathlib.join("/", storage_ns, string.format("_lakefs/exported/%s/%s/", branch_or_tag, sha))
+    return string.format("_lakefs/exported/%s/%s/", branch_or_tag, sha)
+end
+
+local function get_storage_uri_prefix(storage_ns, commit_id, action_info)
+    local key_uri_prefix = get_key_uri_prefix(commit_id, action_info)
+    return pathlib.join("/", storage_ns, key_uri_prefix)
 end
 
 local function sortedKeys(query, sortFunction)
@@ -92,5 +97,6 @@ return {
     lakefs_object_pager=lakefs_object_pager,
     lakefs_paginiated_api=lakefs_paginiated_api,
     sortedKeys = sortedKeys,
+    get_key_uri_prefix = get_key_uri_prefix,
     get_storage_uri_prefix = get_storage_uri_prefix,
 }
