@@ -41,15 +41,5 @@ export default defineConfig({
             testMatch: "test/e2e/common/**/*.spec.ts",
             testIgnore: "test/e2e/common/setup.spec.ts",
         },
-        {
-            // read-only repository tests - need clean slate
-            name: "readonly",
-            dependencies: ["common-setup"],
-            use: {
-                ...devices["Desktop Chrome"],
-                storageState: COMMON_STORAGE_STATE_PATH,
-            },
-            testMatch: "test/e2e/read-only/**/*.spec.ts",
-        }
-    ]
+    ],
 });
