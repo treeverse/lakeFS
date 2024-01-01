@@ -11,6 +11,7 @@ import {AlertError, Loading} from "../../../../lib/components/controls";
 import Modal from "react-bootstrap/Modal";
 import {repositories} from "../../../../lib/api";
 import {useRouter} from "../../../../lib/hooks/router";
+import {ReadOnlyBadge} from "../../../../lib/components/badges";
 
 const DeleteRepositoryModal = ({repo, show, onSubmit, onCancel}) => {
     const [isDisabled, setIsDisabled] = useState(true);
@@ -71,6 +72,14 @@ const SettingsContainer = () => {
             <Container>
                 <Row>
                     <Form.Label column md={{span:3}} className="mb-3">
+                        &nbsp;
+                    </Form.Label>
+                    <Col md={{span:4}}>
+                        <ReadOnlyBadge readOnly={repo?.read_only} style={{marginTop: 7}} />
+                    </Col>
+                </Row>
+                <Row>
+                    <Form.Label column md={{span:3}} className="mb-3">
                         Repository name
                     </Form.Label>
                     <Col md={{span:4}}>
@@ -91,14 +100,6 @@ const SettingsContainer = () => {
                     </Form.Label>
                     <Col md={{span:4}}>
                         <Form.Control readOnly value={repo.default_branch} type="text"/>
-                    </Col>
-                </Row>
-                <Row>
-                    <Form.Label column md={{span:3}} className="mb-3">
-                        Read-only
-                    </Form.Label>
-                    <Col md={{span:4}} style={{paddingTop: 8 }}>
-                        <Form.Check checked={repo?.read_only} disabled={true} type="checkbox"/>
                     </Col>
                 </Row>
             </Container>
