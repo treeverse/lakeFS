@@ -580,6 +580,10 @@ components:
           description: set date to override creation date in the commit (Unix Epoch in seconds)
           type: integer
           format: int64
+        allow_empty:
+          description: sets whether a commit can contain no changes
+          type: boolean
+          default: false
         force:
           type: boolean
           default: false

@@ -396,7 +396,7 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 		p := prefix + n
 		err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
 		testutil.MustDo(t, "create entry "+p, err)
-		_, err = deps.catalog.Commit(ctx, repo, "main", "commit"+n, "some_user", nil, nil, nil, nil)
+		commit, err := deps.catalog.Commit(ctx, repo, "main", "commit"+n, "some_user", nil, nil, nil, nil)
 		testutil.MustDo(t, "commit "+p, err)
 		commits[i] = commit
 	}
