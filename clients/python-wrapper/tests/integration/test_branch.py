@@ -136,6 +136,17 @@ def test_transaction_failure(setup_repo):
     new_data = ["a", "b", "bar/a", "bar/b"]
     common_data = ["foo/a", "foo/b", "foo/c"]
     test_branch = repo.branch("main")
+    commit = test_branch.get_commit()
+
+    # Exception during transaction
+    with expect_exception_context(ValueError, "Something bad happened"):
+        with test_branch.transact(commit_message="my transaction") as tx:
+            upload_data(tx, new_data)
+            raise ValueError("Something bad happened")
+
+    # Ensure tx branch exists and not merged
+    assert tx.get_commit()
+    assert test_branch.get_commit() == commit
 
     # Merge on dirty branch
     with expect_exception_context(TransactionException, "dirty branch"):
