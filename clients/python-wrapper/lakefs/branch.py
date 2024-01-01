@@ -354,12 +354,16 @@ class Transaction:
         self._tx_branch = Branch(self._repo_id, self._tx.id, self._client)
         return self._tx
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, typ, value, traceback) -> bool:
+        if typ is not None:  # Do nothing in case exception occurred
+            return False  # Raise the underlying exception
+
         try:
             if len(list(self._tx.uncommitted(amount=1))) > 0:
                 self._tx_branch.commit(message=self._tx.commit_message, metadata=self._tx.commit_metadata)
                 self._tx_branch.merge_into(self._source_branch, message=f"Merge transaction {self._tx.id} to branch")
+
+            self._tx_branch.delete()
+            return False
         except LakeFSException as e:
             raise TransactionException(f"Failed committing transaction {self._tx.id}: {e}") from e
-
-        self._tx_branch.delete()
