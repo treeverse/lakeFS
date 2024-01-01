@@ -48,7 +48,7 @@ jobs:
         id: restore-cache
         with:
           path: /tmp/generated.tar.gz
-          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**', './webui/**') }}
           restore-keys: ${{ runner.os }}-go-
 
       - name: Setup Go
