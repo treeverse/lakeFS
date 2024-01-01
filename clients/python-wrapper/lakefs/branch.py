@@ -358,12 +358,15 @@ class Transaction:
         if typ is not None:  # Do nothing in case exception occurred
             return False  # Raise the underlying exception
 
-        try:
-            if len(list(self._tx.uncommitted(amount=1))) > 0:
-                self._tx_branch.commit(message=self._tx.commit_message, metadata=self._tx.commit_metadata)
-                self._tx_branch.merge_into(self._source_branch, message=f"Merge transaction {self._tx.id} to branch")
-
+        if len(list(self._tx.uncommitted(amount=1))) == 0:  # Delete branch and raise exception
             self._tx_branch.delete()
+            raise TransactionException("No changes!")
+
+        try:
+            self._tx_branch.commit(message=self._tx.commit_message, metadata=self._tx.commit_metadata)
+            self._tx_branch.merge_into(self._source_branch, message=f"Merge transaction {self._tx.id} to branch")
+            self._tx_branch.delete()
+
             return False
         except LakeFSException as e:
             raise TransactionException(f"Failed committing transaction {self._tx.id}: {e}") from e
