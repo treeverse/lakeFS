@@ -87,7 +87,7 @@ const TagWidget = ({ repo, tag, onDelete }) => {
 };
 
 
-const CreateTagButton = ({ repo, variant = "success", onCreate = null, children }) => {
+const CreateTagButton = ({ repo, variant = "success", onCreate = null, readOnly = false, children }) => {
     const [show, setShow] = useState(false);
     const [disabled, setDisabled] = useState(true);
     const [error, setError] = useState(null);
@@ -166,7 +166,7 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, children 
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant={variant} onClick={display}>{children}</Button>
+            <Button variant={variant} disabled={readOnly} onClick={display}>{children}</Button>
         </>
     );
 };
@@ -214,7 +214,7 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
 
                         <RefreshButton onClick={doRefresh} />
 
-                        <CreateTagButton repo={repo} variant="success" onCreate={doRefresh}>
+                        <CreateTagButton repo={repo} readOnly={repo?.read_only} variant="success" onCreate={doRefresh}>
                             <TagIcon /> Create Tag
                         </CreateTagButton>
 
