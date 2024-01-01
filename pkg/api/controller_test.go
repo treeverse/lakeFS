@@ -480,6 +480,24 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 			expectedMore:    false,
 			stopAt:          commits[8].Reference,
 		},
+		{
+			name:            "stop_at_short_sha",
+			expectedCommits: []string{"commit10", "commit9"},
+			expectedMore:    false,
+			stopAt:          commits[8].Reference[:7],
+		},
+		{
+			name:            "stop_at_branch_ref",
+			expectedCommits: []string{"commit10"},
+			expectedMore:    false,
+			stopAt:          "main",
+		},
+		{
+			name:            "stop_at_branch_ref_expression",
+			expectedCommits: []string{"commit10", "commit9", "commit8"},
+			expectedMore:    false,
+			stopAt:          "main~2",
+		},
 	}
 
 	for _, tt := range tests {
