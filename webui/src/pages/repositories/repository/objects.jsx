@@ -308,7 +308,7 @@ const UploadCandidate = ({ repo, reference, path, file, state, onRemove = null }
   )
 };
 
-const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, show = false}) => {
+const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, show = false, disabled = false}) => {
   const initialState = {
     inProgress: false,
     error: null,
@@ -466,6 +466,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
 
     <Button
       variant={!config.import_support ? "success" : "light"}
+      disabled={disabled}
       onClick={onClick}
       >
       <UploadIcon /> Upload Object
@@ -707,6 +708,7 @@ const ObjectsBrowser = ({ config, configError }) => {
               setShowUpload(false);
             }}
             show={showUpload}
+            disabled={repo?.read_only}
           />
           <ImportButton onClick={() => setShowImport(true)} config={config} />
           <ImportModal

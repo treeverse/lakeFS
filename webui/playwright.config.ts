@@ -40,6 +40,6 @@ export default defineConfig({
             },
             testMatch: "test/e2e/common/**/*.spec.ts",
             testIgnore: "test/e2e/common/setup.spec.ts",
-        }
-    ]
+        },
+    ],
 });

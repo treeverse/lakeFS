@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { SetupPage } from "../poms/setupPage";
 import { LoginPage } from "../poms/loginPage";
+import { RepositoriesPage } from "../poms/repositoriesPage";
 import { COMMON_STORAGE_STATE_PATH } from "../consts";
 
 const LAKECTL_CONFIGURATION_FILE_NAME = "lakectl.yaml";
@@ -55,6 +56,8 @@ test.describe("Setup Page", () => {
         const loginPage = new LoginPage(loginTab);
         await loginPage.doLogin(credentials.accessKeyId, credentials.secretAccessKey);
         await loginTab.waitForURL(/.*\/repositories/);
+        const repositoriesPage = new RepositoriesPage(loginTab);
+        await expect(repositoriesPage.noRepositoriesTitleLocator).toBeVisible();
 
         // save local storage state
         await loginTab.context().storageState({ path: COMMON_STORAGE_STATE_PATH });

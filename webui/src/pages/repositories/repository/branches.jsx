@@ -115,7 +115,7 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
 };
 
 
-const CreateBranchButton = ({ repo, variant = "success", onCreate = null, children }) => {
+const CreateBranchButton = ({ repo, variant = "success", onCreate = null, readOnly = false, children }) => {
     const [show, setShow] = useState(false);
     const [disabled, setDisabled] = useState(false);
     const [error, setError] = useState(null);
@@ -192,7 +192,7 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant={variant} onClick={display}>{children}</Button>
+            <Button variant={variant} disabled={readOnly} onClick={display}>{children}</Button>
         </>
     );
 };
@@ -239,7 +239,7 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
 
                     <RefreshButton onClick={doRefresh}/>
 
-                    <CreateBranchButton repo={repo} variant="success" onCreate={doRefresh}>
+                    <CreateBranchButton repo={repo} readOnly={repo?.read_only} variant="success" onCreate={doRefresh}>
                         <GitBranchIcon/> Create Branch
                     </CreateBranchButton>
 
