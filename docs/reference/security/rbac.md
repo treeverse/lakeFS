@@ -74,9 +74,9 @@ Here are a some **examples** of valid ARNs within lakeFS and their meaning:
 |------------------------------------|---------------------------------------------|
 | `arn:lakefs:auth:::user/jane.doe`                  | A specific user                       
 | `arn:lakefs:auth:::user/*`                  | All users | 
-| `arn:lakefs:fs:::repository/myrepo/*`                  | All resources under myrepo | 
+| `arn:lakefs:fs:::repository/myrepo/*`                  | All resources under `myrepo` | 
 | `arn:lakefs:fs:::repository/myrepo/object/foo/bar/baz`                  | A single object ARN | 
-| `arn:lakefs:fs:::repository/myrepo/object/*`                  | All objects in myrepo | 
+| `arn:lakefs:fs:::repository/myrepo/object/*`                  | All objects in `myrepo` | 
 | `arn:lakefs:fs:::repository/*`                  | All repositories| 
 | `arn:lakefs:fs:::*`                  | All resources under the fs ARN prefix |
 
