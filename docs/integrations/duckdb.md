@@ -25,7 +25,7 @@ LOAD httpfs;
 Then run the following to configure the connection. 
 
 ```sql
--- `s3_region` is the S3 region on which your bucket resides. If local storage, or not S3, then just set it to `us-east-1`.
+-- "s3_region" is the S3 region on which your bucket resides. If local storage, or not S3, then just set it to "us-east-1".
 SET s3_region='us-east-1';
 -- the host (and port, if necessary) of your lakeFS server
 SET s3_endpoint='lakefs.example.com';
