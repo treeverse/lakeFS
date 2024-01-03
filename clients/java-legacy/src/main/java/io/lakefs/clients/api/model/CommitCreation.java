@@ -44,6 +44,10 @@ public class CommitCreation {
   @SerializedName(SERIALIZED_NAME_DATE)
   private Long date;
 
+  public static final String SERIALIZED_NAME_ALLOW_EMPTY = "allow_empty";
+  @SerializedName(SERIALIZED_NAME_ALLOW_EMPTY)
+  private Boolean allowEmpty = false;
+
   public static final String SERIALIZED_NAME_FORCE = "force";
   @SerializedName(SERIALIZED_NAME_FORCE)
   private Boolean force = false;
@@ -126,6 +130,29 @@ public class CommitCreation {
   }
 
 
+  public CommitCreation allowEmpty(Boolean allowEmpty) {
+    
+    this.allowEmpty = allowEmpty;
+    return this;
+  }
+
+   /**
+   * sets whether a commit can contain no changes
+   * @return allowEmpty
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "sets whether a commit can contain no changes")
+
+  public Boolean getAllowEmpty() {
+    return allowEmpty;
+  }
+
+
+  public void setAllowEmpty(Boolean allowEmpty) {
+    this.allowEmpty = allowEmpty;
+  }
+
+
   public CommitCreation force(Boolean force) {
     
     this.force = force;
@@ -161,12 +188,13 @@ public class CommitCreation {
     return Objects.equals(this.message, commitCreation.message) &&
         Objects.equals(this.metadata, commitCreation.metadata) &&
         Objects.equals(this.date, commitCreation.date) &&
+        Objects.equals(this.allowEmpty, commitCreation.allowEmpty) &&
         Objects.equals(this.force, commitCreation.force);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(message, metadata, date, force);
+    return Objects.hash(message, metadata, date, allowEmpty, force);
   }
 
   @Override
@@ -176,6 +204,7 @@ public class CommitCreation {
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("    date: ").append(toIndentedString(date)).append("\n");
+    sb.append("    allowEmpty: ").append(toIndentedString(allowEmpty)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("}");
     return sb.toString();

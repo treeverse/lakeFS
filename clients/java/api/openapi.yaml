@@ -6825,6 +6825,7 @@ components:
           key: metadata
         force: false
         message: message
+        allow_empty: false
       properties:
         message:
           type: string
@@ -6837,6 +6838,10 @@ components:
             in seconds)
           format: int64
           type: integer
+        allow_empty:
+          default: false
+          description: sets whether a commit can contain no changes
+          type: boolean
         force:
           default: false
           type: boolean

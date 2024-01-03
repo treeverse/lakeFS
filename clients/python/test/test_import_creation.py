@@ -51,6 +51,7 @@ class TestImportCreation(unittest.TestCase):
                         'key' : ''
                         }, 
                     date = 56, 
+                    allow_empty = True, 
                     force = True, ), 
                 force = True
             )
@@ -68,6 +69,7 @@ class TestImportCreation(unittest.TestCase):
                         'key' : ''
                         }, 
                     date = 56, 
+                    allow_empty = True, 
                     force = True, ),
         )
         """

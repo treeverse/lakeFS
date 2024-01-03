@@ -14,6 +14,7 @@ var errInvalidKeyValueFormat = errors.New(`invalid key/value pair - should be se
 
 const (
 	dateFlagName         = "epoch-time-seconds"
+	allowEmptyCommit     = "allow-empty-commit"
 	commitCreateTemplate = `Commit for branch "{{.Branch.Ref}}" completed.
 
 ID: {{.Commit.Id|yellow}}
@@ -32,6 +33,7 @@ var commitCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		message, kvPairs := getCommitFlags(cmd)
 		date := Must(cmd.Flags().GetInt64(dateFlagName))
+		emptyCommitBool := Must(cmd.Flags().GetBool(allowEmptyCommit))
 		datePtr := &date
 		if date < 0 {
 			datePtr = nil
@@ -46,9 +48,10 @@ var commitCmd = &cobra.Command{
 		}
 		client := getClient()
 		resp, err := client.CommitWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
-			Message:  message,
-			Metadata: &metadata,
-			Date:     datePtr,
+			Message:    message,
+			Metadata:   &metadata,
+			Date:       datePtr,
+			AllowEmpty: &emptyCommitBool,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
@@ -66,6 +69,7 @@ var commitCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	commitCmd.Flags().Int64(dateFlagName, -1, "create commit with a custom unix epoch date in seconds")
+	commitCmd.Flags().Bool(allowEmptyCommit, false, "allow a commit with no changes")
 	if err := commitCmd.Flags().MarkHidden(dateFlagName); err != nil {
 		DieErr(err)
 	}

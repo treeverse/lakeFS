@@ -202,6 +202,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
                 "key": "key_example",
             },
             date=1,
+            allow_empty=False,
             force=False,
         ),
         force=False,
