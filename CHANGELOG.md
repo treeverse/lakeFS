@@ -1,5 +1,17 @@
 # Changelog
 
+# v1.5.0
+
+:new: What's new:
+
+- Read-only repositories (#7157)
+- Add StopAt field to the CommitLog action (early-stop at a specific commit) (#7222)
+
+:bug: Bugs fixed:
+
+- Fix: Return "bad request - 400" on reset branch with unknown type  (#7210)
+- Fix: S3-gateway "delete" operation with branch protection should return 200 with error (#7211)
+
 # v1.4.0
 
 :new: What's new:
