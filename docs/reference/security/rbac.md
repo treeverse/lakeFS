@@ -65,28 +65,24 @@ This helps us compose policies together. For example, we could attach a very per
 
 ## Resource naming - ARNs
 
-lakeFS uses [ARN identifier](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html#identifiers-arns){:target="_blank"} - very similar in structure to those used by AWS.
-The resource segment of the ARN supports wildcards: use `*` to match 0 or more characters, or `?` to match exactly one character.
+lakeFS uses [ARN identifier](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_identifiers.html#identifiers-arns){:target="_blank"} - very similar in structure to those used by AWS. 
+The resource segment of the ARN supports wildcards: use `*` to match 0 or more characters, or `?` to match exactly one character.  
+
+Here are a some **examples** of valid ARNs within lakeFS and their meaning:
+
+| ARN                        | Meaning                             |
+|------------------------------------|---------------------------------------------|
+| `arn:lakefs:auth:::user/jane.doe`                  | A specific user                       
+| `arn:lakefs:auth:::user/*`                  | All users | 
+| `arn:lakefs:fs:::repository/myrepo/*`                  | All resources under `myrepo` | 
+| `arn:lakefs:fs:::repository/myrepo/object/foo/bar/baz`                  | A single object ARN | 
+| `arn:lakefs:fs:::repository/myrepo/object/*`                  | All objects in `myrepo` | 
+| `arn:lakefs:fs:::repository/*`                  | All repositories| 
+| `arn:lakefs:fs:::*`                  | All resources under the fs ARN prefix |
 
 Additionally, the current user's ID is interpolated in runtime into the ARN using the `${user}` placeholder.
 
-Here are a few examples of valid ARNs within lakeFS:
-
-```text
-arn:lakefs:auth:::user/jane.doe
-arn:lakefs:auth:::user/*
-arn:lakefs:fs:::repository/myrepo/*
-arn:lakefs:fs:::repository/myrepo/object/foo/bar/baz
-arn:lakefs:fs:::repository/myrepo/object/*
-arn:lakefs:fs:::repository/*
-arn:lakefs:fs:::*
-```
-
-this allows us to create fine-grained policies affecting only a specific subset of resources.
-
-When specifying ARNs in the lakeFS configuration, the use of '*' at the end is crucial for proper application of configurations to subfolders. If '*' is included, 
-the configuration will apply to all subfolders and objects within the specified scope. However, if '*' is omitted, the configuration will not extend to subfolders,
-affecting only the specified level in the hierarchy.
+This allows us to create fine-grained policies affecting only a specific subset of resources.
 
 See below for a full reference of ARNs and actions.
 
