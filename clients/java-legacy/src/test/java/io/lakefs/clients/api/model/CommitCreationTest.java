@@ -68,6 +68,14 @@ public class CommitCreationTest {
     }
 
     /**
+     * Test the property 'allowEmpty'
+     */
+    @Test
+    public void allowEmptyTest() {
+        // TODO: test allowEmpty
+    }
+
+    /**
      * Test the property 'force'
      */
     @Test
