@@ -45,6 +45,52 @@ main_branch = repo.create(storage_namespace="<storage_namespace>").branch(branch
 ...
 ```
 
+## Examples
+
+### Print sizes of all objects in lakefs://repo/main~2
+
+```py
+ref = lakefs.Repository("repo").ref("main~2")
+for obj in ref.objects():
+  print(f"{o.path}: {o.size_bytes}")
+```
+
+### Difference between two branches
+
+```py
+for i in lakefs.Repository("repo").ref("main").diff("twig"):
+   print(i)
+```
+
+Naturally you could use ref expressions, for instance `.diff("main~2")` also
+works.
+
+### Search a stored object for a string
+
+```py
+with lakefs.Repository("repo").ref("main").object("path/to/data").reader(mode="r") as f:
+   for l in f:
+     if "quick" in l:
+	   print(l)
+```
+
+### Upload and commit some data
+
+```py
+with lakefs.Repository("golden").branch("main").object("path/to/new").writer(mode="wb") as f:
+   f.write(b"my data")
+
+# Returns a Reference
+lakefs.Repository("golden").branch("main").commit("added my data using lakeFS high-level SDK")
+
+# Prints "my data"
+with lakefs.Repository("golden").branch("main").object("path/to/new").reader(mode="r") as f:
+   for l in f:
+     print(l)
+```
+
+Unlike references, branches are readable.  This example couldn't work if we used a ref.
+
 ## Tests
 
 To run the tests using `pytest`, first clone the lakeFS git repository
