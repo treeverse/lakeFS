@@ -448,7 +448,7 @@ type CommitParams struct {
 	Metadata Metadata
 	// SourceMetaRange - If exists, use it directly. Fail if branch has uncommitted changes
 	SourceMetaRange *MetaRangeID
-	AllowEmpty      *bool
+	AllowEmpty      bool
 }
 
 type GarbageCollectionRunMetadata struct {
@@ -2021,11 +2021,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 			}
 			defer changes.Close()
 			// returns err if the commit is empty (no changes)
-			var allowEmpty = false
-			if params.AllowEmpty != nil {
-				allowEmpty = *params.AllowEmpty
-			}
-			commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes, allowEmpty)
+			commit.MetaRangeID, _, err = g.CommittedManager.Commit(ctx, storageNamespace, branchMetaRangeID, changes, params.AllowEmpty)
 			if err != nil {
 				return nil, fmt.Errorf("commit: %w", err)
 			}
