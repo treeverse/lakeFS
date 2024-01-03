@@ -92,9 +92,9 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
         """
         The file descriptor number as defined by the operating system. In the context of lakeFS it has no meaning
 
-        :return: -1 Always
+        :raise io.UnsupportedOperation: Always, since fileno is not supported for lakeFS objects
         """
-        return -1
+        raise io.UnsupportedOperation
 
     @abstractmethod
     def flush(self) -> None:
