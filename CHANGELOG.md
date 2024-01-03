@@ -9,7 +9,7 @@
 
 :bug: Bugs fixed:
 
-- Fix: Return "bad request - 404" on reset branch with unknown type  (#7210)
+- Fix: Return "bad request - 400" on reset branch with unknown type  (#7210)
 - Fix: S3-gateway "delete" operation with branch protection should return 200 with error (#7211)
 
 # v1.4.0
