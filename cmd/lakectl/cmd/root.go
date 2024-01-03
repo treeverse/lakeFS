@@ -140,6 +140,7 @@ const (
 	allowEmptyMsgFlagName = "allow-empty-message"
 	fmtErrEmptyMsg        = `commit with no message without specifying the "--allow-empty-message" flag`
 	metaFlagName          = "meta"
+	detectContentType     = "detect-content-type"
 )
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
@@ -222,6 +223,10 @@ func withMetadataFlag(cmd *cobra.Command) {
 	cmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")
 }
 
+func withDetectContentFlag(cmd *cobra.Command, detectContentFlag bool) {
+	cmd.Flags().Bool(detectContentType, detectContentFlag, "detect content type")
+}
+
 func withCommitFlags(cmd *cobra.Command, allowEmptyMessage bool) {
 	withMessageFlags(cmd, allowEmptyMessage)
 	withMetadataFlag(cmd)
@@ -240,6 +245,10 @@ func getCommitFlags(cmd *cobra.Command) (string, map[string]string) {
 	}
 
 	return message, kvPairs
+}
+
+func getDetectContentTypeFlag(cmd *cobra.Command) bool {
+	return Must(cmd.Flags().GetBool(detectContentType))
 }
 
 func getKV(cmd *cobra.Command, name string) (map[string]string, error) { //nolint:unparam

@@ -33,7 +33,7 @@ var localCommitCmd = &cobra.Command{
 		_, localPath := getSyncArgs(args, false, false)
 		syncFlags := getSyncFlags(cmd, client)
 		message, kvPairs := getCommitFlags(cmd)
-
+		detectContentTypeFlag := getDetectContentTypeFlag(cmd)
 		idx, err := local.ReadIndex(localPath)
 		if err != nil {
 			DieErr(err)
@@ -112,7 +112,7 @@ var localCommitCmd = &cobra.Command{
 		}()
 		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(commitOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags)
-		err = s.Sync(idx.LocalPath(), remote, c)
+		err = s.Sync(idx.LocalPath(), remote, c, detectContentTypeFlag)
 		if err != nil {
 			DieErr(err)
 		}
@@ -172,5 +172,6 @@ var localCommitCmd = &cobra.Command{
 func init() {
 	withCommitFlags(localCommitCmd, false)
 	withSyncFlags(localCommitCmd)
+	withDetectContentFlag(localCommitCmd, false)
 	localCmd.AddCommand(localCommitCmd)
 }

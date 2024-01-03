@@ -61,7 +61,7 @@ var fsUploadCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		err = s.Sync(fullPath, pathURI, c)
+		err = s.Sync(fullPath, pathURI, c, false)
 		if err != nil {
 			DieErr(err)
 		}
