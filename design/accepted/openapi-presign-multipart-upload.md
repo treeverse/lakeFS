@@ -1,8 +1,8 @@
-# OpenAPI for S3 Like Multipart Upload Proposal
+# OpenAPI for S3 Like Multipart Upload Proposal using Presigned URLs
 
 ## Introduction
 
-This proposal outlines the development of Open API endpoints to enable multipart upload capabilities similar to Amazon S3 multipart. The intention is to enhance the data uploading process for large files, ensuring efficient and reliable data transfer.
+This proposal outlines the development of Open API endpoints to enable multipart upload capabilities similar to Amazon S3 multipart using presigned URLs to upload parts. The intention is to enhance the data uploading process for large files, ensuring efficient and reliable data transfer.
 
 ## Goal
 
@@ -34,10 +34,10 @@ Cancelation: In order to cancel partial upload of multipart request, the client 
 
 ### Multipart upload capability using OpenAPI specification
 
-**Paths for multipart upload operations**
+**Paths for presign multipart upload operations**
 
 ```yaml
-  /repositories/{repository}/branches/{branch}/staging/multipart:
+  /repositories/{repository}/branches/{branch}/staging/pmpu:
     parameters:
       - in: path
         name: repository
@@ -62,20 +62,20 @@ Cancelation: In order to cancel partial upload of multipart request, the client 
           type: integer
     post:
       tags:
-        - staging
-      operationId: createMultipartUpload
-      summary: Initiate a multipart upload
-      description: Initiates a multipart upload and returns an upload ID with presigned URLs for each part. Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part).
+        - experimental
+      operationId: createPresignMultipartUpload
+      summary: Initiate a presign multipart upload
+      description: Initiates a presign multipart upload and returns an upload ID with presigned URLs for each part. Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part).
       responses:
         200:
-          description: Multipart upload initiated
+          description: Presign multipart upload initiated
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MultipartUpload"
+                $ref: "#/components/schemas/PresignMultipartUpload"
         # ... other error responses
 
-  /repositories/{repository}/branches/{branch}/staging/multipart/{uploadId}:
+  /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}:
       parameters:
       - in: path
         name: repository
@@ -100,10 +100,10 @@ Cancelation: In order to cancel partial upload of multipart request, the client 
           type: string
     put:
       tags:
-        - staging
-      operationId: completeMultipartUpload
-      summary: Complete a multipart upload
-      description: Completes a multipart upload by assembling the uploaded parts.
+        - experimental
+      operationId: completePresignMultipartUpload
+      summary: Complete a presign multipart upload
+      description: Completes a presign multipart upload by assembling the uploaded parts.
       requestBody:
         content:
           application/json:
@@ -111,7 +111,7 @@ Cancelation: In order to cancel partial upload of multipart request, the client 
               $ref: "#/components/schemas/CompleteMultipartUpload"
       responses:
         200:
-          description: Multipart upload completed
+          description: Presign multipart upload completed
           content:
             application/json:
               schema:
@@ -120,13 +120,13 @@ Cancelation: In order to cancel partial upload of multipart request, the client 
 
     delete:
       tags:
-        - staging
-      operationId: abortMultipartUpload
-      summary: Abort a multipart upload
-      description: Aborts a multipart upload.
+        - experimental
+      operationId: abortPresignMultipartUpload
+      summary: Abort a presign multipart upload
+      description: Aborts a presign multipart upload.
       responses:
         204:
-          description: Multipart upload aborted
+          description: Presign multipart upload aborted
 
 ```
 
@@ -136,17 +136,20 @@ Cancelation: In order to cancel partial upload of multipart request, the client 
 ```yaml
 components:
   schemas:
-    MultipartUpload:
+    PresignMultipartUpload:
       type: object
       properties:
         upload_id:
           type: string
-        locations:
+        physical_address:
+          type: string
+        presigned_urls:
           type: array
           items:
-            $ref: "#/components/schemas/StagingLocation"
+            type: string
       required:
         - upload_id
+        - physical_address
         
     UploadPart:
       type: object
@@ -159,24 +162,33 @@ components:
         - part_number
         - etag
         
-    CompleteMultipartUpload:
+    CompletePresignMultipartUpload:
       type: object
       properties:
+        physical_address:
+          type: string
         parts:
           type: array
           description: "List of uploaded parts, should be ordered by ascending part number"
           items:
             $ref: "#/components/schemas/UploadPart"
+        user_metadata:
+          type: object
+          additionalProperties:
+            type: string
+        content_type:
+          type: string
+          description: Object media type
       required:
+        - physical_address
         - parts
 ```
 
 ### Support and discover
 
 Presign support is a capability lakectl discover before switching to use presign for upload or download from lakeFS.
-The multipart upload support will be part of the storage capability add `multipart_upload_support` optional field that when set to `true` the user can perform multipart upload using the new API.
-The client will need to check also for `pre_sign_support` in order to request multipart upload with `presigned_parts`.
-Currently as we only support multipart upload for persigned configuration, the server will turn off multipart upload support when presigned is false.
+The presign multipart upload support will be part of the storage capability add `pre_sign_multipart_upload` optional field that when set to `true` the user can perform multipart upload using the new API.
+lakeFS will return presign multipart support only on S3 with presign support enabled. There will be a configurable parameter `disable_pre_signed_multipart` under s3 block adapter that can be used to disable the capability if needed.
 
 ```yaml
     StorageConfig:
@@ -206,7 +218,7 @@ Currently as we only support multipart upload for persigned configuration, the s
           type: boolean
         import_validity_regex:
           type: string
-        pre_sign_support_parts:
+        pre_sign_multipart_upload:
           type: boolean
 ```
 
