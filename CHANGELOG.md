@@ -1,5 +1,11 @@
 # Changelog
 
+# v1.6.0
+
+:new: What's new:
+
+- Allow empty commits option #7186
+
 # v1.5.0
 
 :new: What's new:
