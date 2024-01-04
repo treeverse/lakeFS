@@ -62,8 +62,9 @@ for i in lakefs.Repository("repo").ref("main").diff("twig"):
    print(i)
 ```
 
-Naturally you could use ref expressions, for instance `.diff("main~2")` also
-works.
+You can also use the [ref expression][lakefs-spec-ref]s here, for instance
+`.diff("main~2")` also works.  Ref expressions are the lakeFS analogues of
+[how Git specifies revisions][git-spec-rev].
 
 ### Search a stored object for a string
 
@@ -116,4 +117,5 @@ See [testing documentation](https://github.com/treeverse/lakeFS/blob/master/clie
 
 services@treeverse.io
 
-
+[git-spec-rev]:  https://git-scm.com/docs/git-rev-parse#_specifying_revisions
+[lakefs-spec-ref]:  https://docs.lakefs.io/understand/model.html#ref-expressions
