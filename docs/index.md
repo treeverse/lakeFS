@@ -30,7 +30,7 @@ You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/registe
 * It is format-agnostic.
 * It works with numerous data tools and platforms.
 * Your data stays in place.
-* It eliminates the need for data duplication using [zero-copy branching](understand/model.md#zero-copy-branches).
+* It eliminates the need for data duplication using [zero-copy branching](understand/model.md#zero-copy-branching).
 * It maintains high performance over data lakes of any size.
 * It includes configurable garbage collection capabilities.
 * It is proven in production and has an active community.

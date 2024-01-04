@@ -61,7 +61,7 @@ Branches in lakeFS allow users to create their own "isolated" view of the reposi
 
 Changes on one branch do not appear on other branches. Users can take changes from one branch and apply it to another by [merging](#merge) them.
 
-#### Zero-copy branches
+#### Zero-copy branching
 
 Under the hood, branches are simply a pointer to a [commit](#commits) along with a set of uncommitted changes.
 Creating a branch is a **zero-copy operation**; instead of duplicating data, it involves creating a pointer to the source commit for the branch.
