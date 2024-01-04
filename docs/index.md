@@ -18,10 +18,10 @@ With lakeFS, you can use concepts on your data lake such as **branch** to create
 
 ## How Do I Get Started? 
 
-**[The hands-on quickstart](./quickstart) guides you through some of core features of lakeFS**. 
+**[The hands-on quickstart](./quickstart) guides you through some core features of lakeFS**. 
 
 These include [branching](./quickstart/branch.html), [merging](quickstart/commit-and-merge.html), and [rolling back changes](quickstart/rollback.html) to data. 
-
+      
 {: .note}
 You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register) if you want to try out lakeFS without installing anything. 
 
@@ -30,7 +30,7 @@ You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/registe
 * It is format-agnostic.
 * It works with numerous data tools and platforms.
 * Your data stays in place.
-* It minimizes data duplication via a copy-on-write mechanism.
+* It eliminates the need for data duplication using [zero-copy branching](understand/model.md#zero-copy-branches).
 * It maintains high performance over data lakes of any size.
 * It includes configurable garbage collection capabilities.
 * It is proven in production and has an active community.
@@ -108,9 +108,9 @@ Following this pattern, lakeFS facilitates a streamlined data deployment workflo
 
 lakeFS helps you maintain a tidy data lake in several ways, including:
 
-### Isolated Dev/Test Environments with copy-on-write
+### Isolated Dev/Test Environments with zero-copy branching
 
-lakeFS makes creating isolated dev/test environments for ETL testing instantaneous, and through its use of copy-on-write, cheap. This enables you to test and validate code changes on production data without impacting it, as well as run analysis and experiments on production data in an isolated clone. 
+lakeFS makes creating isolated dev/test environments for ETL testing instantaneous, and through its use of zero-copy branching, cheap. This enables you to test and validate code changes on production data without impacting it, as well as run analysis and experiments on production data in an isolated clone. 
 
 👉🏻 [Read more](./understand/use_cases/etl_testing.html)
 
@@ -122,7 +122,7 @@ Being able to look at data as it was at a given point is particularly useful in 
 
     ML experimentation is usually an iterative process, and being able to reproduce a specific iteration is important. 
     
-    With lakeFS you can version all components of an ML experiment including its data, as well as make use of copy-on-write to minimise the footprint of versions of the data
+    With lakeFS you can version all components of an ML experiment including its data, as well as make use of zero-copy branching to minimise the footprint of versions of the data
 
 2. Troubleshooting production problems
 
