@@ -107,6 +107,7 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | Presign multipart upload aborted |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
@@ -209,6 +210,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | Presign multipart upload completed |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
@@ -309,6 +311,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | Presign multipart upload initiated |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |

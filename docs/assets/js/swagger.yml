@@ -3882,6 +3882,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PresignMultipartUpload"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3932,6 +3934,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ObjectStats"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -3955,6 +3959,8 @@ paths:
       responses:
         204:
           description: Presign multipart upload aborted
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

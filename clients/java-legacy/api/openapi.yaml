@@ -4102,6 +4102,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PresignMultipartUpload'
           description: Presign multipart upload initiated
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -4168,6 +4174,12 @@ paths:
       responses:
         "204":
           description: Presign multipart upload aborted
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -4239,6 +4251,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ObjectStats'
           description: Presign multipart upload completed
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:

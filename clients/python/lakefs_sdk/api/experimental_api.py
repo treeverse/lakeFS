@@ -386,6 +386,7 @@ class ExperimentalApi(object):
 
         _response_types_map = {
             '200': "ObjectStats",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '420': None,
@@ -552,6 +553,7 @@ class ExperimentalApi(object):
 
         _response_types_map = {
             '201': "PresignMultipartUpload",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '420': None,
