@@ -165,6 +165,9 @@ Class | Method | HTTP request | Description
 *CommitsApi* | [**commit**](docs/CommitsApi.md#commit) | **POST** /repositories/{repository}/branches/{branch}/commits | create commit
 *CommitsApi* | [**get_commit**](docs/CommitsApi.md#get_commit) | **GET** /repositories/{repository}/commits/{commitId} | get commit
 *ConfigApi* | [**get_config**](docs/ConfigApi.md#get_config) | **GET** /config | 
+*ExperimentalApi* | [**abort_presign_multipart_upload**](docs/ExperimentalApi.md#abort_presign_multipart_upload) | **DELETE** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Abort a presign multipart upload
+*ExperimentalApi* | [**complete_presign_multipart_upload**](docs/ExperimentalApi.md#complete_presign_multipart_upload) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Complete a presign multipart upload request
+*ExperimentalApi* | [**create_presign_multipart_upload**](docs/ExperimentalApi.md#create_presign_multipart_upload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
 *ExperimentalApi* | [**get_otf_diffs**](docs/ExperimentalApi.md#get_otf_diffs) | **GET** /otf/diffs | get the available Open Table Format diffs
 *ExperimentalApi* | [**otf_diff**](docs/ExperimentalApi.md#otf_diff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
 *HealthCheckApi* | [**health_check**](docs/HealthCheckApi.md#health_check) | **GET** /healthcheck | 
@@ -234,6 +237,7 @@ Class | Method | HTTP request | Description
 ## Documentation For Models
 
  - [ACL](docs/ACL.md)
+ - [AbortPresignMultipartUpload](docs/AbortPresignMultipartUpload.md)
  - [AccessKeyCredentials](docs/AccessKeyCredentials.md)
  - [ActionRun](docs/ActionRun.md)
  - [ActionRunList](docs/ActionRunList.md)
@@ -246,6 +250,7 @@ Class | Method | HTTP request | Description
  - [Commit](docs/Commit.md)
  - [CommitCreation](docs/CommitCreation.md)
  - [CommitList](docs/CommitList.md)
+ - [CompletePresignMultipartUpload](docs/CompletePresignMultipartUpload.md)
  - [Config](docs/Config.md)
  - [Credentials](docs/Credentials.md)
  - [CredentialsList](docs/CredentialsList.md)
@@ -292,6 +297,7 @@ Class | Method | HTTP request | Description
  - [PolicyList](docs/PolicyList.md)
  - [PrepareGCUncommittedRequest](docs/PrepareGCUncommittedRequest.md)
  - [PrepareGCUncommittedResponse](docs/PrepareGCUncommittedResponse.md)
+ - [PresignMultipartUpload](docs/PresignMultipartUpload.md)
  - [RangeMetadata](docs/RangeMetadata.md)
  - [Ref](docs/Ref.md)
  - [RefList](docs/RefList.md)
@@ -317,6 +323,7 @@ Class | Method | HTTP request | Description
  - [TaskInfo](docs/TaskInfo.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)
  - [UpdateToken](docs/UpdateToken.md)
+ - [UploadPart](docs/UploadPart.md)
  - [User](docs/User.md)
  - [UserCreation](docs/UserCreation.md)
  - [UserList](docs/UserList.md)

@@ -42,6 +42,7 @@ type Adapter struct {
 	sessionExpiryWindow          time.Duration
 	disablePreSigned             bool
 	disablePreSignedUI           bool
+	disablePreSignedMultipart    bool
 }
 
 func WithStatsCollector(s stats.Collector) func(a *Adapter) {
@@ -74,6 +75,14 @@ func WithDisablePreSignedUI(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
 		if b {
 			a.disablePreSignedUI = true
+		}
+	}
+}
+
+func WithDisablePreSignedMultipart(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		if b {
+			a.disablePreSignedMultipart = true
 		}
 	}
 }
@@ -422,6 +431,42 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	return req.URL, expiry, nil
 }
 
+func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectPointer, uploadID string, partNumber int) (string, error) {
+	if a.disablePreSigned {
+		return "", block.ErrOperationNotSupported
+	}
+
+	log := a.log(ctx).WithFields(logging.Fields{
+		"operation":  "GetPresignUploadPartURL",
+		"namespace":  obj.StorageNamespace,
+		"identifier": obj.Identifier,
+	})
+	bucket, key, _, err := a.extractParamsFromObj(obj)
+	if err != nil {
+		log.WithError(err).Error("could not resolve namespace")
+		return "", err
+	}
+
+	client := a.clients.Get(ctx, bucket)
+	presigner := s3.NewPresignClient(client,
+		func(options *s3.PresignOptions) {
+			options.Expires = a.preSignedExpiry
+		},
+	)
+
+	uploadInput := &s3.UploadPartInput{
+		Bucket:     aws.String(bucket),
+		Key:        aws.String(key),
+		UploadId:   aws.String(uploadID),
+		PartNumber: aws.Int32(int32(partNumber)),
+	}
+	uploadPart, err := presigner.PresignUploadPart(ctx, uploadInput)
+	if err != nil {
+		return "", err
+	}
+	return uploadPart.URL, nil
+}
+
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
 	var err error
 	defer reportMetrics("Exists", time.Now(), nil, &err)
@@ -740,6 +785,9 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	}
 	if !(a.disablePreSignedUI || a.disablePreSigned) {
 		info.PreSignSupportUI = true
+	}
+	if !a.disablePreSignedMultipart || !info.PreSignSupport {
+		info.PreSignSupportMultipart = true
 	}
 	return info
 }

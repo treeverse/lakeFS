@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 
@@ -28,11 +30,14 @@ var fsUploadCmd = &cobra.Command{
 		remotePath := pathURI.GetPath()
 		ctx := cmd.Context()
 
+		ctx, cleanup := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
+		defer cleanup()
+
 		if !recursive { // Assume source is a single file
 			if strings.HasSuffix(remotePath, uri.PathSeparator) {
 				Die("target path is not a valid URI", 1)
 			}
-			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags.Presign)
+			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags)
 			if err != nil {
 				DieErr(err)
 			}
@@ -75,14 +80,14 @@ var fsUploadCmd = &cobra.Command{
 	},
 }
 
-func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, preSign bool) (*apigen.ObjectStats, error) {
+func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, syncFlags local.SyncFlags) (*apigen.ObjectStats, error) {
 	fp := Must(OpenByPath(sourcePathname))
 	defer func() {
 		_ = fp.Close()
 	}()
 	objectPath := apiutil.Value(destURI.Path)
-	if preSign {
-		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
+	if syncFlags.Presign {
+		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp, syncFlags.PresignMultipart)
 	}
 	return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
 }

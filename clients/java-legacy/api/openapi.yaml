@@ -4057,6 +4057,213 @@ paths:
       tags:
       - objects
       x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/staging/pmpu:
+    post:
+      description: |
+        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional).
+        Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation.
+        For example working with S3 blockstore, minimum size is 5MB (excluding the last part).
+      operationId: createPresignMultipartUpload
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: relative to the branch
+        explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      - description: number of presigned URL parts required to upload
+        explode: true
+        in: query
+        name: parts
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignMultipartUpload'
+          description: Presign multipart upload initiated
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: Initiate a multipart upload
+      tags:
+      - experimental
+      x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}:
+    delete:
+      description: Aborts a presign multipart upload.
+      operationId: abortPresignMultipartUpload
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: uploadId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: relative to the branch
+        explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbortPresignMultipartUpload'
+      responses:
+        "204":
+          description: Presign multipart upload aborted
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: Abort a presign multipart upload
+      tags:
+      - experimental
+      x-contentType: application/json
+      x-accepts: application/json
+    put:
+      description: Completes a presign multipart upload by assembling the uploaded
+        parts.
+      operationId: completePresignMultipartUpload
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: uploadId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: relative to the branch
+        explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompletePresignMultipartUpload'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectStats'
+          description: Presign multipart upload completed
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: Complete a presign multipart upload request
+      tags:
+      - experimental
+      x-contentType: application/json
+      x-accepts: application/json
   /repositories/{repository}/branches/{branch}/staging/backing:
     get:
       operationId: getPhysicalAddress
@@ -7566,6 +7773,7 @@ components:
       type: object
     StorageConfig:
       example:
+        pre_sign_multipart_upload: true
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
         blockstore_type: blockstore_type
@@ -7591,6 +7799,8 @@ components:
           type: boolean
         import_validity_regex:
           type: string
+        pre_sign_multipart_upload:
+          type: boolean
       required:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
@@ -7603,6 +7813,7 @@ components:
     Config:
       example:
         storage_config:
+          pre_sign_multipart_upload: true
           blockstore_namespace_example: blockstore_namespace_example
           blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
           blockstore_type: blockstore_type
@@ -8125,6 +8336,79 @@ components:
           type: array
       required:
       - events
+      type: object
+    PresignMultipartUpload:
+      example:
+        physical_address: physical_address
+        upload_id: upload_id
+        presigned_urls:
+        - presigned_urls
+        - presigned_urls
+      properties:
+        upload_id:
+          type: string
+        physical_address:
+          type: string
+        presigned_urls:
+          items:
+            type: string
+          type: array
+      required:
+      - physical_address
+      - upload_id
+      type: object
+    UploadPart:
+      example:
+        part_number: 0
+        etag: etag
+      properties:
+        part_number:
+          type: integer
+        etag:
+          type: string
+      required:
+      - etag
+      - part_number
+      type: object
+    CompletePresignMultipartUpload:
+      example:
+        physical_address: physical_address
+        user_metadata:
+          key: user_metadata
+        content_type: content_type
+        parts:
+        - part_number: 0
+          etag: etag
+        - part_number: 0
+          etag: etag
+      properties:
+        physical_address:
+          type: string
+        parts:
+          description: List of uploaded parts, should be ordered by ascending part
+            number
+          items:
+            $ref: '#/components/schemas/UploadPart'
+          type: array
+        user_metadata:
+          additionalProperties:
+            type: string
+          type: object
+        content_type:
+          description: Object media type
+          type: string
+      required:
+      - parts
+      - physical_address
+      type: object
+    AbortPresignMultipartUpload:
+      example:
+        physical_address: physical_address
+      properties:
+        physical_address:
+          type: string
+      required:
+      - physical_address
       type: object
     inline_object:
       properties:

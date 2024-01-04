@@ -104,4 +104,12 @@ public class StorageConfigTest {
         // TODO: test importValidityRegex
     }
 
+    /**
+     * Test the property 'preSignMultipartUpload'
+     */
+    @Test
+    public void preSignMultipartUploadTest() {
+        // TODO: test preSignMultipartUpload
+    }
+
 }

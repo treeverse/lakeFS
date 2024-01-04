@@ -161,19 +161,37 @@ func withSyncFlags(cmd *cobra.Command) {
 	withPresignFlag(cmd)
 }
 
-func getPresignMode(cmd *cobra.Command, client *apigen.ClientWithResponses) bool {
-	presign := Must(cmd.Flags().GetBool(presignFlagName))
+type PresignMode struct {
+	Enabled   bool
+	Multipart bool
+}
+
+func getPresignMode(cmd *cobra.Command, client *apigen.ClientWithResponses) PresignMode {
+	// use flags if set
 	presignFlag := cmd.Flags().Lookup(presignFlagName)
-	if !presignFlag.Changed {
+
+	var presignMode PresignMode
+	if presignFlag.Changed {
+		presignMode.Enabled = Must(cmd.Flags().GetBool(presignFlagName))
+	}
+
+	// fetch server config if needed
+	// if presign flag is not set, use server config
+	// if presign flag is set, check if server supports multipart upload
+	var storageConfig *apigen.StorageConfig
+	if !presignFlag.Changed || presignMode.Enabled {
 		resp, err := client.GetConfigWithResponse(cmd.Context())
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
 			Die("Bad response from server", 1)
 		}
-		presign = resp.JSON200.StorageConfig.PreSignSupport
+		storageConfig = resp.JSON200.StorageConfig
+		if !presignFlag.Changed {
+			presignMode.Enabled = storageConfig.PreSignSupport
+		}
+		presignMode.Multipart = swag.BoolValue(storageConfig.PreSignMultipartUpload)
 	}
-
-	return presign
+	return presignMode
 }
 
 func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.SyncFlags {
@@ -182,8 +200,12 @@ func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.
 		DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
 	}
 
-	presign := getPresignMode(cmd, client)
-	return local.SyncFlags{Parallelism: parallelism, Presign: presign}
+	presignMode := getPresignMode(cmd, client)
+	return local.SyncFlags{
+		Parallelism:      parallelism,
+		Presign:          presignMode.Enabled,
+		PresignMultipart: presignMode.Multipart,
+	}
 }
 
 // getSyncArgs parses arguments to extract a remote URI and deduces the local path.

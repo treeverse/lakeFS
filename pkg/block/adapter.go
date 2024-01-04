@@ -139,6 +139,7 @@ type Adapter interface {
 	// expiry is not supported.  The expiry time will be sooner than
 	// Config.*.PreSignedExpiry if an auth token is about to expire.
 	GetPreSignedURL(ctx context.Context, obj ObjectPointer, mode PreSignMode) (string, time.Time, error)
+	GetPresignUploadPartURL(ctx context.Context, obj ObjectPointer, uploadID string, partNumber int) (string, error)
 	Exists(ctx context.Context, obj ObjectPointer) (bool, error)
 	GetRange(ctx context.Context, obj ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error)
 	GetProperties(ctx context.Context, obj ObjectPointer) (Properties, error)

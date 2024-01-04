@@ -46,7 +46,8 @@ class TestStorageConfig(unittest.TestCase):
                 pre_sign_support = True, 
                 pre_sign_support_ui = True, 
                 import_support = True, 
-                import_validity_regex = ''
+                import_validity_regex = '', 
+                pre_sign_multipart_upload = True
             )
         else :
             return StorageConfig(

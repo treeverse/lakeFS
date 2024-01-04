@@ -56,6 +56,7 @@ type S3 struct {
 	PreSignedExpiry               time.Duration
 	DisablePreSigned              bool
 	DisablePreSignedUI            bool
+	DisablePreSignedMultipart     bool
 	ClientLogRetries              bool
 	ClientLogRequest              bool
 	WebIdentity                   *S3WebIdentity
