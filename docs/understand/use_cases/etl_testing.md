@@ -25,7 +25,7 @@ Without lakeFS, the challenge with this approach is that it can be time-consumin
 
 ## How does lakeFS help with Dev/Test environments?
 
-lakeFS makes creating isolated dev/test environments for ETL testing quick and cheap. lakeFS uses Copy-on-Write which means that there is no duplication of data when you create a new environment. This frees you from spending time on environment maintenance and makes it possible to create as many environments as needed.
+lakeFS makes creating isolated dev/test environments for ETL testing quick and cheap. lakeFS uses zero-copy branching which means that there is no duplication of data when you create a new environment. This frees you from spending time on environment maintenance and makes it possible to create as many environments as needed.
 
 In a lakeFS repository, data is always located on a `branch`. You can think of each `branch` in lakeFS as its own environment. This is because branches are isolated, meaning changes on one branch have no effect other branches.
 
