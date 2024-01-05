@@ -443,7 +443,7 @@ func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectP
 	})
 	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
-		log.WithError(err).Error("could not resolve namespace")
+		log.WithError(err).Error("Could not resolve namespace")
 		return "", err
 	}
 
