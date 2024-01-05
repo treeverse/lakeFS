@@ -256,7 +256,7 @@ func (u *PreSignUploader) uploadPart(ctx context.Context, partReader *io.Section
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if !httputil.IsSuccessStatusCode(resp) {
-		return "", fmt.Errorf("upload %w %s: %s", ErrRequestFailed, partURL, resp.Status)
+		return "", fmt.Errorf("upload %s part(%s): %w", partURL, resp.Status, ErrRequestFailed)
 	}
 
 	etag := extractEtagFromResponseHeader(resp.Header)
