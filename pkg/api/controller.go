@@ -123,7 +123,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 		return
 	}
 
-	// check if the branch exists - it is still a possibility, but we don't want to
+	// check if the branch exists - it is still possibille for a branch to be deleted later, but we don't want to
 	// upload to start and fail at the end when the branch was not there in the first place
 	branchExists, err := c.Catalog.BranchExists(ctx, repository, branch)
 	if c.handleAPIError(ctx, w, r, err) {
