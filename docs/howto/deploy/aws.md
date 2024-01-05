@@ -180,7 +180,7 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
    <div class="tabs">
       <ul>
          <li><a href="#bucket-policy-standard">Standard Permissions</a></li>
-         <li><a href="#bucket-policy-minimal">Standard Permissions (with s3express)</a></li>
+         <li><a href="#bucket-policy-express">Standard Permissions (with s3express)</a></li>
          <li><a href="#bucket-policy-minimal">Minimal Permissions (Advanced)</a></li>
       </ul>
       <div markdown="1" id="bucket-policy-standard">
