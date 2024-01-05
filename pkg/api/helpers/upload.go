@@ -261,7 +261,7 @@ func (u *PreSignUploader) uploadPart(ctx context.Context, partReader *io.Section
 
 	etag := extractEtagFromResponseHeader(resp.Header)
 	if etag == "" {
-		return "", fmt.Errorf("upload %w %s: etag is missing", ErrRequestFailed, partURL)
+		return "", fmt.Errorf("upload etag is missing %s: %w", partURL, ErrRequestFailed)
 	}
 	return etag, nil
 }
