@@ -213,6 +213,7 @@ Name | Type | Description  | Notes
 **400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**409** | conflict with a commit, try here |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 

@@ -21,6 +21,7 @@ import io.lakefs.clients.api.model.OTFDiffs;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.OtfDiffList;
 import io.lakefs.clients.api.model.PresignMultipartUpload;
+import io.lakefs.clients.api.model.StagingLocation;
 import org.junit.Test;
 import org.junit.Ignore;
 

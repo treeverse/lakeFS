@@ -3940,6 +3940,12 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        409:
+          description: conflict with a commit, try here
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StagingLocation"
         420:
           description: too many requests
         default:

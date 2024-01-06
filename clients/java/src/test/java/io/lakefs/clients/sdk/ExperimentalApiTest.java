@@ -21,6 +21,7 @@ import io.lakefs.clients.sdk.model.OTFDiffs;
 import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.OtfDiffList;
 import io.lakefs.clients.sdk.model.PresignMultipartUpload;
+import io.lakefs.clients.sdk.model.StagingLocation;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

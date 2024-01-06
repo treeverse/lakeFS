@@ -389,6 +389,7 @@ class ExperimentalApi(object):
             '400': "Error",
             '401': "Error",
             '404': "Error",
+            '409': "StagingLocation",
             '420': None,
         }
 

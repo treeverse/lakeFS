@@ -158,6 +158,7 @@ Completes a presign multipart upload by assembling the uploaded parts.
 import time
 import lakefs_client
 from lakefs_client.api import experimental_api
+from lakefs_client.model.staging_location import StagingLocation
 from lakefs_client.model.complete_presign_multipart_upload import CompletePresignMultipartUpload
 from lakefs_client.model.error import Error
 from lakefs_client.model.object_stats import ObjectStats
@@ -275,6 +276,7 @@ Name | Type | Description  | Notes
 **400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**409** | conflict with a commit, try here |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 

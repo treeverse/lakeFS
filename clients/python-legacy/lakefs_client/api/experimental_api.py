@@ -29,6 +29,7 @@ from lakefs_client.model.otf_diffs import OTFDiffs
 from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.otf_diff_list import OtfDiffList
 from lakefs_client.model.presign_multipart_upload import PresignMultipartUpload
+from lakefs_client.model.staging_location import StagingLocation
 
 
 class ExperimentalApi(object):
