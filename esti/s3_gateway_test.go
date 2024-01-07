@@ -187,7 +187,7 @@ func TestS3ReadObject(t *testing.T) {
 	})
 
 	t.Run("get_no_physical_object", func(t *testing.T) {
-		blockStoreType := viper.GetString("blockstore_type")
+		blockStoreType := viper.GetString(ViperBlockstoreType)
 		if blockStoreType != "s3" {
 			t.Skip("Skipping test - blockstore type is not s3")
 		}

@@ -30,8 +30,8 @@ var fsUploadCmd = &cobra.Command{
 		remotePath := pathURI.GetPath()
 		ctx := cmd.Context()
 
-		ctx, cleanup := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
-		defer cleanup()
+		ctx, stop := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
+		defer stop()
 
 		if !recursive { // Assume source is a single file
 			if strings.HasSuffix(remotePath, uri.PathSeparator) {

@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
@@ -123,7 +124,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 		return
 	}
 
-	// check if the branch exists - it is still possibille for a branch to be deleted later, but we don't want to
+	// check if the branch exists - it is still possible for a branch to be deleted later, but we don't want to
 	// upload to start and fail at the end when the branch was not there in the first place
 	branchExists, err := c.Catalog.BranchExists(ctx, repository, branch)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -132,6 +133,20 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 	if !branchExists {
 		writeError(w, r, http.StatusNotFound, fmt.Sprintf("branch '%s' not found", branch))
 		return
+	}
+
+	// check if the path not empty
+	if params.Path == "" {
+		writeError(w, r, http.StatusBadRequest, "path is required")
+		return
+	}
+
+	// check valid number of parts
+	if params.Parts != nil {
+		if *params.Parts < 0 || int32(*params.Parts) > manager.MaxUploadParts {
+			writeError(w, r, http.StatusBadRequest, fmt.Sprintf("parts can be between 0 and %d", manager.MaxUploadParts))
+			return
+		}
 	}
 
 	// generate a new address for the object we like to upload
@@ -206,9 +221,12 @@ func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.
 		writeError(w, r, http.StatusBadRequest, "upload_id is required")
 		return
 	}
-
-	// verify physical address
-	if err := c.Catalog.VerifyLinkAddress(ctx, repository, body.PhysicalAddress); c.handleAPIError(ctx, w, r, err) {
+	if params.Path == "" {
+		writeError(w, r, http.StatusBadRequest, "path is required")
+		return
+	}
+	if body.PhysicalAddress == "" {
+		writeError(w, r, http.StatusBadRequest, "physical_address is required")
 		return
 	}
 
@@ -217,10 +235,21 @@ func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// verify physical address
+	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	if addressType != catalog.AddressTypeRelative {
+		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
+		return
+	}
+
+	if err := c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
 	if err := c.BlockAdapter.AbortMultiPartUpload(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
-		Identifier:       body.PhysicalAddress,
+		Identifier:       physicalAddress,
 	}, uploadID); c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -243,6 +272,24 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 	storageConfig := c.getStorageConfig()
 	if !swag.BoolValue(storageConfig.PreSignMultipartUpload) {
 		writeError(w, r, http.StatusNotImplemented, "presign multipart upload API is not supported")
+		return
+	}
+
+	// validation checks
+	if uploadID == "" {
+		writeError(w, r, http.StatusBadRequest, "upload_id is required")
+		return
+	}
+	if params.Path == "" {
+		writeError(w, r, http.StatusBadRequest, "path is required")
+		return
+	}
+	if body.PhysicalAddress == "" {
+		writeError(w, r, http.StatusBadRequest, "physical_address is required")
+		return
+	}
+	if len(body.Parts) == 0 {
+		writeError(w, r, http.StatusBadRequest, "parts are required")
 		return
 	}
 
@@ -283,7 +330,7 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 		return
 	}
 
-	checksum := strings.Trim(mpuResp.ETag, `"`)
+	checksum := httputil.StripQuotesAndSpaces(mpuResp.ETag)
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
 		Path(params.Path).
@@ -593,9 +640,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	// trim spaces and quotes from etag
-	checksum := strings.TrimFunc(body.Checksum, func(r rune) bool {
-		return r == '"' || r == ' '
-	})
+	checksum := httputil.StripQuotesAndSpaces(body.Checksum)
 	if checksum == "" {
 		writeError(w, r, http.StatusBadRequest, "checksum is required")
 		return
