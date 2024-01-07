@@ -1171,6 +1171,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 		testutil.Must(t, err)
 
 		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
+		testutil.Must(t, err)
 		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("expected status code 403 for deleting a read-only repository, got %d instead", resp.StatusCode())
 		}
@@ -1645,6 +1646,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 			Name:   newBranchName,
 			Source: "main",
 		})
+		testutil.Must(t, err)
 		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatal("CreateBranch expected 403 forbidden, got", resp.Status())
 		}
@@ -1887,6 +1889,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		b, err := clt.UploadObjectWithBodyWithResponse(ctx, repoName, "main", &apigen.UploadObjectParams{
 			Path: "foo/bar",
 		}, contentType, buf)
+		testutil.Must(t, err)
 		if b.JSON403 == nil {
 			t.Fatalf("expected 403 forbidden for UploadObject, got %d", b.StatusCode())
 		}
@@ -1895,6 +1898,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 			Path:  "foo/bar",
 			Force: swag.Bool(true),
 		}, contentType, buf)
+		testutil.Must(t, err)
 		if b.StatusCode() == http.StatusInternalServerError {
 			t.Fatalf("got internal server error (500) while uploading: %v", b.JSONDefault)
 		}
@@ -1965,6 +1969,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		}
 
 		delResp, err := clt.DeleteBranchWithResponse(ctx, repoName, "main2", &apigen.DeleteBranchParams{})
+		testutil.Must(t, err)
 		if delResp.JSON403 == nil {
 			t.Fatalf("expected 403 forbidden for DeleteBranch, got %d", delResp.StatusCode())
 		}
@@ -2464,6 +2469,7 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		resp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(content), readOnlyRepo, "main")
+		testutil.Must(t, err)
 		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("Expected 403 forbidden error for UploadObject on read-only repository, got %d", resp.StatusCode())
 		}
@@ -2484,7 +2490,7 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 		resp, err = clt.UploadObjectWithBodyWithResponse(ctx, readOnlyRepo, "main", &apigen.UploadObjectParams{
 			Path: path,
 		}, w.FormDataContentType(), &b)
-
+		testutil.Must(t, err)
 		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("Expected 403 forbidden error for UploadObject on read-only repository, got %d instead", resp.StatusCode())
 		}
@@ -2633,6 +2639,7 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 			PhysicalAddress: onBlock(deps, "another-bucket/some/location"),
 			SizeBytes:       expectedSizeBytes,
 		})
+		testutil.Must(t, err)
 		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("expected 403 forbidden status for StageObject for read-only repository, got %d", resp.StatusCode())
 		}
@@ -2803,6 +2810,7 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
 			},
 		})
+		testutil.Must(t, err)
 		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("LinkPhysicalAddress non 403 response - status code %d", resp.StatusCode())
 		}
@@ -3039,12 +3047,15 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 
 		// delete it
 		delResp, err := clt.DeleteObjectWithResponse(ctx, readOnlyRepo, branch, &apigen.DeleteObjectParams{Path: "foo/bar"})
+		testutil.Must(t, err)
 		if delResp.JSON403 == nil {
 			t.Fatalf("expected DeleteObject to fail with 403 forbidden, got %d", delResp.StatusCode())
 		}
 
-		delResp, err = clt.DeleteObjectWithResponse(ctx, readOnlyRepo, branch, &apigen.DeleteObjectParams{Path: "foo/bar",
-			Force: swag.Bool(true)})
+		delResp, err = clt.DeleteObjectWithResponse(ctx, readOnlyRepo, branch, &apigen.DeleteObjectParams{
+			Path:  "foo/bar",
+			Force: swag.Bool(true),
+		})
 		verifyResponseOK(t, delResp, err)
 
 		// get it
@@ -3717,6 +3728,7 @@ func TestController_CreateTag(t *testing.T) {
 			Id:  "tag1",
 			Ref: commit1.Reference,
 		})
+		testutil.Must(t, err)
 		if tagResp.JSON403 == nil {
 			t.Errorf("Create tag to read-only repo should fail with 403 forbidden, got (status code: %d): %s", tagResp.StatusCode(), tagResp.Body)
 		}
@@ -3820,6 +3832,7 @@ func TestController_Revert(t *testing.T) {
 		_, err = deps.catalog.Commit(ctx, readOnlyRepository, "main", "some message", DefaultUserID, nil, nil, nil, false, graveler.WithForce(true))
 		testutil.Must(t, err)
 		revertResp, err := clt.RevertBranchWithResponse(ctx, readOnlyRepository, "main", apigen.RevertBranchJSONRequestBody{Ref: "main"})
+		testutil.Must(t, err)
 		if revertResp.JSON403 == nil {
 			t.Errorf("Revert should fail with 403 forbidden for read-only repository, got (status code: %d): %s", revertResp.StatusCode(), revertResp.Body)
 		}
@@ -4023,6 +4036,7 @@ func TestController_CherryPick(t *testing.T) {
 		testutil.Must(t, err)
 
 		cherryResponse, err := clt.CherryPickWithResponse(ctx, readOnlyRepository, "dest-branch1", apigen.CherryPickJSONRequestBody{Ref: "branch1"})
+		testutil.Must(t, err)
 		if cherryResponse.JSON403 == nil {
 			t.Fatalf("expected 403 to get forbidden error, got %d instead", cherryResponse.StatusCode())
 		}
@@ -4768,6 +4782,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		}, apigen.CopyObjectJSONRequestBody{
 			SrcPath: srcPath,
 		})
+		testutil.Must(t, err)
 		if copyResp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("expected 403 forbidden for CopyObject on read-only repository, got %d instead", copyResp.StatusCode())
 		}
