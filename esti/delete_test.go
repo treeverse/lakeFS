@@ -109,6 +109,7 @@ func TestDeleteObjectsReadOnlyRepository(t *testing.T) {
 	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
 
 	deleteResp, err := client.DeleteObjectWithResponse(ctx, repoName, mainBranch, &apigen.DeleteObjectParams{Path: objPath})
+	require.NoError(t, err, "failed to delete object")
 	if deleteResp.JSON403 == nil {
 		t.Fatalf("expected 403 forbidden error for trying to delete an object from a read-only repository, got %d instead", deleteResp.StatusCode())
 	}
