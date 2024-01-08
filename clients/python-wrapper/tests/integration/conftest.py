@@ -71,4 +71,5 @@ TEST_DATA = pytest.mark.datafiles(
     FIXTURE_DIR / 'data.yaml',
     FIXTURE_DIR / 'data.xml',
     FIXTURE_DIR / 'data.parquet',
+    FIXTURE_DIR / 'waving-axolotl.gif',
 )
