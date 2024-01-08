@@ -353,3 +353,7 @@ func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType 
 func (a *Adapter) RuntimeStats() map[string]string {
 	return nil
 }
+
+func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectPointer, uploadID string, partNumber int) (string, error) {
+	return "", block.ErrOperationNotSupported
+}

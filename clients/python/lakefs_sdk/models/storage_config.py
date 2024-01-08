@@ -34,7 +34,8 @@ class StorageConfig(BaseModel):
     pre_sign_support_ui: StrictBool = Field(...)
     import_support: StrictBool = Field(...)
     import_validity_regex: StrictStr = Field(...)
-    __properties = ["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "default_namespace_prefix", "pre_sign_support", "pre_sign_support_ui", "import_support", "import_validity_regex"]
+    pre_sign_multipart_upload: Optional[StrictBool] = None
+    __properties = ["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "default_namespace_prefix", "pre_sign_support", "pre_sign_support_ui", "import_support", "import_validity_regex", "pre_sign_multipart_upload"]
 
     class Config:
         """Pydantic configuration"""
@@ -79,7 +80,8 @@ class StorageConfig(BaseModel):
             "pre_sign_support": obj.get("pre_sign_support"),
             "pre_sign_support_ui": obj.get("pre_sign_support_ui"),
             "import_support": obj.get("import_support"),
-            "import_validity_regex": obj.get("import_validity_regex")
+            "import_validity_regex": obj.get("import_validity_regex"),
+            "pre_sign_multipart_upload": obj.get("pre_sign_multipart_upload")
         })
         return _obj
 

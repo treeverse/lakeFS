@@ -20,3 +20,9 @@ func ETag(checksum string) string {
 	}
 	return `"` + checksum + `"`
 }
+
+func StripQuotesAndSpaces(etag string) string {
+	return strings.TrimFunc(etag, func(r rune) bool {
+		return r == '"' || r == ' '
+	})
+}

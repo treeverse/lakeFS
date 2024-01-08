@@ -90,6 +90,7 @@ class StorageConfig(ModelNormal):
             'import_support': (bool,),  # noqa: E501
             'import_validity_regex': (str,),  # noqa: E501
             'default_namespace_prefix': (str,),  # noqa: E501
+            'pre_sign_multipart_upload': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -106,6 +107,7 @@ class StorageConfig(ModelNormal):
         'import_support': 'import_support',  # noqa: E501
         'import_validity_regex': 'import_validity_regex',  # noqa: E501
         'default_namespace_prefix': 'default_namespace_prefix',  # noqa: E501
+        'pre_sign_multipart_upload': 'pre_sign_multipart_upload',  # noqa: E501
     }
 
     read_only_vars = {
@@ -159,6 +161,7 @@ class StorageConfig(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             default_namespace_prefix (str): [optional]  # noqa: E501
+            pre_sign_multipart_upload (bool): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -257,6 +260,7 @@ class StorageConfig(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             default_namespace_prefix (str): [optional]  # noqa: E501
+            pre_sign_multipart_upload (bool): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

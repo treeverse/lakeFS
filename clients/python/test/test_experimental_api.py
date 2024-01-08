@@ -29,6 +29,27 @@ class TestExperimentalApi(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def test_abort_presign_multipart_upload(self):
+        """Test case for abort_presign_multipart_upload
+
+        Abort a presign multipart upload  # noqa: E501
+        """
+        pass
+
+    def test_complete_presign_multipart_upload(self):
+        """Test case for complete_presign_multipart_upload
+
+        Complete a presign multipart upload request  # noqa: E501
+        """
+        pass
+
+    def test_create_presign_multipart_upload(self):
+        """Test case for create_presign_multipart_upload
+
+        Initiate a multipart upload  # noqa: E501
+        """
+        pass
+
     def test_get_otf_diffs(self):
         """Test case for get_otf_diffs
 
