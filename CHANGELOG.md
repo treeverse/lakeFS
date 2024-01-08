@@ -1,5 +1,16 @@
 # Changelog
 
+# v1.7.0
+
+:new: What's new:
+
+- API: Presigned multipart uploads for S3. You can initiate presigned multipart uploads for Amazon S3 directly through the API. **experimental** (#7246)
+
+:bug: Bugs fixed:
+
+- UI: DuckDB cached files fixed with cache buster: No more worries about outdated files. (#7252)
+
+
 # v1.6.0
 
 :new: What's new:
