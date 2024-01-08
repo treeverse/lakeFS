@@ -49,7 +49,8 @@ func TestCreatePresignMultipartUpload(t *testing.T) {
 				Parts: tt.parts,
 			})
 			require.NoError(t, err, "CreatePresignMultipartUpload should succeed")
-			require.Equalf(t, tt.statusCode, resp.StatusCode(), "CreatePresignMultipartUpload status code mismatch (expected %d): %s", tt.statusCode, resp.Status())
+			require.Equalf(t, tt.statusCode, resp.StatusCode(), "CreatePresignMultipartUpload status code mismatch: %s - %s",
+				resp.Status(), resp.Body)
 			if tt.statusCode != http.StatusCreated {
 				return
 			}
@@ -236,6 +237,14 @@ func TestCompletePresignMultipartUpload(t *testing.T) {
 		})
 		require.NoError(t, err, "CompletePresignMultipartUpload should succeed")
 		require.Equalf(t, http.StatusOK, resp.StatusCode(), "CompletePresignMultipartUpload status code mismatch: %s - %s", resp.Status(), resp.Body)
+
+		// verify entry is found
+		statResp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{
+			Path: objPath,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, statResp.JSON200)
+		require.Equal(t, resp.JSON200.Checksum, statResp.JSON200.Checksum)
 	})
 }
 
