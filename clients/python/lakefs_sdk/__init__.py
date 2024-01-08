@@ -47,6 +47,7 @@ from lakefs_sdk.exceptions import ApiException
 
 # import models into sdk package
 from lakefs_sdk.models.acl import ACL
+from lakefs_sdk.models.abort_presign_multipart_upload import AbortPresignMultipartUpload
 from lakefs_sdk.models.access_key_credentials import AccessKeyCredentials
 from lakefs_sdk.models.action_run import ActionRun
 from lakefs_sdk.models.action_run_list import ActionRunList
@@ -59,6 +60,7 @@ from lakefs_sdk.models.comm_prefs_input import CommPrefsInput
 from lakefs_sdk.models.commit import Commit
 from lakefs_sdk.models.commit_creation import CommitCreation
 from lakefs_sdk.models.commit_list import CommitList
+from lakefs_sdk.models.complete_presign_multipart_upload import CompletePresignMultipartUpload
 from lakefs_sdk.models.config import Config
 from lakefs_sdk.models.credentials import Credentials
 from lakefs_sdk.models.credentials_list import CredentialsList
@@ -105,6 +107,7 @@ from lakefs_sdk.models.policy import Policy
 from lakefs_sdk.models.policy_list import PolicyList
 from lakefs_sdk.models.prepare_gc_uncommitted_request import PrepareGCUncommittedRequest
 from lakefs_sdk.models.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse
+from lakefs_sdk.models.presign_multipart_upload import PresignMultipartUpload
 from lakefs_sdk.models.range_metadata import RangeMetadata
 from lakefs_sdk.models.ref import Ref
 from lakefs_sdk.models.ref_list import RefList
@@ -130,6 +133,7 @@ from lakefs_sdk.models.tag_creation import TagCreation
 from lakefs_sdk.models.task_info import TaskInfo
 from lakefs_sdk.models.underlying_object_properties import UnderlyingObjectProperties
 from lakefs_sdk.models.update_token import UpdateToken
+from lakefs_sdk.models.upload_part import UploadPart
 from lakefs_sdk.models.user import User
 from lakefs_sdk.models.user_creation import UserCreation
 from lakefs_sdk.models.user_list import UserList

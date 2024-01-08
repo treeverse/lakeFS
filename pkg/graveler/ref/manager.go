@@ -609,6 +609,9 @@ func newCache(cfg CacheConfig) cache.Cache {
 }
 
 func (m *Manager) SetLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
+	if physicalAddress == "" {
+		return graveler.ErrLinkAddressNotFound
+	}
 	a := &graveler.LinkAddressData{
 		Address: physicalAddress,
 	}
@@ -623,6 +626,10 @@ func (m *Manager) SetLinkAddress(ctx context.Context, repository *graveler.Repos
 }
 
 func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
+	if physicalAddress == "" {
+		return graveler.ErrLinkAddressNotFound
+	}
+
 	data := graveler.LinkAddressData{}
 	addrPath := []byte(graveler.LinkedAddressPath(physicalAddress))
 	_, err := kv.GetMsg(ctx, m.kvStore, graveler.RepoPartition(repository), addrPath, &data)
@@ -632,6 +639,7 @@ func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.Re
 		}
 		return err
 	}
+
 	expired, err := m.IsLinkAddressExpired(&data)
 	if err != nil {
 		return err
@@ -639,6 +647,7 @@ func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.Re
 	if expired {
 		err = graveler.ErrLinkAddressExpired
 	}
+
 	_ = deleteLinkAddress(ctx, m.kvStore, repository, physicalAddress)
 	return err
 }

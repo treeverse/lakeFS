@@ -581,3 +581,7 @@ func isValidUploadID(uploadID string) error {
 	}
 	return nil
 }
+
+func (l *Adapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPointer, _ string, _ int) (string, error) {
+	return "", block.ErrOperationNotSupported
+}

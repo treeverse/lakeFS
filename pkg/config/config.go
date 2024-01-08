@@ -253,6 +253,7 @@ type Config struct {
 			PreSignedExpiry               time.Duration `mapstructure:"pre_signed_expiry"`
 			DisablePreSigned              bool          `mapstructure:"disable_pre_signed"`
 			DisablePreSignedUI            bool          `mapstructure:"disable_pre_signed_ui"`
+			DisablePreSignedMultipart     bool          `mapstructure:"disable_pre_signed_multipart"`
 			ClientLogRetries              bool          `mapstructure:"client_log_retries"`
 			ClientLogRequest              bool          `mapstructure:"client_log_request"`
 			WebIdentity                   *struct {
@@ -477,6 +478,7 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 		PreSignedExpiry:               c.Blockstore.S3.PreSignedExpiry,
 		DisablePreSigned:              c.Blockstore.S3.DisablePreSigned,
 		DisablePreSignedUI:            c.Blockstore.S3.DisablePreSignedUI,
+		DisablePreSignedMultipart:     c.Blockstore.S3.DisablePreSignedMultipart,
 		ClientLogRetries:              c.Blockstore.S3.ClientLogRetries,
 		ClientLogRequest:              c.Blockstore.S3.ClientLogRequest,
 		WebIdentity:                   webIdentity,

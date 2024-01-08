@@ -596,3 +596,7 @@ func (a *Adapter) RuntimeStats() map[string]string {
 func (a *Adapter) newPreSignedTime() time.Time {
 	return time.Now().UTC().Add(a.preSignedExpiry)
 }
+
+func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectPointer, uploadID string, partNumber int) (string, error) {
+	return "", block.ErrOperationNotSupported
+}
