@@ -102,6 +102,13 @@ class TestObjectReader:
             with obj.reader() as fd:
                 assert fd.tell() == 0
 
+    def test_fileno(self, monkeypatch, tmp_path):
+        test_kwargs = ObjectTestKWArgs()
+        with readable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
+            with obj.reader() as fd:
+                with expect_exception_context(OSError):
+                    fd.fileno()
+
     @staticmethod
     def verify_reader(fd, patch_setattr, test_kwargs, data):
         object_stats = ObjectTestStats()
@@ -229,3 +236,12 @@ class TestWriteableObject:
         with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             with expect_exception_context(ValueError):
                 obj.upload(data="", mode="invalid")
+
+
+class TestObjectWriter:
+    def test_fileno(self, monkeypatch, tmp_path):
+        test_kwargs = ObjectTestKWArgs()
+        with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
+            with obj.reader() as fd:
+                with expect_exception_context(OSError):
+                    fd.fileno()
