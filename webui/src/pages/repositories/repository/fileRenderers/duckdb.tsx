@@ -48,6 +48,7 @@ const LAKEFS_URI_PATTERN = /^(['"]?)(lakefs:\/\/(.*))(['"])\s*$/;
 // returns a mapping of `lakefs://..` URIs to their `s3://...` equivalent
 async function extractFiles(conn: AsyncDuckDBConnection, sql: string): Promise<{ [name: string]: string }> {
     const tokenized = await conn.bindings.tokenize(sql)
+    const r = Math.random(); // random number to make sure the S3 gateway picks up the request
     let prev = 0;
     const fileMap: { [name: string]: string } = {};
     tokenized.offsets.forEach((offset, i) => {
@@ -60,7 +61,7 @@ async function extractFiles(conn: AsyncDuckDBConnection, sql: string): Promise<{
         if (tokenized.types[i] === DUCKDB_STRING_CONSTANT) {
             const matches = part.match(LAKEFS_URI_PATTERN)
             if (matches !== null) {
-                fileMap[matches[2]] = `s3://${matches[3]}`;
+                fileMap[matches[2]] = `s3://${matches[3]}?r=${r}`;
             }
         }
     })
