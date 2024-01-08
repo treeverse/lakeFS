@@ -21,7 +21,8 @@ TEST_REQUIRES = [
     "pytest ~= 7.4.3",
     "pytest-datafiles ~= 3.0.0",
     "pandas ~= 2.1.4",
-    "pyarrow ~= 14.0.1"
+    "pyarrow ~= 14.0.1",
+    "pillow ~= 10.2.0"
 ]
 
 with open('README.md') as f:

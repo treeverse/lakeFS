@@ -9,6 +9,7 @@ from typing import get_args
 import pandas as pd
 import yaml
 import pytest
+from PIL import Image
 
 from tests.integration.conftest import TEST_DATA
 from tests.utests.common import expect_exception_context
@@ -443,3 +444,17 @@ def test_writer_discard(setup_repo):
         assert writer.closed
 
     assert not obj.exists()
+
+
+@TEST_DATA
+def test_writer_gif(setup_repo, datafiles):
+    _, repo = setup_repo
+    test_file = datafiles / "waving-axolotl.gif"
+    image = Image.open(test_file)
+    obj = repo.branch("main").object("waving-axolotl.gif")
+
+    with obj.writer() as writer:
+        image.save(writer, save_all=True, optimize=False, disposal=3)
+
+    assert obj.exists()
+    image.close()
