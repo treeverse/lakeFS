@@ -42,6 +42,11 @@ func (m *mockCache) GetOrSet(k interface{}, setFn cache.SetFn) (v interface{}, e
 	return val, nil
 }
 
+func (m *mockCache) GetOrSetWithExpiry(k interface{}, setFn cache.SetFnWithExpiry) (v interface{}, err error) {
+	// Settings does not use expiry.
+	panic("Not implemented.")
+}
+
 func TestNonExistent(t *testing.T) {
 	ctx := context.Background()
 	m, _ := prepareTest(t, ctx, nil, nil)
