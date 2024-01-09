@@ -178,6 +178,15 @@ type ExpireResult struct {
 	InternalReference string
 }
 
+type CommitParams struct {
+	Committer       string
+	Message         string
+	Date            *int64
+	Metadata        Metadata
+	SourceMetaRange *string
+	AllowEmpty      bool
+}
+
 // ExpiryRows is a database iterator over ExpiryResults.  Use Next to advance from row to row.
 type ExpiryRows interface {
 	Close()
@@ -1110,7 +1119,7 @@ func (c *Catalog) ResetEntries(ctx context.Context, repositoryID string, branch 
 	return c.Store.ResetPrefix(ctx, repository, branchID, keyPrefix, opts...)
 }
 
-func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, committer string, metadata Metadata, date *int64, sourceMetarange *string, allowEmpty bool, opts ...graveler.SetOptionsFunc) (*CommitLog, error) {
+func (c *Catalog) Commit(ctx context.Context, repositoryID string, branch string, params CommitParams, opts ...graveler.SetOptionsFunc) (*CommitLog, error) {
 	branchID := graveler.BranchID(branch)
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
@@ -1125,14 +1134,14 @@ func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, com
 	}
 
 	p := graveler.CommitParams{
-		Committer:  committer,
-		Message:    message,
-		Date:       date,
-		Metadata:   map[string]string(metadata),
-		AllowEmpty: allowEmpty,
+		Committer:  params.Committer,
+		Message:    params.Message,
+		Date:       params.Date,
+		Metadata:   map[string]string(params.Metadata),
+		AllowEmpty: params.AllowEmpty,
 	}
-	if sourceMetarange != nil {
-		x := graveler.MetaRangeID(*sourceMetarange)
+	if params.SourceMetaRange != nil {
+		x := graveler.MetaRangeID(*params.SourceMetaRange)
 		p.SourceMetaRange = &x
 	}
 	commitID, err := c.Store.Commit(ctx, repository, branchID, p, opts...)
@@ -1141,9 +1150,9 @@ func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, com
 	}
 	catalogCommitLog := &CommitLog{
 		Reference: commitID.String(),
-		Committer: committer,
-		Message:   message,
-		Metadata:  metadata,
+		Committer: params.Committer,
+		Message:   params.Message,
+		Metadata:  params.Metadata,
 	}
 	// in order to return commit log we need the commit creation time and parents
 	commit, err := c.Store.GetCommit(ctx, repository, commitID)

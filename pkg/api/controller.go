@@ -2520,7 +2520,14 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 		metadata = body.Metadata.AdditionalProperties
 	}
 
-	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange, swag.BoolValue(body.AllowEmpty), graveler.WithForce(swag.BoolValue(body.Force)))
+	newCommit, err := c.Catalog.Commit(ctx, repository, branch, catalog.CommitParams{
+		Message:         body.Message,
+		Committer:       user.Committer(),
+		Date:            body.Date,
+		Metadata:        metadata,
+		SourceMetaRange: params.SourceMetarange,
+		AllowEmpty:      swag.BoolValue(body.AllowEmpty)},
+		graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
