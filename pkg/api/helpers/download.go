@@ -106,10 +106,10 @@ func downloadPresigned(ctx context.Context, client *apigen.ClientWithResponses, 
 }
 
 func downloadPresignedPart(ctx context.Context, httpClient *http.Client, physicalAddress string, rangeStart int64, partSize int64, partNumber int64, f *os.File) error {
-	fmt.Printf("Downloading part %d (%d)...\n", partNumber, partSize)
+	// fmt.Printf("Downloading part %d (%d)...\n", partNumber, partSize)
 	start := time.Now()
 	defer func() {
-		fmt.Printf("Finished part %d (%d), took %s.\n", partNumber, partSize, time.Since(start))
+		fmt.Printf("Downloaded part %d (%d), took %s.\n", partNumber, partSize, time.Since(start))
 	}()
 
 	rangeEnd := rangeStart + partSize - 1
@@ -132,7 +132,7 @@ func downloadPresignedPart(ctx context.Context, httpClient *http.Client, physica
 		return fmt.Errorf("part %d expected %d bytes, got %d", partNumber, partSize, resp.ContentLength)
 	}
 	writer := io.NewOffsetWriter(f, rangeStart)
-	_, err = io.Copy(writer, resp.Body)
+	_, err = io.CopyN(writer, resp.Body, partSize)
 	return err
 }
 
