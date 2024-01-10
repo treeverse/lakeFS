@@ -6912,14 +6912,35 @@ components:
     ResetCreation:
       example:
         path: path
+        ref: ref
         force: false
         type: object
+        operation: staged
       properties:
+        operation:
+          default: staged
+          description: |
+            The kind of reset operation to perform.  If "staged",
+            uncommitted objects according to type.  If "hard", branch must
+            contain no uncommitted objects, and will be reset to refer to
+            ref.
+          enum:
+          - staged
+          - hard
+          type: string
         type:
+          description: |
+            Only allowed for operation="staged".  Specifies what to reset
+            according to path.
           enum:
           - object
           - common_prefix
           - reset
+          type: string
+        ref:
+          description: |
+            Only allowed for operation="hard".  Branch will be reset to this
+            ref.
           type: string
         path:
           type: string

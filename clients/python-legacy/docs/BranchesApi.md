@@ -797,7 +797,9 @@ with lakefs_client.ApiClient(configuration) as api_client:
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
     reset_creation = ResetCreation(
+        operation="staged",
         type="object",
+        ref="ref_example",
         path="path_example",
         force=False,
     ) # ResetCreation | 

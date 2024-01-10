@@ -26,10 +26,22 @@ class ResetCreation(BaseModel):
     """
     ResetCreation
     """
-    type: StrictStr = Field(...)
+    operation: Optional[StrictStr] = Field('staged', description="The kind of reset operation to perform.  If \"staged\", uncommitted objects according to type.  If \"hard\", branch must contain no uncommitted objects, and will be reset to refer to ref. ")
+    type: StrictStr = Field(..., description="Only allowed for operation=\"staged\".  Specifies what to reset according to path. ")
+    ref: Optional[StrictStr] = Field(None, description="Only allowed for operation=\"hard\".  Branch will be reset to this ref. ")
     path: Optional[StrictStr] = None
     force: Optional[StrictBool] = False
-    __properties = ["type", "path", "force"]
+    __properties = ["operation", "type", "ref", "path", "force"]
+
+    @validator('operation')
+    def operation_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in ('staged', 'hard'):
+            raise ValueError("must be one of enum values ('staged', 'hard')")
+        return value
 
     @validator('type')
     def type_validate_enum(cls, value):
@@ -74,7 +86,9 @@ class ResetCreation(BaseModel):
             return ResetCreation.parse_obj(obj)
 
         _obj = ResetCreation.parse_obj({
+            "operation": obj.get("operation") if obj.get("operation") is not None else 'staged',
             "type": obj.get("type"),
+            "ref": obj.get("ref"),
             "path": obj.get("path"),
             "force": obj.get("force") if obj.get("force") is not None else False
         })

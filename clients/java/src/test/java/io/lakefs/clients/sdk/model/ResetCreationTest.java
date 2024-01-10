@@ -38,11 +38,27 @@ public class ResetCreationTest {
     }
 
     /**
+     * Test the property 'operation'
+     */
+    @Test
+    public void operationTest() {
+        // TODO: test operation
+    }
+
+    /**
      * Test the property 'type'
      */
     @Test
     public void typeTest() {
         // TODO: test type
+    }
+
+    /**
+     * Test the property 'ref'
+     */
+    @Test
+    public void refTest() {
+        // TODO: test ref
     }
 
     /**

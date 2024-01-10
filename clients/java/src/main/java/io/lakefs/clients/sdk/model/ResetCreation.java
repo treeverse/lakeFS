@@ -53,7 +53,58 @@ import io.lakefs.clients.sdk.JSON;
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ResetCreation {
   /**
-   * Gets or Sets type
+   * The kind of reset operation to perform.  If \&quot;staged\&quot;, uncommitted objects according to type.  If \&quot;hard\&quot;, branch must contain no uncommitted objects, and will be reset to refer to ref. 
+   */
+  @JsonAdapter(OperationEnum.Adapter.class)
+  public enum OperationEnum {
+    STAGED("staged"),
+    
+    HARD("hard");
+
+    private String value;
+
+    OperationEnum(String value) {
+      this.value = value;
+    }
+
+    public String getValue() {
+      return value;
+    }
+
+    @Override
+    public String toString() {
+      return String.valueOf(value);
+    }
+
+    public static OperationEnum fromValue(String value) {
+      for (OperationEnum b : OperationEnum.values()) {
+        if (b.value.equals(value)) {
+          return b;
+        }
+      }
+      throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    }
+
+    public static class Adapter extends TypeAdapter<OperationEnum> {
+      @Override
+      public void write(final JsonWriter jsonWriter, final OperationEnum enumeration) throws IOException {
+        jsonWriter.value(enumeration.getValue());
+      }
+
+      @Override
+      public OperationEnum read(final JsonReader jsonReader) throws IOException {
+        String value =  jsonReader.nextString();
+        return OperationEnum.fromValue(value);
+      }
+    }
+  }
+
+  public static final String SERIALIZED_NAME_OPERATION = "operation";
+  @SerializedName(SERIALIZED_NAME_OPERATION)
+  private OperationEnum operation = OperationEnum.STAGED;
+
+  /**
+   * Only allowed for operation&#x3D;\&quot;staged\&quot;.  Specifies what to reset according to path. 
    */
   @JsonAdapter(TypeEnum.Adapter.class)
   public enum TypeEnum {
@@ -105,6 +156,10 @@ public class ResetCreation {
   @SerializedName(SERIALIZED_NAME_TYPE)
   private TypeEnum type;
 
+  public static final String SERIALIZED_NAME_REF = "ref";
+  @SerializedName(SERIALIZED_NAME_REF)
+  private String ref;
+
   public static final String SERIALIZED_NAME_PATH = "path";
   @SerializedName(SERIALIZED_NAME_PATH)
   private String path;
@@ -116,6 +171,27 @@ public class ResetCreation {
   public ResetCreation() {
   }
 
+  public ResetCreation operation(OperationEnum operation) {
+    
+    this.operation = operation;
+    return this;
+  }
+
+   /**
+   * The kind of reset operation to perform.  If \&quot;staged\&quot;, uncommitted objects according to type.  If \&quot;hard\&quot;, branch must contain no uncommitted objects, and will be reset to refer to ref. 
+   * @return operation
+  **/
+  @javax.annotation.Nullable
+  public OperationEnum getOperation() {
+    return operation;
+  }
+
+
+  public void setOperation(OperationEnum operation) {
+    this.operation = operation;
+  }
+
+
   public ResetCreation type(TypeEnum type) {
     
     this.type = type;
@@ -123,7 +199,7 @@ public class ResetCreation {
   }
 
    /**
-   * Get type
+   * Only allowed for operation&#x3D;\&quot;staged\&quot;.  Specifies what to reset according to path. 
    * @return type
   **/
   @javax.annotation.Nonnull
@@ -134,6 +210,27 @@ public class ResetCreation {
 
   public void setType(TypeEnum type) {
     this.type = type;
+  }
+
+
+  public ResetCreation ref(String ref) {
+    
+    this.ref = ref;
+    return this;
+  }
+
+   /**
+   * Only allowed for operation&#x3D;\&quot;hard\&quot;.  Branch will be reset to this ref. 
+   * @return ref
+  **/
+  @javax.annotation.Nullable
+  public String getRef() {
+    return ref;
+  }
+
+
+  public void setRef(String ref) {
+    this.ref = ref;
   }
 
 
@@ -233,7 +330,9 @@ public class ResetCreation {
       return false;
     }
     ResetCreation resetCreation = (ResetCreation) o;
-    return Objects.equals(this.type, resetCreation.type) &&
+    return Objects.equals(this.operation, resetCreation.operation) &&
+        Objects.equals(this.type, resetCreation.type) &&
+        Objects.equals(this.ref, resetCreation.ref) &&
         Objects.equals(this.path, resetCreation.path) &&
         Objects.equals(this.force, resetCreation.force)&&
         Objects.equals(this.additionalProperties, resetCreation.additionalProperties);
@@ -241,14 +340,16 @@ public class ResetCreation {
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, path, force, additionalProperties);
+    return Objects.hash(operation, type, ref, path, force, additionalProperties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ResetCreation {\n");
+    sb.append("    operation: ").append(toIndentedString(operation)).append("\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("    ref: ").append(toIndentedString(ref)).append("\n");
     sb.append("    path: ").append(toIndentedString(path)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
@@ -274,7 +375,9 @@ public class ResetCreation {
   static {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
+    openapiFields.add("operation");
     openapiFields.add("type");
+    openapiFields.add("ref");
     openapiFields.add("path");
     openapiFields.add("force");
 
@@ -303,8 +406,14 @@ public class ResetCreation {
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if ((jsonObj.get("operation") != null && !jsonObj.get("operation").isJsonNull()) && !jsonObj.get("operation").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `operation` to be a primitive type in the JSON string but got `%s`", jsonObj.get("operation").toString()));
+      }
       if (!jsonObj.get("type").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("type").toString()));
+      }
+      if ((jsonObj.get("ref") != null && !jsonObj.get("ref").isJsonNull()) && !jsonObj.get("ref").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `ref` to be a primitive type in the JSON string but got `%s`", jsonObj.get("ref").toString()));
       }
       if ((jsonObj.get("path") != null && !jsonObj.get("path").isJsonNull()) && !jsonObj.get("path").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `path` to be a primitive type in the JSON string but got `%s`", jsonObj.get("path").toString()));
