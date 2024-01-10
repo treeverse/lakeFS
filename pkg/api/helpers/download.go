@@ -65,6 +65,12 @@ func downloadPresigned(ctx context.Context, client *apigen.ClientWithResponses, 
 	}
 	defer func() { _ = f.Close() }()
 
+	// make sure the file is the right size
+	size := swag.Int64Value(statResp.JSON200.SizeBytes)
+	if err := f.Truncate(size); err != nil {
+		return fmt.Errorf("failed to truncate file to size %d: %w", size, err)
+	}
+
 	// download the file using ranges and concurrency
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = 10
@@ -73,7 +79,6 @@ func downloadPresigned(ctx context.Context, client *apigen.ClientWithResponses, 
 	}
 
 	physicalAddress := statResp.JSON200.PhysicalAddress
-	size := swag.Int64Value(statResp.JSON200.SizeBytes)
 
 	var nextPart atomic.Int64
 	g, grpCtx := errgroup.WithContext(context.Background())
