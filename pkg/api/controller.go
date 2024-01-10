@@ -60,6 +60,9 @@ const (
 	actionStatusFailed    = "failed"
 	actionStatusSkipped   = "skipped"
 
+	resetOperationHard   = "hard"
+	resetOperationStaged = "staged"
+
 	entryTypeObject       = "object"
 	entryTypeCommonPrefix = "common_prefix"
 
@@ -2595,15 +2598,24 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ap
 	c.LogAction(ctx, "reset_branch", r, repository, branch, "")
 
 	var err error
-	switch body.Type {
-	case entryTypeCommonPrefix:
-		err = c.Catalog.ResetEntries(ctx, repository, branch, swag.StringValue(body.Path), graveler.WithForce(swag.BoolValue(body.Force)))
-	case "reset":
-		err = c.Catalog.ResetBranch(ctx, repository, branch, graveler.WithForce(swag.BoolValue(body.Force)))
-	case entryTypeObject:
-		err = c.Catalog.ResetEntry(ctx, repository, branch, swag.StringValue(body.Path), graveler.WithForce(swag.BoolValue(body.Force)))
+
+	switch *body.Operation {
+	case resetOperationHard:
+		err = c.Catalog.ResetBranchHard(ctx, repository, branch, swag.StringValue(body.Ref), graveler.WithForce(swag.BoolValue(body.Force)))
+	case resetOperationStaged:
+		switch body.Type {
+		case entryTypeCommonPrefix:
+			err = c.Catalog.ResetEntries(ctx, repository, branch, swag.StringValue(body.Path), graveler.WithForce(swag.BoolValue(body.Force)))
+		case "reset":
+			err = c.Catalog.ResetBranch(ctx, repository, branch, graveler.WithForce(swag.BoolValue(body.Force)))
+		case entryTypeObject:
+			err = c.Catalog.ResetEntry(ctx, repository, branch, swag.StringValue(body.Path), graveler.WithForce(swag.BoolValue(body.Force)))
+		default:
+			writeError(w, r, http.StatusBadRequest, "unknown reset type")
+			return
+		}
 	default:
-		writeError(w, r, http.StatusBadRequest, "unknown reset type")
+		writeError(w, r, http.StatusBadRequest, "unknown reset operation "+swag.StringValue(body.Operation))
 		return
 	}
 	if c.handleAPIError(ctx, w, r, err) {

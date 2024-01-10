@@ -561,6 +561,9 @@ type VersionController interface {
 	// ResolveRawRef returns the ResolvedRef matching the given RawRef
 	ResolveRawRef(ctx context.Context, repository *RepositoryRecord, rawRef RawRef) (*ResolvedRef, error)
 
+	// ResetHard resets branch to point at ref.
+	ResetHard(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, opts ...SetOptionsFunc) error
+
 	// Reset throws all staged data on the repository / branch
 	Reset(ctx context.Context, repository *RepositoryRecord, branchID BranchID, opts ...SetOptionsFunc) error
 
@@ -2224,6 +2227,68 @@ func (g *Graveler) dropTokens(ctx context.Context, tokens ...StagingToken) {
 			logging.FromContext(ctx).WithError(err).WithField("staging_token", token).Error("Failed to drop staging token")
 		}
 	}
+}
+
+func (g *Graveler) ResetHard(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, opts ...SetOptionsFunc) error {
+	isProtectedCommit, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_COMMIT)
+	if err != nil {
+		return err
+	}
+	if isProtectedCommit {
+		return ErrProtectedBranch
+	}
+	isProtectedWrite, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtectedWrite {
+		return ErrWriteToProtectedBranch
+	}
+
+	options := &SetOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	if repository.ReadOnly && !options.Force {
+		return ErrReadOnlyRepository
+	}
+
+	// TODO(ariels): up to here.  Verify staging is empty!
+	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
+		// Must fetch ref under update!  Consider a hard reset to
+		// branch^ racing against a commit D to branch.  Say branch
+		// looks like this:
+		//
+		//    C --> B --> A
+		//
+		// There are 2 possible results:
+		//
+		// * If commit occurs first then D --> C --> B --> A and
+		//   then the hard reset goes to C --> B --> A.
+		//
+		// * If the hard reset goes first then B --> A and then the
+		//   commit goes to D --> B --> A.
+		//
+		// But a third option is possible if dereference occurs
+		// outside of BranchUpdate.  Hard reset dereferences branch^
+		// to B, then commit goes to D --> C --> B --> A, then hard
+		// reset enters BranchUpdate and we end up with B --> A.
+		// That result is not serialized: it cannot be explained
+		// through atomic operations.
+		//
+		// So we need to dereference here :-(
+		commitRecord, err := g.dereferenceCommit(ctx, repository, ref)
+		if err != nil {
+			return nil, err
+		}
+		if branch.StagingToken != "" || len(branch.SealedTokens) > 0 {
+			return nil, ErrDirtyBranch
+		}
+		branch.CommitID = commitRecord.CommitID
+		return branch, nil
+	})
+	return err
 }
 
 func (g *Graveler) Reset(ctx context.Context, repository *RepositoryRecord, branchID BranchID, opts ...SetOptionsFunc) error {
