@@ -389,6 +389,78 @@ class BranchesApi(object):
             },
             api_client=api_client
         )
+        self.hard_reset_branch_endpoint = _Endpoint(
+            settings={
+                'response_type': None,
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth',
+                    'saml_auth'
+                ],
+                'endpoint_path': '/repositories/{repository}/branches/{branch}/hard_reset',
+                'operation_id': 'hard_reset_branch',
+                'http_method': 'PUT',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'repository',
+                    'branch',
+                    'ref',
+                    'force',
+                ],
+                'required': [
+                    'repository',
+                    'branch',
+                    'ref',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'repository':
+                        (str,),
+                    'branch':
+                        (str,),
+                    'ref':
+                        (str,),
+                    'force':
+                        (bool,),
+                },
+                'attribute_map': {
+                    'repository': 'repository',
+                    'branch': 'branch',
+                    'ref': 'ref',
+                    'force': 'force',
+                },
+                'location_map': {
+                    'repository': 'path',
+                    'branch': 'path',
+                    'ref': 'query',
+                    'force': 'query',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client
+        )
         self.list_branches_endpoint = _Endpoint(
             settings={
                 'response_type': (RefList,),
@@ -955,6 +1027,81 @@ class BranchesApi(object):
         kwargs['branch'] = \
             branch
         return self.get_branch_endpoint.call_with_http_info(**kwargs)
+
+    def hard_reset_branch(
+        self,
+        repository,
+        branch,
+        ref,
+        **kwargs
+    ):
+        """hard reset branch  # noqa: E501
+
+        Relocate branch to refer to ref.  Branch must not contain uncommitted data.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.hard_reset_branch(repository, branch, ref, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            repository (str):
+            branch (str):
+            ref (str): After reset, branch will point at this reference.
+
+        Keyword Args:
+            force (bool): [optional] if omitted the server will use the default value of False
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            None
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['repository'] = \
+            repository
+        kwargs['branch'] = \
+            branch
+        kwargs['ref'] = \
+            ref
+        return self.hard_reset_branch_endpoint.call_with_http_info(**kwargs)
 
     def list_branches(
         self,

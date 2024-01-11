@@ -175,6 +175,7 @@ Class | Method | HTTP request | Description
 *BranchesApi* | [**deleteBranch**](docs/BranchesApi.md#deleteBranch) | **DELETE** /repositories/{repository}/branches/{branch} | delete branch
 *BranchesApi* | [**diffBranch**](docs/BranchesApi.md#diffBranch) | **GET** /repositories/{repository}/branches/{branch}/diff | diff branch
 *BranchesApi* | [**getBranch**](docs/BranchesApi.md#getBranch) | **GET** /repositories/{repository}/branches/{branch} | get branch
+*BranchesApi* | [**hardResetBranch**](docs/BranchesApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 *BranchesApi* | [**listBranches**](docs/BranchesApi.md#listBranches) | **GET** /repositories/{repository}/branches | list branches
 *BranchesApi* | [**resetBranch**](docs/BranchesApi.md#resetBranch) | **PUT** /repositories/{repository}/branches/{branch} | reset branch
 *BranchesApi* | [**revertBranch**](docs/BranchesApi.md#revertBranch) | **POST** /repositories/{repository}/branches/{branch}/revert | revert

@@ -801,6 +801,25 @@ func (mr *MockVersionControllerMockRecorder) Reset(ctx, repository, branchID int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reset", reflect.TypeOf((*MockVersionController)(nil).Reset), varargs...)
 }
 
+// ResetHard mocks base method.
+func (m *MockVersionController) ResetHard(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref, opts ...graveler.SetOptionsFunc) error {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, repository, branchID, ref}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ResetHard", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResetHard indicates an expected call of ResetHard.
+func (mr *MockVersionControllerMockRecorder) ResetHard(ctx, repository, branchID, ref interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, repository, branchID, ref}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetHard", reflect.TypeOf((*MockVersionController)(nil).ResetHard), varargs...)
+}
+
 // ResetKey mocks base method.
 func (m *MockVersionController) ResetKey(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()

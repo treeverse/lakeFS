@@ -10,73 +10,93 @@ import (
 )
 
 func TestResetAll(t *testing.T) {
-	for _, operation := range []string{"", "staged", "hard"} { // Default "" is "staged".
-		t.Run(operation, func(t *testing.T) {
-			ctx, _, repo := setupTest(t)
-			defer tearDownTest(repo)
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
 
-			hard := operation == "hard"
+	const objPath = "1.txt"
 
-			const objPath = "1.txt"
+	// upload file
+	_, objContent := uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
+	f, err := found(ctx, repo, mainBranch, objPath)
+	require.NoError(t, err)
+	require.True(t, f, "uploaded object found")
 
-			// upload file
-			_, objContent := uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
-			f, err := found(ctx, repo, mainBranch, objPath)
-			require.NoError(t, err)
-			require.True(t, f, "uploaded object found")
+	// commit file
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+		Message: "resetAll",
+	})
+	require.NoError(t, err, "failed to commit changes")
+	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+		"failed to commit changes repo %s branch %s", repo, mainBranch)
 
-			// commit file
-			commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
-				Message: "resetAll",
-			})
-			require.NoError(t, err, "failed to commit changes")
-			require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
-				"failed to commit changes repo %s branch %s", repo, mainBranch)
+	// delete file
+	deleteResp, err := client.DeleteObjectWithResponse(ctx, repo, mainBranch, &apigen.DeleteObjectParams{
+		Path: objPath,
+	})
+	require.NoError(t, err, "failed to delete file")
+	require.NoErrorf(t, verifyResponse(deleteResp.HTTPResponse, deleteResp.Body),
+		"failed to delete file %s repo %s branch %s", objPath, repo, mainBranch)
 
-			// delete file
-			deleteResp, err := client.DeleteObjectWithResponse(ctx, repo, mainBranch, &apigen.DeleteObjectParams{
-				Path: objPath,
-			})
-			require.NoError(t, err, "failed to delete file")
-			require.NoErrorf(t, verifyResponse(deleteResp.HTTPResponse, deleteResp.Body),
-				"failed to delete file %s repo %s branch %s", objPath, repo, mainBranch)
+	// reset
+	reset := apigen.ResetCreation{Type: "reset"}
 
-			// reset
-			var reset apigen.ResetCreation
-			if operation != "" {
-				reset.Operation = &operation
-			}
-			if hard {
-				reset.Ref = swag.String(mainBranch + "^")
-			} else {
-				reset.Type = "reset"
-			}
-			resetResp, err := client.ResetBranchWithResponse(ctx, repo, mainBranch, apigen.ResetBranchJSONRequestBody(reset))
-			require.NoError(t, err, "failed to reset")
-			require.NoErrorf(t, verifyResponse(resetResp.HTTPResponse, resetResp.Body),
-				"failed to reset commit %s repo %s branch %s", repo, mainBranch)
+	resetResp, err := client.ResetBranchWithResponse(ctx, repo, mainBranch, apigen.ResetBranchJSONRequestBody(reset))
+	require.NoError(t, err, "failed to reset")
+	require.NoErrorf(t, verifyResponse(resetResp.HTTPResponse, resetResp.Body),
+		"failed to reset commit %s repo %s branch %s", repo, mainBranch)
 
-			// read file
-			getObjResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &apigen.GetObjectParams{Path: objPath})
-			require.NoError(t, err, "failed to get object")
-			require.NoErrorf(t, verifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
-				"failed to get object repo %s branch %s path %s", repo, mainBranch, objPath)
+	// read file
+	getObjResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &apigen.GetObjectParams{Path: objPath})
+	require.NoError(t, err, "failed to get object")
+	require.NoErrorf(t, verifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
+		"failed to get object repo %s branch %s path %s", repo, mainBranch, objPath)
 
-			// assert file content
-			body := string(getObjResp.Body)
-			require.Equal(t, objContent, body, fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath, objContent, body))
+	// assert file content
+	body := string(getObjResp.Body)
+	require.Equal(t, objContent, body, fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath, objContent, body))
+}
 
-			// examine the last commit
-			getCommitResp, err := client.GetCommitWithResponse(ctx, repo, mainBranch)
-			require.NoError(t, err, "failed to get latest commit")
-			require.NoErrorf(t, verifyResponse(getCommitResp.HTTPResponse, getCommitResp.Body),
-				"failed to get commit repo %s ref %s", repo, mainBranch)
-			if hard {
-				require.Equal(t, *getCommitResp.JSON200, *commitResp.JSON201,
-					"Hard-reset should yield exact commit")
-			}
-		})
-	}
+func TestHardReset(t *testing.T) {
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	const objPath = "1.txt"
+
+	// upload file
+	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
+	f, err := found(ctx, repo, mainBranch, objPath)
+	require.NoError(t, err)
+	require.True(t, f, "uploaded object found")
+
+	// commit file
+	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+		Message: "resetAll",
+	})
+	require.NoError(t, err, "failed to commit changes")
+	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+		"failed to commit changes repo %s branch %s", repo, mainBranch)
+
+	// commit again so we have something to revert
+	_, err = client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+		Message:    "another commit",
+		AllowEmpty: swag.Bool(true),
+	})
+
+	// reset
+	reset := apigen.HardResetBranchParams{Ref: mainBranch + "/"}
+
+	resetResp, err := client.HardResetBranchWithResponse(ctx, repo, mainBranch, &reset)
+	require.NoError(t, err, "failed to reset")
+	require.NoErrorf(t, verifyResponse(resetResp.HTTPResponse, resetResp.Body),
+		"failed to reset commit %s repo %s branch %s", repo, mainBranch)
+
+	// examine the last commit
+	getCommitResp, err := client.GetCommitWithResponse(ctx, repo, mainBranch)
+	require.NoError(t, err, "failed to get latest commit")
+	require.NoErrorf(t, verifyResponse(getCommitResp.HTTPResponse, getCommitResp.Body),
+		"failed to get commit repo %s ref %s", repo, mainBranch)
+	require.Equal(t, *getCommitResp.JSON200, *commitResp.JSON201,
+		"Hard-reset should yield exact commit")
 }
 
 func TestResetPath(t *testing.T) {

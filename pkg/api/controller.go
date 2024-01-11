@@ -60,9 +60,6 @@ const (
 	actionStatusFailed    = "failed"
 	actionStatusSkipped   = "skipped"
 
-	resetOperationHard   = "hard"
-	resetOperationStaged = "staged"
-
 	entryTypeObject       = "object"
 	entryTypeCommonPrefix = "common_prefix"
 
@@ -2599,25 +2596,39 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ap
 
 	var err error
 
-	switch *body.Operation {
-	case resetOperationHard:
-		err = c.Catalog.ResetBranchHard(ctx, repository, branch, swag.StringValue(body.Ref), graveler.WithForce(swag.BoolValue(body.Force)))
-	case resetOperationStaged:
-		switch body.Type {
-		case entryTypeCommonPrefix:
-			err = c.Catalog.ResetEntries(ctx, repository, branch, swag.StringValue(body.Path), graveler.WithForce(swag.BoolValue(body.Force)))
-		case "reset":
-			err = c.Catalog.ResetBranch(ctx, repository, branch, graveler.WithForce(swag.BoolValue(body.Force)))
-		case entryTypeObject:
-			err = c.Catalog.ResetEntry(ctx, repository, branch, swag.StringValue(body.Path), graveler.WithForce(swag.BoolValue(body.Force)))
-		default:
-			writeError(w, r, http.StatusBadRequest, "unknown reset type")
-			return
-		}
+	switch body.Type {
+	case entryTypeCommonPrefix:
+		err = c.Catalog.ResetEntries(ctx, repository, branch, swag.StringValue(body.Path), graveler.WithForce(swag.BoolValue(body.Force)))
+	case "reset":
+		err = c.Catalog.ResetBranch(ctx, repository, branch, graveler.WithForce(swag.BoolValue(body.Force)))
+	case entryTypeObject:
+		err = c.Catalog.ResetEntry(ctx, repository, branch, swag.StringValue(body.Path), graveler.WithForce(swag.BoolValue(body.Force)))
 	default:
-		writeError(w, r, http.StatusBadRequest, "unknown reset operation "+swag.StringValue(body.Operation))
+		writeError(w, r, http.StatusBadRequest, "unknown reset type")
 		return
 	}
+
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+func (c *Controller) HardResetBranch(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.HardResetBranchParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			// TODO(ozkatz): Can we have another action here?
+			Action:   permissions.RevertBranchAction,
+			Resource: permissions.BranchArn(repository, branch),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+
+	c.LogAction(ctx, "hard_reset_branch", r, repository, branch, "")
+
+	err := c.Catalog.HardResetBranch(ctx, repository, branch, params.Ref, graveler.WithForce(swag.BoolValue(params.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
