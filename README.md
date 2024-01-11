@@ -76,7 +76,7 @@ Thus, to ensure the quality and reliability at each stage of the data lifecycle,
 Everytime there is an update to production data, the best practice would be to run CI tests and then promote(deploy) the data to production. With lakeFS you can create hooks that make sure that only data that passed these tests will become part of production.
 
 ### Rollback
-A rollback operation is used to to fix critical data errors immediately.
+A rollback operation is used to fix critical data errors immediately.
 
 What is a critical data error? Think of a situation where erroneous or misformatted data causes a signficant issue with an important service or function. In such situations, the first thing to do is stop the bleeding.
 
