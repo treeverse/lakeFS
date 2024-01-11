@@ -95,7 +95,7 @@ func TestHardReset(t *testing.T) {
 	require.NoError(t, err, "failed to get latest commit")
 	require.NoErrorf(t, verifyResponse(getCommitResp.HTTPResponse, getCommitResp.Body),
 		"failed to get commit repo %s ref %s", repo, mainBranch)
-	require.Equal(t, *getCommitResp.JSON200, *commitResp.JSON201,
+	require.Equal(t, *commitResp.JSON201, *getCommitResp.JSON200,
 		"Hard-reset should yield exact commit")
 }
 
