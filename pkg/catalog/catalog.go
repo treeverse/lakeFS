@@ -504,6 +504,37 @@ func (c *Catalog) GetRepositoryMetadata(ctx context.Context, repository string) 
 	return c.Store.GetRepositoryMetadata(ctx, repositoryID)
 }
 
+// SetRepositoryMetadata set repository metadata
+func (c *Catalog) UpdateRepositoryMetadata(ctx context.Context, repository string, metadata graveler.RepositoryMetadata) error {
+	r, err := c.getRepository(ctx, repository)
+	if err != nil {
+		return err
+	}
+	return c.Store.SetRepositoryMetadata(ctx, r, func(md graveler.RepositoryMetadata) (graveler.RepositoryMetadata, error) {
+		if md == nil {
+			md = make(graveler.RepositoryMetadata)
+		}
+		for k, v := range metadata {
+			md[k] = v
+		}
+		return md, nil
+	})
+}
+
+// DeleteRepositoryMetadata delete repository metadata
+func (c *Catalog) DeleteRepositoryMetadata(ctx context.Context, repository string, keys []string) error {
+	r, err := c.getRepository(ctx, repository)
+	if err != nil {
+		return err
+	}
+	return c.Store.SetRepositoryMetadata(ctx, r, func(md graveler.RepositoryMetadata) (graveler.RepositoryMetadata, error) {
+		for _, k := range keys {
+			delete(md, k)
+		}
+		return md, nil
+	})
+}
+
 // ListRepositories list repository information, the bool returned is true when more repositories can be listed.
 // In this case, pass the last repository name as 'after' on the next call to ListRepositories
 func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after string) ([]*Repository, bool, error) {

@@ -6,6 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**createBranchProtectionRulePreflight**](InternalApi.md#createBranchProtectionRulePreflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
 [**createSymlinkFile**](InternalApi.md#createSymlinkFile) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
+[**deleteRepositoryMetadata**](InternalApi.md#deleteRepositoryMetadata) | **DELETE** /repositories/{repository}/metadata | delete repository metadata
 [**dumpRefs**](InternalApi.md#dumpRefs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations 
 [**getAuthCapabilities**](InternalApi.md#getAuthCapabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 [**getGarbageCollectionConfig**](InternalApi.md#getGarbageCollectionConfig) | **GET** /config/garbage-collection | 
@@ -23,6 +24,7 @@ Method | HTTP request | Description
 [**prepareGarbageCollectionUncommitted**](InternalApi.md#prepareGarbageCollectionUncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 [**restoreRefs**](InternalApi.md#restoreRefs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 [**setGarbageCollectionRulesPreflight**](InternalApi.md#setGarbageCollectionRulesPreflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
+[**setRepositoryMetadata**](InternalApi.md#setRepositoryMetadata) | **POST** /repositories/{repository}/metadata | set repository metadata
 [**setup**](InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 [**setupCommPrefs**](InternalApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences
 [**stageObject**](InternalApi.md#stageObject) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
@@ -212,6 +214,101 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **201** | location created |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="deleteRepositoryMetadata"></a>
+# **deleteRepositoryMetadata**
+> deleteRepositoryMetadata(repository, repositoryMetadataKeys)
+
+delete repository metadata
+
+Delete repository metadata. Deletes the provided key from the repository metadata. 
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.InternalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+    
+    // Configure HTTP basic authorization: basic_auth
+    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
+    basic_auth.setUsername("YOUR USERNAME");
+    basic_auth.setPassword("YOUR PASSWORD");
+
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: saml_auth
+    ApiKeyAuth saml_auth = (ApiKeyAuth) defaultClient.getAuthentication("saml_auth");
+    saml_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //saml_auth.setApiKeyPrefix("Token");
+
+    InternalApi apiInstance = new InternalApi(defaultClient);
+    String repository = "repository_example"; // String | 
+    RepositoryMetadataKeys repositoryMetadataKeys = new RepositoryMetadataKeys(); // RepositoryMetadataKeys | 
+    try {
+      apiInstance.deleteRepositoryMetadata(repository, repositoryMetadataKeys);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling InternalApi#deleteRepositoryMetadata");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **String**|  |
+ **repositoryMetadataKeys** | [**RepositoryMetadataKeys**](RepositoryMetadataKeys.md)|  |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**204** | repository metadata deleted successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
@@ -1699,6 +1796,101 @@ null (empty response body)
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **204** | User has permissions to set garbage collection rules on this repository |  -  |
+**401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="setRepositoryMetadata"></a>
+# **setRepositoryMetadata**
+> setRepositoryMetadata(repository, repositoryMetadataSet)
+
+set repository metadata
+
+Set repository metadata. This will only add or update the provided keys, and will not remove any existing keys. 
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.auth.*;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.InternalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+    
+    // Configure HTTP basic authorization: basic_auth
+    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
+    basic_auth.setUsername("YOUR USERNAME");
+    basic_auth.setPassword("YOUR PASSWORD");
+
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: saml_auth
+    ApiKeyAuth saml_auth = (ApiKeyAuth) defaultClient.getAuthentication("saml_auth");
+    saml_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //saml_auth.setApiKeyPrefix("Token");
+
+    InternalApi apiInstance = new InternalApi(defaultClient);
+    String repository = "repository_example"; // String | 
+    RepositoryMetadataSet repositoryMetadataSet = new RepositoryMetadataSet(); // RepositoryMetadataSet | 
+    try {
+      apiInstance.setRepositoryMetadata(repository, repositoryMetadataSet);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling InternalApi#setRepositoryMetadata");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **String**|  |
+ **repositoryMetadataSet** | [**RepositoryMetadataSet**](RepositoryMetadataSet.md)|  |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**204** | repository metadata set successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |

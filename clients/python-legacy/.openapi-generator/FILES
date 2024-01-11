@@ -89,6 +89,8 @@ docs/RepositoryCreation.md
 docs/RepositoryDumpStatus.md
 docs/RepositoryList.md
 docs/RepositoryMetadata.md
+docs/RepositoryMetadataKeys.md
+docs/RepositoryMetadataSet.md
 docs/RepositoryRestoreStatus.md
 docs/ResetCreation.md
 docs/RevertCreation.md
@@ -210,6 +212,8 @@ lakefs_client/model/repository_creation.py
 lakefs_client/model/repository_dump_status.py
 lakefs_client/model/repository_list.py
 lakefs_client/model/repository_metadata.py
+lakefs_client/model/repository_metadata_keys.py
+lakefs_client/model/repository_metadata_set.py
 lakefs_client/model/repository_restore_status.py
 lakefs_client/model/reset_creation.py
 lakefs_client/model/revert_creation.py
@@ -326,6 +330,8 @@ test/test_repository_creation.py
 test/test_repository_dump_status.py
 test/test_repository_list.py
 test/test_repository_metadata.py
+test/test_repository_metadata_keys.py
+test/test_repository_metadata_set.py
 test/test_repository_restore_status.py
 test/test_reset_creation.py
 test/test_revert_creation.py

@@ -37,6 +37,8 @@ from lakefs_client.model.prepare_gc_uncommitted_request import PrepareGCUncommit
 from lakefs_client.model.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse
 from lakefs_client.model.refs_dump import RefsDump
 from lakefs_client.model.refs_restore import RefsRestore
+from lakefs_client.model.repository_metadata_keys import RepositoryMetadataKeys
+from lakefs_client.model.repository_metadata_set import RepositoryMetadataSet
 from lakefs_client.model.setup import Setup
 from lakefs_client.model.setup_state import SetupState
 from lakefs_client.model.stats_events_list import StatsEventsList
@@ -174,6 +176,68 @@ class InternalApi(object):
                     'application/json'
                 ],
                 'content_type': [],
+            },
+            api_client=api_client
+        )
+        self.delete_repository_metadata_endpoint = _Endpoint(
+            settings={
+                'response_type': None,
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth',
+                    'saml_auth'
+                ],
+                'endpoint_path': '/repositories/{repository}/metadata',
+                'operation_id': 'delete_repository_metadata',
+                'http_method': 'DELETE',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'repository',
+                    'repository_metadata_keys',
+                ],
+                'required': [
+                    'repository',
+                    'repository_metadata_keys',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'repository':
+                        (str,),
+                    'repository_metadata_keys':
+                        (RepositoryMetadataKeys,),
+                },
+                'attribute_map': {
+                    'repository': 'repository',
+                },
+                'location_map': {
+                    'repository': 'path',
+                    'repository_metadata_keys': 'body',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [
+                    'application/json'
+                ]
             },
             api_client=api_client
         )
@@ -1100,6 +1164,68 @@ class InternalApi(object):
             },
             api_client=api_client
         )
+        self.set_repository_metadata_endpoint = _Endpoint(
+            settings={
+                'response_type': None,
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth',
+                    'saml_auth'
+                ],
+                'endpoint_path': '/repositories/{repository}/metadata',
+                'operation_id': 'set_repository_metadata',
+                'http_method': 'POST',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'repository',
+                    'repository_metadata_set',
+                ],
+                'required': [
+                    'repository',
+                    'repository_metadata_set',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'repository':
+                        (str,),
+                    'repository_metadata_set':
+                        (RepositoryMetadataSet,),
+                },
+                'attribute_map': {
+                    'repository': 'repository',
+                },
+                'location_map': {
+                    'repository': 'path',
+                    'repository_metadata_set': 'body',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [
+                    'application/json'
+                ]
+            },
+            api_client=api_client
+        )
         self.setup_endpoint = _Endpoint(
             settings={
                 'response_type': (CredentialsWithSecret,),
@@ -1476,6 +1602,76 @@ class InternalApi(object):
         kwargs['branch'] = \
             branch
         return self.create_symlink_file_endpoint.call_with_http_info(**kwargs)
+
+    def delete_repository_metadata(
+        self,
+        repository,
+        repository_metadata_keys,
+        **kwargs
+    ):
+        """delete repository metadata  # noqa: E501
+
+        Delete repository metadata. Deletes the provided key from the repository metadata.   # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.delete_repository_metadata(repository, repository_metadata_keys, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            repository (str):
+            repository_metadata_keys (RepositoryMetadataKeys):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            None
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['repository'] = \
+            repository
+        kwargs['repository_metadata_keys'] = \
+            repository_metadata_keys
+        return self.delete_repository_metadata_endpoint.call_with_http_info(**kwargs)
 
     def dump_refs(
         self,
@@ -2576,6 +2772,76 @@ class InternalApi(object):
         kwargs['repository'] = \
             repository
         return self.set_garbage_collection_rules_preflight_endpoint.call_with_http_info(**kwargs)
+
+    def set_repository_metadata(
+        self,
+        repository,
+        repository_metadata_set,
+        **kwargs
+    ):
+        """set repository metadata  # noqa: E501
+
+        Set repository metadata. This will only add or update the provided keys, and will not remove any existing keys.   # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.set_repository_metadata(repository, repository_metadata_set, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            repository (str):
+            repository_metadata_set (RepositoryMetadataSet):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            None
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['repository'] = \
+            repository
+        kwargs['repository_metadata_set'] = \
+            repository_metadata_set
+        return self.set_repository_metadata_endpoint.call_with_http_info(**kwargs)
 
     def setup(
         self,

@@ -86,6 +86,8 @@ from lakefs_sdk.models.repository import Repository
 from lakefs_sdk.models.repository_creation import RepositoryCreation
 from lakefs_sdk.models.repository_dump_status import RepositoryDumpStatus
 from lakefs_sdk.models.repository_list import RepositoryList
+from lakefs_sdk.models.repository_metadata_keys import RepositoryMetadataKeys
+from lakefs_sdk.models.repository_metadata_set import RepositoryMetadataSet
 from lakefs_sdk.models.repository_restore_status import RepositoryRestoreStatus
 from lakefs_sdk.models.reset_creation import ResetCreation
 from lakefs_sdk.models.revert_creation import RevertCreation

@@ -62,7 +62,7 @@ func Serve(cfg *config.Config, catalog *catalog.Catalog, middlewareAuthenticator
 	r.Mount("/_health", httputil.ServeHealth())
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
-	r.Mount("/swagger.json", http.HandlerFunc(swaggerSpecHandler))
+	r.Mount("/openapi.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.Auth.LogoutRedirectURL))
 

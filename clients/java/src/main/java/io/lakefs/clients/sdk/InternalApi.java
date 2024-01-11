@@ -42,6 +42,8 @@ import io.lakefs.clients.sdk.model.PrepareGCUncommittedRequest;
 import io.lakefs.clients.sdk.model.PrepareGCUncommittedResponse;
 import io.lakefs.clients.sdk.model.RefsDump;
 import io.lakefs.clients.sdk.model.RefsRestore;
+import io.lakefs.clients.sdk.model.RepositoryMetadataKeys;
+import io.lakefs.clients.sdk.model.RepositoryMetadataSet;
 import io.lakefs.clients.sdk.model.Setup;
 import io.lakefs.clients.sdk.model.SetupState;
 import io.lakefs.clients.sdk.model.StatsEventsList;
@@ -460,6 +462,183 @@ public class InternalApi {
      */
     public APIcreateSymlinkFileRequest createSymlinkFile(String repository, String branch) {
         return new APIcreateSymlinkFileRequest(repository, branch);
+    }
+    private okhttp3.Call deleteRepositoryMetadataCall(String repository, RepositoryMetadataKeys repositoryMetadataKeys, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = repositoryMetadataKeys;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/metadata"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call deleteRepositoryMetadataValidateBeforeCall(String repository, RepositoryMetadataKeys repositoryMetadataKeys, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling deleteRepositoryMetadata(Async)");
+        }
+
+        // verify the required parameter 'repositoryMetadataKeys' is set
+        if (repositoryMetadataKeys == null) {
+            throw new ApiException("Missing the required parameter 'repositoryMetadataKeys' when calling deleteRepositoryMetadata(Async)");
+        }
+
+        return deleteRepositoryMetadataCall(repository, repositoryMetadataKeys, _callback);
+
+    }
+
+
+    private ApiResponse<Void> deleteRepositoryMetadataWithHttpInfo(String repository, RepositoryMetadataKeys repositoryMetadataKeys) throws ApiException {
+        okhttp3.Call localVarCall = deleteRepositoryMetadataValidateBeforeCall(repository, repositoryMetadataKeys, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    private okhttp3.Call deleteRepositoryMetadataAsync(String repository, RepositoryMetadataKeys repositoryMetadataKeys, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = deleteRepositoryMetadataValidateBeforeCall(repository, repositoryMetadataKeys, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+
+    public class APIdeleteRepositoryMetadataRequest {
+        private final String repository;
+        private final RepositoryMetadataKeys repositoryMetadataKeys;
+
+        private APIdeleteRepositoryMetadataRequest(String repository, RepositoryMetadataKeys repositoryMetadataKeys) {
+            this.repository = repository;
+            this.repositoryMetadataKeys = repositoryMetadataKeys;
+        }
+
+        /**
+         * Build call for deleteRepositoryMetadata
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> repository metadata deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return deleteRepositoryMetadataCall(repository, repositoryMetadataKeys, _callback);
+        }
+
+        /**
+         * Execute deleteRepositoryMetadata request
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> repository metadata deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public void execute() throws ApiException {
+            deleteRepositoryMetadataWithHttpInfo(repository, repositoryMetadataKeys);
+        }
+
+        /**
+         * Execute deleteRepositoryMetadata request with HTTP info returned
+         * @return ApiResponse&lt;Void&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> repository metadata deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
+            return deleteRepositoryMetadataWithHttpInfo(repository, repositoryMetadataKeys);
+        }
+
+        /**
+         * Execute deleteRepositoryMetadata request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> repository metadata deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
+            return deleteRepositoryMetadataAsync(repository, repositoryMetadataKeys, _callback);
+        }
+    }
+
+    /**
+     * delete repository metadata
+     * Delete repository metadata. Deletes the provided key from the repository metadata. 
+     * @param repository  (required)
+     * @param repositoryMetadataKeys  (required)
+     * @return APIdeleteRepositoryMetadataRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> repository metadata deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIdeleteRepositoryMetadataRequest deleteRepositoryMetadata(String repository, RepositoryMetadataKeys repositoryMetadataKeys) {
+        return new APIdeleteRepositoryMetadataRequest(repository, repositoryMetadataKeys);
     }
     private okhttp3.Call dumpRefsCall(String repository, final ApiCallback _callback) throws ApiException {
         String basePath = null;
@@ -3397,6 +3576,183 @@ public class InternalApi {
      */
     public APIsetGarbageCollectionRulesPreflightRequest setGarbageCollectionRulesPreflight(String repository) {
         return new APIsetGarbageCollectionRulesPreflightRequest(repository);
+    }
+    private okhttp3.Call setRepositoryMetadataCall(String repository, RepositoryMetadataSet repositoryMetadataSet, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = repositoryMetadataSet;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/metadata"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call setRepositoryMetadataValidateBeforeCall(String repository, RepositoryMetadataSet repositoryMetadataSet, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling setRepositoryMetadata(Async)");
+        }
+
+        // verify the required parameter 'repositoryMetadataSet' is set
+        if (repositoryMetadataSet == null) {
+            throw new ApiException("Missing the required parameter 'repositoryMetadataSet' when calling setRepositoryMetadata(Async)");
+        }
+
+        return setRepositoryMetadataCall(repository, repositoryMetadataSet, _callback);
+
+    }
+
+
+    private ApiResponse<Void> setRepositoryMetadataWithHttpInfo(String repository, RepositoryMetadataSet repositoryMetadataSet) throws ApiException {
+        okhttp3.Call localVarCall = setRepositoryMetadataValidateBeforeCall(repository, repositoryMetadataSet, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    private okhttp3.Call setRepositoryMetadataAsync(String repository, RepositoryMetadataSet repositoryMetadataSet, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = setRepositoryMetadataValidateBeforeCall(repository, repositoryMetadataSet, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+
+    public class APIsetRepositoryMetadataRequest {
+        private final String repository;
+        private final RepositoryMetadataSet repositoryMetadataSet;
+
+        private APIsetRepositoryMetadataRequest(String repository, RepositoryMetadataSet repositoryMetadataSet) {
+            this.repository = repository;
+            this.repositoryMetadataSet = repositoryMetadataSet;
+        }
+
+        /**
+         * Build call for setRepositoryMetadata
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> repository metadata set successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return setRepositoryMetadataCall(repository, repositoryMetadataSet, _callback);
+        }
+
+        /**
+         * Execute setRepositoryMetadata request
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> repository metadata set successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public void execute() throws ApiException {
+            setRepositoryMetadataWithHttpInfo(repository, repositoryMetadataSet);
+        }
+
+        /**
+         * Execute setRepositoryMetadata request with HTTP info returned
+         * @return ApiResponse&lt;Void&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> repository metadata set successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
+            return setRepositoryMetadataWithHttpInfo(repository, repositoryMetadataSet);
+        }
+
+        /**
+         * Execute setRepositoryMetadata request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 204 </td><td> repository metadata set successfully </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
+            return setRepositoryMetadataAsync(repository, repositoryMetadataSet, _callback);
+        }
+    }
+
+    /**
+     * set repository metadata
+     * Set repository metadata. This will only add or update the provided keys, and will not remove any existing keys. 
+     * @param repository  (required)
+     * @param repositoryMetadataSet  (required)
+     * @return APIsetRepositoryMetadataRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> repository metadata set successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIsetRepositoryMetadataRequest setRepositoryMetadata(String repository, RepositoryMetadataSet repositoryMetadataSet) {
+        return new APIsetRepositoryMetadataRequest(repository, repositoryMetadataSet);
     }
     private okhttp3.Call setupCall(Setup setup, final ApiCallback _callback) throws ApiException {
         String basePath = null;

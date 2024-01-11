@@ -16,6 +16,7 @@ var (
 const (
 	ReadRepositoryAction                      = "fs:ReadRepository"
 	CreateRepositoryAction                    = "fs:CreateRepository"
+	UpdateRepositoryAction                    = "fs:UpdateRepository"
 	AttachStorageNamespaceAction              = "fs:AttachStorageNamespace"
 	ImportFromStorageAction                   = "fs:ImportFromStorage"
 	ImportCancelAction                        = "fs:ImportCancel"

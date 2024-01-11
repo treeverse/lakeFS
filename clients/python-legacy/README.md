@@ -173,6 +173,7 @@ Class | Method | HTTP request | Description
 *ImportApi* | [**import_status**](docs/ImportApi.md#import_status) | **GET** /repositories/{repository}/branches/{branch}/import | get import status
 *InternalApi* | [**create_branch_protection_rule_preflight**](docs/InternalApi.md#create_branch_protection_rule_preflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
 *InternalApi* | [**create_symlink_file**](docs/InternalApi.md#create_symlink_file) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
+*InternalApi* | [**delete_repository_metadata**](docs/InternalApi.md#delete_repository_metadata) | **DELETE** /repositories/{repository}/metadata | delete repository metadata
 *InternalApi* | [**dump_refs**](docs/InternalApi.md#dump_refs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations 
 *InternalApi* | [**get_auth_capabilities**](docs/InternalApi.md#get_auth_capabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 *InternalApi* | [**get_garbage_collection_config**](docs/InternalApi.md#get_garbage_collection_config) | **GET** /config/garbage-collection | 
@@ -190,6 +191,7 @@ Class | Method | HTTP request | Description
 *InternalApi* | [**prepare_garbage_collection_uncommitted**](docs/InternalApi.md#prepare_garbage_collection_uncommitted) | **POST** /repositories/{repository}/gc/prepare_uncommited | save repository uncommitted metadata for garbage collection
 *InternalApi* | [**restore_refs**](docs/InternalApi.md#restore_refs) | **PUT** /repositories/{repository}/refs/restore | Restore repository refs (tags, commits, branches) from object store. Deprecated: a new API will introduce long running operations 
 *InternalApi* | [**set_garbage_collection_rules_preflight**](docs/InternalApi.md#set_garbage_collection_rules_preflight) | **GET** /repositories/{repository}/gc/rules/set_allowed | 
+*InternalApi* | [**set_repository_metadata**](docs/InternalApi.md#set_repository_metadata) | **POST** /repositories/{repository}/metadata | set repository metadata
 *InternalApi* | [**setup**](docs/InternalApi.md#setup) | **POST** /setup_lakefs | setup lakeFS and create a first user
 *InternalApi* | [**setup_comm_prefs**](docs/InternalApi.md#setup_comm_prefs) | **POST** /setup_comm_prefs | setup communications preferences
 *InternalApi* | [**stage_object**](docs/InternalApi.md#stage_object) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
@@ -307,6 +309,8 @@ Class | Method | HTTP request | Description
  - [RepositoryDumpStatus](docs/RepositoryDumpStatus.md)
  - [RepositoryList](docs/RepositoryList.md)
  - [RepositoryMetadata](docs/RepositoryMetadata.md)
+ - [RepositoryMetadataKeys](docs/RepositoryMetadataKeys.md)
+ - [RepositoryMetadataSet](docs/RepositoryMetadataSet.md)
  - [RepositoryRestoreStatus](docs/RepositoryRestoreStatus.md)
  - [ResetCreation](docs/ResetCreation.md)
  - [RevertCreation](docs/RevertCreation.md)

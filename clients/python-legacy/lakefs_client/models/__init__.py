@@ -83,6 +83,8 @@ from lakefs_client.model.repository_creation import RepositoryCreation
 from lakefs_client.model.repository_dump_status import RepositoryDumpStatus
 from lakefs_client.model.repository_list import RepositoryList
 from lakefs_client.model.repository_metadata import RepositoryMetadata
+from lakefs_client.model.repository_metadata_keys import RepositoryMetadataKeys
+from lakefs_client.model.repository_metadata_set import RepositoryMetadataSet
 from lakefs_client.model.repository_restore_status import RepositoryRestoreStatus
 from lakefs_client.model.reset_creation import ResetCreation
 from lakefs_client.model.revert_creation import RevertCreation

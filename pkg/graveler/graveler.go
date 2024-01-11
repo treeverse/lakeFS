@@ -507,6 +507,9 @@ type VersionController interface {
 	// GetRepositoryMetadata returns repository user metadata
 	GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (RepositoryMetadata, error)
 
+	// SetRepositoryMetadata sets repository user metadata
+	SetRepositoryMetadata(ctx context.Context, repository *RepositoryRecord, updateFunc RepoMetadataUpdateFunc) error
+
 	// CreateBranch creates branch on repository pointing to ref
 	CreateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, opts ...SetOptionsFunc) (*Branch, error)
 
@@ -1100,6 +1103,10 @@ func (g *Graveler) DeleteRepository(ctx context.Context, repositoryID Repository
 
 func (g *Graveler) GetRepositoryMetadata(ctx context.Context, repositoryID RepositoryID) (RepositoryMetadata, error) {
 	return g.RefManager.GetRepositoryMetadata(ctx, repositoryID)
+}
+
+func (g *Graveler) SetRepositoryMetadata(ctx context.Context, repository *RepositoryRecord, updateFunc RepoMetadataUpdateFunc) error {
+	return g.RefManager.SetRepositoryMetadata(ctx, repository, updateFunc)
 }
 
 func (g *Graveler) WriteRange(ctx context.Context, repository *RepositoryRecord, it ValueIterator, opts ...SetOptionsFunc) (*RangeInfo, error) {
