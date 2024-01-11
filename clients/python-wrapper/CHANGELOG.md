@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+:bug: Bugs fixed:
+
+- fileno to throw exception (#7238)
+- Transactions: Fix and add flag for branch cleanup (#7227)
+
 ## v0.2.0
 
 :new: What's new:
