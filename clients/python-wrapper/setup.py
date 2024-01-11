@@ -15,7 +15,6 @@ REQUIRES = [
     "setuptools == 68.2.2",
     "lakefs-sdk ~= 1.0",
     "pyyaml ~= 6.0.1",
-    "urllib3 >= 1.26"
 ]
 TEST_REQUIRES = [
     "pytest ~= 7.4.3",
