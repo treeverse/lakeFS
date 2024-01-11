@@ -2595,6 +2595,7 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ap
 	c.LogAction(ctx, "reset_branch", r, repository, branch, "")
 
 	var err error
+
 	switch body.Type {
 	case entryTypeCommonPrefix:
 		err = c.Catalog.ResetEntries(ctx, repository, branch, swag.StringValue(body.Path), graveler.WithForce(swag.BoolValue(body.Force)))
@@ -2606,6 +2607,28 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ap
 		writeError(w, r, http.StatusBadRequest, "unknown reset type")
 		return
 	}
+
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+func (c *Controller) HardResetBranch(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.HardResetBranchParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			// TODO(ozkatz): Can we have another action here?
+			Action:   permissions.RevertBranchAction,
+			Resource: permissions.BranchArn(repository, branch),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+
+	c.LogAction(ctx, "hard_reset_branch", r, repository, branch, "")
+
+	err := c.Catalog.HardResetBranch(ctx, repository, branch, params.Ref, graveler.WithForce(swag.BoolValue(params.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

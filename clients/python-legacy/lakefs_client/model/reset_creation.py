@@ -114,7 +114,7 @@ class ResetCreation(ModelNormal):
         """ResetCreation - a model defined in OpenAPI
 
         Args:
-            type (str):
+            type (str): What to reset according to path.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -201,7 +201,7 @@ class ResetCreation(ModelNormal):
         """ResetCreation - a model defined in OpenAPI
 
         Args:
-            type (str):
+            type (str): What to reset according to path.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types

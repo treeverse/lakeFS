@@ -3282,6 +3282,81 @@ paths:
       - branches
       x-contentType: application/json
       x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/hard_reset:
+    put:
+      description: Relocate branch to refer to ref.  Branch must not contain uncommitted
+        data.
+      operationId: hardResetBranch
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: After reset, branch will point at this reference.
+        explode: true
+        in: query
+        name: ref
+        required: true
+        schema:
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: force
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
+      responses:
+        "204":
+          description: reset successful
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: hard reset branch
+      tags:
+      - experimental
+      x-accepts: application/json
   /repositories/{repository}/branches/{branch}/revert:
     post:
       operationId: revertBranch
@@ -6942,6 +7017,7 @@ components:
         type: object
       properties:
         type:
+          description: What to reset according to path.
           enum:
           - object
           - common_prefix

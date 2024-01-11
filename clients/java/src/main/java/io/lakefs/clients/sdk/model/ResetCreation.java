@@ -53,7 +53,7 @@ import io.lakefs.clients.sdk.JSON;
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ResetCreation {
   /**
-   * Gets or Sets type
+   * What to reset according to path.
    */
   @JsonAdapter(TypeEnum.Adapter.class)
   public enum TypeEnum {
@@ -123,7 +123,7 @@ public class ResetCreation {
   }
 
    /**
-   * Get type
+   * What to reset according to path.
    * @return type
   **/
   @javax.annotation.Nonnull

@@ -193,6 +193,7 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**completePresignMultipartUpload**](docs/ExperimentalApi.md#completePresignMultipartUpload) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Complete a presign multipart upload request
 *ExperimentalApi* | [**createPresignMultipartUpload**](docs/ExperimentalApi.md#createPresignMultipartUpload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
 *ExperimentalApi* | [**getOtfDiffs**](docs/ExperimentalApi.md#getOtfDiffs) | **GET** /otf/diffs | get the available Open Table Format diffs
+*ExperimentalApi* | [**hardResetBranch**](docs/ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 *ExperimentalApi* | [**otfDiff**](docs/ExperimentalApi.md#otfDiff) | **GET** /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref} | perform otf diff
 *HealthCheckApi* | [**healthCheck**](docs/HealthCheckApi.md#healthCheck) | **GET** /healthcheck | 
 *ImportApi* | [**importCancel**](docs/ImportApi.md#importCancel) | **DELETE** /repositories/{repository}/branches/{branch}/import | cancel ongoing import

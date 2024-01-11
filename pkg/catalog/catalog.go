@@ -748,6 +748,23 @@ func (c *Catalog) GetBranchReference(ctx context.Context, repositoryID string, b
 	return string(b.CommitID), nil
 }
 
+func (c *Catalog) HardResetBranch(ctx context.Context, repositoryID, branch, refExpr string, opts ...graveler.SetOptionsFunc) error {
+	branchID := graveler.BranchID(branch)
+	ref := graveler.Ref(refExpr)
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
+		{Name: "ref", Value: ref, Fn: graveler.ValidateRef},
+	}); err != nil {
+		return err
+	}
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	return c.Store.ResetHard(ctx, repository, branchID, ref, opts...)
+}
+
 func (c *Catalog) ResetBranch(ctx context.Context, repositoryID string, branch string, opts ...graveler.SetOptionsFunc) error {
 	branchID := graveler.BranchID(branch)
 	if err := validator.Validate([]validator.ValidateArg{
@@ -1154,6 +1171,7 @@ func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, com
 		catalogCommitLog.Parents = append(catalogCommitLog.Parents, parent.String())
 	}
 	catalogCommitLog.CreationDate = commit.CreationDate.UTC()
+	catalogCommitLog.MetaRangeID = string(commit.MetaRangeID)
 	return catalogCommitLog, nil
 }
 
