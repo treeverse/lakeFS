@@ -748,8 +748,9 @@ func (c *Catalog) GetBranchReference(ctx context.Context, repositoryID string, b
 	return string(b.CommitID), nil
 }
 
-func (c *Catalog) HardResetBranch(ctx context.Context, repositoryID, branch, ref string, opts ...graveler.SetOptionsFunc) error {
+func (c *Catalog) HardResetBranch(ctx context.Context, repositoryID, branch, refExpr string, opts ...graveler.SetOptionsFunc) error {
 	branchID := graveler.BranchID(branch)
+	ref := graveler.Ref(refExpr)
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
@@ -761,7 +762,7 @@ func (c *Catalog) HardResetBranch(ctx context.Context, repositoryID, branch, ref
 	if err != nil {
 		return err
 	}
-	return c.Store.ResetHard(ctx, repository, branchID, graveler.Ref(ref), opts...)
+	return c.Store.ResetHard(ctx, repository, branchID, ref, opts...)
 }
 
 func (c *Catalog) ResetBranch(ctx context.Context, repositoryID string, branch string, opts ...graveler.SetOptionsFunc) error {

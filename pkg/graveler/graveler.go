@@ -2256,7 +2256,7 @@ func (g *Graveler) ResetHard(ctx context.Context, repository *RepositoryRecord, 
 
 	// TODO(ariels): up to here.  Verify staging is empty!
 	err = g.retryBranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
-		if empty, err := g.isSealedEmpty(repository, branch); err != nil {
+		if empty, err := g.isSealedEmpty(ctx, repository, branch); err != nil {
 			return nil, fmt.Errorf("%s: check if dirty: %w", branchID, err)
 		} else if !empty {
 			return nil, fmt.Errorf("%s: %w", branchID, ErrDirtyBranch)
@@ -2289,7 +2289,7 @@ func (g *Graveler) ResetHard(ctx context.Context, repository *RepositoryRecord, 
 		}
 		branch.CommitID = commitRecord.CommitID
 		return branch, nil
-	})
+	}, "reset_hard")
 	return err
 }
 
