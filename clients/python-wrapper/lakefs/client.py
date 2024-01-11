@@ -57,7 +57,7 @@ class Client:
 
     .. code-block:: python
 
-        from lakefs import Client
+        from lakefs.client import Client
 
         client = Client(username="<access_key_id>", password="<secret_access_key>", host="<lakefs_endpoint>")
         print(client.version)
