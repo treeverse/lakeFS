@@ -237,7 +237,8 @@ class Branch(_BaseBranch):
         return ImportManager(self._repo_id, self._id, commit_message, metadata, self._client)
 
     @contextmanager
-    def transact(self, commit_message: str = "", commit_metadata: Optional[Dict] = None) -> _Transaction:
+    def transact(self, commit_message: str = "", commit_metadata: Optional[Dict] = None,
+                 delete_branch_on_error: bool = True) -> _Transaction:
         """
         Create a transaction for multiple operations.
         Transaction allows for multiple modifications to be performed atomically on a branch,
@@ -270,9 +271,11 @@ class Branch(_BaseBranch):
 
         :param commit_message: once the transaction is committed, a commit is created with this message
         :param commit_metadata: user metadata for the transaction commit
+        :param delete_branch_on_error: Defaults to True. Ensures ephemeral branch is deleted on error.
         :return: a Transaction object to perform the operations on
         """
-        with Transaction(self._repo_id, self._id, commit_message, commit_metadata, self._client) as tx:
+        with Transaction(self._repo_id, self._id, commit_message, commit_metadata, delete_branch_on_error,
+                         self._client) as tx:
             yield tx
 
 
@@ -339,7 +342,7 @@ class Transaction:
     """
 
     def __init__(self, repository_id: str, branch_id: str, commit_message: str = "",
-                 commit_metadata: Optional[Dict] = None, client: Client = None):
+                 commit_metadata: Optional[Dict] = None, delete_branch_on_error: bool = True, client: Client = None):
         self._repo_id = repository_id
         self._commit_message = commit_message
         self._commit_metadata = commit_metadata
@@ -347,6 +350,7 @@ class Transaction:
         self._client = client
         self._tx = None
         self._tx_branch = None
+        self._cleanup_branch = delete_branch_on_error
 
     def __enter__(self):
         self._tx = _Transaction(self._repo_id, self._source_branch, self._commit_message, self._commit_metadata,
@@ -354,13 +358,19 @@ class Transaction:
         self._tx_branch = Branch(self._repo_id, self._tx.id, self._client)
         return self._tx
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            if len(list(self._tx.uncommitted(amount=1))) == 0:
-                return  # Do nothing if tx is empty
+    def __exit__(self, typ, value, traceback) -> bool:
+        if typ is not None:  # Perform only cleanup in case exception occurred
+            if self._cleanup_branch:
+                self._tx_branch.delete()
+            return False  # Raise the underlying exception
 
+        try:
             self._tx_branch.commit(message=self._tx.commit_message, metadata=self._tx.commit_metadata)
             self._tx_branch.merge_into(self._source_branch, message=f"Merge transaction {self._tx.id} to branch")
             self._tx_branch.delete()
+
+            return False
         except LakeFSException as e:
+            if self._cleanup_branch:
+                self._tx_branch.delete()
             raise TransactionException(f"Failed committing transaction {self._tx.id}: {e}") from e
