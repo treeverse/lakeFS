@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.2.1
+
 :bug: Bugs fixed:
 
 - fileno to throw exception (#7238)
