@@ -39,9 +39,7 @@ class TestResetCreation(unittest.TestCase):
         model = lakefs_sdk.models.reset_creation.ResetCreation()  # noqa: E501
         if include_optional :
             return ResetCreation(
-                operation = 'staged', 
                 type = 'object', 
-                ref = '', 
                 path = '', 
                 force = True
             )

@@ -121,25 +121,6 @@ public class BranchesApiTest {
     }
 
     /**
-     * hard reset branch
-     *
-     * Relocate branch to refer to ref.  Branch must not contain uncommitted data.
-     *
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void hardResetBranchTest() throws ApiException {
-        String repository = null;
-        String branch = null;
-        String ref = null;
-        Boolean force = null;
-        api.hardResetBranch(repository, branch, ref)
-                .force(force)
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
      * list branches
      *
      * @throws ApiException if the Api call fails

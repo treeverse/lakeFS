@@ -9,7 +9,6 @@ All URIs are relative to */api/v1*
 | [**deleteBranch**](BranchesApi.md#deleteBranch) | **DELETE** /repositories/{repository}/branches/{branch} | delete branch |
 | [**diffBranch**](BranchesApi.md#diffBranch) | **GET** /repositories/{repository}/branches/{branch}/diff | diff branch |
 | [**getBranch**](BranchesApi.md#getBranch) | **GET** /repositories/{repository}/branches/{branch} | get branch |
-| [**hardResetBranch**](BranchesApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch |
 | [**listBranches**](BranchesApi.md#listBranches) | **GET** /repositories/{repository}/branches | list branches |
 | [**resetBranch**](BranchesApi.md#resetBranch) | **PUT** /repositories/{repository}/branches/{branch} | reset branch |
 | [**revertBranch**](BranchesApi.md#revertBranch) | **POST** /repositories/{repository}/branches/{branch}/revert | revert |
@@ -509,109 +508,6 @@ public class Example {
 |-------------|-------------|------------------|
 | **200** | branch |  -  |
 | **401** | Unauthorized |  -  |
-| **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
-| **0** | Internal Server Error |  -  |
-
-<a id="hardResetBranch"></a>
-# **hardResetBranch**
-> hardResetBranch(repository, branch, ref).force(force).execute();
-
-hard reset branch
-
-Relocate branch to refer to ref.  Branch must not contain uncommitted data.
-
-### Example
-```java
-// Import classes:
-import io.lakefs.clients.sdk.ApiClient;
-import io.lakefs.clients.sdk.ApiException;
-import io.lakefs.clients.sdk.Configuration;
-import io.lakefs.clients.sdk.auth.*;
-import io.lakefs.clients.sdk.models.*;
-import io.lakefs.clients.sdk.BranchesApi;
-
-public class Example {
-  public static void main(String[] args) {
-    ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("/api/v1");
-    
-    // Configure HTTP basic authorization: basic_auth
-    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
-    basic_auth.setUsername("YOUR USERNAME");
-    basic_auth.setPassword("YOUR PASSWORD");
-
-    // Configure API key authorization: cookie_auth
-    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
-    cookie_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
-    // Configure API key authorization: saml_auth
-    ApiKeyAuth saml_auth = (ApiKeyAuth) defaultClient.getAuthentication("saml_auth");
-    saml_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //saml_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
-
-    BranchesApi apiInstance = new BranchesApi(defaultClient);
-    String repository = "repository_example"; // String | 
-    String branch = "branch_example"; // String | 
-    String ref = "ref_example"; // String | After reset, branch will point at this reference.
-    Boolean force = false; // Boolean | 
-    try {
-      apiInstance.hardResetBranch(repository, branch, ref)
-            .force(force)
-            .execute();
-    } catch (ApiException e) {
-      System.err.println("Exception when calling BranchesApi#hardResetBranch");
-      System.err.println("Status code: " + e.getCode());
-      System.err.println("Reason: " + e.getResponseBody());
-      System.err.println("Response headers: " + e.getResponseHeaders());
-      e.printStackTrace();
-    }
-  }
-}
-```
-
-### Parameters
-
-| Name | Type | Description  | Notes |
-|------------- | ------------- | ------------- | -------------|
-| **repository** | **String**|  | |
-| **branch** | **String**|  | |
-| **ref** | **String**| After reset, branch will point at this reference. | |
-| **force** | **Boolean**|  | [optional] [default to false] |
-
-### Return type
-
-null (empty response body)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **204** | reset successful |  -  |
-| **400** | Bad Request |  -  |
-| **401** | Unauthorized |  -  |
-| **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |

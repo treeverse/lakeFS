@@ -479,26 +479,10 @@ components:
       required:
         - type
       properties:
-        operation:
-          type: string
-          enum: [staged, hard]
-          default: staged
-          description: |
-            The kind of reset operation to perform.  If "staged",
-            uncommitted objects according to type.  If "hard", branch must
-            contain no uncommitted objects, and will be reset to refer to
-            ref.
         type:
           type: string
           enum: [object, common_prefix, reset]
-          description: |
-            Only allowed for operation="staged".  Specifies what to reset
-            according to path.
-        ref:
-          type: string
-          description: |
-            Only allowed for operation="hard".  Branch will be reset to this
-            ref.
+          description: What to reset according to path.
         path:
           type: string
         force:
@@ -3410,7 +3394,7 @@ paths:
           type: string
     put:
       tags:
-        - branches
+        - experimental
       operationId: hardResetBranch
       summary: hard reset branch
       description:

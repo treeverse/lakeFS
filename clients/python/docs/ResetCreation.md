@@ -5,9 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**operation** | **str** | The kind of reset operation to perform.  If \&quot;staged\&quot;, uncommitted objects according to type.  If \&quot;hard\&quot;, branch must contain no uncommitted objects, and will be reset to refer to ref.  | [optional] [default to 'staged']
-**type** | **str** | Only allowed for operation&#x3D;\&quot;staged\&quot;.  Specifies what to reset according to path.  | 
-**ref** | **str** | Only allowed for operation&#x3D;\&quot;hard\&quot;.  Branch will be reset to this ref.  | [optional] 
+**type** | **str** | What to reset according to path. | 
 **path** | **str** |  | [optional] 
 **force** | **bool** |  | [optional] [default to False]
 

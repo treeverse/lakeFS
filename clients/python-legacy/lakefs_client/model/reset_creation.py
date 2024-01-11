@@ -61,10 +61,6 @@ class ResetCreation(ModelNormal):
             'COMMON_PREFIX': "common_prefix",
             'RESET': "reset",
         },
-        ('operation',): {
-            'STAGED': "staged",
-            'HARD': "hard",
-        },
     }
 
     validations = {
@@ -92,8 +88,6 @@ class ResetCreation(ModelNormal):
         """
         return {
             'type': (str,),  # noqa: E501
-            'operation': (str,),  # noqa: E501
-            'ref': (str,),  # noqa: E501
             'path': (str,),  # noqa: E501
             'force': (bool,),  # noqa: E501
         }
@@ -105,8 +99,6 @@ class ResetCreation(ModelNormal):
 
     attribute_map = {
         'type': 'type',  # noqa: E501
-        'operation': 'operation',  # noqa: E501
-        'ref': 'ref',  # noqa: E501
         'path': 'path',  # noqa: E501
         'force': 'force',  # noqa: E501
     }
@@ -122,7 +114,7 @@ class ResetCreation(ModelNormal):
         """ResetCreation - a model defined in OpenAPI
 
         Args:
-            type (str): Only allowed for operation=\"staged\".  Specifies what to reset according to path. 
+            type (str): What to reset according to path.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -155,8 +147,6 @@ class ResetCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            operation (str): The kind of reset operation to perform.  If \"staged\", uncommitted objects according to type.  If \"hard\", branch must contain no uncommitted objects, and will be reset to refer to ref. . [optional] if omitted the server will use the default value of "staged"  # noqa: E501
-            ref (str): Only allowed for operation=\"hard\".  Branch will be reset to this ref. . [optional]  # noqa: E501
             path (str): [optional]  # noqa: E501
             force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
@@ -211,7 +201,7 @@ class ResetCreation(ModelNormal):
         """ResetCreation - a model defined in OpenAPI
 
         Args:
-            type (str): Only allowed for operation=\"staged\".  Specifies what to reset according to path. 
+            type (str): What to reset according to path.
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -244,8 +234,6 @@ class ResetCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            operation (str): The kind of reset operation to perform.  If \"staged\", uncommitted objects according to type.  If \"hard\", branch must contain no uncommitted objects, and will be reset to refer to ref. . [optional] if omitted the server will use the default value of "staged"  # noqa: E501
-            ref (str): Only allowed for operation=\"hard\".  Branch will be reset to this ref. . [optional]  # noqa: E501
             path (str): [optional]  # noqa: E501
             force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """

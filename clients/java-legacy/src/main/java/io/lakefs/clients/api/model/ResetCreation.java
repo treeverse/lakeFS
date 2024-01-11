@@ -30,58 +30,7 @@ import java.io.IOException;
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ResetCreation {
   /**
-   * The kind of reset operation to perform.  If \&quot;staged\&quot;, uncommitted objects according to type.  If \&quot;hard\&quot;, branch must contain no uncommitted objects, and will be reset to refer to ref. 
-   */
-  @JsonAdapter(OperationEnum.Adapter.class)
-  public enum OperationEnum {
-    STAGED("staged"),
-    
-    HARD("hard");
-
-    private String value;
-
-    OperationEnum(String value) {
-      this.value = value;
-    }
-
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    public static OperationEnum fromValue(String value) {
-      for (OperationEnum b : OperationEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-
-    public static class Adapter extends TypeAdapter<OperationEnum> {
-      @Override
-      public void write(final JsonWriter jsonWriter, final OperationEnum enumeration) throws IOException {
-        jsonWriter.value(enumeration.getValue());
-      }
-
-      @Override
-      public OperationEnum read(final JsonReader jsonReader) throws IOException {
-        String value =  jsonReader.nextString();
-        return OperationEnum.fromValue(value);
-      }
-    }
-  }
-
-  public static final String SERIALIZED_NAME_OPERATION = "operation";
-  @SerializedName(SERIALIZED_NAME_OPERATION)
-  private OperationEnum operation = OperationEnum.STAGED;
-
-  /**
-   * Only allowed for operation&#x3D;\&quot;staged\&quot;.  Specifies what to reset according to path. 
+   * What to reset according to path.
    */
   @JsonAdapter(TypeEnum.Adapter.class)
   public enum TypeEnum {
@@ -133,10 +82,6 @@ public class ResetCreation {
   @SerializedName(SERIALIZED_NAME_TYPE)
   private TypeEnum type;
 
-  public static final String SERIALIZED_NAME_REF = "ref";
-  @SerializedName(SERIALIZED_NAME_REF)
-  private String ref;
-
   public static final String SERIALIZED_NAME_PATH = "path";
   @SerializedName(SERIALIZED_NAME_PATH)
   private String path;
@@ -146,29 +91,6 @@ public class ResetCreation {
   private Boolean force = false;
 
 
-  public ResetCreation operation(OperationEnum operation) {
-    
-    this.operation = operation;
-    return this;
-  }
-
-   /**
-   * The kind of reset operation to perform.  If \&quot;staged\&quot;, uncommitted objects according to type.  If \&quot;hard\&quot;, branch must contain no uncommitted objects, and will be reset to refer to ref. 
-   * @return operation
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "The kind of reset operation to perform.  If \"staged\", uncommitted objects according to type.  If \"hard\", branch must contain no uncommitted objects, and will be reset to refer to ref. ")
-
-  public OperationEnum getOperation() {
-    return operation;
-  }
-
-
-  public void setOperation(OperationEnum operation) {
-    this.operation = operation;
-  }
-
-
   public ResetCreation type(TypeEnum type) {
     
     this.type = type;
@@ -176,11 +98,11 @@ public class ResetCreation {
   }
 
    /**
-   * Only allowed for operation&#x3D;\&quot;staged\&quot;.  Specifies what to reset according to path. 
+   * What to reset according to path.
    * @return type
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Only allowed for operation=\"staged\".  Specifies what to reset according to path. ")
+  @ApiModelProperty(required = true, value = "What to reset according to path.")
 
   public TypeEnum getType() {
     return type;
@@ -189,29 +111,6 @@ public class ResetCreation {
 
   public void setType(TypeEnum type) {
     this.type = type;
-  }
-
-
-  public ResetCreation ref(String ref) {
-    
-    this.ref = ref;
-    return this;
-  }
-
-   /**
-   * Only allowed for operation&#x3D;\&quot;hard\&quot;.  Branch will be reset to this ref. 
-   * @return ref
-  **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "Only allowed for operation=\"hard\".  Branch will be reset to this ref. ")
-
-  public String getRef() {
-    return ref;
-  }
-
-
-  public void setRef(String ref) {
-    this.ref = ref;
   }
 
 
@@ -270,25 +169,21 @@ public class ResetCreation {
       return false;
     }
     ResetCreation resetCreation = (ResetCreation) o;
-    return Objects.equals(this.operation, resetCreation.operation) &&
-        Objects.equals(this.type, resetCreation.type) &&
-        Objects.equals(this.ref, resetCreation.ref) &&
+    return Objects.equals(this.type, resetCreation.type) &&
         Objects.equals(this.path, resetCreation.path) &&
         Objects.equals(this.force, resetCreation.force);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(operation, type, ref, path, force);
+    return Objects.hash(type, path, force);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ResetCreation {\n");
-    sb.append("    operation: ").append(toIndentedString(operation)).append("\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
-    sb.append("    ref: ").append(toIndentedString(ref)).append("\n");
     sb.append("    path: ").append(toIndentedString(path)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("}");
