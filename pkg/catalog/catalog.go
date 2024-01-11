@@ -1171,6 +1171,7 @@ func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, com
 		catalogCommitLog.Parents = append(catalogCommitLog.Parents, parent.String())
 	}
 	catalogCommitLog.CreationDate = commit.CreationDate.UTC()
+	catalogCommitLog.MetaRangeID = string(commit.MetaRangeID)
 	return catalogCommitLog, nil
 }
 
