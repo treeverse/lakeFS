@@ -15,7 +15,6 @@ from abc import abstractmethod
 from typing import AnyStr, IO, Iterator, List, Literal, Optional, Union, get_args
 
 import lakefs_sdk
-import urllib3
 from lakefs_sdk import StagingMetadata
 
 from lakefs.client import Client, _BaseLakeFSObject
@@ -560,10 +559,10 @@ class ObjectWriter(LakeFSIOBase):
             headers["x-ms-blob-type"] = "BlockBlob"
 
         self._fd.seek(0)
-        resp = urllib3.request(method="PUT",
-                               url=url,
-                               body=self._fd,
-                               headers=headers)
+        resp = self._client.sdk_client.staging_api.api_client.rest_client.pool_manager.request(method="PUT",
+                                                                                               url=url,
+                                                                                               body=self._fd,
+                                                                                               headers=headers)
         handle_http_error(resp)
 
         etag = ObjectWriter._extract_etag_from_response(resp.headers)

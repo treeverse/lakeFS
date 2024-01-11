@@ -214,7 +214,7 @@ class TestWriteableObject:
         with writeable_object_context(monkeypatch, **test_kwargs.__dict__) as obj:
             staging_location = StagingTestLocation()
             monkeypatch.setattr(lakefs_sdk.api.StagingApi, "get_physical_address", lambda *args: staging_location)
-            monkeypatch.setattr(urllib3, "request",
+            monkeypatch.setattr(urllib3.PoolManager, "request",
                                 lambda *args, **kwargs: urllib3.response.HTTPResponse(status=201))
 
             def monkey_link_physical_address(*_, staging_metadata: lakefs_sdk.StagingMetadata, **__):
