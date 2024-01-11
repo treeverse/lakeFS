@@ -115,7 +115,7 @@ def test_transaction(setup_repo):
         assert not test_branch.object(obj).exists()
 
     # Reset all changes - ensure no new commits
-    with expect_exception_context(TransactionException, "No changes"):
+    with expect_exception_context(TransactionException, "no changes"):
         with test_branch.transact(commit_message="my transaction", commit_metadata={"foo": "bar"}) as tx:
             assert tx.get_commit().id == test_branch.head.id
             upload_data(tx, path_and_data2)
@@ -125,7 +125,7 @@ def test_transaction(setup_repo):
     assert log[0].message == f"Merge transaction {tx_id} to branch"
 
     # Verify transaction branch is deleted when no changes are made
-    with expect_exception_context(TransactionException, "No changes"):
+    with expect_exception_context(TransactionException, "no changes"):
         with test_branch.transact(commit_message="my transaction") as tx:
             pass
 
