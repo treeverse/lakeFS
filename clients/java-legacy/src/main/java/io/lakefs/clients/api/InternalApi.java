@@ -419,7 +419,7 @@ public class InternalApi {
 
     /**
      * delete repository metadata
-     * Delete repository metadata. Deletes the provided key from the repository metadata. 
+     * Delete repository metadata. Deletes the provided keys from the repository metadata. 
      * @param repository  (required)
      * @param repositoryMetadataKeys  (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -439,7 +439,7 @@ public class InternalApi {
 
     /**
      * delete repository metadata
-     * Delete repository metadata. Deletes the provided key from the repository metadata. 
+     * Delete repository metadata. Deletes the provided keys from the repository metadata. 
      * @param repository  (required)
      * @param repositoryMetadataKeys  (required)
      * @return ApiResponse&lt;Void&gt;
@@ -461,7 +461,7 @@ public class InternalApi {
 
     /**
      * delete repository metadata (asynchronously)
-     * Delete repository metadata. Deletes the provided key from the repository metadata. 
+     * Delete repository metadata. Deletes the provided keys from the repository metadata. 
      * @param repository  (required)
      * @param repositoryMetadataKeys  (required)
      * @param _callback The callback to be executed when the API call finishes

@@ -2640,7 +2640,7 @@ paths:
       operationId: deleteRepositoryMetadata
       summary: delete repository metadata
       description: |
-        Delete repository metadata. Deletes the provided key from the repository metadata.
+        Delete repository metadata. Deletes the provided keys from the repository metadata.
       requestBody:
         required: true
         content:

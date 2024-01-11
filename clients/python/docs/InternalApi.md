@@ -257,7 +257,7 @@ Name | Type | Description  | Notes
 
 delete repository metadata
 
-Delete repository metadata. Deletes the provided key from the repository metadata. 
+Delete repository metadata. Deletes the provided keys from the repository metadata. 
 
 ### Example
 

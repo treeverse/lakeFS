@@ -1611,7 +1611,7 @@ class InternalApi(object):
     ):
         """delete repository metadata  # noqa: E501
 
-        Delete repository metadata. Deletes the provided key from the repository metadata.   # noqa: E501
+        Delete repository metadata. Deletes the provided keys from the repository metadata.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 

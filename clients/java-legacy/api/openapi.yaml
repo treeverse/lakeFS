@@ -1826,7 +1826,7 @@ paths:
   /repositories/{repository}/metadata:
     delete:
       description: |
-        Delete repository metadata. Deletes the provided key from the repository metadata.
+        Delete repository metadata. Deletes the provided keys from the repository metadata.
       operationId: deleteRepositoryMetadata
       parameters:
       - explode: false

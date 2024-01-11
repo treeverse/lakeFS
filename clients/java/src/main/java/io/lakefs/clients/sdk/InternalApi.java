@@ -623,7 +623,7 @@ public class InternalApi {
 
     /**
      * delete repository metadata
-     * Delete repository metadata. Deletes the provided key from the repository metadata. 
+     * Delete repository metadata. Deletes the provided keys from the repository metadata. 
      * @param repository  (required)
      * @param repositoryMetadataKeys  (required)
      * @return APIdeleteRepositoryMetadataRequest

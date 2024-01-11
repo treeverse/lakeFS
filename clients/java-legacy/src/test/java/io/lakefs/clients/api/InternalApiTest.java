@@ -89,7 +89,7 @@ public class InternalApiTest {
     /**
      * delete repository metadata
      *
-     * Delete repository metadata. Deletes the provided key from the repository metadata. 
+     * Delete repository metadata. Deletes the provided keys from the repository metadata. 
      *
      * @throws ApiException
      *          if the Api call fails
