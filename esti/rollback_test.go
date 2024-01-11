@@ -83,7 +83,7 @@ func TestHardReset(t *testing.T) {
 	})
 
 	// reset
-	reset := apigen.HardResetBranchParams{Ref: mainBranch + "/"}
+	reset := apigen.HardResetBranchParams{Ref: mainBranch + "~"}
 
 	resetResp, err := client.HardResetBranchWithResponse(ctx, repo, mainBranch, &reset)
 	require.NoError(t, err, "failed to reset")
