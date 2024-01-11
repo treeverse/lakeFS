@@ -238,7 +238,7 @@ class Branch(_BaseBranch):
 
     @contextmanager
     def transact(self, commit_message: str = "", commit_metadata: Optional[Dict] = None,
-                 delete_branch_on_error: bool = False) -> _Transaction:
+                 delete_branch_on_error: bool = True) -> _Transaction:
         """
         Create a transaction for multiple operations.
         Transaction allows for multiple modifications to be performed atomically on a branch,
@@ -271,7 +271,7 @@ class Branch(_BaseBranch):
 
         :param commit_message: once the transaction is committed, a commit is created with this message
         :param commit_metadata: user metadata for the transaction commit
-        :param delete_branch_on_error: Defaults to False. If set True, deletes ephemeral branch on error.
+        :param delete_branch_on_error: Defaults to True. Ensures ephemeral branch is deleted on error.
         :return: a Transaction object to perform the operations on
         """
         with Transaction(self._repo_id, self._id, commit_message, commit_metadata, delete_branch_on_error,
@@ -342,7 +342,7 @@ class Transaction:
     """
 
     def __init__(self, repository_id: str, branch_id: str, commit_message: str = "",
-                 commit_metadata: Optional[Dict] = None, delete_branch_on_error: bool = False, client: Client = None):
+                 commit_metadata: Optional[Dict] = None, delete_branch_on_error: bool = True, client: Client = None):
         self._repo_id = repository_id
         self._commit_message = commit_message
         self._commit_metadata = commit_metadata
@@ -371,4 +371,6 @@ class Transaction:
 
             return False
         except LakeFSException as e:
+            if self._cleanup_branch:
+                self._tx_branch.delete()
             raise TransactionException(f"Failed committing transaction {self._tx.id}: {e}") from e

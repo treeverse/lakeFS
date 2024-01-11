@@ -4,7 +4,8 @@
 
 :bug: Bugs fixed:
 
-- Fix transaction cleanup (#7227)
+- fileno to throw exception (#7238)
+- Transactions: Fix and add flag for branch cleanup (#7227)
 
 ## v0.2.0
 

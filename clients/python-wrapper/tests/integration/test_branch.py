@@ -1,3 +1,4 @@
+import pytest
 from pydantic import ValidationError
 
 import lakefs
@@ -133,7 +134,8 @@ def test_transaction(setup_repo):
         tx.get_commit()
 
 
-def test_transaction_failure(setup_repo):
+@pytest.mark.parametrize("cleanup_branch", [True, False])
+def test_transaction_failure(setup_repo, cleanup_branch):
     _, repo = setup_repo
     new_data = ["a", "b", "bar/a", "bar/b"]
     common_data = ["foo/a", "foo/b", "foo/c"]
@@ -142,12 +144,14 @@ def test_transaction_failure(setup_repo):
 
     # Exception during transaction
     with expect_exception_context(ValueError, "Something bad happened"):
-        with test_branch.transact(commit_message="my transaction") as tx:
+        with test_branch.transact(commit_message="my transaction", delete_branch_on_error=cleanup_branch) as tx:
             upload_data(tx, new_data)
             raise ValueError("Something bad happened")
 
     # Ensure tx branch exists and not merged
-    assert tx.get_commit()
+    if not cleanup_branch:
+        assert tx.get_commit()
+
     assert test_branch.get_commit() == commit
 
     # Merge on dirty branch
@@ -157,11 +161,19 @@ def test_transaction_failure(setup_repo):
             upload_data(tx, new_data)
             upload_data(test_branch, common_data, 2)
 
-    # Verify tx branch was not deleted
-    repo.branch(tx.id).get_commit()
+    # Ensure tx branch exists and not merged
+    if not cleanup_branch:
+        assert tx.get_commit()
+
+    assert test_branch.get_commit() == commit
 
     # Merge with conflicts
     with expect_exception_context(TransactionException, "Conflict"):
         with test_branch.transact(commit_message="my transaction") as tx:
-            test_branch.commit(message="test branch commit")
+            new_ref = test_branch.commit(message="test branch commit")
             upload_data(tx, common_data)
+
+    with expect_exception_context(NotFoundException):
+        assert tx.get_commit()
+
+    assert test_branch.get_commit() == new_ref.get_commit()
