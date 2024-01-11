@@ -26,7 +26,7 @@ class ResetCreation(BaseModel):
     """
     ResetCreation
     """
-    type: StrictStr = Field(...)
+    type: StrictStr = Field(..., description="What to reset according to path.")
     path: Optional[StrictStr] = None
     force: Optional[StrictBool] = False
     __properties = ["type", "path", "force"]

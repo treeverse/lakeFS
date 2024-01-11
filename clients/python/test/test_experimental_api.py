@@ -57,6 +57,13 @@ class TestExperimentalApi(unittest.TestCase):
         """
         pass
 
+    def test_hard_reset_branch(self):
+        """Test case for hard_reset_branch
+
+        hard reset branch  # noqa: E501
+        """
+        pass
+
     def test_otf_diff(self):
         """Test case for otf_diff
 

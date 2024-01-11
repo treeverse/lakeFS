@@ -482,6 +482,7 @@ components:
         type:
           type: string
           enum: [object, common_prefix, reset]
+          description: What to reset according to path.
         path:
           type: string
         force:
@@ -3363,6 +3364,55 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ResetCreation"
+      responses:
+        204:
+          description: reset successful
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/hard_reset:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - experimental
+      operationId: hardResetBranch
+      summary: hard reset branch
+      description:
+        Relocate branch to refer to ref.  Branch must not contain
+        uncommitted data.
+      parameters:
+        - in: query
+          name: ref
+          required: true
+          schema:
+            type: string
+          description: After reset, branch will point at this reference.
+        - in: query
+          name: force
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         204:
           description: reset successful

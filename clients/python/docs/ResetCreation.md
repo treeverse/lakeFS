@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**type** | **str** |  | 
+**type** | **str** | What to reset according to path. | 
 **path** | **str** |  | [optional] 
 **force** | **bool** |  | [optional] [default to False]
 
