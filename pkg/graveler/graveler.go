@@ -2255,7 +2255,12 @@ func (g *Graveler) ResetHard(ctx context.Context, repository *RepositoryRecord, 
 	}
 
 	// TODO(ariels): up to here.  Verify staging is empty!
-	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
+	err = g.retryBranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
+		if empty, err := g.isSealedEmpty(repository, branch); err != nil {
+			return nil, fmt.Errorf("%s: check if dirty: %w", branchID, err)
+		} else if !empty {
+			return nil, fmt.Errorf("%s: %w", branchID, ErrDirtyBranch)
+		}
 		// Must fetch ref under update!  Consider a hard reset to
 		// branch^ racing against a commit D to branch.  Say branch
 		// looks like this:
@@ -2280,10 +2285,7 @@ func (g *Graveler) ResetHard(ctx context.Context, repository *RepositoryRecord, 
 		// So we need to dereference here :-(
 		commitRecord, err := g.dereferenceCommit(ctx, repository, ref)
 		if err != nil {
-			return nil, err
-		}
-		if branch.StagingToken != "" || len(branch.SealedTokens) > 0 {
-			return nil, ErrDirtyBranch
+			return nil, fmt.Errorf("hard-reset %s to %s: %w", branchID, ref, err)
 		}
 		branch.CommitID = commitRecord.CommitID
 		return branch, nil
