@@ -230,7 +230,7 @@ func testCommitEntries(t *testing.T, ctx context.Context, cat *catalog.Catalog, 
 			})
 		testutil.MustDo(t, "create entry "+p, err)
 	}
-	commit, err := cat.Commit(ctx, params.repo, params.branch, "commit"+params.commitName, params.user, nil, nil, nil)
+	commit, err := cat.Commit(ctx, params.repo, params.branch, "commit"+params.commitName, params.user, nil, nil, nil, false)
 	testutil.MustDo(t, "commit", err)
 	return commit.Reference
 }
@@ -306,7 +306,7 @@ func TestController_LogCommitsHandler(t *testing.T) {
 				p := prefix + n
 				err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
 				testutil.MustDo(t, "create entry "+p, err)
-				_, err = deps.catalog.Commit(ctx, repo, "main", "commit"+n, "some_user", nil, nil, nil)
+				_, err = deps.catalog.Commit(ctx, repo, "main", "commit"+n, "some_user", nil, nil, nil, false)
 				testutil.MustDo(t, "commit "+p, err)
 			}
 			params := &apigen.LogCommitsParams{}
@@ -349,7 +349,7 @@ func TestController_LogCommitsParallelHandler(t *testing.T) {
 		p := prefix + n
 		err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
 		testutil.MustDo(t, "create entry "+p, err)
-		log, err := deps.catalog.Commit(ctx, repo, "main", t.Name()+" commit"+n, "some_user", nil, nil, nil)
+		log, err := deps.catalog.Commit(ctx, repo, "main", t.Name()+" commit"+n, "some_user", nil, nil, nil, false)
 		testutil.MustDo(t, "commit "+p, err)
 		if i%4 == 0 {
 			commitsToLook[p] = log
@@ -396,7 +396,7 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 		p := prefix + n
 		err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
 		testutil.MustDo(t, "create entry "+p, err)
-		commit, err := deps.catalog.Commit(ctx, repo, "main", "commit"+n, "some_user", nil, nil, nil)
+		commit, err := deps.catalog.Commit(ctx, repo, "main", "commit"+n, "some_user", nil, nil, nil, false)
 		testutil.MustDo(t, "commit "+p, err)
 		commits[i] = commit
 	}
@@ -479,6 +479,24 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 			expectedCommits: []string{"commit10", "commit9"},
 			expectedMore:    false,
 			stopAt:          commits[8].Reference,
+		},
+		{
+			name:            "stop_at_short_sha",
+			expectedCommits: []string{"commit10", "commit9"},
+			expectedMore:    false,
+			stopAt:          commits[8].Reference[:7],
+		},
+		{
+			name:            "stop_at_branch_ref",
+			expectedCommits: []string{"commit10"},
+			expectedMore:    false,
+			stopAt:          "main",
+		},
+		{
+			name:            "stop_at_branch_ref_expression",
+			expectedCommits: []string{"commit10", "commit9", "commit8"},
+			expectedMore:    false,
+			stopAt:          "main~2",
 		},
 	}
 
@@ -728,7 +746,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "foo1", onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, "foo1", "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
-		commit1, err := deps.catalog.Commit(ctx, "foo1", "main", "some message", DefaultUserID, nil, nil, nil)
+		commit1, err := deps.catalog.Commit(ctx, "foo1", "main", "some message", DefaultUserID, nil, nil, nil, false)
 		testutil.Must(t, err)
 		reference1, err := deps.catalog.GetBranchReference(ctx, "foo1", "main")
 		if err != nil {
@@ -752,7 +770,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
-		commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
+		commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil, false)
 		testutil.Must(t, err)
 		reference1, err := deps.catalog.GetBranchReference(ctx, repo, "main")
 		if err != nil {
@@ -780,7 +798,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
-		commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
+		commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil, false)
 		testutil.Must(t, err)
 		_, err = deps.catalog.CreateTag(ctx, repo, "tag1", commit1.Reference)
 		if err != nil {
@@ -1153,6 +1171,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 		testutil.Must(t, err)
 
 		resp, err := clt.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
+		testutil.Must(t, err)
 		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("expected status code 403 for deleting a read-only repository, got %d instead", resp.StatusCode())
 		}
@@ -1262,7 +1281,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 
 		// create the first "dummy" commit on main so that we can create branches from it
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "a/b"}))
-		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil)
+		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, false)
 		testutil.Must(t, err)
 
 		for i := 0; i < 7; i++ {
@@ -1317,7 +1336,7 @@ func TestController_ListTagsHandler(t *testing.T) {
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 	testutil.Must(t, err)
 	testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "obj1"}))
-	commitLog, err := deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil)
+	commitLog, err := deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, false)
 	testutil.Must(t, err)
 	const createTagLen = 7
 	var createdTags []apigen.Ref
@@ -1402,7 +1421,7 @@ func TestController_GetBranchHandler(t *testing.T) {
 	t.Run("get default branch", func(t *testing.T) {
 		// create the first "dummy" commit on main so that we can create branches from it
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, testBranch, catalog.DBEntry{Path: "a/b"}))
-		_, err = deps.catalog.Commit(ctx, repo, testBranch, "first commit", "test", nil, nil, nil)
+		_, err = deps.catalog.Commit(ctx, repo, testBranch, "first commit", "test", nil, nil, nil, false)
 		testutil.Must(t, err)
 
 		resp, err := clt.GetBranchWithResponse(ctx, repo, testBranch)
@@ -1493,7 +1512,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "a/b"}))
-		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil)
+		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, false)
 		testutil.Must(t, err)
 
 		const newBranchName = "main2"
@@ -1512,7 +1531,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(content), repo, newBranchName)
 		verifyResponseOK(t, uploadResp, err)
 
-		if _, err := deps.catalog.Commit(ctx, repo, "main2", "commit 1", "some_user", nil, nil, nil); err != nil {
+		if _, err := deps.catalog.Commit(ctx, repo, "main2", "commit 1", "some_user", nil, nil, nil, false); err != nil {
 			t.Fatalf("failed to commit 'repo1': %s", err)
 		}
 		resp2, err := clt.DiffRefsWithResponse(ctx, repo, "main", newBranchName, &apigen.DiffRefsParams{})
@@ -1619,7 +1638,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", true)
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "a/b"}, graveler.WithForce(true)))
-		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, graveler.WithForce(true))
+		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, false, graveler.WithForce(true))
 		testutil.Must(t, err)
 
 		const newBranchName = "main2"
@@ -1627,6 +1646,7 @@ func TestController_CreateBranchHandler(t *testing.T) {
 			Name:   newBranchName,
 			Source: "main",
 		})
+		testutil.Must(t, err)
 		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatal("CreateBranch expected 403 forbidden, got", resp.Status())
 		}
@@ -1666,7 +1686,7 @@ func TestController_DiffRefsHandler(t *testing.T) {
 		uploadResp, err := uploadObjectHelper(t, ctx, clt, fullPath, strings.NewReader(content), repoName, newBranchName)
 		verifyResponseOK(t, uploadResp, err)
 
-		if _, err := deps.catalog.Commit(ctx, repoName, newBranchName, "commit 1", "some_user", nil, nil, nil); err != nil {
+		if _, err := deps.catalog.Commit(ctx, repoName, newBranchName, "commit 1", "some_user", nil, nil, nil, false); err != nil {
 			t.Fatalf("failed to commit 'repo1': %s", err)
 		}
 		resp2, err := clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &apigen.DiffRefsParams{})
@@ -1812,7 +1832,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		}
 
 		// commit
-		_, err = deps.catalog.Commit(ctx, "my-new-repo", "another-branch", "a commit!", "user1", nil, nil, nil)
+		_, err = deps.catalog.Commit(ctx, "my-new-repo", "another-branch", "a commit!", "user1", nil, nil, nil, false)
 		testutil.Must(t, err)
 
 		// overwrite after commit
@@ -1869,6 +1889,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		b, err := clt.UploadObjectWithBodyWithResponse(ctx, repoName, "main", &apigen.UploadObjectParams{
 			Path: "foo/bar",
 		}, contentType, buf)
+		testutil.Must(t, err)
 		if b.JSON403 == nil {
 			t.Fatalf("expected 403 forbidden for UploadObject, got %d", b.StatusCode())
 		}
@@ -1877,6 +1898,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 			Path:  "foo/bar",
 			Force: swag.Bool(true),
 		}, contentType, buf)
+		testutil.Must(t, err)
 		if b.StatusCode() == http.StatusInternalServerError {
 			t.Fatalf("got internal server error (500) while uploading: %v", b.JSONDefault)
 		}
@@ -1894,7 +1916,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, "my-new-repo", onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, "my-new-repo", "main", catalog.DBEntry{Path: "a/b"}))
-		_, err = deps.catalog.Commit(ctx, "my-new-repo", "main", "first commit", "test", nil, nil, nil)
+		_, err = deps.catalog.Commit(ctx, "my-new-repo", "main", "first commit", "test", nil, nil, nil, false)
 		testutil.Must(t, err)
 
 		_, err = deps.catalog.CreateBranch(ctx, "my-new-repo", "main2", "main")
@@ -1938,7 +1960,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repoName, onBlock(deps, "foo1"), "main", true)
 		testutil.Must(t, err)
 		testutil.Must(t, deps.catalog.CreateEntry(ctx, repoName, "main", catalog.DBEntry{Path: "a/b"}, graveler.WithForce(true)))
-		_, err = deps.catalog.Commit(ctx, repoName, "main", "first commit", "test", nil, nil, nil, graveler.WithForce(true))
+		_, err = deps.catalog.Commit(ctx, repoName, "main", "first commit", "test", nil, nil, nil, false, graveler.WithForce(true))
 		testutil.Must(t, err)
 
 		_, err = deps.catalog.CreateBranch(ctx, repoName, "main2", "main", graveler.WithForce(true))
@@ -1947,6 +1969,7 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		}
 
 		delResp, err := clt.DeleteBranchWithResponse(ctx, repoName, "main2", &apigen.DeleteBranchParams{})
+		testutil.Must(t, err)
 		if delResp.JSON403 == nil {
 			t.Fatalf("expected 403 forbidden for DeleteBranch, got %d", delResp.StatusCode())
 		}
@@ -2446,6 +2469,7 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		resp, err := uploadObjectHelper(t, ctx, clt, path, strings.NewReader(content), readOnlyRepo, "main")
+		testutil.Must(t, err)
 		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("Expected 403 forbidden error for UploadObject on read-only repository, got %d", resp.StatusCode())
 		}
@@ -2466,7 +2490,7 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 		resp, err = clt.UploadObjectWithBodyWithResponse(ctx, readOnlyRepo, "main", &apigen.UploadObjectParams{
 			Path: path,
 		}, w.FormDataContentType(), &b)
-
+		testutil.Must(t, err)
 		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("Expected 403 forbidden error for UploadObject on read-only repository, got %d instead", resp.StatusCode())
 		}
@@ -2615,6 +2639,7 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 			PhysicalAddress: onBlock(deps, "another-bucket/some/location"),
 			SizeBytes:       expectedSizeBytes,
 		})
+		testutil.Must(t, err)
 		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("expected 403 forbidden status for StageObject for read-only repository, got %d", resp.StatusCode())
 		}
@@ -2785,6 +2810,7 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
 			},
 		})
+		testutil.Must(t, err)
 		if resp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("LinkPhysicalAddress non 403 response - status code %d", resp.StatusCode())
 		}
@@ -3021,12 +3047,15 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 
 		// delete it
 		delResp, err := clt.DeleteObjectWithResponse(ctx, readOnlyRepo, branch, &apigen.DeleteObjectParams{Path: "foo/bar"})
+		testutil.Must(t, err)
 		if delResp.JSON403 == nil {
 			t.Fatalf("expected DeleteObject to fail with 403 forbidden, got %d", delResp.StatusCode())
 		}
 
-		delResp, err = clt.DeleteObjectWithResponse(ctx, readOnlyRepo, branch, &apigen.DeleteObjectParams{Path: "foo/bar",
-			Force: swag.Bool(true)})
+		delResp, err = clt.DeleteObjectWithResponse(ctx, readOnlyRepo, branch, &apigen.DeleteObjectParams{
+			Path:  "foo/bar",
+			Force: swag.Bool(true),
+		})
 		verifyResponseOK(t, delResp, err)
 
 		// get it
@@ -3527,7 +3556,7 @@ func TestController_MergeIntoExplicitBranch(t *testing.T) {
 	testutil.Must(t, err)
 	err = deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
 	testutil.Must(t, err)
-	_, err = deps.catalog.Commit(ctx, repo, "branch1", "some message", DefaultUserID, nil, nil, nil)
+	_, err = deps.catalog.Commit(ctx, repo, "branch1", "some message", DefaultUserID, nil, nil, nil, false)
 	testutil.Must(t, err)
 
 	// test branch with mods
@@ -3564,7 +3593,7 @@ func TestController_MergeDirtyBranch(t *testing.T) {
 	testutil.Must(t, err)
 	err = deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum2"})
 	testutil.Must(t, err)
-	_, err = deps.catalog.Commit(ctx, repo, "branch1", "some message", DefaultUserID, nil, nil, nil)
+	_, err = deps.catalog.Commit(ctx, repo, "branch1", "some message", DefaultUserID, nil, nil, nil, false)
 	testutil.Must(t, err)
 
 	// merge branch1 to main (dirty)
@@ -3583,7 +3612,7 @@ func TestController_CreateTag(t *testing.T) {
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
-	commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
+	commit1, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil, false)
 	testutil.Must(t, err)
 
 	t.Run("ref", func(t *testing.T) {
@@ -3693,12 +3722,13 @@ func TestController_CreateTag(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepo, onBlock(deps, readOnlyRepo), "main", true)
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, readOnlyRepo, "main", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}, graveler.WithForce(true)))
-		commit1, err := deps.catalog.Commit(ctx, readOnlyRepo, "main", "some message", DefaultUserID, nil, nil, nil, graveler.WithForce(true))
+		commit1, err := deps.catalog.Commit(ctx, readOnlyRepo, "main", "some message", DefaultUserID, nil, nil, nil, false, graveler.WithForce(true))
 		testutil.Must(t, err)
 		tagResp, err := clt.CreateTagWithResponse(ctx, readOnlyRepo, apigen.CreateTagJSONRequestBody{
 			Id:  "tag1",
 			Ref: commit1.Reference,
 		})
+		testutil.Must(t, err)
 		if tagResp.JSON403 == nil {
 			t.Errorf("Create tag to read-only repo should fail with 403 forbidden, got (status code: %d): %s", tagResp.StatusCode(), tagResp.Body)
 		}
@@ -3723,7 +3753,7 @@ func TestController_Revert(t *testing.T) {
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
-	_, err = deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
+	_, err = deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil, false)
 	testutil.Must(t, err)
 
 	t.Run("ref", func(t *testing.T) {
@@ -3773,14 +3803,14 @@ func TestController_Revert(t *testing.T) {
 		testutil.Must(t, err)
 		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "merge/foo/bar1", PhysicalAddress: "merge1bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
 		testutil.Must(t, err)
-		_, err = deps.catalog.Commit(ctx, repo, "main", "first", DefaultUserID, nil, nil, nil)
+		_, err = deps.catalog.Commit(ctx, repo, "main", "first", DefaultUserID, nil, nil, nil, false)
 		testutil.Must(t, err)
 		// create branch with one entry committed
 		_, err = deps.catalog.CreateBranch(ctx, repo, "branch1", "main")
 		testutil.Must(t, err)
 		err = deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "merge/foo/bar2", PhysicalAddress: "merge2bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum2"})
 		testutil.Must(t, err)
-		_, err = deps.catalog.Commit(ctx, repo, "branch1", "second", DefaultUserID, nil, nil, nil)
+		_, err = deps.catalog.Commit(ctx, repo, "branch1", "second", DefaultUserID, nil, nil, nil, false)
 		testutil.Must(t, err)
 		// merge branch1 to main
 		mergeRef, err := deps.catalog.Merge(ctx, repo, "main", "branch1", DefaultUserID, "merge to main", catalog.Metadata{}, "")
@@ -3799,9 +3829,10 @@ func TestController_Revert(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepository, onBlock(deps, readOnlyRepository), "main", true)
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, readOnlyRepository, "main", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}, graveler.WithForce(true)))
-		_, err = deps.catalog.Commit(ctx, readOnlyRepository, "main", "some message", DefaultUserID, nil, nil, nil, graveler.WithForce(true))
+		_, err = deps.catalog.Commit(ctx, readOnlyRepository, "main", "some message", DefaultUserID, nil, nil, nil, false, graveler.WithForce(true))
 		testutil.Must(t, err)
 		revertResp, err := clt.RevertBranchWithResponse(ctx, readOnlyRepository, "main", apigen.RevertBranchJSONRequestBody{Ref: "main"})
+		testutil.Must(t, err)
 		if revertResp.JSON403 == nil {
 			t.Errorf("Revert should fail with 403 forbidden for read-only repository, got (status code: %d): %s", revertResp.StatusCode(), revertResp.Body)
 		}
@@ -3818,10 +3849,10 @@ func TestController_RevertConflict(t *testing.T) {
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
-	firstCommit, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil)
+	firstCommit, err := deps.catalog.Commit(ctx, repo, "main", "some message", DefaultUserID, nil, nil, nil, false)
 	testutil.Must(t, err)
 	testutil.MustDo(t, "overriding entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum2"}))
-	_, err = deps.catalog.Commit(ctx, repo, "main", "some other message", DefaultUserID, nil, nil, nil)
+	_, err = deps.catalog.Commit(ctx, repo, "main", "some other message", DefaultUserID, nil, nil, nil, false)
 	testutil.Must(t, err)
 
 	resp, err := clt.RevertBranchWithResponse(ctx, repo, "main", apigen.RevertBranchJSONRequestBody{Ref: firstCommit.Reference})
@@ -3839,7 +3870,7 @@ func TestController_CherryPick(t *testing.T) {
 	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 	testutil.Must(t, err)
 	testutil.MustDo(t, "create entry bar1", deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
-	_, err = deps.catalog.Commit(ctx, repo, "main", "message1", DefaultUserID, nil, nil, nil)
+	_, err = deps.catalog.Commit(ctx, repo, "main", "message1", DefaultUserID, nil, nil, nil, false)
 	testutil.Must(t, err)
 
 	for _, name := range []string{"branch1", "branch2", "branch3", "branch4", "dest-branch1", "dest-branch2", "dest-branch3", "dest-branch4"} {
@@ -3848,25 +3879,25 @@ func TestController_CherryPick(t *testing.T) {
 	}
 
 	testutil.MustDo(t, "create entry bar2", deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 2, Checksum: "cksum2"}))
-	commit2, err := deps.catalog.Commit(ctx, repo, "branch1", "message2", DefaultUserID, nil, nil, nil)
+	commit2, err := deps.catalog.Commit(ctx, repo, "branch1", "message2", DefaultUserID, nil, nil, nil, false)
 	testutil.Must(t, err)
 
 	testutil.MustDo(t, "create entry bar3", deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar3", PhysicalAddress: "bar3addr", CreationDate: time.Now(), Size: 3, Checksum: "cksum3"}))
 	testutil.MustDo(t, "create entry bar4", deps.catalog.CreateEntry(ctx, repo, "branch1", catalog.DBEntry{Path: "foo/bar4", PhysicalAddress: "bar4addr", CreationDate: time.Now(), Size: 4, Checksum: "cksum4"}))
-	_, err = deps.catalog.Commit(ctx, repo, "branch1", "message34", DefaultUserID, nil, nil, nil)
+	_, err = deps.catalog.Commit(ctx, repo, "branch1", "message34", DefaultUserID, nil, nil, nil, false)
 	testutil.Must(t, err)
 
 	testutil.MustDo(t, "create entry bar6", deps.catalog.CreateEntry(ctx, repo, "branch2", catalog.DBEntry{Path: "foo/bar6", PhysicalAddress: "bar6addr", CreationDate: time.Now(), Size: 6, Checksum: "cksum6"}))
 	testutil.MustDo(t, "create entry bar7", deps.catalog.CreateEntry(ctx, repo, "branch2", catalog.DBEntry{Path: "foo/bar7", PhysicalAddress: "bar7addr", CreationDate: time.Now(), Size: 7, Checksum: "cksum7"}))
-	_, err = deps.catalog.Commit(ctx, repo, "branch2", "message34", DefaultUserID, nil, nil, nil)
+	_, err = deps.catalog.Commit(ctx, repo, "branch2", "message34", DefaultUserID, nil, nil, nil, false)
 	testutil.Must(t, err)
 
 	testutil.MustDo(t, "create entry bar8", deps.catalog.CreateEntry(ctx, repo, "branch3", catalog.DBEntry{Path: "foo/bar8", PhysicalAddress: "bar8addr", CreationDate: time.Now(), Size: 8, Checksum: "cksum8"}))
-	_, err = deps.catalog.Commit(ctx, repo, "branch3", "message8", DefaultUserID, nil, nil, nil)
+	_, err = deps.catalog.Commit(ctx, repo, "branch3", "message8", DefaultUserID, nil, nil, nil, false)
 	testutil.Must(t, err)
 
 	testutil.MustDo(t, "create entry bar2", deps.catalog.CreateEntry(ctx, repo, "branch4", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr4", CreationDate: time.Now(), Size: 24, Checksum: "cksum24"}))
-	_, err = deps.catalog.Commit(ctx, repo, "branch4", "message4", DefaultUserID, nil, nil, nil)
+	_, err = deps.catalog.Commit(ctx, repo, "branch4", "message4", DefaultUserID, nil, nil, nil, false)
 	testutil.Must(t, err)
 
 	_, err = deps.catalog.Merge(ctx, repo, "branch3", "branch1", DefaultUserID,
@@ -4001,10 +4032,11 @@ func TestController_CherryPick(t *testing.T) {
 			testutil.Must(t, err)
 		}
 		testutil.MustDo(t, "create entry bar2", deps.catalog.CreateEntry(ctx, readOnlyRepository, "branch1", catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 2, Checksum: "cksum2"}, graveler.WithForce(true)))
-		_, err = deps.catalog.Commit(ctx, readOnlyRepository, "branch1", "message2", DefaultUserID, nil, nil, nil, graveler.WithForce(true))
+		_, err = deps.catalog.Commit(ctx, readOnlyRepository, "branch1", "message2", DefaultUserID, nil, nil, nil, false, graveler.WithForce(true))
 		testutil.Must(t, err)
 
 		cherryResponse, err := clt.CherryPickWithResponse(ctx, readOnlyRepository, "dest-branch1", apigen.CherryPickJSONRequestBody{Ref: "branch1"})
+		testutil.Must(t, err)
 		if cherryResponse.JSON403 == nil {
 			t.Fatalf("expected 403 to get forbidden error, got %d instead", cherryResponse.StatusCode())
 		}
@@ -4245,7 +4277,7 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
 		}
-		if _, err := deps.catalog.Commit(ctx, repo, "main", "committed objects", "some_user", nil, nil, nil); err != nil {
+		if _, err := deps.catalog.Commit(ctx, repo, "main", "committed objects", "some_user", nil, nil, nil, false); err != nil {
 			t.Fatalf("failed to commit objects: %s", err)
 		}
 		verifyPrepareGarbageCollection(t, repo, 1, false)
@@ -4750,6 +4782,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		}, apigen.CopyObjectJSONRequestBody{
 			SrcPath: srcPath,
 		})
+		testutil.Must(t, err)
 		if copyResp.StatusCode() != http.StatusForbidden {
 			t.Fatalf("expected 403 forbidden for CopyObject on read-only repository, got %d instead", copyResp.StatusCode())
 		}
@@ -5044,7 +5077,7 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 		p := "foo/bar" + n
 		err := deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: p, PhysicalAddress: onBlock(deps, "bar"+n+"addr"), CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n})
 		testutil.MustDo(t, "create entry "+p, err)
-		_, err = deps.catalog.Commit(ctx, repo, "main", "commit"+n, "tester", nil, nil, nil)
+		_, err = deps.catalog.Commit(ctx, repo, "main", "commit"+n, "tester", nil, nil, nil, false)
 		testutil.MustDo(t, "commit "+p, err)
 	}
 

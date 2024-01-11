@@ -31,6 +31,10 @@ func (a *mockAdapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, 
 	return "", time.Time{}, block.ErrOperationNotSupported
 }
 
+func (a *mockAdapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPointer, _ string, _ int) (string, error) {
+	return "", block.ErrOperationNotSupported
+}
+
 func (a *mockAdapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
 	data, err := io.ReadAll(reader)
 	if err != nil {

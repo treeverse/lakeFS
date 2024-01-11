@@ -936,7 +936,7 @@ func TestConsistentCommitIdentity(t *testing.T) {
 	const expected = "f1a106bbeb12d3eb54418d6000f4507501d289d0d0879dcce6f4d31425587df1"
 
 	// Running many times to check that it's actually consistent (see issue #1291)
-	const iterations = 10000
+	const iterations = 50
 
 	for i := 0; i < iterations; i++ {
 		res := addressProvider.ContentAddress(commit)

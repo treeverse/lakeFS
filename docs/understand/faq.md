@@ -12,7 +12,7 @@ redirect_from:
 lakeFS is completely free, open-source, and licensed under the [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) License. We maintain a public [product roadmap][roadmap] and a [Slack channel](https://lakefs.io/slack) for open discussions.
 
 ### 2. How does lakeFS data versioning work?
-lakeFS uses a copy-on-write mechanism to avoid data duplication. For example, creating a new branch is a metadata-only operation: no objects are actually copied. Only when an object changes does lakeFS create another [version of the data](https://lakefs.io/blog/data-versioning/) in the storage. For more information, see [Versioning internals]({% link understand/how/versioning-internals.md %}).
+lakeFS uses zero-copy branching to avoid data duplication. That is, creating a new branch is a metadata-only operation: no objects are actually copied. Only when an object changes does lakeFS create another [version of the data](https://lakefs.io/blog/data-versioning/) in the storage. For more information, see [Versioning internals]({% link understand/how/versioning-internals.md %}).
 
 ### 3. How do I get support for my lakeFS installation?
 We are extremely responsive on our Slack channel, and we make sure to prioritize the most pressing issues for the community. For SLA-based support, please contact us at [support@treeverse.io](mailto:support@treeverse.io).

@@ -6,6 +6,7 @@ api/openapi.yaml
 build.gradle
 build.sbt
 docs/ACL.md
+docs/AbortPresignMultipartUpload.md
 docs/AccessKeyCredentials.md
 docs/ActionRun.md
 docs/ActionRunList.md
@@ -22,6 +23,7 @@ docs/Commit.md
 docs/CommitCreation.md
 docs/CommitList.md
 docs/CommitsApi.md
+docs/CompletePresignMultipartUpload.md
 docs/Config.md
 docs/ConfigApi.md
 docs/Credentials.md
@@ -76,6 +78,7 @@ docs/Policy.md
 docs/PolicyList.md
 docs/PrepareGCUncommittedRequest.md
 docs/PrepareGCUncommittedResponse.md
+docs/PresignMultipartUpload.md
 docs/RangeMetadata.md
 docs/Ref.md
 docs/RefList.md
@@ -105,6 +108,7 @@ docs/TagsApi.md
 docs/TaskInfo.md
 docs/UnderlyingObjectProperties.md
 docs/UpdateToken.md
+docs/UploadPart.md
 docs/User.md
 docs/UserCreation.md
 docs/UserList.md
@@ -151,6 +155,7 @@ src/main/java/io/lakefs/clients/api/auth/Authentication.java
 src/main/java/io/lakefs/clients/api/auth/HttpBasicAuth.java
 src/main/java/io/lakefs/clients/api/auth/HttpBearerAuth.java
 src/main/java/io/lakefs/clients/api/model/ACL.java
+src/main/java/io/lakefs/clients/api/model/AbortPresignMultipartUpload.java
 src/main/java/io/lakefs/clients/api/model/AccessKeyCredentials.java
 src/main/java/io/lakefs/clients/api/model/ActionRun.java
 src/main/java/io/lakefs/clients/api/model/ActionRunList.java
@@ -163,6 +168,7 @@ src/main/java/io/lakefs/clients/api/model/CommPrefsInput.java
 src/main/java/io/lakefs/clients/api/model/Commit.java
 src/main/java/io/lakefs/clients/api/model/CommitCreation.java
 src/main/java/io/lakefs/clients/api/model/CommitList.java
+src/main/java/io/lakefs/clients/api/model/CompletePresignMultipartUpload.java
 src/main/java/io/lakefs/clients/api/model/Config.java
 src/main/java/io/lakefs/clients/api/model/Credentials.java
 src/main/java/io/lakefs/clients/api/model/CredentialsList.java
@@ -210,6 +216,7 @@ src/main/java/io/lakefs/clients/api/model/Policy.java
 src/main/java/io/lakefs/clients/api/model/PolicyList.java
 src/main/java/io/lakefs/clients/api/model/PrepareGCUncommittedRequest.java
 src/main/java/io/lakefs/clients/api/model/PrepareGCUncommittedResponse.java
+src/main/java/io/lakefs/clients/api/model/PresignMultipartUpload.java
 src/main/java/io/lakefs/clients/api/model/RangeMetadata.java
 src/main/java/io/lakefs/clients/api/model/Ref.java
 src/main/java/io/lakefs/clients/api/model/RefList.java
@@ -235,6 +242,7 @@ src/main/java/io/lakefs/clients/api/model/TagCreation.java
 src/main/java/io/lakefs/clients/api/model/TaskInfo.java
 src/main/java/io/lakefs/clients/api/model/UnderlyingObjectProperties.java
 src/main/java/io/lakefs/clients/api/model/UpdateToken.java
+src/main/java/io/lakefs/clients/api/model/UploadPart.java
 src/main/java/io/lakefs/clients/api/model/User.java
 src/main/java/io/lakefs/clients/api/model/UserCreation.java
 src/main/java/io/lakefs/clients/api/model/UserList.java
@@ -255,6 +263,7 @@ src/test/java/io/lakefs/clients/api/RepositoriesApiTest.java
 src/test/java/io/lakefs/clients/api/StagingApiTest.java
 src/test/java/io/lakefs/clients/api/TagsApiTest.java
 src/test/java/io/lakefs/clients/api/model/ACLTest.java
+src/test/java/io/lakefs/clients/api/model/AbortPresignMultipartUploadTest.java
 src/test/java/io/lakefs/clients/api/model/AccessKeyCredentialsTest.java
 src/test/java/io/lakefs/clients/api/model/ActionRunListTest.java
 src/test/java/io/lakefs/clients/api/model/ActionRunTest.java
@@ -267,6 +276,7 @@ src/test/java/io/lakefs/clients/api/model/CommPrefsInputTest.java
 src/test/java/io/lakefs/clients/api/model/CommitCreationTest.java
 src/test/java/io/lakefs/clients/api/model/CommitListTest.java
 src/test/java/io/lakefs/clients/api/model/CommitTest.java
+src/test/java/io/lakefs/clients/api/model/CompletePresignMultipartUploadTest.java
 src/test/java/io/lakefs/clients/api/model/ConfigTest.java
 src/test/java/io/lakefs/clients/api/model/CredentialsListTest.java
 src/test/java/io/lakefs/clients/api/model/CredentialsTest.java
@@ -314,6 +324,7 @@ src/test/java/io/lakefs/clients/api/model/PolicyListTest.java
 src/test/java/io/lakefs/clients/api/model/PolicyTest.java
 src/test/java/io/lakefs/clients/api/model/PrepareGCUncommittedRequestTest.java
 src/test/java/io/lakefs/clients/api/model/PrepareGCUncommittedResponseTest.java
+src/test/java/io/lakefs/clients/api/model/PresignMultipartUploadTest.java
 src/test/java/io/lakefs/clients/api/model/RangeMetadataTest.java
 src/test/java/io/lakefs/clients/api/model/RefListTest.java
 src/test/java/io/lakefs/clients/api/model/RefTest.java
@@ -339,6 +350,7 @@ src/test/java/io/lakefs/clients/api/model/TagCreationTest.java
 src/test/java/io/lakefs/clients/api/model/TaskInfoTest.java
 src/test/java/io/lakefs/clients/api/model/UnderlyingObjectPropertiesTest.java
 src/test/java/io/lakefs/clients/api/model/UpdateTokenTest.java
+src/test/java/io/lakefs/clients/api/model/UploadPartTest.java
 src/test/java/io/lakefs/clients/api/model/UserCreationTest.java
 src/test/java/io/lakefs/clients/api/model/UserListTest.java
 src/test/java/io/lakefs/clients/api/model/UserTest.java

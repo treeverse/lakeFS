@@ -10,6 +10,7 @@
 # sys.setrecursionlimit(n)
 
 from lakefs_client.model.acl import ACL
+from lakefs_client.model.abort_presign_multipart_upload import AbortPresignMultipartUpload
 from lakefs_client.model.access_key_credentials import AccessKeyCredentials
 from lakefs_client.model.action_run import ActionRun
 from lakefs_client.model.action_run_list import ActionRunList
@@ -22,6 +23,7 @@ from lakefs_client.model.comm_prefs_input import CommPrefsInput
 from lakefs_client.model.commit import Commit
 from lakefs_client.model.commit_creation import CommitCreation
 from lakefs_client.model.commit_list import CommitList
+from lakefs_client.model.complete_presign_multipart_upload import CompletePresignMultipartUpload
 from lakefs_client.model.config import Config
 from lakefs_client.model.credentials import Credentials
 from lakefs_client.model.credentials_list import CredentialsList
@@ -70,6 +72,7 @@ from lakefs_client.model.policy import Policy
 from lakefs_client.model.policy_list import PolicyList
 from lakefs_client.model.prepare_gc_uncommitted_request import PrepareGCUncommittedRequest
 from lakefs_client.model.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse
+from lakefs_client.model.presign_multipart_upload import PresignMultipartUpload
 from lakefs_client.model.range_metadata import RangeMetadata
 from lakefs_client.model.ref import Ref
 from lakefs_client.model.ref_list import RefList
@@ -96,6 +99,7 @@ from lakefs_client.model.tag_creation import TagCreation
 from lakefs_client.model.task_info import TaskInfo
 from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties
 from lakefs_client.model.update_token import UpdateToken
+from lakefs_client.model.upload_part import UploadPart
 from lakefs_client.model.user import User
 from lakefs_client.model.user_creation import UserCreation
 from lakefs_client.model.user_list import UserList

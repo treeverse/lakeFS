@@ -136,12 +136,13 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.endpoint` `(string : )` - If specified, custom endpoint for the AWS S3 API (https://s3_compatible_service_endpoint:port)
 * `blockstore.s3.force_path_style` `(bool : false)` - When true, use path-style S3 URLs (https://<host>/<bucket> instead of https://<bucket>.<host>)
 * `blockstore.s3.discover_bucket_region` `(bool : true)` - (Can be turned off if the underlying S3 bucket doesn't support the GetBucketRegion API).
-* `blockstore.s3.skip_verify_certificate_test_only` `(boolean : false)` - Skip certificate verification while connecting to the storage endpoint. Should be used only for testing.
+* `blockstore.s3.skip_verify_certificate_test_only` `(bool : false)` - Skip certificate verification while connecting to the storage endpoint. Should be used only for testing.
 * `blockstore.s3.server_side_encryption` `(string : )` - Server side encryption format used (Example on AWS using SSE-KMS while passing "aws:kms")
 * `blockstore.s3.server_side_encryption_kms_key_id` `(string : )` - Server side encryption KMS key ID
 * `blockstore.s3.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
 * `blockstore.s3.disable_pre_signed` `(bool : false)` - Disable use of pre-signed URL.
 * `blockstore.s3.disable_pre_signed_ui` `(bool : true)` - Disable use of pre-signed URL in the UI.
+* `blockstore.s3.disable_pre_signed_multipart` `(bool : )` - Disable use of pre-signed multipart upload **experimental**, enabled on s3 block adapter with presign support.
 * `blockstore.s3.client_log_request` `(bool : false)` - Set SDK logging bit to log requests
 * `blockstore.s3.client_log_retries` `(bool : false)` - Set SDK logging bit to log retries
 * `graveler.reposiory_cache.size` `(int : 1000)` - How many items to store in the repository cache.

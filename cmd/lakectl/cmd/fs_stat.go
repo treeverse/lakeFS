@@ -16,11 +16,11 @@ var fsStatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path URI", args[0])
 		client := getClient()
-		preSign := getPresignMode(cmd, client)
+		preSignMode := getPresignMode(cmd, client)
 
 		resp, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &apigen.StatObjectParams{
 			Path:         *pathURI.Path,
-			Presign:      swag.Bool(preSign),
+			Presign:      swag.Bool(preSignMode.Enabled),
 			UserMetadata: swag.Bool(true),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)

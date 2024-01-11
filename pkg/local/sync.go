@@ -30,8 +30,9 @@ const (
 )
 
 type SyncFlags struct {
-	Parallelism int
-	Presign     bool
+	Parallelism      int
+	Presign          bool
+	PresignMultipart bool
 }
 
 func getMtimeFromStats(stats apigen.ObjectStats) (int64, error) {
@@ -276,7 +277,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	}
 	if s.flags.Presign {
 		_, err = helpers.ClientUploadPreSign(
-			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
+			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader, s.flags.PresignMultipart)
 		return err
 	}
 	// not pre-signed

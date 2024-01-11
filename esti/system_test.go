@@ -30,6 +30,11 @@ const mainBranch = "main"
 
 const minHTTPErrorStatusCode = 400
 
+const (
+	ViperStorageNamespaceKey = "storage_namespace"
+	ViperBlockstoreType      = "blockstore_type"
+)
+
 var errNotVerified = errors.New("lakeFS failed")
 
 var nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
@@ -37,7 +42,7 @@ var nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
 // skipOnSchemaMismatch matches the rawURL schema to the current tested storage namespace schema
 func skipOnSchemaMismatch(t *testing.T, rawURL string) {
 	t.Helper()
-	namespaceURL, err := url.Parse(viper.GetString("storage_namespace"))
+	namespaceURL, err := url.Parse(viper.GetString(ViperStorageNamespaceKey))
 	if err != nil {
 		t.Fatal("Failed to parse configured storage_namespace", err)
 	}

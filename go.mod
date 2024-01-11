@@ -254,4 +254,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20231224145418-d3dda453818f
+replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20240101152008-53c0d469272e

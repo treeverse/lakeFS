@@ -84,6 +84,10 @@ public class StorageConfig {
   @SerializedName(SERIALIZED_NAME_IMPORT_VALIDITY_REGEX)
   private String importValidityRegex;
 
+  public static final String SERIALIZED_NAME_PRE_SIGN_MULTIPART_UPLOAD = "pre_sign_multipart_upload";
+  @SerializedName(SERIALIZED_NAME_PRE_SIGN_MULTIPART_UPLOAD)
+  private Boolean preSignMultipartUpload;
+
   public StorageConfig() {
   }
 
@@ -254,6 +258,27 @@ public class StorageConfig {
     this.importValidityRegex = importValidityRegex;
   }
 
+
+  public StorageConfig preSignMultipartUpload(Boolean preSignMultipartUpload) {
+    
+    this.preSignMultipartUpload = preSignMultipartUpload;
+    return this;
+  }
+
+   /**
+   * Get preSignMultipartUpload
+   * @return preSignMultipartUpload
+  **/
+  @javax.annotation.Nullable
+  public Boolean getPreSignMultipartUpload() {
+    return preSignMultipartUpload;
+  }
+
+
+  public void setPreSignMultipartUpload(Boolean preSignMultipartUpload) {
+    this.preSignMultipartUpload = preSignMultipartUpload;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -316,13 +341,14 @@ public class StorageConfig {
         Objects.equals(this.preSignSupport, storageConfig.preSignSupport) &&
         Objects.equals(this.preSignSupportUi, storageConfig.preSignSupportUi) &&
         Objects.equals(this.importSupport, storageConfig.importSupport) &&
-        Objects.equals(this.importValidityRegex, storageConfig.importValidityRegex)&&
+        Objects.equals(this.importValidityRegex, storageConfig.importValidityRegex) &&
+        Objects.equals(this.preSignMultipartUpload, storageConfig.preSignMultipartUpload)&&
         Objects.equals(this.additionalProperties, storageConfig.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, preSignSupportUi, importSupport, importValidityRegex, additionalProperties);
+    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, preSignSupportUi, importSupport, importValidityRegex, preSignMultipartUpload, additionalProperties);
   }
 
   @Override
@@ -337,6 +363,7 @@ public class StorageConfig {
     sb.append("    preSignSupportUi: ").append(toIndentedString(preSignSupportUi)).append("\n");
     sb.append("    importSupport: ").append(toIndentedString(importSupport)).append("\n");
     sb.append("    importValidityRegex: ").append(toIndentedString(importValidityRegex)).append("\n");
+    sb.append("    preSignMultipartUpload: ").append(toIndentedString(preSignMultipartUpload)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -368,6 +395,7 @@ public class StorageConfig {
     openapiFields.add("pre_sign_support_ui");
     openapiFields.add("import_support");
     openapiFields.add("import_validity_regex");
+    openapiFields.add("pre_sign_multipart_upload");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
@@ -97,6 +98,271 @@ type Controller struct {
 	sessionStore          sessions.Store
 	PathProvider          upload.PathProvider
 	otfDiffService        *tablediff.Service
+}
+
+func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http.Request, repository string, branch string, params apigen.CreatePresignMultipartUploadParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.WriteObjectAction,
+			Resource: permissions.ObjectArn(repository, params.Path),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "create_presign_multipart_upload", r, repository, branch, "")
+
+	// check if api is supported
+	storageConfig := c.getStorageConfig()
+	if !swag.BoolValue(storageConfig.PreSignMultipartUpload) {
+		writeError(w, r, http.StatusNotImplemented, "presign multipart upload API is not supported")
+		return
+	}
+
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// check if the branch exists - it is still possible for a branch to be deleted later, but we don't want to
+	// upload to start and fail at the end when the branch was not there in the first place
+	branchExists, err := c.Catalog.BranchExists(ctx, repository, branch)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	if !branchExists {
+		writeError(w, r, http.StatusNotFound, fmt.Sprintf("branch '%s' not found", branch))
+		return
+	}
+
+	// check if the path not empty
+	if params.Path == "" {
+		writeError(w, r, http.StatusBadRequest, "path is required")
+		return
+	}
+
+	// check valid number of parts
+	if params.Parts != nil {
+		if *params.Parts < 0 || int32(*params.Parts) > manager.MaxUploadParts {
+			writeError(w, r, http.StatusBadRequest, fmt.Sprintf("parts can be between 0 and %d", manager.MaxUploadParts))
+			return
+		}
+	}
+
+	// generate a new address for the object we like to upload
+	address := c.PathProvider.NewPath()
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	err = c.Catalog.SetLinkAddress(ctx, repository, address)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// create a new multipart upload
+	mpuResp, err := c.BlockAdapter.CreateMultiPartUpload(ctx, block.ObjectPointer{
+		StorageNamespace: repo.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       address,
+	}, nil, block.CreateMultiPartUploadOpts{})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// prepare presigned URL, for each part
+	var presignedURLs []string
+	for i := 0; i < swag.IntValue(params.Parts); i++ {
+		// generate a pre-signed PUT url for the given request
+		preSignedURL, err := c.BlockAdapter.GetPresignUploadPartURL(ctx, block.ObjectPointer{
+			StorageNamespace: repo.StorageNamespace,
+			Identifier:       address,
+			IdentifierType:   block.IdentifierTypeRelative,
+		}, mpuResp.UploadID, i+1)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		presignedURLs = append(presignedURLs, preSignedURL)
+	}
+
+	// write response
+	resp := &apigen.PresignMultipartUpload{
+		PhysicalAddress: qk.Format(),
+		UploadId:        mpuResp.UploadID,
+	}
+	if len(presignedURLs) > 0 {
+		resp.PresignedUrls = &presignedURLs
+	}
+	writeResponse(w, r, http.StatusCreated, resp)
+}
+
+func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.Request, body apigen.AbortPresignMultipartUploadJSONRequestBody, repository string, branch string, uploadID string, params apigen.AbortPresignMultipartUploadParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.WriteObjectAction,
+			Resource: permissions.ObjectArn(repository, params.Path),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "abort_presign_multipart_upload", r, repository, branch, "")
+
+	// check if api is supported
+	storageConfig := c.getStorageConfig()
+	if !swag.BoolValue(storageConfig.PreSignMultipartUpload) {
+		writeError(w, r, http.StatusNotImplemented, "presign multipart upload API is not supported")
+		return
+	}
+
+	// validation checks
+	if uploadID == "" {
+		writeError(w, r, http.StatusBadRequest, "upload_id is required")
+		return
+	}
+	if params.Path == "" {
+		writeError(w, r, http.StatusBadRequest, "path is required")
+		return
+	}
+	if body.PhysicalAddress == "" {
+		writeError(w, r, http.StatusBadRequest, "physical_address is required")
+		return
+	}
+
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// verify physical address
+	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	if addressType != catalog.AddressTypeRelative {
+		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
+		return
+	}
+
+	if err := c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	if err := c.BlockAdapter.AbortMultiPartUpload(ctx, block.ObjectPointer{
+		StorageNamespace: repo.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       physicalAddress,
+	}, uploadID); c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *http.Request, body apigen.CompletePresignMultipartUploadJSONRequestBody, repository string, branch string, uploadID string, params apigen.CompletePresignMultipartUploadParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.WriteObjectAction,
+			Resource: permissions.ObjectArn(repository, params.Path),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "complete_presign_multipart_upload", r, repository, branch, "")
+
+	// check if api is supported
+	storageConfig := c.getStorageConfig()
+	if !swag.BoolValue(storageConfig.PreSignMultipartUpload) {
+		writeError(w, r, http.StatusNotImplemented, "presign multipart upload API is not supported")
+		return
+	}
+
+	// validation checks
+	if uploadID == "" {
+		writeError(w, r, http.StatusBadRequest, "upload_id is required")
+		return
+	}
+	if params.Path == "" {
+		writeError(w, r, http.StatusBadRequest, "path is required")
+		return
+	}
+	if body.PhysicalAddress == "" {
+		writeError(w, r, http.StatusBadRequest, "physical_address is required")
+		return
+	}
+	if len(body.Parts) == 0 {
+		writeError(w, r, http.StatusBadRequest, "parts are required")
+		return
+	}
+
+	// verify physical address
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	writeTime := time.Now()
+	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	if addressType != catalog.AddressTypeRelative {
+		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
+		return
+	}
+
+	//  verify it has been saved for linking
+	if err := c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	var multipartList []block.MultipartPart
+	for _, part := range body.Parts {
+		multipartList = append(multipartList, block.MultipartPart{
+			PartNumber: part.PartNumber,
+			ETag:       part.Etag,
+		})
+	}
+
+	mpuResp, err := c.BlockAdapter.CompleteMultiPartUpload(ctx, block.ObjectPointer{
+		StorageNamespace: repo.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       physicalAddress,
+	}, uploadID, &block.MultipartUploadCompletion{
+		Part: multipartList,
+	})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	checksum := httputil.StripQuotesAndSpaces(mpuResp.ETag)
+	entryBuilder := catalog.NewDBEntryBuilder().
+		CommonLevel(false).
+		Path(params.Path).
+		PhysicalAddress(physicalAddress).
+		AddressType(addressType).
+		CreationDate(writeTime).
+		Size(mpuResp.ContentLength).
+		Checksum(checksum).
+		ContentType(swag.StringValue(body.ContentType))
+	if body.UserMetadata != nil {
+		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
+	}
+	entry := entryBuilder.Build()
+
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	metadata := apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
+	response := apigen.ObjectStats{
+		Checksum:        entry.Checksum,
+		ContentType:     swag.String(entry.ContentType),
+		Metadata:        &metadata,
+		Mtime:           entry.CreationDate.Unix(),
+		Path:            entry.Path,
+		PathType:        entryTypeObject,
+		PhysicalAddress: physicalAddress,
+		SizeBytes:       swag.Int64(entry.Size),
+	}
+
+	writeResponse(w, r, http.StatusOK, response)
 }
 
 func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, r *http.Request, body apigen.PrepareGarbageCollectionUncommittedJSONRequestBody, repository string) {
@@ -374,9 +640,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	// trim spaces and quotes from etag
-	checksum := strings.TrimFunc(body.Checksum, func(r rune) bool {
-		return r == '"' || r == ' '
-	})
+	checksum := httputil.StripQuotesAndSpaces(body.Checksum)
 	if checksum == "" {
 		writeError(w, r, http.StatusBadRequest, "checksum is required")
 		return
@@ -1483,6 +1747,7 @@ func (c *Controller) getStorageConfig() apigen.StorageConfig {
 		PreSignSupportUi:                 info.PreSignSupportUI,
 		ImportSupport:                    info.ImportSupport,
 		ImportValidityRegex:              info.ImportValidityRegex,
+		PreSignMultipartUpload:           swag.Bool(info.PreSignSupportMultipart),
 	}
 }
 
@@ -2520,7 +2785,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 		metadata = body.Metadata.AdditionalProperties
 	}
 
-	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange, graveler.WithForce(swag.BoolValue(body.Force)))
+	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange, swag.BoolValue(body.AllowEmpty), graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

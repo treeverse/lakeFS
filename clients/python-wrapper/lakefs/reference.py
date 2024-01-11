@@ -23,6 +23,20 @@ class Reference(_BaseLakeFSObject):
     _commit: Optional[Commit] = None
 
     def __init__(self, repository_id: str, reference_id: str, client: Optional[Client] = None) -> None:
+        """Return a reference to a lakeFS commit.
+
+        :param repository_id: the repository holding the commit
+        :param reference_id: a reference expression to the commit
+
+        Any reference expression can be used as a reference_id, for example:
+
+        - 'main' (head of 'main' branch)
+        - 'main@' (head of 'main' branch, only committed objects)
+        - 'my_tag~3' (3 commits before 'my_tag')
+
+        See https://docs.lakefs.io/understand/model.html#ref-expressions for
+        details.
+        """
         self._repo_id = repository_id
         self._id = reference_id
         super().__init__(client)

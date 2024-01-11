@@ -15,6 +15,7 @@ Name | Type | Description | Notes
 **preSignSupportUi** | **Boolean** |  | 
 **importSupport** | **Boolean** |  | 
 **importValidityRegex** | **String** |  | 
+**preSignMultipartUpload** | **Boolean** |  |  [optional]
 
 
 

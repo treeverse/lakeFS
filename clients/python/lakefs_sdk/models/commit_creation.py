@@ -29,8 +29,9 @@ class CommitCreation(BaseModel):
     message: StrictStr = Field(...)
     metadata: Optional[Dict[str, StrictStr]] = None
     var_date: Optional[StrictInt] = Field(None, alias="date", description="set date to override creation date in the commit (Unix Epoch in seconds)")
+    allow_empty: Optional[StrictBool] = Field(False, description="sets whether a commit can contain no changes")
     force: Optional[StrictBool] = False
-    __properties = ["message", "metadata", "date", "force"]
+    __properties = ["message", "metadata", "date", "allow_empty", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -71,6 +72,7 @@ class CommitCreation(BaseModel):
             "message": obj.get("message"),
             "metadata": obj.get("metadata"),
             "var_date": obj.get("date"),
+            "allow_empty": obj.get("allow_empty") if obj.get("allow_empty") is not None else False,
             "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj

@@ -1,5 +1,34 @@
 # Changelog
 
+# v1.7.0
+
+:new: What's new:
+
+- API: Presigned multipart uploads for S3. You can initiate presigned multipart uploads for Amazon S3 directly through the API. **experimental** (#7246)
+
+:bug: Bugs fixed:
+
+- UI: DuckDB cached files fixed with cache buster: No more worries about outdated files. (#7252)
+
+
+# v1.6.0
+
+:new: What's new:
+
+- Allow empty commits option #7186
+
+# v1.5.0
+
+:new: What's new:
+
+- Read-only repositories (#7157)
+- Add StopAt field to the CommitLog action (early-stop at a specific commit) (#7222)
+
+:bug: Bugs fixed:
+
+- Fix: Return "bad request - 400" on reset branch with unknown type  (#7210)
+- Fix: S3-gateway "delete" operation with branch protection should return 200 with error (#7211)
+
 # v1.4.0
 
 :new: What's new:

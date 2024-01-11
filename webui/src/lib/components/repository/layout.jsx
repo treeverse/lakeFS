@@ -3,6 +3,7 @@ import { useLocalStorage } from "usehooks-ts";
 
 import Container from "react-bootstrap/Container";
 import Breadcrumb from "react-bootstrap/Breadcrumb";
+import Stack from "react-bootstrap/Stack";
 
 import {useRefs} from "../../hooks/repo";
 import { Outlet } from "react-router-dom";
@@ -12,6 +13,7 @@ import { config } from "../../api";
 import { useAPI } from "../../hooks/api";
 import RepoOnboardingChecklistSlider from "./repoOnboardingChecklistSlider";
 import { RefContextProvider } from "../../hooks/repo";
+import { ReadOnlyBadge } from "../badges";
 
 const RepoNav = () => {
     const { repo } = useRefs();
@@ -23,14 +25,17 @@ const RepoNav = () => {
     }, [repo]);
 
     return (
-        <Breadcrumb>
-            <Link href={{pathname: '/repositories'}} component={Breadcrumb.Item}>
-                Repositories
-            </Link>
-            <Link href={{pathname: '/repositories/:repoId/objects', params: {repoId}}} component={Breadcrumb.Item}>
-                {repoId}
-            </Link>
-        </Breadcrumb>
+        <Stack direction="horizontal" gap={2}>
+            <Breadcrumb>
+                <Link href={{pathname: '/repositories'}} component={Breadcrumb.Item}>
+                    Repositories
+                </Link>
+                <Link href={{pathname: '/repositories/:repoId/objects', params: {repoId}}} component={Breadcrumb.Item}>
+                    {repoId}
+                </Link>
+            </Breadcrumb>
+            <ReadOnlyBadge readOnly={repo?.read_only} style={{ marginBottom: 16 }} />
+        </Stack>
     );
 };
 

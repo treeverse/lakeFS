@@ -521,7 +521,7 @@ func TestGravelerCommit_v2(t *testing.T) {
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
 		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
-		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any(), []graveler.SetOptionsFunc{}).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, nil)
+		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any(), false, []graveler.SetOptionsFunc{}).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, nil)
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).Return(graveler.CommitID(""), nil)
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken1).Return(nil)
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken2).Return(nil)
@@ -563,7 +563,7 @@ func TestGravelerCommit_v2(t *testing.T) {
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
 		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
-		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any(), []graveler.SetOptionsFunc{}).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, graveler.ErrNoChanges)
+		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any(), false, []graveler.SetOptionsFunc{}).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, graveler.ErrNoChanges)
 
 		val, err := test.Sut.Commit(ctx, repository, branch1ID, graveler.CommitParams{})
 

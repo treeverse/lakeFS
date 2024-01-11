@@ -281,7 +281,7 @@ func (c *committedManager) merge(ctx context.Context, mctx mergeContext) (gravel
 	return *newID, err
 }
 
-func (c *committedManager) Commit(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, graveler.DiffSummary, error) {
+func (c *committedManager) Commit(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator, allowEmpty bool, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	mwWriter := c.metaRangeManager.NewWriter(ctx, ns, nil)
 	defer func() {
 		err := mwWriter.Abort()
@@ -297,7 +297,7 @@ func (c *committedManager) Commit(ctx context.Context, ns graveler.StorageNamesp
 		return "", summary, fmt.Errorf("get metarange ns=%s id=%s: %w", ns, baseMetaRangeID, err)
 	}
 	defer metaRangeIterator.Close()
-	summary, err = Commit(ctx, mwWriter, metaRangeIterator, changes, &CommitOptions{})
+	summary, err = Commit(ctx, mwWriter, metaRangeIterator, changes, &CommitOptions{AllowEmpty: allowEmpty})
 	if err != nil {
 		if !errors.Is(err, graveler.ErrUserVisible) {
 			err = fmt.Errorf("commit ns=%s id=%s: %w", ns, baseMetaRangeID, err)

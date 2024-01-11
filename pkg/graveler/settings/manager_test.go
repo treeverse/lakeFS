@@ -8,8 +8,6 @@ import (
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/mem"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
@@ -42,9 +40,14 @@ func (m *mockCache) GetOrSet(k interface{}, setFn cache.SetFn) (v interface{}, e
 	return val, nil
 }
 
+func (m *mockCache) GetOrSetWithExpiry(k interface{}, setFn cache.SetFnWithExpiry) (v interface{}, err error) {
+	// Settings does not use expiry.
+	panic("Not implemented.")
+}
+
 func TestNonExistent(t *testing.T) {
 	ctx := context.Background()
-	m, _ := prepareTest(t, ctx, nil, nil)
+	m := prepareTest(t, ctx, nil, nil)
 	setting := &settings.ExampleSettings{}
 	err := m.Get(ctx, repository, "settingKey", setting)
 	require.NoError(t, err)
@@ -60,7 +63,7 @@ func TestSaveAndGet(t *testing.T) {
 	mc := &mockCache{
 		c: make(map[interface{}]interface{}),
 	}
-	m, _ := prepareTest(t, ctx, mc, nil)
+	m := prepareTest(t, ctx, mc, nil)
 	firstSettings := newSetting(5, 6, "hello")
 	err := m.Save(ctx, repository, "settingKey", firstSettings, nil)
 	testutil.Must(t, err)
@@ -92,7 +95,7 @@ func TestSaveAndGet(t *testing.T) {
 
 func TestGetLatest(t *testing.T) {
 	ctx := context.Background()
-	m, _ := prepareTest(t, ctx, nil, nil)
+	m := prepareTest(t, ctx, nil, nil)
 	err := m.Save(ctx, repository, "settingKey", newSetting(5, 6, "hello"), nil)
 	testutil.Must(t, err)
 	setting := &settings.ExampleSettings{}
@@ -111,7 +114,7 @@ func TestConditionalUpdate(t *testing.T) {
 	mc := &mockCache{
 		c: make(map[interface{}]interface{}),
 	}
-	m, _ := prepareTest(t, ctx, mc, nil)
+	m := prepareTest(t, ctx, mc, nil)
 	firstSettings := newSetting(5, 6, "hello")
 	err := m.Save(ctx, repository, "settingKey", firstSettings, swag.String("WRONG_CHECKSUM"))
 	require.ErrorIs(t, err, graveler.ErrPreconditionFailed)
@@ -130,11 +133,10 @@ func TestConditionalUpdate(t *testing.T) {
 	require.ErrorIs(t, err, graveler.ErrPreconditionFailed)
 }
 
-func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache, branchLockCallback func(context.Context, *graveler.RepositoryRecord, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) (*settings.Manager, block.Adapter) {
+func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache, branchLockCallback func(context.Context, *graveler.RepositoryRecord, graveler.BranchID, func() (interface{}, error)) (interface{}, error)) *settings.Manager {
 	ctrl := gomock.NewController(t)
 	refManager := mock.NewMockRefManager(ctrl)
 
-	blockAdapter := mem.New(context.Background())
 	branchLock := mock.NewMockBranchLocker(ctrl)
 	cb := func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f func() (interface{}, error)) (interface{}, error) {
 		return f()
@@ -152,7 +154,7 @@ func prepareTest(t *testing.T, ctx context.Context, refCache cache.Cache, branch
 	m := settings.NewManager(refManager, kvStore, opts...)
 
 	refManager.EXPECT().GetRepository(ctx, gomock.Eq(repository.RepositoryID)).AnyTimes().Return(repository, nil)
-	return m, blockAdapter
+	return m
 }
 
 func newSetting(a int32, b int32, c string) *settings.ExampleSettings {

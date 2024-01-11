@@ -202,12 +202,12 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
 
                     <RefreshButton onClick={refresh}/>
 
-                    <RevertButton enabled={results.length > 0} onRevert={() => {
+                    <RevertButton enabled={results.length > 0 && !repo?.read_only} onRevert={() => {
                         branches.reset(repo.id, reference.id, {type: 'reset'})
                             .then(refresh)
                             .catch(error => setActionError(error))
                     }}/>
-                    <CommitButton repo={repo} enabled={results.length > 0} onCommit={async (commitDetails, done) => {
+                    <CommitButton repo={repo} enabled={results.length > 0 && !repo?.read_only} onCommit={async (commitDetails, done) => {
                         try {
                             await commits.commit(repo.id, reference.id, commitDetails.message, commitDetails.metadata);
                             setActionError(null);

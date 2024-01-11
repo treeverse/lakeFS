@@ -583,3 +583,7 @@ func formatMultipartFilename(uploadID string, partNumber int) string {
 func formatMultipartMarkerFilename(uploadID string) string {
 	return uploadID + markerSuffix
 }
+
+func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectPointer, uploadID string, partNumber int) (string, error) {
+	return "", block.ErrOperationNotSupported
+}

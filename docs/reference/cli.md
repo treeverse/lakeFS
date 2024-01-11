@@ -1893,6 +1893,7 @@ lakectl commit <branch URI> [flags]
 {:.no_toc}
 
 ```
+      --allow-empty-commit    allow a commit with no changes
       --allow-empty-message   allow an empty commit message
   -h, --help                  help for commit
   -m, --message string        commit message
