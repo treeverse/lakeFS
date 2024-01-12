@@ -59,12 +59,24 @@ func downloadPresigned(ctx context.Context, client *apigen.ClientWithResponses, 
 	// TODO(barak): can we assume accept ranges is supported?
 
 	// create and copy object content
-	f, err := os.Create(dst)
+	// f, err := os.Create(dst)
+	f, err := os.CreateTemp("", "lakefs-download")
 	if err != nil {
 		return err
 	}
-	defer func() { _ = f.Close() }()
-
+	defer func() {
+		startCopy := time.Now()
+		if copyErr := copyFile(f, dst); copyErr != nil {
+			if err == nil {
+				err = copyErr
+			}
+		} else {
+			fmt.Printf("Copied file to %s in %s\n", dst, time.Since(startCopy))
+		}
+		// close and remove temp file
+		_ = f.Close()
+		_ = os.Remove(f.Name())
+	}()
 	// make sure the file is the right size
 	size := swag.Int64Value(statResp.JSON200.SizeBytes)
 	if err := f.Truncate(size); err != nil {
@@ -103,6 +115,20 @@ func downloadPresigned(ctx context.Context, client *apigen.ClientWithResponses, 
 		})
 	}
 	return g.Wait()
+}
+
+func copyFile(f *os.File, dst string) error {
+	_, err := f.Seek(0, io.SeekStart)
+	if err != nil {
+		return err
+	}
+	target, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = target.Close() }()
+	_, err = io.Copy(target, f)
+	return err
 }
 
 func downloadPresignedPart(ctx context.Context, httpClient *http.Client, physicalAddress string, rangeStart int64, partSize int64, partNumber int64, f *os.File) error {
