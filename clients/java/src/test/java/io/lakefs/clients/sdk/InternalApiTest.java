@@ -22,6 +22,7 @@ import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.GarbageCollectionConfig;
 import io.lakefs.clients.sdk.model.GarbageCollectionPrepareResponse;
 import io.lakefs.clients.sdk.model.GarbageCollectionRules;
+import io.lakefs.clients.sdk.model.InstallationUsageReport;
 import io.lakefs.clients.sdk.model.InternalDeleteBranchProtectionRuleRequest;
 import io.lakefs.clients.sdk.model.ObjectStageCreation;
 import io.lakefs.clients.sdk.model.ObjectStats;
@@ -147,6 +148,18 @@ public class InternalApiTest {
     @Test
     public void getStorageConfigTest() throws ApiException {
         StorageConfig response = api.getStorageConfig()
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * get usage report summary
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getUsageReportSummaryTest() throws ApiException {
+        InstallationUsageReport response = api.getUsageReportSummary()
                 .execute();
         // TODO: test validations
     }

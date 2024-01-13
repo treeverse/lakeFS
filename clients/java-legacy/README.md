@@ -198,6 +198,7 @@ Class | Method | HTTP request | Description
 *InternalApi* | [**getLakeFSVersion**](docs/InternalApi.md#getLakeFSVersion) | **GET** /config/version | 
 *InternalApi* | [**getSetupState**](docs/InternalApi.md#getSetupState) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 *InternalApi* | [**getStorageConfig**](docs/InternalApi.md#getStorageConfig) | **GET** /config/storage | 
+*InternalApi* | [**getUsageReportSummary**](docs/InternalApi.md#getUsageReportSummary) | **GET** /usage-report/summary | get usage report summary
 *InternalApi* | [**internalCreateBranchProtectionRule**](docs/InternalApi.md#internalCreateBranchProtectionRule) | **POST** /repositories/{repository}/branch_protection | 
 *InternalApi* | [**internalDeleteBranchProtectionRule**](docs/InternalApi.md#internalDeleteBranchProtectionRule) | **DELETE** /repositories/{repository}/branch_protection | 
 *InternalApi* | [**internalDeleteGarbageCollectionRules**](docs/InternalApi.md#internalDeleteGarbageCollectionRules) | **DELETE** /repositories/{repository}/gc/rules | 
@@ -293,6 +294,7 @@ Class | Method | HTTP request | Description
  - [ImportStatus](docs/ImportStatus.md)
  - [InlineObject](docs/InlineObject.md)
  - [InlineObject1](docs/InlineObject1.md)
+ - [InstallationUsageReport](docs/InstallationUsageReport.md)
  - [LoginConfig](docs/LoginConfig.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
@@ -341,6 +343,7 @@ Class | Method | HTTP request | Description
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)
  - [UpdateToken](docs/UpdateToken.md)
  - [UploadPart](docs/UploadPart.md)
+ - [UsageReport](docs/UsageReport.md)
  - [User](docs/User.md)
  - [UserCreation](docs/UserCreation.md)
  - [UserList](docs/UserList.md)

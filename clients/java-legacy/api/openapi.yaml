@@ -6321,6 +6321,43 @@ paths:
       - internal
       x-contentType: application/json
       x-accepts: application/json
+  /usage-report/summary:
+    get:
+      operationId: getUsageReportSummary
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallationUsageReport'
+            application/text:
+              schema:
+                type: string
+          description: Usage report
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get usage report summary
+      tags:
+      - internal
+      x-accepts: application/json
 components:
   parameters:
     PaginationPrefix:
@@ -8433,6 +8470,45 @@ components:
           type: string
       required:
       - physical_address
+      type: object
+    UsageReport:
+      example:
+        month: 6
+        year: 0
+        count: 1
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+        count:
+          format: int64
+          type: integer
+      required:
+      - count
+      - month
+      - year
+      type: object
+    InstallationUsageReport:
+      example:
+        reports:
+        - month: 6
+          year: 0
+          count: 1
+        - month: 6
+          year: 0
+          count: 1
+        installation_id: installation_id
+      properties:
+        installation_id:
+          type: string
+        reports:
+          items:
+            $ref: '#/components/schemas/UsageReport'
+          type: array
+      required:
+      - installation_id
+      - reports
       type: object
     inline_object:
       properties:

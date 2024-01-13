@@ -98,6 +98,32 @@ type Controller struct {
 	sessionStore          sessions.Store
 	PathProvider          upload.PathProvider
 	otfDiffService        *tablediff.Service
+	usageReporter         stats.UsageReporterOperations
+}
+
+var usageCounter = stats.NewUsageCounter()
+
+func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.DeleteUserAction,
+			Resource: permissions.UserArn(userID),
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "delete_user", r, "", "", "")
+	err := c.Auth.DeleteUser(ctx, userID)
+	if errors.Is(err, auth.ErrNotFound) {
+		writeError(w, r, http.StatusNotFound, "user not found")
+		return
+	}
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http.Request, repository string, branch string, params apigen.CreatePresignMultipartUploadParams) {
@@ -1396,29 +1422,6 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 		CreationDate: u.CreatedAt.Unix(),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
-}
-
-func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.DeleteUserAction,
-			Resource: permissions.UserArn(userID),
-		},
-	}) {
-		return
-	}
-
-	ctx := r.Context()
-	c.LogAction(ctx, "delete_user", r, "", "", "")
-	err := c.Auth.DeleteUser(ctx, userID)
-	if errors.Is(err, auth.ErrNotFound) {
-		writeError(w, r, http.StatusNotFound, "user not found")
-		return
-	}
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userID string) {
@@ -5035,7 +5038,7 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 	return pathRecords
 }
 
-func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, otfDiffService *tablediff.Service) *Controller {
+func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, otfDiffService *tablediff.Service, usageReporter stats.UsageReporterOperations) *Controller {
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
@@ -5052,6 +5055,7 @@ func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator a
 		sessionStore:          sessionStore,
 		PathProvider:          pathProvider,
 		otfDiffService:        otfDiffService,
+		usageReporter:         usageReporter,
 	}
 }
 
@@ -5083,6 +5087,7 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		"source_ip":  sourceIP,
 	}).Debug("performing API action")
 	c.Collector.CollectEvent(ev)
+	usageCounter.Add(1)
 }
 
 func paginationFor(hasMore bool, results interface{}, fieldName string) apigen.Pagination {
@@ -5192,4 +5197,48 @@ func extractLakeFSMetadata(header http.Header) map[string]string {
 		meta[metaKey] = v[0]
 	}
 	return meta
+}
+
+func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// c.LogAction(ctx, "get_usage_report_summary", r, "", "", "")
+	installationID := c.usageReporter.InstallationID()
+	if installationID == "" {
+		writeError(w, r, http.StatusNotFound, "usage report is not enabled")
+		return
+	}
+
+	// flush data before collecting usage
+	c.usageReporter.Flush(ctx)
+
+	records, err := c.usageReporter.Records(ctx)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// base on content-type return plain text or json (default)
+	if r.Header.Get("Accept") == "text/plain" {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		_, _ = fmt.Fprintf(w, "Usage for installation ID: %s\n", installationID)
+		for _, rec := range records {
+			_, _ = fmt.Fprintf(w, "%d-%02d: %12d\n", rec.Year, rec.Month, rec.Count)
+		}
+		return
+	}
+
+	// format response as json
+	response := apigen.InstallationUsageReport{
+		InstallationId: installationID,
+		Reports:        make([]apigen.UsageReport, 0, len(records)),
+	}
+	for _, rec := range records {
+		response.Reports = append(response.Reports, apigen.UsageReport{
+			Count: rec.Count,
+			Month: rec.Month,
+			Year:  rec.Year,
+		})
+	}
+	writeResponse(w, r, http.StatusOK, response)
 }
