@@ -174,7 +174,7 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		// usage report setup - nil if disabled
+		// usage report setup - default usage reporter is a no-op
 		usageReporter := stats.DefaultUsageReporter
 		if cfg.UsageReport.Enabled {
 			ur := stats.NewUsageReporter(metadata.InstallationID, kvStore)

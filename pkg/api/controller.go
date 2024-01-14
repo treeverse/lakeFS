@@ -5202,14 +5202,13 @@ func extractLakeFSMetadata(header http.Header) map[string]string {
 func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// c.LogAction(ctx, "get_usage_report_summary", r, "", "", "")
 	installationID := c.usageReporter.InstallationID()
 	if installationID == "" {
 		writeError(w, r, http.StatusNotFound, "usage report is not enabled")
 		return
 	}
 
-	// flush data before collecting usage
+	// flush data before collecting usage - can help for single node deployments
 	c.usageReporter.Flush(ctx)
 
 	records, err := c.usageReporter.Records(ctx)
