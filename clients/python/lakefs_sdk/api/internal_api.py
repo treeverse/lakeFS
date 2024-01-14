@@ -362,7 +362,7 @@ class InternalApi(object):
     def delete_repository_metadata(self, repository : StrictStr, repository_metadata_keys : RepositoryMetadataKeys, **kwargs) -> None:  # noqa: E501
         """delete repository metadata  # noqa: E501
 
-        Delete repository metadata. Deletes the provided keys from the repository metadata.   # noqa: E501
+        Delete specified keys from the repository's metadata.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -393,7 +393,7 @@ class InternalApi(object):
     def delete_repository_metadata_with_http_info(self, repository : StrictStr, repository_metadata_keys : RepositoryMetadataKeys, **kwargs) -> ApiResponse:  # noqa: E501
         """delete repository metadata  # noqa: E501
 
-        Delete repository metadata. Deletes the provided keys from the repository metadata.   # noqa: E501
+        Delete specified keys from the repository's metadata.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 

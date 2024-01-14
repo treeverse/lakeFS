@@ -360,9 +360,8 @@ public class InternalApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> repository metadata deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> repository metadata keys deleted successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -419,16 +418,15 @@ public class InternalApi {
 
     /**
      * delete repository metadata
-     * Delete repository metadata. Deletes the provided keys from the repository metadata. 
+     * Delete specified keys from the repository&#39;s metadata. 
      * @param repository  (required)
      * @param repositoryMetadataKeys  (required)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> repository metadata deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> repository metadata keys deleted successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -439,7 +437,7 @@ public class InternalApi {
 
     /**
      * delete repository metadata
-     * Delete repository metadata. Deletes the provided keys from the repository metadata. 
+     * Delete specified keys from the repository&#39;s metadata. 
      * @param repository  (required)
      * @param repositoryMetadataKeys  (required)
      * @return ApiResponse&lt;Void&gt;
@@ -447,9 +445,8 @@ public class InternalApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> repository metadata deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> repository metadata keys deleted successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -461,7 +458,7 @@ public class InternalApi {
 
     /**
      * delete repository metadata (asynchronously)
-     * Delete repository metadata. Deletes the provided keys from the repository metadata. 
+     * Delete specified keys from the repository&#39;s metadata. 
      * @param repository  (required)
      * @param repositoryMetadataKeys  (required)
      * @param _callback The callback to be executed when the API call finishes
@@ -470,9 +467,8 @@ public class InternalApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> repository metadata deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> repository metadata keys deleted successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>

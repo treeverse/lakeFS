@@ -263,7 +263,7 @@ Name | Type | Description  | Notes
 
 delete repository metadata
 
-Delete repository metadata. Deletes the provided keys from the repository metadata. 
+Delete specified keys from the repository's metadata. 
 
 ### Example
 
@@ -365,9 +365,8 @@ void (empty response body)
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**204** | repository metadata deleted successfully |  -  |
+**204** | repository metadata keys deleted successfully |  -  |
 **401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 

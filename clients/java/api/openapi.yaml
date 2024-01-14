@@ -1826,7 +1826,7 @@ paths:
   /repositories/{repository}/metadata:
     delete:
       description: |
-        Delete repository metadata. Deletes the provided keys from the repository metadata.
+        Delete specified keys from the repository's metadata.
       operationId: deleteRepositoryMetadata
       parameters:
       - explode: false
@@ -1844,19 +1844,13 @@ paths:
         required: true
       responses:
         "204":
-          description: repository metadata deleted successfully
+          description: repository metadata keys deleted successfully
         "401":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
         "420":
           description: too many requests
         default:
