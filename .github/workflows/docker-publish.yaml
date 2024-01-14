@@ -62,12 +62,10 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        with:
-          buildkitd-flags: --debug
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -78,17 +76,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: lakectl docker metadata
-        id: lakectl_meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            treeverse/lakectl
-            ${{ steps.login-ecr.outputs.registry }}/lakectl
-          tags: |
-            type=semver,pattern={{version}},value=${{ steps.version.outputs.tag }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.tag }}
-            type=semver,pattern={{major}},value=${{ steps.version.outputs.tag }}
+
       - name: lakefs docker metadata
         id: lakefs_meta
         uses: docker/metadata-action@v5
@@ -100,6 +88,29 @@ jobs:
             type=semver,pattern={{version}},value=${{ steps.version.outputs.tag }}
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.tag }}
             type=semver,pattern={{major}},value=${{ steps.version.outputs.tag }}
+
+      - name: Build and push lakefs
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: lakefs
+          push: true
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          build-args: VERSION=${{ steps.version.outputs.tag }}
+          tags: ${{ steps.lakefs_meta.outputs.tags }}
+
+      - name: lakectl docker metadata
+        id: lakectl_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            treeverse/lakectl
+            ${{ steps.login-ecr.outputs.registry }}/lakectl
+          tags: |
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.tag }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.tag }}
+            type=semver,pattern={{major}},value=${{ steps.version.outputs.tag }}
+
       - name: Build and push lakectl
         uses: docker/build-push-action@v5
         with:
@@ -110,12 +121,3 @@ jobs:
           build-args: VERSION=${{ steps.version.outputs.tag }}
           tags: ${{ steps.lakectl_meta.outputs.tags }}
 
-      - name: Build and push lakefs
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          target: lakefs-plugins
-          push: true
-          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
-          build-args: VERSION=${{ steps.version.outputs.tag }}
-          tags: ${{ steps.lakefs_meta.outputs.tags }}
