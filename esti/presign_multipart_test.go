@@ -2,7 +2,8 @@ package esti
 
 import (
 	"bytes"
-	"math/rand"
+	"crypto/rand"
+	"math/big"
 	"net/http"
 	"strconv"
 	"testing"
@@ -195,14 +196,16 @@ func TestCompletePresignMultipartUpload(t *testing.T) {
 		for i := 0; i < numberOfParts; i++ {
 			startTime := time.Now()
 			// random data - all parts except the last one should be at least >= MinUploadPartSize
+			n, err := rand.Int(rand.Reader, big.NewInt(1<<20))
+			require.NoError(t, err)
 			var partSize int64
 			if i < numberOfParts-1 {
-				partSize = manager.MinUploadPartSize + rand.Int63n(1<<20) // 5mb + ~1mb
+				partSize = manager.MinUploadPartSize + n.Int64() // 5mb + ~1mb
 			} else {
-				partSize = rand.Int63n(1<<20) + 1 // ~1mb + 1
+				partSize = n.Int64() + 1 // ~1mb + 1
 			}
 			data := make([]byte, partSize)
-			_, err := rand.Read(data)
+			_, err = rand.Read(data)
 			require.NoError(t, err)
 
 			// upload part using presigned url
