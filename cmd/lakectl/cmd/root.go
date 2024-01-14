@@ -84,6 +84,9 @@ type Configuration struct {
 		// setting FixSparkPlaceholder to true will change spark placeholder with the actual location. for more information see https://github.com/treeverse/lakeFS/issues/2213
 		FixSparkPlaceholder bool `mapstructure:"fix_spark_placeholder"`
 	}
+	Download struct {
+		UseTmpDir bool `mapstructure:"use_tmp_dir"` // Use system tmp dir for downloads
+	} `mapstructure:"download"`
 }
 
 type versionInfo struct {

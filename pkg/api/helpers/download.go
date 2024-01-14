@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sync/atomic"
-	"time"
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -21,25 +19,51 @@ const (
 	DefaultDownloadConcurrency       = 10
 )
 
-func Download(ctx context.Context, client *apigen.ClientWithResponses, preSign bool, src uri.URI, dst string) error {
-	start := time.Now()
-	defer func() {
-		fmt.Printf("Downloaded %s in %s\n", src.String(), time.Since(start))
-	}()
+type Downloader struct {
+	Client     *apigen.ClientWithResponses
+	PreSign    bool
+	UseTmpDir  bool
+	HTTPClient *http.Client
+}
+
+type downloadPart struct {
+	Number     int
+	RangeStart int64
+	PartSize   int64
+}
+
+func NewDownloader(client *apigen.ClientWithResponses, preSign bool, useTmpDir bool) *Downloader {
+	// setup http client
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.MaxIdleConnsPerHost = 10
+	httpClient := &http.Client{
+		Transport: transport,
+	}
+
+	return &Downloader{
+		Client:     client,
+		PreSign:    preSign,
+		UseTmpDir:  useTmpDir,
+		HTTPClient: httpClient,
+	}
+}
+
+// Download downloads an object from lakeFS to a local file, create the destination directory if needed.
+func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string) error {
 	// create destination dir if needed
 	dir := filepath.Dir(dst)
 	_ = os.MkdirAll(dir, os.ModePerm)
 
-	// download object
-	if preSign {
-		return downloadPresigned(ctx, client, src, dst)
+	if d.PreSign {
+		// download using presigned multipart download, it will fall back to presign single object download if needed
+		return d.downloadPresignMultipart(ctx, src, dst)
 	}
-	return downloadObject(ctx, client, false, src, dst)
+	return d.downloadObject(ctx, src, dst)
 }
 
-func downloadPresigned(ctx context.Context, client *apigen.ClientWithResponses, src uri.URI, dst string) error {
-	// get object metadata
-	statResp, err := client.StatObjectWithResponse(ctx, src.Repository, src.Ref, &apigen.StatObjectParams{
+func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, dst string) error {
+	// get object metadata for size and physical address (presigned)
+	statResp, err := d.Client.StatObjectWithResponse(ctx, src.Repository, src.Ref, &apigen.StatObjectParams{
 		Path:    *src.Path,
 		Presign: swag.Bool(true),
 	})
@@ -52,92 +76,121 @@ func downloadPresigned(ctx context.Context, client *apigen.ClientWithResponses, 
 
 	// check if the object is small enough to download in one request
 	if *statResp.JSON200.SizeBytes < DefaultDownloadPartSize {
-		return downloadObject(ctx, client, true, src, dst)
+		return d.downloadObject(ctx, src, dst)
 	}
 
-	// check if object support ranges in bytes
-	// TODO(barak): can we assume accept ranges is supported?
-
-	// create and copy object content
-	// f, err := os.Create(dst)
-	f, err := os.CreateTemp("", "lakefs-download")
+	// create a temporary file to download the object to
+	// base of UseTmpDir create the temporary file in the destination directory
+	f, err := d.createTempFile(dst)
 	if err != nil {
 		return err
 	}
+
+	// if we fail, close and delete the temporary file
+	// if we succeed, move the temporary file to the destination path
 	defer func() {
-		startCopy := time.Now()
-		if copyErr := copyFile(f, dst); copyErr != nil {
-			if err == nil {
-				err = copyErr
-			}
-		} else {
-			fmt.Printf("Copied file to %s in %s\n", dst, time.Since(startCopy))
+		if err != nil {
+			_ = f.Close()
+			_ = os.Remove(f.Name())
+			return
 		}
-		// close and remove temp file
-		_ = f.Close()
-		_ = os.Remove(f.Name())
+		if tmpErr := moveOrCopyFile(f, dst); tmpErr != nil {
+			if err == nil {
+				err = tmpErr
+			}
+		}
 	}()
-	// make sure the file is the right size
+
+	// make sure the destination file is in the right size
 	size := swag.Int64Value(statResp.JSON200.SizeBytes)
 	if err := f.Truncate(size); err != nil {
-		return fmt.Errorf("failed to truncate file to size %d: %w", size, err)
+		return fmt.Errorf("failed to truncate '%s' to size %d: %w", f.Name(), size, err)
 	}
 
 	// download the file using ranges and concurrency
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.MaxIdleConnsPerHost = 10
-	httpClient := &http.Client{
-		Transport: transport,
-	}
-
 	physicalAddress := statResp.JSON200.PhysicalAddress
 
-	var nextPart atomic.Int64
+	ch := make(chan downloadPart, DefaultDownloadConcurrency)
+
+	// start download workers
 	g, grpCtx := errgroup.WithContext(context.Background())
 	for i := 0; i < DefaultDownloadConcurrency; i++ {
 		g.Go(func() error {
-			for {
-				partNumber := nextPart.Add(1)
-				rangeStart := (partNumber - 1) * DefaultDownloadPartSize
-				if rangeStart >= size {
-					return nil
-				}
-				partSize := DefaultDownloadPartSize
-				if rangeStart+partSize > size {
-					partSize = size - rangeStart
-				}
-
-				err := downloadPresignedPart(grpCtx, httpClient, physicalAddress, rangeStart, partSize, partNumber, f)
+			for part := range ch {
+				err := d.downloadPresignedPart(grpCtx, physicalAddress, part.RangeStart, part.PartSize, part.Number, f)
 				if err != nil {
 					return err
 				}
 			}
+			return nil
 		})
 	}
+
+	// send parts to download to the channel
+	partNumber := 0
+	for off := int64(0); off < size; off += DefaultDownloadPartSize {
+		partNumber++ // part numbers start from 1
+		part := downloadPart{
+			Number:     partNumber,
+			RangeStart: off,
+			PartSize:   DefaultDownloadPartSize,
+		}
+		if part.RangeStart+part.PartSize > size {
+			part.PartSize = size - part.RangeStart
+		}
+		ch <- part
+	}
+	close(ch)
+
 	return g.Wait()
 }
 
-func copyFile(f *os.File, dst string) error {
-	_, err := f.Seek(0, io.SeekStart)
+// createTempFile creates a temporary file in the destination directory.
+// if UseTmpDir is true, it creates a temporary file in the system's temporary folder.
+func (d *Downloader) createTempFile(dst string) (*os.File, error) {
+	var tmpDir string
+	if !d.UseTmpDir {
+		tmpDir = filepath.Dir(dst)
+	}
+	base := filepath.Base(dst)
+	return os.CreateTemp(tmpDir, base+".*.tmp")
+}
+
+// moveOrCopyFile tries to rename the file to the destination path,
+// if it fails, it copies the file to the destination path.
+// srcFile is closed and deleted, if needed, on exit.
+func moveOrCopyFile(srcFile *os.File, dst string) (err error) {
+	// rename/move the file to the destination path
+	err = os.Rename(srcFile.Name(), dst)
+	if err == nil {
+		return srcFile.Close()
+	}
+
+	// if rename failed, copy the file to the destination path
+	// close and delete the source file on exit
+	defer func() {
+		if closeErr := srcFile.Close(); closeErr != nil {
+			if err == nil {
+				err = closeErr
+			}
+		}
+		_ = os.Remove(srcFile.Name())
+	}()
+
+	// make sure we start copying from the beginning of the file
+	_, err = srcFile.Seek(0, io.SeekStart)
 	if err != nil {
 		return err
 	}
-	target, err := os.Create(dst)
+	dstFile, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = target.Close() }()
-	_, err = io.Copy(target, f)
+	_, err = io.Copy(dstFile, srcFile)
 	return err
 }
 
-func downloadPresignedPart(ctx context.Context, httpClient *http.Client, physicalAddress string, rangeStart int64, partSize int64, partNumber int64, f *os.File) error {
-	// fmt.Printf("Downloading part %d (%d)...\n", partNumber, partSize)
-	start := time.Now()
-	defer func() {
-		fmt.Printf("Downloaded part %d (%d), took %s.\n", partNumber, partSize, time.Since(start))
-	}()
-
+func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress string, rangeStart int64, partSize int64, partNumber int, f *os.File) error {
 	rangeEnd := rangeStart + partSize - 1
 	rangeHeader := fmt.Sprintf("bytes=%d-%d", rangeStart, rangeEnd)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, physicalAddress, nil)
@@ -145,7 +198,7 @@ func downloadPresignedPart(ctx context.Context, httpClient *http.Client, physica
 		return err
 	}
 	req.Header.Set("Range", rangeHeader)
-	resp, err := httpClient.Do(req)
+	resp, err := d.HTTPClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -155,18 +208,18 @@ func downloadPresignedPart(ctx context.Context, httpClient *http.Client, physica
 		return fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status)
 	}
 	if resp.ContentLength != partSize {
-		return fmt.Errorf("part %d expected %d bytes, got %d", partNumber, partSize, resp.ContentLength)
+		return fmt.Errorf("%w: part %d expected %d bytes, got %d", ErrRequestFailed, partNumber, partSize, resp.ContentLength)
 	}
 	writer := io.NewOffsetWriter(f, rangeStart)
 	_, err = io.CopyN(writer, resp.Body, partSize)
 	return err
 }
 
-func downloadObject(ctx context.Context, client *apigen.ClientWithResponses, preSign bool, src uri.URI, dst string) error {
+func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string) error {
 	// get object content
-	resp, err := client.GetObject(ctx, src.Repository, src.Ref, &apigen.GetObjectParams{
+	resp, err := d.Client.GetObject(ctx, src.Repository, src.Ref, &apigen.GetObjectParams{
 		Path:    *src.Path,
-		Presign: swag.Bool(preSign),
+		Presign: swag.Bool(d.PreSign),
 	})
 	if err != nil {
 		return err
