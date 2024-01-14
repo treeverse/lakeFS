@@ -77,10 +77,12 @@ func TestHardReset(t *testing.T) {
 		"failed to commit changes repo %s branch %s", repo, mainBranch)
 
 	// commit again so we have something to revert
-	_, err = client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+	commitResp2, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message:    "another commit",
 		AllowEmpty: swag.Bool(true),
 	})
+	require.NoError(t, err, "failed to commit changes")
+	require.NotNil(t, commitResp2.JSON201, "failed to commit changes")
 
 	// reset
 	reset := apigen.HardResetBranchParams{Ref: mainBranch + "~"}
