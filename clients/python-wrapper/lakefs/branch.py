@@ -334,7 +334,7 @@ class _Transaction(_BaseBranch):
 
 class Transaction:
     """
-    Manage a transactions on a given branch
+    Manage a transaction on a given branch
 
     The transaction creates an ephemeral branch from the source branch. The transaction can then be used to perform
     operations on the branch which will later be merged back into the source branch.
