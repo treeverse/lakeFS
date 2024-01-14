@@ -54,6 +54,7 @@ from lakefs_sdk.models.import_creation import ImportCreation
 from lakefs_sdk.models.import_creation_response import ImportCreationResponse
 from lakefs_sdk.models.import_location import ImportLocation
 from lakefs_sdk.models.import_status import ImportStatus
+from lakefs_sdk.models.installation_usage_report import InstallationUsageReport
 from lakefs_sdk.models.internal_delete_branch_protection_rule_request import InternalDeleteBranchProtectionRuleRequest
 from lakefs_sdk.models.login_config import LoginConfig
 from lakefs_sdk.models.login_information import LoginInformation
@@ -103,6 +104,7 @@ from lakefs_sdk.models.task_info import TaskInfo
 from lakefs_sdk.models.underlying_object_properties import UnderlyingObjectProperties
 from lakefs_sdk.models.update_token import UpdateToken
 from lakefs_sdk.models.upload_part import UploadPart
+from lakefs_sdk.models.usage_report import UsageReport
 from lakefs_sdk.models.user import User
 from lakefs_sdk.models.user_creation import UserCreation
 from lakefs_sdk.models.user_list import UserList

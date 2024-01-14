@@ -50,6 +50,7 @@ from lakefs_client.model.import_location import ImportLocation
 from lakefs_client.model.import_status import ImportStatus
 from lakefs_client.model.inline_object import InlineObject
 from lakefs_client.model.inline_object1 import InlineObject1
+from lakefs_client.model.installation_usage_report import InstallationUsageReport
 from lakefs_client.model.login_config import LoginConfig
 from lakefs_client.model.login_information import LoginInformation
 from lakefs_client.model.merge import Merge
@@ -100,6 +101,7 @@ from lakefs_client.model.task_info import TaskInfo
 from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties
 from lakefs_client.model.update_token import UpdateToken
 from lakefs_client.model.upload_part import UploadPart
+from lakefs_client.model.usage_report import UsageReport
 from lakefs_client.model.user import User
 from lakefs_client.model.user_creation import UserCreation
 from lakefs_client.model.user_list import UserList

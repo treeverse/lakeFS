@@ -213,6 +213,8 @@ This reference uses `.` to denote the nesting of values.
 * `installation.user_name` `(string : )` - When specified, an initial admin user will be created when the server is first run. Works only when `database.type` is set to local. Requires `installation.access_key_id` and `installation.secret_access_key`. 
 * `installation.access_key_id` `(string : )` - Admin's initial access key id (used once in the initial setup process)
 * `installation.secret_access_key` `(string : )` - Admin's initial secret access key (used once in the initial setup process)
+* `usage_report.enabled` `(bool : false)` - Store API and Gateway usage reports into key-value store.
+* `usage_report.flush_interval` `(duration : 5m)` - Sets interval for flushing in-memory usage data to key-value store.
 
 {: .ref-list }
 
