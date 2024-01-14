@@ -504,15 +504,18 @@ func (c *Catalog) GetRepositoryMetadata(ctx context.Context, repository string) 
 	return c.Store.GetRepositoryMetadata(ctx, repositoryID)
 }
 
-// SetRepositoryMetadata set repository metadata
+// UpdateRepositoryMetadata set repository metadata
 func (c *Catalog) UpdateRepositoryMetadata(ctx context.Context, repository string, metadata graveler.RepositoryMetadata) error {
+	if len(metadata) == 0 {
+		return nil
+	}
 	r, err := c.getRepository(ctx, repository)
 	if err != nil {
 		return err
 	}
 	return c.Store.SetRepositoryMetadata(ctx, r, func(md graveler.RepositoryMetadata) (graveler.RepositoryMetadata, error) {
 		if md == nil {
-			md = make(graveler.RepositoryMetadata)
+			return metadata, nil
 		}
 		for k, v := range metadata {
 			md[k] = v
@@ -523,6 +526,9 @@ func (c *Catalog) UpdateRepositoryMetadata(ctx context.Context, repository strin
 
 // DeleteRepositoryMetadata delete repository metadata
 func (c *Catalog) DeleteRepositoryMetadata(ctx context.Context, repository string, keys []string) error {
+	if len(keys) == 0 {
+		return nil
+	}
 	r, err := c.getRepository(ctx, repository)
 	if err != nil {
 		return err
