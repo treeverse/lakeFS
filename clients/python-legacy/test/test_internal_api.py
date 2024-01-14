@@ -76,6 +76,13 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
+    def test_get_usage_report_summary(self):
+        """Test case for get_usage_report_summary
+
+        get usage report summary  # noqa: E501
+        """
+        pass
+
     def test_internal_create_branch_protection_rule(self):
         """Test case for internal_create_branch_protection_rule
 

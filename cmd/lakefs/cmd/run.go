@@ -174,6 +174,14 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
+		// usage report setup - default usage reporter is a no-op
+		usageReporter := stats.DefaultUsageReporter
+		if cfg.UsageReport.Enabled {
+			ur := stats.NewUsageReporter(metadata.InstallationID, kvStore)
+			ur.Start(ctx, cfg.UsageReport.FlushInterval, logger.WithField("service", "usage_report"))
+			usageReporter = ur
+		}
+
 		deleteScheduler := gocron.NewScheduler(time.UTC)
 		err = scheduleCleanupJobs(ctx, deleteScheduler, c)
 		if err != nil {
@@ -262,6 +270,7 @@ var runCmd = &cobra.Command{
 			cfg.UISnippets(),
 			upload.DefaultPathProvider,
 			otfDiffService,
+			usageReporter,
 		)
 
 		// init gateway server

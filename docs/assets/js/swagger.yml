@@ -1563,6 +1563,35 @@ components:
       required:
         - physical_address
 
+    UsageReport:
+      type: object
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+        count:
+          type: integer
+          format: int64
+      required:
+        - year
+        - month
+        - count
+
+    InstallationUsageReport:
+      type: object
+      properties:
+        installation_id:
+          type: string
+        reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/UsageReport"
+      required:
+        - installation_id
+        - reports
+
+
 paths:
   /setup_comm_prefs:
     post:
@@ -5238,6 +5267,31 @@ paths:
       responses:
         204:
           description: reported successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /usage-report/summary:
+    get:
+      tags:
+        - internal
+      operationId: getUsageReportSummary
+      summary: get usage report summary
+      responses:
+        200:
+          description: Usage report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstallationUsageReport"
+            application/text:
+              schema:
+                type: string
         400:
           $ref: "#/components/responses/BadRequest"
         401:

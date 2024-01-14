@@ -54,6 +54,7 @@ docs/ImportLocation.md
 docs/ImportStatus.md
 docs/InlineObject.md
 docs/InlineObject1.md
+docs/InstallationUsageReport.md
 docs/InternalApi.md
 docs/LoginConfig.md
 docs/LoginInformation.md
@@ -109,6 +110,7 @@ docs/TaskInfo.md
 docs/UnderlyingObjectProperties.md
 docs/UpdateToken.md
 docs/UploadPart.md
+docs/UsageReport.md
 docs/User.md
 docs/UserCreation.md
 docs/UserList.md
@@ -195,6 +197,7 @@ src/main/java/io/lakefs/clients/api/model/ImportLocation.java
 src/main/java/io/lakefs/clients/api/model/ImportStatus.java
 src/main/java/io/lakefs/clients/api/model/InlineObject.java
 src/main/java/io/lakefs/clients/api/model/InlineObject1.java
+src/main/java/io/lakefs/clients/api/model/InstallationUsageReport.java
 src/main/java/io/lakefs/clients/api/model/LoginConfig.java
 src/main/java/io/lakefs/clients/api/model/LoginInformation.java
 src/main/java/io/lakefs/clients/api/model/Merge.java
@@ -243,6 +246,7 @@ src/main/java/io/lakefs/clients/api/model/TaskInfo.java
 src/main/java/io/lakefs/clients/api/model/UnderlyingObjectProperties.java
 src/main/java/io/lakefs/clients/api/model/UpdateToken.java
 src/main/java/io/lakefs/clients/api/model/UploadPart.java
+src/main/java/io/lakefs/clients/api/model/UsageReport.java
 src/main/java/io/lakefs/clients/api/model/User.java
 src/main/java/io/lakefs/clients/api/model/UserCreation.java
 src/main/java/io/lakefs/clients/api/model/UserList.java
@@ -303,6 +307,7 @@ src/test/java/io/lakefs/clients/api/model/ImportLocationTest.java
 src/test/java/io/lakefs/clients/api/model/ImportStatusTest.java
 src/test/java/io/lakefs/clients/api/model/InlineObject1Test.java
 src/test/java/io/lakefs/clients/api/model/InlineObjectTest.java
+src/test/java/io/lakefs/clients/api/model/InstallationUsageReportTest.java
 src/test/java/io/lakefs/clients/api/model/LoginConfigTest.java
 src/test/java/io/lakefs/clients/api/model/LoginInformationTest.java
 src/test/java/io/lakefs/clients/api/model/MergeResultTest.java
@@ -351,6 +356,7 @@ src/test/java/io/lakefs/clients/api/model/TaskInfoTest.java
 src/test/java/io/lakefs/clients/api/model/UnderlyingObjectPropertiesTest.java
 src/test/java/io/lakefs/clients/api/model/UpdateTokenTest.java
 src/test/java/io/lakefs/clients/api/model/UploadPartTest.java
+src/test/java/io/lakefs/clients/api/model/UsageReportTest.java
 src/test/java/io/lakefs/clients/api/model/UserCreationTest.java
 src/test/java/io/lakefs/clients/api/model/UserListTest.java
 src/test/java/io/lakefs/clients/api/model/UserTest.java

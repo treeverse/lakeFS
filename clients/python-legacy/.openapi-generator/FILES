@@ -51,6 +51,7 @@ docs/ImportLocation.md
 docs/ImportStatus.md
 docs/InlineObject.md
 docs/InlineObject1.md
+docs/InstallationUsageReport.md
 docs/InternalApi.md
 docs/LoginConfig.md
 docs/LoginInformation.md
@@ -108,6 +109,7 @@ docs/TaskInfo.md
 docs/UnderlyingObjectProperties.md
 docs/UpdateToken.md
 docs/UploadPart.md
+docs/UsageReport.md
 docs/User.md
 docs/UserCreation.md
 docs/UserList.md
@@ -177,6 +179,7 @@ lakefs_client/model/import_location.py
 lakefs_client/model/import_status.py
 lakefs_client/model/inline_object.py
 lakefs_client/model/inline_object1.py
+lakefs_client/model/installation_usage_report.py
 lakefs_client/model/login_config.py
 lakefs_client/model/login_information.py
 lakefs_client/model/merge.py
@@ -227,6 +230,7 @@ lakefs_client/model/task_info.py
 lakefs_client/model/underlying_object_properties.py
 lakefs_client/model/update_token.py
 lakefs_client/model/upload_part.py
+lakefs_client/model/usage_report.py
 lakefs_client/model/user.py
 lakefs_client/model/user_creation.py
 lakefs_client/model/user_list.py
@@ -288,6 +292,7 @@ test/test_import_location.py
 test/test_import_status.py
 test/test_inline_object.py
 test/test_inline_object1.py
+test/test_installation_usage_report.py
 test/test_internal_api.py
 test/test_login_config.py
 test/test_login_information.py
@@ -345,6 +350,7 @@ test/test_task_info.py
 test/test_underlying_object_properties.py
 test/test_update_token.py
 test/test_upload_part.py
+test/test_usage_report.py
 test/test_user.py
 test/test_user_creation.py
 test/test_user_list.py

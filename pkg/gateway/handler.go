@@ -37,10 +37,12 @@ const (
 
 var commaSeparator = regexp.MustCompile(`,\s*`)
 
-var (
+const (
 	contentTypeApplicationXML = "application/xml"
 	contentTypeTextXML        = "text/xml"
 )
+
+var usageCounter = stats.NewUsageCounter()
 
 type handler struct {
 	sc                 *ServerContext
@@ -136,6 +138,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	usageCounter.Add(1)
 	operationHandler.ServeHTTP(w, req)
 }
 
