@@ -1188,6 +1188,226 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 	})
 }
 
+func TestController_SetRepositoryMetadataHandler(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	t.Run("set, append and get", func(t *testing.T) {
+		tt := []struct {
+			name        string
+			properties  map[string]string
+			appendProps map[string]string
+			expected    map[string]string
+		}{
+			{
+				name:        "empty",
+				properties:  map[string]string{},
+				appendProps: map[string]string{},
+				expected:    nil,
+			},
+			{
+				name:        "append empty",
+				properties:  map[string]string{"foo": "bar"},
+				appendProps: map[string]string{},
+				expected:    map[string]string{"foo": "bar"},
+			},
+			{
+				name:        "append new",
+				properties:  map[string]string{"foo": "bar"},
+				appendProps: map[string]string{"foo1": "bar1"},
+				expected:    map[string]string{"foo": "bar", "foo1": "bar1"},
+			},
+			{
+				name:        "append multiple",
+				properties:  map[string]string{"foo": "bar"},
+				appendProps: map[string]string{"foo1": "bar1", "foo2": "bar2", "foo3": "bar3", "foo4": "bar4"},
+				expected:    map[string]string{"foo": "bar", "foo1": "bar1", "foo2": "bar2", "foo3": "bar3", "foo4": "bar4"},
+			},
+			{
+				name:        "append override",
+				properties:  map[string]string{"foo": "bar"},
+				appendProps: map[string]string{"foo": "bar1"},
+				expected:    map[string]string{"foo": "bar1"},
+			},
+			{
+				name:        "append override empty",
+				properties:  map[string]string{"foo": "bar"},
+				appendProps: map[string]string{"foo": ""},
+				expected:    map[string]string{"foo": ""},
+			},
+		}
+		for _, tt1 := range tt {
+			t.Run(tt1.name, func(t *testing.T) {
+				repoName := testUniqueRepoName()
+				createResp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+					DefaultBranch:    apiutil.Ptr("main"),
+					Name:             repoName,
+					StorageNamespace: onBlock(deps, repoName),
+				})
+				verifyResponseOK(t, createResp, err)
+
+				resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: tt1.properties}})
+				verifyResponseOK(t, resp, err)
+
+				resp, err = clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: tt1.appendProps}})
+				verifyResponseOK(t, resp, err)
+
+				getResp, err := clt.GetRepositoryMetadataWithResponse(ctx, repoName)
+				verifyResponseOK(t, resp, err)
+				if diff := deep.Equal(getResp.JSON200.AdditionalProperties, tt1.expected); diff != nil {
+					t.Fatal("Get repository metadata results diff:", diff)
+				}
+			})
+		}
+	})
+
+	t.Run("set metadata bare repo", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		bareRepo := true
+		createResp, err := clt.CreateRepositoryWithResponse(ctx,
+			&apigen.CreateRepositoryParams{
+				Bare: &bareRepo,
+			}, apigen.CreateRepositoryJSONRequestBody{
+				DefaultBranch:    apiutil.Ptr("main"),
+				Name:             repoName,
+				StorageNamespace: onBlock(deps, "foo-bucket-2"),
+			})
+		verifyResponseOK(t, createResp, err)
+
+		resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: map[string]string{"foo": "bar"}}})
+		verifyResponseOK(t, resp, err)
+	})
+
+	t.Run("set repository metadata not exist", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: map[string]string{"foo": "bar"}}})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON404)
+	})
+
+	t.Run("set repo metadata user unauthorized", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		createResp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    apiutil.Ptr("main"),
+			Name:             repoName,
+			StorageNamespace: onBlock(deps, "foo-bucket-3"),
+		})
+		verifyResponseOK(t, createResp, err)
+
+		// create a user
+		creds := createUserWithDefaultGroup(t, clt)
+		// create a client with the user
+		regClt := setupClientByEndpoint(t, deps.server.URL, creds.AccessKeyID, creds.SecretAccessKey)
+		resp, err := regClt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: map[string]string{"foo": "bar"}}})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON401)
+	})
+}
+
+func TestController_DeleteRepositoryMetadataHandler(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	t.Run("set, delete and get", func(t *testing.T) {
+		tt := []struct {
+			name        string
+			properties  map[string]string
+			deleteProps []string
+			expected    map[string]string
+		}{
+			{
+				name:        "empty",
+				properties:  map[string]string{},
+				deleteProps: []string{},
+				expected:    nil,
+			},
+			{
+				name:        "delete nothing",
+				properties:  map[string]string{"foo": "bar"},
+				deleteProps: []string{},
+				expected:    map[string]string{"foo": "bar"},
+			},
+			{
+				name:        "delete one",
+				properties:  map[string]string{"foo": "bar", "foo1": "bar1"},
+				deleteProps: []string{"foo1"},
+				expected:    map[string]string{"foo": "bar"},
+			},
+			{
+				name:        "delete non existing",
+				properties:  map[string]string{"foo": "bar"},
+				deleteProps: []string{"non-existing"},
+				expected:    map[string]string{"foo": "bar"},
+			},
+		}
+		for _, tt1 := range tt {
+			t.Run(tt1.name, func(t *testing.T) {
+				repoName := testUniqueRepoName()
+				createResp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+					DefaultBranch:    apiutil.Ptr("main"),
+					Name:             repoName,
+					StorageNamespace: onBlock(deps, repoName),
+				})
+				verifyResponseOK(t, createResp, err)
+
+				resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: tt1.properties}})
+				verifyResponseOK(t, resp, err)
+
+				deleteResp, err := clt.DeleteRepositoryMetadataWithResponse(ctx, repoName, apigen.DeleteRepositoryMetadataJSONRequestBody{Keys: tt1.deleteProps})
+				verifyResponseOK(t, deleteResp, err)
+
+				getResp, err := clt.GetRepositoryMetadataWithResponse(ctx, repoName)
+				verifyResponseOK(t, resp, err)
+				if diff := deep.Equal(getResp.JSON200.AdditionalProperties, tt1.expected); diff != nil {
+					t.Fatal("Get repository metadata results diff:", diff)
+				}
+			})
+		}
+	})
+
+	t.Run("delete metadata bare repo", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		bareRepo := true
+		createResp, err := clt.CreateRepositoryWithResponse(ctx,
+			&apigen.CreateRepositoryParams{
+				Bare: &bareRepo,
+			}, apigen.CreateRepositoryJSONRequestBody{
+				DefaultBranch:    apiutil.Ptr("main"),
+				Name:             repoName,
+				StorageNamespace: onBlock(deps, "foo-bucket-2"),
+			})
+		verifyResponseOK(t, createResp, err)
+
+		resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: map[string]string{"foo": "bar"}}})
+		verifyResponseOK(t, resp, err)
+	})
+
+	t.Run("delete repository metadata, repository not exist", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: map[string]string{"foo": "bar"}}})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON404)
+	})
+
+	t.Run("delete repo metadata user unauthorized", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		createResp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    apiutil.Ptr("main"),
+			Name:             repoName,
+			StorageNamespace: onBlock(deps, "foo-bucket-3"),
+		})
+		verifyResponseOK(t, createResp, err)
+
+		// create a user
+		creds := createUserWithDefaultGroup(t, clt)
+		// create a client with the user
+		regClt := setupClientByEndpoint(t, deps.server.URL, creds.AccessKeyID, creds.SecretAccessKey)
+		resp, err := regClt.DeleteRepositoryMetadataWithResponse(ctx, repoName, apigen.DeleteRepositoryMetadataJSONRequestBody{Keys: []string{"foo"}})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON401)
+	})
+}
+
 func TestController_GetRepositoryMetadataHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
