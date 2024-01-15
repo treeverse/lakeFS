@@ -1824,6 +1824,46 @@ paths:
       - repositories
       x-accepts: application/json
   /repositories/{repository}/metadata:
+    delete:
+      description: |
+        Delete specified keys from the repository's metadata.
+      operationId: deleteRepositoryMetadata
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepositoryMetadataKeys'
+        required: true
+      responses:
+        "204":
+          description: repository metadata keys deleted successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: delete repository metadata
+      tags:
+      - internal
+      x-contentType: application/json
+      x-accepts: application/json
     get:
       operationId: getRepositoryMetadata
       parameters:
@@ -1864,6 +1904,52 @@ paths:
       summary: get repository metadata
       tags:
       - repositories
+      x-accepts: application/json
+    post:
+      description: |
+        Set repository metadata. This will only add or update the provided keys, and will not remove any existing keys.
+      operationId: setRepositoryMetadata
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepositoryMetadataSet'
+        required: true
+      responses:
+        "204":
+          description: repository metadata set successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: set repository metadata
+      tags:
+      - internal
+      x-contentType: application/json
       x-accepts: application/json
   /repositories/{repository}/settings/gc_rules:
     delete:
@@ -6604,6 +6690,32 @@ components:
     RepositoryMetadata:
       additionalProperties:
         type: string
+      type: object
+    RepositoryMetadataSet:
+      example:
+        metadata:
+          key: metadata
+      properties:
+        metadata:
+          additionalProperties:
+            type: string
+          type: object
+      required:
+      - metadata
+      type: object
+    RepositoryMetadataKeys:
+      example:
+        keys:
+        - keys
+        - keys
+      properties:
+        keys:
+          items:
+            description: metadata key
+            type: string
+          type: array
+      required:
+      - keys
       type: object
     RepositoryList:
       example:
