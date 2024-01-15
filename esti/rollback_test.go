@@ -43,7 +43,7 @@ func TestResetAll(t *testing.T) {
 	resetResp, err := client.ResetBranchWithResponse(ctx, repo, mainBranch, apigen.ResetBranchJSONRequestBody(reset))
 	require.NoError(t, err, "failed to reset")
 	require.NoErrorf(t, verifyResponse(resetResp.HTTPResponse, resetResp.Body),
-		"failed to reset commit %s repo %s branch %s", repo, mainBranch)
+		"failed to reset branch repo %s branch %s", repo, mainBranch)
 
 	// read file
 	getObjResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &apigen.GetObjectParams{Path: objPath})
@@ -91,7 +91,7 @@ func TestHardReset(t *testing.T) {
 	resetResp, err := client.HardResetBranchWithResponse(ctx, repo, mainBranch, &reset)
 	require.NoError(t, err, "failed to reset")
 	require.NoErrorf(t, verifyResponse(resetResp.HTTPResponse, resetResp.Body),
-		"failed to reset commit %s repo %s branch %s", repo, mainBranch)
+		"failed to reset branch repo %s branch %s", repo, mainBranch)
 
 	// examine the last commit
 	getCommitResp, err := client.GetCommitWithResponse(ctx, repo, mainBranch)
