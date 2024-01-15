@@ -22,19 +22,17 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build -ldflags "-X github.com/treeverse/lakefs/pkg/version.Version=${VERSION}" -o lakectl ./cmd/lakectl
 
-FROM alpine:3.18 AS base
-RUN apk add -U --no-cache ca-certificates
+FROM alpine:3.18 AS lakectl
 WORKDIR /app
 ENV PATH /app:$PATH
+COPY --from=build-lakectl /build/lakectl /app/
+RUN apk add -U --no-cache ca-certificates
 RUN addgroup -S lakefs && adduser -S lakefs -G lakefs
 USER lakefs
 WORKDIR /home/lakefs
-
-FROM base AS lakectl
-COPY --from=build-lakectl /build/lakectl /app/
 ENTRYPOINT ["/app/lakectl"]
 
-FROM base AS lakefs
+FROM lakectl AS lakefs
 COPY ./scripts/wait-for /app/
 COPY --from=build-lakefs /build/lakefs /app/
 EXPOSE 8000/tcp
