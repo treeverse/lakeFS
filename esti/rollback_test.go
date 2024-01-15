@@ -82,7 +82,8 @@ func TestHardReset(t *testing.T) {
 		AllowEmpty: swag.Bool(true),
 	})
 	require.NoError(t, err, "failed to commit changes")
-	require.NotNil(t, commitResp2.JSON201, "failed to commit changes")
+	require.NoErrorf(t, verifyResponse(commitResp2.HTTPResponse, commitResp2.Body),
+		"failed to commit changes repo %s branch %s", repo, mainBranch)
 
 	// reset
 	reset := apigen.HardResetBranchParams{Ref: mainBranch + "~"}
