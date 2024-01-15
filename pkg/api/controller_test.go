@@ -1309,7 +1309,7 @@ func TestController_DeleteRepositoryMetadataHandler(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("set, delete and get", func(t *testing.T) {
-		tt := []struct {
+		tests := []struct {
 			name        string
 			properties  map[string]string
 			deleteProps []string
@@ -1340,8 +1340,8 @@ func TestController_DeleteRepositoryMetadataHandler(t *testing.T) {
 				expected:    map[string]string{"foo": "bar"},
 			},
 		}
-		for _, tt1 := range tt {
-			t.Run(tt1.name, func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
 				repoName := testUniqueRepoName()
 				createResp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 					DefaultBranch:    apiutil.Ptr("main"),
@@ -1350,15 +1350,15 @@ func TestController_DeleteRepositoryMetadataHandler(t *testing.T) {
 				})
 				verifyResponseOK(t, createResp, err)
 
-				resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: tt1.properties}})
+				resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: tt.properties}})
 				verifyResponseOK(t, resp, err)
 
-				deleteResp, err := clt.DeleteRepositoryMetadataWithResponse(ctx, repoName, apigen.DeleteRepositoryMetadataJSONRequestBody{Keys: tt1.deleteProps})
+				deleteResp, err := clt.DeleteRepositoryMetadataWithResponse(ctx, repoName, apigen.DeleteRepositoryMetadataJSONRequestBody{Keys: tt.deleteProps})
 				verifyResponseOK(t, deleteResp, err)
 
 				getResp, err := clt.GetRepositoryMetadataWithResponse(ctx, repoName)
-				verifyResponseOK(t, resp, err)
-				if diff := deep.Equal(getResp.JSON200.AdditionalProperties, tt1.expected); diff != nil {
+				verifyResponseOK(t, getResp, err)
+				if diff := deep.Equal(getResp.JSON200.AdditionalProperties, tt.expected); diff != nil {
 					t.Fatal("Get repository metadata results diff:", diff)
 				}
 			})
