@@ -179,6 +179,27 @@ components:
       additionalProperties:
         type: string
 
+    RepositoryMetadataSet:
+      type: object
+      required:
+        - metadata
+      properties:
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+
+    RepositoryMetadataKeys:
+      type: object
+      required:
+        - keys
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+            description: metadata key
+
     RepositoryList:
       type: object
       required:
@@ -2619,7 +2640,54 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-
+    post:
+      tags:
+        - internal
+      operationId: setRepositoryMetadata
+      summary: set repository metadata
+      description: |
+        Set repository metadata. This will only add or update the provided keys, and will not remove any existing keys.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepositoryMetadataSet"
+      responses:
+        204:
+          description: repository metadata set successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - internal
+      operationId: deleteRepositoryMetadata
+      summary: delete repository metadata
+      description: |
+        Delete repository metadata. Deletes the provided keys from the repository metadata.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepositoryMetadataKeys"
+      responses:
+        204:
+          description: repository metadata deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
   /repositories/{repository}/settings/gc_rules:
     parameters:
       - in: path

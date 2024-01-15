@@ -91,6 +91,8 @@ docs/Repository.md
 docs/RepositoryCreation.md
 docs/RepositoryDumpStatus.md
 docs/RepositoryList.md
+docs/RepositoryMetadataKeys.md
+docs/RepositoryMetadataSet.md
 docs/RepositoryRestoreStatus.md
 docs/ResetCreation.md
 docs/RevertCreation.md
@@ -229,6 +231,8 @@ src/main/java/io/lakefs/clients/api/model/Repository.java
 src/main/java/io/lakefs/clients/api/model/RepositoryCreation.java
 src/main/java/io/lakefs/clients/api/model/RepositoryDumpStatus.java
 src/main/java/io/lakefs/clients/api/model/RepositoryList.java
+src/main/java/io/lakefs/clients/api/model/RepositoryMetadataKeys.java
+src/main/java/io/lakefs/clients/api/model/RepositoryMetadataSet.java
 src/main/java/io/lakefs/clients/api/model/RepositoryRestoreStatus.java
 src/main/java/io/lakefs/clients/api/model/ResetCreation.java
 src/main/java/io/lakefs/clients/api/model/RevertCreation.java
@@ -338,6 +342,8 @@ src/test/java/io/lakefs/clients/api/model/RefsRestoreTest.java
 src/test/java/io/lakefs/clients/api/model/RepositoryCreationTest.java
 src/test/java/io/lakefs/clients/api/model/RepositoryDumpStatusTest.java
 src/test/java/io/lakefs/clients/api/model/RepositoryListTest.java
+src/test/java/io/lakefs/clients/api/model/RepositoryMetadataKeysTest.java
+src/test/java/io/lakefs/clients/api/model/RepositoryMetadataSetTest.java
 src/test/java/io/lakefs/clients/api/model/RepositoryRestoreStatusTest.java
 src/test/java/io/lakefs/clients/api/model/RepositoryTest.java
 src/test/java/io/lakefs/clients/api/model/ResetCreationTest.java
