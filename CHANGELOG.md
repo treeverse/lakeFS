@@ -1,5 +1,17 @@
 # Changelog
 
+# v1.8.0
+
+:new: What's new:
+
+- Add "hard reset" operation (#7263)
+- Usage report for API and S3 gateway (#7281)
+
+:bug: Bugs fixed:
+
+- Fix docker image build for cross compile (#7286)
+
+
 # v1.7.0
 
 :new: What's new:
