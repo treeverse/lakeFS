@@ -95,7 +95,7 @@ jobs:
           context: .
           target: lakefs
           push: true
-          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          platforms: linux/amd64,linux/arm64
           build-args: VERSION=${{ steps.version.outputs.tag }}
           tags: ${{ steps.lakefs_meta.outputs.tags }}
 
@@ -117,7 +117,7 @@ jobs:
           context: .
           target: lakectl
           push: true
-          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          platforms: linux/amd64,linux/arm64
           build-args: VERSION=${{ steps.version.outputs.tag }}
           tags: ${{ steps.lakectl_meta.outputs.tags }}
 
