@@ -943,6 +943,20 @@ func (mr *MockVersionControllerMockRecorder) SetLinkAddress(ctx, repository, phy
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLinkAddress", reflect.TypeOf((*MockVersionController)(nil).SetLinkAddress), ctx, repository, physicalAddress)
 }
 
+// SetRepositoryMetadata mocks base method.
+func (m *MockVersionController) SetRepositoryMetadata(ctx context.Context, repository *graveler.RepositoryRecord, updateFunc graveler.RepoMetadataUpdateFunc) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetRepositoryMetadata", ctx, repository, updateFunc)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetRepositoryMetadata indicates an expected call of SetRepositoryMetadata.
+func (mr *MockVersionControllerMockRecorder) SetRepositoryMetadata(ctx, repository, updateFunc interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRepositoryMetadata", reflect.TypeOf((*MockVersionController)(nil).SetRepositoryMetadata), ctx, repository, updateFunc)
+}
+
 // UpdateBranch mocks base method.
 func (m *MockVersionController) UpdateBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref, opts ...graveler.SetOptionsFunc) (*graveler.Branch, error) {
 	m.ctrl.T.Helper()
