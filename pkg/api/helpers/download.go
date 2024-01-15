@@ -70,8 +70,10 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 	if err != nil {
 		return err
 	}
+
+	// fallback to download if missing size
 	if statResp.JSON200 == nil || statResp.JSON200.SizeBytes == nil {
-		return fmt.Errorf("%w: missing object size (%s)", ErrRequestFailed, statResp.Status())
+		return d.downloadObject(ctx, src, dst)
 	}
 
 	// check if the object is small enough to download in one request
