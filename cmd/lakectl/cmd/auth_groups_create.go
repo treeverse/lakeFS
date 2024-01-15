@@ -20,7 +20,7 @@ var authGroupsCreateCmd = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.CreateGroupWithResponse(cmd.Context(), apigen.CreateGroupJSONRequestBody{
-			Name: id,
+			Id: id,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {

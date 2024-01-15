@@ -763,7 +763,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body ap
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.CreateGroupAction,
-			Resource: permissions.GroupArn(body.Name),
+			Resource: permissions.GroupArn(body.Id),
 		},
 	}) {
 		return
@@ -772,7 +772,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body ap
 	c.LogAction(ctx, "create_group", r, "", "", "")
 
 	// Check that group name is valid
-	valid, msg := c.isNameValid(body.Name, "Group")
+	valid, msg := c.isNameValid(body.Id, "Group")
 	if !valid {
 		writeError(w, r, http.StatusBadRequest, msg)
 		return
@@ -780,16 +780,16 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body ap
 
 	g := &model.Group{
 		CreatedAt:   time.Now().UTC(),
-		DisplayName: body.Name,
+		DisplayName: body.Id,
 	}
-	err := c.Auth.CreateGroup(ctx, g)
+	createdGroup, err := c.Auth.CreateGroup(ctx, g)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 	response := apigen.Group{
-		CreationDate: g.CreatedAt.Unix(),
-		Name:         g.DisplayName,
-		Id:           g.ID,
+		CreationDate: createdGroup.CreatedAt.Unix(),
+		Name:         createdGroup.DisplayName,
+		Id:           createdGroup.ID,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }

@@ -26,8 +26,8 @@ class GroupCreation(BaseModel):
     """
     GroupCreation
     """
-    name: StrictStr = Field(...)
-    __properties = ["name"]
+    id: StrictStr = Field(...)
+    __properties = ["id"]
 
     class Config:
         """Pydantic configuration"""
@@ -65,7 +65,7 @@ class GroupCreation(BaseModel):
             return GroupCreation.parse_obj(obj)
 
         _obj = GroupCreation.parse_obj({
-            "name": obj.get("name")
+            "id": obj.get("id")
         })
         return _obj
 

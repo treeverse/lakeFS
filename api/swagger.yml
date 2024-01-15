@@ -1048,9 +1048,9 @@ components:
     GroupCreation:
       type: object
       required:
-        - name
+        - id
       properties:
-        name:
+        id:
           type: string
 
     Statement:

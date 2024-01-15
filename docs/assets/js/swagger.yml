@@ -1048,9 +1048,9 @@ components:
     GroupCreation:
       type: object
       required:
-        - name
+        - id
       properties:
-        name:
+        id:
           type: string
 
     Statement:
@@ -2673,7 +2673,7 @@ paths:
       operationId: deleteRepositoryMetadata
       summary: delete repository metadata
       description: |
-        Delete repository metadata. Deletes the provided keys from the repository metadata.
+        Delete specified keys from the repository's metadata.
       requestBody:
         required: true
         content:
@@ -2682,11 +2682,9 @@ paths:
               $ref: "#/components/schemas/RepositoryMetadataKeys"
       responses:
         204:
-          description: repository metadata deleted successfully
+          description: repository metadata keys deleted successfully
         401:
           $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
         default:

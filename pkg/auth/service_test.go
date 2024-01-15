@@ -502,7 +502,7 @@ func createInitialDataSet(t *testing.T, ctx context.Context, svc auth.Service, u
 	}
 
 	for _, groupName := range groupNames {
-		if err := svc.CreateGroup(ctx, &model.Group{DisplayName: groupName}); err != nil {
+		if _, err := svc.CreateGroup(ctx, &model.Group{DisplayName: groupName}); err != nil {
 			t.Fatalf("CreateGroup(%s): %s", groupName, err)
 		}
 		for _, userName := range userNames {
@@ -2411,10 +2411,10 @@ func TestAPIAuthService_CreateGroup(t *testing.T) {
 				},
 			}
 			mockClient.EXPECT().CreateGroupWithResponse(gomock.Any(), auth.CreateGroupJSONRequestBody{
-				Name: tt.groupName,
+				Id: tt.groupName,
 			}).Return(response, nil)
 			ctx := context.Background()
-			err := s.CreateGroup(ctx, &model.Group{
+			_, err := s.CreateGroup(ctx, &model.Group{
 				DisplayName: tt.groupName,
 			})
 			if !errors.Is(err, tt.expectedErr) {

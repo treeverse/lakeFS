@@ -20,7 +20,7 @@ func TestAdminPermissions(t *testing.T) {
 	// creating a new group should succeed
 	const gname = "TestGroup"
 	resCreateGroup, err := client.CreateGroupWithResponse(ctx, apigen.CreateGroupJSONRequestBody{
-		Name: gname,
+		Id: gname,
 	})
 	require.NoError(t, err, "Admin failed while creating group")
 	require.Equal(t, http.StatusCreated, resCreateGroup.StatusCode(), "Admin unexpectedly failed to create group")

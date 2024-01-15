@@ -7880,12 +7880,12 @@ components:
       type: object
     GroupCreation:
       example:
-        name: name
+        id: id
       properties:
-        name:
+        id:
           type: string
       required:
-      - name
+      - id
       type: object
     Statement:
       example:
