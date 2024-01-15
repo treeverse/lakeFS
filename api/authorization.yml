@@ -235,6 +235,8 @@ components:
         - creation_date
         - name
       properties:
+        id:
+          type: string
         name:
           type: string
         creation_date:
@@ -271,9 +273,9 @@ components:
     GroupCreation:
       type: object
       required:
-        - id
+        - name
       properties:
-        id:
+        name:
           type: string
 
     Statement:

@@ -2411,7 +2411,7 @@ func TestAPIAuthService_CreateGroup(t *testing.T) {
 				},
 			}
 			mockClient.EXPECT().CreateGroupWithResponse(gomock.Any(), auth.CreateGroupJSONRequestBody{
-				Id: tt.groupName,
+				Name: tt.groupName,
 			}).Return(response, nil)
 			ctx := context.Background()
 			err := s.CreateGroup(ctx, &model.Group{

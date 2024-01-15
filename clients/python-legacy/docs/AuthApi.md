@@ -535,7 +535,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
     group_creation = GroupCreation(
-        id="id_example",
+        name="name_example",
     ) # GroupCreation |  (optional)
 
     # example passing only required values which don't have defaults set

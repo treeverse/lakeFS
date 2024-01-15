@@ -7771,10 +7771,13 @@ components:
       type: object
     Group:
       example:
+        name: name
         id: id
         creation_date: 0
       properties:
         id:
+          type: string
+        name:
           type: string
         creation_date:
           description: Unix Epoch in seconds
@@ -7783,6 +7786,7 @@ components:
       required:
       - creation_date
       - id
+      - name
       type: object
     GroupList:
       example:
@@ -7792,9 +7796,11 @@ components:
           next_offset: next_offset
           results: 0
         results:
-        - id: id
+        - name: name
+          id: id
           creation_date: 0
-        - id: id
+        - name: name
+          id: id
           creation_date: 0
       properties:
         pagination:
@@ -7874,12 +7880,12 @@ components:
       type: object
     GroupCreation:
       example:
-        id: id
+        name: name
       properties:
-        id:
+        name:
           type: string
       required:
-      - id
+      - name
       type: object
     Statement:
       example:

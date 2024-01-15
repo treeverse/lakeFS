@@ -83,6 +83,7 @@ class Group(ModelNormal):
         """
         return {
             'id': (str,),  # noqa: E501
+            'name': (str,),  # noqa: E501
             'creation_date': (int,),  # noqa: E501
         }
 
@@ -93,6 +94,7 @@ class Group(ModelNormal):
 
     attribute_map = {
         'id': 'id',  # noqa: E501
+        'name': 'name',  # noqa: E501
         'creation_date': 'creation_date',  # noqa: E501
     }
 
@@ -103,11 +105,12 @@ class Group(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, id, creation_date, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, id, name, creation_date, *args, **kwargs):  # noqa: E501
         """Group - a model defined in OpenAPI
 
         Args:
             id (str):
+            name (str):
             creation_date (int): Unix Epoch in seconds
 
         Keyword Args:
@@ -169,6 +172,7 @@ class Group(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.id = id
+        self.name = name
         self.creation_date = creation_date
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
@@ -190,11 +194,12 @@ class Group(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, id, creation_date, *args, **kwargs):  # noqa: E501
+    def __init__(self, id, name, creation_date, *args, **kwargs):  # noqa: E501
         """Group - a model defined in OpenAPI
 
         Args:
             id (str):
+            name (str):
             creation_date (int): Unix Epoch in seconds
 
         Keyword Args:
@@ -254,6 +259,7 @@ class Group(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.id = id
+        self.name = name
         self.creation_date = creation_date
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \

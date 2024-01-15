@@ -92,15 +92,15 @@ type Service interface {
 
 	// groups
 	CreateGroup(ctx context.Context, group *model.Group) error
-	DeleteGroup(ctx context.Context, groupDisplayName string) error
-	GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error)
+	DeleteGroup(ctx context.Context, groupID string) error
+	GetGroup(ctx context.Context, groupID string) (*model.Group, error)
 	ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error)
 
 	// group<->user memberships
-	AddUserToGroup(ctx context.Context, username, groupDisplayName string) error
-	RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error
+	AddUserToGroup(ctx context.Context, username, groupID string) error
+	RemoveUserFromGroup(ctx context.Context, username, groupID string) error
 	ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error)
-	ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
+	ListGroupUsers(ctx context.Context, groupID string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// policies
 	WritePolicy(ctx context.Context, policy *model.Policy, update bool) error
@@ -123,9 +123,9 @@ type Service interface {
 	ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// policy<->group attachments
-	AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
-	DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
-	ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupID string) error
+	DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupID string) error
+	ListGroupPolicies(ctx context.Context, groupID string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	Authorizer
 
@@ -1326,7 +1326,7 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 
 func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) error {
 	resp, err := a.apiClient.CreateGroupWithResponse(ctx, CreateGroupJSONRequestBody{
-		Id: group.DisplayName,
+		Name: group.DisplayName,
 	})
 	if err != nil {
 		a.logger.WithError(err).WithField("group", group).Error("failed to create group")
@@ -1370,27 +1370,29 @@ func paginationAmount(amount int) *PaginationAmount {
 	return &p
 }
 
-func (a *APIAuthService) DeleteGroup(ctx context.Context, groupDisplayName string) error {
-	resp, err := a.apiClient.DeleteGroupWithResponse(ctx, groupDisplayName)
+func (a *APIAuthService) DeleteGroup(ctx context.Context, groupID string) error {
+	resp, err := a.apiClient.DeleteGroupWithResponse(ctx, groupID)
 	if err != nil {
-		a.logger.WithError(err).WithField("group", groupDisplayName).Error("failed to delete group")
+		a.logger.WithError(err).WithField("group", groupID).Error("failed to delete group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusNoContent)
 }
 
-func (a *APIAuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
-	resp, err := a.apiClient.GetGroupWithResponse(ctx, groupDisplayName)
+func (a *APIAuthService) GetGroup(ctx context.Context, groupID string) (*model.Group, error) {
+	resp, err := a.apiClient.GetGroupWithResponse(ctx, groupID)
 	if err != nil {
-		a.logger.WithError(err).WithField("group", groupDisplayName).Error("failed to get group")
+		a.logger.WithError(err).WithField("group", groupID).Error("failed to get group")
 		return nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
 		return nil, err
 	}
+
 	return &model.Group{
 		CreatedAt:   time.Unix(resp.JSON200.CreationDate, 0),
 		DisplayName: resp.JSON200.Name,
+		ID:          groupIDOrDisplayName(*resp.JSON200),
 	}, nil
 }
 
@@ -1413,24 +1415,25 @@ func (a *APIAuthService) ListGroups(ctx context.Context, params *model.Paginatio
 		groups[i] = &model.Group{
 			CreatedAt:   time.Unix(r.CreationDate, 0),
 			DisplayName: r.Name,
+			ID:          groupIDOrDisplayName(r),
 		}
 	}
 	return groups, toPagination(resp.JSON200.Pagination), nil
 }
 
-func (a *APIAuthService) AddUserToGroup(ctx context.Context, username, groupDisplayName string) error {
-	resp, err := a.apiClient.AddGroupMembershipWithResponse(ctx, groupDisplayName, username)
+func (a *APIAuthService) AddUserToGroup(ctx context.Context, username, groupID string) error {
+	resp, err := a.apiClient.AddGroupMembershipWithResponse(ctx, groupID, username)
 	if err != nil {
-		a.logger.WithError(err).WithField("group", groupDisplayName).WithField("username", username).Error("failed to add user to group")
+		a.logger.WithError(err).WithField("group", groupID).WithField("username", username).Error("failed to add user to group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusCreated)
 }
 
-func (a *APIAuthService) RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error {
-	resp, err := a.apiClient.DeleteGroupMembershipWithResponse(ctx, groupDisplayName, username)
+func (a *APIAuthService) RemoveUserFromGroup(ctx context.Context, username, groupID string) error {
+	resp, err := a.apiClient.DeleteGroupMembershipWithResponse(ctx, groupID, username)
 	if err != nil {
-		a.logger.WithError(err).WithField("group", groupDisplayName).WithField("username", username).Error("failed to remove user from group")
+		a.logger.WithError(err).WithField("group", groupID).WithField("username", username).Error("failed to remove user from group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusNoContent)
@@ -1454,19 +1457,20 @@ func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, pa
 		userGroups[i] = &model.Group{
 			CreatedAt:   time.Unix(r.CreationDate, 0),
 			DisplayName: r.Name,
+			ID:          groupIDOrDisplayName(r),
 		}
 	}
 	return userGroups, toPagination(resp.JSON200.Pagination), nil
 }
 
-func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
-	resp, err := a.apiClient.ListGroupMembersWithResponse(ctx, groupDisplayName, &ListGroupMembersParams{
+func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupID string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+	resp, err := a.apiClient.ListGroupMembersWithResponse(ctx, groupID, &ListGroupMembersParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
 		Amount: paginationAmount(params.Amount),
 	})
 	if err != nil {
-		a.logger.WithError(err).WithField("group", groupDisplayName).Error("failed to list group users")
+		a.logger.WithError(err).WithField("group", groupID).Error("failed to list group users")
 		return nil, nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1799,36 +1803,36 @@ func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username str
 	return a.listUserPolicies(ctx, username, params, true)
 }
 
-func (a *APIAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
-	resp, err := a.apiClient.AttachPolicyToGroupWithResponse(ctx, groupDisplayName, policyDisplayName)
+func (a *APIAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupID string) error {
+	resp, err := a.apiClient.AttachPolicyToGroupWithResponse(ctx, groupID, policyDisplayName)
 	if err != nil {
 		a.logger.WithError(err).
-			WithFields(logging.Fields{"policy": policyDisplayName, "group": groupDisplayName}).
+			WithFields(logging.Fields{"policy": policyDisplayName, "group": groupID}).
 			Error("failed to attach policy to group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusCreated)
 }
 
-func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
-	resp, err := a.apiClient.DetachPolicyFromGroupWithResponse(ctx, groupDisplayName, policyDisplayName)
+func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupID string) error {
+	resp, err := a.apiClient.DetachPolicyFromGroupWithResponse(ctx, groupID, policyDisplayName)
 	if err != nil {
 		a.logger.WithError(err).
-			WithFields(logging.Fields{"policy": policyDisplayName, "group": groupDisplayName}).
+			WithFields(logging.Fields{"policy": policyDisplayName, "group": groupID}).
 			Error("failed to detach policy from group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusNoContent)
 }
 
-func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
-	resp, err := a.apiClient.ListGroupPoliciesWithResponse(ctx, groupDisplayName, &ListGroupPoliciesParams{
+func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupID string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	resp, err := a.apiClient.ListGroupPoliciesWithResponse(ctx, groupID, &ListGroupPoliciesParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
 		Amount: paginationAmount(params.Amount),
 	})
 	if err != nil {
-		a.logger.WithError(err).WithField("group", groupDisplayName).Error("failed to list policies")
+		a.logger.WithError(err).WithField("group", groupID).Error("failed to list policies")
 		return nil, nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1968,6 +1972,14 @@ func generateAuthAPIJWT(secret []byte) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	logging.ContextUnavailable().WithField("id", id).Info("generated auth api token")
 	return token.SignedString(secret)
+}
+
+func groupIDOrDisplayName(group Group) string {
+	stringID := swag.StringValue(group.Id)
+	if stringID != "" {
+		return stringID
+	}
+	return group.Name
 }
 
 func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {

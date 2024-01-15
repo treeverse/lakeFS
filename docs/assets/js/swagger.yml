@@ -976,8 +976,11 @@ components:
       required:
         - creation_date
         - id
+        - name
       properties:
         id:
+          type: string
+        name:
           type: string
         creation_date:
           type: integer
@@ -1045,9 +1048,9 @@ components:
     GroupCreation:
       type: object
       required:
-        - id
+        - name
       properties:
-        id:
+        name:
           type: string
 
     Statement:

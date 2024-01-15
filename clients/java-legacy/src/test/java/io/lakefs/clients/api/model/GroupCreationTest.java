@@ -41,11 +41,11 @@ public class GroupCreationTest {
     }
 
     /**
-     * Test the property 'id'
+     * Test the property 'name'
      */
     @Test
-    public void idTest() {
-        // TODO: test id
+    public void nameTest() {
+        // TODO: test name
     }
 
 }

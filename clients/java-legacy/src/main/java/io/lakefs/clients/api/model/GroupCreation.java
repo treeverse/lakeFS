@@ -29,31 +29,31 @@ import java.io.IOException;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class GroupCreation {
-  public static final String SERIALIZED_NAME_ID = "id";
-  @SerializedName(SERIALIZED_NAME_ID)
-  private String id;
+  public static final String SERIALIZED_NAME_NAME = "name";
+  @SerializedName(SERIALIZED_NAME_NAME)
+  private String name;
 
 
-  public GroupCreation id(String id) {
+  public GroupCreation name(String name) {
     
-    this.id = id;
+    this.name = name;
     return this;
   }
 
    /**
-   * Get id
-   * @return id
+   * Get name
+   * @return name
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
-  public String getId() {
-    return id;
+  public String getName() {
+    return name;
   }
 
 
-  public void setId(String id) {
-    this.id = id;
+  public void setName(String name) {
+    this.name = name;
   }
 
 
@@ -66,19 +66,19 @@ public class GroupCreation {
       return false;
     }
     GroupCreation groupCreation = (GroupCreation) o;
-    return Objects.equals(this.id, groupCreation.id);
+    return Objects.equals(this.name, groupCreation.name);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id);
+    return Objects.hash(name);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class GroupCreation {\n");
-    sb.append("    id: ").append(toIndentedString(id)).append("\n");
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("}");
     return sb.toString();
   }
