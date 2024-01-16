@@ -22,7 +22,6 @@ const (
 type Downloader struct {
 	Client     *apigen.ClientWithResponses
 	PreSign    bool
-	UseTmpDir  bool
 	HTTPClient *http.Client
 }
 
@@ -32,7 +31,7 @@ type downloadPart struct {
 	PartSize   int64
 }
 
-func NewDownloader(client *apigen.ClientWithResponses, preSign bool, useTmpDir bool) *Downloader {
+func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader {
 	// setup http client
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = 10
@@ -43,7 +42,6 @@ func NewDownloader(client *apigen.ClientWithResponses, preSign bool, useTmpDir b
 	return &Downloader{
 		Client:     client,
 		PreSign:    preSign,
-		UseTmpDir:  useTmpDir,
 		HTTPClient: httpClient,
 	}
 }
@@ -54,6 +52,7 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string) erro
 	dir := filepath.Dir(dst)
 	_ = os.MkdirAll(dir, os.ModePerm)
 
+	// download object
 	if d.PreSign {
 		// download using presigned multipart download, it will fall back to presign single object download if needed
 		return d.downloadPresignMultipart(ctx, src, dst)
@@ -61,7 +60,7 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string) erro
 	return d.downloadObject(ctx, src, dst)
 }
 
-func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, dst string) error {
+func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, dst string) (err error) {
 	// get object metadata for size and physical address (presigned)
 	statResp, err := d.Client.StatObjectWithResponse(ctx, src.Repository, src.Ref, &apigen.StatObjectParams{
 		Path:    *src.Path,
@@ -81,26 +80,12 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 		return d.downloadObject(ctx, src, dst)
 	}
 
-	// create a temporary file to download the object to
-	// base of UseTmpDir create the temporary file in the destination directory
-	f, err := d.createTempFile(dst)
+	f, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-
-	// if we fail, close and delete the temporary file
-	// if we succeed, move the temporary file to the destination path
 	defer func() {
-		if err != nil {
-			_ = f.Close()
-			_ = os.Remove(f.Name())
-			return
-		}
-		if tmpErr := moveOrCopyFile(f, dst); tmpErr != nil {
-			if err == nil {
-				err = tmpErr
-			}
-		}
+		_ = f.Close()
 	}()
 
 	// make sure the destination file is in the right size
@@ -147,51 +132,6 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 	return g.Wait()
 }
 
-// createTempFile creates a temporary file in the destination directory.
-// if UseTmpDir is true, it creates a temporary file in the system's temporary folder.
-func (d *Downloader) createTempFile(dst string) (*os.File, error) {
-	var tmpDir string
-	if !d.UseTmpDir {
-		tmpDir = filepath.Dir(dst)
-	}
-	base := filepath.Base(dst)
-	return os.CreateTemp(tmpDir, base+".*.tmp")
-}
-
-// moveOrCopyFile tries to rename the file to the destination path,
-// if it fails, it copies the file to the destination path.
-// srcFile is closed and deleted, if needed, on exit.
-func moveOrCopyFile(srcFile *os.File, dst string) (err error) {
-	// rename/move the file to the destination path
-	err = os.Rename(srcFile.Name(), dst)
-	if err == nil {
-		return srcFile.Close()
-	}
-
-	// if rename failed, copy the file to the destination path
-	// close and delete the source file on exit
-	defer func() {
-		if closeErr := srcFile.Close(); closeErr != nil {
-			if err == nil {
-				err = closeErr
-			}
-		}
-		_ = os.Remove(srcFile.Name())
-	}()
-
-	// make sure we start copying from the beginning of the file
-	_, err = srcFile.Seek(0, io.SeekStart)
-	if err != nil {
-		return err
-	}
-	dstFile, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(dstFile, srcFile)
-	return err
-}
-
 func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress string, rangeStart int64, partSize int64, partNumber int, f *os.File) error {
 	rangeEnd := rangeStart + partSize - 1
 	rangeHeader := fmt.Sprintf("bytes=%d-%d", rangeStart, rangeEnd)
@@ -212,9 +152,18 @@ func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress 
 	if resp.ContentLength != partSize {
 		return fmt.Errorf("%w: part %d expected %d bytes, got %d", ErrRequestFailed, partNumber, partSize, resp.ContentLength)
 	}
-	writer := io.NewOffsetWriter(f, rangeStart)
-	_, err = io.CopyN(writer, resp.Body, partSize)
-	return err
+
+	buf := make([]byte, partSize)
+	_, err = io.ReadFull(resp.Body, buf)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.WriteAt(buf, rangeStart)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string) error {

@@ -44,7 +44,7 @@ var fsDownloadCmd = &cobra.Command{
 				dest += filepath.Base(remotePath)
 			}
 
-			d := helpers.NewDownloader(client, syncFlags.Presign, cfg.Download.UseTmpDir)
+			d := helpers.NewDownloader(client, syncFlags.Presign)
 			err := d.Download(ctx, src, dest)
 			if err != nil {
 				DieErr(err)
