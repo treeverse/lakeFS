@@ -80,6 +80,7 @@ def rename(prefix: String) = ShadeRule.rename(prefix -> "io.lakefs.spark.shade.@
 
 assembly / assemblyShadeRules := Seq(
   rename("org.apache.http.**").inAll,
+  rename("scalapb.**").inAll,
   rename("com.google.protobuf.**").inAll,
   rename("com.google.common.**")
     .inLibrary("com.google.guava" % "guava" % "30.1-jre",
