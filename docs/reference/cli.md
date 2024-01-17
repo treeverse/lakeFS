@@ -2132,6 +2132,7 @@ lakectl fs download <path URI> [<destination path>] [flags]
 ```
   -h, --help              help for download
   -p, --parallelism int   Max concurrent operations to perform (default 25)
+      --part-size int     part size in bytes for multipart download (default 8388608)
       --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
   -r, --recursive         recursively download all objects under path
 ```
