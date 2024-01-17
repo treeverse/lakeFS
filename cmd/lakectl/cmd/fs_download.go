@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -37,6 +38,7 @@ var fsDownloadCmd = &cobra.Command{
 				Ref:        remote.Ref,
 				Path:       remote.Path,
 			}
+			// if dest is a directory, add the file name
 			if s, _ := os.Stat(dest); s != nil && s.IsDir() {
 				dest += uri.PathSeparator
 			}
@@ -49,6 +51,7 @@ var fsDownloadCmd = &cobra.Command{
 			if err != nil {
 				DieErr(err)
 			}
+			fmt.Printf("download: %s to %s\n", src.String(), dest)
 			return
 		}
 

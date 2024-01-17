@@ -53,11 +53,17 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string) erro
 	_ = os.MkdirAll(dir, os.ModePerm)
 
 	// download object
+	var err error
 	if d.PreSign {
 		// download using presigned multipart download, it will fall back to presign single object download if needed
-		return d.downloadPresignMultipart(ctx, src, dst)
+		err = d.downloadPresignMultipart(ctx, src, dst)
+	} else {
+		err = d.downloadObject(ctx, src, dst)
 	}
-	return d.downloadObject(ctx, src, dst)
+	if err != nil {
+		return fmt.Errorf("download failed: %w", err)
+	}
+	return nil
 }
 
 func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, dst string) (err error) {
