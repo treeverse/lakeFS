@@ -476,11 +476,11 @@ func TestLakectlFsDownload(t *testing.T) {
 	})
 
 	t.Run("single_with_dest", func(t *testing.T) {
-		src := "lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0"
+		src := "lakefs://" + repoName + "/" + mainBranch + "/data/ro/ro_1k.0"
 		dest := t.TempDir()
-		sanitizedResult := runCmd(t, Lakectl()+" fs download "src+" "+dest, false, false, map[string]string{})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src+" "+dest, false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download: "+src)
-		require.Contains(t, sanitizedResult, dest + "/" + "ro_1k.0")
+		require.Contains(t, sanitizedResult, dest+"/"+"ro_1k.0")
 	})
 
 	t.Run("single_with_rel_dest", func(t *testing.T) {
@@ -494,7 +494,7 @@ func TestLakectlFsDownload(t *testing.T) {
 			require.NoError(t, os.Chdir(currDir))
 		}()
 
-		src := "lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0"
+		src := "lakefs://" + repoName + "/" + mainBranch + "/data/ro/ro_1k.0"
 		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src+" ./", false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download: "+src)
 		require.Contains(t, sanitizedResult, currDir+"/ro_1k.0")
