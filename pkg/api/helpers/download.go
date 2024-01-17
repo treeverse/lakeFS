@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	MinDownloadPartSize        int64 = 1024 * 64       // 64KB
 	DefaultDownloadPartSize    int64 = 1024 * 1024 * 8 // 8MB
 	DefaultDownloadConcurrency       = 10
 )
@@ -23,6 +24,7 @@ type Downloader struct {
 	Client     *apigen.ClientWithResponses
 	PreSign    bool
 	HTTPClient *http.Client
+	PartSize   int64
 }
 
 type downloadPart struct {
@@ -43,6 +45,7 @@ func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader
 		Client:     client,
 		PreSign:    preSign,
 		HTTPClient: httpClient,
+		PartSize:   DefaultDownloadPartSize,
 	}
 }
 
@@ -82,7 +85,8 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 	}
 
 	// check if the object is small enough to download in one request
-	if *statResp.JSON200.SizeBytes < DefaultDownloadPartSize {
+	sizeBytes := *statResp.JSON200.SizeBytes
+	if sizeBytes < d.PartSize {
 		return d.downloadObject(ctx, src, dst)
 	}
 
@@ -108,7 +112,7 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 	g, grpCtx := errgroup.WithContext(context.Background())
 	for i := 0; i < DefaultDownloadConcurrency; i++ {
 		g.Go(func() error {
-			buf := make([]byte, DefaultDownloadPartSize)
+			buf := make([]byte, d.PartSize)
 			for part := range ch {
 				err := d.downloadPresignedPart(grpCtx, physicalAddress, part.RangeStart, part.PartSize, part.Number, f, buf)
 				if err != nil {
@@ -121,13 +125,14 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 
 	// send parts to download to the channel
 	partNumber := 0
-	for off := int64(0); off < size; off += DefaultDownloadPartSize {
+	for off := int64(0); off < size; off += d.PartSize {
 		partNumber++ // part numbers start from 1
 		part := downloadPart{
 			Number:     partNumber,
 			RangeStart: off,
-			PartSize:   DefaultDownloadPartSize,
+			PartSize:   d.PartSize,
 		}
+		// adjust last part size
 		if part.RangeStart+part.PartSize > size {
 			part.PartSize = size - part.RangeStart
 		}

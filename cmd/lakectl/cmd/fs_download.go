@@ -18,6 +18,7 @@ import (
 const (
 	fsDownloadCmdMinArgs = 1
 	fsDownloadCmdMaxArgs = 2
+	partSizeFlagName     = "part-size"
 )
 
 var fsDownloadCmd = &cobra.Command{
@@ -31,6 +32,10 @@ var fsDownloadCmd = &cobra.Command{
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		ctx := cmd.Context()
 		remotePath := remote.GetPath()
+		downloadPartSize := Must(cmd.Flags().GetInt64(partSizeFlagName))
+		if downloadPartSize < helpers.MinDownloadPartSize {
+			DieFmt("part size must be at least %d bytes", helpers.MinDownloadPartSize)
+		}
 
 		if !recursive {
 			src := uri.URI{
@@ -47,6 +52,7 @@ var fsDownloadCmd = &cobra.Command{
 			}
 
 			d := helpers.NewDownloader(client, syncFlags.Presign)
+			d.PartSize = downloadPartSize
 			err := d.Download(ctx, src, dest)
 			if err != nil {
 				DieErr(err)
@@ -117,5 +123,6 @@ var fsDownloadCmd = &cobra.Command{
 func init() {
 	withSyncFlags(fsDownloadCmd)
 	withRecursiveFlag(fsDownloadCmd, "recursively download all objects under path")
+	fsDownloadCmd.Flags().Int64(partSizeFlagName, helpers.DefaultDownloadPartSize, "part size in bytes for multipart download")
 	fsCmd.AddCommand(fsDownloadCmd)
 }
