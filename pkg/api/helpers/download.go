@@ -104,13 +104,13 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 	physicalAddress := statResp.JSON200.PhysicalAddress
 
 	ch := make(chan downloadPart, DefaultDownloadConcurrency)
-
 	// start download workers
 	g, grpCtx := errgroup.WithContext(context.Background())
 	for i := 0; i < DefaultDownloadConcurrency; i++ {
 		g.Go(func() error {
+			buf := make([]byte, DefaultDownloadPartSize)
 			for part := range ch {
-				err := d.downloadPresignedPart(grpCtx, physicalAddress, part.RangeStart, part.PartSize, part.Number, f)
+				err := d.downloadPresignedPart(grpCtx, physicalAddress, part.RangeStart, part.PartSize, part.Number, f, buf)
 				if err != nil {
 					return err
 				}
@@ -138,7 +138,7 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 	return g.Wait()
 }
 
-func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress string, rangeStart int64, partSize int64, partNumber int, f *os.File) error {
+func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress string, rangeStart int64, partSize int64, partNumber int, f *os.File, buf []byte) error {
 	rangeEnd := rangeStart + partSize - 1
 	rangeHeader := fmt.Sprintf("bytes=%d-%d", rangeStart, rangeEnd)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, physicalAddress, nil)
@@ -159,7 +159,13 @@ func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress 
 		return fmt.Errorf("%w: part %d expected %d bytes, got %d", ErrRequestFailed, partNumber, partSize, resp.ContentLength)
 	}
 
-	buf := make([]byte, partSize)
+	// reuse buffer if possible
+	if buf == nil {
+		buf = make([]byte, partSize)
+	} else {
+		buf = buf[:partSize]
+	}
+
 	_, err = io.ReadFull(resp.Body, buf)
 	if err != nil {
 		return err
