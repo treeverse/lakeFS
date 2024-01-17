@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"net/http"
+
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +21,10 @@ var usageSummaryCmd = &cobra.Command{
 		ctx := cmd.Context()
 		resp, err := client.GetUsageReportSummaryWithResponse(ctx)
 		if err != nil {
-			DieErr(err)
+			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		}
+		if resp.JSON404 != nil {
+			Die(resp.JSON404.Message, 1)
 		}
 		if resp.JSON200 == nil {
 			Die("Bad response from server", 1)

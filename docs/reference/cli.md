@@ -3307,3 +3307,62 @@ lakectl tag show <tag URI> [flags]
 
 
 
+### lakectl usage
+
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
+Usage reports from lakeFS
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for usage
+```
+
+
+
+### lakectl usage help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type usage help [path to command] for full details.
+
+```
+lakectl usage help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl usage summary
+
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
+Summary reports from lakeFS
+
+```
+lakectl usage summary [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for summary
+```
+
+
+
