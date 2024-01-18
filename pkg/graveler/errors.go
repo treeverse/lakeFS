@@ -61,6 +61,7 @@ var (
 	ErrSkipValueUpdate              = errors.New("skip value update")
 	ErrImport                       = wrapError(ErrUserVisible, "import error")
 	ErrReadOnlyRepository           = wrapError(ErrUserVisible, "read-only repository")
+	ErrEmptyRevert                  = wrapError(ErrUserVisible, "revert with no changes")
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.

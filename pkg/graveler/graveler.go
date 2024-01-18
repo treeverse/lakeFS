@@ -2551,6 +2551,9 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 		}
 		// merge from the parent to the top of the branch, with the given ref as the merge base:
 		metaRangeID, err := g.CommittedManager.Merge(ctx, repository.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID, MergeStrategyNone)
+		if metaRangeID == branchCommit.MetaRangeID {
+			return nil, ErrEmptyRevert
+		}
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge: %w", err)
