@@ -6,7 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **commit_id** | **str** | id of the commit record | 
 **version** | **int** | version of the commit record | 
-**commiter** | **str** | commiter of the commit record | 
+**committer** | **str** | commiter of the commit record | 
 **message** | **str** | message of the commit record | 
 **metarange_id** | **str** | metarange_id of the commit record | 
 **creation_date** | **int** | Unix Epoch in seconds | 

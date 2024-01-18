@@ -2864,13 +2864,13 @@ func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_commit_record", r, repository, "", "")
+	c.LogAction(ctx, "create_commit_record", r, repository, body.CommitId, "")
 	_, err := auth.GetUser(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusUnauthorized, "missing user")
 		return
 	}
-	err = c.Catalog.CreateCommitRecord(ctx, repository, body.CommitId, int(body.Version), body.Commiter, body.Message, body.MetarangeId, &body.CreationDate, body.Parents, body.Metadata.AdditionalProperties, int(body.Generation), graveler.WithForce(swag.BoolValue(body.Force)))
+	err = c.Catalog.CreateCommitRecord(ctx, repository, body.CommitId, int(body.Version), body.Committer, body.Message, body.MetarangeId, &body.CreationDate, body.Parents, body.Metadata.AdditionalProperties, int(body.Generation), graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

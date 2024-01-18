@@ -41,9 +41,9 @@ public class CommitRecordCreation {
   @SerializedName(SERIALIZED_NAME_VERSION)
   private Long version;
 
-  public static final String SERIALIZED_NAME_COMMITER = "commiter";
-  @SerializedName(SERIALIZED_NAME_COMMITER)
-  private String commiter;
+  public static final String SERIALIZED_NAME_COMMITTER = "committer";
+  @SerializedName(SERIALIZED_NAME_COMMITTER)
+  private String committer;
 
   public static final String SERIALIZED_NAME_MESSAGE = "message";
   @SerializedName(SERIALIZED_NAME_MESSAGE)
@@ -120,26 +120,26 @@ public class CommitRecordCreation {
   }
 
 
-  public CommitRecordCreation commiter(String commiter) {
+  public CommitRecordCreation committer(String committer) {
     
-    this.commiter = commiter;
+    this.committer = committer;
     return this;
   }
 
    /**
    * commiter of the commit record
-   * @return commiter
+   * @return committer
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "commiter of the commit record")
 
-  public String getCommiter() {
-    return commiter;
+  public String getCommitter() {
+    return committer;
   }
 
 
-  public void setCommiter(String commiter) {
-    this.commiter = commiter;
+  public void setCommitter(String committer) {
+    this.committer = committer;
   }
 
 
@@ -325,7 +325,7 @@ public class CommitRecordCreation {
     CommitRecordCreation commitRecordCreation = (CommitRecordCreation) o;
     return Objects.equals(this.commitId, commitRecordCreation.commitId) &&
         Objects.equals(this.version, commitRecordCreation.version) &&
-        Objects.equals(this.commiter, commitRecordCreation.commiter) &&
+        Objects.equals(this.committer, commitRecordCreation.committer) &&
         Objects.equals(this.message, commitRecordCreation.message) &&
         Objects.equals(this.metarangeId, commitRecordCreation.metarangeId) &&
         Objects.equals(this.creationDate, commitRecordCreation.creationDate) &&
@@ -337,7 +337,7 @@ public class CommitRecordCreation {
 
   @Override
   public int hashCode() {
-    return Objects.hash(commitId, version, commiter, message, metarangeId, creationDate, parents, metadata, generation, force);
+    return Objects.hash(commitId, version, committer, message, metarangeId, creationDate, parents, metadata, generation, force);
   }
 
   @Override
@@ -346,7 +346,7 @@ public class CommitRecordCreation {
     sb.append("class CommitRecordCreation {\n");
     sb.append("    commitId: ").append(toIndentedString(commitId)).append("\n");
     sb.append("    version: ").append(toIndentedString(version)).append("\n");
-    sb.append("    commiter: ").append(toIndentedString(commiter)).append("\n");
+    sb.append("    committer: ").append(toIndentedString(committer)).append("\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("    metarangeId: ").append(toIndentedString(metarangeId)).append("\n");
     sb.append("    creationDate: ").append(toIndentedString(creationDate)).append("\n");

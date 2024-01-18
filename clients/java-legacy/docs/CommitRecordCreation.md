@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **commitId** | **String** | id of the commit record | 
 **version** | **Long** | version of the commit record | 
-**commiter** | **String** | commiter of the commit record | 
+**committer** | **String** | commiter of the commit record | 
 **message** | **String** | message of the commit record | 
 **metarangeId** | **String** | metarange_id of the commit record | 
 **creationDate** | **Long** | Unix Epoch in seconds | 

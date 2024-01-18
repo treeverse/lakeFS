@@ -7392,13 +7392,13 @@ components:
         generation: 1
         metadata:
           key: metadata
+        committer: committer
         metarange_id: metarange_id
         force: false
         creation_date: 6
         message: message
         commit_id: commit_id
         version: 0
-        commiter: commiter
         parents:
         - parents
         - parents
@@ -7410,7 +7410,7 @@ components:
           description: version of the commit record
           format: int64
           type: integer
-        commiter:
+        committer:
           description: commiter of the commit record
           type: string
         message:
@@ -7442,7 +7442,7 @@ components:
           type: boolean
       required:
       - commit_id
-      - commiter
+      - committer
       - creation_date
       - generation
       - message

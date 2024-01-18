@@ -5438,8 +5438,8 @@ func TestController_CreateCommitRecord(t *testing.T) {
 		}
 		commitLog, err := deps.catalog.GetCommit(ctx, repo, expectedCommitID)
 		testutil.MustDo(t, "get commit", err)
-		if commitLog.Committer != body.Commiter {
-			t.Fatalf("Expected Committer %s, got %s", body.Commiter, commitLog.Committer)
+		if commitLog.Committer != body.Committer {
+			t.Fatalf("Expected Committer %s, got %s", body.Committer, commitLog.Committer)
 		}
 		if commitLog.CreationDate.Unix() != body.CreationDate {
 			t.Fatalf("Expected CreationDate %d, got %d", body.CreationDate, commitLog.CreationDate.Unix())

@@ -41,7 +41,7 @@ class TestCommitRecordCreation(unittest.TestCase):
             return CommitRecordCreation(
                 commit_id = '', 
                 version = 56, 
-                commiter = '', 
+                committer = '', 
                 message = '', 
                 metarange_id = '', 
                 creation_date = 56, 
@@ -58,7 +58,7 @@ class TestCommitRecordCreation(unittest.TestCase):
             return CommitRecordCreation(
                 commit_id = '',
                 version = 56,
-                commiter = '',
+                committer = '',
                 message = '',
                 metarange_id = '',
                 creation_date = 56,

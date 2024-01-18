@@ -615,7 +615,7 @@ components:
       required:
         - commit_id
         - version
-        - commiter
+        - committer
         - message
         - metarange_id
         - creation_date
@@ -630,7 +630,7 @@ components:
           type: integer
           format: int64
           description: version of the commit record
-        commiter:
+        committer:
           type: string
           description: commiter of the commit record
         message:
@@ -735,7 +735,7 @@ components:
         error:
           type: string
         refs:
-          $ref: "#/components/schemas/RefsDump"
+            $ref: "#/components/schemas/RefsDump"
 
     RepositoryRestoreStatus:
       type: object

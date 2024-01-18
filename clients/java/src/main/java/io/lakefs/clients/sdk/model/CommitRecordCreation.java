@@ -64,9 +64,9 @@ public class CommitRecordCreation {
   @SerializedName(SERIALIZED_NAME_VERSION)
   private Long version;
 
-  public static final String SERIALIZED_NAME_COMMITER = "commiter";
-  @SerializedName(SERIALIZED_NAME_COMMITER)
-  private String commiter;
+  public static final String SERIALIZED_NAME_COMMITTER = "committer";
+  @SerializedName(SERIALIZED_NAME_COMMITTER)
+  private String committer;
 
   public static final String SERIALIZED_NAME_MESSAGE = "message";
   @SerializedName(SERIALIZED_NAME_MESSAGE)
@@ -141,24 +141,24 @@ public class CommitRecordCreation {
   }
 
 
-  public CommitRecordCreation commiter(String commiter) {
+  public CommitRecordCreation committer(String committer) {
     
-    this.commiter = commiter;
+    this.committer = committer;
     return this;
   }
 
    /**
    * commiter of the commit record
-   * @return commiter
+   * @return committer
   **/
   @javax.annotation.Nonnull
-  public String getCommiter() {
-    return commiter;
+  public String getCommitter() {
+    return committer;
   }
 
 
-  public void setCommiter(String commiter) {
-    this.commiter = commiter;
+  public void setCommitter(String committer) {
+    this.committer = committer;
   }
 
 
@@ -381,7 +381,7 @@ public class CommitRecordCreation {
     CommitRecordCreation commitRecordCreation = (CommitRecordCreation) o;
     return Objects.equals(this.commitId, commitRecordCreation.commitId) &&
         Objects.equals(this.version, commitRecordCreation.version) &&
-        Objects.equals(this.commiter, commitRecordCreation.commiter) &&
+        Objects.equals(this.committer, commitRecordCreation.committer) &&
         Objects.equals(this.message, commitRecordCreation.message) &&
         Objects.equals(this.metarangeId, commitRecordCreation.metarangeId) &&
         Objects.equals(this.creationDate, commitRecordCreation.creationDate) &&
@@ -394,7 +394,7 @@ public class CommitRecordCreation {
 
   @Override
   public int hashCode() {
-    return Objects.hash(commitId, version, commiter, message, metarangeId, creationDate, parents, metadata, generation, force, additionalProperties);
+    return Objects.hash(commitId, version, committer, message, metarangeId, creationDate, parents, metadata, generation, force, additionalProperties);
   }
 
   @Override
@@ -403,7 +403,7 @@ public class CommitRecordCreation {
     sb.append("class CommitRecordCreation {\n");
     sb.append("    commitId: ").append(toIndentedString(commitId)).append("\n");
     sb.append("    version: ").append(toIndentedString(version)).append("\n");
-    sb.append("    commiter: ").append(toIndentedString(commiter)).append("\n");
+    sb.append("    committer: ").append(toIndentedString(committer)).append("\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
     sb.append("    metarangeId: ").append(toIndentedString(metarangeId)).append("\n");
     sb.append("    creationDate: ").append(toIndentedString(creationDate)).append("\n");
@@ -436,7 +436,7 @@ public class CommitRecordCreation {
     openapiFields = new HashSet<String>();
     openapiFields.add("commit_id");
     openapiFields.add("version");
-    openapiFields.add("commiter");
+    openapiFields.add("committer");
     openapiFields.add("message");
     openapiFields.add("metarange_id");
     openapiFields.add("creation_date");
@@ -449,7 +449,7 @@ public class CommitRecordCreation {
     openapiRequiredFields = new HashSet<String>();
     openapiRequiredFields.add("commit_id");
     openapiRequiredFields.add("version");
-    openapiRequiredFields.add("commiter");
+    openapiRequiredFields.add("committer");
     openapiRequiredFields.add("message");
     openapiRequiredFields.add("metarange_id");
     openapiRequiredFields.add("creation_date");
@@ -481,8 +481,8 @@ public class CommitRecordCreation {
       if (!jsonObj.get("commit_id").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `commit_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("commit_id").toString()));
       }
-      if (!jsonObj.get("commiter").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `commiter` to be a primitive type in the JSON string but got `%s`", jsonObj.get("commiter").toString()));
+      if (!jsonObj.get("committer").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `committer` to be a primitive type in the JSON string but got `%s`", jsonObj.get("committer").toString()));
       }
       if (!jsonObj.get("message").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `message` to be a primitive type in the JSON string but got `%s`", jsonObj.get("message").toString()));

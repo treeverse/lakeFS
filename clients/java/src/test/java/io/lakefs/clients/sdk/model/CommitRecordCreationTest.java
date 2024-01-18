@@ -58,11 +58,11 @@ public class CommitRecordCreationTest {
     }
 
     /**
-     * Test the property 'commiter'
+     * Test the property 'committer'
      */
     @Test
-    public void commiterTest() {
-        // TODO: test commiter
+    public void committerTest() {
+        // TODO: test committer
     }
 
     /**

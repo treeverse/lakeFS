@@ -207,7 +207,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     commit_record_creation = CommitRecordCreation(
         commit_id="commit_id_example",
         version=1,
-        commiter="commiter_example",
+        committer="committer_example",
         message="message_example",
         metarange_id="metarange_id_example",
         creation_date=1,
