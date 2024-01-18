@@ -6496,6 +6496,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
         "420":
           description: too many requests
         default:
