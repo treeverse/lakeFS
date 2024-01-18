@@ -869,6 +869,7 @@ This endpoint does not need any parameter.
 **200** | Usage report |  -  |
 **400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 

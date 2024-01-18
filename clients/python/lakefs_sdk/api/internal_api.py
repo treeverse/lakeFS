@@ -1424,6 +1424,7 @@ class InternalApi(object):
             '200': "InstallationUsageReport",
             '400': "Error",
             '401': "Error",
+            '404': "Error",
             '420': None,
         }
 
