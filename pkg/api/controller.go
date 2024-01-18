@@ -2854,6 +2854,32 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 	commitResponse(w, r, newCommit)
 }
 
+func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, body apigen.CreateCommitRecordJSONRequestBody, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateCommitAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "create_commit_record", r, repository, "", "")
+	_, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "missing user")
+		return
+	}
+	newCommitID, err := c.Catalog.CreateCommitRecord(ctx, repository, int(body.Version), body.Commiter, body.Message, body.MetarangeId, &body.CreationDate, body.Parents, body.Metadata.AdditionalProperties, int(body.Generation), graveler.WithForce(swag.BoolValue(body.Force)))
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	response := apigen.CommitRecordCreationResults{
+		Id: newCommitID,
+	}
+	writeResponse(w, r, http.StatusCreated, response)
+}
+
 func commitResponse(w http.ResponseWriter, r *http.Request, newCommit *catalog.CommitLog) {
 	response := apigen.Commit{
 		Committer:    newCommit.Committer,

@@ -192,6 +192,7 @@ Class | Method | HTTP request | Description
 *ImportApi* | [**importStart**](docs/ImportApi.md#importStart) | **POST** /repositories/{repository}/branches/{branch}/import | import data from object store
 *ImportApi* | [**importStatus**](docs/ImportApi.md#importStatus) | **GET** /repositories/{repository}/branches/{branch}/import | get import status
 *InternalApi* | [**createBranchProtectionRulePreflight**](docs/InternalApi.md#createBranchProtectionRulePreflight) | **GET** /repositories/{repository}/branch_protection/set_allowed | 
+*InternalApi* | [**createCommitRecord**](docs/InternalApi.md#createCommitRecord) | **POST** /repositories/{repository}/commits | create commit record
 *InternalApi* | [**createSymlinkFile**](docs/InternalApi.md#createSymlinkFile) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory
 *InternalApi* | [**deleteRepositoryMetadata**](docs/InternalApi.md#deleteRepositoryMetadata) | **DELETE** /repositories/{repository}/metadata | delete repository metadata
 *InternalApi* | [**dumpRefs**](docs/InternalApi.md#dumpRefs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations 
@@ -270,6 +271,8 @@ Class | Method | HTTP request | Description
  - [Commit](docs/Commit.md)
  - [CommitCreation](docs/CommitCreation.md)
  - [CommitList](docs/CommitList.md)
+ - [CommitRecordCreation](docs/CommitRecordCreation.md)
+ - [CommitRecordCreationResults](docs/CommitRecordCreationResults.md)
  - [CompletePresignMultipartUpload](docs/CompletePresignMultipartUpload.md)
  - [Config](docs/Config.md)
  - [Credentials](docs/Credentials.md)

@@ -30,6 +30,13 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
+    def test_create_commit_record(self):
+        """Test case for create_commit_record
+
+        create commit record  # noqa: E501
+        """
+        pass
+
     def test_create_symlink_file(self):
         """Test case for create_symlink_file
 

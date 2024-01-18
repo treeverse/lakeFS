@@ -1212,6 +1212,32 @@ func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, com
 	return catalogCommitLog, nil
 }
 
+func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, version int, committer string, message string, metaRangeID string, creationDate *int64, parents []string, metadata map[string]string, generation int, opts ...graveler.SetOptionsFunc) (string, error) {
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return "", err
+	}
+	commitParents := make([]graveler.CommitID, len(parents))
+	for i, parent := range parents {
+		commitParents[i] = graveler.CommitID(parent)
+	}
+	commit := graveler.Commit{
+		Version:      graveler.CommitVersion(version),
+		Committer:    committer,
+		Message:      message,
+		MetaRangeID:  graveler.MetaRangeID(metaRangeID),
+		CreationDate: time.Unix(0, *creationDate).UTC(),
+		Parents:      commitParents,
+		Metadata:     metadata,
+		Generation:   generation,
+	}
+	commitID, err := c.Store.CreateCommitRecord(ctx, repository, commit, opts...)
+	if err != nil {
+		return "", err
+	}
+	return string(commitID), nil
+}
+
 func (c *Catalog) GetCommit(ctx context.Context, repositoryID string, reference string) (*CommitLog, error) {
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},

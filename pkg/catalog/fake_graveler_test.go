@@ -224,6 +224,10 @@ func (g *FakeGraveler) Commit(ctx context.Context, repository *graveler.Reposito
 	panic("implement me")
 }
 
+func (g *FakeGraveler) CreateCommitRecord(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
+	panic("implement me")
+}
+
 func (g *FakeGraveler) WriteRange(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.ValueIterator, _ ...graveler.SetOptionsFunc) (*graveler.RangeInfo, error) {
 	panic("implement me")
 }

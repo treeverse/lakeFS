@@ -256,6 +256,26 @@ func (mr *MockVersionControllerMockRecorder) Commit(ctx, repository, branchID, c
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockVersionController)(nil).Commit), varargs...)
 }
 
+// CreateCommitRecord mocks base method.
+func (m *MockVersionController) CreateCommitRecord(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, repository, commit}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateCommitRecord", varargs...)
+	ret0, _ := ret[0].(graveler.CommitID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateCommitRecord indicates an expected call of CreateCommitRecord
+func (mr *MockVersionControllerMockRecorder) CreateCommitRecord(ctx, repository, commit interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, repository, commit}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCommitRecord", reflect.TypeOf((*MockVersionController)(nil).CreateCommitRecord), varargs...)
+}
+
 // Compare mocks base method.
 func (m *MockVersionController) Compare(ctx context.Context, repository *graveler.RepositoryRecord, left, right graveler.Ref) (graveler.DiffIterator, error) {
 	m.ctrl.T.Helper()

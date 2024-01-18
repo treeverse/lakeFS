@@ -5,6 +5,7 @@ All URIs are relative to */api/v1*
 | Method | HTTP request | Description |
 |------------- | ------------- | -------------|
 | [**createBranchProtectionRulePreflight**](InternalApi.md#createBranchProtectionRulePreflight) | **GET** /repositories/{repository}/branch_protection/set_allowed |  |
+| [**createCommitRecord**](InternalApi.md#createCommitRecord) | **POST** /repositories/{repository}/commits | create commit record |
 | [**createSymlinkFile**](InternalApi.md#createSymlinkFile) | **POST** /repositories/{repository}/refs/{branch}/symlink | creates symlink files corresponding to the given directory |
 | [**deleteRepositoryMetadata**](InternalApi.md#deleteRepositoryMetadata) | **DELETE** /repositories/{repository}/metadata | delete repository metadata |
 | [**dumpRefs**](InternalApi.md#dumpRefs) | **PUT** /repositories/{repository}/refs/dump | Dump repository refs (tags, commits, branches) to object store Deprecated: a new API will introduce long running operations  |
@@ -122,6 +123,103 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
+| **420** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
+
+<a id="createCommitRecord"></a>
+# **createCommitRecord**
+> CommitRecordCreationResults createCommitRecord(repository, commitRecordCreation).execute();
+
+create commit record
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.InternalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("/api/v1");
+    
+    // Configure HTTP basic authorization: basic_auth
+    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
+    basic_auth.setUsername("YOUR USERNAME");
+    basic_auth.setPassword("YOUR PASSWORD");
+
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: saml_auth
+    ApiKeyAuth saml_auth = (ApiKeyAuth) defaultClient.getAuthentication("saml_auth");
+    saml_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //saml_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
+    InternalApi apiInstance = new InternalApi(defaultClient);
+    String repository = "repository_example"; // String | 
+    CommitRecordCreation commitRecordCreation = new CommitRecordCreation(); // CommitRecordCreation | 
+    try {
+      CommitRecordCreationResults result = apiInstance.createCommitRecord(repository, commitRecordCreation)
+            .execute();
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling InternalApi#createCommitRecord");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **repository** | **String**|  | |
+| **commitRecordCreation** | [**CommitRecordCreation**](CommitRecordCreation.md)|  | |
+
+### Return type
+
+[**CommitRecordCreationResults**](CommitRecordCreationResults.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **201** | commitID |  -  |
+| **400** | Validation Error |  -  |
+| **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
+| **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

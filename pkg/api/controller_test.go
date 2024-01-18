@@ -5410,6 +5410,54 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 	})
 }
 
+func TestController_CreateCommitRecord(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	t.Run("create commit record", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
+		testutil.Must(t, err)
+		body := apigen.CreateCommitRecordJSONRequestBody{
+			Commiter:     "Commiter",
+			CreationDate: 0,
+			Generation:   1,
+			Message:      "message",
+			Metadata:     apigen.CommitRecordCreation_Metadata{AdditionalProperties: map[string]string{"key": "value"}},
+			MetarangeId:  "metarangeId",
+			Parents:      []string{"parent1", "parent2"},
+			Version:      2,
+		}
+		resp, err := clt.CreateCommitRecordWithResponse(ctx, repo, body)
+		testutil.MustDo(t, "create commit record", err)
+		if resp.JSON201 == nil {
+			t.Fatalf("Expected 201 response, got: %s", resp.Status())
+		}
+		commitLog, err := deps.catalog.GetCommit(ctx, repo, resp.JSON201.Id)
+		testutil.MustDo(t, "get commit", err)
+		if commitLog.Committer != body.Commiter {
+			t.Fatalf("Expected Committer %s, got %s", body.Commiter, commitLog.Committer)
+		}
+		if commitLog.CreationDate.Unix() != body.CreationDate {
+			t.Fatalf("Expected CreationDate %d, got %d", body.CreationDate, commitLog.CreationDate.Unix())
+		}
+		if commitLog.Message != body.Message {
+			t.Fatalf("Expected Message %s, got %s", body.Message, commitLog.Message)
+		}
+		if commitLog.MetaRangeID != body.MetarangeId {
+			t.Fatalf("Expected MetarangeId %s, got %s", body.MetarangeId, commitLog.MetaRangeID)
+		}
+		if len(commitLog.Parents) != len(body.Parents) {
+			t.Fatalf("Expected %d Parents, got %d", len(body.Parents), len(commitLog.Parents))
+		}
+		for i, parent := range commitLog.Parents {
+			if parent != body.Parents[i] {
+				t.Fatalf("Expected Parent %s, got %s", body.Parents[i], parent)
+			}
+		}
+	})
+}
+
 // pollRestoreStatus polls the restore status endpoint until the restore is complete or times out.
 // test will fail in case of error.
 // will return nil in case of timeout.

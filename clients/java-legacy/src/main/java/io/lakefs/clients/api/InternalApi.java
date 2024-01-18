@@ -30,6 +30,8 @@ import java.io.IOException;
 import io.lakefs.clients.api.model.AuthCapabilities;
 import io.lakefs.clients.api.model.BranchProtectionRule;
 import io.lakefs.clients.api.model.CommPrefsInput;
+import io.lakefs.clients.api.model.CommitRecordCreation;
+import io.lakefs.clients.api.model.CommitRecordCreationResults;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionConfig;
@@ -203,6 +205,151 @@ public class InternalApi {
 
         okhttp3.Call localVarCall = createBranchProtectionRulePreflightValidateBeforeCall(repository, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for createCommitRecord
+     * @param repository  (required)
+     * @param commitRecordCreation  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> commitID </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call createCommitRecordCall(String repository, CommitRecordCreation commitRecordCreation, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = commitRecordCreation;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/commits"
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call createCommitRecordValidateBeforeCall(String repository, CommitRecordCreation commitRecordCreation, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling createCommitRecord(Async)");
+        }
+        
+        // verify the required parameter 'commitRecordCreation' is set
+        if (commitRecordCreation == null) {
+            throw new ApiException("Missing the required parameter 'commitRecordCreation' when calling createCommitRecord(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = createCommitRecordCall(repository, commitRecordCreation, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * create commit record
+     * 
+     * @param repository  (required)
+     * @param commitRecordCreation  (required)
+     * @return CommitRecordCreationResults
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> commitID </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public CommitRecordCreationResults createCommitRecord(String repository, CommitRecordCreation commitRecordCreation) throws ApiException {
+        ApiResponse<CommitRecordCreationResults> localVarResp = createCommitRecordWithHttpInfo(repository, commitRecordCreation);
+        return localVarResp.getData();
+    }
+
+    /**
+     * create commit record
+     * 
+     * @param repository  (required)
+     * @param commitRecordCreation  (required)
+     * @return ApiResponse&lt;CommitRecordCreationResults&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> commitID </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<CommitRecordCreationResults> createCommitRecordWithHttpInfo(String repository, CommitRecordCreation commitRecordCreation) throws ApiException {
+        okhttp3.Call localVarCall = createCommitRecordValidateBeforeCall(repository, commitRecordCreation, null);
+        Type localVarReturnType = new TypeToken<CommitRecordCreationResults>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * create commit record (asynchronously)
+     * 
+     * @param repository  (required)
+     * @param commitRecordCreation  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> commitID </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call createCommitRecordAsync(String repository, CommitRecordCreation commitRecordCreation, final ApiCallback<CommitRecordCreationResults> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = createCommitRecordValidateBeforeCall(repository, commitRecordCreation, _callback);
+        Type localVarReturnType = new TypeToken<CommitRecordCreationResults>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
     /**

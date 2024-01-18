@@ -25,6 +25,8 @@ from lakefs_client.model_utils import (  # noqa: F401
 from lakefs_client.model.auth_capabilities import AuthCapabilities
 from lakefs_client.model.branch_protection_rule import BranchProtectionRule
 from lakefs_client.model.comm_prefs_input import CommPrefsInput
+from lakefs_client.model.commit_record_creation import CommitRecordCreation
+from lakefs_client.model.commit_record_creation_results import CommitRecordCreationResults
 from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
 from lakefs_client.model.error import Error
 from lakefs_client.model.garbage_collection_config import GarbageCollectionConfig
@@ -111,6 +113,68 @@ class InternalApi(object):
                     'application/json'
                 ],
                 'content_type': [],
+            },
+            api_client=api_client
+        )
+        self.create_commit_record_endpoint = _Endpoint(
+            settings={
+                'response_type': (CommitRecordCreationResults,),
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth',
+                    'saml_auth'
+                ],
+                'endpoint_path': '/repositories/{repository}/commits',
+                'operation_id': 'create_commit_record',
+                'http_method': 'POST',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'repository',
+                    'commit_record_creation',
+                ],
+                'required': [
+                    'repository',
+                    'commit_record_creation',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'repository':
+                        (str,),
+                    'commit_record_creation':
+                        (CommitRecordCreation,),
+                },
+                'attribute_map': {
+                    'repository': 'repository',
+                },
+                'location_map': {
+                    'repository': 'path',
+                    'commit_record_creation': 'body',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [
+                    'application/json'
+                ]
             },
             api_client=api_client
         )
@@ -1582,6 +1646,75 @@ class InternalApi(object):
         kwargs['repository'] = \
             repository
         return self.create_branch_protection_rule_preflight_endpoint.call_with_http_info(**kwargs)
+
+    def create_commit_record(
+        self,
+        repository,
+        commit_record_creation,
+        **kwargs
+    ):
+        """create commit record  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.create_commit_record(repository, commit_record_creation, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            repository (str):
+            commit_record_creation (CommitRecordCreation):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            CommitRecordCreationResults
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['repository'] = \
+            repository
+        kwargs['commit_record_creation'] = \
+            commit_record_creation
+        return self.create_commit_record_endpoint.call_with_http_info(**kwargs)
 
     def create_symlink_file(
         self,

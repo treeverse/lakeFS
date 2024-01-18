@@ -544,6 +544,9 @@ type VersionController interface {
 	//   ErrNothingToCommit in case there is no data in stage
 	Commit(ctx context.Context, repository *RepositoryRecord, branchID BranchID, commitParams CommitParams, opts ...SetOptionsFunc) (CommitID, error)
 
+	// CreateCommitRecord creates a commit record in the repository.
+	CreateCommitRecord(ctx context.Context, repository *RepositoryRecord, commit Commit, opts ...SetOptionsFunc) (CommitID, error)
+
 	// WriteMetaRangeByIterator accepts a ValueIterator and writes the entire iterator to a new MetaRange
 	// and returns the result ID.
 	WriteMetaRangeByIterator(ctx context.Context, repository *RepositoryRecord, it ValueIterator, opts ...SetOptionsFunc) (*MetaRangeID, error)
@@ -2073,6 +2076,18 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 			Error("Post-commit hook failed")
 	}
 	return newCommitID, nil
+}
+
+func (g *Graveler) CreateCommitRecord(ctx context.Context, repository *RepositoryRecord, commit Commit, opts ...SetOptionsFunc) (CommitID, error) {
+	options := &SetOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	if repository.ReadOnly && !options.Force {
+		return "", ErrReadOnlyRepository
+	}
+
+	return g.RefManager.AddCommit(ctx, repository, commit)
 }
 
 // retryBranchUpdate repeatedly attempts to BranchUpdate branchID of

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
@@ -2270,4 +2271,26 @@ func TestGraveler_SetAddressToken(t *testing.T) {
 	if err != nil {
 		t.Fatal("unexpected error on set address token", err)
 	}
+}
+
+func TestGravelerCreateCommitRecord(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("create commit record", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		commit := graveler.Commit{
+			Committer:    "committer",
+			Message:      "message",
+			MetaRangeID:  "metaRangeID",
+			Parents:      []graveler.CommitID{"parent1", "parent2"},
+			Metadata:     graveler.Metadata{"key": "value"},
+			CreationDate: time.Now(),
+			Version:      graveler.CommitVersion(1),
+			Generation:   1,
+		}
+		test.RefManager.EXPECT().AddCommit(ctx, repository, commit).Return(graveler.CommitID("commitid"), nil)
+		commitID, err := test.Sut.CreateCommitRecord(ctx, repository, commit)
+		require.NoError(t, err)
+		require.Equal(t, graveler.CommitID("commitid"), commitID)
+	})
 }

@@ -610,6 +610,62 @@ components:
           type: boolean
           default: false
 
+    CommitRecordCreation:
+      type: object
+      required:
+        - version
+        - commiter
+        - message
+        - metarange_id
+        - creation_date
+        - parents
+        - metadata
+        - generation
+      properties:
+        version:
+          type: integer
+          format: int64
+          description: version of the commit record
+        commiter:
+          type: string
+          description: commiter of the commit record
+        message:
+          type: string
+          description: message of the commit record
+        metarange_id:
+          type: string
+          description: metarange_id of the commit record
+        creation_date:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
+        parents:
+          type: array
+          items:
+            type: string
+          description: parents of the commit record
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          description: metadata of the commit record
+        generation:
+          type: integer
+          format: int64
+          description: generation of the commit record
+        force:
+          type: boolean
+          default: false
+
+    CommitRecordCreationResults:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: id of the created commit record
+
     Merge:
       type: object
       properties:
@@ -3386,6 +3442,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/commits:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - internal
+      operationId: CreateCommitRecord
+      summary: create commit record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitRecordCreation"
+      responses:
+        201:
+          description: commitID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommitRecordCreationResults"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
         default:
