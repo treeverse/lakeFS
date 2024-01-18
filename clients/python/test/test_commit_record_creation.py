@@ -39,6 +39,7 @@ class TestCommitRecordCreation(unittest.TestCase):
         model = lakefs_sdk.models.commit_record_creation.CommitRecordCreation()  # noqa: E501
         if include_optional :
             return CommitRecordCreation(
+                commit_id = '', 
                 version = 56, 
                 commiter = '', 
                 message = '', 
@@ -55,6 +56,7 @@ class TestCommitRecordCreation(unittest.TestCase):
             )
         else :
             return CommitRecordCreation(
+                commit_id = '',
                 version = 56,
                 commiter = '',
                 message = '',

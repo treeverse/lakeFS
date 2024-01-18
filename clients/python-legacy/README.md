@@ -253,7 +253,6 @@ Class | Method | HTTP request | Description
  - [CommitCreation](docs/CommitCreation.md)
  - [CommitList](docs/CommitList.md)
  - [CommitRecordCreation](docs/CommitRecordCreation.md)
- - [CommitRecordCreationResults](docs/CommitRecordCreationResults.md)
  - [CompletePresignMultipartUpload](docs/CompletePresignMultipartUpload.md)
  - [Config](docs/Config.md)
  - [Credentials](docs/Credentials.md)

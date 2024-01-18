@@ -26,7 +26,6 @@ from lakefs_client.model.auth_capabilities import AuthCapabilities
 from lakefs_client.model.branch_protection_rule import BranchProtectionRule
 from lakefs_client.model.comm_prefs_input import CommPrefsInput
 from lakefs_client.model.commit_record_creation import CommitRecordCreation
-from lakefs_client.model.commit_record_creation_results import CommitRecordCreationResults
 from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
 from lakefs_client.model.error import Error
 from lakefs_client.model.garbage_collection_config import GarbageCollectionConfig
@@ -118,7 +117,7 @@ class InternalApi(object):
         )
         self.create_commit_record_endpoint = _Endpoint(
             settings={
-                'response_type': (CommitRecordCreationResults,),
+                'response_type': None,
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
@@ -1687,7 +1686,7 @@ class InternalApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            CommitRecordCreationResults
+            None
                 If the method is called asynchronously, returns the request
                 thread.
         """

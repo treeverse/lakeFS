@@ -82,6 +82,7 @@ class CommitRecordCreation(ModelNormal):
                 and the value is attribute type.
         """
         return {
+            'commit_id': (str,),  # noqa: E501
             'version': (int,),  # noqa: E501
             'commiter': (str,),  # noqa: E501
             'message': (str,),  # noqa: E501
@@ -99,6 +100,7 @@ class CommitRecordCreation(ModelNormal):
 
 
     attribute_map = {
+        'commit_id': 'commit_id',  # noqa: E501
         'version': 'version',  # noqa: E501
         'commiter': 'commiter',  # noqa: E501
         'message': 'message',  # noqa: E501
@@ -117,10 +119,11 @@ class CommitRecordCreation(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, version, commiter, message, metarange_id, creation_date, parents, metadata, generation, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, commit_id, version, commiter, message, metarange_id, creation_date, parents, metadata, generation, *args, **kwargs):  # noqa: E501
         """CommitRecordCreation - a model defined in OpenAPI
 
         Args:
+            commit_id (str): id of the commit record
             version (int): version of the commit record
             commiter (str): commiter of the commit record
             message (str): message of the commit record
@@ -189,6 +192,7 @@ class CommitRecordCreation(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.commit_id = commit_id
         self.version = version
         self.commiter = commiter
         self.message = message
@@ -217,10 +221,11 @@ class CommitRecordCreation(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, version, commiter, message, metarange_id, creation_date, parents, metadata, generation, *args, **kwargs):  # noqa: E501
+    def __init__(self, commit_id, version, commiter, message, metarange_id, creation_date, parents, metadata, generation, *args, **kwargs):  # noqa: E501
         """CommitRecordCreation - a model defined in OpenAPI
 
         Args:
+            commit_id (str): id of the commit record
             version (int): version of the commit record
             commiter (str): commiter of the commit record
             message (str): message of the commit record
@@ -287,6 +292,7 @@ class CommitRecordCreation(ModelNormal):
         self._configuration = _configuration
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
+        self.commit_id = commit_id
         self.version = version
         self.commiter = commiter
         self.message = message

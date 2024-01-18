@@ -23,7 +23,6 @@ docs/Commit.md
 docs/CommitCreation.md
 docs/CommitList.md
 docs/CommitRecordCreation.md
-docs/CommitRecordCreationResults.md
 docs/CommitsApi.md
 docs/CompletePresignMultipartUpload.md
 docs/Config.md
@@ -175,7 +174,6 @@ src/main/java/io/lakefs/clients/api/model/Commit.java
 src/main/java/io/lakefs/clients/api/model/CommitCreation.java
 src/main/java/io/lakefs/clients/api/model/CommitList.java
 src/main/java/io/lakefs/clients/api/model/CommitRecordCreation.java
-src/main/java/io/lakefs/clients/api/model/CommitRecordCreationResults.java
 src/main/java/io/lakefs/clients/api/model/CompletePresignMultipartUpload.java
 src/main/java/io/lakefs/clients/api/model/Config.java
 src/main/java/io/lakefs/clients/api/model/Credentials.java
@@ -287,7 +285,6 @@ src/test/java/io/lakefs/clients/api/model/CherryPickCreationTest.java
 src/test/java/io/lakefs/clients/api/model/CommPrefsInputTest.java
 src/test/java/io/lakefs/clients/api/model/CommitCreationTest.java
 src/test/java/io/lakefs/clients/api/model/CommitListTest.java
-src/test/java/io/lakefs/clients/api/model/CommitRecordCreationResultsTest.java
 src/test/java/io/lakefs/clients/api/model/CommitRecordCreationTest.java
 src/test/java/io/lakefs/clients/api/model/CommitTest.java
 src/test/java/io/lakefs/clients/api/model/CompletePresignMultipartUploadTest.java

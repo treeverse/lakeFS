@@ -570,6 +570,21 @@ func (m *Manager) AddCommit(ctx context.Context, repository *graveler.Repository
 	return m.addCommit(ctx, graveler.RepoPartition(repository), commit)
 }
 
+func (m *Manager) CreateCommitRecord(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, commit graveler.Commit) error {
+	if m.addressProvider.ContentAddress(commit) != commitID.String() {
+		return graveler.ErrInvalidCommitID
+	}
+	c := graveler.ProtoFromCommit(commitID, &commit)
+	commitKey := graveler.CommitPath(commitID)
+	err := kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(commitKey), c, nil)
+	// commits are written based on their content hash, if we insert the same ID again,
+	// it will necessarily have the same attributes as the existing one, so if a commit already exists doesn't return an error
+	if err != nil && !errors.Is(err, kv.ErrPredicateFailed) {
+		return err
+	}
+	return nil
+}
+
 func (m *Manager) RemoveCommit(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) error {
 	commitKey := graveler.CommitPath(commitID)
 	return m.kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), []byte(commitKey))

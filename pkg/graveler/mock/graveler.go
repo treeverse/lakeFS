@@ -307,22 +307,21 @@ func (mr *MockVersionControllerMockRecorder) CreateBranch(ctx, repository, branc
 }
 
 // CreateCommitRecord mocks base method.
-func (m *MockVersionController) CreateCommitRecord(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
+func (m *MockVersionController) CreateCommitRecord(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, commit graveler.Commit, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, repository, commit}
+	varargs := []interface{}{ctx, repository, commitID, commit}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "CreateCommitRecord", varargs...)
-	ret0, _ := ret[0].(graveler.CommitID)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // CreateCommitRecord indicates an expected call of CreateCommitRecord.
-func (mr *MockVersionControllerMockRecorder) CreateCommitRecord(ctx, repository, commit interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) CreateCommitRecord(ctx, repository, commitID, commit interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, repository, commit}, opts...)
+	varargs := append([]interface{}{ctx, repository, commitID, commit}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCommitRecord", reflect.TypeOf((*MockVersionController)(nil).CreateCommitRecord), varargs...)
 }
 
@@ -2007,6 +2006,20 @@ func (m *MockRefManager) CreateBranch(ctx context.Context, repository *graveler.
 func (mr *MockRefManagerMockRecorder) CreateBranch(ctx, repository, branchID, branch interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBranch", reflect.TypeOf((*MockRefManager)(nil).CreateBranch), ctx, repository, branchID, branch)
+}
+
+// CreateCommitRecord mocks base method.
+func (m *MockRefManager) CreateCommitRecord(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, commit graveler.Commit) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateCommitRecord", ctx, repository, commitID, commit)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateCommitRecord indicates an expected call of CreateCommitRecord.
+func (mr *MockRefManagerMockRecorder) CreateCommitRecord(ctx, repository, commitID, commit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCommitRecord", reflect.TypeOf((*MockRefManager)(nil).CreateCommitRecord), ctx, repository, commitID, commit)
 }
 
 // CreateRepository mocks base method.

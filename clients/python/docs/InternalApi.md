@@ -141,7 +141,7 @@ void (empty response body)
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **create_commit_record**
-> CommitRecordCreationResults create_commit_record(repository, commit_record_creation)
+> create_commit_record(repository, commit_record_creation)
 
 create commit record
 
@@ -158,7 +158,6 @@ import time
 import os
 import lakefs_sdk
 from lakefs_sdk.models.commit_record_creation import CommitRecordCreation
-from lakefs_sdk.models.commit_record_creation_results import CommitRecordCreationResults
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
 
@@ -211,9 +210,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
     try:
         # create commit record
-        api_response = api_instance.create_commit_record(repository, commit_record_creation)
-        print("The response of InternalApi->create_commit_record:\n")
-        pprint(api_response)
+        api_instance.create_commit_record(repository, commit_record_creation)
     except Exception as e:
         print("Exception when calling InternalApi->create_commit_record: %s\n" % e)
 ```
@@ -230,7 +227,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**CommitRecordCreationResults**](CommitRecordCreationResults.md)
+void (empty response body)
 
 ### Authorization
 
@@ -245,7 +242,7 @@ Name | Type | Description  | Notes
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**201** | commitID |  -  |
+**204** | commit record created |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |

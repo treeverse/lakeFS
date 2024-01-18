@@ -45,6 +45,14 @@ public class CommitRecordCreationTest {
     }
 
     /**
+     * Test the property 'commitId'
+     */
+    @Test
+    public void commitIdTest() {
+        // TODO: test commitId
+    }
+
+    /**
      * Test the property 'version'
      */
     @Test

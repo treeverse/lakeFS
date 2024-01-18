@@ -545,7 +545,7 @@ type VersionController interface {
 	Commit(ctx context.Context, repository *RepositoryRecord, branchID BranchID, commitParams CommitParams, opts ...SetOptionsFunc) (CommitID, error)
 
 	// CreateCommitRecord creates a commit record in the repository.
-	CreateCommitRecord(ctx context.Context, repository *RepositoryRecord, commit Commit, opts ...SetOptionsFunc) (CommitID, error)
+	CreateCommitRecord(ctx context.Context, repository *RepositoryRecord, commitID CommitID, commit Commit, opts ...SetOptionsFunc) error
 
 	// WriteMetaRangeByIterator accepts a ValueIterator and writes the entire iterator to a new MetaRange
 	// and returns the result ID.
@@ -849,6 +849,9 @@ type RefManager interface {
 
 	// AddCommit stores the Commit object, returning its ID
 	AddCommit(ctx context.Context, repository *RepositoryRecord, commit Commit) (CommitID, error)
+
+	// CreateCommitRecord stores the Commit object
+	CreateCommitRecord(ctx context.Context, repository *RepositoryRecord, commitID CommitID, commit Commit) error
 
 	// RemoveCommit deletes commit from store - used for repository cleanup
 	RemoveCommit(ctx context.Context, repository *RepositoryRecord, commitID CommitID) error
@@ -2078,16 +2081,16 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 	return newCommitID, nil
 }
 
-func (g *Graveler) CreateCommitRecord(ctx context.Context, repository *RepositoryRecord, commit Commit, opts ...SetOptionsFunc) (CommitID, error) {
+func (g *Graveler) CreateCommitRecord(ctx context.Context, repository *RepositoryRecord, commitID CommitID, commit Commit, opts ...SetOptionsFunc) error {
 	options := &SetOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
 	if repository.ReadOnly && !options.Force {
-		return "", ErrReadOnlyRepository
+		return ErrReadOnlyRepository
 	}
 
-	return g.RefManager.AddCommit(ctx, repository, commit)
+	return g.RefManager.CreateCommitRecord(ctx, repository, commitID, commit)
 }
 
 // retryBranchUpdate repeatedly attempts to BranchUpdate branchID of

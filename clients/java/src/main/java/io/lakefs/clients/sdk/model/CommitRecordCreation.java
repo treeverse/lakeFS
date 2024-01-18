@@ -56,6 +56,10 @@ import io.lakefs.clients.sdk.JSON;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class CommitRecordCreation {
+  public static final String SERIALIZED_NAME_COMMIT_ID = "commit_id";
+  @SerializedName(SERIALIZED_NAME_COMMIT_ID)
+  private String commitId;
+
   public static final String SERIALIZED_NAME_VERSION = "version";
   @SerializedName(SERIALIZED_NAME_VERSION)
   private Long version;
@@ -94,6 +98,27 @@ public class CommitRecordCreation {
 
   public CommitRecordCreation() {
   }
+
+  public CommitRecordCreation commitId(String commitId) {
+    
+    this.commitId = commitId;
+    return this;
+  }
+
+   /**
+   * id of the commit record
+   * @return commitId
+  **/
+  @javax.annotation.Nonnull
+  public String getCommitId() {
+    return commitId;
+  }
+
+
+  public void setCommitId(String commitId) {
+    this.commitId = commitId;
+  }
+
 
   public CommitRecordCreation version(Long version) {
     
@@ -354,7 +379,8 @@ public class CommitRecordCreation {
       return false;
     }
     CommitRecordCreation commitRecordCreation = (CommitRecordCreation) o;
-    return Objects.equals(this.version, commitRecordCreation.version) &&
+    return Objects.equals(this.commitId, commitRecordCreation.commitId) &&
+        Objects.equals(this.version, commitRecordCreation.version) &&
         Objects.equals(this.commiter, commitRecordCreation.commiter) &&
         Objects.equals(this.message, commitRecordCreation.message) &&
         Objects.equals(this.metarangeId, commitRecordCreation.metarangeId) &&
@@ -368,13 +394,14 @@ public class CommitRecordCreation {
 
   @Override
   public int hashCode() {
-    return Objects.hash(version, commiter, message, metarangeId, creationDate, parents, metadata, generation, force, additionalProperties);
+    return Objects.hash(commitId, version, commiter, message, metarangeId, creationDate, parents, metadata, generation, force, additionalProperties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class CommitRecordCreation {\n");
+    sb.append("    commitId: ").append(toIndentedString(commitId)).append("\n");
     sb.append("    version: ").append(toIndentedString(version)).append("\n");
     sb.append("    commiter: ").append(toIndentedString(commiter)).append("\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
@@ -407,6 +434,7 @@ public class CommitRecordCreation {
   static {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
+    openapiFields.add("commit_id");
     openapiFields.add("version");
     openapiFields.add("commiter");
     openapiFields.add("message");
@@ -419,6 +447,7 @@ public class CommitRecordCreation {
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
+    openapiRequiredFields.add("commit_id");
     openapiRequiredFields.add("version");
     openapiRequiredFields.add("commiter");
     openapiRequiredFields.add("message");
@@ -449,6 +478,9 @@ public class CommitRecordCreation {
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("commit_id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `commit_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("commit_id").toString()));
+      }
       if (!jsonObj.get("commiter").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `commiter` to be a primitive type in the JSON string but got `%s`", jsonObj.get("commiter").toString()));
       }

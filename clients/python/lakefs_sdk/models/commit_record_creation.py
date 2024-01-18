@@ -26,6 +26,7 @@ class CommitRecordCreation(BaseModel):
     """
     CommitRecordCreation
     """
+    commit_id: StrictStr = Field(..., description="id of the commit record")
     version: StrictInt = Field(..., description="version of the commit record")
     commiter: StrictStr = Field(..., description="commiter of the commit record")
     message: StrictStr = Field(..., description="message of the commit record")
@@ -35,7 +36,7 @@ class CommitRecordCreation(BaseModel):
     metadata: Dict[str, StrictStr] = Field(..., description="metadata of the commit record")
     generation: StrictInt = Field(..., description="generation of the commit record")
     force: Optional[StrictBool] = False
-    __properties = ["version", "commiter", "message", "metarange_id", "creation_date", "parents", "metadata", "generation", "force"]
+    __properties = ["commit_id", "version", "commiter", "message", "metarange_id", "creation_date", "parents", "metadata", "generation", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -73,6 +74,7 @@ class CommitRecordCreation(BaseModel):
             return CommitRecordCreation.parse_obj(obj)
 
         _obj = CommitRecordCreation.parse_obj({
+            "commit_id": obj.get("commit_id"),
             "version": obj.get("version"),
             "commiter": obj.get("commiter"),
             "message": obj.get("message"),

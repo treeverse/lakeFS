@@ -28,7 +28,6 @@ from lakefs_sdk.models.auth_capabilities import AuthCapabilities
 from lakefs_sdk.models.branch_protection_rule import BranchProtectionRule
 from lakefs_sdk.models.comm_prefs_input import CommPrefsInput
 from lakefs_sdk.models.commit_record_creation import CommitRecordCreation
-from lakefs_sdk.models.commit_record_creation_results import CommitRecordCreationResults
 from lakefs_sdk.models.credentials_with_secret import CredentialsWithSecret
 from lakefs_sdk.models.garbage_collection_config import GarbageCollectionConfig
 from lakefs_sdk.models.garbage_collection_prepare_response import GarbageCollectionPrepareResponse
@@ -206,7 +205,7 @@ class InternalApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def create_commit_record(self, repository : StrictStr, commit_record_creation : CommitRecordCreation, **kwargs) -> CommitRecordCreationResults:  # noqa: E501
+    def create_commit_record(self, repository : StrictStr, commit_record_creation : CommitRecordCreation, **kwargs) -> None:  # noqa: E501
         """create commit record  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -228,7 +227,7 @@ class InternalApi(object):
         :return: Returns the result object.
                  If the method is called asynchronously,
                  returns the request thread.
-        :rtype: CommitRecordCreationResults
+        :rtype: None
         """
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
@@ -271,7 +270,7 @@ class InternalApi(object):
         :return: Returns the result object.
                  If the method is called asynchronously,
                  returns the request thread.
-        :rtype: tuple(CommitRecordCreationResults, status_code(int), headers(HTTPHeaderDict))
+        :rtype: None
         """
 
         _params = locals()
@@ -336,14 +335,7 @@ class InternalApi(object):
         # authentication setting
         _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
-        _response_types_map = {
-            '201': "CommitRecordCreationResults",
-            '400': "Error",
-            '401': "Error",
-            '403': "Error",
-            '404': "Error",
-            '420': None,
-        }
+        _response_types_map = {}
 
         return self.api_client.call_api(
             '/repositories/{repository}/commits', 'POST',

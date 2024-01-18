@@ -2870,14 +2870,12 @@ func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, 
 		writeError(w, r, http.StatusUnauthorized, "missing user")
 		return
 	}
-	newCommitID, err := c.Catalog.CreateCommitRecord(ctx, repository, int(body.Version), body.Commiter, body.Message, body.MetarangeId, &body.CreationDate, body.Parents, body.Metadata.AdditionalProperties, int(body.Generation), graveler.WithForce(swag.BoolValue(body.Force)))
+	err = c.Catalog.CreateCommitRecord(ctx, repository, body.CommitId, int(body.Version), body.Commiter, body.Message, body.MetarangeId, &body.CreationDate, body.Parents, body.Metadata.AdditionalProperties, int(body.Generation), graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	response := apigen.CommitRecordCreationResults{
-		Id: newCommitID,
-	}
-	writeResponse(w, r, http.StatusCreated, response)
+
+	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func commitResponse(w http.ResponseWriter, r *http.Request, newCommit *catalog.CommitLog) {

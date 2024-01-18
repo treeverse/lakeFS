@@ -5413,27 +5413,30 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 func TestController_CreateCommitRecord(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
+	// expected commit ID for this commit record
+	expectedCommitID := "e1b20626cb8491bebc20f32e8cadcdc1e3eb32e5b0d6a80c9a26b102858adb09"
+	body := apigen.CreateCommitRecordJSONRequestBody{
+		CommitId:     expectedCommitID,
+		Commiter:     "Commiter",
+		CreationDate: 0,
+		Generation:   1,
+		Message:      "message",
+		Metadata:     apigen.CommitRecordCreation_Metadata{AdditionalProperties: map[string]string{"key": "value"}},
+		MetarangeId:  "metarangeId",
+		Parents:      []string{"parent1", "parent2"},
+		Version:      2,
+	}
 
 	t.Run("create commit record", func(t *testing.T) {
 		repo := testUniqueRepoName()
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
-		body := apigen.CreateCommitRecordJSONRequestBody{
-			Commiter:     "Commiter",
-			CreationDate: 0,
-			Generation:   1,
-			Message:      "message",
-			Metadata:     apigen.CommitRecordCreation_Metadata{AdditionalProperties: map[string]string{"key": "value"}},
-			MetarangeId:  "metarangeId",
-			Parents:      []string{"parent1", "parent2"},
-			Version:      2,
-		}
 		resp, err := clt.CreateCommitRecordWithResponse(ctx, repo, body)
 		testutil.MustDo(t, "create commit record", err)
-		if resp.JSON201 == nil {
-			t.Fatalf("Expected 201 response, got: %s", resp.Status())
+		if resp.StatusCode() != http.StatusNoContent {
+			t.Fatalf("Expected 204 (no content) response, got %s", resp.Status())
 		}
-		commitLog, err := deps.catalog.GetCommit(ctx, repo, resp.JSON201.Id)
+		commitLog, err := deps.catalog.GetCommit(ctx, repo, expectedCommitID)
 		testutil.MustDo(t, "get commit", err)
 		if commitLog.Committer != body.Commiter {
 			t.Fatalf("Expected Committer %s, got %s", body.Commiter, commitLog.Committer)
@@ -5457,20 +5460,23 @@ func TestController_CreateCommitRecord(t *testing.T) {
 		}
 	})
 
+	t.Run("create commit record with wrong commitID", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
+		testutil.Must(t, err)
+		bodyCpy := body
+		bodyCpy.CommitId = "wrong"
+		resp, err := clt.CreateCommitRecordWithResponse(ctx, repo, bodyCpy)
+		testutil.MustDo(t, "create commit record", err)
+		if resp.StatusCode() != http.StatusBadRequest {
+			t.Fatalf("Expected 400 (bad request) response, got %s", resp.Status())
+		}
+	})
+
 	t.Run("read only repository", func(t *testing.T) {
 		repo := testUniqueRepoName()
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", true)
 		testutil.Must(t, err)
-		body := apigen.CreateCommitRecordJSONRequestBody{
-			Commiter:     "Commiter",
-			CreationDate: 0,
-			Generation:   1,
-			Message:      "message",
-			Metadata:     apigen.CommitRecordCreation_Metadata{AdditionalProperties: map[string]string{"key": "value"}},
-			MetarangeId:  "metarangeId",
-			Parents:      []string{"parent1", "parent2"},
-			Version:      2,
-		}
 		resp, err := clt.CreateCommitRecordWithResponse(ctx, repo, body)
 		testutil.Must(t, err)
 		if resp.StatusCode() != http.StatusForbidden {
@@ -5479,8 +5485,8 @@ func TestController_CreateCommitRecord(t *testing.T) {
 		body.Force = swag.Bool(true)
 		resp, err = clt.CreateCommitRecordWithResponse(ctx, repo, body)
 		testutil.MustDo(t, "create commit record", err)
-		if resp.JSON201 == nil {
-			t.Fatalf("Expected 201 response, got: %s", resp.Status())
+		if resp.StatusCode() != http.StatusNoContent {
+			t.Fatalf("Expected 204 response, got: %s", resp.Status())
 		}
 	})
 }

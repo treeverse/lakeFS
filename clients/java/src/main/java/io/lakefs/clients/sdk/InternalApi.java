@@ -31,7 +31,6 @@ import io.lakefs.clients.sdk.model.AuthCapabilities;
 import io.lakefs.clients.sdk.model.BranchProtectionRule;
 import io.lakefs.clients.sdk.model.CommPrefsInput;
 import io.lakefs.clients.sdk.model.CommitRecordCreation;
-import io.lakefs.clients.sdk.model.CommitRecordCreationResults;
 import io.lakefs.clients.sdk.model.CredentialsWithSecret;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.GarbageCollectionConfig;
@@ -333,17 +332,15 @@ public class InternalApi {
     }
 
 
-    private ApiResponse<CommitRecordCreationResults> createCommitRecordWithHttpInfo(String repository, CommitRecordCreation commitRecordCreation) throws ApiException {
+    private ApiResponse<Void> createCommitRecordWithHttpInfo(String repository, CommitRecordCreation commitRecordCreation) throws ApiException {
         okhttp3.Call localVarCall = createCommitRecordValidateBeforeCall(repository, commitRecordCreation, null);
-        Type localVarReturnType = new TypeToken<CommitRecordCreationResults>(){}.getType();
-        return localVarApiClient.execute(localVarCall, localVarReturnType);
+        return localVarApiClient.execute(localVarCall);
     }
 
-    private okhttp3.Call createCommitRecordAsync(String repository, CommitRecordCreation commitRecordCreation, final ApiCallback<CommitRecordCreationResults> _callback) throws ApiException {
+    private okhttp3.Call createCommitRecordAsync(String repository, CommitRecordCreation commitRecordCreation, final ApiCallback<Void> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = createCommitRecordValidateBeforeCall(repository, commitRecordCreation, _callback);
-        Type localVarReturnType = new TypeToken<CommitRecordCreationResults>(){}.getType();
-        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
 
@@ -364,7 +361,7 @@ public class InternalApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 201 </td><td> commitID </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> commit record created </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
@@ -379,12 +376,11 @@ public class InternalApi {
 
         /**
          * Execute createCommitRecord request
-         * @return CommitRecordCreationResults
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 201 </td><td> commitID </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> commit record created </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
@@ -393,19 +389,18 @@ public class InternalApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public CommitRecordCreationResults execute() throws ApiException {
-            ApiResponse<CommitRecordCreationResults> localVarResp = createCommitRecordWithHttpInfo(repository, commitRecordCreation);
-            return localVarResp.getData();
+        public void execute() throws ApiException {
+            createCommitRecordWithHttpInfo(repository, commitRecordCreation);
         }
 
         /**
          * Execute createCommitRecord request with HTTP info returned
-         * @return ApiResponse&lt;CommitRecordCreationResults&gt;
+         * @return ApiResponse&lt;Void&gt;
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 201 </td><td> commitID </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> commit record created </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
@@ -414,7 +409,7 @@ public class InternalApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public ApiResponse<CommitRecordCreationResults> executeWithHttpInfo() throws ApiException {
+        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
             return createCommitRecordWithHttpInfo(repository, commitRecordCreation);
         }
 
@@ -426,7 +421,7 @@ public class InternalApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 201 </td><td> commitID </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> commit record created </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
@@ -435,7 +430,7 @@ public class InternalApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public okhttp3.Call executeAsync(final ApiCallback<CommitRecordCreationResults> _callback) throws ApiException {
+        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
             return createCommitRecordAsync(repository, commitRecordCreation, _callback);
         }
     }
@@ -449,7 +444,7 @@ public class InternalApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> commitID </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> commit record created </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>

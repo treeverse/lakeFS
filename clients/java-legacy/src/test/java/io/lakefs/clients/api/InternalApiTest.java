@@ -18,7 +18,6 @@ import io.lakefs.clients.api.model.AuthCapabilities;
 import io.lakefs.clients.api.model.BranchProtectionRule;
 import io.lakefs.clients.api.model.CommPrefsInput;
 import io.lakefs.clients.api.model.CommitRecordCreation;
-import io.lakefs.clients.api.model.CommitRecordCreationResults;
 import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.GarbageCollectionConfig;
@@ -84,7 +83,7 @@ public class InternalApiTest {
     public void createCommitRecordTest() throws ApiException {
         String repository = null;
         CommitRecordCreation commitRecordCreation = null;
-                CommitRecordCreationResults response = api.createCommitRecord(repository, commitRecordCreation);
+                api.createCommitRecord(repository, commitRecordCreation);
         // TODO: test validations
     }
     

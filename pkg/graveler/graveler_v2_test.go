@@ -599,7 +599,6 @@ func TestGravelerCommit_v2(t *testing.T) {
 
 func TestGravelerCreateCommitRecord_v2(t *testing.T) {
 	ctx := context.Background()
-
 	t.Run("create commit record", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		commit := graveler.Commit{
@@ -612,10 +611,9 @@ func TestGravelerCreateCommitRecord_v2(t *testing.T) {
 			Version:      graveler.CommitVersion(2),
 			Generation:   1,
 		}
-		test.RefManager.EXPECT().AddCommit(ctx, repository, commit).Return(graveler.CommitID("commitid"), nil)
-		commitID, err := test.Sut.CreateCommitRecord(ctx, repository, commit)
+		test.RefManager.EXPECT().CreateCommitRecord(ctx, repository, graveler.CommitID("commitID"), commit).Return(nil)
+		err := test.Sut.CreateCommitRecord(ctx, repository, "commitID", commit)
 		require.NoError(t, err)
-		require.Equal(t, graveler.CommitID("commitid"), commitID)
 	})
 }
 

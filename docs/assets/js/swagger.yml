@@ -613,6 +613,7 @@ components:
     CommitRecordCreation:
       type: object
       required:
+        - commit_id
         - version
         - commiter
         - message
@@ -622,6 +623,9 @@ components:
         - metadata
         - generation
       properties:
+        commit_id:
+          type: string
+          description: id of the commit record
         version:
           type: integer
           format: int64
@@ -656,15 +660,6 @@ components:
         force:
           type: boolean
           default: false
-
-    CommitRecordCreationResults:
-      type: object
-      required:
-        - id
-      properties:
-        id:
-          type: string
-          description: id of the created commit record
 
     Merge:
       type: object
@@ -740,7 +735,7 @@ components:
         error:
           type: string
         refs:
-            $ref: "#/components/schemas/RefsDump"
+          $ref: "#/components/schemas/RefsDump"
 
     RepositoryRestoreStatus:
       type: object
@@ -758,7 +753,7 @@ components:
           type: string
           format: date-time
         error:
-          type: string   
+          type: string
 
     RefsDump:
       type: object
@@ -923,9 +918,9 @@ components:
           description: URL to use for logging out.
           type: string
       required:
-      - login_url
-      - login_cookie_names
-      - logout_url
+        - login_url
+        - login_cookie_names
+        - logout_url
 
     SetupState:
       type: object
@@ -3466,12 +3461,8 @@ paths:
             schema:
               $ref: "#/components/schemas/CommitRecordCreation"
       responses:
-        201:
-          description: commitID
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CommitRecordCreationResults"
+        204:
+          description: commit record created
         400:
           $ref: "#/components/responses/ValidationError"
         401:

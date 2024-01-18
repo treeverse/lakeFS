@@ -33,6 +33,10 @@ import java.util.Map;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class CommitRecordCreation {
+  public static final String SERIALIZED_NAME_COMMIT_ID = "commit_id";
+  @SerializedName(SERIALIZED_NAME_COMMIT_ID)
+  private String commitId;
+
   public static final String SERIALIZED_NAME_VERSION = "version";
   @SerializedName(SERIALIZED_NAME_VERSION)
   private Long version;
@@ -68,6 +72,29 @@ public class CommitRecordCreation {
   public static final String SERIALIZED_NAME_FORCE = "force";
   @SerializedName(SERIALIZED_NAME_FORCE)
   private Boolean force = false;
+
+
+  public CommitRecordCreation commitId(String commitId) {
+    
+    this.commitId = commitId;
+    return this;
+  }
+
+   /**
+   * id of the commit record
+   * @return commitId
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "id of the commit record")
+
+  public String getCommitId() {
+    return commitId;
+  }
+
+
+  public void setCommitId(String commitId) {
+    this.commitId = commitId;
+  }
 
 
   public CommitRecordCreation version(Long version) {
@@ -296,7 +323,8 @@ public class CommitRecordCreation {
       return false;
     }
     CommitRecordCreation commitRecordCreation = (CommitRecordCreation) o;
-    return Objects.equals(this.version, commitRecordCreation.version) &&
+    return Objects.equals(this.commitId, commitRecordCreation.commitId) &&
+        Objects.equals(this.version, commitRecordCreation.version) &&
         Objects.equals(this.commiter, commitRecordCreation.commiter) &&
         Objects.equals(this.message, commitRecordCreation.message) &&
         Objects.equals(this.metarangeId, commitRecordCreation.metarangeId) &&
@@ -309,13 +337,14 @@ public class CommitRecordCreation {
 
   @Override
   public int hashCode() {
-    return Objects.hash(version, commiter, message, metarangeId, creationDate, parents, metadata, generation, force);
+    return Objects.hash(commitId, version, commiter, message, metarangeId, creationDate, parents, metadata, generation, force);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class CommitRecordCreation {\n");
+    sb.append("    commitId: ").append(toIndentedString(commitId)).append("\n");
     sb.append("    version: ").append(toIndentedString(version)).append("\n");
     sb.append("    commiter: ").append(toIndentedString(commiter)).append("\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");

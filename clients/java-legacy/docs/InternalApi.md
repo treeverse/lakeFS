@@ -127,7 +127,7 @@ null (empty response body)
 
 <a name="createCommitRecord"></a>
 # **createCommitRecord**
-> CommitRecordCreationResults createCommitRecord(repository, commitRecordCreation)
+> createCommitRecord(repository, commitRecordCreation)
 
 create commit record
 
@@ -177,8 +177,7 @@ public class Example {
     String repository = "repository_example"; // String | 
     CommitRecordCreation commitRecordCreation = new CommitRecordCreation(); // CommitRecordCreation | 
     try {
-      CommitRecordCreationResults result = apiInstance.createCommitRecord(repository, commitRecordCreation);
-      System.out.println(result);
+      apiInstance.createCommitRecord(repository, commitRecordCreation);
     } catch (ApiException e) {
       System.err.println("Exception when calling InternalApi#createCommitRecord");
       System.err.println("Status code: " + e.getCode());
@@ -199,7 +198,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**CommitRecordCreationResults**](CommitRecordCreationResults.md)
+null (empty response body)
 
 ### Authorization
 
@@ -213,7 +212,7 @@ Name | Type | Description  | Notes
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**201** | commitID |  -  |
+**204** | commit record created |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |

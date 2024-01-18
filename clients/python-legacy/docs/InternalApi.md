@@ -140,7 +140,7 @@ void (empty response body)
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **create_commit_record**
-> CommitRecordCreationResults create_commit_record(repository, commit_record_creation)
+> create_commit_record(repository, commit_record_creation)
 
 create commit record
 
@@ -156,7 +156,6 @@ create commit record
 import time
 import lakefs_client
 from lakefs_client.api import internal_api
-from lakefs_client.model.commit_record_creation_results import CommitRecordCreationResults
 from lakefs_client.model.commit_record_creation import CommitRecordCreation
 from lakefs_client.model.error import Error
 from pprint import pprint
@@ -206,6 +205,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = internal_api.InternalApi(api_client)
     repository = "repository_example" # str | 
     commit_record_creation = CommitRecordCreation(
+        commit_id="commit_id_example",
         version=1,
         commiter="commiter_example",
         message="message_example",
@@ -224,8 +224,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     try:
         # create commit record
-        api_response = api_instance.create_commit_record(repository, commit_record_creation)
-        pprint(api_response)
+        api_instance.create_commit_record(repository, commit_record_creation)
     except lakefs_client.ApiException as e:
         print("Exception when calling InternalApi->create_commit_record: %s\n" % e)
 ```
@@ -240,7 +239,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**CommitRecordCreationResults**](CommitRecordCreationResults.md)
+void (empty response body)
 
 ### Authorization
 
@@ -256,7 +255,7 @@ Name | Type | Description  | Notes
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**201** | commitID |  -  |
+**204** | commit record created |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |

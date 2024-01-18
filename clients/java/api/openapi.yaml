@@ -3216,12 +3216,8 @@ paths:
               $ref: '#/components/schemas/CommitRecordCreation'
         required: true
       responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CommitRecordCreationResults'
-          description: commitID
+        "204":
+          description: commit record created
         "400":
           content:
             application/json:
@@ -7374,12 +7370,16 @@ components:
         force: false
         creation_date: 6
         message: message
+        commit_id: commit_id
         version: 0
         commiter: commiter
         parents:
         - parents
         - parents
       properties:
+        commit_id:
+          description: id of the commit record
+          type: string
         version:
           description: version of the commit record
           format: int64
@@ -7415,6 +7415,7 @@ components:
           default: false
           type: boolean
       required:
+      - commit_id
       - commiter
       - creation_date
       - generation
@@ -7423,16 +7424,6 @@ components:
       - metarange_id
       - parents
       - version
-      type: object
-    CommitRecordCreationResults:
-      example:
-        id: id
-      properties:
-        id:
-          description: id of the created commit record
-          type: string
-      required:
-      - id
       type: object
     Merge:
       example:
