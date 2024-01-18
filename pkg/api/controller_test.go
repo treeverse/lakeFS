@@ -5456,6 +5456,33 @@ func TestController_CreateCommitRecord(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("read only repository", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", true)
+		testutil.Must(t, err)
+		body := apigen.CreateCommitRecordJSONRequestBody{
+			Commiter:     "Commiter",
+			CreationDate: 0,
+			Generation:   1,
+			Message:      "message",
+			Metadata:     apigen.CommitRecordCreation_Metadata{AdditionalProperties: map[string]string{"key": "value"}},
+			MetarangeId:  "metarangeId",
+			Parents:      []string{"parent1", "parent2"},
+			Version:      2,
+		}
+		resp, err := clt.CreateCommitRecordWithResponse(ctx, repo, body)
+		testutil.Must(t, err)
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("Create commit record in read-only repository should be forbidden (403), got %s", resp.Status())
+		}
+		body.Force = swag.Bool(true)
+		resp, err = clt.CreateCommitRecordWithResponse(ctx, repo, body)
+		testutil.MustDo(t, "create commit record", err)
+		if resp.JSON201 == nil {
+			t.Fatalf("Expected 201 response, got: %s", resp.Status())
+		}
+	})
 }
 
 // pollRestoreStatus polls the restore status endpoint until the restore is complete or times out.
