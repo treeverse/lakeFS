@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -26,7 +25,6 @@ const (
 )
 
 type (
-	Booleans   []bool
 	arrayFlags []string
 )
 
@@ -44,31 +42,6 @@ var (
 	usersToKeep        arrayFlags
 	policiesToKeep     arrayFlags
 )
-
-func (bs *Booleans) String() string {
-	ret := make([]string, len(*bs))
-	for i, b := range *bs {
-		if b {
-			ret[i] = "true"
-		} else {
-			ret[i] = "false"
-		}
-	}
-	return strings.Join(ret, ",")
-}
-
-func (bs *Booleans) Parse(value string) error {
-	values := strings.Split(value, ",")
-	*bs = make(Booleans, 0, len(values))
-	for _, v := range values {
-		b, err := strconv.ParseBool(v)
-		if err != nil {
-			return err
-		}
-		*bs = append(*bs, b)
-	}
-	return nil
-}
 
 func (i *arrayFlags) String() string {
 	return strings.Join(*i, " ")
