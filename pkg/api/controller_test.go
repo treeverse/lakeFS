@@ -5416,7 +5416,7 @@ func TestController_CreateCommitRecord(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	// expected commit ID for this commit record
-	expectedCommitID := "e1b20626cb8491bebc20f32e8cadcdc1e3eb32e5b0d6a80c9a26b102858adb09"
+	expectedCommitID := "2996b23ac5ab6e7267c302cf00c751bbb87afddd81c6d03e95f654f77b0f3ded"
 	body := apigen.CreateCommitRecordJSONRequestBody{
 		CommitId:     expectedCommitID,
 		Committer:    "Committer",
