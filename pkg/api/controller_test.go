@@ -5419,7 +5419,7 @@ func TestController_CreateCommitRecord(t *testing.T) {
 	expectedCommitID := "e1b20626cb8491bebc20f32e8cadcdc1e3eb32e5b0d6a80c9a26b102858adb09"
 	body := apigen.CreateCommitRecordJSONRequestBody{
 		CommitId:     expectedCommitID,
-		Committer:    "Commiter",
+		Committer:    "Committer",
 		CreationDate: 0,
 		Generation:   1,
 		Message:      "message",
