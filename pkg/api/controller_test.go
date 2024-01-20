@@ -753,7 +753,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		if reference1 != commit1.Reference {
-			t.Fatalf("Commit reference %s, not equals to branch reference %s", commit1, reference1)
+			t.Fatalf("Commit reference %s, not equals to branch reference %s", *commit1, reference1)
 		}
 		resp, err := clt.GetCommitWithResponse(ctx, "foo1", commit1.Reference)
 		verifyResponseOK(t, resp, err)
@@ -5421,7 +5421,7 @@ func TestController_CreateCommitRecord(t *testing.T) {
 		CreationDate: 0,
 		Generation:   1,
 		Message:      "message",
-		Metadata:     apigen.CommitRecordCreation_Metadata{AdditionalProperties: map[string]string{"key": "value"}},
+		Metadata:     &apigen.CommitRecordCreation_Metadata{AdditionalProperties: map[string]string{"key": "value2"}},
 		MetarangeId:  "metarangeId",
 		Parents:      []string{"parent1", "parent2"},
 		Version:      2,

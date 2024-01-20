@@ -89,8 +89,8 @@ class CommitRecordCreation(ModelNormal):
             'metarange_id': (str,),  # noqa: E501
             'creation_date': (int,),  # noqa: E501
             'parents': ([str],),  # noqa: E501
-            'metadata': ({str: (str,)},),  # noqa: E501
             'generation': (int,),  # noqa: E501
+            'metadata': ({str: (str,)},),  # noqa: E501
             'force': (bool,),  # noqa: E501
         }
 
@@ -107,8 +107,8 @@ class CommitRecordCreation(ModelNormal):
         'metarange_id': 'metarange_id',  # noqa: E501
         'creation_date': 'creation_date',  # noqa: E501
         'parents': 'parents',  # noqa: E501
-        'metadata': 'metadata',  # noqa: E501
         'generation': 'generation',  # noqa: E501
+        'metadata': 'metadata',  # noqa: E501
         'force': 'force',  # noqa: E501
     }
 
@@ -119,18 +119,17 @@ class CommitRecordCreation(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, commit_id, version, committer, message, metarange_id, creation_date, parents, metadata, generation, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, commit_id, version, committer, message, metarange_id, creation_date, parents, generation, *args, **kwargs):  # noqa: E501
         """CommitRecordCreation - a model defined in OpenAPI
 
         Args:
             commit_id (str): id of the commit record
             version (int): version of the commit record
-            committer (str): commiter of the commit record
+            committer (str): committer of the commit record
             message (str): message of the commit record
             metarange_id (str): metarange_id of the commit record
             creation_date (int): Unix Epoch in seconds
             parents ([str]): parents of the commit record
-            metadata ({str: (str,)}): metadata of the commit record
             generation (int): generation of the commit record
 
         Keyword Args:
@@ -164,6 +163,7 @@ class CommitRecordCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            metadata ({str: (str,)}): metadata of the commit record. [optional]  # noqa: E501
             force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
@@ -199,7 +199,6 @@ class CommitRecordCreation(ModelNormal):
         self.metarange_id = metarange_id
         self.creation_date = creation_date
         self.parents = parents
-        self.metadata = metadata
         self.generation = generation
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
@@ -221,18 +220,17 @@ class CommitRecordCreation(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, commit_id, version, committer, message, metarange_id, creation_date, parents, metadata, generation, *args, **kwargs):  # noqa: E501
+    def __init__(self, commit_id, version, committer, message, metarange_id, creation_date, parents, generation, *args, **kwargs):  # noqa: E501
         """CommitRecordCreation - a model defined in OpenAPI
 
         Args:
             commit_id (str): id of the commit record
             version (int): version of the commit record
-            committer (str): commiter of the commit record
+            committer (str): committer of the commit record
             message (str): message of the commit record
             metarange_id (str): metarange_id of the commit record
             creation_date (int): Unix Epoch in seconds
             parents ([str]): parents of the commit record
-            metadata ({str: (str,)}): metadata of the commit record
             generation (int): generation of the commit record
 
         Keyword Args:
@@ -266,6 +264,7 @@ class CommitRecordCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            metadata ({str: (str,)}): metadata of the commit record. [optional]  # noqa: E501
             force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
@@ -299,7 +298,6 @@ class CommitRecordCreation(ModelNormal):
         self.metarange_id = metarange_id
         self.creation_date = creation_date
         self.parents = parents
-        self.metadata = metadata
         self.generation = generation
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \

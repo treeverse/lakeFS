@@ -1229,7 +1229,7 @@ func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, c
 		CreationDate: time.Unix(0, *creationDate).UTC(),
 		Parents:      commitParents,
 		Metadata:     metadata,
-		Generation:   generation,
+		Generation:   graveler.CommitGeneration(generation),
 	}
 	return c.Store.CreateCommitRecord(ctx, repository, graveler.CommitID(commitID), commit, opts...)
 }
@@ -1259,6 +1259,8 @@ func (c *Catalog) GetCommit(ctx context.Context, repositoryID string, reference 
 		CreationDate: commit.CreationDate,
 		MetaRangeID:  string(commit.MetaRangeID),
 		Metadata:     Metadata(commit.Metadata),
+		Generation:   CommitGeneration(commit.Generation),
+		Version:      CommitVersion(commit.Version),
 		Parents:      []string{},
 	}
 	for _, parent := range commit.Parents {

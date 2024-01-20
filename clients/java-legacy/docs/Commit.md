@@ -14,6 +14,8 @@ Name | Type | Description | Notes
 **creationDate** | **Long** | Unix Epoch in seconds | 
 **metaRangeId** | **String** |  | 
 **metadata** | **Map&lt;String, String&gt;** |  |  [optional]
+**generation** | **Long** |  | 
+**version** | **Long** |  | 
 
 
 

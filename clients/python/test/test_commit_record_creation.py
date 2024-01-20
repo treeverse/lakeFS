@@ -65,9 +65,6 @@ class TestCommitRecordCreation(unittest.TestCase):
                 parents = [
                     ''
                     ],
-                metadata = {
-                    'key' : ''
-                    },
                 generation = 56,
         )
         """

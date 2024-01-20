@@ -84,6 +84,14 @@ public class Commit {
   @SerializedName(SERIALIZED_NAME_METADATA)
   private Map<String, String> metadata = new HashMap<>();
 
+  public static final String SERIALIZED_NAME_GENERATION = "generation";
+  @SerializedName(SERIALIZED_NAME_GENERATION)
+  private Long generation;
+
+  public static final String SERIALIZED_NAME_VERSION = "version";
+  @SerializedName(SERIALIZED_NAME_VERSION)
+  private Long version;
+
   public Commit() {
   }
 
@@ -249,6 +257,48 @@ public class Commit {
     this.metadata = metadata;
   }
 
+
+  public Commit generation(Long generation) {
+    
+    this.generation = generation;
+    return this;
+  }
+
+   /**
+   * Get generation
+   * @return generation
+  **/
+  @javax.annotation.Nonnull
+  public Long getGeneration() {
+    return generation;
+  }
+
+
+  public void setGeneration(Long generation) {
+    this.generation = generation;
+  }
+
+
+  public Commit version(Long version) {
+    
+    this.version = version;
+    return this;
+  }
+
+   /**
+   * Get version
+   * @return version
+  **/
+  @javax.annotation.Nonnull
+  public Long getVersion() {
+    return version;
+  }
+
+
+  public void setVersion(Long version) {
+    this.version = version;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -310,13 +360,15 @@ public class Commit {
         Objects.equals(this.message, commit.message) &&
         Objects.equals(this.creationDate, commit.creationDate) &&
         Objects.equals(this.metaRangeId, commit.metaRangeId) &&
-        Objects.equals(this.metadata, commit.metadata)&&
+        Objects.equals(this.metadata, commit.metadata) &&
+        Objects.equals(this.generation, commit.generation) &&
+        Objects.equals(this.version, commit.version)&&
         Objects.equals(this.additionalProperties, commit.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, parents, committer, message, creationDate, metaRangeId, metadata, additionalProperties);
+    return Objects.hash(id, parents, committer, message, creationDate, metaRangeId, metadata, generation, version, additionalProperties);
   }
 
   @Override
@@ -330,6 +382,8 @@ public class Commit {
     sb.append("    creationDate: ").append(toIndentedString(creationDate)).append("\n");
     sb.append("    metaRangeId: ").append(toIndentedString(metaRangeId)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("    generation: ").append(toIndentedString(generation)).append("\n");
+    sb.append("    version: ").append(toIndentedString(version)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -360,6 +414,8 @@ public class Commit {
     openapiFields.add("creation_date");
     openapiFields.add("meta_range_id");
     openapiFields.add("metadata");
+    openapiFields.add("generation");
+    openapiFields.add("version");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -369,6 +425,8 @@ public class Commit {
     openapiRequiredFields.add("message");
     openapiRequiredFields.add("creation_date");
     openapiRequiredFields.add("meta_range_id");
+    openapiRequiredFields.add("generation");
+    openapiRequiredFields.add("version");
   }
 
  /**

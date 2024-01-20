@@ -148,7 +148,7 @@ public class CommitRecordCreation {
   }
 
    /**
-   * commiter of the commit record
+   * committer of the commit record
    * @return committer
   **/
   @javax.annotation.Nonnull
@@ -272,7 +272,7 @@ public class CommitRecordCreation {
    * metadata of the commit record
    * @return metadata
   **/
-  @javax.annotation.Nonnull
+  @javax.annotation.Nullable
   public Map<String, String> getMetadata() {
     return metadata;
   }
@@ -454,7 +454,6 @@ public class CommitRecordCreation {
     openapiRequiredFields.add("metarange_id");
     openapiRequiredFields.add("creation_date");
     openapiRequiredFields.add("parents");
-    openapiRequiredFields.add("metadata");
     openapiRequiredFields.add("generation");
   }
 

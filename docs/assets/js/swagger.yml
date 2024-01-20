@@ -552,6 +552,8 @@ components:
         - message
         - creation_date
         - meta_range_id
+        - generation
+        - version
       properties:
         id:
           type: string
@@ -573,6 +575,12 @@ components:
           type: object
           additionalProperties:
             type: string
+        generation:
+          type: integer
+          format: int64
+        version:
+          type: integer
+          format: int64
 
     CommitList:
       type: object
@@ -620,7 +628,6 @@ components:
         - metarange_id
         - creation_date
         - parents
-        - metadata
         - generation
       properties:
         commit_id:
@@ -632,7 +639,7 @@ components:
           description: version of the commit record
         committer:
           type: string
-          description: commiter of the commit record
+          description: committer of the commit record
         message:
           type: string
           description: message of the commit record

@@ -10,6 +10,8 @@ Name | Type | Description | Notes
 **message** | **str** |  | 
 **creation_date** | **int** | Unix Epoch in seconds | 
 **meta_range_id** | **str** |  | 
+**generation** | **int** |  | 
+**version** | **int** |  | 
 **metadata** | **{str: (str,)}** |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 

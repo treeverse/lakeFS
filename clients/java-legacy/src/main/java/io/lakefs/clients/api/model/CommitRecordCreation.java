@@ -63,7 +63,7 @@ public class CommitRecordCreation {
 
   public static final String SERIALIZED_NAME_METADATA = "metadata";
   @SerializedName(SERIALIZED_NAME_METADATA)
-  private Map<String, String> metadata = new HashMap<String, String>();
+  private Map<String, String> metadata = null;
 
   public static final String SERIALIZED_NAME_GENERATION = "generation";
   @SerializedName(SERIALIZED_NAME_GENERATION)
@@ -127,11 +127,11 @@ public class CommitRecordCreation {
   }
 
    /**
-   * commiter of the commit record
+   * committer of the commit record
    * @return committer
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "commiter of the commit record")
+  @ApiModelProperty(required = true, value = "committer of the commit record")
 
   public String getCommitter() {
     return committer;
@@ -247,6 +247,9 @@ public class CommitRecordCreation {
   }
 
   public CommitRecordCreation putMetadataItem(String key, String metadataItem) {
+    if (this.metadata == null) {
+      this.metadata = new HashMap<String, String>();
+    }
     this.metadata.put(key, metadataItem);
     return this;
   }
@@ -255,8 +258,8 @@ public class CommitRecordCreation {
    * metadata of the commit record
    * @return metadata
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "metadata of the commit record")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "metadata of the commit record")
 
   public Map<String, String> getMetadata() {
     return metadata;

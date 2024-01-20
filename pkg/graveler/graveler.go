@@ -346,6 +346,8 @@ const FirstCommitMsg = "Repository created"
 // CommitVersion used to track changes in Commit schema. Each version is change that a constant describes.
 type CommitVersion int
 
+type CommitGeneration int64
+
 const (
 	CommitVersionInitial CommitVersion = iota
 	CommitVersionParentSwitch
@@ -364,7 +366,7 @@ type Commit struct {
 	CreationDate time.Time
 	Parents      CommitParents
 	Metadata     Metadata
-	Generation   int
+	Generation   CommitGeneration
 }
 
 func NewCommit() Commit {
@@ -2018,9 +2020,9 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 				return nil, fmt.Errorf("get commit: %w", err)
 			}
 			branchMetaRangeID = branchCommit.MetaRangeID
-			parentGeneration = branchCommit.Generation
+			parentGeneration = int(branchCommit.Generation)
 		}
-		commit.Generation = parentGeneration + 1
+		commit.Generation = CommitGeneration(parentGeneration + 1)
 		if params.SourceMetaRange != nil {
 			empty, err := g.isSealedEmpty(ctx, repository, branch)
 			if err != nil {
@@ -3128,7 +3130,7 @@ func (g *Graveler) LoadCommits(ctx context.Context, repository *RepositoryRecord
 			CreationDate: commit.GetCreationDate().AsTime(),
 			Parents:      parents,
 			Metadata:     commit.GetMetadata(),
-			Generation:   int(commit.GetGeneration()),
+			Generation:   CommitGeneration(commit.GetGeneration()),
 		})
 		if err != nil {
 			return err

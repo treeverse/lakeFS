@@ -7279,6 +7279,7 @@ components:
       type: object
     Commit:
       example:
+        generation: 6
         metadata:
           key: metadata
         committer: committer
@@ -7286,6 +7287,7 @@ components:
         creation_date: 0
         meta_range_id: meta_range_id
         message: message
+        version: 1
         parents:
         - parents
         - parents
@@ -7310,13 +7312,21 @@ components:
           additionalProperties:
             type: string
           type: object
+        generation:
+          format: int64
+          type: integer
+        version:
+          format: int64
+          type: integer
       required:
       - committer
       - creation_date
+      - generation
       - id
       - message
       - meta_range_id
       - parents
+      - version
       type: object
     CommitList:
       example:
@@ -7326,23 +7336,27 @@ components:
           next_offset: next_offset
           results: 0
         results:
-        - metadata:
+        - generation: 6
+          metadata:
             key: metadata
           committer: committer
           id: id
           creation_date: 0
           meta_range_id: meta_range_id
           message: message
+          version: 1
           parents:
           - parents
           - parents
-        - metadata:
+        - generation: 6
+          metadata:
             key: metadata
           committer: committer
           id: id
           creation_date: 0
           meta_range_id: meta_range_id
           message: message
+          version: 1
           parents:
           - parents
           - parents
@@ -7411,7 +7425,7 @@ components:
           format: int64
           type: integer
         committer:
-          description: commiter of the commit record
+          description: committer of the commit record
           type: string
         message:
           description: message of the commit record
@@ -7446,7 +7460,6 @@ components:
       - creation_date
       - generation
       - message
-      - metadata
       - metarange_id
       - parents
       - version
@@ -8603,6 +8616,7 @@ components:
         metarange_id: metarange_id
         ingested_objects: 0
         commit:
+          generation: 6
           metadata:
             key: metadata
           committer: committer
@@ -8610,6 +8624,7 @@ components:
           creation_date: 0
           meta_range_id: meta_range_id
           message: message
+          version: 1
           parents:
           - parents
           - parents

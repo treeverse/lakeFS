@@ -28,12 +28,12 @@ class CommitRecordCreation(BaseModel):
     """
     commit_id: StrictStr = Field(..., description="id of the commit record")
     version: StrictInt = Field(..., description="version of the commit record")
-    committer: StrictStr = Field(..., description="commiter of the commit record")
+    committer: StrictStr = Field(..., description="committer of the commit record")
     message: StrictStr = Field(..., description="message of the commit record")
     metarange_id: StrictStr = Field(..., description="metarange_id of the commit record")
     creation_date: StrictInt = Field(..., description="Unix Epoch in seconds")
     parents: conlist(StrictStr) = Field(..., description="parents of the commit record")
-    metadata: Dict[str, StrictStr] = Field(..., description="metadata of the commit record")
+    metadata: Optional[Dict[str, StrictStr]] = Field(None, description="metadata of the commit record")
     generation: StrictInt = Field(..., description="generation of the commit record")
     force: Optional[StrictBool] = False
     __properties = ["commit_id", "version", "committer", "message", "metarange_id", "creation_date", "parents", "metadata", "generation", "force"]
