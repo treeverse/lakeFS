@@ -658,10 +658,12 @@ func (c *Catalog) CreateBranch(ctx context.Context, repositoryID string, branch 
 		return nil, err
 	}
 	catalogCommitLog := &CommitLog{
-		Reference: newBranch.CommitID.String(),
-		Committer: commit.Committer,
-		Message:   commit.Message,
-		Metadata:  Metadata(commit.Metadata),
+		Reference:  newBranch.CommitID.String(),
+		Committer:  commit.Committer,
+		Message:    commit.Message,
+		Metadata:   Metadata(commit.Metadata),
+		Version:    CommitVersion(commit.Version),
+		Generation: CommitGeneration(commit.Generation),
 	}
 	for _, parent := range commit.Parents {
 		catalogCommitLog.Parents = append(catalogCommitLog.Parents, string(parent))
@@ -1209,6 +1211,8 @@ func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, com
 	}
 	catalogCommitLog.CreationDate = commit.CreationDate.UTC()
 	catalogCommitLog.MetaRangeID = string(commit.MetaRangeID)
+	catalogCommitLog.Version = CommitVersion(commit.Version)
+	catalogCommitLog.Generation = CommitGeneration(commit.Generation)
 	return catalogCommitLog, nil
 }
 
@@ -1483,6 +1487,8 @@ func CommitRecordToLog(val *graveler.CommitRecord) *CommitLog {
 		Metadata:     map[string]string(val.Metadata),
 		MetaRangeID:  string(val.MetaRangeID),
 		Parents:      make([]string, 0, len(val.Parents)),
+		Version:      CommitVersion(val.Version),
+		Generation:   CommitGeneration(val.Generation),
 	}
 	for _, parent := range val.Parents {
 		commit.Parents = append(commit.Parents, parent.String())
@@ -1690,6 +1696,8 @@ func (c *Catalog) CherryPick(ctx context.Context, repositoryID string, branch st
 		CreationDate: commit.CreationDate.UTC(),
 		MetaRangeID:  string(commit.MetaRangeID),
 		Metadata:     Metadata(commit.Metadata),
+		Version:      CommitVersion(commit.Version),
+		Generation:   CommitGeneration(commit.Generation),
 	}
 	for _, parent := range commit.Parents {
 		catalogCommitLog.Parents = append(catalogCommitLog.Parents, parent.String())

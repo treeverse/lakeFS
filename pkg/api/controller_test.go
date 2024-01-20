@@ -753,7 +753,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		if reference1 != commit1.Reference {
-			t.Fatalf("Commit reference %s, not equals to branch reference %s", *commit1, reference1)
+			t.Fatalf("Commit reference %v, not equals to branch reference %s", commit1, reference1)
 		}
 		resp, err := clt.GetCommitWithResponse(ctx, "foo1", commit1.Reference)
 		verifyResponseOK(t, resp, err)
@@ -777,7 +777,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		if reference1 != commit1.Reference {
-			t.Fatalf("Commit reference %s, not equals to branch reference %s", commit1, reference1)
+			t.Fatalf("Commit reference %v, not equals to branch reference %s", commit1, reference1)
 		}
 		resp, err := clt.GetCommitWithResponse(ctx, repo, "main")
 		verifyResponseOK(t, resp, err)
@@ -5421,7 +5421,7 @@ func TestController_CreateCommitRecord(t *testing.T) {
 		CreationDate: 0,
 		Generation:   1,
 		Message:      "message",
-		Metadata:     &apigen.CommitRecordCreation_Metadata{AdditionalProperties: map[string]string{"key": "value2"}},
+		Metadata:     &apigen.CommitRecordCreation_Metadata{AdditionalProperties: map[string]string{"key": "value"}},
 		MetarangeId:  "metarangeId",
 		Parents:      []string{"parent1", "parent2"},
 		Version:      2,
@@ -5438,26 +5438,21 @@ func TestController_CreateCommitRecord(t *testing.T) {
 		}
 		commitLog, err := deps.catalog.GetCommit(ctx, repo, expectedCommitID)
 		testutil.MustDo(t, "get commit", err)
-		if commitLog.Committer != body.Committer {
-			t.Fatalf("Expected Committer %s, got %s", body.Committer, commitLog.Committer)
+		expectedCommitLog := &catalog.CommitLog{
+			Reference:    expectedCommitID,
+			Committer:    body.Committer,
+			Message:      body.Message,
+			CreationDate: time.Unix(0, body.CreationDate).UTC(),
+			Metadata:     body.Metadata.AdditionalProperties,
+			MetaRangeID:  body.MetarangeId,
+			Parents:      body.Parents,
+			Generation:   catalog.CommitGeneration(body.Generation),
+			Version:      catalog.CommitVersion(body.Version),
 		}
-		if commitLog.CreationDate.Unix() != body.CreationDate {
-			t.Fatalf("Expected CreationDate %d, got %d", body.CreationDate, commitLog.CreationDate.Unix())
+		if diff := deep.Equal(commitLog, expectedCommitLog); diff != nil {
+			t.Fatalf("Diff: %v", diff)
 		}
-		if commitLog.Message != body.Message {
-			t.Fatalf("Expected Message %s, got %s", body.Message, commitLog.Message)
-		}
-		if commitLog.MetaRangeID != body.MetarangeId {
-			t.Fatalf("Expected MetarangeId %s, got %s", body.MetarangeId, commitLog.MetaRangeID)
-		}
-		if len(commitLog.Parents) != len(body.Parents) {
-			t.Fatalf("Expected %d Parents, got %d", len(body.Parents), len(commitLog.Parents))
-		}
-		for i, parent := range commitLog.Parents {
-			if parent != body.Parents[i] {
-				t.Fatalf("Expected Parent %s, got %s", body.Parents[i], parent)
-			}
-		}
+
 	})
 
 	t.Run("create commit record with wrong commitID", func(t *testing.T) {
