@@ -67,7 +67,7 @@ public class Commit {
 
   public static final String SERIALIZED_NAME_VERSION = "version";
   @SerializedName(SERIALIZED_NAME_VERSION)
-  private Long version;
+  private Integer version;
 
 
   public Commit id(String id) {
@@ -267,7 +267,7 @@ public class Commit {
   }
 
 
-  public Commit version(Long version) {
+  public Commit version(Integer version) {
     
     this.version = version;
     return this;
@@ -275,17 +275,19 @@ public class Commit {
 
    /**
    * Get version
+   * minimum: 0
+   * maximum: 1
    * @return version
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
 
-  public Long getVersion() {
+  public Integer getVersion() {
     return version;
   }
 
 
-  public void setVersion(Long version) {
+  public void setVersion(Integer version) {
     this.version = version;
   }
 

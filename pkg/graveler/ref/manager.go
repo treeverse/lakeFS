@@ -578,7 +578,7 @@ func (m *Manager) CreateCommitRecord(ctx context.Context, repository *graveler.R
 	commitKey := graveler.CommitPath(commitID)
 	err := kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(commitKey), c, nil)
 	if errors.Is(err, kv.ErrPredicateFailed) {
-		logging.FromContext(ctx).WithField("ID", commitID).Info("Same commit already exists, ignore ")
+		logging.FromContext(ctx).WithField("ID", commitID).Info("Same commit already exists, ignore")
 	} else if err != nil {
 		return err
 	}

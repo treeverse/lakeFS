@@ -7261,7 +7261,7 @@ components:
         creation_date: 0
         meta_range_id: meta_range_id
         message: message
-        version: 1
+        version: 0
         parents:
         - parents
         - parents
@@ -7290,7 +7290,8 @@ components:
           format: int64
           type: integer
         version:
-          format: int64
+          maximum: 1
+          minimum: 0
           type: integer
       required:
       - committer
@@ -7318,7 +7319,7 @@ components:
           creation_date: 0
           meta_range_id: meta_range_id
           message: message
-          version: 1
+          version: 0
           parents:
           - parents
           - parents
@@ -7330,7 +7331,7 @@ components:
           creation_date: 0
           meta_range_id: meta_range_id
           message: message
-          version: 1
+          version: 0
           parents:
           - parents
           - parents
@@ -7396,7 +7397,8 @@ components:
           type: string
         version:
           description: version of the commit record
-          format: int64
+          maximum: 1
+          minimum: 0
           type: integer
         committer:
           description: committer of the commit record
@@ -8598,7 +8600,7 @@ components:
           creation_date: 0
           meta_range_id: meta_range_id
           message: message
-          version: 1
+          version: 0
           parents:
           - parents
           - parents

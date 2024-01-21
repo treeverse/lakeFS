@@ -39,7 +39,7 @@ public class CommitRecordCreation {
 
   public static final String SERIALIZED_NAME_VERSION = "version";
   @SerializedName(SERIALIZED_NAME_VERSION)
-  private Long version;
+  private Integer version;
 
   public static final String SERIALIZED_NAME_COMMITTER = "committer";
   @SerializedName(SERIALIZED_NAME_COMMITTER)
@@ -97,7 +97,7 @@ public class CommitRecordCreation {
   }
 
 
-  public CommitRecordCreation version(Long version) {
+  public CommitRecordCreation version(Integer version) {
     
     this.version = version;
     return this;
@@ -105,17 +105,19 @@ public class CommitRecordCreation {
 
    /**
    * version of the commit record
+   * minimum: 0
+   * maximum: 1
    * @return version
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "version of the commit record")
 
-  public Long getVersion() {
+  public Integer getVersion() {
     return version;
   }
 
 
-  public void setVersion(Long version) {
+  public void setVersion(Integer version) {
     this.version = version;
   }
 

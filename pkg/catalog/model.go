@@ -14,7 +14,7 @@ const (
 )
 
 type Metadata map[string]string
-type CommitVersion int64
+type CommitVersion int
 type CommitGeneration int64
 
 type Repository struct {

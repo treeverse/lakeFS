@@ -206,7 +206,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     repository = "repository_example" # str | 
     commit_record_creation = CommitRecordCreation(
         commit_id="commit_id_example",
-        version=1,
+        version=0,
         committer="committer_example",
         message="message_example",
         metarange_id="metarange_id_example",

@@ -2782,7 +2782,7 @@ func importStatusToResponse(status *graveler.ImportStatus) apigen.ImportStatus {
 			MetaRangeId:  commitLog.MetaRangeID,
 			Metadata:     &apigen.Commit_Metadata{AdditionalProperties: commitLog.Metadata},
 			Parents:      commitLog.Parents,
-			Version:      int64(commitLog.Version),
+			Version:      int(commitLog.Version),
 			Generation:   int64(commitLog.Generation),
 		}
 	}
@@ -2889,7 +2889,7 @@ func commitResponse(w http.ResponseWriter, r *http.Request, newCommit *catalog.C
 		MetaRangeId:  newCommit.MetaRangeID,
 		Metadata:     &apigen.Commit_Metadata{AdditionalProperties: newCommit.Metadata},
 		Parents:      newCommit.Parents,
-		Version:      int64(newCommit.Version),
+		Version:      int(newCommit.Version),
 		Generation:   int64(newCommit.Generation),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
@@ -3386,7 +3386,7 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 		Metadata:     &apigen.Commit_Metadata{AdditionalProperties: commit.Metadata},
 		Parents:      commit.Parents,
 		Generation:   int64(commit.Generation),
-		Version:      int64(commit.Version),
+		Version:      int(commit.Version),
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -4100,7 +4100,7 @@ func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, reposito
 			MetaRangeId:  commit.MetaRangeID,
 			Parents:      commit.Parents,
 			Generation:   int64(commit.Generation),
-			Version:      int64(commit.Version),
+			Version:      int(commit.Version),
 		})
 	}
 

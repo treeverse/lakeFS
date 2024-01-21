@@ -56,7 +56,7 @@ class TestImportStatus(unittest.TestCase):
                         'key' : ''
                         }, 
                     generation = 56, 
-                    version = 56, ), 
+                    version = 0, ), 
                 error = lakefs_sdk.models.error.Error(
                     message = '', )
             )

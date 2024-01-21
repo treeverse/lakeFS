@@ -20,14 +20,14 @@ import json
 
 
 from typing import Dict, List, Optional
-from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr, conlist
+from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr, conint, conlist
 
 class CommitRecordCreation(BaseModel):
     """
     CommitRecordCreation
     """
     commit_id: StrictStr = Field(..., description="id of the commit record")
-    version: StrictInt = Field(..., description="version of the commit record")
+    version: conint(strict=True, le=1, ge=0) = Field(..., description="version of the commit record")
     committer: StrictStr = Field(..., description="committer of the commit record")
     message: StrictStr = Field(..., description="message of the commit record")
     metarange_id: StrictStr = Field(..., description="metarange_id of the commit record")

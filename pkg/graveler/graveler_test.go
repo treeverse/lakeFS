@@ -2284,7 +2284,7 @@ func TestGravelerCreateCommitRecord(t *testing.T) {
 			Parents:      []graveler.CommitID{"parent1", "parent2"},
 			Metadata:     graveler.Metadata{"key": "value"},
 			CreationDate: time.Now(),
-			Version:      graveler.CommitVersion(2),
+			Version:      graveler.CurrentCommitVersion,
 			Generation:   1,
 		}
 		test.RefManager.EXPECT().CreateCommitRecord(ctx, repository, graveler.CommitID("commitID"), commit).Return(nil)

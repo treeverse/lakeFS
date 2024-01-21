@@ -59,6 +59,10 @@ class Commit(ModelNormal):
     }
 
     validations = {
+        ('version',): {
+            'inclusive_maximum': 1,
+            'inclusive_minimum': 0,
+        },
     }
 
     @cached_property

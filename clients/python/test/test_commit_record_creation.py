@@ -40,7 +40,7 @@ class TestCommitRecordCreation(unittest.TestCase):
         if include_optional :
             return CommitRecordCreation(
                 commit_id = '', 
-                version = 56, 
+                version = 0, 
                 committer = '', 
                 message = '', 
                 metarange_id = '', 
@@ -57,7 +57,7 @@ class TestCommitRecordCreation(unittest.TestCase):
         else :
             return CommitRecordCreation(
                 commit_id = '',
-                version = 56,
+                version = 0,
                 committer = '',
                 message = '',
                 metarange_id = '',

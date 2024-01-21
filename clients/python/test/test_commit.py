@@ -51,7 +51,7 @@ class TestCommit(unittest.TestCase):
                     'key' : ''
                     }, 
                 generation = 56, 
-                version = 56
+                version = 0
             )
         else :
             return Commit(
@@ -64,7 +64,7 @@ class TestCommit(unittest.TestCase):
                 creation_date = 56,
                 meta_range_id = '',
                 generation = 56,
-                version = 56,
+                version = 0,
         )
         """
 

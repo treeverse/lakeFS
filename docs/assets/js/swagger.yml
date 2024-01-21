@@ -580,7 +580,8 @@ components:
           format: int64
         version:
           type: integer
-          format: int64
+          minimum: 0
+          maximum: 1
 
     CommitList:
       type: object
@@ -635,7 +636,8 @@ components:
           description: id of the commit record
         version:
           type: integer
-          format: int64
+          minimum: 0
+          maximum: 1
           description: version of the commit record
         committer:
           type: string

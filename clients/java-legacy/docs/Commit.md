@@ -15,7 +15,7 @@ Name | Type | Description | Notes
 **metaRangeId** | **String** |  | 
 **metadata** | **Map&lt;String, String&gt;** |  |  [optional]
 **generation** | **Long** |  | 
-**version** | **Long** |  | 
+**version** | **Integer** |  | 
 
 
 

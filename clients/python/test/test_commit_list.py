@@ -58,7 +58,7 @@ class TestCommitList(unittest.TestCase):
                             'key' : ''
                             }, 
                         generation = 56, 
-                        version = 56, )
+                        version = 0, )
                     ]
             )
         else :
@@ -82,7 +82,7 @@ class TestCommitList(unittest.TestCase):
                             'key' : ''
                             }, 
                         generation = 56, 
-                        version = 56, )
+                        version = 0, )
                     ],
         )
         """
