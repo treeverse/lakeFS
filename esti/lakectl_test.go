@@ -790,3 +790,18 @@ func TestLakectlBisect(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, r.Replace("{lakectl} bisect reset"), false,
 		"lakectl_bisect_reset", vars)
 }
+
+func TestLakectlUsage(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+
+	r := strings.NewReplacer("{lakectl}", Lakectl(), "{repo}", repoName, "{storage}", storage, "{branch}", "main")
+	runCmd(t, r.Replace("{lakectl} repo create lakefs://{repo} {storage}"), false, false, nil)
+	runCmd(t, r.Replace("{lakectl} repo list"), false, false, nil)
+	RunCmdAndVerifyFailureWithFile(t, r.Replace("{lakectl} usage summary"), false, "lakectl_usage_summary", vars)
+}
