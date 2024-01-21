@@ -33,6 +33,10 @@ public class Group {
   @SerializedName(SERIALIZED_NAME_ID)
   private String id;
 
+  public static final String SERIALIZED_NAME_NAME = "name";
+  @SerializedName(SERIALIZED_NAME_NAME)
+  private String name;
+
   public static final String SERIALIZED_NAME_CREATION_DATE = "creation_date";
   @SerializedName(SERIALIZED_NAME_CREATION_DATE)
   private Long creationDate;
@@ -58,6 +62,29 @@ public class Group {
 
   public void setId(String id) {
     this.id = id;
+  }
+
+
+  public Group name(String name) {
+    
+    this.name = name;
+    return this;
+  }
+
+   /**
+   * Get name
+   * @return name
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public String getName() {
+    return name;
+  }
+
+
+  public void setName(String name) {
+    this.name = name;
   }
 
 
@@ -94,12 +121,13 @@ public class Group {
     }
     Group group = (Group) o;
     return Objects.equals(this.id, group.id) &&
+        Objects.equals(this.name, group.name) &&
         Objects.equals(this.creationDate, group.creationDate);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, creationDate);
+    return Objects.hash(id, name, creationDate);
   }
 
   @Override
@@ -107,6 +135,7 @@ public class Group {
     StringBuilder sb = new StringBuilder();
     sb.append("class Group {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    creationDate: ").append(toIndentedString(creationDate)).append("\n");
     sb.append("}");
     return sb.toString();

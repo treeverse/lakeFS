@@ -235,6 +235,8 @@ components:
         - creation_date
         - name
       properties:
+        id:
+          type: string
         name:
           type: string
         creation_date:

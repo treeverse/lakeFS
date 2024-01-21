@@ -22,7 +22,7 @@ const (
 
 func createGroups(ctx context.Context, authService auth.Service, groups []*model.Group) error {
 	for _, group := range groups {
-		err := authService.CreateGroup(ctx, group)
+		_, err := authService.CreateGroup(ctx, group)
 		if err != nil {
 			return err
 		}
@@ -151,28 +151,28 @@ func CreateRBACBaseGroups(ctx context.Context, authService auth.Service, ts time
 }
 
 func CreateACLBaseGroups(ctx context.Context, authService auth.Service, ts time.Time) error {
-	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.AdminsGroup}); err != nil {
+	if _, err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.AdminsGroup}); err != nil {
 		return fmt.Errorf("setup: create base ACL group %s: %w", acl.AdminsGroup, err)
 	}
 	if err := acl.WriteGroupACL(ctx, authService, acl.AdminsGroup, model.ACL{Permission: acl.AdminPermission}, ts, false); err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
 
-	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.SupersGroup}); err != nil {
+	if _, err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.SupersGroup}); err != nil {
 		return fmt.Errorf("setup: create base ACL group %s: %w", acl.SupersGroup, err)
 	}
 	if err := acl.WriteGroupACL(ctx, authService, acl.SupersGroup, model.ACL{Permission: acl.SuperPermission}, ts, false); err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
 
-	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.WritersGroup}); err != nil {
+	if _, err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.WritersGroup}); err != nil {
 		return fmt.Errorf("setup: create base ACL group %s: %w", acl.WritersGroup, err)
 	}
 	if err := acl.WriteGroupACL(ctx, authService, acl.WritersGroup, model.ACL{Permission: acl.WritePermission}, ts, false); err != nil {
 		return fmt.Errorf("setup: %w", err)
 	}
 
-	if err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.ReadersGroup}); err != nil {
+	if _, err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.ReadersGroup}); err != nil {
 		return fmt.Errorf("create base ACL group %s: %w", acl.ReadersGroup, err)
 	}
 	if err := acl.WriteGroupACL(ctx, authService, acl.ReadersGroup, model.ACL{Permission: acl.ReadPermission}, ts, false); err != nil {

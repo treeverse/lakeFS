@@ -140,6 +140,7 @@ func ConvertDBID(id int64) string {
 }
 
 type Group struct {
+	ID          string    `db:"id"`
 	CreatedAt   time.Time `db:"created_at"`
 	DisplayName string    `db:"display_name" json:"display_name"`
 }
@@ -263,6 +264,7 @@ func GroupFromProto(pb *GroupData) *Group {
 	return &Group{
 		CreatedAt:   pb.CreatedAt.AsTime(),
 		DisplayName: pb.DisplayName,
+		ID:          pb.DisplayName,
 	}
 }
 

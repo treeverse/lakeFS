@@ -6,6 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** |  | 
+**name** | **str** |  | [optional] 
 **creation_date** | **int** | Unix Epoch in seconds | 
 
 ## Example

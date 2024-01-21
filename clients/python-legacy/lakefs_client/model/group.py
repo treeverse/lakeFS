@@ -84,6 +84,7 @@ class Group(ModelNormal):
         return {
             'id': (str,),  # noqa: E501
             'creation_date': (int,),  # noqa: E501
+            'name': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -94,6 +95,7 @@ class Group(ModelNormal):
     attribute_map = {
         'id': 'id',  # noqa: E501
         'creation_date': 'creation_date',  # noqa: E501
+        'name': 'name',  # noqa: E501
     }
 
     read_only_vars = {
@@ -141,6 +143,7 @@ class Group(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            name (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -228,6 +231,7 @@ class Group(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            name (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

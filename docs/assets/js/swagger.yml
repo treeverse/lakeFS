@@ -979,6 +979,8 @@ components:
       properties:
         id:
           type: string
+        name:
+          type: string
         creation_date:
           type: integer
           format: int64
