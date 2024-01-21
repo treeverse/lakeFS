@@ -1,5 +1,16 @@
 # Changelog
 
+# v1.9.0
+
+:new: What's new:
+
+- lakectl: download single file using presign now support multipart (#7284)
+- API: separate group id and display name (#7292)
+
+**Note:** the separation of group IDs from displayNames isn't a breaking change.
+However, if using older generated clients with the latest lakeFS version,
+IDs will be displayed instead of the human-readable displayNames when using an external authentication API.
+
 # v1.8.0
 
 :new: What's new:
