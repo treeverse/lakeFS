@@ -14,6 +14,8 @@ const (
 )
 
 type Metadata map[string]string
+type CommitVersion int
+type CommitGeneration int64
 
 type Repository struct {
 	Name             string
@@ -44,6 +46,8 @@ type CommitLog struct {
 	Metadata     Metadata
 	MetaRangeID  string
 	Parents      []string
+	Generation   CommitGeneration
+	Version      CommitVersion
 }
 
 type Branch struct {

@@ -346,6 +346,8 @@ const FirstCommitMsg = "Repository created"
 // CommitVersion used to track changes in Commit schema. Each version is change that a constant describes.
 type CommitVersion int
 
+type CommitGeneration int64
+
 const (
 	CommitVersionInitial CommitVersion = iota
 	CommitVersionParentSwitch
@@ -364,7 +366,7 @@ type Commit struct {
 	CreationDate time.Time
 	Parents      CommitParents
 	Metadata     Metadata
-	Generation   int
+	Generation   CommitGeneration
 }
 
 func NewCommit() Commit {
@@ -543,6 +545,9 @@ type VersionController interface {
 	// Commit the staged data and returns a commit ID that references that change
 	//   ErrNothingToCommit in case there is no data in stage
 	Commit(ctx context.Context, repository *RepositoryRecord, branchID BranchID, commitParams CommitParams, opts ...SetOptionsFunc) (CommitID, error)
+
+	// CreateCommitRecord creates a commit record in the repository.
+	CreateCommitRecord(ctx context.Context, repository *RepositoryRecord, commitID CommitID, commit Commit, opts ...SetOptionsFunc) error
 
 	// WriteMetaRangeByIterator accepts a ValueIterator and writes the entire iterator to a new MetaRange
 	// and returns the result ID.
@@ -846,6 +851,9 @@ type RefManager interface {
 
 	// AddCommit stores the Commit object, returning its ID
 	AddCommit(ctx context.Context, repository *RepositoryRecord, commit Commit) (CommitID, error)
+
+	// CreateCommitRecord stores the Commit object
+	CreateCommitRecord(ctx context.Context, repository *RepositoryRecord, commitID CommitID, commit Commit) error
 
 	// RemoveCommit deletes commit from store - used for repository cleanup
 	RemoveCommit(ctx context.Context, repository *RepositoryRecord, commitID CommitID) error
@@ -2012,9 +2020,9 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 				return nil, fmt.Errorf("get commit: %w", err)
 			}
 			branchMetaRangeID = branchCommit.MetaRangeID
-			parentGeneration = branchCommit.Generation
+			parentGeneration = int(branchCommit.Generation)
 		}
-		commit.Generation = parentGeneration + 1
+		commit.Generation = CommitGeneration(parentGeneration + 1)
 		if params.SourceMetaRange != nil {
 			empty, err := g.isSealedEmpty(ctx, repository, branch)
 			if err != nil {
@@ -2073,6 +2081,18 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 			Error("Post-commit hook failed")
 	}
 	return newCommitID, nil
+}
+
+func (g *Graveler) CreateCommitRecord(ctx context.Context, repository *RepositoryRecord, commitID CommitID, commit Commit, opts ...SetOptionsFunc) error {
+	options := &SetOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	if repository.ReadOnly && !options.Force {
+		return ErrReadOnlyRepository
+	}
+
+	return g.RefManager.CreateCommitRecord(ctx, repository, commitID, commit)
 }
 
 // retryBranchUpdate repeatedly attempts to BranchUpdate branchID of
@@ -3110,7 +3130,7 @@ func (g *Graveler) LoadCommits(ctx context.Context, repository *RepositoryRecord
 			CreationDate: commit.GetCreationDate().AsTime(),
 			Parents:      parents,
 			Metadata:     commit.GetMetadata(),
-			Generation:   int(commit.GetGeneration()),
+			Generation:   CommitGeneration(commit.GetGeneration()),
 		})
 		if err != nil {
 			return err

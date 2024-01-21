@@ -97,4 +97,20 @@ public class CommitTest {
         // TODO: test metadata
     }
 
+    /**
+     * Test the property 'generation'
+     */
+    @Test
+    public void generationTest() {
+        // TODO: test generation
+    }
+
+    /**
+     * Test the property 'version'
+     */
+    @Test
+    public void versionTest() {
+        // TODO: test version
+    }
+
 }

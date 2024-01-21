@@ -31,7 +31,7 @@ def test_reference_log(monkeypatch):
             results.append(lakefs_sdk.Commit(
                 id=str(index),
                 parents=[""],
-                committer="Commiter-" + str(index),
+                committer="Committer-" + str(index),
                 message="Message-" + str(index),
                 creation_date=index,
                 meta_range_id="",

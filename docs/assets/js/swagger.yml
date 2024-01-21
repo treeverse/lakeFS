@@ -552,6 +552,8 @@ components:
         - message
         - creation_date
         - meta_range_id
+        - generation
+        - version
       properties:
         id:
           type: string
@@ -573,6 +575,13 @@ components:
           type: object
           additionalProperties:
             type: string
+        generation:
+          type: integer
+          format: int64
+        version:
+          type: integer
+          minimum: 0
+          maximum: 1
 
     CommitList:
       type: object
@@ -606,6 +615,57 @@ components:
           description: sets whether a commit can contain no changes
           type: boolean
           default: false
+        force:
+          type: boolean
+          default: false
+
+    CommitRecordCreation:
+      type: object
+      required:
+        - commit_id
+        - version
+        - committer
+        - message
+        - metarange_id
+        - creation_date
+        - parents
+        - generation
+      properties:
+        commit_id:
+          type: string
+          description: id of the commit record
+        version:
+          type: integer
+          minimum: 0
+          maximum: 1
+          description: version of the commit record
+        committer:
+          type: string
+          description: committer of the commit record
+        message:
+          type: string
+          description: message of the commit record
+        metarange_id:
+          type: string
+          description: metarange_id of the commit record
+        creation_date:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
+        parents:
+          type: array
+          items:
+            type: string
+          description: parents of the commit record
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          description: metadata of the commit record
+        generation:
+          type: integer
+          format: int64
+          description: generation of the commit record
         force:
           type: boolean
           default: false
@@ -702,7 +762,7 @@ components:
           type: string
           format: date-time
         error:
-          type: string   
+          type: string
 
     RefsDump:
       type: object
@@ -867,9 +927,9 @@ components:
           description: URL to use for logging out.
           type: string
       required:
-      - login_url
-      - login_cookie_names
-      - logout_url
+        - login_url
+        - login_cookie_names
+        - logout_url
 
     SetupState:
       type: object
@@ -3388,6 +3448,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/commits:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - internal
+      operationId: CreateCommitRecord
+      summary: create commit record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitRecordCreation"
+      responses:
+        204:
+          description: commit record created
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
         default:

@@ -20,7 +20,7 @@ import json
 
 
 from typing import Dict, List, Optional
-from pydantic import BaseModel, Field, StrictInt, StrictStr, conlist
+from pydantic import BaseModel, Field, StrictInt, StrictStr, conint, conlist
 
 class Commit(BaseModel):
     """
@@ -33,7 +33,9 @@ class Commit(BaseModel):
     creation_date: StrictInt = Field(..., description="Unix Epoch in seconds")
     meta_range_id: StrictStr = Field(...)
     metadata: Optional[Dict[str, StrictStr]] = None
-    __properties = ["id", "parents", "committer", "message", "creation_date", "meta_range_id", "metadata"]
+    generation: StrictInt = Field(...)
+    version: conint(strict=True, le=1, ge=0) = Field(...)
+    __properties = ["id", "parents", "committer", "message", "creation_date", "meta_range_id", "metadata", "generation", "version"]
 
     class Config:
         """Pydantic configuration"""
@@ -77,7 +79,9 @@ class Commit(BaseModel):
             "message": obj.get("message"),
             "creation_date": obj.get("creation_date"),
             "meta_range_id": obj.get("meta_range_id"),
-            "metadata": obj.get("metadata")
+            "metadata": obj.get("metadata"),
+            "generation": obj.get("generation"),
+            "version": obj.get("version")
         })
         return _obj
 

@@ -17,6 +17,7 @@ import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.clients.sdk.model.AuthCapabilities;
 import io.lakefs.clients.sdk.model.BranchProtectionRule;
 import io.lakefs.clients.sdk.model.CommPrefsInput;
+import io.lakefs.clients.sdk.model.CommitRecordCreation;
 import io.lakefs.clients.sdk.model.CredentialsWithSecret;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.GarbageCollectionConfig;
@@ -61,6 +62,20 @@ public class InternalApiTest {
     public void createBranchProtectionRulePreflightTest() throws ApiException {
         String repository = null;
         api.createBranchProtectionRulePreflight(repository)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * create commit record
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void createCommitRecordTest() throws ApiException {
+        String repository = null;
+        CommitRecordCreation commitRecordCreation = null;
+        api.createCommitRecord(repository, commitRecordCreation)
                 .execute();
         // TODO: test validations
     }
