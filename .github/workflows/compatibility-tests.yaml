@@ -40,13 +40,13 @@ jobs:
           make -j3 gen-api VERSION=${{ steps.version.outputs.tag }}
           mkdir webui/dist
           touch webui/dist/index.html
-          tar -cf /tmp/generated.tar.gz .
+          tar -cf /tmp/generated-no-ui.tar.gz ./webui/dist ./pkg/auth/client.gen.go ./pkg/permissions/actions.gen.go ./pkg/api/apigen/lakefs.gen.go
 
       - name: Store generated code
         uses: actions/upload-artifact@v3
         with:
-            name: generated-code
-            path: /tmp/generated.tar.gz
+            name: generated-code-no-ui
+            path: /tmp/generated-no-ui.tar.gz
 
       - name: Build Spark direct-access client
         working-directory: clients/hadoopfs
@@ -84,11 +84,11 @@ jobs:
       - name: Retrieve generated code
         uses: actions/download-artifact@v3
         with:
-          name: generated-code
+          name: generated-code-no-ui
           path: /tmp/
 
       - name: Unpack generated code
-        run: tar -xf /tmp/generated.tar.gz
+        run: tar -xf /tmp/generated-no-ui.tar.gz
 
       - name: Extract version
         shell: bash
