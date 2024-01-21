@@ -1,4 +1,4 @@
-import React, {FC, useMemo, useState, ReactNode, MouseEventHandler, useContext} from "react";
+import React, {FC, useMemo, useState, ReactNode, MouseEventHandler, useContext, PropsWithChildren} from "react";
 
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
@@ -21,10 +21,10 @@ interface ConfirmationButtonProps {
     msg: ReactNode;
     onConfirm: (hide: () => void) => void;
     variant: ButtonVariant;
-    modalVariant: ButtonVariant;
-    size: 'sm' | 'lg';
+    modalVariant?: ButtonVariant;
+    size?: 'sm' | 'lg';
     disabled?: boolean;
-    tooltip: ReactNode;
+    tooltip?: ReactNode;
     children: ReactNode;
 }
 
@@ -83,7 +83,7 @@ export const ConfirmationButtonWithContext: FC<ConfirmationButtonWithContextProp
 }
 
 
-export const ConfirmationButton: FC<ConfirmationButtonProps> = ({ msg, onConfirm, variant, modalVariant, size, disabled = false, tooltip = null, children }) => {
+export const ConfirmationButton: FC<ConfirmationButtonProps> = ({ msg, onConfirm, variant, modalVariant = "danger", size, disabled = false, tooltip = null, children }) => {
     const [show, setShow] = useState(false);
     let btn = <Button variant={variant} size={size} disabled={disabled} onClick={() => setShow(true)}>{children}</Button>;
     if (tooltip !== null) {
@@ -112,7 +112,14 @@ export const ConfirmationButton: FC<ConfirmationButtonProps> = ({ msg, onConfirm
     );
 };
 
-const SimpleModal =  ({children, show = false, heading, onCancel, footer=null}) => {
+interface SimpleModalProps extends PropsWithChildren {
+    show: boolean;
+    heading: string;
+    onCancel: () => void;
+    footer?: ReactNode;
+}
+
+const SimpleModal: FC<SimpleModalProps> =  ({children, show = false, heading, onCancel, footer=null}) => {
     return (
         <Modal show={show} onHide={onCancel}
                size="lg"

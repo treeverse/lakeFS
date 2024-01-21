@@ -13,7 +13,7 @@ const isEmptyString = (str) => (!str?.length);
 
 
 export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
-                          emptyState = 'No matches', modalTitle = 'Add',
+                          emptyState = 'No matches', modalTitle = 'Add', headers = ['Select', 'ID'],
                      filterPlaceholder = 'Filter...'}) => {
     const search = useRef(null);
     const [searchPrefix, setSearchPrefix] = useState("");
@@ -34,7 +34,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
     else content = (
             <>
                 <DataTable
-                    headers={['Select', 'ID']}
+                    headers={headers}
                     keyFn={ent => ent.id}
                     emptyState={emptyState}
                     results={response}

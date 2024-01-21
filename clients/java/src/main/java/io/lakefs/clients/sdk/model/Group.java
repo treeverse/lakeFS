@@ -56,6 +56,10 @@ public class Group {
   @SerializedName(SERIALIZED_NAME_ID)
   private String id;
 
+  public static final String SERIALIZED_NAME_NAME = "name";
+  @SerializedName(SERIALIZED_NAME_NAME)
+  private String name;
+
   public static final String SERIALIZED_NAME_CREATION_DATE = "creation_date";
   @SerializedName(SERIALIZED_NAME_CREATION_DATE)
   private Long creationDate;
@@ -81,6 +85,27 @@ public class Group {
 
   public void setId(String id) {
     this.id = id;
+  }
+
+
+  public Group name(String name) {
+    
+    this.name = name;
+    return this;
+  }
+
+   /**
+   * Get name
+   * @return name
+  **/
+  @javax.annotation.Nullable
+  public String getName() {
+    return name;
+  }
+
+
+  public void setName(String name) {
+    this.name = name;
   }
 
 
@@ -160,13 +185,14 @@ public class Group {
     }
     Group group = (Group) o;
     return Objects.equals(this.id, group.id) &&
+        Objects.equals(this.name, group.name) &&
         Objects.equals(this.creationDate, group.creationDate)&&
         Objects.equals(this.additionalProperties, group.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, creationDate, additionalProperties);
+    return Objects.hash(id, name, creationDate, additionalProperties);
   }
 
   @Override
@@ -174,6 +200,7 @@ public class Group {
     StringBuilder sb = new StringBuilder();
     sb.append("class Group {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
+    sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    creationDate: ").append(toIndentedString(creationDate)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
@@ -199,6 +226,7 @@ public class Group {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
     openapiFields.add("id");
+    openapiFields.add("name");
     openapiFields.add("creation_date");
 
     // a set of required properties/fields (JSON key names)
@@ -229,6 +257,9 @@ public class Group {
         JsonObject jsonObj = jsonElement.getAsJsonObject();
       if (!jsonObj.get("id").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
+      }
+      if ((jsonObj.get("name") != null && !jsonObj.get("name").isJsonNull()) && !jsonObj.get("name").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("name").toString()));
       }
   }
 

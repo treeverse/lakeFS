@@ -46,6 +46,14 @@ public class GroupTest {
     }
 
     /**
+     * Test the property 'name'
+     */
+    @Test
+    public void nameTest() {
+        // TODO: test name
+    }
+
+    /**
      * Test the property 'creationDate'
      */
     @Test

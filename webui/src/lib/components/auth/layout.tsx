@@ -8,12 +8,15 @@ import Card from "react-bootstrap/Card";
 
 import {Link} from "../nav";
 import {useLoginConfigContext} from "../../hooks/conf";
+import {useLayoutOutletContext} from "../layout";
+
+type AuthOutletContext = [(tab: string) => void];
 
 
 export const AuthLayout = () => {
     const [activeTab, setActiveTab] = useState("credentials");
     const {RBAC: rbac} = useLoginConfigContext();
-    const [setIsLogged] = useOutletContext();
+    const [setIsLogged] = useLayoutOutletContext();
     useEffect(() => {
         setIsLogged(true);
     }, [setIsLogged]);
@@ -52,10 +55,13 @@ export const AuthLayout = () => {
 
                 </Col>
                 <Col md={{span: 9}}>
-                    <Outlet context={[setActiveTab]} />
+                    <Outlet context={[setActiveTab] satisfies AuthOutletContext} />
                 </Col>
             </Row>
         </Container>
     );
 };
 
+export function useAuthOutletContext() {
+    return useOutletContext<AuthOutletContext>();
+}

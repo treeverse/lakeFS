@@ -1,5 +1,4 @@
 import React, {useEffect, useState} from "react";
-import { useOutletContext } from "react-router-dom";
 import Button from "react-bootstrap/Button";
 import Dropdown from "react-bootstrap/Dropdown";
 
@@ -22,9 +21,19 @@ import {Link} from "../../../lib/components/nav";
 import {EntityActionModal} from "../../../lib/components/auth/forms";
 import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from "../validation";
 import {useLoginConfigContext} from "../../../lib/hooks/conf";
+import {useAuthOutletContext} from "../../../lib/components/auth/layout";
+
+interface PermissionTypes {
+    Read: string;
+    Write: string;
+    Super: string;
+    Admin: string;
+}
+
+type PermissionType = keyof PermissionTypes;
 
 
-const permissions = {
+const permissions: PermissionTypes = {
     'Read': 'Read repository data and metadata, and manage own credentials.',
     'Write': 'Read and write repository data and metadata, and manage own credentials.',
     'Super': 'Perform all operations on repository, and manage own credentials.',
@@ -38,11 +47,25 @@ type ACLPermissionButtonProps = {
 }
 
 const ACLPermission: React.FC<ACLPermissionButtonProps> = ({initialValue, onSelect, variant}) => {
-    const [value, setValue] = useState(initialValue);
-    const [title, setTitle] = useState(permissions[initialValue] || '(unknown)');
+    const [value, setValue] = useState<string|undefined>(initialValue);
+    const [title, setTitle] = useState<string>("");
     variant ||= 'secondary';
-    return (<Dropdown variant={variant} onSelect={
-        (p) => {
+
+    useEffect(() => {
+        if (!initialValue) {
+            setTitle('(unknown)');
+            return;
+        }
+
+        if (Object.keys(permissions).includes(initialValue)) {
+            setTitle(permissions[initialValue as PermissionType]);
+        } else {
+            setTitle('(unknown)');
+        }
+    }, [initialValue]);
+
+    return (<Dropdown onSelect={
+        (p: PermissionType) => {
             if (value !== p) {
                 if (onSelect) { onSelect(p); }
                 setValue(p);
@@ -52,7 +75,7 @@ const ACLPermission: React.FC<ACLPermissionButtonProps> = ({initialValue, onSele
         <Dropdown.Toggle variant={variant} title={title}>{value}</Dropdown.Toggle>
         <Dropdown.Menu>
         {Object.entries(permissions).map(([key, text]) =>
-            <Dropdown.Item variant={variant} key={key} eventKey={key}>
+            <Dropdown.Item key={key} eventKey={key}>
             <div><b>{key}</b><br/>{text}</div>
             </Dropdown.Item>
         )}
@@ -86,7 +109,7 @@ const GroupsContainer = () => {
         const groups = await auth.listGroups(after);
         const enrichedResults = await Promise.all(groups?.results.map(async group => ({...group, acl: simplified && await getACLMaybe(group.id)})));
         return {...groups, results: enrichedResults};
-    }, [after, refresh]);
+    }, [after, refresh, lc.RBAC]);
 
     useEffect(() => {
         setSelected([]);
@@ -94,7 +117,7 @@ const GroupsContainer = () => {
 
     if (error) return <AlertError error={error}/>;
     if (loading) return <Loading/>;
-    const headers = simplified ? ['', 'Group ID', 'Permission', 'Created At'] : ['', 'Group ID', 'Created At'];
+    const headers = simplified ? ['', 'Group Name', 'Permission', 'Created At'] : ['', 'Group Name', 'Created At'];
 
     return (
         <>
@@ -108,7 +131,8 @@ const GroupsContainer = () => {
 
                     <ConfirmationButton
                         onConfirm={() => {
-                            auth.deleteGroups(selected.map(g => g.id))
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            auth.deleteGroups(selected.map(g => (g as any).id))
                                 .catch(err => setDeleteError(err))
                                 .then(() => {
                                     setSelected([]);
@@ -136,8 +160,8 @@ const GroupsContainer = () => {
             <EntityActionModal
                 show={showCreate}
                 onHide={() => setShowCreate(false)}
-                onAction={groupId => {
-                    return auth.createGroup(groupId).then(() => {
+                onAction={groupName => {
+                    return auth.createGroup(groupName).then(() => {
                         setSelected([]);
                         setShowCreate(false);
                         setRefresh(!refresh);
@@ -161,7 +185,7 @@ const GroupsContainer = () => {
                             onRemove={() => setSelected(selected.filter(g => g !== group))}
                         />,
                         <Link href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>
-                            {group.id}
+                            {group.name}
                         </Link>]
                     simplified && elements.push(group.acl ? <ACLPermission initialValue={group.acl.permission} onSelect={
                             ((permission) => auth.putACL(group.id, {...group.acl, permission})
@@ -175,14 +199,14 @@ const GroupsContainer = () => {
             <Paginator
                 nextPage={nextPage}
                 after={after}
-                onPaginate={after => router.push({pathname: '/auth/groups', query: {after}})}
+                onPaginate={after => router.push({pathname: '/auth/groups', query: {after}, params: {}})}
             />
         </>
     );
 };
 
 export const GroupsPage = () => {
-    const [setActiveTab] = useOutletContext();
+    const [setActiveTab] = useAuthOutletContext();
     useEffect(() => setActiveTab('groups'), [setActiveTab]);
     return <GroupsContainer/>;
 };

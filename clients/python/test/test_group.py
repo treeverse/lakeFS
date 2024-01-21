@@ -40,6 +40,7 @@ class TestGroup(unittest.TestCase):
         if include_optional :
             return Group(
                 id = '', 
+                name = '', 
                 creation_date = 56
             )
         else :

@@ -18,15 +18,15 @@ func TestAdminPermissions(t *testing.T) {
 	defer tearDownTest(repo)
 
 	// creating a new group should succeed
-	const gid = "TestGroup"
+	const gname = "TestGroup"
 	resCreateGroup, err := client.CreateGroupWithResponse(ctx, apigen.CreateGroupJSONRequestBody{
-		Id: gid,
+		Id: gname,
 	})
 	require.NoError(t, err, "Admin failed while creating group")
 	require.Equal(t, http.StatusCreated, resCreateGroup.StatusCode(), "Admin unexpectedly failed to create group")
 
 	// setting a group ACL should succeed
-	resSetACL, err := client.SetGroupACLWithResponse(ctx, gid, apigen.SetGroupACLJSONRequestBody{
+	resSetACL, err := client.SetGroupACLWithResponse(ctx, gname, apigen.SetGroupACLJSONRequestBody{
 		Permission: "Write",
 	})
 	require.NoError(t, err, "Admin failed while setting group ACL")
@@ -41,7 +41,7 @@ func TestAdminPermissions(t *testing.T) {
 	require.Equal(t, http.StatusCreated, resCreateUser.StatusCode(), "Admin unexpectedly failed to create user")
 
 	// adding group to user should succeed
-	resAddGroup, err := client.AddGroupMembershipWithResponse(ctx, gid, uid)
+	resAddGroup, err := client.AddGroupMembershipWithResponse(ctx, gname, uid)
 	require.NoError(t, err, "Admin failed while adding the group membership to the user")
 	require.Equal(t, http.StatusCreated, resAddGroup.StatusCode(), "Admin unexpectedly failed to add the group membership to the user")
 
