@@ -752,7 +752,7 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params a
 	for _, g := range groups {
 		response.Results = append(response.Results, apigen.Group{
 			Id:           g.ID,
-			Name:         g.DisplayName,
+			Name:         swag.String(g.DisplayName),
 			CreationDate: g.CreatedAt.Unix(),
 		})
 	}
@@ -788,7 +788,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body ap
 	}
 	response := apigen.Group{
 		CreationDate: createdGroup.CreatedAt.Unix(),
-		Name:         createdGroup.DisplayName,
+		Name:         swag.String(createdGroup.DisplayName),
 		Id:           createdGroup.ID,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
@@ -1594,7 +1594,7 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 	for _, g := range groups {
 		response.Results = append(response.Results, apigen.Group{
 			Id:           g.ID,
-			Name:         g.DisplayName,
+			Name:         swag.String(g.DisplayName),
 			CreationDate: g.CreatedAt.Unix(),
 		})
 	}

@@ -976,7 +976,6 @@ components:
       required:
         - creation_date
         - id
-        - name
       properties:
         id:
           type: string

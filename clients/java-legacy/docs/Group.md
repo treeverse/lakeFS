@@ -8,7 +8,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **String** |  | 
-**name** | **String** |  | 
+**name** | **String** |  |  [optional]
 **creationDate** | **Long** | Unix Epoch in seconds | 
 
 

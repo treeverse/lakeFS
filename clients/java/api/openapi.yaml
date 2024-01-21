@@ -7786,7 +7786,6 @@ components:
       required:
       - creation_date
       - id
-      - name
       type: object
     GroupList:
       example:

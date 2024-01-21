@@ -19,7 +19,7 @@ import re  # noqa: F401
 import json
 
 
-
+from typing import Optional
 from pydantic import BaseModel, Field, StrictInt, StrictStr
 
 class Group(BaseModel):
@@ -27,7 +27,7 @@ class Group(BaseModel):
     Group
     """
     id: StrictStr = Field(...)
-    name: StrictStr = Field(...)
+    name: Optional[StrictStr] = None
     creation_date: StrictInt = Field(..., description="Unix Epoch in seconds")
     __properties = ["id", "name", "creation_date"]
 
