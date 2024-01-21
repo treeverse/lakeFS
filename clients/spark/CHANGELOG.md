@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.13.0 - 2024-01-21
+* Shade scalapb for use in current DataBricks LTS releases (#7289). :bricks:
+
+This is a minor release: while it adds no new functionality, it changes how
+users can use the Spark metadata client with DataBricks (and possibly other
+managed Spark providers).
+
 ## v0.12.0 - 2023-12-21
 * Metaclient: Skip dummy file when scanning metadata prefix (#7192)
 
