@@ -61,6 +61,14 @@ public class Commit {
   @SerializedName(SERIALIZED_NAME_METADATA)
   private Map<String, String> metadata = null;
 
+  public static final String SERIALIZED_NAME_GENERATION = "generation";
+  @SerializedName(SERIALIZED_NAME_GENERATION)
+  private Long generation;
+
+  public static final String SERIALIZED_NAME_VERSION = "version";
+  @SerializedName(SERIALIZED_NAME_VERSION)
+  private Integer version;
+
 
   public Commit id(String id) {
     
@@ -236,6 +244,54 @@ public class Commit {
   }
 
 
+  public Commit generation(Long generation) {
+    
+    this.generation = generation;
+    return this;
+  }
+
+   /**
+   * Get generation
+   * @return generation
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+
+  public Long getGeneration() {
+    return generation;
+  }
+
+
+  public void setGeneration(Long generation) {
+    this.generation = generation;
+  }
+
+
+  public Commit version(Integer version) {
+    
+    this.version = version;
+    return this;
+  }
+
+   /**
+   * Get version
+   * minimum: 0
+   * maximum: 1
+   * @return version
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+
+  public Integer getVersion() {
+    return version;
+  }
+
+
+  public void setVersion(Integer version) {
+    this.version = version;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -251,12 +307,14 @@ public class Commit {
         Objects.equals(this.message, commit.message) &&
         Objects.equals(this.creationDate, commit.creationDate) &&
         Objects.equals(this.metaRangeId, commit.metaRangeId) &&
-        Objects.equals(this.metadata, commit.metadata);
+        Objects.equals(this.metadata, commit.metadata) &&
+        Objects.equals(this.generation, commit.generation) &&
+        Objects.equals(this.version, commit.version);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, parents, committer, message, creationDate, metaRangeId, metadata);
+    return Objects.hash(id, parents, committer, message, creationDate, metaRangeId, metadata, generation, version);
   }
 
   @Override
@@ -270,6 +328,8 @@ public class Commit {
     sb.append("    creationDate: ").append(toIndentedString(creationDate)).append("\n");
     sb.append("    metaRangeId: ").append(toIndentedString(metaRangeId)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
+    sb.append("    generation: ").append(toIndentedString(generation)).append("\n");
+    sb.append("    version: ").append(toIndentedString(version)).append("\n");
     sb.append("}");
     return sb.toString();
   }

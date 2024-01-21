@@ -2785,6 +2785,8 @@ func importStatusToResponse(status *graveler.ImportStatus) apigen.ImportStatus {
 			MetaRangeId:  commitLog.MetaRangeID,
 			Metadata:     &apigen.Commit_Metadata{AdditionalProperties: commitLog.Metadata},
 			Parents:      commitLog.Parents,
+			Version:      int(commitLog.Version),
+			Generation:   int64(commitLog.Generation),
 		}
 	}
 
@@ -2857,6 +2859,30 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 	commitResponse(w, r, newCommit)
 }
 
+func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, body apigen.CreateCommitRecordJSONRequestBody, repository string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateCommitAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "create_commit_record", r, repository, body.CommitId, "")
+	_, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "missing user")
+		return
+	}
+	err = c.Catalog.CreateCommitRecord(ctx, repository, body.CommitId, body.Version, body.Committer, body.Message, body.MetarangeId, &body.CreationDate, body.Parents, body.Metadata.AdditionalProperties, int(body.Generation), graveler.WithForce(swag.BoolValue(body.Force)))
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
 func commitResponse(w http.ResponseWriter, r *http.Request, newCommit *catalog.CommitLog) {
 	response := apigen.Commit{
 		Committer:    newCommit.Committer,
@@ -2866,6 +2892,8 @@ func commitResponse(w http.ResponseWriter, r *http.Request, newCommit *catalog.C
 		MetaRangeId:  newCommit.MetaRangeID,
 		Metadata:     &apigen.Commit_Metadata{AdditionalProperties: newCommit.Metadata},
 		Parents:      newCommit.Parents,
+		Version:      int(newCommit.Version),
+		Generation:   int64(newCommit.Generation),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -3360,6 +3388,8 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 		MetaRangeId:  commit.MetaRangeID,
 		Metadata:     &apigen.Commit_Metadata{AdditionalProperties: commit.Metadata},
 		Parents:      commit.Parents,
+		Generation:   int64(commit.Generation),
+		Version:      int(commit.Version),
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -4072,6 +4102,8 @@ func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, reposito
 			Metadata:     &metadata,
 			MetaRangeId:  commit.MetaRangeID,
 			Parents:      commit.Parents,
+			Generation:   int64(commit.Generation),
+			Version:      int(commit.Version),
 		})
 	}
 

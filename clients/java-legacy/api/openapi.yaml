@@ -3198,6 +3198,63 @@ paths:
       - commits
       x-contentType: application/json
       x-accepts: application/json
+  /repositories/{repository}/commits:
+    post:
+      operationId: CreateCommitRecord
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitRecordCreation'
+        required: true
+      responses:
+        "204":
+          description: commit record created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: create commit record
+      tags:
+      - internal
+      x-contentType: application/json
+      x-accepts: application/json
   /repositories/{repository}/branches/{branch}:
     delete:
       operationId: deleteBranch
@@ -7228,6 +7285,7 @@ components:
       type: object
     Commit:
       example:
+        generation: 6
         metadata:
           key: metadata
         committer: committer
@@ -7235,6 +7293,7 @@ components:
         creation_date: 0
         meta_range_id: meta_range_id
         message: message
+        version: 0
         parents:
         - parents
         - parents
@@ -7259,13 +7318,22 @@ components:
           additionalProperties:
             type: string
           type: object
+        generation:
+          format: int64
+          type: integer
+        version:
+          maximum: 1
+          minimum: 0
+          type: integer
       required:
       - committer
       - creation_date
+      - generation
       - id
       - message
       - meta_range_id
       - parents
+      - version
       type: object
     CommitList:
       example:
@@ -7275,23 +7343,27 @@ components:
           next_offset: next_offset
           results: 0
         results:
-        - metadata:
+        - generation: 6
+          metadata:
             key: metadata
           committer: committer
           id: id
           creation_date: 0
           meta_range_id: meta_range_id
           message: message
+          version: 0
           parents:
           - parents
           - parents
-        - metadata:
+        - generation: 6
+          metadata:
             key: metadata
           committer: committer
           id: id
           creation_date: 0
           meta_range_id: meta_range_id
           message: message
+          version: 0
           parents:
           - parents
           - parents
@@ -7335,6 +7407,70 @@ components:
           type: boolean
       required:
       - message
+      type: object
+    CommitRecordCreation:
+      example:
+        generation: 1
+        metadata:
+          key: metadata
+        committer: committer
+        metarange_id: metarange_id
+        force: false
+        creation_date: 6
+        message: message
+        commit_id: commit_id
+        version: 0
+        parents:
+        - parents
+        - parents
+      properties:
+        commit_id:
+          description: id of the commit record
+          type: string
+        version:
+          description: version of the commit record
+          maximum: 1
+          minimum: 0
+          type: integer
+        committer:
+          description: committer of the commit record
+          type: string
+        message:
+          description: message of the commit record
+          type: string
+        metarange_id:
+          description: metarange_id of the commit record
+          type: string
+        creation_date:
+          description: Unix Epoch in seconds
+          format: int64
+          type: integer
+        parents:
+          description: parents of the commit record
+          items:
+            type: string
+          type: array
+        metadata:
+          additionalProperties:
+            type: string
+          description: metadata of the commit record
+          type: object
+        generation:
+          description: generation of the commit record
+          format: int64
+          type: integer
+        force:
+          default: false
+          type: boolean
+      required:
+      - commit_id
+      - committer
+      - creation_date
+      - generation
+      - message
+      - metarange_id
+      - parents
+      - version
       type: object
     Merge:
       example:
@@ -8493,6 +8629,7 @@ components:
         metarange_id: metarange_id
         ingested_objects: 0
         commit:
+          generation: 6
           metadata:
             key: metadata
           committer: committer
@@ -8500,6 +8637,7 @@ components:
           creation_date: 0
           meta_range_id: meta_range_id
           message: message
+          version: 0
           parents:
           - parents
           - parents

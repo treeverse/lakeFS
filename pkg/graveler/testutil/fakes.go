@@ -893,3 +893,8 @@ func (m *RefsFake) SetRepositoryMetadata(_ context.Context, _ *graveler.Reposito
 	// TODO implement me
 	panic("implement me")
 }
+
+func (m *RefsFake) CreateCommitRecord(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.CommitID, _ graveler.Commit) error {
+	// TODO implement me
+	panic("implement me")
+}

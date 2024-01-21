@@ -11,53 +11,50 @@
  */
 
 
-package io.lakefs.clients.api.model;
+package io.lakefs.clients.sdk.model;
 
 import com.google.gson.TypeAdapter;
 import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for Commit
+ * Model tests for CommitRecordCreation
  */
-public class CommitTest {
-    private final Commit model = new Commit();
+public class CommitRecordCreationTest {
+    private final CommitRecordCreation model = new CommitRecordCreation();
 
     /**
-     * Model tests for Commit
+     * Model tests for CommitRecordCreation
      */
     @Test
-    public void testCommit() {
-        // TODO: test Commit
+    public void testCommitRecordCreation() {
+        // TODO: test CommitRecordCreation
     }
 
     /**
-     * Test the property 'id'
+     * Test the property 'commitId'
      */
     @Test
-    public void idTest() {
-        // TODO: test id
+    public void commitIdTest() {
+        // TODO: test commitId
     }
 
     /**
-     * Test the property 'parents'
+     * Test the property 'version'
      */
     @Test
-    public void parentsTest() {
-        // TODO: test parents
+    public void versionTest() {
+        // TODO: test version
     }
 
     /**
@@ -77,6 +74,14 @@ public class CommitTest {
     }
 
     /**
+     * Test the property 'metarangeId'
+     */
+    @Test
+    public void metarangeIdTest() {
+        // TODO: test metarangeId
+    }
+
+    /**
      * Test the property 'creationDate'
      */
     @Test
@@ -85,11 +90,11 @@ public class CommitTest {
     }
 
     /**
-     * Test the property 'metaRangeId'
+     * Test the property 'parents'
      */
     @Test
-    public void metaRangeIdTest() {
-        // TODO: test metaRangeId
+    public void parentsTest() {
+        // TODO: test parents
     }
 
     /**
@@ -109,11 +114,11 @@ public class CommitTest {
     }
 
     /**
-     * Test the property 'version'
+     * Test the property 'force'
      */
     @Test
-    public void versionTest() {
-        // TODO: test version
+    public void forceTest() {
+        // TODO: test force
     }
 
 }

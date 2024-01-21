@@ -95,7 +95,7 @@ func CommitFromProto(pb *CommitData) *Commit {
 		CreationDate: pb.CreationDate.AsTime(),
 		Parents:      parents,
 		Metadata:     pb.Metadata,
-		Generation:   int(pb.Generation),
+		Generation:   CommitGeneration(pb.Generation),
 	}
 }
 

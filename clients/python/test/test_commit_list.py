@@ -56,7 +56,9 @@ class TestCommitList(unittest.TestCase):
                         meta_range_id = '', 
                         metadata = {
                             'key' : ''
-                            }, )
+                            }, 
+                        generation = 56, 
+                        version = 0, )
                     ]
             )
         else :
@@ -78,7 +80,9 @@ class TestCommitList(unittest.TestCase):
                         meta_range_id = '', 
                         metadata = {
                             'key' : ''
-                            }, )
+                            }, 
+                        generation = 56, 
+                        version = 0, )
                     ],
         )
         """

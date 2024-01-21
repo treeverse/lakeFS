@@ -753,7 +753,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		if reference1 != commit1.Reference {
-			t.Fatalf("Commit reference %s, not equals to branch reference %s", commit1, reference1)
+			t.Fatalf("Commit reference %v, not equals to branch reference %s", commit1, reference1)
 		}
 		resp, err := clt.GetCommitWithResponse(ctx, "foo1", commit1.Reference)
 		verifyResponseOK(t, resp, err)
@@ -777,7 +777,7 @@ func TestController_GetCommitHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		if reference1 != commit1.Reference {
-			t.Fatalf("Commit reference %s, not equals to branch reference %s", commit1, reference1)
+			t.Fatalf("Commit reference %v, not equals to branch reference %s", commit1, reference1)
 		}
 		resp, err := clt.GetCommitWithResponse(ctx, repo, "main")
 		verifyResponseOK(t, resp, err)
@@ -841,6 +841,8 @@ func TestController_GetCommitHandler(t *testing.T) {
 			MetaRangeId:  "",
 			Metadata:     &metadata,
 			Parents:      []string{},
+			Generation:   1,
+			Version:      1,
 		}
 		if diff := deep.Equal(commit, expectedCommit); diff != nil {
 			t.Fatalf("GetCommit initial commit diff: %v", diff)
@@ -5406,6 +5408,82 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 		testutil.MustDo(t, "restore status", err)
 		if response.JSON404 == nil {
 			t.Fatalf("Expected 404 (not found) response, got %s", response.Status())
+		}
+	})
+}
+
+func TestController_CreateCommitRecord(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+	// expected commit ID for this commit record
+	expectedCommitID := "2996b23ac5ab6e7267c302cf00c751bbb87afddd81c6d03e95f654f77b0f3ded"
+	body := apigen.CreateCommitRecordJSONRequestBody{
+		CommitId:     expectedCommitID,
+		Committer:    "Committer",
+		CreationDate: 0,
+		Generation:   1,
+		Message:      "message",
+		Metadata:     &apigen.CommitRecordCreation_Metadata{AdditionalProperties: map[string]string{"key": "value"}},
+		MetarangeId:  "metarangeId",
+		Parents:      []string{"parent1", "parent2"},
+		Version:      1,
+	}
+
+	t.Run("create commit record", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
+		testutil.Must(t, err)
+		resp, err := clt.CreateCommitRecordWithResponse(ctx, repo, body)
+		testutil.MustDo(t, "create commit record", err)
+		if resp.StatusCode() != http.StatusNoContent {
+			t.Fatalf("Expected 204 (no content) response, got %s", resp.Status())
+		}
+		commitLog, err := deps.catalog.GetCommit(ctx, repo, expectedCommitID)
+		testutil.MustDo(t, "get commit", err)
+		expectedCommitLog := &catalog.CommitLog{
+			Reference:    expectedCommitID,
+			Committer:    body.Committer,
+			Message:      body.Message,
+			CreationDate: time.Unix(0, body.CreationDate).UTC(),
+			Metadata:     body.Metadata.AdditionalProperties,
+			MetaRangeID:  body.MetarangeId,
+			Parents:      body.Parents,
+			Generation:   catalog.CommitGeneration(body.Generation),
+			Version:      catalog.CommitVersion(body.Version),
+		}
+		if diff := deep.Equal(commitLog, expectedCommitLog); diff != nil {
+			t.Fatalf("Diff: %v", diff)
+		}
+
+	})
+
+	t.Run("create commit record with wrong commitID", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
+		testutil.Must(t, err)
+		bodyCpy := body
+		bodyCpy.CommitId = "wrong"
+		resp, err := clt.CreateCommitRecordWithResponse(ctx, repo, bodyCpy)
+		testutil.MustDo(t, "create commit record", err)
+		if resp.StatusCode() != http.StatusBadRequest {
+			t.Fatalf("Expected 400 (bad request) response, got %s", resp.Status())
+		}
+	})
+
+	t.Run("read only repository", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", true)
+		testutil.Must(t, err)
+		resp, err := clt.CreateCommitRecordWithResponse(ctx, repo, body)
+		testutil.Must(t, err)
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("Create commit record in read-only repository should be forbidden (403), got %s", resp.Status())
+		}
+		body.Force = swag.Bool(true)
+		resp, err = clt.CreateCommitRecordWithResponse(ctx, repo, body)
+		testutil.MustDo(t, "create commit record", err)
+		if resp.StatusCode() != http.StatusNoContent {
+			t.Fatalf("Expected 204 response, got: %s", resp.Status())
 		}
 	})
 }

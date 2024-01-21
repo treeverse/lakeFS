@@ -31,33 +31,33 @@ import org.junit.Test;
 
 
 /**
- * Model tests for Commit
+ * Model tests for CommitRecordCreation
  */
-public class CommitTest {
-    private final Commit model = new Commit();
+public class CommitRecordCreationTest {
+    private final CommitRecordCreation model = new CommitRecordCreation();
 
     /**
-     * Model tests for Commit
+     * Model tests for CommitRecordCreation
      */
     @Test
-    public void testCommit() {
-        // TODO: test Commit
+    public void testCommitRecordCreation() {
+        // TODO: test CommitRecordCreation
     }
 
     /**
-     * Test the property 'id'
+     * Test the property 'commitId'
      */
     @Test
-    public void idTest() {
-        // TODO: test id
+    public void commitIdTest() {
+        // TODO: test commitId
     }
 
     /**
-     * Test the property 'parents'
+     * Test the property 'version'
      */
     @Test
-    public void parentsTest() {
-        // TODO: test parents
+    public void versionTest() {
+        // TODO: test version
     }
 
     /**
@@ -77,6 +77,14 @@ public class CommitTest {
     }
 
     /**
+     * Test the property 'metarangeId'
+     */
+    @Test
+    public void metarangeIdTest() {
+        // TODO: test metarangeId
+    }
+
+    /**
      * Test the property 'creationDate'
      */
     @Test
@@ -85,11 +93,11 @@ public class CommitTest {
     }
 
     /**
-     * Test the property 'metaRangeId'
+     * Test the property 'parents'
      */
     @Test
-    public void metaRangeIdTest() {
-        // TODO: test metaRangeId
+    public void parentsTest() {
+        // TODO: test parents
     }
 
     /**
@@ -109,11 +117,11 @@ public class CommitTest {
     }
 
     /**
-     * Test the property 'version'
+     * Test the property 'force'
      */
     @Test
-    public void versionTest() {
-        // TODO: test version
+    public void forceTest() {
+        // TODO: test force
     }
 
 }

@@ -17,11 +17,11 @@ import unittest
 import datetime
 
 import lakefs_sdk
-from lakefs_sdk.models.commit import Commit  # noqa: E501
+from lakefs_sdk.models.commit_record_creation import CommitRecordCreation  # noqa: E501
 from lakefs_sdk.rest import ApiException
 
-class TestCommit(unittest.TestCase):
-    """Commit unit test stubs"""
+class TestCommitRecordCreation(unittest.TestCase):
+    """CommitRecordCreation unit test stubs"""
 
     def setUp(self):
         pass
@@ -30,46 +30,47 @@ class TestCommit(unittest.TestCase):
         pass
 
     def make_instance(self, include_optional):
-        """Test Commit
+        """Test CommitRecordCreation
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `Commit`
+        # uncomment below to create an instance of `CommitRecordCreation`
         """
-        model = lakefs_sdk.models.commit.Commit()  # noqa: E501
+        model = lakefs_sdk.models.commit_record_creation.CommitRecordCreation()  # noqa: E501
         if include_optional :
-            return Commit(
-                id = '', 
+            return CommitRecordCreation(
+                commit_id = '', 
+                version = 0, 
+                committer = '', 
+                message = '', 
+                metarange_id = '', 
+                creation_date = 56, 
                 parents = [
                     ''
                     ], 
-                committer = '', 
-                message = '', 
-                creation_date = 56, 
-                meta_range_id = '', 
                 metadata = {
                     'key' : ''
                     }, 
                 generation = 56, 
-                version = 0
+                force = True
             )
         else :
-            return Commit(
-                id = '',
+            return CommitRecordCreation(
+                commit_id = '',
+                version = 0,
+                committer = '',
+                message = '',
+                metarange_id = '',
+                creation_date = 56,
                 parents = [
                     ''
                     ],
-                committer = '',
-                message = '',
-                creation_date = 56,
-                meta_range_id = '',
                 generation = 56,
-                version = 0,
         )
         """
 
-    def testCommit(self):
-        """Test Commit"""
+    def testCommitRecordCreation(self):
+        """Test CommitRecordCreation"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

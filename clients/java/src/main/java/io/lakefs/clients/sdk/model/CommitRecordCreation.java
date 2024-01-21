@@ -52,17 +52,17 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * Commit
+ * CommitRecordCreation
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class Commit {
-  public static final String SERIALIZED_NAME_ID = "id";
-  @SerializedName(SERIALIZED_NAME_ID)
-  private String id;
+public class CommitRecordCreation {
+  public static final String SERIALIZED_NAME_COMMIT_ID = "commit_id";
+  @SerializedName(SERIALIZED_NAME_COMMIT_ID)
+  private String commitId;
 
-  public static final String SERIALIZED_NAME_PARENTS = "parents";
-  @SerializedName(SERIALIZED_NAME_PARENTS)
-  private List<String> parents = new ArrayList<>();
+  public static final String SERIALIZED_NAME_VERSION = "version";
+  @SerializedName(SERIALIZED_NAME_VERSION)
+  private Integer version;
 
   public static final String SERIALIZED_NAME_COMMITTER = "committer";
   @SerializedName(SERIALIZED_NAME_COMMITTER)
@@ -72,13 +72,17 @@ public class Commit {
   @SerializedName(SERIALIZED_NAME_MESSAGE)
   private String message;
 
+  public static final String SERIALIZED_NAME_METARANGE_ID = "metarange_id";
+  @SerializedName(SERIALIZED_NAME_METARANGE_ID)
+  private String metarangeId;
+
   public static final String SERIALIZED_NAME_CREATION_DATE = "creation_date";
   @SerializedName(SERIALIZED_NAME_CREATION_DATE)
   private Long creationDate;
 
-  public static final String SERIALIZED_NAME_META_RANGE_ID = "meta_range_id";
-  @SerializedName(SERIALIZED_NAME_META_RANGE_ID)
-  private String metaRangeId;
+  public static final String SERIALIZED_NAME_PARENTS = "parents";
+  @SerializedName(SERIALIZED_NAME_PARENTS)
+  private List<String> parents = new ArrayList<>();
 
   public static final String SERIALIZED_NAME_METADATA = "metadata";
   @SerializedName(SERIALIZED_NAME_METADATA)
@@ -88,71 +92,65 @@ public class Commit {
   @SerializedName(SERIALIZED_NAME_GENERATION)
   private Long generation;
 
-  public static final String SERIALIZED_NAME_VERSION = "version";
-  @SerializedName(SERIALIZED_NAME_VERSION)
-  private Integer version;
+  public static final String SERIALIZED_NAME_FORCE = "force";
+  @SerializedName(SERIALIZED_NAME_FORCE)
+  private Boolean force = false;
 
-  public Commit() {
+  public CommitRecordCreation() {
   }
 
-  public Commit id(String id) {
+  public CommitRecordCreation commitId(String commitId) {
     
-    this.id = id;
+    this.commitId = commitId;
     return this;
   }
 
    /**
-   * Get id
-   * @return id
+   * id of the commit record
+   * @return commitId
   **/
   @javax.annotation.Nonnull
-  public String getId() {
-    return id;
+  public String getCommitId() {
+    return commitId;
   }
 
 
-  public void setId(String id) {
-    this.id = id;
+  public void setCommitId(String commitId) {
+    this.commitId = commitId;
   }
 
 
-  public Commit parents(List<String> parents) {
+  public CommitRecordCreation version(Integer version) {
     
-    this.parents = parents;
-    return this;
-  }
-
-  public Commit addParentsItem(String parentsItem) {
-    if (this.parents == null) {
-      this.parents = new ArrayList<>();
-    }
-    this.parents.add(parentsItem);
+    this.version = version;
     return this;
   }
 
    /**
-   * Get parents
-   * @return parents
+   * version of the commit record
+   * minimum: 0
+   * maximum: 1
+   * @return version
   **/
   @javax.annotation.Nonnull
-  public List<String> getParents() {
-    return parents;
+  public Integer getVersion() {
+    return version;
   }
 
 
-  public void setParents(List<String> parents) {
-    this.parents = parents;
+  public void setVersion(Integer version) {
+    this.version = version;
   }
 
 
-  public Commit committer(String committer) {
+  public CommitRecordCreation committer(String committer) {
     
     this.committer = committer;
     return this;
   }
 
    /**
-   * Get committer
+   * committer of the commit record
    * @return committer
   **/
   @javax.annotation.Nonnull
@@ -166,14 +164,14 @@ public class Commit {
   }
 
 
-  public Commit message(String message) {
+  public CommitRecordCreation message(String message) {
     
     this.message = message;
     return this;
   }
 
    /**
-   * Get message
+   * message of the commit record
    * @return message
   **/
   @javax.annotation.Nonnull
@@ -187,7 +185,28 @@ public class Commit {
   }
 
 
-  public Commit creationDate(Long creationDate) {
+  public CommitRecordCreation metarangeId(String metarangeId) {
+    
+    this.metarangeId = metarangeId;
+    return this;
+  }
+
+   /**
+   * metarange_id of the commit record
+   * @return metarangeId
+  **/
+  @javax.annotation.Nonnull
+  public String getMetarangeId() {
+    return metarangeId;
+  }
+
+
+  public void setMetarangeId(String metarangeId) {
+    this.metarangeId = metarangeId;
+  }
+
+
+  public CommitRecordCreation creationDate(Long creationDate) {
     
     this.creationDate = creationDate;
     return this;
@@ -208,34 +227,42 @@ public class Commit {
   }
 
 
-  public Commit metaRangeId(String metaRangeId) {
+  public CommitRecordCreation parents(List<String> parents) {
     
-    this.metaRangeId = metaRangeId;
+    this.parents = parents;
+    return this;
+  }
+
+  public CommitRecordCreation addParentsItem(String parentsItem) {
+    if (this.parents == null) {
+      this.parents = new ArrayList<>();
+    }
+    this.parents.add(parentsItem);
     return this;
   }
 
    /**
-   * Get metaRangeId
-   * @return metaRangeId
+   * parents of the commit record
+   * @return parents
   **/
   @javax.annotation.Nonnull
-  public String getMetaRangeId() {
-    return metaRangeId;
+  public List<String> getParents() {
+    return parents;
   }
 
 
-  public void setMetaRangeId(String metaRangeId) {
-    this.metaRangeId = metaRangeId;
+  public void setParents(List<String> parents) {
+    this.parents = parents;
   }
 
 
-  public Commit metadata(Map<String, String> metadata) {
+  public CommitRecordCreation metadata(Map<String, String> metadata) {
     
     this.metadata = metadata;
     return this;
   }
 
-  public Commit putMetadataItem(String key, String metadataItem) {
+  public CommitRecordCreation putMetadataItem(String key, String metadataItem) {
     if (this.metadata == null) {
       this.metadata = new HashMap<>();
     }
@@ -244,7 +271,7 @@ public class Commit {
   }
 
    /**
-   * Get metadata
+   * metadata of the commit record
    * @return metadata
   **/
   @javax.annotation.Nullable
@@ -258,14 +285,14 @@ public class Commit {
   }
 
 
-  public Commit generation(Long generation) {
+  public CommitRecordCreation generation(Long generation) {
     
     this.generation = generation;
     return this;
   }
 
    /**
-   * Get generation
+   * generation of the commit record
    * @return generation
   **/
   @javax.annotation.Nonnull
@@ -279,26 +306,24 @@ public class Commit {
   }
 
 
-  public Commit version(Integer version) {
+  public CommitRecordCreation force(Boolean force) {
     
-    this.version = version;
+    this.force = force;
     return this;
   }
 
    /**
-   * Get version
-   * minimum: 0
-   * maximum: 1
-   * @return version
+   * Get force
+   * @return force
   **/
-  @javax.annotation.Nonnull
-  public Integer getVersion() {
-    return version;
+  @javax.annotation.Nullable
+  public Boolean getForce() {
+    return force;
   }
 
 
-  public void setVersion(Integer version) {
-    this.version = version;
+  public void setForce(Boolean force) {
+    this.force = force;
   }
 
   /**
@@ -314,9 +339,9 @@ public class Commit {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the Commit instance itself
+   * @return the CommitRecordCreation instance itself
    */
-  public Commit putAdditionalProperty(String key, Object value) {
+  public CommitRecordCreation putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -355,37 +380,39 @@ public class Commit {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Commit commit = (Commit) o;
-    return Objects.equals(this.id, commit.id) &&
-        Objects.equals(this.parents, commit.parents) &&
-        Objects.equals(this.committer, commit.committer) &&
-        Objects.equals(this.message, commit.message) &&
-        Objects.equals(this.creationDate, commit.creationDate) &&
-        Objects.equals(this.metaRangeId, commit.metaRangeId) &&
-        Objects.equals(this.metadata, commit.metadata) &&
-        Objects.equals(this.generation, commit.generation) &&
-        Objects.equals(this.version, commit.version)&&
-        Objects.equals(this.additionalProperties, commit.additionalProperties);
+    CommitRecordCreation commitRecordCreation = (CommitRecordCreation) o;
+    return Objects.equals(this.commitId, commitRecordCreation.commitId) &&
+        Objects.equals(this.version, commitRecordCreation.version) &&
+        Objects.equals(this.committer, commitRecordCreation.committer) &&
+        Objects.equals(this.message, commitRecordCreation.message) &&
+        Objects.equals(this.metarangeId, commitRecordCreation.metarangeId) &&
+        Objects.equals(this.creationDate, commitRecordCreation.creationDate) &&
+        Objects.equals(this.parents, commitRecordCreation.parents) &&
+        Objects.equals(this.metadata, commitRecordCreation.metadata) &&
+        Objects.equals(this.generation, commitRecordCreation.generation) &&
+        Objects.equals(this.force, commitRecordCreation.force)&&
+        Objects.equals(this.additionalProperties, commitRecordCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, parents, committer, message, creationDate, metaRangeId, metadata, generation, version, additionalProperties);
+    return Objects.hash(commitId, version, committer, message, metarangeId, creationDate, parents, metadata, generation, force, additionalProperties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Commit {\n");
-    sb.append("    id: ").append(toIndentedString(id)).append("\n");
-    sb.append("    parents: ").append(toIndentedString(parents)).append("\n");
+    sb.append("class CommitRecordCreation {\n");
+    sb.append("    commitId: ").append(toIndentedString(commitId)).append("\n");
+    sb.append("    version: ").append(toIndentedString(version)).append("\n");
     sb.append("    committer: ").append(toIndentedString(committer)).append("\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
+    sb.append("    metarangeId: ").append(toIndentedString(metarangeId)).append("\n");
     sb.append("    creationDate: ").append(toIndentedString(creationDate)).append("\n");
-    sb.append("    metaRangeId: ").append(toIndentedString(metaRangeId)).append("\n");
+    sb.append("    parents: ").append(toIndentedString(parents)).append("\n");
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("    generation: ").append(toIndentedString(generation)).append("\n");
-    sb.append("    version: ").append(toIndentedString(version)).append("\n");
+    sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -409,56 +436,51 @@ public class Commit {
   static {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
-    openapiFields.add("id");
-    openapiFields.add("parents");
+    openapiFields.add("commit_id");
+    openapiFields.add("version");
     openapiFields.add("committer");
     openapiFields.add("message");
+    openapiFields.add("metarange_id");
     openapiFields.add("creation_date");
-    openapiFields.add("meta_range_id");
+    openapiFields.add("parents");
     openapiFields.add("metadata");
     openapiFields.add("generation");
-    openapiFields.add("version");
+    openapiFields.add("force");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("id");
-    openapiRequiredFields.add("parents");
+    openapiRequiredFields.add("commit_id");
+    openapiRequiredFields.add("version");
     openapiRequiredFields.add("committer");
     openapiRequiredFields.add("message");
+    openapiRequiredFields.add("metarange_id");
     openapiRequiredFields.add("creation_date");
-    openapiRequiredFields.add("meta_range_id");
+    openapiRequiredFields.add("parents");
     openapiRequiredFields.add("generation");
-    openapiRequiredFields.add("version");
   }
 
  /**
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to Commit
+  * @throws IOException if the JSON Element is invalid with respect to CommitRecordCreation
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!Commit.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in Commit is not found in the empty JSON string", Commit.openapiRequiredFields.toString()));
+        if (!CommitRecordCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in CommitRecordCreation is not found in the empty JSON string", CommitRecordCreation.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : Commit.openapiRequiredFields) {
+      for (String requiredField : CommitRecordCreation.openapiRequiredFields) {
         if (jsonElement.getAsJsonObject().get(requiredField) == null) {
           throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if (!jsonObj.get("id").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
-      }
-      // ensure the required json array is present
-      if (jsonObj.get("parents") == null) {
-        throw new IllegalArgumentException("Expected the field `linkedContent` to be an array in the JSON string but got `null`");
-      } else if (!jsonObj.get("parents").isJsonArray()) {
-        throw new IllegalArgumentException(String.format("Expected the field `parents` to be an array in the JSON string but got `%s`", jsonObj.get("parents").toString()));
+      if (!jsonObj.get("commit_id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `commit_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("commit_id").toString()));
       }
       if (!jsonObj.get("committer").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `committer` to be a primitive type in the JSON string but got `%s`", jsonObj.get("committer").toString()));
@@ -466,8 +488,14 @@ public class Commit {
       if (!jsonObj.get("message").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `message` to be a primitive type in the JSON string but got `%s`", jsonObj.get("message").toString()));
       }
-      if (!jsonObj.get("meta_range_id").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `meta_range_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("meta_range_id").toString()));
+      if (!jsonObj.get("metarange_id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `metarange_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("metarange_id").toString()));
+      }
+      // ensure the required json array is present
+      if (jsonObj.get("parents") == null) {
+        throw new IllegalArgumentException("Expected the field `linkedContent` to be an array in the JSON string but got `null`");
+      } else if (!jsonObj.get("parents").isJsonArray()) {
+        throw new IllegalArgumentException(String.format("Expected the field `parents` to be an array in the JSON string but got `%s`", jsonObj.get("parents").toString()));
       }
   }
 
@@ -475,16 +503,16 @@ public class Commit {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!Commit.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'Commit' and its subtypes
+       if (!CommitRecordCreation.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'CommitRecordCreation' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<Commit> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(Commit.class));
+       final TypeAdapter<CommitRecordCreation> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(CommitRecordCreation.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<Commit>() {
+       return (TypeAdapter<T>) new TypeAdapter<CommitRecordCreation>() {
            @Override
-           public void write(JsonWriter out, Commit value) throws IOException {
+           public void write(JsonWriter out, CommitRecordCreation value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -507,12 +535,12 @@ public class Commit {
            }
 
            @Override
-           public Commit read(JsonReader in) throws IOException {
+           public CommitRecordCreation read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             Commit instance = thisAdapter.fromJsonTree(jsonObj);
+             CommitRecordCreation instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -539,18 +567,18 @@ public class Commit {
   }
 
  /**
-  * Create an instance of Commit given an JSON string
+  * Create an instance of CommitRecordCreation given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of Commit
-  * @throws IOException if the JSON string is invalid with respect to Commit
+  * @return An instance of CommitRecordCreation
+  * @throws IOException if the JSON string is invalid with respect to CommitRecordCreation
   */
-  public static Commit fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, Commit.class);
+  public static CommitRecordCreation fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, CommitRecordCreation.class);
   }
 
  /**
-  * Convert an instance of Commit to an JSON string
+  * Convert an instance of CommitRecordCreation to an JSON string
   *
   * @return JSON string
   */

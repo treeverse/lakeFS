@@ -597,6 +597,26 @@ func TestGravelerCommit_v2(t *testing.T) {
 	})
 }
 
+func TestGravelerCreateCommitRecord_v2(t *testing.T) {
+	ctx := context.Background()
+	t.Run("create commit record", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		commit := graveler.Commit{
+			Committer:    "committer",
+			Message:      "message",
+			MetaRangeID:  "metaRangeID",
+			Parents:      []graveler.CommitID{"parent1", "parent2"},
+			Metadata:     graveler.Metadata{"key": "value"},
+			CreationDate: time.Now(),
+			Version:      graveler.CurrentCommitVersion,
+			Generation:   1,
+		}
+		test.RefManager.EXPECT().CreateCommitRecord(ctx, repository, graveler.CommitID("commitID"), commit).Return(nil)
+		err := test.Sut.CreateCommitRecord(ctx, repository, "commitID", commit)
+		require.NoError(t, err)
+	})
+}
+
 func TestGravelerImport(t *testing.T) {
 	ctx := context.Background()
 

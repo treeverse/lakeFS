@@ -60,6 +60,7 @@ from lakefs_sdk.models.comm_prefs_input import CommPrefsInput
 from lakefs_sdk.models.commit import Commit
 from lakefs_sdk.models.commit_creation import CommitCreation
 from lakefs_sdk.models.commit_list import CommitList
+from lakefs_sdk.models.commit_record_creation import CommitRecordCreation
 from lakefs_sdk.models.complete_presign_multipart_upload import CompletePresignMultipartUpload
 from lakefs_sdk.models.config import Config
 from lakefs_sdk.models.credentials import Credentials
