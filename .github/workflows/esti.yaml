@@ -48,7 +48,7 @@ jobs:
         id: restore-cache
         with:
           path: /tmp/generated.tar.gz
-          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**', './webui/**') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**', './api/*', './webui/**') }}
           restore-keys: ${{ runner.os }}-go-
 
       - name: Setup Go
@@ -58,14 +58,22 @@ jobs:
           go-version: "1.21.4"
         id: go
 
+      - name: Setup NodeJS
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: "npm"
+          cache-dependency-path: webui/package-lock.json
+
       - name: Generate code
         if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
-          make -j3 gen-api VERSION=${{ steps.version.outputs.tag }}
-          make gen-ui
-          tar -cf /tmp/generated.tar.gz ./pkg ./webui
+          make -j3 gen-api gen-ui VERSION=${{ steps.version.outputs.tag }}
+          tar -cf /tmp/generated.tar.gz ./webui/dist ./pkg/auth/client.gen.go ./pkg/permissions/actions.gen.go ./pkg/api/apigen/lakefs.gen.go
 
       - name: Store generated code
+        if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/upload-artifact@v3
         with:
           name: generated-code
