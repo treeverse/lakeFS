@@ -30,8 +30,10 @@ class ServerException(LakeFSException):
         if body is not None:
             try:  # Try to get message from body
                 self.body = json.loads(body)
-            except ValueError:
-                pass
+            except json.JSONDecodeError:
+                self.body = {}
+        else:
+            self.body = {}
 
     def __str__(self):
         return f"code: {self.status_code}, reason: {self.reason}, body: {self.body}"
