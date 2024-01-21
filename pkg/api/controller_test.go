@@ -5426,7 +5426,7 @@ func TestController_CreateCommitRecord(t *testing.T) {
 		Metadata:     &apigen.CommitRecordCreation_Metadata{AdditionalProperties: map[string]string{"key": "value"}},
 		MetarangeId:  "metarangeId",
 		Parents:      []string{"parent1", "parent2"},
-		Version:      2,
+		Version:      1,
 	}
 
 	t.Run("create commit record", func(t *testing.T) {
