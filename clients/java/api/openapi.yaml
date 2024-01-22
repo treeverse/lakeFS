@@ -7302,12 +7302,10 @@ components:
       required:
       - committer
       - creation_date
-      - generation
       - id
       - message
       - meta_range_id
       - parents
-      - version
       type: object
     CommitList:
       example:

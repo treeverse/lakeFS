@@ -254,8 +254,8 @@ public class Commit {
    * Get generation
    * @return generation
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public Long getGeneration() {
     return generation;
@@ -279,8 +279,8 @@ public class Commit {
    * maximum: 1
    * @return version
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public Integer getVersion() {
     return version;
