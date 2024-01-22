@@ -361,8 +361,8 @@ type Config struct {
 			Code string `mapstructure:"code"`
 		} `mapstructure:"snippets"`
 	} `mapstructure:"ui"`
-	Diff        DiffProps `mapstructure:"diff"`
-	Plugins     Plugins   `mapstructure:"plugins"`
+	// Diff        DiffProps `mapstructure:"diff"`
+	// Plugins     Plugins   `mapstructure:"plugins"`
 	UsageReport struct {
 		Enabled       bool          `mapstructure:"enabled"`
 		FlushInterval time.Duration `mapstructure:"flush_interval"`

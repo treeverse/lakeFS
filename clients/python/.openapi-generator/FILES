@@ -28,7 +28,6 @@ docs/CredentialsWithSecret.md
 docs/CurrentUser.md
 docs/Diff.md
 docs/DiffList.md
-docs/DiffProperties.md
 docs/Error.md
 docs/ErrorNoACL.md
 docs/ExperimentalApi.md
@@ -58,7 +57,6 @@ docs/MergeResult.md
 docs/MetaRangeCreation.md
 docs/MetaRangeCreationResponse.md
 docs/MetadataApi.md
-docs/OTFDiffs.md
 docs/ObjectCopyCreation.md
 docs/ObjectError.md
 docs/ObjectErrorList.md
@@ -66,8 +64,6 @@ docs/ObjectStageCreation.md
 docs/ObjectStats.md
 docs/ObjectStatsList.md
 docs/ObjectsApi.md
-docs/OtfDiffEntry.md
-docs/OtfDiffList.md
 docs/Pagination.md
 docs/PathList.md
 docs/Policy.md
@@ -158,7 +154,6 @@ lakefs_sdk/models/credentials_with_secret.py
 lakefs_sdk/models/current_user.py
 lakefs_sdk/models/diff.py
 lakefs_sdk/models/diff_list.py
-lakefs_sdk/models/diff_properties.py
 lakefs_sdk/models/error.py
 lakefs_sdk/models/error_no_acl.py
 lakefs_sdk/models/find_merge_base_result.py
@@ -189,9 +184,6 @@ lakefs_sdk/models/object_error_list.py
 lakefs_sdk/models/object_stage_creation.py
 lakefs_sdk/models/object_stats.py
 lakefs_sdk/models/object_stats_list.py
-lakefs_sdk/models/otf_diff_entry.py
-lakefs_sdk/models/otf_diff_list.py
-lakefs_sdk/models/otf_diffs.py
 lakefs_sdk/models/pagination.py
 lakefs_sdk/models/path_list.py
 lakefs_sdk/models/policy.py
@@ -268,7 +260,6 @@ test/test_credentials_with_secret.py
 test/test_current_user.py
 test/test_diff.py
 test/test_diff_list.py
-test/test_diff_properties.py
 test/test_error.py
 test/test_error_no_acl.py
 test/test_experimental_api.py
@@ -305,9 +296,6 @@ test/test_object_stage_creation.py
 test/test_object_stats.py
 test/test_object_stats_list.py
 test/test_objects_api.py
-test/test_otf_diff_entry.py
-test/test_otf_diff_list.py
-test/test_otf_diffs.py
 test/test_pagination.py
 test/test_path_list.py
 test/test_policy.py

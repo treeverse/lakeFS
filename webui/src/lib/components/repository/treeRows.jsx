@@ -96,27 +96,6 @@ export const PrefixTreeEntryRow = ({entry, relativeTo = "", dirExpanded, depth =
         />
     );
 };
-
-export const TableTreeEntryRow = ({entry, relativeTo = "", onClickExpandDiff, depth = 0, loading = false, onRevert}) => {
-    const [showRevertConfirm, setShowRevertConfirm] = useState(false)
-    let rowClass = 'tree-entry-row ' + diffType(entry);
-    let pathSection = extractTableName(entry, relativeTo);
-    const diffIndicator = <DiffIndicationIcon entry={entry} rowType={TreeRowType.Table}/>
-
-    const rowActions = []
-    rowActions.push(new RowAction(null, "", "Show table changes", onClickExpandDiff))
-    if (onRevert) {
-        rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", null, () => {
-            setShowRevertConfirm(true)
-        }))
-    }
-    return (
-        <TableRow className={rowClass} entry={entry} diffIndicator={diffIndicator} rowActions={rowActions}
-                  onRevert={onRevert} depth={depth} loading={loading} pathSection={pathSection}
-                  showRevertConfirm={showRevertConfirm} setShowRevertConfirm={() => setShowRevertConfirm(false)}/>
-    );
-};
-
 const PrefixExpansionSection = ({dirExpanded, onClick}) => {
     return (<span onClick={onClick}>
                 {dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}
@@ -168,18 +147,6 @@ function diffType(entry) {
             return '';
     }
 }
-
-function extractTableName(entry, relativeTo) {
-    let pathText = entry.path;
-    if (pathText.startsWith(relativeTo)) {
-        pathText = pathText.substr(relativeTo.length);
-    }
-    if (pathText.endsWith("/")) {
-        pathText = pathText.slice(0,-1)
-    }
-    return pathText;
-}
-
 export const DiffIndicationIcon = ({entry, rowType}) => {
     let diffIcon;
     let tooltipId;

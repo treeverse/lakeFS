@@ -1,14 +1,14 @@
 import React, {useEffect, useRef, useState} from 'react';
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
-import {Warnings} from "../../lib/components/controls";
+import {Warnings} from "./controls";
 import {FloatingLabel} from "react-bootstrap";
 import Accordion from "react-bootstrap/Accordion";
 
 const DEFAULT_BLOCKSTORE_EXAMPLE = "e.g. s3://example-bucket/";
 const DEFAULT_BLOCKSTORE_VALIDITY_REGEX = new RegExp(`^s3://`);
 
-export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormValid, error = null, samlpleRepoChecked = false }) => {
+export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormValid, error = null, sampleRepoChecked = false }) => {
     const repoValidityRegex = /^[a-z0-9][a-z0-9-]{2,62}$/;
 
     const [repoValid, setRepoValid] = useState(null);
@@ -24,9 +24,9 @@ export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormV
 
     useEffect(() => {
         if (sampleDataCheckbox.current) {
-            sampleDataCheckbox.current.checked = samlpleRepoChecked;
+            sampleDataCheckbox.current.checked = sampleRepoChecked;
         }
-    }, [samlpleRepoChecked, sampleDataCheckbox.current]);
+    }, [sampleRepoChecked, sampleDataCheckbox.current]);
 
 
     const onRepoNameChange = () => {
@@ -173,5 +173,3 @@ export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormV
         </Form>
     );
 }
-
-export default RepositoryCreateForm;

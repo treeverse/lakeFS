@@ -1,4 +1,4 @@
-import React, {FC, useMemo, useState, ReactNode, MouseEventHandler, useContext, PropsWithChildren} from "react";
+import React, {FC, useMemo, useState, ReactNode, MouseEventHandler, useContext} from "react";
 
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
@@ -6,8 +6,6 @@ import Tooltip from "react-bootstrap/Tooltip";
 import {OverlayTrigger} from "react-bootstrap";
 import { ButtonVariant } from "react-bootstrap/esm/types";
 import { GetUserEmailByIdContext } from "../../pages/auth/users";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
 
 interface ConfirmationModalProps {
     show: boolean;
@@ -34,13 +32,6 @@ interface ConfirmationButtonWithContextProps extends Omit<ConfirmationButtonProp
     msg: ReactNode | ((email: string) => ReactNode);
     userId: string;
 }
-
-interface BasicModal {
-    display: boolean;
-    children: ReactNode;
-    onCancel: () => void;
-}
-
 export const ConfirmationModal: FC<ConfirmationModalProps> = ({ show, onHide, msg, onConfirm, variant = "danger" }) => {
     return (
         <Modal show={show} onHide={onHide}>
@@ -60,7 +51,7 @@ export const ConfirmationModal: FC<ConfirmationModalProps> = ({ show, onHide, ms
 
 export const ConfirmationButtonWithContext: FC<ConfirmationButtonWithContextProps> = ({ userId, msg, onConfirm, variant, modalVariant, size, disabled = false, tooltip = null, children }) => {
     const getUserEmailById = useContext(GetUserEmailByIdContext);
-    const email = useMemo(() => getUserEmailById(userId), [userId]);
+    const email = useMemo(() => getUserEmailById(userId), [userId, getUserEmailById]);
 
     let msgNode: ReactNode;
     if (typeof msg === "function") {
@@ -110,53 +101,4 @@ export const ConfirmationButton: FC<ConfirmationButtonProps> = ({ msg, onConfirm
             {btn}
         </>
     );
-};
-
-interface SimpleModalProps extends PropsWithChildren {
-    show: boolean;
-    heading: string;
-    onCancel: () => void;
-    footer?: ReactNode;
-}
-
-const SimpleModal: FC<SimpleModalProps> =  ({children, show = false, heading, onCancel, footer=null}) => {
-    return (
-        <Modal show={show} onHide={onCancel}
-               size="lg"
-               restoreFocus={false}
-               aria-labelledby="contained-modal-title-vcenter"
-               centered>
-            <Row>
-                <Col>
-                    <Modal.Header className="justify-content-center">
-                        <Modal.Title>{heading}</Modal.Title>
-                    </Modal.Header>
-                </Col>
-            </Row>
-            <Row>
-                <Col>
-                    <Modal.Body className="justify-content-center">
-                        {children}
-                    </Modal.Body>
-                </Col>
-            </Row>
-            {footer &&
-            <Row>
-                <Col>
-                    <Modal.Footer>
-                        {footer}
-                    </Modal.Footer>
-                </Col>
-            </Row>
-            }
-        </Modal>
-    )
-};
-
-export const ComingSoonModal: FC<BasicModal> = ({display, children, onCancel}) => {
-    return (
-        <SimpleModal show={display} heading={"Coming soon!"} onCancel={onCancel}>
-            {children}
-        </SimpleModal>
-    )
 };

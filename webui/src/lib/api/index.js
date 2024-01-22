@@ -467,22 +467,6 @@ class Repositories {
             throw new Error(await extractError(response));
         }
     }
-
-    async otfDiff(repoId, leftRef, rightRef, tablePath = "", type) {
-        const query = qs({table_path: tablePath, type});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/otf/refs/${encodeURIComponent(leftRef)}/diff/${encodeURIComponent(rightRef)}?` + query);
-        if (response.status !== 200) {
-            switch (response.status) {
-                case 401:
-                    throw new AuthorizationError('user unauthorized');
-                case 404:
-                    throw new NotFoundError(`table ${tablePath} not found`);
-                default:
-                    throw new Error(await extractError(response));
-            }
-        }
-        return response.json();
-    }
 }
 
 class Branches {
@@ -1053,18 +1037,6 @@ class Staging {
     }
 }
 
-class OTFDiffs {
-    async get() {
-        const response = await apiRequest('/otf/diffs', {
-            method: 'GET'
-        });
-        if (response.status !== 200) {
-            throw new Error(await extractError(response));
-        }
-        return response.json();
-    }
-}
-
 class Import {
 
     async get(repoId, branchId, importId) {
@@ -1129,5 +1101,4 @@ export const config = new Config();
 export const branchProtectionRules = new BranchProtectionRules();
 export const statistics = new Statistics();
 export const staging = new Staging();
-export const otfDiffs = new OTFDiffs();
 export const imports = new Import();
