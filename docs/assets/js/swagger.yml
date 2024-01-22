@@ -3440,6 +3440,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
         412:
           description: Precondition Failed (e.g. a pre-commit hook returned a failure)
           content:
