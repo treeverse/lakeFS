@@ -12,8 +12,8 @@ Name | Type | Description | Notes
 **creation_date** | **int** | Unix Epoch in seconds | 
 **meta_range_id** | **str** |  | 
 **metadata** | **Dict[str, str]** |  | [optional] 
-**generation** | **int** |  | 
-**version** | **int** |  | 
+**generation** | **int** |  | [optional] 
+**version** | **int** |  | [optional] 
 
 ## Example
 

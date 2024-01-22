@@ -92,9 +92,9 @@ class Commit(ModelNormal):
             'message': (str,),  # noqa: E501
             'creation_date': (int,),  # noqa: E501
             'meta_range_id': (str,),  # noqa: E501
+            'metadata': ({str: (str,)},),  # noqa: E501
             'generation': (int,),  # noqa: E501
             'version': (int,),  # noqa: E501
-            'metadata': ({str: (str,)},),  # noqa: E501
         }
 
     @cached_property
@@ -109,9 +109,9 @@ class Commit(ModelNormal):
         'message': 'message',  # noqa: E501
         'creation_date': 'creation_date',  # noqa: E501
         'meta_range_id': 'meta_range_id',  # noqa: E501
+        'metadata': 'metadata',  # noqa: E501
         'generation': 'generation',  # noqa: E501
         'version': 'version',  # noqa: E501
-        'metadata': 'metadata',  # noqa: E501
     }
 
     read_only_vars = {
@@ -121,7 +121,7 @@ class Commit(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, id, parents, committer, message, creation_date, meta_range_id, generation, version, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, id, parents, committer, message, creation_date, meta_range_id, *args, **kwargs):  # noqa: E501
         """Commit - a model defined in OpenAPI
 
         Args:
@@ -131,8 +131,6 @@ class Commit(ModelNormal):
             message (str):
             creation_date (int): Unix Epoch in seconds
             meta_range_id (str):
-            generation (int):
-            version (int):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -166,6 +164,8 @@ class Commit(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             metadata ({str: (str,)}): [optional]  # noqa: E501
+            generation (int): [optional]  # noqa: E501
+            version (int): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -199,8 +199,6 @@ class Commit(ModelNormal):
         self.message = message
         self.creation_date = creation_date
         self.meta_range_id = meta_range_id
-        self.generation = generation
-        self.version = version
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
@@ -221,7 +219,7 @@ class Commit(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, id, parents, committer, message, creation_date, meta_range_id, generation, version, *args, **kwargs):  # noqa: E501
+    def __init__(self, id, parents, committer, message, creation_date, meta_range_id, *args, **kwargs):  # noqa: E501
         """Commit - a model defined in OpenAPI
 
         Args:
@@ -231,8 +229,6 @@ class Commit(ModelNormal):
             message (str):
             creation_date (int): Unix Epoch in seconds
             meta_range_id (str):
-            generation (int):
-            version (int):
 
         Keyword Args:
             _check_type (bool): if True, values for parameters in openapi_types
@@ -266,6 +262,8 @@ class Commit(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             metadata ({str: (str,)}): [optional]  # noqa: E501
+            generation (int): [optional]  # noqa: E501
+            version (int): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -297,8 +295,6 @@ class Commit(ModelNormal):
         self.message = message
         self.creation_date = creation_date
         self.meta_range_id = meta_range_id
-        self.generation = generation
-        self.version = version
         for var_name, var_value in kwargs.items():
             if var_name not in self.attribute_map and \
                         self._configuration is not None and \
