@@ -841,8 +841,8 @@ func TestController_GetCommitHandler(t *testing.T) {
 			MetaRangeId:  "",
 			Metadata:     &metadata,
 			Parents:      []string{},
-			Generation:   1,
-			Version:      1,
+			Generation:   swag.Int64(1),
+			Version:      swag.Int(1),
 		}
 		if diff := deep.Equal(commit, expectedCommit); diff != nil {
 			t.Fatalf("GetCommit initial commit diff: %v", diff)

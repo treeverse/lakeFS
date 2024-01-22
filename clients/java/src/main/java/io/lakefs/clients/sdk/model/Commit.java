@@ -268,7 +268,7 @@ public class Commit {
    * Get generation
    * @return generation
   **/
-  @javax.annotation.Nonnull
+  @javax.annotation.Nullable
   public Long getGeneration() {
     return generation;
   }
@@ -291,7 +291,7 @@ public class Commit {
    * maximum: 1
    * @return version
   **/
-  @javax.annotation.Nonnull
+  @javax.annotation.Nullable
   public Integer getVersion() {
     return version;
   }
@@ -427,8 +427,6 @@ public class Commit {
     openapiRequiredFields.add("message");
     openapiRequiredFields.add("creation_date");
     openapiRequiredFields.add("meta_range_id");
-    openapiRequiredFields.add("generation");
-    openapiRequiredFields.add("version");
   }
 
  /**

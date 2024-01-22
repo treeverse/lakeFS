@@ -1,5 +1,11 @@
 # Changelog
 
+# v1.9.1
+
+ :bug: Bugs fixed:
+
+- API: make version and generation fields optional for commit- fix a breaking change introduced in v1.9.0 (#7323)
+
 # v1.9.0
 
 :new: What's new:

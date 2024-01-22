@@ -33,8 +33,8 @@ class Commit(BaseModel):
     creation_date: StrictInt = Field(..., description="Unix Epoch in seconds")
     meta_range_id: StrictStr = Field(...)
     metadata: Optional[Dict[str, StrictStr]] = None
-    generation: StrictInt = Field(...)
-    version: conint(strict=True, le=1, ge=0) = Field(...)
+    generation: Optional[StrictInt] = None
+    version: Optional[conint(strict=True, le=1, ge=0)] = None
     __properties = ["id", "parents", "committer", "message", "creation_date", "meta_range_id", "metadata", "generation", "version"]
 
     class Config:
