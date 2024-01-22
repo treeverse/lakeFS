@@ -8,8 +8,10 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"golang.org/x/exp/slices"
 )
 
 // Test Admin permissions: AuthFullAccess, ExportSetConfiguration, FSFullAccess, RepoManagementFullAccess
@@ -22,11 +24,12 @@ func TestAdminPermissions(t *testing.T) {
 	resCreateGroup, err := client.CreateGroupWithResponse(ctx, apigen.CreateGroupJSONRequestBody{
 		Id: gname,
 	})
+	groupID := resCreateGroup.JSON201.Id
 	require.NoError(t, err, "Admin failed while creating group")
 	require.Equal(t, http.StatusCreated, resCreateGroup.StatusCode(), "Admin unexpectedly failed to create group")
 
 	// setting a group ACL should succeed
-	resSetACL, err := client.SetGroupACLWithResponse(ctx, gname, apigen.SetGroupACLJSONRequestBody{
+	resSetACL, err := client.SetGroupACLWithResponse(ctx, groupID, apigen.SetGroupACLJSONRequestBody{
 		Permission: "Write",
 	})
 	require.NoError(t, err, "Admin failed while setting group ACL")
@@ -41,7 +44,7 @@ func TestAdminPermissions(t *testing.T) {
 	require.Equal(t, http.StatusCreated, resCreateUser.StatusCode(), "Admin unexpectedly failed to create user")
 
 	// adding group to user should succeed
-	resAddGroup, err := client.AddGroupMembershipWithResponse(ctx, gname, uid)
+	resAddGroup, err := client.AddGroupMembershipWithResponse(ctx, groupID, uid)
 	require.NoError(t, err, "Admin failed while adding the group membership to the user")
 	require.Equal(t, http.StatusCreated, resAddGroup.StatusCode(), "Admin unexpectedly failed to add the group membership to the user")
 
@@ -51,12 +54,31 @@ func TestAdminPermissions(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, resDeleteUser.StatusCode(), "Admin unexpectedly failed to delete the user")
 }
 
+func mapGroupNamesToIDs(t *testing.T, ctx context.Context, groups []string) (map[string]string, []string) {
+	groupIDs := make([]string, len(groups))
+	mapGroupNameToID := make(map[string]string)
+
+	// get group list
+	resListGroups, err := client.ListGroupsWithResponse(ctx, &apigen.ListGroupsParams{Amount: apiutil.Ptr(apigen.PaginationAmount(-1))})
+	require.NoError(t, err, "unexpectedly failed while listing groups")
+	for _, group := range resListGroups.JSON200.Results {
+		if slices.Contains(groups, *group.Name) {
+			mapGroupNameToID[*group.Name] = group.Id
+			groupIDs = append(groupIDs, group.Id)
+		}
+	}
+	return mapGroupNameToID, groupIDs
+}
+
 // Test Super Permissions: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestSuperPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
+	groups := []string{"Supers", "SuperUsers"}
 
+	// map group names to IDs
+	mapGroupNameToID, groupIDs := mapGroupNamesToIDs(t, ctx, groups)
 	// generate the Super client
-	superClient := newClientFromGroup(t, ctx, logger, "super", []string{"Supers", "SuperUsers"})
+	superClient := newClientFromGroup(t, ctx, logger, "super", groupIDs)
 
 	// listing the available branches should succeed
 	resListBranches, err := superClient.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{})
@@ -95,7 +117,7 @@ func TestSuperPermissions(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, resListUsers.StatusCode(), "Super unexpectedly did not receive unauthorized response while listing users")
 
 	// attempting to get the group ACL should be unauthorized
-	resGetGroupACL, err := superClient.GetGroupACLWithResponse(ctx, "Admins")
+	resGetGroupACL, err := superClient.GetGroupACLWithResponse(ctx, mapGroupNameToID["Admins"])
 	require.NoError(t, err, "Super failed while testing get Admins ACL")
 	require.Equal(t, http.StatusUnauthorized, resGetGroupACL.StatusCode(), "Super unexpectedly did not receive unauthorized response while getting Admins ACL")
 }
@@ -103,9 +125,12 @@ func TestSuperPermissions(t *testing.T) {
 // Test Writer Permissions: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestWriterPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
+	groups := []string{"Writers", "Developers"}
+	// map group names to IDs
+	_, groupIDs := mapGroupNamesToIDs(t, ctx, groups)
 
 	// generate the Writer client
-	writerClient := newClientFromGroup(t, ctx, logger, "writer", []string{"Writers", "Developers"})
+	writerClient := newClientFromGroup(t, ctx, logger, "writer", groupIDs)
 
 	// listing the available branches should succeed
 	resListBranches, err := writerClient.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{})
@@ -147,9 +172,13 @@ func TestWriterPermissions(t *testing.T) {
 // Test Reader Permissions: AuthManageOwnCredentials, FSReadAll
 func TestReaderPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
+	groups := []string{"Readers", "Viewers"}
+
+	// map group names to IDs
+	_, groupIDs := mapGroupNamesToIDs(t, ctx, groups)
 
 	// generate the reader client
-	readerClient := newClientFromGroup(t, ctx, logger, "reader", []string{"Readers", "Viewers"})
+	readerClient := newClientFromGroup(t, ctx, logger, "reader", groupIDs)
 
 	// listing the available branches should succeed
 	resListBranches, err := readerClient.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{})
