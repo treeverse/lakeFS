@@ -53,6 +53,8 @@ type Build struct {
 	// use for the lakeFS local block adapter.  By default it is a
 	// temporary test directory.
 	LocalDirectory string
+	// Env sets the environment.
+	Env []string
 }
 
 func (b *Build) WithRepository(repository string) *Build {
@@ -67,6 +69,11 @@ func (b *Build) WithTag(tag string) *Build {
 
 func (b *Build) WithLocalDirectory(dir string) *Build {
 	b.LocalDirectory = dir
+	return b
+}
+
+func (b *Build) WithEnv(e ...string) *Build {
+	b.Env = append(b.Env, e...)
 	return b
 }
 
@@ -131,13 +138,12 @@ func newLakeFSContainer(ctx context.Context, b *Build, t testing.TB, pool *docke
 	ret.Resource, err = pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: b.Repository,
 		Tag:        b.Tag,
-		Env: []string{
+		Env: append(b.Env[:],
 			"LAKEFS_STATS_ENABLED=0",
 			"LAKEFS_AUTH_ENCRYPT_SECRET_KEY=shh...",
 			"LAKEFS_BLOCKSTORE_TYPE=mem",
 			"LAKEFS_DATABASE_TYPE=local",
-			"LAKEFS_LOCAL=foo",
-		},
+		),
 		// Don't forget to turn off stats!!
 		Cmd: []string{"run"},
 	})
