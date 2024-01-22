@@ -24,9 +24,9 @@ func TestAdminPermissions(t *testing.T) {
 	resCreateGroup, err := client.CreateGroupWithResponse(ctx, apigen.CreateGroupJSONRequestBody{
 		Id: gname,
 	})
-	groupID := resCreateGroup.JSON201.Id
 	require.NoError(t, err, "Admin failed while creating group")
 	require.Equal(t, http.StatusCreated, resCreateGroup.StatusCode(), "Admin unexpectedly failed to create group")
+	groupID := resCreateGroup.JSON201.Id
 
 	// setting a group ACL should succeed
 	resSetACL, err := client.SetGroupACLWithResponse(ctx, groupID, apigen.SetGroupACLJSONRequestBody{
@@ -245,6 +245,7 @@ func mapGroupNamesToIDs(t *testing.T, ctx context.Context, groups []string) (map
 	// get group list
 	resListGroups, err := client.ListGroupsWithResponse(ctx, &apigen.ListGroupsParams{Amount: apiutil.Ptr(apigen.PaginationAmount(-1))})
 	require.NoError(t, err, "unexpectedly failed while listing groups")
+	require.NotNil(t, resListGroups.JSON200, "unexpectedly got empty response when listing groups")
 	for _, group := range resListGroups.JSON200.Results {
 		mapGroupNameToID[*group.Name] = group.Id
 		if slices.Contains(groups, *group.Name) {
