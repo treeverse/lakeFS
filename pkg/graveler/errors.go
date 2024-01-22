@@ -43,6 +43,7 @@ var (
 	ErrBranchExists                 = fmt.Errorf("branch already exists: %w", ErrNotUnique)
 	ErrTagAlreadyExists             = fmt.Errorf("tag already exists: %w", ErrNotUnique)
 	ErrLinkAddressAlreadyExists     = fmt.Errorf("address token already exists: %w", ErrNotUnique)
+	ErrCommitAlreadyExists          = fmt.Errorf("commit already exists: %w", ErrNotUnique)
 	ErrLinkAddressNotFound          = fmt.Errorf("address token %w", ErrNotFound)
 	ErrLinkAddressExpired           = errors.New("address token has expired")
 	ErrDirtyBranch                  = wrapError(ErrUserVisible, "uncommitted changes (dirty branch)")

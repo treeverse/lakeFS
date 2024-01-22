@@ -5454,7 +5454,6 @@ func TestController_CreateCommitRecord(t *testing.T) {
 		if diff := deep.Equal(commitLog, expectedCommitLog); diff != nil {
 			t.Fatalf("Diff: %v", diff)
 		}
-
 	})
 
 	t.Run("create commit record with wrong commitID", func(t *testing.T) {
@@ -5484,6 +5483,21 @@ func TestController_CreateCommitRecord(t *testing.T) {
 		testutil.MustDo(t, "create commit record", err)
 		if resp.StatusCode() != http.StatusNoContent {
 			t.Fatalf("Expected 204 response, got: %s", resp.Status())
+		}
+	})
+
+	t.Run("already existing commit", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
+		testutil.Must(t, err)
+		resp, err := clt.CreateCommitRecordWithResponse(ctx, repo, body)
+		testutil.MustDo(t, "create commit record", err)
+		if resp.StatusCode() != http.StatusNoContent {
+			t.Fatalf("Expected 204 (no content) response, got %s", resp.Status())
+		}
+		resp, err = clt.CreateCommitRecordWithResponse(ctx, repo, body)
+		if resp.StatusCode() != http.StatusConflict {
+			t.Fatalf("Expected 409 (conflict) response, got %s", resp.Status())
 		}
 	})
 }
