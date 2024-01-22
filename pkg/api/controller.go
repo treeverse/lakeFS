@@ -2586,8 +2586,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	case errors.Is(err, graveler.ErrNotUnique),
 		errors.Is(err, graveler.ErrConflictFound),
-		errors.Is(err, graveler.ErrRevertMergeNoParent),
-		errors.Is(err, graveler.ErrCommitAlreadyExists):
+		errors.Is(err, graveler.ErrRevertMergeNoParent):
 		log.Debug("Conflict")
 		cb(w, r, http.StatusConflict, err)
 
