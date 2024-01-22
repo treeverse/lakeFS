@@ -63,8 +63,6 @@ class TestCommit(unittest.TestCase):
                 message = '',
                 creation_date = 56,
                 meta_range_id = '',
-                generation = 56,
-                version = 0,
         )
         """
 
