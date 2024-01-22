@@ -54,22 +54,6 @@ func TestAdminPermissions(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, resDeleteUser.StatusCode(), "Admin unexpectedly failed to delete the user")
 }
 
-func mapGroupNamesToIDs(t *testing.T, ctx context.Context, groups []string) (map[string]string, []string) {
-	groupIDs := make([]string, len(groups))
-	mapGroupNameToID := make(map[string]string)
-
-	// get group list
-	resListGroups, err := client.ListGroupsWithResponse(ctx, &apigen.ListGroupsParams{Amount: apiutil.Ptr(apigen.PaginationAmount(-1))})
-	require.NoError(t, err, "unexpectedly failed while listing groups")
-	for _, group := range resListGroups.JSON200.Results {
-		if slices.Contains(groups, *group.Name) {
-			mapGroupNameToID[*group.Name] = group.Id
-			groupIDs = append(groupIDs, group.Id)
-		}
-	}
-	return mapGroupNameToID, groupIDs
-}
-
 // Test Super Permissions: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestSuperPermissions(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
@@ -252,4 +236,20 @@ func mergeAuthTest(t *testing.T, cli *apigen.ClientWithResponses, ctx context.Co
 	require.Equal(t, http.StatusCreated, resBranchCommit.StatusCode())
 
 	return client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, apigen.MergeIntoBranchJSONRequestBody{})
+}
+
+func mapGroupNamesToIDs(t *testing.T, ctx context.Context, groups []string) (map[string]string, []string) {
+	groupIDs := make([]string, len(groups))
+	mapGroupNameToID := make(map[string]string)
+
+	// get group list
+	resListGroups, err := client.ListGroupsWithResponse(ctx, &apigen.ListGroupsParams{Amount: apiutil.Ptr(apigen.PaginationAmount(-1))})
+	require.NoError(t, err, "unexpectedly failed while listing groups")
+	for _, group := range resListGroups.JSON200.Results {
+		mapGroupNameToID[*group.Name] = group.Id
+		if slices.Contains(groups, *group.Name) {
+			groupIDs = append(groupIDs, group.Id)
+		}
+	}
+	return mapGroupNameToID, groupIDs
 }
