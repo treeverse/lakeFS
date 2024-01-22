@@ -552,8 +552,6 @@ components:
         - message
         - creation_date
         - meta_range_id
-        - generation
-        - version
       properties:
         id:
           type: string
