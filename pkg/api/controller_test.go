@@ -5444,7 +5444,7 @@ func TestController_CreateCommitRecord(t *testing.T) {
 			Reference:    expectedCommitID,
 			Committer:    body.Committer,
 			Message:      body.Message,
-			CreationDate: time.Unix(0, body.CreationDate).UTC(),
+			CreationDate: time.Unix(body.CreationDate, 0).UTC(),
 			Metadata:     body.Metadata.AdditionalProperties,
 			MetaRangeID:  body.MetarangeId,
 			Parents:      body.Parents,
