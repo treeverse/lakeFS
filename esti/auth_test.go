@@ -240,7 +240,7 @@ func mergeAuthTest(t *testing.T, cli *apigen.ClientWithResponses, ctx context.Co
 }
 
 func mapGroupNamesToIDs(t *testing.T, ctx context.Context, groups []string) (map[string]string, []string) {
-	groupIDs := make([]string, len(groups))
+	groupIDs := make([]string, 0, len(groups))
 	mapGroupNameToID := make(map[string]string)
 
 	// get group list
