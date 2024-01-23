@@ -96,6 +96,7 @@ command to demonstrate starting lakeFS using Docker:
 
 ```sh
 docker run \
+  --pull always \
   --name lakefs \
   -p 8000:8000 \
   -e LAKEFS_DATABASE_TYPE="postgres" \
