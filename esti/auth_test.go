@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -247,9 +248,12 @@ func mapGroupNamesToIDs(t *testing.T, ctx context.Context, groups []string) (map
 	require.NoError(t, err, "unexpectedly failed while listing groups")
 	require.NotNil(t, resListGroups.JSON200, "unexpectedly got empty response when listing groups")
 	for _, group := range resListGroups.JSON200.Results {
-		mapGroupNameToID[*group.Name] = group.Id
-		if slices.Contains(groups, *group.Name) {
-			groupIDs = append(groupIDs, group.Id)
+		grpName := swag.StringValue(group.Name)
+		if grpName != "" {
+			mapGroupNameToID[grpName] = group.Id
+			if slices.Contains(groups, grpName) {
+				groupIDs = append(groupIDs, group.Id)
+			}
 		}
 	}
 	return mapGroupNameToID, groupIDs
