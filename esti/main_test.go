@@ -6,18 +6,19 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/go-openapi/swag"
 	"github.com/hashicorp/go-multierror"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -142,7 +143,7 @@ func deleteAllGroups(ctx context.Context, client apigen.ClientWithResponsesInter
 			return fmt.Errorf("list groups: status: %s", resp.Status())
 		}
 		for _, group := range resp.JSON200.Results {
-			if !slices.Contains(groupsToKeep, group.Id) {
+			if !slices.Contains(groupsToKeep, swag.StringValue(group.Name)) {
 				groupsToDelete = append(groupsToDelete, group.Id)
 			}
 		}
