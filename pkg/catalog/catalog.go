@@ -1230,7 +1230,7 @@ func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, c
 		Committer:    committer,
 		Message:      message,
 		MetaRangeID:  graveler.MetaRangeID(metaRangeID),
-		CreationDate: time.Unix(0, *creationDate).UTC(),
+		CreationDate: time.Unix(*creationDate, 0).UTC(),
 		Parents:      commitParents,
 		Metadata:     metadata,
 		Generation:   graveler.CommitGeneration(generation),
