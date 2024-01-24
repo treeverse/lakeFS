@@ -22,17 +22,16 @@ func TestLakeFSContainer(t *testing.T) {
 	}
 
 	container := lakefs_ci.New().WithTag(version).New(ctx, t, pool)
+	defer container.Close()
 
 	res, err := container.Client.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if err = helpers.ResponseAsError(res); err != nil {
-		t.Errorf("Received error: %s", err)
+		t.Fatalf("Received error: %s", err)
 	}
 	if len(res.JSON200.Results) != 0 {
 		t.Errorf("Got repositories %+v", res.JSON200.Results)
 	}
-
-	container.Close()
 }

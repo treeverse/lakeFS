@@ -24,18 +24,18 @@ const (
 // waitForHealth waits until GETting URL returns 200.
 func waitForHealth(ctx context.Context, url string, pool *dockertest.Pool) error {
 	return pool.Retry(func() error {
-		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			return err
 		}
 		res, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return err
-		} else if err = helpers.HTTPResponseAsError(res); err != nil {
-			return err
-		} else {
-			return nil
 		}
+		if res != nil && res.Body != nil {
+			defer res.Body.Close()
+		}
+		return helpers.HTTPResponseAsError(res)
 	})
 }
 
@@ -46,9 +46,9 @@ func New() *Build {
 // Build holds parameters for building a lakeFS dockertest container.
 type Build struct {
 	Repository string
-	// Tag is the docker tag to fetch.  It is required or New() will
+	// DockerTag is the docker tag to fetch.  It is required or New() will
 	// fail.
-	Tag string
+	DockerTag string
 	// LocalDirectory is the directory to mount into the container and
 	// use for the lakeFS local block adapter.  By default it is a
 	// temporary test directory.
@@ -63,7 +63,7 @@ func (b *Build) WithRepository(repository string) *Build {
 }
 
 func (b *Build) WithTag(tag string) *Build {
-	b.Tag = tag
+	b.DockerTag = tag
 	return b
 }
 
@@ -83,7 +83,7 @@ func (b *Build) New(ctx context.Context, t testing.TB, pool *dockertest.Pool) *C
 	if b.Repository == "" {
 		b.Repository = DockerLakeFSRepository
 	}
-	if b.Tag == "" {
+	if b.DockerTag == "" {
 		t.Fatal("Tag not specified")
 	}
 	if b.LocalDirectory == "" {
@@ -135,17 +135,20 @@ func newLakeFSContainer(ctx context.Context, b *Build, t testing.TB, pool *docke
 		}
 	}()
 
+	env := make([]string, len(b.Env))
+	copy(env, b.Env)
+	env = append(env,
+		"LAKEFS_STATS_ENABLED=0",
+		"LAKEFS_AUTH_ENCRYPT_SECRET_KEY=shh...",
+		"LAKEFS_BLOCKSTORE_TYPE=mem",
+		"LAKEFS_DATABASE_TYPE=local",
+	)
+
 	ret.Resource, err = pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: b.Repository,
-		Tag:        b.Tag,
-		Env: append(b.Env[:],
-			"LAKEFS_STATS_ENABLED=0",
-			"LAKEFS_AUTH_ENCRYPT_SECRET_KEY=shh...",
-			"LAKEFS_BLOCKSTORE_TYPE=mem",
-			"LAKEFS_DATABASE_TYPE=local",
-		),
-		// Don't forget to turn off stats!!
-		Cmd: []string{"run"},
+		Tag:        b.DockerTag,
+		Env:        env,
+		Cmd:        []string{"run"},
 	})
 	if err != nil {
 		t.Fatalf("Failed to start lakeFS container: %s", err)
