@@ -5416,11 +5416,11 @@ func TestController_CreateCommitRecord(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	// expected commit ID for this commit record
-	expectedCommitID := "2996b23ac5ab6e7267c302cf00c751bbb87afddd81c6d03e95f654f77b0f3ded"
+	expectedCommitID := "0c5f9d6fde638a6aa82840caf2485bdbe6ad0fc3f220ea88884df9ed99d7cf19"
 	body := apigen.CreateCommitRecordJSONRequestBody{
 		CommitId:     expectedCommitID,
 		Committer:    "Committer",
-		CreationDate: 0,
+		CreationDate: 1e9,
 		Generation:   1,
 		Message:      "message",
 		Metadata:     &apigen.CommitRecordCreation_Metadata{AdditionalProperties: map[string]string{"key": "value"}},
@@ -5444,7 +5444,7 @@ func TestController_CreateCommitRecord(t *testing.T) {
 			Reference:    expectedCommitID,
 			Committer:    body.Committer,
 			Message:      body.Message,
-			CreationDate: time.Unix(0, body.CreationDate).UTC(),
+			CreationDate: time.Unix(body.CreationDate, 0).UTC(),
 			Metadata:     body.Metadata.AdditionalProperties,
 			MetaRangeID:  body.MetarangeId,
 			Parents:      body.Parents,
