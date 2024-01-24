@@ -97,14 +97,14 @@ spark-shell --conf spark.sql.catalog.lakefs="org.apache.iceberg.spark.SparkCatal
 To create a table on your main branch, use the following syntax:
 
 ```sql
-CREATE TABLE lakefs.main.table1 (id int, data string);
+CREATE TABLE lakefs.main.db1.table1 (id int, data string);
 ```
 
 ### Insert data into the table
     
 ```sql
-INSERT INTO lakefs.main.table1 VALUES (1, 'data1');
-INSERT INTO lakefs.main.table1 VALUES (2, 'data2');
+INSERT INTO lakefs.main.db1.table1 VALUES (1, 'data1');
+INSERT INTO lakefs.main.db1.table1 VALUES (2, 'data2');
 ```
 
 ### Create a branch
@@ -126,7 +126,7 @@ lakectl branch create lakefs://example-repo/dev -s lakefs://example-repo/main
 We can now make changes on the branch:
 
 ```sql
-INSERT INTO lakefs.dev.table1 VALUES (3, 'data3');
+INSERT INTO lakefs.dev.db1.table1 VALUES (3, 'data3');
 ```
 
 ### Query the table
@@ -134,7 +134,7 @@ INSERT INTO lakefs.dev.table1 VALUES (3, 'data3');
 If we query the table on the branch, we will see the data we inserted:
 
 ```sql
-SELECT * FROM lakefs.dev.table1;
+SELECT * FROM lakefs.dev.db1.table1;
 ```
 
 Results in:
@@ -151,7 +151,7 @@ Results in:
 However, if we query the table on the main branch, we will not see the new changes:
 
 ```sql
-SELECT * FROM lakefs.main.table1;
+SELECT * FROM lakefs.main.db1.table1;
 ```
 
 Results in:
