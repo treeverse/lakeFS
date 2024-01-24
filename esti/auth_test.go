@@ -3,6 +3,7 @@ package esti
 import (
 	"context"
 	"net/http"
+	"slices"
 	"testing"
 
 	"github.com/go-openapi/swag"
@@ -12,7 +13,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
-	"golang.org/x/exp/slices"
 )
 
 // Test Admin permissions: AuthFullAccess, ExportSetConfiguration, FSFullAccess, RepoManagementFullAccess
@@ -246,6 +246,7 @@ func mapGroupNamesToIDs(t *testing.T, ctx context.Context, groups []string) (map
 	// get group list
 	resListGroups, err := client.ListGroupsWithResponse(ctx, &apigen.ListGroupsParams{Amount: apiutil.Ptr(apigen.PaginationAmount(-1))})
 	require.NoError(t, err, "unexpectedly failed while listing groups")
+	require.Equal(t, http.StatusOK, resListGroups.StatusCode())
 	require.NotNil(t, resListGroups.JSON200, "unexpectedly got empty response when listing groups")
 	for _, group := range resListGroups.JSON200.Results {
 		grpName := swag.StringValue(group.Name)
