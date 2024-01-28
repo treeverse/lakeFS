@@ -269,7 +269,7 @@ local client = databricks.client("https://my-host.cloud.databricks.com", "my-ser
 local status = client.register_external_table("mytable", "s3://mybucket/the/path/to/mytable", "examwarehouseple", "my-catalog-name", "myschema")
 ```
 
-- For the Databricks permissions needed to run this method, check out the [Unity Catalog Exporter]({% link integrations/unity_catalog.md %}) docs.
+- For the Databricks permissions needed to run this method, check out the [Unity Catalog Exporter]({% link integrations/unity-catalog.md %}) docs.
 
 ### `encoding/base64/encode(data)`
 
@@ -712,7 +712,7 @@ catalog: my-catalog
 ```
 
 For detailed step-by-step guide on how to use `unity_exporter.register_tables` as a part of a lakeFS action refer to
-the [Unity Catalog docs]({% link integrations/unity_catalog.md %}).
+the [Unity Catalog docs]({% link integrations/unity-catalog.md %}).
 
 ### `path/parse(path_string)`
 
