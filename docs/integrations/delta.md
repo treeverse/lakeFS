@@ -84,5 +84,4 @@ guarantee data quality in a Delta table by utilizing lakeFS branches.
 
 
 [data-quality-gates]:  {% link understand/use_cases/cicd_for_data.md %}#using-hooks-as-data-quality-gates
-[config-plugins]:  {% link reference/configuration.md %}#plugins
 [deploy-docker]:  {% link howto/deploy/onprem.md %}#docker
