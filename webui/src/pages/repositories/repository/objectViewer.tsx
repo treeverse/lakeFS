@@ -6,13 +6,12 @@ import Card from "react-bootstrap/Card";
 
 import { useAPI } from "../../../lib/hooks/api";
 import { useQuery } from "../../../lib/hooks/router";
-import { objects } from "../../../lib/api";
+import {config, objects} from "../../../lib/api";
 import { ObjectRenderer } from "./fileRenderers";
 import { AlertError } from "../../../lib/components/controls";
 import { URINavigator } from "../../../lib/components/repository/tree";
 import { RefTypeBranch } from "../../../constants";
 import { RefContextProvider } from "../../../lib/hooks/repo";
-import { useStorageConfig } from "../../../lib/hooks/storageConfig";
 import { linkToPath } from "../../../lib/api";
 
 import "../../../styles/quickstart.css";
@@ -56,7 +55,7 @@ export const getContentType = (headers: Headers): string | null => {
 };
 
 const FileObjectsViewerPage = () => {
-  const config = useStorageConfig();
+  const { response: configResponse, error: configError, loading: configLoading } = useAPI(() => config.getStorageConfig());
   const { repoId } = useParams<ObjectViewerPathParams>();
   const queryString = useQuery<ObjectViewerQueryString>();
   const refId = queryString["ref"] ?? "";
@@ -66,10 +65,12 @@ const FileObjectsViewerPage = () => {
   }, [repoId, refId, path]);
 
   let content;
-  if (loading || config.loading) {
+  if (loading || configLoading) {
     content = <Loading />;
   } else if (error) {
-    content = <AlertError error={error} />;
+    content = <AlertError error={error}/>;
+  } else if (configError) {
+    content = <AlertError error={configError} />;
   } else {
     const fileExtension = getFileExtension(path);
     // We'll need to convert the API service to get rid of this any
@@ -79,6 +80,7 @@ const FileObjectsViewerPage = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (response as any)?.headers.get("Content-Length")
     );
+    const presign = configResponse.pre_sign_support_ui || false;
     content = (
       <FileContents
         repoId={repoId || ""}
@@ -92,7 +94,7 @@ const FileObjectsViewerPage = () => {
         sizeBytes={sizeBytes}
         error={error}
         loading={loading}
-        presign={config.pre_sign_support_ui}
+        presign={presign}
       />
     );
   }
