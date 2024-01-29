@@ -65,28 +65,6 @@ type S3AuthInfo struct {
 	}
 }
 
-// PluginProps struct holds the properties needed to run a plugin
-type PluginProps struct {
-	Path    string `mapstructure:"path"`
-	Version int    `mapstructure:"version"`
-}
-
-// Plugins struct holds the plugins dir default location and a map of optional plugin location with higher precedence
-type Plugins struct {
-	DefaultPath string                 `mapstructure:"default_path"`
-	Properties  map[string]PluginProps `mapstructure:"properties"`
-}
-
-// DeltaDiffPlugin includes properties for the Delta Lake diff plugin
-type DeltaDiffPlugin struct {
-	PluginName string `mapstructure:"plugin"`
-}
-
-// DiffProps struct holds the properties that define the details necessary to run a diff.
-type DiffProps struct {
-	Delta DeltaDiffPlugin `mapstructure:"delta"`
-}
-
 // Config - Output struct of configuration, used to validate.  If you read a key using a viper accessor
 // rather than accessing a field of this struct, that key will *not* be validated.  So don't
 // do that.
@@ -361,8 +339,6 @@ type Config struct {
 			Code string `mapstructure:"code"`
 		} `mapstructure:"snippets"`
 	} `mapstructure:"ui"`
-	Diff        DiffProps `mapstructure:"diff"`
-	Plugins     Plugins   `mapstructure:"plugins"`
 	UsageReport struct {
 		Enabled       bool          `mapstructure:"enabled"`
 		FlushInterval time.Duration `mapstructure:"flush_interval"`

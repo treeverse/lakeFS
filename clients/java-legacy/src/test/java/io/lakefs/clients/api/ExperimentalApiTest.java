@@ -17,9 +17,7 @@ import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.AbortPresignMultipartUpload;
 import io.lakefs.clients.api.model.CompletePresignMultipartUpload;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.OTFDiffs;
 import io.lakefs.clients.api.model.ObjectStats;
-import io.lakefs.clients.api.model.OtfDiffList;
 import io.lakefs.clients.api.model.PresignMultipartUpload;
 import io.lakefs.clients.api.model.StagingLocation;
 import org.junit.Test;
@@ -96,20 +94,6 @@ public class ExperimentalApiTest {
     }
     
     /**
-     * get the available Open Table Format diffs
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void getOtfDiffsTest() throws ApiException {
-                OTFDiffs response = api.getOtfDiffs();
-        // TODO: test validations
-    }
-    
-    /**
      * hard reset branch
      *
      * Relocate branch to refer to ref.  Branch must not contain uncommitted data.
@@ -124,25 +108,6 @@ public class ExperimentalApiTest {
         String ref = null;
         Boolean force = null;
                 api.hardResetBranch(repository, branch, ref, force);
-        // TODO: test validations
-    }
-    
-    /**
-     * perform otf diff
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void otfDiffTest() throws ApiException {
-        String repository = null;
-        String leftRef = null;
-        String rightRef = null;
-        String tablePath = null;
-        String type = null;
-                OtfDiffList response = api.otfDiff(repository, leftRef, rightRef, tablePath, type);
         // TODO: test validations
     }
     

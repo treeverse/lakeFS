@@ -45,10 +45,6 @@ export const useRefs = () => {
     return refs;
 }
 
-export const useRefsWithRefresh = () => {
-    return useContext(RefContext);
-};
-
 const refContextInitialState = {
     loading: true,
     error: null,

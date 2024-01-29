@@ -40,7 +40,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/samplerepo"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -97,7 +96,6 @@ type Controller struct {
 	Logger                logging.Logger
 	sessionStore          sessions.Store
 	PathProvider          upload.PathProvider
-	otfDiffService        *tablediff.Service
 	usageReporter         stats.UsageReporterOperations
 }
 
@@ -4930,117 +4928,6 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) OtfDiff(w http.ResponseWriter, r *http.Request, repository, leftRef, rightRef string, params apigen.OtfDiffParams) {
-	ctx := r.Context()
-	user, _ := auth.GetUser(ctx)
-	c.LogAction(ctx, fmt.Sprintf("table_format_%s_diff", params.Type), r, repository, rightRef, leftRef)
-	credentials, _, err := c.Auth.ListUserCredentials(ctx, user.Username, &model.PaginationParams{
-		Prefix: "",
-		After:  "",
-		Amount: 1,
-	})
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	if len(credentials) == 0 {
-		writeError(w, r, http.StatusPreconditionFailed, "no programmatic credentials")
-		return
-	}
-
-	baseCredential, err := c.Auth.GetCredentials(ctx, credentials[0].AccessKeyID)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	listenAddress := c.Config.ListenAddress
-	if strings.HasPrefix(listenAddress, ":") {
-		// workaround in case we listen on all interfaces without specifying ip
-		listenAddress = fmt.Sprintf("localhost%s", listenAddress)
-	}
-
-	tdp := tablediff.Params{
-		// TODO(jonathan): add base RefPath
-		TablePaths: tablediff.TablePaths{
-			Left: tablediff.RefPath{
-				Ref:  leftRef,
-				Path: params.TablePath,
-			},
-			Right: tablediff.RefPath{
-				Ref:  rightRef,
-				Path: params.TablePath,
-			},
-		},
-		S3Creds: tablediff.S3Creds{
-			Key:      config.SecureString(baseCredential.AccessKeyID),
-			Secret:   config.SecureString(baseCredential.SecretAccessKey),
-			Endpoint: "http://" + listenAddress,
-		},
-		Repo: repository,
-	}
-
-	entries, err := c.otfDiffService.RunDiff(ctx, params.Type, tdp)
-	if err != nil {
-		c.Logger.WithError(err).
-			WithContext(ctx).
-			WithField("type", params.Type).
-			WithField("table_diff_paths", fmt.Sprintf("%+v", tdp.TablePaths)).
-			WithField("repo", tdp.Repo).
-			Error("OTF Diff service failed")
-		if errors.Is(err, tablediff.ErrTableNotFound) {
-			writeError(w, r, http.StatusNotFound, err)
-		} else {
-			writeError(w, r, http.StatusInternalServerError, err)
-		}
-		return
-	}
-	writeResponse(w, r, http.StatusOK, buildOtfDiffListResponse(entries))
-}
-
-func (c *Controller) GetOtfDiffs(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	c.LogAction(ctx, "get_otf_diffs", r, "", "", "")
-	diffTypes := c.otfDiffService.EnabledDiffs()
-	diffs := make([]apigen.DiffProperties, 0, len(diffTypes))
-	for _, diffType := range diffTypes {
-		diffs = append(diffs, apigen.DiffProperties{
-			Name: diffType,
-		})
-	}
-	writeResponse(w, r, http.StatusOK, apigen.OTFDiffs{
-		Diffs: &diffs,
-	})
-}
-
-func buildOtfDiffListResponse(tableDiffResponse tablediff.Response) apigen.OtfDiffList {
-	ol := make([]apigen.OtfDiffEntry, 0)
-	for _, entry := range tableDiffResponse.Diffs {
-		content := make(map[string]interface{})
-		for k, v := range entry.OperationContent {
-			content[k] = v
-		}
-		id := entry.ID
-		ol = append(ol, apigen.OtfDiffEntry{
-			Operation:        entry.Operation,
-			OperationContent: content,
-			Timestamp:        int(entry.Timestamp.Unix()),
-			Id:               id,
-			OperationType:    entry.OperationType,
-		})
-	}
-
-	t := "changed"
-	switch tableDiffResponse.DiffType {
-	case tablediff.DiffTypeCreated:
-		t = "created"
-	case tablediff.DiffTypeDropped:
-		t = "dropped"
-	}
-	return apigen.OtfDiffList{
-		Results:  ol,
-		DiffType: &t,
-	}
-}
-
 func writeError(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
 	apiErr := apigen.Error{
 		Message: fmt.Sprint(v),
@@ -5132,7 +5019,7 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 	return pathRecords
 }
 
-func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, otfDiffService *tablediff.Service, usageReporter stats.UsageReporterOperations) *Controller {
+func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
@@ -5148,7 +5035,6 @@ func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator a
 		Logger:                logger,
 		sessionStore:          sessionStore,
 		PathProvider:          pathProvider,
-		otfDiffService:        otfDiffService,
 		usageReporter:         usageReporter,
 	}
 }

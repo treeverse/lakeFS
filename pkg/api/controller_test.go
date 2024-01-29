@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/go-openapi/swag"
 	"github.com/go-test/deep"
 	"github.com/hashicorp/go-multierror"
@@ -40,7 +39,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -5028,118 +5026,6 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		verifyResponseOK(t, statResp, err)
 		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
-}
-
-func TestController_OtfDiff(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
-	username := "username"
-	_, _ = clt.CreateUserWithResponse(context.Background(), apigen.CreateUserJSONRequestBody{Id: username})
-	server := deps.server
-	authProvider := generateJWTToken(deps.authService, username)
-	nonExistingUserAuthProvider := generateJWTToken(deps.authService, username+"NE")
-	noCredsClient, _ := apigen.NewClientWithResponses(server.URL+apiutil.BaseURL, apigen.WithRequestEditorFn(authProvider.Intercept))
-	noUserClient, _ := apigen.NewClientWithResponses(server.URL+apiutil.BaseURL, apigen.WithRequestEditorFn(nonExistingUserAuthProvider.Intercept))
-
-	repo := testUniqueRepoName()
-
-	diffParams := apigen.OtfDiffParams{
-		TablePath: "path/to/table",
-		Type:      tablediff.ControllerTestPlugin,
-	}
-	testCases := []struct {
-		clt                apigen.ClientWithResponsesInterface
-		expectedHttpStatus int
-		err                error
-		resultDiffType     string
-		description        string
-	}{
-		{
-			clt:                clt,
-			expectedHttpStatus: http.StatusOK,
-			resultDiffType:     "changed",
-			description:        "success - table changed",
-		},
-		{
-			clt:                clt,
-			expectedHttpStatus: http.StatusOK,
-			resultDiffType:     "dropped",
-			description:        "success - table dropped",
-		},
-		{
-			clt:                clt,
-			expectedHttpStatus: http.StatusOK,
-			resultDiffType:     "created",
-			description:        "success - table created",
-		},
-		{
-			clt:                clt,
-			expectedHttpStatus: http.StatusNotFound,
-			err:                tablediff.ErrTableNotFound,
-			description:        "failure - table not found",
-		},
-		{
-			clt:                clt,
-			expectedHttpStatus: http.StatusInternalServerError,
-			err:                tablediff.ErrDiffFailed,
-			description:        "failure - internal error",
-		},
-		{
-			clt:                noUserClient,
-			expectedHttpStatus: http.StatusUnauthorized,
-			description:        "failure - non existing user",
-		},
-		{
-			clt:                noCredsClient,
-			expectedHttpStatus: http.StatusPreconditionFailed,
-			description:        "failure - user without credentials",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			currCtx := context.Background()
-
-			left := "left"
-			right := "right"
-
-			if tc.resultDiffType == "dropped" {
-				left = "dropped"
-			} else if tc.resultDiffType == "created" {
-				right = "created"
-			}
-			if errors.Is(tc.err, tablediff.ErrTableNotFound) {
-				left = "notfound"
-				right = "notfound"
-			} else if errors.Is(tc.err, tablediff.ErrDiffFailed) {
-				diffParams.Type = "nonExistingPlugin"
-			}
-
-			response, err := tc.clt.OtfDiffWithResponse(currCtx, repo, left, right, &diffParams)
-
-			require.NoError(t, err)
-			require.NotNil(t, response)
-			require.NotEmpty(t, response.StatusCode())
-			require.Equal(t, tc.expectedHttpStatus, response.StatusCode())
-			if tc.expectedHttpStatus == http.StatusOK {
-				require.NotNil(t, response.JSON200)
-				require.Equal(t, tc.resultDiffType, *response.JSON200.DiffType)
-				if tc.resultDiffType != "dropped" {
-					require.NotEmpty(t, response.JSON200.Results)
-				} else {
-					require.Empty(t, response.JSON200.Results)
-				}
-			}
-		})
-	}
-}
-
-func generateJWTToken(authService auth.Service, username string) *securityprovider.SecurityProviderApiKey {
-	secret := authService.SecretStore().SharedSecret()
-	now := time.Now()
-	expires := now.Add(time.Hour)
-	apiToken, _ := api.GenerateJWTLogin(secret, username, now, expires)
-	authProvider, _ := securityprovider.NewSecurityProviderApiKey("header", "Authorization", "Bearer "+apiToken)
-	return authProvider
 }
 
 func TestController_LocalAdapter_StageObject(t *testing.T) {

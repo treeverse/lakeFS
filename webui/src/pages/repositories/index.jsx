@@ -79,7 +79,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress, sam
                   onSubmit={onSubmit}
                   onCancel={onCancel}
                   inProgress={inProgress}
-                  samlpleRepoChecked={samlpleRepoChecked}
+                  sampleRepoChecked={samlpleRepoChecked}
                 />
             </Modal.Body>
             <Modal.Footer>
