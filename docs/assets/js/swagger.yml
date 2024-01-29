@@ -442,58 +442,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Diff"
-    OtfDiffEntry:
-      type: object
-      required:
-        - id
-        - operation
-        - timestamp
-        - operation_content
-        - operation_type
-      properties:
-        id:
-          type: string
-        timestamp:
-          type: integer
-        operation:
-          type: string
-        operation_content:
-          type: object
-          description: free form content describing the returned operation diff
-        operation_type:
-          type: string
-          enum: [ create, update, delete ]
-          description: the operation category (CUD)
-
-    OtfDiffList:
-      type: object
-      required:
-        - results
-      properties:
-        diff_type:
-          type: string
-          enum: [ created, dropped, changed ]
-        results:
-          type: array
-          items:
-            $ref: "#/components/schemas/OtfDiffEntry"
-
-    DiffProperties:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-
-    OTFDiffs:
-      title: A list of available Output Table Format diffs.
-      type: object
-      properties:
-        diffs:
-          type: array
-          items:
-            $ref: "#/components/schemas/DiffProperties"
 
     ResetCreation:
       type: object
@@ -2869,78 +2817,6 @@ paths:
           description: branch protection rule created successfully
         400:
           $ref: "#/components/responses/BadRequest"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        412:
-          $ref: "#/components/responses/PreconditionFailed"
-        420:
-          description: too many requests
-        default:
-          $ref: "#/components/responses/ServerError"
-
-  /otf/diffs:
-    get:
-      tags:
-        - experimental
-      operationId: getOtfDiffs
-      summary: get the available Open Table Format diffs
-      responses:
-        200:
-          description: available Open Table Format diffs
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OTFDiffs"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        420:
-          description: too many requests
-        default:
-          $ref: "#/components/responses/ServerError"
-
-  /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-      - in: path
-        name: left_ref
-        required: true
-        schema:
-          type: string
-      - in: path
-        name: right_ref
-        required: true
-        schema:
-          type: string
-      - in: query
-        name: table_path
-        required: true
-        description: a path to the table location under the specified ref.
-        schema:
-          type: string
-      - in: query
-        name: type
-        required: true
-        description: the type of otf
-        schema:
-          type: string
-    get:
-      tags:
-        - experimental
-      operationId: otfDiff
-      summary: perform otf diff
-      responses:
-        200:
-          description: diff list
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OtfDiffList"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

@@ -41,7 +41,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv/mem"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -249,9 +248,6 @@ var runCmd = &cobra.Command{
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
-		otfDiffService, closeOtfService := tablediff.NewService(cfg.Diff, cfg.Plugins)
-		defer closeOtfService()
-
 		// start API server
 		apiHandler := api.Serve(
 			cfg,
@@ -269,7 +265,6 @@ var runCmd = &cobra.Command{
 			cfg.Gateways.S3.DomainNames,
 			cfg.UISnippets(),
 			upload.DefaultPathProvider,
-			otfDiffService,
 			usageReporter,
 		)
 

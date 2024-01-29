@@ -33,7 +33,6 @@ docs/CredentialsWithSecret.md
 docs/CurrentUser.md
 docs/Diff.md
 docs/DiffList.md
-docs/DiffProperties.md
 docs/Error.md
 docs/ErrorNoACL.md
 docs/ExperimentalApi.md
@@ -64,7 +63,6 @@ docs/MergeResult.md
 docs/MetaRangeCreation.md
 docs/MetaRangeCreationResponse.md
 docs/MetadataApi.md
-docs/OTFDiffs.md
 docs/ObjectCopyCreation.md
 docs/ObjectError.md
 docs/ObjectErrorList.md
@@ -72,8 +70,6 @@ docs/ObjectStageCreation.md
 docs/ObjectStats.md
 docs/ObjectStatsList.md
 docs/ObjectsApi.md
-docs/OtfDiffEntry.md
-docs/OtfDiffList.md
 docs/Pagination.md
 docs/PathList.md
 docs/Policy.md
@@ -182,7 +178,6 @@ src/main/java/io/lakefs/clients/api/model/CredentialsWithSecret.java
 src/main/java/io/lakefs/clients/api/model/CurrentUser.java
 src/main/java/io/lakefs/clients/api/model/Diff.java
 src/main/java/io/lakefs/clients/api/model/DiffList.java
-src/main/java/io/lakefs/clients/api/model/DiffProperties.java
 src/main/java/io/lakefs/clients/api/model/Error.java
 src/main/java/io/lakefs/clients/api/model/ErrorNoACL.java
 src/main/java/io/lakefs/clients/api/model/FindMergeBaseResult.java
@@ -208,15 +203,12 @@ src/main/java/io/lakefs/clients/api/model/Merge.java
 src/main/java/io/lakefs/clients/api/model/MergeResult.java
 src/main/java/io/lakefs/clients/api/model/MetaRangeCreation.java
 src/main/java/io/lakefs/clients/api/model/MetaRangeCreationResponse.java
-src/main/java/io/lakefs/clients/api/model/OTFDiffs.java
 src/main/java/io/lakefs/clients/api/model/ObjectCopyCreation.java
 src/main/java/io/lakefs/clients/api/model/ObjectError.java
 src/main/java/io/lakefs/clients/api/model/ObjectErrorList.java
 src/main/java/io/lakefs/clients/api/model/ObjectStageCreation.java
 src/main/java/io/lakefs/clients/api/model/ObjectStats.java
 src/main/java/io/lakefs/clients/api/model/ObjectStatsList.java
-src/main/java/io/lakefs/clients/api/model/OtfDiffEntry.java
-src/main/java/io/lakefs/clients/api/model/OtfDiffList.java
 src/main/java/io/lakefs/clients/api/model/Pagination.java
 src/main/java/io/lakefs/clients/api/model/PathList.java
 src/main/java/io/lakefs/clients/api/model/Policy.java
@@ -294,7 +286,6 @@ src/test/java/io/lakefs/clients/api/model/CredentialsTest.java
 src/test/java/io/lakefs/clients/api/model/CredentialsWithSecretTest.java
 src/test/java/io/lakefs/clients/api/model/CurrentUserTest.java
 src/test/java/io/lakefs/clients/api/model/DiffListTest.java
-src/test/java/io/lakefs/clients/api/model/DiffPropertiesTest.java
 src/test/java/io/lakefs/clients/api/model/DiffTest.java
 src/test/java/io/lakefs/clients/api/model/ErrorNoACLTest.java
 src/test/java/io/lakefs/clients/api/model/ErrorTest.java
@@ -321,15 +312,12 @@ src/test/java/io/lakefs/clients/api/model/MergeResultTest.java
 src/test/java/io/lakefs/clients/api/model/MergeTest.java
 src/test/java/io/lakefs/clients/api/model/MetaRangeCreationResponseTest.java
 src/test/java/io/lakefs/clients/api/model/MetaRangeCreationTest.java
-src/test/java/io/lakefs/clients/api/model/OTFDiffsTest.java
 src/test/java/io/lakefs/clients/api/model/ObjectCopyCreationTest.java
 src/test/java/io/lakefs/clients/api/model/ObjectErrorListTest.java
 src/test/java/io/lakefs/clients/api/model/ObjectErrorTest.java
 src/test/java/io/lakefs/clients/api/model/ObjectStageCreationTest.java
 src/test/java/io/lakefs/clients/api/model/ObjectStatsListTest.java
 src/test/java/io/lakefs/clients/api/model/ObjectStatsTest.java
-src/test/java/io/lakefs/clients/api/model/OtfDiffEntryTest.java
-src/test/java/io/lakefs/clients/api/model/OtfDiffListTest.java
 src/test/java/io/lakefs/clients/api/model/PaginationTest.java
 src/test/java/io/lakefs/clients/api/model/PathListTest.java
 src/test/java/io/lakefs/clients/api/model/PolicyListTest.java

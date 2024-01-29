@@ -1,19 +1,16 @@
 import React, {useCallback, useState} from "react";
 
-import {ArrowLeftIcon, ClockIcon, InfoIcon, PlusIcon, XIcon} from "@primer/octicons-react";
+import {ClockIcon, PlusIcon, XIcon} from "@primer/octicons-react";
 
-import {useAPI, useAPIWithPagination} from "../../hooks/api";
-import {AlertError, Loading} from "../controls";
+import {useAPIWithPagination} from "../../hooks/api";
+import {AlertError} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
-import {TreeItemType} from "../../../constants";
-import * as otfUtils from "../../../util/otfUtil";
-import {ObjectTreeEntryRow, PrefixTreeEntryRow, TableTreeEntryRow} from "./treeRows";
+import {ObjectTreeEntryRow, PrefixTreeEntryRow} from "./treeRows";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
 import {refs} from "../../api";
-import {DeltaLakeDiff} from "./TableDiff";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -35,13 +32,11 @@ import Col from "react-bootstrap/Col";
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore callback to be called when more items need to be rendered
  */
 export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore,
-                                depth=0, setTableDiffExpanded, setTableDiffState, setIsTableMerge, deltaDiffEnabled}) => {
+                                depth=0}) => {
     const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
-
-    const itemType = useAPI(() => useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID, deltaDiffEnabled), []);
 
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!dirExpanded) return
@@ -61,12 +56,12 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
     if (error)
         return <tr><td><AlertError error={error}/></td></tr>
 
-    if (itemType.loading || (loading && results.length === 0)) {
+    if (loading && results.length === 0) {
         return <ObjectTreeEntryRow key={entry.path + "entry-row"} entry={entry} loading={true} relativeTo={relativeTo}
                                    depth={depth} onRevert={onRevert} repo={repo} reference={reference}
                                    getMore={getMore}/>
     }
-    if (itemType.response === TreeItemType.Object) {
+    if (entry.path_type === "object") {
         return <>
             <ObjectTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo}
                                 depth={depth === 0 ? 0 : depth + 1} onRevert={onRevert} repo={repo}
@@ -84,26 +79,22 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
                 </td>
                 </tr>
             }
-        </>
-
-    } else if (itemType.response === TreeItemType.Prefix) {
-        return <>
-            <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
-            {dirExpanded && results &&
-            results.map(child =>
-                (<TreeItemRow key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
-                              internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
-                              relativeTo={entry.path} getMore={getMore} setTableDiffExpanded={onTableDiffExpansion(child, setTableDiffState, setIsTableMerge)} setTableDiffState={setTableDiffState}
-                              setIsTableMerge={setIsTableMerge}
-                              deltaDiffEnabled={deltaDiffEnabled}/>))}
-            {(!!nextPage || loading) &&
-            <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage}
-                                setAfterUpdated={setAfterUpdated}/>
-        }
-    </>
-    } else {
-        return <TableTreeEntryRow key={entry.path + "entry-row"} entry={entry} relativeTo={relativeTo} depth={depth} onRevert={onRevert} onClickExpandDiff={setTableDiffExpanded}/>
+            </>
     }
+    // entry is a common prefix
+    return <>
+        <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
+        {dirExpanded && results &&
+        results.map(child =>
+            (<TreeItemRow key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
+                          internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
+                          relativeTo={entry.path} getMore={getMore}
+                          />))}
+        {(!!nextPage || loading) &&
+        <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage}
+                            setAfterUpdated={setAfterUpdated}/>
+    }
+    </>
 }
 
 export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, loading=false }) => {
@@ -128,27 +119,6 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
     );
 };
 
-async function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID, isDeltaEnabled) {
-    if (entry.path_type === "object") {
-        return TreeItemType.Object;
-    }
-    if (!isDeltaEnabled) {
-        return TreeItemType.Prefix;
-    }
-    // Tree items that represent prefixes are always of entry.type = prefix_changed and the actual diff type is
-    // presented at the object level. Therefore, in case of tables that were added or removed we don't know
-    // under which of the diff refs the table root is expected to be listed, and therefore we try to get the table type
-    // from both and take the one that returned results.
-    let leftResult = otfUtils.isDeltaLakeTable(entry, repo, rightDiffRefID);
-    let rightResult = otfUtils.isDeltaLakeTable(entry, repo, leftDiffRefID);
-    const [leftResponse, rightResponse] = await Promise.all([rightResult, leftResult])
-
-    if (leftResponse || rightResponse) {
-        return TreeItemType.DeltaLakeTable
-    }
-    return TreeItemType.Prefix;
-}
-
 /**
  * A container component for entries that represent a diff between refs. This container is used by the compare, commit changes,
  * and uncommitted changes views.
@@ -168,60 +138,27 @@ async function useTreeItemType(entry, repo, leftDiffRefID, rightDiffRefID, isDel
  * @param setAfterUpdated state of pagination of the item's children
  * @param onNavigate to be called when navigating to a prefix
  * @param onRevert to be called when an object/prefix is requested to be reverted
+ * @param changesTreeMessage
  */
 export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
-                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert, setIsTableMerge,
+                                         getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert,
                                          changesTreeMessage= ""}) => {
-    const [tableDiffState, setTableDiffState] = useState({isShown: false, expandedTablePath: "", expandedTableName: ""});
-    const isDeltaDiffEnabled = useAPI(() => otfUtils.isDeltaLakeDiffEnabled(), []);
-    const compareTipStorageKey = "show_compare_tip";
-    const [showCompareTip, setShowCompareTip] = useState(window.localStorage.getItem(compareTipStorageKey) !== "false");
-    const closeAndRememberCompareTip = useCallback(() => {
-        window.localStorage.setItem(compareTipStorageKey, "false");
-        setShowCompareTip(false);
-    });
-
-    if (isDeltaDiffEnabled.loading) {
-        return <Loading />
-    }
     if (results.length === 0) {
         return <div className="tree-container">
             <Alert variant="info">No changes</Alert>
         </div>
     } else {
         return <div className="tree-container">
-                    {tableDiffState.isShown
-                                ? <Button className="action-bar"
-                                          variant="secondary"
-                                          disabled={false}
-                                          onClick={() => {
-                                              setTableDiffState( {isShown: false, expandedTablePath: "", expandedTableName: ""})
-                                              if (setIsTableMerge) {
-                                                  setIsTableMerge(false);
-                                              }
-                                          }}>
-                                    <ArrowLeftIcon/> Back to object comparison
-                                  </Button>
-                                : <div className="mr-1 mb-2">{showCompareTip && <Alert onClose={closeAndRememberCompareTip} dismissible variant={"info"}>
-                                    <InfoIcon/> You can use lakeFS to compare Delta Lake tables. <a href="https://docs.lakefs.io/integrations/delta.html">Learn more.</a></Alert>}
-                                  </div>
-                    }
                     <div>{changesTreeMessage}</div>
                     <Card>
                         <Card.Header>
-                            {tableDiffState.isShown
-                                ? tableDiffState.expandedTableName
-                                :
-                                <span className="float-start">
-                                    {(delimiter !== "") && uriNavigator}
-                                </span>
-                            }
+                            <span className="float-start">
+                                {(delimiter !== "") && uriNavigator}
+                            </span>
                         </Card.Header>
                         <Card.Body>
-                            {tableDiffState.isShown
-                                ? <DeltaLakeDiff repo={repo} leftRef={leftDiffRefID} rightRef={rightDiffRefID} tablePath={tableDiffState.expandedTablePath}/>
-                                : <Table borderless size="sm">
+                            <Table borderless size="sm">
                                 <tbody>
                                 {results.map(entry => {
                                     return (
@@ -233,17 +170,13 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                                      onNavigate={onNavigate}
                                                      getMore={getMore}
                                                      onRevert={onRevert}
-                                                     setTableDiffExpanded={onTableDiffExpansion(entry, setTableDiffState, setIsTableMerge)}
-                                                     setTableDiffState={setTableDiffState}
-                                                     setIsTableMerge={setIsTableMerge}
-                                                     deltaDiffEnabled={isDeltaDiffEnabled.response}
                                                  />);
                                 })}
                                 {!!nextPage &&
                                 <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage}
                                                     setAfterUpdated={setAfterUpdated}/>}
                                 </tbody>
-                            </Table>}
+                            </Table>
                         </Card.Body>
                     </Card>
             </div>
@@ -253,15 +186,6 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
 export const defaultGetMoreChanges = (repo, leftRefId, rightRefId, delimiter) => (afterUpdated, path, useDelimiter= true, amount = -1) => {
     return refs.diff(repo.id, leftRefId, rightRefId, afterUpdated, path, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined);
 };
-
-const onTableDiffExpansion = (entry, setTableDiffState, setIsTableMerge) => () => {
-    const pathParts = entry.path.split('/');
-    const tableName = pathParts.pop() || pathParts.pop();  // handle trailing slash at the end of table name
-    setTableDiffState({isShown: true,  expandedTablePath: entry.path, expandedTableName: tableName})
-    if (setIsTableMerge) {
-        setIsTableMerge(true);
-    }
-}
 
 export const MetadataFields = ({ metadataFields, setMetadataFields, ...rest}) => {
     const onChangeKey = useCallback((i) => {
