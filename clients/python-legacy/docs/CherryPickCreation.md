@@ -5,7 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **ref** | **str** | the commit to cherry-pick, given by a ref | 
-**parent_number** | **int** | when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff. The destination branch is parent 1, which is the default behaviour.  | [optional] 
+**parent_number** | **int** | When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff. The default branch is parent 1.  | [optional] 
 **force** | **bool** |  | [optional]  if omitted the server will use the default value of False
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 

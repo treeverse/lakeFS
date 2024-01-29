@@ -72,11 +72,11 @@ public class CherryPickCreation {
   }
 
    /**
-   * when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff. The destination branch is parent 1, which is the default behaviour. 
+   * When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff. The default branch is parent 1. 
    * @return parentNumber
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff. The destination branch is parent 1, which is the default behaviour. ")
+  @ApiModelProperty(value = "When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff. The default branch is parent 1. ")
 
   public Integer getParentNumber() {
     return parentNumber;
