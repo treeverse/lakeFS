@@ -26,6 +26,26 @@ def test_revert(setup_repo):
         assert fd.read() == initial_content
 
 
+def test_cherry_pick(setup_repo):
+    _, repo = setup_repo
+    main_branch = repo.branch("main")
+    test_branch = repo.branch("testest").create("main")
+
+    initial_content = "test_content"
+    test_branch.object("test_object").upload(initial_content)
+    testcommit = test_branch.commit("test_commit", {"test_key": "test_value"}).get_commit()
+
+    cherry_picked = main_branch.cherry_pick(test_branch.head)
+    assert test_branch.object("test_object").exists()
+    # SHAs are not equal, so we exclude them from eq checks.
+    assert cherry_picked.message == testcommit.message
+    # cherry-picks have origin and source ref name attached as metadata (at minimum),
+    # so we only check that the additional user-supplied metadata is present.
+    assert set(testcommit.metadata.items()) <= set(cherry_picked.metadata.items())
+    # check that the cherry-pick origin is exactly testest@HEAD.
+    assert cherry_picked.metadata["cherry-pick-origin"] == testcommit.id
+
+
 def test_reset_changes(setup_repo):
     _, repo = setup_repo
     test_branch = repo.branch("main")

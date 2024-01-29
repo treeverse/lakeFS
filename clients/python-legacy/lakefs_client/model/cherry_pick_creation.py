@@ -142,7 +142,7 @@ class CherryPickCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            parent_number (int): when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff. The destination branch is parent 1, which is the default behaviour. . [optional]  # noqa: E501
+            parent_number (int): When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff. The default branch is parent 1. . [optional]  # noqa: E501
             force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
@@ -229,7 +229,7 @@ class CherryPickCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            parent_number (int): when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff. The destination branch is parent 1, which is the default behaviour. . [optional]  # noqa: E501
+            parent_number (int): When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff. The default branch is parent 1. . [optional]  # noqa: E501
             force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 

@@ -27,7 +27,7 @@ class CherryPickCreation(BaseModel):
     CherryPickCreation
     """
     ref: StrictStr = Field(..., description="the commit to cherry-pick, given by a ref")
-    parent_number: Optional[StrictInt] = Field(None, description="when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff. The destination branch is parent 1, which is the default behaviour. ")
+    parent_number: Optional[StrictInt] = Field(None, description="When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff. The default branch is parent 1. ")
     force: Optional[StrictBool] = False
     __properties = ["ref", "parent_number", "force"]
 

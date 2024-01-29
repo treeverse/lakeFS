@@ -14,7 +14,7 @@ from lakefs.object import WriteableObject
 from lakefs.object import StoredObject
 from lakefs.import_manager import ImportManager
 from lakefs.reference import Reference, ReferenceType, generate_listing
-from lakefs.models import Change
+from lakefs.models import Change, Commit
 from lakefs.exceptions import (
     api_exception_handler,
     ConflictException,
@@ -123,6 +123,24 @@ class Branch(_BaseBranch):
         """
         self._commit = None
         return super().get_commit()
+
+    def cherry_pick(self, reference: ReferenceType, parent_number: Optional[int] = None) -> Commit:
+        """
+        Cherry-pick a given reference onto the branch.
+
+        :param reference: ID of the reference to cherry-pick.
+        :param parent_number: When cherry-picking a merge commit, the parent number (starting from 1)
+            with which to perform the diff. The default branch is parent 1.
+        :return: The cherry-picked commit at the head of the branch.
+        :raise NotFoundException: If either the repository or target reference do not exist.
+        :raise NotAuthorizedException: If the user is not authorized to perform this operation.
+        :raise ServerException: For any other errors.
+        """
+        ref = reference if isinstance(reference, str) else reference.id
+        cherry_pick_creation = lakefs_sdk.CherryPickCreation(ref=ref, parent_number=parent_number)
+        with api_exception_handler():
+            res = self._client.sdk_client.branches_api.cherry_pick(self._repo_id, self._id, cherry_pick_creation)
+            return Commit(**res.dict())
 
     def create(self, source_reference: ReferenceType, exist_ok: bool = False) -> Branch:
         """
