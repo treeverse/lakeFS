@@ -124,20 +124,21 @@ class Branch(_BaseBranch):
         self._commit = None
         return super().get_commit()
 
-    def cherry_pick(self, reference: ReferenceType, parent_number: Optional[int] = None) -> Commit:
+    def cherry_pick(self, reference: ReferenceType, parent_number: Optional[int] = None, force: bool = False) -> Commit:
         """
         Cherry-pick a given reference onto the branch.
 
         :param reference: ID of the reference to cherry-pick.
         :param parent_number: When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff.
             The default branch is parent 1.
+        :param force: Force the cherry-pick application of the target reference.
         :return: The cherry-picked commit at the head of the branch.
         :raise NotFoundException: If either the repository or target reference do not exist.
         :raise NotAuthorizedException: If the user is not authorized to perform this operation.
         :raise ServerException: For any other errors.
         """
         ref = reference if isinstance(reference, str) else reference.id
-        cherry_pick_creation = lakefs_sdk.CherryPickCreation(ref=ref, parent_number=parent_number)
+        cherry_pick_creation = lakefs_sdk.CherryPickCreation(ref=ref, parent_number=parent_number, force=force)
         with api_exception_handler():
             res = self._client.sdk_client.branches_api.cherry_pick(self._repo_id, self._id, cherry_pick_creation)
             return Commit(**res.dict())
