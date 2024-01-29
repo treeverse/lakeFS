@@ -129,8 +129,8 @@ class Branch(_BaseBranch):
         Cherry-pick a given reference onto the branch.
 
         :param reference: ID of the reference to cherry-pick.
-        :param parent_number: When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff.
-            The default branch is parent 1.
+        :param parent_number: When cherry-picking a merge commit, the parent number (starting from 1)
+            with which to perform the diff. The default branch is parent 1.
         :return: The cherry-picked commit at the head of the branch.
         :raise NotFoundException: If either the repository or target reference do not exist.
         :raise NotAuthorizedException: If the user is not authorized to perform this operation.
