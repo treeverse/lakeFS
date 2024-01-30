@@ -148,7 +148,7 @@ type RevertParams struct {
 	Reference    string // the commit to revert
 	ParentNumber int    // if reverting a merge commit, the change will be reversed relative to this parent number (1-based).
 	Committer    string
-	AllowEmpty   bool // allow revert with no changes
+	AllowEmpty   bool // allow empty commit (revert without changes)
 }
 
 type CherryPickParams struct {

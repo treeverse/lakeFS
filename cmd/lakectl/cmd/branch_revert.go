@@ -12,7 +12,7 @@ import (
 const (
 	branchRevertCmdArgs  = 2
 	ParentNumberFlagName = "parent-number"
-	allowEmptyRevert     = "allow-empty-revert"
+	allowEmptyRevert     = "allow-empty-commit"
 )
 
 // lakectl branch revert lakefs://myrepo/main commitId
@@ -61,7 +61,7 @@ func init() {
 	AssignAutoConfirmFlag(branchRevertCmd.Flags())
 
 	branchRevertCmd.Flags().IntP(ParentNumberFlagName, "m", 0, "the parent number (starting from 1) of the mainline. The revert will reverse the change relative to the specified parent.")
-	branchRevertCmd.Flags().Bool(allowEmptyRevert, false, "allow revert with no changes")
+	branchRevertCmd.Flags().Bool(allowEmptyRevert, false, "allow empty commit (revert without changes)")
 
 	branchCmd.AddCommand(branchRevertCmd)
 }
