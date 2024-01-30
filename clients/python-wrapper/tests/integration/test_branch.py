@@ -20,7 +20,8 @@ def test_revert(setup_repo):
     with obj.reader(mode='r') as fd:
         assert fd.read() == override_content
 
-    test_branch.revert(test_branch.head.id)
+    c = test_branch.revert(test_branch.head)
+    assert c.message.startswith("Revert")
 
     with obj.reader(mode='r') as fd:
         assert fd.read() == initial_content
