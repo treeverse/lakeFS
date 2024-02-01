@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## v0.3.0
+
+:new: What's new:
+
+- Implement Cherry Pick (#7348)
+- Implement Transactions (#7202)
+
+:bug: Bugs fixed:
+
 ## v0.2.1
 
 :bug: Bugs fixed:
