@@ -29,10 +29,24 @@ jobs:
           sparse-checkout: |
             api/swagger.yml
           sparse-checkout-cone-mode: false
-      - name: Check lakeFS swagger YAML
-        id: test_swagger_breaking_changes
+      - name: Check lakeFS swagger YAML backward compatibility
+        id: test_swagger_backward_breaking_changes
         uses: oasdiff/oasdiff-action/breaking@main
         with:
           base: base/api/swagger.yml
           revision: changed/api/swagger.yml
           fail-on-diff: true
+      - name: Check lakeFS swagger YAML forward compatibility
+        id: test_swagger_forward_breaking_changes
+        uses: oasdiff/oasdiff-action/changelog@main
+        with:
+          base: base/api/swagger.yml
+          revision: changed/api/swagger.yml
+      - name: Test changelog action output for forward compatible breaking changes
+        run: |
+          changes=$(echo "${{steps.test_swagger_forward_breaking_changes.outputs.changelog}}")
+          if [[ "$changes" =~ "response-required-property-added" || "$changes" =~ "response-property-became-required" ]]; then
+            echo "Found forward compatible breaking changes"
+            echo $changes
+            exit 1
+          fi
