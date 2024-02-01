@@ -7,7 +7,6 @@
 :new: What's new:
 
 - Implement Cherry Pick (#7348)
-- Implement Transactions (#7202)
 
 :bug: Bugs fixed:
 
