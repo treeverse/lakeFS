@@ -644,7 +644,7 @@ func TestGravelerImport(t *testing.T) {
 		}}))
 	}
 
-	t.Run("import successful", func(t *testing.T) {
+	importTest := func(t *testing.T, metadata graveler.Metadata) {
 		test := testutil.InitGravelerTest(t)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
@@ -672,9 +672,17 @@ func TestGravelerImport(t *testing.T) {
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken3).Times(1)
 		test.RefManager.EXPECT().SetRepositoryMetadata(ctx, repository, gomock.Any())
 
-		val, err := test.Sut.Import(ctx, repository, branch1ID, commit2.MetaRangeID, graveler.CommitParams{Metadata: graveler.Metadata{}}, nil)
+		val, err := test.Sut.Import(ctx, repository, branch1ID, commit2.MetaRangeID, graveler.CommitParams{Metadata: metadata}, nil)
 		require.NoError(t, err)
 		require.NotNil(t, val)
 		require.Equal(t, commit4ID, graveler.CommitID(val.Ref()))
+	}
+
+	t.Run("import successful without metadata", func(t *testing.T) {
+		importTest(t, nil)
+	})
+
+	t.Run("import successful with metadata", func(t *testing.T) {
+		importTest(t, graveler.Metadata{"key": "value"})
 	})
 }
