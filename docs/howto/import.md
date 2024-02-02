@@ -89,7 +89,7 @@ lakeFS Enterprise
 {: .label .label-purple }
 
 With RBAC support, The lakeFS user running the import command should have the following permissions in lakeFS:
-`fs:WriteObject`, `fs:CreateMetaRange`, `fs:CreateCommit`, `fs:ImportFromStorage` and `fs:ImportCancel`.
+`fs:WriteObject`, `fs:CreateMetaRange`, `fs:CreateCommit`, `fs:CreateBranch`, `fs:ImportFromStorage` and `fs:ImportCancel`.
 
 As mentioned above, all of these permissions are available by default to the Supers (open-source) group or the SuperUsers (Cloud/Enterprise).
 
