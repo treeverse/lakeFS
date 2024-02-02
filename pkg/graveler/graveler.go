@@ -2907,6 +2907,9 @@ func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, des
 		commit.Parents = []CommitID{toCommit.CommitID}
 		commit.Generation = toCommit.Generation + 1
 		commit.Metadata = commitParams.Metadata
+		if commit.Metadata == nil {
+			commit.Metadata = make(Metadata)
+		}
 		commit.Metadata[MergeStrategyMetadataKey] = MergeStrategySrcWinsStr
 		preRunID = g.hooks.NewRunID()
 		err = g.hooks.PreCommitHook(ctx, HookRecord{
