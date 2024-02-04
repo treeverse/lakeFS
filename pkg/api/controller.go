@@ -2687,12 +2687,6 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ap
 			},
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.CreateBranchAction,
-					Resource: permissions.RepoArn(repository),
-				},
-			},
-			{
-				Permission: permissions.Permission{
 					Action:   permissions.CreateCommitAction,
 					Resource: permissions.BranchArn(repository, branch),
 				},
