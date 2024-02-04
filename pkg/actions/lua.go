@@ -224,7 +224,7 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, server
 		return &LuaHook{}, fmt.Errorf("error parsing args, got wrong type: %T: %w", parsedArgs, ErrInvalidAction)
 	}
 
-	// script or script_ath
+	// script or script_path
 	script, err := h.Properties.getRequiredProperty("script")
 	if err == nil {
 		return &LuaHook{
@@ -234,9 +234,10 @@ func NewLuaHook(h ActionHook, action *Action, cfg Config, e *http.Server, server
 				Config:     cfg,
 				Endpoint:   e,
 			},
-			Script:    script,
-			Args:      args,
-			collector: collector,
+			Script:        script,
+			Args:          args,
+			collector:     collector,
+			serverAddress: serverAddress,
 		}, nil
 	} else if !errors.Is(err, errMissingKey) {
 		// 'script' was provided but is empty or of the wrong type.

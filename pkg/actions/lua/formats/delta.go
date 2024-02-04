@@ -146,9 +146,7 @@ func newDelta(ctx context.Context, lakeFSAddr string) lua.Function {
 func newS3DeltaClient(l *lua.State, ctx context.Context, lakeFSAddr string) *DeltaClient {
 	accessKeyID := lua.CheckString(l, 1)
 	secretAccessKey := lua.CheckString(l, 2)
-	r := lua.CheckString(l, 3)
 	awsProps := storage.AWSProperties{
-		Region:         r,
 		ForcePathStyle: true,
 		CredsProvider: aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
 			return aws.Credentials{
@@ -158,6 +156,10 @@ func newS3DeltaClient(l *lua.State, ctx context.Context, lakeFSAddr string) *Del
 		}),
 		Endpoint: lakeFSAddr,
 	}
+	if !l.IsNone(3) {
+		awsProps.Region = lua.CheckString(l, 3)
+	}
+
 	storage.RegisterS3CompatBucketURLOpener("lakefs", &awsProps)
 
 	return &DeltaClient{accessProvider: AWSInfo{AWSProps: awsProps}, ctx: ctx}
