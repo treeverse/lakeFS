@@ -1,5 +1,16 @@
 # Changelog
 
+# v1.10.0
+
+:new: What's new:
+
+- Remove Delta Diff experimental support + code cleanup (#7343)
+
+:bug: Bugs fixed:
+
+- Handle empty metadata on import (#7363)
+- Remove unnecessary CreateBranch permission check on import (#7362)
+
 # v1.9.1
 
  :bug: Bugs fixed:
