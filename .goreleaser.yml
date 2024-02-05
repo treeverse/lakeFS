@@ -44,9 +44,6 @@ archives:
   format_overrides:
     - goos: windows
       format: zip
-  files:
-    - src: 'delta/artifacts/delta-{{ tolower .Os }}-{{ tolower .Arch }}/delta_diff*'
-      strip_parent: true
   builds:
    - lakefs
    - lakectl
