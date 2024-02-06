@@ -141,7 +141,7 @@ public class RevertCreation {
   }
 
    /**
-   * allow reverts without any changes
+   * allow empty commit (revert without changes)
    * @return allowEmpty
   **/
   @javax.annotation.Nullable

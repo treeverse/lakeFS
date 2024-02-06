@@ -476,7 +476,7 @@ components:
         allow_empty:
           type: boolean
           default: false
-          description: allow reverts without any changes
+          description: allow empty commit (revert without changes)
 
     CherryPickCreation:
       type: object

@@ -29,7 +29,7 @@ class RevertCreation(BaseModel):
     ref: StrictStr = Field(..., description="the commit to revert, given by a ref")
     parent_number: StrictInt = Field(..., description="when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.")
     force: Optional[StrictBool] = False
-    allow_empty: Optional[StrictBool] = Field(False, description="allow reverts without any changes")
+    allow_empty: Optional[StrictBool] = Field(False, description="allow empty commit (revert without changes)")
     __properties = ["ref", "parent_number", "force", "allow_empty"]
 
     class Config:

@@ -122,11 +122,11 @@ public class RevertCreation {
   }
 
    /**
-   * allow reverts without any changes
+   * allow empty commit (revert without changes)
    * @return allowEmpty
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "allow reverts without any changes")
+  @ApiModelProperty(value = "allow empty commit (revert without changes)")
 
   public Boolean getAllowEmpty() {
     return allowEmpty;

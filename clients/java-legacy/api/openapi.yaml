@@ -7082,7 +7082,7 @@ components:
           type: boolean
         allow_empty:
           default: false
-          description: allow reverts without any changes
+          description: allow empty commit (revert without changes)
           type: boolean
       required:
       - parent_number
