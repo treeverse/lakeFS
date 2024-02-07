@@ -917,6 +917,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         ref="ref_example",
         parent_number=1,
         force=False,
+        allow_empty=False,
     ) # RevertCreation | 
 
     # example passing only required values which don't have defaults set

@@ -61,4 +61,12 @@ public class RevertCreationTest {
         // TODO: test force
     }
 
+    /**
+     * Test the property 'allowEmpty'
+     */
+    @Test
+    public void allowEmptyTest() {
+        // TODO: test allowEmpty
+    }
+
 }

@@ -64,6 +64,10 @@ public class RevertCreation {
   @SerializedName(SERIALIZED_NAME_FORCE)
   private Boolean force = false;
 
+  public static final String SERIALIZED_NAME_ALLOW_EMPTY = "allow_empty";
+  @SerializedName(SERIALIZED_NAME_ALLOW_EMPTY)
+  private Boolean allowEmpty = false;
+
   public RevertCreation() {
   }
 
@@ -129,6 +133,27 @@ public class RevertCreation {
     this.force = force;
   }
 
+
+  public RevertCreation allowEmpty(Boolean allowEmpty) {
+    
+    this.allowEmpty = allowEmpty;
+    return this;
+  }
+
+   /**
+   * allow empty commit (revert without changes)
+   * @return allowEmpty
+  **/
+  @javax.annotation.Nullable
+  public Boolean getAllowEmpty() {
+    return allowEmpty;
+  }
+
+
+  public void setAllowEmpty(Boolean allowEmpty) {
+    this.allowEmpty = allowEmpty;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -186,13 +211,14 @@ public class RevertCreation {
     RevertCreation revertCreation = (RevertCreation) o;
     return Objects.equals(this.ref, revertCreation.ref) &&
         Objects.equals(this.parentNumber, revertCreation.parentNumber) &&
-        Objects.equals(this.force, revertCreation.force)&&
+        Objects.equals(this.force, revertCreation.force) &&
+        Objects.equals(this.allowEmpty, revertCreation.allowEmpty)&&
         Objects.equals(this.additionalProperties, revertCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ref, parentNumber, force, additionalProperties);
+    return Objects.hash(ref, parentNumber, force, allowEmpty, additionalProperties);
   }
 
   @Override
@@ -202,6 +228,7 @@ public class RevertCreation {
     sb.append("    ref: ").append(toIndentedString(ref)).append("\n");
     sb.append("    parentNumber: ").append(toIndentedString(parentNumber)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
+    sb.append("    allowEmpty: ").append(toIndentedString(allowEmpty)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -228,6 +255,7 @@ public class RevertCreation {
     openapiFields.add("ref");
     openapiFields.add("parent_number");
     openapiFields.add("force");
+    openapiFields.add("allow_empty");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

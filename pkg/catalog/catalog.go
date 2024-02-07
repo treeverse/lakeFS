@@ -148,6 +148,7 @@ type RevertParams struct {
 	Reference    string // the commit to revert
 	ParentNumber int    // if reverting a merge commit, the change will be reversed relative to this parent number (1-based).
 	Committer    string
+	AllowEmpty   bool // allow empty commit (revert without changes)
 }
 
 type CherryPickParams struct {
@@ -1638,8 +1639,9 @@ func (c *Catalog) Revert(ctx context.Context, repositoryID string, branch string
 	branchID := graveler.BranchID(branch)
 	reference := graveler.Ref(params.Reference)
 	commitParams := graveler.CommitParams{
-		Committer: params.Committer,
-		Message:   fmt.Sprintf("Revert %s", params.Reference),
+		Committer:  params.Committer,
+		Message:    fmt.Sprintf("Revert %s", params.Reference),
+		AllowEmpty: params.AllowEmpty,
 	}
 	parentNumber := params.ParentNumber
 	if err := validator.Validate([]validator.ValidateArg{

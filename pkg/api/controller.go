@@ -3301,6 +3301,7 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body a
 		Reference:    body.Ref,
 		Committer:    user.Committer(),
 		ParentNumber: body.ParentNumber,
+		AllowEmpty:   swag.BoolValue(body.AllowEmpty),
 	}, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return

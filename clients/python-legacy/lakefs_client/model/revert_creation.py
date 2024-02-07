@@ -85,6 +85,7 @@ class RevertCreation(ModelNormal):
             'ref': (str,),  # noqa: E501
             'parent_number': (int,),  # noqa: E501
             'force': (bool,),  # noqa: E501
+            'allow_empty': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -96,6 +97,7 @@ class RevertCreation(ModelNormal):
         'ref': 'ref',  # noqa: E501
         'parent_number': 'parent_number',  # noqa: E501
         'force': 'force',  # noqa: E501
+        'allow_empty': 'allow_empty',  # noqa: E501
     }
 
     read_only_vars = {
@@ -144,6 +146,7 @@ class RevertCreation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
+            allow_empty (bool): allow empty commit (revert without changes). [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -232,6 +235,7 @@ class RevertCreation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
+            allow_empty (bool): allow empty commit (revert without changes). [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
