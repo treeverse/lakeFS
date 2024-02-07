@@ -41,7 +41,8 @@ class TestRevertCreation(unittest.TestCase):
             return RevertCreation(
                 ref = '', 
                 parent_number = 56, 
-                force = True
+                force = True, 
+                allow_empty = True
             )
         else :
             return RevertCreation(

@@ -1648,9 +1648,10 @@ lakectl branch revert lakefs://example-repo/example-branch commitA
 {:.no_toc}
 
 ```
-  -h, --help                help for revert
-  -m, --parent-number int   the parent number (starting from 1) of the mainline. The revert will reverse the change relative to the specified parent.
-  -y, --yes                 Automatically say yes to all confirmations
+      --allow-empty-commit   allow empty commit (revert without changes)
+  -h, --help                 help for revert
+  -m, --parent-number int    the parent number (starting from 1) of the mainline. The revert will reverse the change relative to the specified parent.
+  -y, --yes                  Automatically say yes to all confirmations
 ```
 
 

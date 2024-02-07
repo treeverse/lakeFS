@@ -41,6 +41,10 @@ public class RevertCreation {
   @SerializedName(SERIALIZED_NAME_FORCE)
   private Boolean force = false;
 
+  public static final String SERIALIZED_NAME_ALLOW_EMPTY = "allow_empty";
+  @SerializedName(SERIALIZED_NAME_ALLOW_EMPTY)
+  private Boolean allowEmpty = false;
+
 
   public RevertCreation ref(String ref) {
     
@@ -111,6 +115,29 @@ public class RevertCreation {
   }
 
 
+  public RevertCreation allowEmpty(Boolean allowEmpty) {
+    
+    this.allowEmpty = allowEmpty;
+    return this;
+  }
+
+   /**
+   * allow empty commit (revert without changes)
+   * @return allowEmpty
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "allow empty commit (revert without changes)")
+
+  public Boolean getAllowEmpty() {
+    return allowEmpty;
+  }
+
+
+  public void setAllowEmpty(Boolean allowEmpty) {
+    this.allowEmpty = allowEmpty;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -122,12 +149,13 @@ public class RevertCreation {
     RevertCreation revertCreation = (RevertCreation) o;
     return Objects.equals(this.ref, revertCreation.ref) &&
         Objects.equals(this.parentNumber, revertCreation.parentNumber) &&
-        Objects.equals(this.force, revertCreation.force);
+        Objects.equals(this.force, revertCreation.force) &&
+        Objects.equals(this.allowEmpty, revertCreation.allowEmpty);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ref, parentNumber, force);
+    return Objects.hash(ref, parentNumber, force, allowEmpty);
   }
 
   @Override
@@ -137,6 +165,7 @@ public class RevertCreation {
     sb.append("    ref: ").append(toIndentedString(ref)).append("\n");
     sb.append("    parentNumber: ").append(toIndentedString(parentNumber)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
+    sb.append("    allowEmpty: ").append(toIndentedString(allowEmpty)).append("\n");
     sb.append("}");
     return sb.toString();
   }

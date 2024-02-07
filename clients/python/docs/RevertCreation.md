@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **ref** | **str** | the commit to revert, given by a ref | 
 **parent_number** | **int** | when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert. | 
 **force** | **bool** |  | [optional] [default to False]
+**allow_empty** | **bool** | allow empty commit (revert without changes) | [optional] [default to False]
 
 ## Example
 

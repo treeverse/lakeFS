@@ -473,6 +473,10 @@ components:
         force:
           type: boolean
           default: false
+        allow_empty:
+          type: boolean
+          default: false
+          description: allow empty commit (revert without changes)
 
     CherryPickCreation:
       type: object

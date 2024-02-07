@@ -29,7 +29,8 @@ class RevertCreation(BaseModel):
     ref: StrictStr = Field(..., description="the commit to revert, given by a ref")
     parent_number: StrictInt = Field(..., description="when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.")
     force: Optional[StrictBool] = False
-    __properties = ["ref", "parent_number", "force"]
+    allow_empty: Optional[StrictBool] = Field(False, description="allow empty commit (revert without changes)")
+    __properties = ["ref", "parent_number", "force", "allow_empty"]
 
     class Config:
         """Pydantic configuration"""
@@ -69,7 +70,8 @@ class RevertCreation(BaseModel):
         _obj = RevertCreation.parse_obj({
             "ref": obj.get("ref"),
             "parent_number": obj.get("parent_number"),
-            "force": obj.get("force") if obj.get("force") is not None else False
+            "force": obj.get("force") if obj.get("force") is not None else False,
+            "allow_empty": obj.get("allow_empty") if obj.get("allow_empty") is not None else False
         })
         return _obj
 

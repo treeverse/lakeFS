@@ -2557,6 +2557,9 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 			}
 			return nil, err
 		}
+		if (metaRangeID == branchCommit.MetaRangeID) && !commitParams.AllowEmpty {
+			return nil, ErrNoChanges
+		}
 		commit := NewCommit()
 		commit.Committer = commitParams.Committer
 		commit.Message = commitParams.Message
