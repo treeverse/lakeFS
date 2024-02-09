@@ -1075,7 +1075,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 
 	t.Run("create repo skip ensure storage namespace", func(t *testing.T) {
 		repoName := testUniqueRepoName()
-		path := "foo-bucket-1"
+		path := "bucket-1/namespace-1"
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    apiutil.Ptr("main"),
 			Name:             repoName,
