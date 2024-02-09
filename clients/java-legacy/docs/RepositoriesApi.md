@@ -22,7 +22,7 @@ Method | HTTP request | Description
 
 <a name="createRepository"></a>
 # **createRepository**
-> Repository createRepository(repositoryCreation, bare)
+> Repository createRepository(repositoryCreation, bare, skipEnsureStorageNamespace)
 
 create repository
 
@@ -71,8 +71,9 @@ public class Example {
     RepositoriesApi apiInstance = new RepositoriesApi(defaultClient);
     RepositoryCreation repositoryCreation = new RepositoryCreation(); // RepositoryCreation | 
     Boolean bare = false; // Boolean | If true, create a bare repository with no initial commit and branch
+    Boolean skipEnsureStorageNamespace = false; // Boolean | If true, skip ensuring the storage namespace is not already used by another repository
     try {
-      Repository result = apiInstance.createRepository(repositoryCreation, bare);
+      Repository result = apiInstance.createRepository(repositoryCreation, bare, skipEnsureStorageNamespace);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling RepositoriesApi#createRepository");
@@ -91,6 +92,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repositoryCreation** | [**RepositoryCreation**](RepositoryCreation.md)|  |
  **bare** | **Boolean**| If true, create a bare repository with no initial commit and branch | [optional] [default to false]
+ **skipEnsureStorageNamespace** | **Boolean**| If true, skip ensuring the storage namespace is not already used by another repository | [optional] [default to false]
 
 ### Return type
 

@@ -81,7 +81,7 @@ public class RepositoriesApi {
         this.localCustomBaseUrl = customBaseUrl;
     }
 
-    private okhttp3.Call createRepositoryCall(RepositoryCreation repositoryCreation, Boolean bare, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call createRepositoryCall(RepositoryCreation repositoryCreation, Boolean bare, Boolean skipEnsureStorageNamespace, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -110,6 +110,10 @@ public class RepositoriesApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("bare", bare));
         }
 
+        if (skipEnsureStorageNamespace != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("skipEnsureStorageNamespace", skipEnsureStorageNamespace));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -131,26 +135,26 @@ public class RepositoriesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call createRepositoryValidateBeforeCall(RepositoryCreation repositoryCreation, Boolean bare, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call createRepositoryValidateBeforeCall(RepositoryCreation repositoryCreation, Boolean bare, Boolean skipEnsureStorageNamespace, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repositoryCreation' is set
         if (repositoryCreation == null) {
             throw new ApiException("Missing the required parameter 'repositoryCreation' when calling createRepository(Async)");
         }
 
-        return createRepositoryCall(repositoryCreation, bare, _callback);
+        return createRepositoryCall(repositoryCreation, bare, skipEnsureStorageNamespace, _callback);
 
     }
 
 
-    private ApiResponse<Repository> createRepositoryWithHttpInfo(RepositoryCreation repositoryCreation, Boolean bare) throws ApiException {
-        okhttp3.Call localVarCall = createRepositoryValidateBeforeCall(repositoryCreation, bare, null);
+    private ApiResponse<Repository> createRepositoryWithHttpInfo(RepositoryCreation repositoryCreation, Boolean bare, Boolean skipEnsureStorageNamespace) throws ApiException {
+        okhttp3.Call localVarCall = createRepositoryValidateBeforeCall(repositoryCreation, bare, skipEnsureStorageNamespace, null);
         Type localVarReturnType = new TypeToken<Repository>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call createRepositoryAsync(RepositoryCreation repositoryCreation, Boolean bare, final ApiCallback<Repository> _callback) throws ApiException {
+    private okhttp3.Call createRepositoryAsync(RepositoryCreation repositoryCreation, Boolean bare, Boolean skipEnsureStorageNamespace, final ApiCallback<Repository> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = createRepositoryValidateBeforeCall(repositoryCreation, bare, _callback);
+        okhttp3.Call localVarCall = createRepositoryValidateBeforeCall(repositoryCreation, bare, skipEnsureStorageNamespace, _callback);
         Type localVarReturnType = new TypeToken<Repository>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -159,6 +163,7 @@ public class RepositoriesApi {
     public class APIcreateRepositoryRequest {
         private final RepositoryCreation repositoryCreation;
         private Boolean bare;
+        private Boolean skipEnsureStorageNamespace;
 
         private APIcreateRepositoryRequest(RepositoryCreation repositoryCreation) {
             this.repositoryCreation = repositoryCreation;
@@ -171,6 +176,16 @@ public class RepositoriesApi {
          */
         public APIcreateRepositoryRequest bare(Boolean bare) {
             this.bare = bare;
+            return this;
+        }
+
+        /**
+         * Set skipEnsureStorageNamespace
+         * @param skipEnsureStorageNamespace If true, skip ensuring the storage namespace is not already used by another repository (optional, default to false)
+         * @return APIcreateRepositoryRequest
+         */
+        public APIcreateRepositoryRequest skipEnsureStorageNamespace(Boolean skipEnsureStorageNamespace) {
+            this.skipEnsureStorageNamespace = skipEnsureStorageNamespace;
             return this;
         }
 
@@ -191,7 +206,7 @@ public class RepositoriesApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return createRepositoryCall(repositoryCreation, bare, _callback);
+            return createRepositoryCall(repositoryCreation, bare, skipEnsureStorageNamespace, _callback);
         }
 
         /**
@@ -210,7 +225,7 @@ public class RepositoriesApi {
          </table>
          */
         public Repository execute() throws ApiException {
-            ApiResponse<Repository> localVarResp = createRepositoryWithHttpInfo(repositoryCreation, bare);
+            ApiResponse<Repository> localVarResp = createRepositoryWithHttpInfo(repositoryCreation, bare, skipEnsureStorageNamespace);
             return localVarResp.getData();
         }
 
@@ -230,7 +245,7 @@ public class RepositoriesApi {
          </table>
          */
         public ApiResponse<Repository> executeWithHttpInfo() throws ApiException {
-            return createRepositoryWithHttpInfo(repositoryCreation, bare);
+            return createRepositoryWithHttpInfo(repositoryCreation, bare, skipEnsureStorageNamespace);
         }
 
         /**
@@ -250,7 +265,7 @@ public class RepositoriesApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<Repository> _callback) throws ApiException {
-            return createRepositoryAsync(repositoryCreation, bare, _callback);
+            return createRepositoryAsync(repositoryCreation, bare, skipEnsureStorageNamespace, _callback);
         }
     }
 

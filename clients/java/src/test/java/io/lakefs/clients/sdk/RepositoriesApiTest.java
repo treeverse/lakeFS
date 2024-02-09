@@ -49,8 +49,10 @@ public class RepositoriesApiTest {
     public void createRepositoryTest() throws ApiException {
         RepositoryCreation repositoryCreation = null;
         Boolean bare = null;
+        Boolean skipEnsureStorageNamespace = null;
         Repository response = api.createRepository(repositoryCreation)
                 .bare(bare)
+                .skipEnsureStorageNamespace(skipEnsureStorageNamespace)
                 .execute();
         // TODO: test validations
     }

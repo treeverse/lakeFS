@@ -55,19 +55,21 @@ class RepositoriesApi(object):
         self.api_client = api_client
 
     @validate_arguments
-    def create_repository(self, repository_creation : RepositoryCreation, bare : Annotated[Optional[StrictBool], Field(description="If true, create a bare repository with no initial commit and branch")] = None, **kwargs) -> Repository:  # noqa: E501
+    def create_repository(self, repository_creation : RepositoryCreation, bare : Annotated[Optional[StrictBool], Field(description="If true, create a bare repository with no initial commit and branch")] = None, skip_ensure_storage_namespace : Annotated[Optional[StrictBool], Field(description="If true, skip ensuring the storage namespace is not already used by another repository")] = None, **kwargs) -> Repository:  # noqa: E501
         """create repository  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.create_repository(repository_creation, bare, async_req=True)
+        >>> thread = api.create_repository(repository_creation, bare, skip_ensure_storage_namespace, async_req=True)
         >>> result = thread.get()
 
         :param repository_creation: (required)
         :type repository_creation: RepositoryCreation
         :param bare: If true, create a bare repository with no initial commit and branch
         :type bare: bool
+        :param skip_ensure_storage_namespace: If true, skip ensuring the storage namespace is not already used by another repository
+        :type skip_ensure_storage_namespace: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request. If one
@@ -82,22 +84,24 @@ class RepositoriesApi(object):
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
             raise ValueError("Error! Please call the create_repository_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.create_repository_with_http_info(repository_creation, bare, **kwargs)  # noqa: E501
+        return self.create_repository_with_http_info(repository_creation, bare, skip_ensure_storage_namespace, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def create_repository_with_http_info(self, repository_creation : RepositoryCreation, bare : Annotated[Optional[StrictBool], Field(description="If true, create a bare repository with no initial commit and branch")] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def create_repository_with_http_info(self, repository_creation : RepositoryCreation, bare : Annotated[Optional[StrictBool], Field(description="If true, create a bare repository with no initial commit and branch")] = None, skip_ensure_storage_namespace : Annotated[Optional[StrictBool], Field(description="If true, skip ensuring the storage namespace is not already used by another repository")] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """create repository  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.create_repository_with_http_info(repository_creation, bare, async_req=True)
+        >>> thread = api.create_repository_with_http_info(repository_creation, bare, skip_ensure_storage_namespace, async_req=True)
         >>> result = thread.get()
 
         :param repository_creation: (required)
         :type repository_creation: RepositoryCreation
         :param bare: If true, create a bare repository with no initial commit and branch
         :type bare: bool
+        :param skip_ensure_storage_namespace: If true, skip ensuring the storage namespace is not already used by another repository
+        :type skip_ensure_storage_namespace: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -127,7 +131,8 @@ class RepositoriesApi(object):
 
         _all_params = [
             'repository_creation',
-            'bare'
+            'bare',
+            'skip_ensure_storage_namespace'
         ]
         _all_params.extend(
             [
@@ -160,6 +165,9 @@ class RepositoriesApi(object):
         _query_params = []
         if _params.get('bare') is not None:  # noqa: E501
             _query_params.append(('bare', _params['bare']))
+
+        if _params.get('skip_ensure_storage_namespace') is not None:  # noqa: E501
+            _query_params.append(('skipEnsureStorageNamespace', _params['skip_ensure_storage_namespace']))
 
         # process the header parameters
         _header_params = dict(_params.get('_headers', {}))

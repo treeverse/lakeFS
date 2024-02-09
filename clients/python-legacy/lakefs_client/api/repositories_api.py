@@ -65,6 +65,7 @@ class RepositoriesApi(object):
                 'all': [
                     'repository_creation',
                     'bare',
+                    'skip_ensure_storage_namespace',
                 ],
                 'required': [
                     'repository_creation',
@@ -86,13 +87,17 @@ class RepositoriesApi(object):
                         (RepositoryCreation,),
                     'bare':
                         (bool,),
+                    'skip_ensure_storage_namespace':
+                        (bool,),
                 },
                 'attribute_map': {
                     'bare': 'bare',
+                    'skip_ensure_storage_namespace': 'skipEnsureStorageNamespace',
                 },
                 'location_map': {
                     'repository_creation': 'body',
                     'bare': 'query',
+                    'skip_ensure_storage_namespace': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -898,6 +903,7 @@ class RepositoriesApi(object):
 
         Keyword Args:
             bare (bool): If true, create a bare repository with no initial commit and branch. [optional] if omitted the server will use the default value of False
+            skip_ensure_storage_namespace (bool): If true, skip ensuring the storage namespace is not already used by another repository. [optional] if omitted the server will use the default value of False
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
