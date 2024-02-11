@@ -340,7 +340,4 @@ commit 5403ec29903942b692aabef404598b8dd3577f8a
 So, all we have to do now is `git checkout 5403ec29903942b692aabef404598b8dd3577f8a` and we are good to reproduce the model results! 
 
 Checkout our article about [ML Data Version Control and Reproducibility at Scale](https://lakefs.io/blog/scalable-ml-data-version-control-and-reproducibility/) to get another example for how lakeFS and Git work seamlessly together.     
- 
-
-
 

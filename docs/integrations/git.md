@@ -29,3 +29,4 @@ This approach allows straight forward troubleshooting and reproduction of data e
 
 Check out [this](https://github.com/treeverse/lakeFS-samples/tree/main/01_standalone_examples/airflow-02) lakeFS sample 
 that demonstrates how Git, Airflow, and lakeFS can be integrated to result in reproducible ETL pipelines.   
+
