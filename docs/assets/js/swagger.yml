@@ -2556,12 +2556,6 @@ paths:
             type: boolean
             default: false
           description: If true, create a bare repository with no initial commit and branch
-        - in: query
-          name: skipEnsureStorageNamespace
-          schema:
-            type: boolean
-            default: false
-          description: If true, skip ensuring the storage namespace is not already used by another repository
       responses:
         201:
           description: repository

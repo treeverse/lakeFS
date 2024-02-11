@@ -1691,16 +1691,6 @@ paths:
           default: false
           type: boolean
         style: form
-      - description: If true, skip ensuring the storage namespace is not already used
-          by another repository
-        explode: true
-        in: query
-        name: skipEnsureStorageNamespace
-        required: false
-        schema:
-          default: false
-          type: boolean
-        style: form
       requestBody:
         content:
           application/json:

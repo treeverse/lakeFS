@@ -1858,7 +1858,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	if !swag.BoolValue(params.SkipEnsureStorageNamespace) {
+	if !swag.BoolValue(body.ReadOnly) {
 		if err := c.ensureStorageNamespace(ctx, body.StorageNamespace); err != nil {
 			var (
 				reason string

@@ -21,7 +21,7 @@ Method | HTTP request | Description
 
 
 # **create_repository**
-> Repository create_repository(repository_creation, bare=bare, skip_ensure_storage_namespace=skip_ensure_storage_namespace)
+> Repository create_repository(repository_creation, bare=bare)
 
 create repository
 
@@ -88,11 +88,10 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     api_instance = lakefs_sdk.RepositoriesApi(api_client)
     repository_creation = lakefs_sdk.RepositoryCreation() # RepositoryCreation | 
     bare = False # bool | If true, create a bare repository with no initial commit and branch (optional) (default to False)
-    skip_ensure_storage_namespace = False # bool | If true, skip ensuring the storage namespace is not already used by another repository (optional) (default to False)
 
     try:
         # create repository
-        api_response = api_instance.create_repository(repository_creation, bare=bare, skip_ensure_storage_namespace=skip_ensure_storage_namespace)
+        api_response = api_instance.create_repository(repository_creation, bare=bare)
         print("The response of RepositoriesApi->create_repository:\n")
         pprint(api_response)
     except Exception as e:
@@ -108,7 +107,6 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository_creation** | [**RepositoryCreation**](RepositoryCreation.md)|  | 
  **bare** | **bool**| If true, create a bare repository with no initial commit and branch | [optional] [default to False]
- **skip_ensure_storage_namespace** | **bool**| If true, skip ensuring the storage namespace is not already used by another repository | [optional] [default to False]
 
 ### Return type
 

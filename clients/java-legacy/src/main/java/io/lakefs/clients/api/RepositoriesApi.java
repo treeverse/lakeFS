@@ -67,7 +67,6 @@ public class RepositoriesApi {
      * Build call for createRepository
      * @param repositoryCreation  (required)
      * @param bare If true, create a bare repository with no initial commit and branch (optional, default to false)
-     * @param skipEnsureStorageNamespace If true, skip ensuring the storage namespace is not already used by another repository (optional, default to false)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -82,7 +81,7 @@ public class RepositoriesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call createRepositoryCall(RepositoryCreation repositoryCreation, Boolean bare, Boolean skipEnsureStorageNamespace, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call createRepositoryCall(RepositoryCreation repositoryCreation, Boolean bare, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = repositoryCreation;
 
         // create path and map variables
@@ -96,10 +95,6 @@ public class RepositoriesApi {
 
         if (bare != null) {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("bare", bare));
-        }
-
-        if (skipEnsureStorageNamespace != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("skipEnsureStorageNamespace", skipEnsureStorageNamespace));
         }
 
         final String[] localVarAccepts = {
@@ -121,7 +116,7 @@ public class RepositoriesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call createRepositoryValidateBeforeCall(RepositoryCreation repositoryCreation, Boolean bare, Boolean skipEnsureStorageNamespace, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call createRepositoryValidateBeforeCall(RepositoryCreation repositoryCreation, Boolean bare, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repositoryCreation' is set
         if (repositoryCreation == null) {
@@ -129,7 +124,7 @@ public class RepositoriesApi {
         }
         
 
-        okhttp3.Call localVarCall = createRepositoryCall(repositoryCreation, bare, skipEnsureStorageNamespace, _callback);
+        okhttp3.Call localVarCall = createRepositoryCall(repositoryCreation, bare, _callback);
         return localVarCall;
 
     }
@@ -139,7 +134,6 @@ public class RepositoriesApi {
      * 
      * @param repositoryCreation  (required)
      * @param bare If true, create a bare repository with no initial commit and branch (optional, default to false)
-     * @param skipEnsureStorageNamespace If true, skip ensuring the storage namespace is not already used by another repository (optional, default to false)
      * @return Repository
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -153,8 +147,8 @@ public class RepositoriesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public Repository createRepository(RepositoryCreation repositoryCreation, Boolean bare, Boolean skipEnsureStorageNamespace) throws ApiException {
-        ApiResponse<Repository> localVarResp = createRepositoryWithHttpInfo(repositoryCreation, bare, skipEnsureStorageNamespace);
+    public Repository createRepository(RepositoryCreation repositoryCreation, Boolean bare) throws ApiException {
+        ApiResponse<Repository> localVarResp = createRepositoryWithHttpInfo(repositoryCreation, bare);
         return localVarResp.getData();
     }
 
@@ -163,7 +157,6 @@ public class RepositoriesApi {
      * 
      * @param repositoryCreation  (required)
      * @param bare If true, create a bare repository with no initial commit and branch (optional, default to false)
-     * @param skipEnsureStorageNamespace If true, skip ensuring the storage namespace is not already used by another repository (optional, default to false)
      * @return ApiResponse&lt;Repository&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -177,8 +170,8 @@ public class RepositoriesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<Repository> createRepositoryWithHttpInfo(RepositoryCreation repositoryCreation, Boolean bare, Boolean skipEnsureStorageNamespace) throws ApiException {
-        okhttp3.Call localVarCall = createRepositoryValidateBeforeCall(repositoryCreation, bare, skipEnsureStorageNamespace, null);
+    public ApiResponse<Repository> createRepositoryWithHttpInfo(RepositoryCreation repositoryCreation, Boolean bare) throws ApiException {
+        okhttp3.Call localVarCall = createRepositoryValidateBeforeCall(repositoryCreation, bare, null);
         Type localVarReturnType = new TypeToken<Repository>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -188,7 +181,6 @@ public class RepositoriesApi {
      * 
      * @param repositoryCreation  (required)
      * @param bare If true, create a bare repository with no initial commit and branch (optional, default to false)
-     * @param skipEnsureStorageNamespace If true, skip ensuring the storage namespace is not already used by another repository (optional, default to false)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -203,9 +195,9 @@ public class RepositoriesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call createRepositoryAsync(RepositoryCreation repositoryCreation, Boolean bare, Boolean skipEnsureStorageNamespace, final ApiCallback<Repository> _callback) throws ApiException {
+    public okhttp3.Call createRepositoryAsync(RepositoryCreation repositoryCreation, Boolean bare, final ApiCallback<Repository> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = createRepositoryValidateBeforeCall(repositoryCreation, bare, skipEnsureStorageNamespace, _callback);
+        okhttp3.Call localVarCall = createRepositoryValidateBeforeCall(repositoryCreation, bare, _callback);
         Type localVarReturnType = new TypeToken<Repository>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

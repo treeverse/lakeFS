@@ -1073,7 +1073,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("create repo skip ensure storage namespace", func(t *testing.T) {
+	t.Run("create read-only repo skip ensure storage namespace", func(t *testing.T) {
 		repoName := testUniqueRepoName()
 		path := "bucket-1/namespace-1"
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
@@ -1096,7 +1096,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		// try to create the same repo multiple times with the SkipEnsureStorageNamespace and then with it
+		// try to create the same repo once as a "normal" repo and once as a read-only repo
 
 		resp2, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    apiutil.Ptr("main"),
@@ -1113,10 +1113,11 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 			t.Fatal("expected status code 400 creating duplicate repo, got ", resp.StatusCode())
 		}
 
-		resp3, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{SkipEnsureStorageNamespace: apiutil.Ptr(true)}, apigen.CreateRepositoryJSONRequestBody{
+		resp3, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    apiutil.Ptr("main"),
 			Name:             repoName,
 			StorageNamespace: onBlock(deps, path),
+			ReadOnly:         apiutil.Ptr(true),
 		})
 		verifyResponseOK(t, resp3, err)
 		response = resp3.JSON201

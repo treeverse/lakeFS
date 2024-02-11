@@ -93,7 +93,6 @@ with lakefs_client.ApiClient(configuration) as api_client:
         read_only=True,
     ) # RepositoryCreation | 
     bare = False # bool | If true, create a bare repository with no initial commit and branch (optional) if omitted the server will use the default value of False
-    skip_ensure_storage_namespace = False # bool | If true, skip ensuring the storage namespace is not already used by another repository (optional) if omitted the server will use the default value of False
 
     # example passing only required values which don't have defaults set
     try:
@@ -107,7 +106,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # create repository
-        api_response = api_instance.create_repository(repository_creation, bare=bare, skip_ensure_storage_namespace=skip_ensure_storage_namespace)
+        api_response = api_instance.create_repository(repository_creation, bare=bare)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling RepositoriesApi->create_repository: %s\n" % e)
@@ -120,7 +119,6 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository_creation** | [**RepositoryCreation**](RepositoryCreation.md)|  |
  **bare** | **bool**| If true, create a bare repository with no initial commit and branch | [optional] if omitted the server will use the default value of False
- **skip_ensure_storage_namespace** | **bool**| If true, skip ensuring the storage namespace is not already used by another repository | [optional] if omitted the server will use the default value of False
 
 ### Return type
 
