@@ -220,26 +220,25 @@ class Branch(_BaseBranch):
         with api_exception_handler():
             return self._client.sdk_client.branches_api.delete_branch(self._repo_id, self._id)
 
-    def revert(self, reference: Optional[ReferenceType], parent_number: Optional[int] = None, *,
+    def revert(self, reference: Optional[ReferenceType], parent_number: int = 1, *,
                reference_id: Optional[str] = None) -> Commit:
         """
         revert the changes done by the provided reference on the current branch
 
+        :param reference_id: (Optional) The reference ID to revert
+
+            .. deprecated:: 0.4.0
+                Use ``reference`` instead.
+
         :param parent_number: when reverting a merge commit, the parent number (starting from 1) relative to which to
             perform the revert.
         :param reference: the reference to revert
-        :param reference_id: Backwards-compatible alias for ``reference``, do not use.
-
-            .. deprecated:: 0.4.0
-                Use `reference` instead.
         :return: The commit created by the revert
         :raise NotFoundException: if branch by this id does not exist
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
-        if parent_number is None:
-            parent_number = 0
-        elif parent_number <= 0:
+        if parent_number <= 0:
             raise ValueError("parent_number must be a positive integer")
 
         if reference_id is not None:

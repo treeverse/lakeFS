@@ -114,7 +114,7 @@ def test_branch_delete(monkeypatch):
 def test_branch_revert(monkeypatch):
     branch = get_test_branch()
     ref_id = "ab1234"
-    expected_parent = 0
+    expected_parent = 1
     with monkeypatch.context():
         def monkey_revert_branch(repo_name, branch_name, revert_branch_creation, *_):
             assert repo_name == branch.repo_id
@@ -146,7 +146,7 @@ def test_branch_revert(monkeypatch):
         with expect_exception_context(ValueError):
             branch.revert(ref_id, 0)
 
-        expected_parent = 0
+        expected_parent = 1
         # reference_id passed, but not reference
         with pytest.warns(DeprecationWarning, match="reference_id is deprecated.*"):
             branch.revert(None, reference_id=ref_id)
