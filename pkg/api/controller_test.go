@@ -1073,6 +1073,62 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("create read-only repo skip ensure storage namespace", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		path := "bucket-1/namespace-1"
+		resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    apiutil.Ptr("main"),
+			Name:             repoName,
+			StorageNamespace: onBlock(deps, path),
+		})
+		verifyResponseOK(t, resp, err)
+
+		response := resp.JSON201
+		if response == nil {
+			t.Fatal("CreateRepository got bad response")
+		}
+		if response.Id != repoName {
+			t.Fatalf("CreateRepository id=%s, expected=%s", response.Id, repoName)
+		}
+
+		// delete the repo but keeps the dummy file
+		err = deps.catalog.DeleteRepository(ctx, repoName)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// try to create the same repo once as a "normal" repo and once as a read-only repo
+
+		resp2, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    apiutil.Ptr("main"),
+			Name:             repoName,
+			StorageNamespace: onBlock(deps, path),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp2 == nil {
+			t.Fatal("CreateRepository missing response")
+		}
+		if resp2.JSON400 == nil {
+			t.Fatal("expected status code 400 creating duplicate repo, got ", resp.StatusCode())
+		}
+
+		resp3, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    apiutil.Ptr("main"),
+			Name:             repoName,
+			StorageNamespace: onBlock(deps, path),
+			ReadOnly:         apiutil.Ptr(true),
+		})
+		verifyResponseOK(t, resp3, err)
+		response = resp3.JSON201
+		if response == nil {
+			t.Fatal("CreateRepository got bad response")
+		}
+		if response.Id != repoName {
+			t.Fatalf("CreateRepository id=%s, expected=%s", response.Id, repoName)
+		}
+	})
+
 	t.Run("create repo user unauthorized", func(t *testing.T) {
 		repo := testUniqueRepoName()
 
