@@ -100,7 +100,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
             onHide={() => setShowAddModal(false)}
             onAttach={(selected) => {
               Promise.all(
-                selected.map((groupId) => auth.addUserToGroup(userId, groupId))
+                selected.map((group) => auth.addUserToGroup(userId, group.id))
               )
                 .then(() => {
                   setRefresh(!refresh);

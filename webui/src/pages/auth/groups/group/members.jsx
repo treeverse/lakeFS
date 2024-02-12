@@ -77,7 +77,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                     searchFn={prefix => auth.listUsers(prefix, "", 5).then(res => res.results)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
-                        Promise.all(selected.map(userId => auth.addUserToGroup(userId, groupId)))
+                        Promise.all(selected.map(user => auth.addUserToGroup(user.id, groupId)))
                             .then(() => { setRefresh(!refresh); setAttachError(null) })
                             .catch(error => { setAttachError(error) })
                             .finally(() => { setShowAddModal(false) });
