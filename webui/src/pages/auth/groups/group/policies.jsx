@@ -77,7 +77,7 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
                     searchFn={prefix => auth.listPolicies(prefix, "", 5).then(res => res.results)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
-                        Promise.all(selected.map(policyId => auth.attachPolicyToGroup(groupId, policyId)))
+                        Promise.all(selected.map(policy => auth.attachPolicyToGroup(groupId, policy.id)))
                             .then(() => { setRefresh(!refresh); setAttachError(null) })
                             .catch(error => { setAttachError(error) })
                             .finally(() => { setShowAddModal(false) })
