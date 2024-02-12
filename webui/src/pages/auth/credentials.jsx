@@ -13,11 +13,15 @@ import {useState} from "react";
 import {CredentialsShowModal, CredentialsTable} from "../../lib/components/auth/credentials";
 import {useRouter} from "../../lib/hooks/router";
 
+const resolveDisplayName = (user) => {
+    if (!user) return "";
+    if (user?.email?.length) return user.email;
+    return user.id;
+}
 
 const CredentialsContainer = () => {
     const router = useRouter();
     const { user } = useUser();
-    const userId = (user) ? user.id : "";
     const [refreshToken, setRefreshToken] = useState(false);
     const [createError, setCreateError] = useState(null);
     const [createdKey, setCreatedKey] = useState(null);
@@ -41,7 +45,7 @@ const CredentialsContainer = () => {
                     <ConfirmationButton
                         variant="success"
                         modalVariant="success"
-                        msg={<span>Create a new Access Key for user <strong>{userId}</strong>?</span>}
+                        msg={<span>Create a new Access Key for user <strong>{resolveDisplayName(user)}</strong>?</span>}
                         onConfirm={hide => {
                             createKey()
                                 .then(key => { setCreatedKey(key) })
