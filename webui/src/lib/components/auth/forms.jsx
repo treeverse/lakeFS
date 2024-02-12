@@ -9,8 +9,13 @@ import {SearchIcon} from "@primer/octicons-react";
 import {useAPI} from "../../hooks/api";
 import {Checkbox, DataTable, DebouncedFormControl, AlertError, Loading} from "../controls";
 
-const isEmptyString = (str) => (!str?.length);
-
+const resolveEntityDisplayName = (ent) => {
+    // for users
+    if (ent?.email?.length) return ent.email;
+    // for groups
+    if (ent?.name?.length) return ent.name;
+    return ent.id;
+}
 
 export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
                           emptyState = 'No matches', modalTitle = 'Add', headers = ['Select', 'ID'],
@@ -41,10 +46,10 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
                     rowFn={ent => [
                         <Checkbox
                             defaultChecked={selected.indexOf(ent.id) >= 0}
-                            onAdd={() => setSelected([...selected, ent.id])}
-                            onRemove={() => setSelected(selected.filter(id => id !== ent.id))}
+                            onAdd={() => setSelected([...selected, ent])}
+                            onRemove={() => setSelected(selected.filter(selectedEnt => selectedEnt.id !== ent.id))}
                             name={'selected'}/>,
-                        <strong>{!isEmptyString(ent.email) ? ent.email : ent.id}</strong>
+                        <strong>{resolveEntityDisplayName(ent)}</strong>
                     ]}/>
 
                 <div className="mt-3">
@@ -52,8 +57,8 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
                     <p>
                         <strong>Selected: </strong>
                         {(selected.map(item => (
-                            <Badge key={item} pill variant="primary" className="me-1">
-                                {item}
+                            <Badge key={item.id} pill variant="primary" className="me-1">
+                                {resolveEntityDisplayName(item)}
                             </Badge>
                         )))}
                     </p>
