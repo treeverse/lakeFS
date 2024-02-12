@@ -5,6 +5,7 @@ Module containing lakeFS branch implementation
 from __future__ import annotations
 
 import uuid
+import warnings
 from contextlib import contextmanager
 from typing import Optional, Generator, Iterable, Literal, Dict
 
@@ -219,29 +220,46 @@ class Branch(_BaseBranch):
         with api_exception_handler():
             return self._client.sdk_client.branches_api.delete_branch(self._repo_id, self._id)
 
-    def revert(self, reference_id: str, parent_number: Optional[int] = None) -> None:
+    def revert(self, reference: Optional[ReferenceType], parent_number: int = 0, *,
+               reference_id: Optional[str] = None) -> Commit:
         """
         revert the changes done by the provided reference on the current branch
 
+        :param reference_id: (Optional) The reference ID to revert
+
+            .. deprecated:: 0.4.0
+                Use ``reference`` instead.
+
         :param parent_number: when reverting a merge commit, the parent number (starting from 1) relative to which to
-            perform the revert.
-        :param reference_id: the reference to revert
-        :return: The new reference after the revert
+            perform the revert. The default for non merge commits is 0
+        :param reference: the reference to revert
+        :return: The commit created by the revert
         :raise NotFoundException: if branch by this id does not exist
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
-        if parent_number is None:
-            parent_number = 0
-        elif parent_number <= 0:
-            raise ValueError("parent_number must be a positive integer")
+        if parent_number < 0:
+            raise ValueError("parent_number must be a non-negative integer")
+
+        if reference_id is not None:
+            warnings.warn(
+                "reference_id is deprecated, please use the `reference` argument.", DeprecationWarning
+            )
+
+        # Handle reference_id as a deprecated alias to reference.
+        reference = reference or reference_id
+        if reference is None:
+            raise ValueError("reference to revert must be specified")
+        ref = reference if isinstance(reference, str) else reference.id
 
         with api_exception_handler():
-            return self._client.sdk_client.branches_api.revert_branch(
+            self._client.sdk_client.branches_api.revert_branch(
                 self._repo_id,
                 self._id,
-                lakefs_sdk.RevertCreation(ref=reference_id, parent_number=parent_number)
+                lakefs_sdk.RevertCreation(ref=ref, parent_number=parent_number)
             )
+            commit = self._client.sdk_client.commits_api.get_commit(self._repo_id, self._id)
+            return Commit(**commit.dict())
 
     def import_data(self, commit_message: str = "", metadata: Optional[dict] = None) -> ImportManager:
         """

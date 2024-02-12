@@ -1,6 +1,7 @@
 import http
 
 import lakefs_sdk
+import pytest
 
 from tests.utests.common import get_test_client, expect_exception_context
 from lakefs.repository import Repository
@@ -121,8 +122,21 @@ def test_branch_revert(monkeypatch):
             assert revert_branch_creation.ref == ref_id
             assert revert_branch_creation.parent_number == expected_parent  # default value
 
+        def monkey_get_commit(repo_name, ref_name, **_):
+            assert repo_name == branch.repo_id
+            assert ref_name == branch.id
+            return lakefs_sdk.Commit(
+                id=ref_id,
+                parents=[""],
+                committer="Committer",
+                message="Message",
+                creation_date=0,
+                meta_range_id=""
+            )
+
         # Test default parent number
         monkeypatch.setattr(branch._client.sdk_client.branches_api, "revert_branch", monkey_revert_branch)
+        monkeypatch.setattr(branch._client.sdk_client.commits_api, "get_commit", monkey_get_commit)
         branch.revert(ref_id)
         expected_parent = 2
         # Test set parent number
@@ -130,4 +144,21 @@ def test_branch_revert(monkeypatch):
 
         # Test set invalid parent number
         with expect_exception_context(ValueError):
-            branch.revert(ref_id, 0)
+            branch.revert(ref_id, -1)
+
+        expected_parent = 0
+        # reference_id passed, but not reference
+        with pytest.warns(DeprecationWarning, match="reference_id is deprecated.*"):
+            branch.revert(None, reference_id=ref_id)
+
+        # neither reference nor reference_id passed
+        with pytest.raises(ValueError, match=".* must be specified"):
+            branch.revert(None)
+
+        # both are passed, prefer ``reference_id``
+        with pytest.warns(DeprecationWarning, match="reference_id is deprecated.*"):
+            # this is not a high-quality test, but it would throw if the revert API
+            # was called with reference "hello" due to the monkey-patching above
+            # always returning "ab1234" as ref ID.
+            c = branch.revert(ref_id, reference_id="hello")
+            assert c.id == ref_id
