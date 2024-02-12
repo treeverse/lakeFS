@@ -23,6 +23,7 @@ has_toc: false
 * [Copy data](/howto/copying.html) to/from lakeFS
 * [Using external Data Catalogs](/howto/catalog_exports.html) with data stored on lakeFS
 * [Migrating](/howto/migrate-away.html) away from lakeFS
+* Working with lakeFS data [locally](local-checkouts.md)
 
 ## Actions and Hooks in lakeFS
 
