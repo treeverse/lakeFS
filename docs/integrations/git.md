@@ -19,8 +19,8 @@ Maintain a comprehensive record of both model code versions and input data versi
 model results.
 
 The common way to develop reproducible ML models with lakeFS is to use the 
-[lakectl local](../reference/cli.md#lakectl-local) command. Use [this](../howto/local-checkouts.md#example-using-lakectl-local-in-tandem-with-git) 
-guide to understand how to use lakectl local in conjunction with Git to develop reproducible ML models.    
+[lakectl local](../reference/cli.md#lakectl-local) command. See [_Working with lakeFS Data Locally_](../howto/local-checkouts.md#example-using-lakectl-local-in-tandem-with-git) 
+to understand how to use lakectl local in conjunction with Git to develop reproducible ML models.    
 
 ### Develop Reproducible ETL Pipelines
 
