@@ -496,7 +496,16 @@ func TestDeltaCatalogExport(t *testing.T) {
 	})
 
 	runs := waitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
-	require.Equal(t, "completed", runs.Results[0].Status)
+	run := runs.Results[0]
+	require.Equal(t, "completed", run.Status)
 
+	amount := apigen.PaginationAmount(1)
+	tasks, err := client.ListRunHooksWithResponse(ctx, repo, run.RunId, &apigen.ListRunHooksParams{
+		Amount: &amount,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, tasks.JSON200)
+	require.Equal(t, 1, len(tasks.JSON200.Results))
+	require.Equal(t, "delta_exporter", tasks.JSON200.Results[0].HookId)
 	validateExportTestByStorageType(t, ctx, headCommit.Id, testData, blockstore)
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/Shopify/go-lua"
-	"github.com/treeverse/lakefs/pkg/actions/lua/storage"
 	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -22,7 +21,7 @@ type Client struct {
 	client *service.Client
 }
 
-func newClient(ctx context.Context) lua.Function {
+func newBlobClient(ctx context.Context) lua.Function {
 	return func(l *lua.State) int {
 		storageAccount := lua.CheckString(l, 1)
 		accessKey := lua.CheckString(l, 2)
@@ -40,14 +39,23 @@ func newClient(ctx context.Context) lua.Function {
 			client: azClient,
 		}
 
-		storage.InitStorageClient(l, client)
+		l.NewTable()
+		functions := map[string]lua.Function{
+			"get_object":    client.GetObject,
+			"put_object":    client.PutObject,
+			"delete_object": client.DeleteObject,
+		}
+		for name, goFn := range functions {
+			l.PushGoFunction(goFn)
+			l.SetField(-2, name)
+		}
 		return 1
 	}
 }
 
 func (c *Client) GetObject(l *lua.State) int {
-	containerName := lua.CheckString(l, 1)
-	key := lua.CheckString(l, 2)
+	path := lua.CheckString(l, 1)
+	containerName, key := parsePath(l, path)
 	blobClient := c.getBlobClient(containerName, key)
 	downloadResponse, err := blobClient.DownloadStream(c.ctx, &azblob.DownloadStreamOptions{})
 
@@ -72,15 +80,9 @@ func (c *Client) GetObject(l *lua.State) int {
 }
 
 func (c *Client) PutObject(l *lua.State) int {
-	// Skipping first argument as it is the host arg (bucket which is irrelevant in Azure)
-	path := lua.CheckString(l, 2)
-	buf := strings.NewReader(lua.CheckString(l, 3))
-	// Extract containerName and key from path
-	containerName, key, found := strings.Cut(path, uri.PathSeparator)
-	if !found {
-		lua.Errorf(l, "azure client: invalid path, missing container name from path: %s", path)
-		panic("unreachable")
-	}
+	path := lua.CheckString(l, 1)
+	buf := strings.NewReader(lua.CheckString(l, 2))
+	containerName, key := parsePath(l, path)
 	blobClient := c.getBlobClient(containerName, key)
 	_, err := blobClient.UploadStream(c.ctx, buf, &azblob.UploadStreamOptions{})
 	if err != nil {
@@ -91,8 +93,8 @@ func (c *Client) PutObject(l *lua.State) int {
 }
 
 func (c *Client) DeleteObject(l *lua.State) int {
-	containerName := lua.CheckString(l, 1)
-	key := lua.CheckString(l, 2)
+	path := lua.CheckString(l, 1)
+	containerName, key := parsePath(l, path)
 	blobClient := c.getBlobClient(containerName, key)
 	_, err := blobClient.Delete(c.ctx, nil)
 	if err != nil {
@@ -102,24 +104,20 @@ func (c *Client) DeleteObject(l *lua.State) int {
 	return 0
 }
 
-// ListObjects Should be implemented when needed. There are nuances between HNS and BlobStorage which requires understanding the
-// Actual use case before implementing the solution
-func (c *Client) ListObjects(l *lua.State) int {
-	lua.Errorf(l, "Not implemented")
-	panic("unreachable")
-}
-
-// DeleteRecursive Should be implemented when needed. There are nuances between HNS and BlobStorage which requires understanding the
-// Actual use case before implementing the solution
-func (c *Client) DeleteRecursive(l *lua.State) int {
-	lua.Errorf(l, "Not implemented")
-	panic("unreachable")
-}
-
 func (c *Client) getBlobClient(container, blob string) *blockblob.Client {
 	return c.getContainerClient(container).NewBlockBlobClient(blob)
 }
 
 func (c *Client) getContainerClient(container string) *container.Client {
 	return c.client.NewContainerClient(container)
+}
+
+func parsePath(l *lua.State, path string) (string, string) {
+	// Extract containerName and key from path
+	containerName, key, found := strings.Cut(path, uri.PathSeparator)
+	if !found {
+		lua.Errorf(l, "azure client: invalid path, missing container name from path: %s", path)
+		panic("unreachable")
+	}
+	return containerName, key
 }

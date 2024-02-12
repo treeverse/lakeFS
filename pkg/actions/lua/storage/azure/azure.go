@@ -9,7 +9,7 @@ import (
 func Open(l *lua.State, ctx context.Context) {
 	open := func(l *lua.State) int {
 		lua.NewLibrary(l, []lua.RegistryFunction{
-			{Name: "client", Function: newClient(ctx)},
+			{Name: "blob_client", Function: newBlobClient(ctx)},
 		})
 		return 1
 	}

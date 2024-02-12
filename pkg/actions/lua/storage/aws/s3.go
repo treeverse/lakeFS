@@ -15,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/treeverse/lakefs/pkg/actions/lua/storage"
 	"github.com/treeverse/lakefs/pkg/actions/lua/util"
 )
 
@@ -41,7 +40,18 @@ func newS3Client(ctx context.Context) lua.Function {
 			Region:          region,
 			ctx:             ctx,
 		}
-		storage.InitStorageClient(l, c)
+		l.NewTable()
+		functions := map[string]lua.Function{
+			"get_object":       c.GetObject,
+			"put_object":       c.PutObject,
+			"list_objects":     c.ListObjects,
+			"delete_object":    c.DeleteObject,
+			"delete_recursive": c.DeleteRecursive,
+		}
+		for name, goFn := range functions {
+			l.PushGoFunction(goFn)
+			l.SetField(-2, name)
+		}
 
 		return 1
 	}
