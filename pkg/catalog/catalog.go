@@ -432,7 +432,7 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 
 // CreateBareRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with no initial branch or commit
 // defaultBranchID will point to a non-existent branch on creation, it is up to the caller to eventually create it.
-func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, storageNamespace string, defaultBranchID string) (*Repository, error) {
+func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, storageNamespace string, defaultBranchID string, readOnly bool) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
 	storageNS := graveler.StorageNamespace(storageNamespace)
 	branchID := graveler.BranchID(defaultBranchID)
@@ -442,7 +442,7 @@ func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, s
 	}); err != nil {
 		return nil, err
 	}
-	repo, err := c.Store.CreateBareRepository(ctx, repositoryID, storageNS, branchID)
+	repo, err := c.Store.CreateBareRepository(ctx, repositoryID, storageNS, branchID, readOnly)
 	if err != nil {
 		return nil, err
 	}
@@ -451,6 +451,7 @@ func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, s
 		StorageNamespace: storageNS.String(),
 		DefaultBranch:    branchID.String(),
 		CreationDate:     repo.CreationDate,
+		ReadOnly:         readOnly,
 	}
 	return catalogRepo, nil
 }

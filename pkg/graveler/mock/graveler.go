@@ -272,18 +272,18 @@ func (mr *MockVersionControllerMockRecorder) Compare(ctx, repository, left, righ
 }
 
 // CreateBareRepository mocks base method.
-func (m *MockVersionController) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, defaultBranchID graveler.BranchID) (*graveler.RepositoryRecord, error) {
+func (m *MockVersionController) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, defaultBranchID graveler.BranchID, readOnly bool) (*graveler.RepositoryRecord, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateBareRepository", ctx, repositoryID, storageNamespace, defaultBranchID)
+	ret := m.ctrl.Call(m, "CreateBareRepository", ctx, repositoryID, storageNamespace, defaultBranchID, readOnly)
 	ret0, _ := ret[0].(*graveler.RepositoryRecord)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateBareRepository indicates an expected call of CreateBareRepository.
-func (mr *MockVersionControllerMockRecorder) CreateBareRepository(ctx, repositoryID, storageNamespace, defaultBranchID interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) CreateBareRepository(ctx, repositoryID, storageNamespace, defaultBranchID, readOnly interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBareRepository", reflect.TypeOf((*MockVersionController)(nil).CreateBareRepository), ctx, repositoryID, storageNamespace, defaultBranchID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBareRepository", reflect.TypeOf((*MockVersionController)(nil).CreateBareRepository), ctx, repositoryID, storageNamespace, defaultBranchID, readOnly)
 }
 
 // CreateBranch mocks base method.

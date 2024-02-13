@@ -52,7 +52,7 @@ func (g *FakeGraveler) SetGarbageCollectionRules(_ context.Context, _ *graveler.
 	panic("implement me")
 }
 
-func (g *FakeGraveler) CreateBareRepository(_ context.Context, _ graveler.RepositoryID, _ graveler.StorageNamespace, _ graveler.BranchID) (*graveler.RepositoryRecord, error) {
+func (g *FakeGraveler) CreateBareRepository(_ context.Context, _ graveler.RepositoryID, _ graveler.StorageNamespace, _ graveler.BranchID, _ bool) (*graveler.RepositoryRecord, error) {
 	panic("implement me")
 }
 
