@@ -5295,7 +5295,7 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 		}
 
 		newRepo := testUniqueRepoName()
-		_, err = deps.catalog.CreateBareRepository(ctx, newRepo, onBlock(deps, repo), "main")
+		_, err = deps.catalog.CreateBareRepository(ctx, newRepo, onBlock(deps, repo), "main", false)
 		testutil.MustDo(t, "create bare repository", err)
 
 		submitResponse, err := clt.RestoreSubmitWithResponse(ctx, newRepo, apigen.RestoreSubmitJSONRequestBody{
@@ -5320,7 +5320,7 @@ func TestController_DumpRestoreRepository(t *testing.T) {
 	t.Run("restore_invalid_refs", func(t *testing.T) {
 		// delete and recreate repository as bare for restore
 		newRepo := testUniqueRepoName()
-		_, err = deps.catalog.CreateBareRepository(ctx, newRepo, onBlock(deps, repo), "main")
+		_, err = deps.catalog.CreateBareRepository(ctx, newRepo, onBlock(deps, repo), "main", false)
 		testutil.MustDo(t, "create bare repository", err)
 
 		submitResponse, err := clt.RestoreSubmitWithResponse(ctx, newRepo, apigen.RestoreSubmitJSONRequestBody{
