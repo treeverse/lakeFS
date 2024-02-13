@@ -86,6 +86,7 @@ def test_branch_commit(monkeypatch):
             assert branch_name == branch.id
             assert commits_creation.message == commit_message
             assert commits_creation.metadata == md
+            assert commits_creation.allow_empty
             return lakefs_sdk.Commit(
                 id=commit_id,
                 parents=[""],
@@ -96,7 +97,7 @@ def test_branch_commit(monkeypatch):
             )
 
         monkeypatch.setattr(branch._client.sdk_client.commits_api, "commit", monkey_commit)
-        res = branch.commit(commit_message, metadata=md)
+        res = branch.commit(commit_message, metadata=md, allow_empty=True, ignored_field="test")
         assert res.id == commit_id
 
 

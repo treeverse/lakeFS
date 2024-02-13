@@ -190,20 +190,21 @@ class Branch(_BaseBranch):
             branch = self._client.sdk_client.branches_api.get_branch(self._repo_id, self._id)
         return Reference(self._repo_id, branch.commit_id, self._client)
 
-    def commit(self, message: str, metadata: dict = None) -> Reference:
+    def commit(self, message: str, metadata: dict = None, **kwargs) -> Reference:
         """
         Commit changes on the current branch
 
         :param message: Commit message
         :param metadata: Metadata to attach to the commit
+        :param kwargs: Additional Keyword Arguments for commit creation
         :return: The new reference after the commit
         :raise NotFoundException: if branch by this id does not exist
         :raise ForbiddenException: if commit is not allowed on this branch
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
+        commits_creation = lakefs_sdk.CommitCreation(message=message, metadata=metadata, **kwargs)
 
-        commits_creation = lakefs_sdk.CommitCreation(message=message, metadata=metadata)
         with api_exception_handler():
             c = self._client.sdk_client.commits_api.commit(self._repo_id, self._id, commits_creation)
         return Reference(self._repo_id, c.id, self._client)
