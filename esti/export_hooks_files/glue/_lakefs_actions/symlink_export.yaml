@@ -9,7 +9,7 @@ hooks:
       script_path: "{{ .SymlinkScriptPath }}"
       args:
         aws:
-          aws_access_key_id: "{{ .AccessKeyId }}"
-          aws_secret_access_key: "{{ .SecretAccessKey }}"
-          aws_region: "{{ .Region }}"
+          aws_access_key_id: "{{ .AWSAccessKeyID }}"
+          aws_secret_access_key: "{{ .AWSSecretAccessKey }}"
+          aws_region: "{{ .AWSRegion }}"
         table_source: '{{ .TableDescriptorPath }}'

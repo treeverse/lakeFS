@@ -32,6 +32,7 @@ func newS3Client(ctx context.Context) lua.Function {
 		if !l.IsNone(4) {
 			endpoint = lua.CheckString(l, 4)
 		}
+
 		c := &S3Client{
 			AccessKeyID:     accessKeyID,
 			SecretAccessKey: secretAccessKey,
@@ -39,12 +40,16 @@ func newS3Client(ctx context.Context) lua.Function {
 			Region:          region,
 			ctx:             ctx,
 		}
-
 		l.NewTable()
+		functions := map[string]lua.Function{
+			"get_object":       c.GetObject,
+			"put_object":       c.PutObject,
+			"list_objects":     c.ListObjects,
+			"delete_object":    c.DeleteObject,
+			"delete_recursive": c.DeleteRecursive,
+		}
 		for name, goFn := range functions {
-			// -1: tbl
-			l.PushGoFunction(goFn(c))
-			// -1: fn, -2:tbl
+			l.PushGoFunction(goFn)
 			l.SetField(-2, name)
 		}
 
@@ -75,185 +80,167 @@ func (c *S3Client) client() *s3.Client {
 	})
 }
 
-var functions = map[string]func(client *S3Client) lua.Function{
-	"get_object":       getObject,
-	"put_object":       putObject,
-	"list_objects":     listObjects,
-	"delete_object":    deleteObject,
-	"delete_recursive": deleteRecursive,
-}
+func (c *S3Client) DeleteRecursive(l *lua.State) int {
+	bucketName := lua.CheckString(l, 1)
+	prefix := lua.CheckString(l, 2)
 
-func deleteRecursive(c *S3Client) lua.Function {
-	return func(l *lua.State) int {
-		bucketName := lua.CheckString(l, 1)
-		prefix := lua.CheckString(l, 2)
-
-		client := c.client()
-		input := &s3.ListObjectsV2Input{
-			Bucket: aws.String(bucketName),
-			Prefix: aws.String(prefix),
-		}
-
-		var errs error
-		for {
-			// list objects to delete and delete them
-			listObjects, err := client.ListObjectsV2(c.ctx, input)
-			if err != nil {
-				lua.Errorf(l, "%s", err.Error())
-				panic("unreachable")
-			}
-
-			deleteInput := &s3.DeleteObjectsInput{
-				Bucket: &bucketName,
-				Delete: &types.Delete{},
-			}
-			for _, content := range listObjects.Contents {
-				deleteInput.Delete.Objects = append(deleteInput.Delete.Objects, types.ObjectIdentifier{Key: content.Key})
-			}
-			deleteObjects, err := client.DeleteObjects(c.ctx, deleteInput)
-			if err != nil {
-				errs = errors.Join(errs, err)
-				break
-			}
-			for _, deleteError := range deleteObjects.Errors {
-				errDel := fmt.Errorf("%w '%s', %s",
-					errDeleteObject, aws.ToString(deleteError.Key), aws.ToString(deleteError.Message))
-				errs = errors.Join(errs, errDel)
-			}
-
-			if !aws.ToBool(listObjects.IsTruncated) {
-				break
-			}
-			input.ContinuationToken = listObjects.NextContinuationToken
-		}
-		if errs != nil {
-			lua.Errorf(l, "%s", errs.Error())
-			panic("unreachable")
-		}
-		return 0
+	client := c.client()
+	input := &s3.ListObjectsV2Input{
+		Bucket: aws.String(bucketName),
+		Prefix: aws.String(prefix),
 	}
-}
 
-func getObject(c *S3Client) lua.Function {
-	return func(l *lua.State) int {
-		client := c.client()
-		key := lua.CheckString(l, 2)
-		bucket := lua.CheckString(l, 1)
-		resp, err := client.GetObject(c.ctx, &s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String(key),
-		})
-		if err != nil {
-			var (
-				noSuchBucket *types.NoSuchBucket
-				noSuchKey    *types.NoSuchKey
-			)
-			if errors.As(err, &noSuchBucket) || errors.As(err, &noSuchKey) {
-				l.PushString("")
-				l.PushBoolean(false) // exists
-				return 2
-			}
-			lua.Errorf(l, "%s", err.Error())
-			panic("unreachable")
-		}
-		data, err := io.ReadAll(resp.Body)
+	var errs error
+	for {
+		// list objects to delete and delete them
+		listObjects, err := client.ListObjectsV2(c.ctx, input)
 		if err != nil {
 			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}
-		l.PushString(string(data))
-		l.PushBoolean(true) // exists
-		return 2
+
+		deleteInput := &s3.DeleteObjectsInput{
+			Bucket: &bucketName,
+			Delete: &types.Delete{},
+		}
+		for _, content := range listObjects.Contents {
+			deleteInput.Delete.Objects = append(deleteInput.Delete.Objects, types.ObjectIdentifier{Key: content.Key})
+		}
+		deleteObjects, err := client.DeleteObjects(c.ctx, deleteInput)
+		if err != nil {
+			errs = errors.Join(errs, err)
+			break
+		}
+		for _, deleteError := range deleteObjects.Errors {
+			errDel := fmt.Errorf("%w '%s', %s",
+				errDeleteObject, aws.ToString(deleteError.Key), aws.ToString(deleteError.Message))
+			errs = errors.Join(errs, errDel)
+		}
+
+		if !aws.ToBool(listObjects.IsTruncated) {
+			break
+		}
+		input.ContinuationToken = listObjects.NextContinuationToken
 	}
+	if errs != nil {
+		lua.Errorf(l, "%s", errs.Error())
+		panic("unreachable")
+	}
+	return 0
 }
 
-func putObject(c *S3Client) lua.Function {
-	return func(l *lua.State) int {
-		client := c.client()
-		buf := strings.NewReader(lua.CheckString(l, 3))
-		_, err := client.PutObject(c.ctx, &s3.PutObjectInput{
-			Body:   buf,
-			Bucket: aws.String(lua.CheckString(l, 1)),
-			Key:    aws.String(lua.CheckString(l, 2)),
-		})
-		if err != nil {
-			lua.Errorf(l, "%s", err.Error())
-			panic("unreachable")
+func (c *S3Client) GetObject(l *lua.State) int {
+	client := c.client()
+	key := lua.CheckString(l, 2)
+	bucket := lua.CheckString(l, 1)
+	resp, err := client.GetObject(c.ctx, &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		var (
+			noSuchBucket *types.NoSuchBucket
+			noSuchKey    *types.NoSuchKey
+		)
+		if errors.As(err, &noSuchBucket) || errors.As(err, &noSuchKey) {
+			l.PushString("")
+			l.PushBoolean(false) // exists
+			return 2
 		}
-		return 0
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
 	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
+	}
+	l.PushString(string(data))
+	l.PushBoolean(true) // exists
+	return 2
 }
 
-func deleteObject(c *S3Client) lua.Function {
-	return func(l *lua.State) int {
-		client := c.client()
-		_, err := client.DeleteObject(c.ctx, &s3.DeleteObjectInput{
-			Bucket: aws.String(lua.CheckString(l, 1)),
-			Key:    aws.String(lua.CheckString(l, 2)),
-		})
-		if err != nil {
-			lua.Errorf(l, "%s", err.Error())
-			panic("unreachable")
-		}
-		return 0
+func (c *S3Client) PutObject(l *lua.State) int {
+	client := c.client()
+	buf := strings.NewReader(lua.CheckString(l, 3))
+	_, err := client.PutObject(c.ctx, &s3.PutObjectInput{
+		Body:   buf,
+		Bucket: aws.String(lua.CheckString(l, 1)),
+		Key:    aws.String(lua.CheckString(l, 2)),
+	})
+	if err != nil {
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
 	}
+	return 0
 }
 
-func listObjects(c *S3Client) lua.Function {
-	return func(l *lua.State) int {
-		client := c.client()
-
-		var prefix, delimiter, continuationToken *string
-		if !l.IsNone(2) {
-			prefix = aws.String(lua.CheckString(l, 2))
-		}
-		if !l.IsNone(3) {
-			continuationToken = aws.String(lua.CheckString(l, 3))
-		}
-		if !l.IsNone(4) {
-			delimiter = aws.String(lua.CheckString(l, 4))
-		} else {
-			delimiter = aws.String("/")
-		}
-
-		resp, err := client.ListObjectsV2(c.ctx, &s3.ListObjectsV2Input{
-			Bucket:            aws.String(lua.CheckString(l, 1)),
-			ContinuationToken: continuationToken,
-			Delimiter:         delimiter,
-			Prefix:            prefix,
-		})
-		if err != nil {
-			lua.Errorf(l, "%s", err.Error())
-			panic("unreachable")
-		}
-		results := make([]map[string]interface{}, 0)
-		for _, prefix := range resp.CommonPrefixes {
-			results = append(results, map[string]interface{}{
-				"key":  *prefix.Prefix,
-				"type": "prefix",
-			})
-		}
-		for _, obj := range resp.Contents {
-			results = append(results, map[string]interface{}{
-				"key":           *obj.Key,
-				"type":          "object",
-				"etag":          *obj.ETag,
-				"size":          obj.Size,
-				"last_modified": obj.LastModified.Format(time.RFC3339),
-			})
-		}
-
-		// sort it
-		sort.Slice(results, func(i, j int) bool {
-			return results[i]["key"].(string) > results[j]["key"].(string)
-		})
-
-		response := map[string]interface{}{
-			"is_truncated":            resp.IsTruncated,
-			"next_continuation_token": aws.ToString(resp.NextContinuationToken),
-			"results":                 results,
-		}
-
-		return util.DeepPush(l, response)
+func (c *S3Client) DeleteObject(l *lua.State) int {
+	client := c.client()
+	_, err := client.DeleteObject(c.ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(lua.CheckString(l, 1)),
+		Key:    aws.String(lua.CheckString(l, 2)),
+	})
+	if err != nil {
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
 	}
+	return 0
+}
+
+func (c *S3Client) ListObjects(l *lua.State) int {
+	client := c.client()
+
+	var prefix, delimiter, continuationToken *string
+	if !l.IsNone(2) {
+		prefix = aws.String(lua.CheckString(l, 2))
+	}
+	if !l.IsNone(3) {
+		continuationToken = aws.String(lua.CheckString(l, 3))
+	}
+	if !l.IsNone(4) {
+		delimiter = aws.String(lua.CheckString(l, 4))
+	} else {
+		delimiter = aws.String("/")
+	}
+
+	resp, err := client.ListObjectsV2(c.ctx, &s3.ListObjectsV2Input{
+		Bucket:            aws.String(lua.CheckString(l, 1)),
+		ContinuationToken: continuationToken,
+		Delimiter:         delimiter,
+		Prefix:            prefix,
+	})
+	if err != nil {
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
+	}
+	results := make([]map[string]interface{}, 0)
+	for _, prefix := range resp.CommonPrefixes {
+		results = append(results, map[string]interface{}{
+			"key":  *prefix.Prefix,
+			"type": "prefix",
+		})
+	}
+	for _, obj := range resp.Contents {
+		results = append(results, map[string]interface{}{
+			"key":           *obj.Key,
+			"type":          "object",
+			"etag":          *obj.ETag,
+			"size":          obj.Size,
+			"last_modified": obj.LastModified.Format(time.RFC3339),
+		})
+	}
+
+	// sort it
+	sort.Slice(results, func(i, j int) bool {
+		return results[i]["key"].(string) > results[j]["key"].(string)
+	})
+
+	response := map[string]interface{}{
+		"is_truncated":            resp.IsTruncated,
+		"next_continuation_token": aws.ToString(resp.NextContinuationToken),
+		"results":                 results,
+	}
+
+	return util.DeepPush(l, response)
 }

@@ -54,8 +54,6 @@ services:
       - LAKEFS_BLOCKSTORE_S3_ENDPOINT=http://s3.local.lakefs.io:9000
       - LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE=true
       - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
-      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
-      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
     env_file:
       - tester.env
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
