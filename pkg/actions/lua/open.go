@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/lua/path"
 	"github.com/treeverse/lakefs/pkg/actions/lua/regexp"
 	"github.com/treeverse/lakefs/pkg/actions/lua/storage/aws"
+	"github.com/treeverse/lakefs/pkg/actions/lua/storage/azure"
 	"github.com/treeverse/lakefs/pkg/actions/lua/storage/gcloud"
 	"github.com/treeverse/lakefs/pkg/actions/lua/strings"
 	"github.com/treeverse/lakefs/pkg/actions/lua/time"
@@ -46,6 +47,7 @@ func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	path.Open(l)
 	aws.Open(l, ctx)
 	gcloud.Open(l, ctx)
+	azure.Open(l, ctx)
 	url.Open(l)
 	formats.Open(l, ctx, cfg.LakeFSAddr)
 	databricks.Open(l, ctx)

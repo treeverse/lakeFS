@@ -40,7 +40,7 @@ end
 local function get_table_descriptor(client, repo_id, commit_id, logical_path)
     local code, content = client.get_object(repo_id, commit_id, logical_path)
     if code ~= 200 then
-        error("could not fetch data file: HTTP " .. tostring(code))
+        error("could not fetch data file: HTTP " .. tostring(code) , "path: ", logical_path)
     end
     local descriptor = yaml.unmarshal(content)
     descriptor.partition_columns = descriptor.partition_columns or {}

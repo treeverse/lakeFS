@@ -28,13 +28,19 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/azure"
+	"github.com/treeverse/lakefs/pkg/block/params"
+	lakefscfg "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed export_hooks_files/*/*
+//go:embed all:export_hooks_files
 var exportHooksFiles embed.FS
+
+const catalogExportTestMaxElapsed = 30 * time.Second
 
 type schemaField struct {
 	Name       string            `yaml:"name"`
@@ -56,18 +62,23 @@ type hiveTableSpec struct {
 }
 
 type exportHooksTestData struct {
-	SymlinkActionPath   string
-	SymlinkScriptPath   string
-	TableDescriptorPath string
-	GlueActionPath      string
-	GlueScriptPath      string
-	Branch              string
-	GlueDB              string
-	AccessKeyId         string
-	SecretAccessKey     string
-	Region              string
-	OverrideCommitID    string
-	TableSpec           *hiveTableSpec
+	Repository            string
+	SymlinkActionPath     string
+	SymlinkScriptPath     string
+	TableDescriptorPath   string
+	GlueActionPath        string
+	GlueScriptPath        string
+	Branch                string
+	GlueDB                string
+	AWSAccessKeyID        string
+	AWSSecretAccessKey    string
+	AWSRegion             string
+	AzureAccessKey        string
+	AzureStorageAccount   string
+	OverrideCommitID      string
+	LakeFSAccessKeyID     string
+	LakeFSSecretAccessKey string
+	TableSpec             *hiveTableSpec
 }
 
 func renderTplFileAsStr(t *testing.T, tplData any, rootDir fs.FS, path string) string {
@@ -166,7 +177,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 	storageURL, err := url.Parse(symlinksPrefix)
 	require.NoError(t, err, "failed extracting bucket name")
 
-	s3Client, err := testutil.SetupTestS3Client("https://s3.amazonaws.com", testData.AccessKeyId, testData.SecretAccessKey)
+	s3Client, err := testutil.SetupTestS3Client("https://s3.amazonaws.com", testData.AWSAccessKeyID, testData.AWSSecretAccessKey)
 
 	require.NoError(t, err, "failed creating s3 client")
 
@@ -175,7 +186,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxInterval = 5 * time.Second
-	bo.MaxElapsedTime = 30 * time.Second
+	bo.MaxElapsedTime = catalogExportTestMaxElapsed
 	listS3Func := func() error {
 		listResp, err := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 			Bucket: aws.String(storageURL.Host),
@@ -204,9 +215,10 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 			Key:    aws.String(symlinkFileKey),
 		})
 		require.NoErrorf(t, err, "getting symlink file content bucket=%s key=%s", storageURL.Host, symlinkFileKey)
-		defer objRes.Body.Close()
 		body, err := io.ReadAll(objRes.Body)
 		require.NoError(t, err, "fail reading object data")
+		require.NoError(t, objRes.Body.Close())
+
 		for _, addr := range strings.Split(string(body), "\n") {
 			if addr != "" { // split returns last \n as empty string
 				storagePhysicalAddrs[addr] = true
@@ -234,14 +246,14 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 	return commit.Id, symlinksPrefix
 }
 
-// TestAWSCatalogExport will verify that symlinks are exported correcrtly and then in a sequential test verify that the glue exporter works well.
+// TestAWSCatalogExport will verify that symlinks are exported correctly and then in a sequential test verify that the glue exporter works well.
 // The setup in this test includes:
 // Symlinks export: lua script, table in _lakefs_tables, action file, mock table data in CSV form
 // Glue export: lua script, table in _lakefs_tables, action file
 func TestAWSCatalogExport(t *testing.T) {
 	// skip if blockstore is not not s3
 	requireBlockstoreType(t, block.BlockstoreTypeS3)
-	// skip of the following args are not provided
+	// skip if the following args are not provided
 	accessKeyID := viper.GetString("aws_access_key_id")
 	secretAccessKey := viper.GetString("aws_secret_access_key")
 	glueDB := viper.GetString("glue_export_hooks_database")
@@ -259,7 +271,7 @@ func TestAWSCatalogExport(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	tmplDir, _ := fs.Sub(exportHooksFiles, "export_hooks_files")
+	tmplDir, _ := fs.Sub(exportHooksFiles, "export_hooks_files/glue")
 	testData := &exportHooksTestData{
 		Branch:              mainBranch,
 		SymlinkActionPath:   "_lakefs_actions/symlink_export.yaml",
@@ -268,9 +280,9 @@ func TestAWSCatalogExport(t *testing.T) {
 		GlueActionPath:      "_lakefs_actions/glue_export.yaml",
 		TableDescriptorPath: "_lakefs_tables/animals.yaml",
 		GlueDB:              glueDB,
-		Region:              glueRegion,
-		AccessKeyId:         accessKeyID,
-		SecretAccessKey:     secretAccessKey,
+		AWSRegion:           glueRegion,
+		AWSAccessKeyID:      accessKeyID,
+		AWSSecretAccessKey:  secretAccessKey,
 		TableSpec: &hiveTableSpec{
 			Name:             "animals",
 			Type:             "hive",
@@ -320,14 +332,14 @@ func TestAWSCatalogExport(t *testing.T) {
 
 		// create glue client
 
-		glueClient, err := setupGlueClient(ctx, testData.AccessKeyId, testData.SecretAccessKey, testData.Region)
+		glueClient, err := setupGlueClient(ctx, testData.AWSAccessKeyID, testData.AWSSecretAccessKey, testData.AWSRegion)
 		require.NoError(t, err, "creating glue client")
 
 		// wait until table is ready
 		tableName := fmt.Sprintf("%s_%s_%s_%s", testData.TableSpec.Name, repo, mainBranch, commitID[:6])
 		bo := backoff.NewExponentialBackOff()
 		bo.MaxInterval = 5 * time.Second
-		bo.MaxElapsedTime = 30 * time.Second
+		bo.MaxElapsedTime = catalogExportTestMaxElapsed
 		getGlueTable := func() error {
 			t.Logf("[retry] get table %s ", tableName)
 			resp, err := glueClient.GetTable(ctx, &glue.GetTableInput{
@@ -382,4 +394,118 @@ func TestAWSCatalogExport(t *testing.T) {
 		require.Equal(t, "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat", aws.ToString(glueTable.StorageDescriptor.OutputFormat), "wrong table output format")
 		require.Equal(t, symlinkPrefix, aws.ToString(glueTable.StorageDescriptor.Location)+"/", "wrong s3 location in glue table")
 	})
+}
+
+func setupCatalogExportTestByStorageType(t *testing.T, testData *exportHooksTestData) string {
+	blockstoreType := viper.GetString(lakefscfg.BlockstoreTypeKey)
+
+	switch blockstoreType {
+	case block.BlockstoreTypeS3:
+		testData.AWSAccessKeyID = viper.GetString("aws_access_key_id")
+		testData.AWSSecretAccessKey = viper.GetString("aws_secret_access_key")
+		testData.AWSRegion = "us-east-1"
+
+	case block.BlockstoreTypeAzure:
+		testData.AzureStorageAccount = viper.GetString("azure_storage_account")
+		testData.AzureAccessKey = viper.GetString("azure_storage_access_key")
+
+	default:
+		t.Skip("unsupported block adapter: ", blockstoreType)
+	}
+
+	return blockstoreType
+}
+
+func validateExportTestByStorageType(t *testing.T, ctx context.Context, commit string, testData *exportHooksTestData, blockstoreType string) {
+	resp, err := client.GetRepositoryWithResponse(ctx, testData.Repository)
+	require.NoError(t, err)
+	require.NotNil(t, resp.JSON200)
+	namespaceURL, err := url.Parse(resp.JSON200.StorageNamespace)
+	require.NoError(t, err)
+	keyTempl := "%s/_lakefs/exported/%s/%s/test_table/_delta_log/00000000000000000000.json"
+
+	switch blockstoreType {
+	case block.BlockstoreTypeS3:
+		cfg, err := config.LoadDefaultConfig(ctx,
+			config.WithRegion(testData.AWSRegion),
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(testData.AWSAccessKeyID, testData.AWSSecretAccessKey, "")),
+		)
+		require.NoError(t, err)
+
+		clt := s3.NewFromConfig(cfg)
+		key := fmt.Sprintf(keyTempl, strings.TrimPrefix(namespaceURL.Path, "/"), mainBranch, commit[:6])
+		_, err = clt.HeadObject(ctx, &s3.HeadObjectInput{
+			Bucket: aws.String(namespaceURL.Host),
+			Key:    aws.String(key)})
+		require.NoError(t, err)
+
+	case block.BlockstoreTypeAzure:
+		azClient, err := azure.BuildAzureServiceClient(params.Azure{
+			StorageAccount:   testData.AzureStorageAccount,
+			StorageAccessKey: testData.AzureAccessKey,
+		})
+		require.NoError(t, err)
+
+		containerName, prefix, _ := strings.Cut(namespaceURL.Path, uri.PathSeparator)
+		key := fmt.Sprintf(keyTempl, strings.TrimPrefix(prefix, "/"), mainBranch, commit[:6])
+		_, err = azClient.NewContainerClient(containerName).NewBlobClient(key).GetProperties(ctx, nil)
+		require.NoError(t, err)
+
+	default:
+		t.Fatal("validation failed on unsupported block adapter")
+	}
+}
+
+func TestDeltaCatalogExport(t *testing.T) {
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	accessKeyID := viper.GetString("access_key_id")
+	secretAccessKey := viper.GetString("secret_access_key")
+	testData := &exportHooksTestData{
+		Repository:            repo,
+		Branch:                mainBranch,
+		LakeFSAccessKeyID:     accessKeyID,
+		LakeFSSecretAccessKey: secretAccessKey,
+	}
+	blockstore := setupCatalogExportTestByStorageType(t, testData)
+
+	tmplDir, err := fs.Sub(exportHooksFiles, "export_hooks_files/delta")
+	require.NoError(t, err)
+	err = fs.WalkDir(tmplDir, "data", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() {
+			buf, err := fs.ReadFile(tmplDir, path)
+			if err != nil {
+				return err
+			}
+			uploadResp, err := uploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf))
+			if err != nil {
+				return err
+			}
+			require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
+		}
+		return nil
+	})
+	require.NoError(t, err)
+
+	headCommit := uploadAndCommitObjects(t, ctx, repo, mainBranch, map[string]string{
+		"_lakefs_actions/delta_export.yaml": renderTplFileAsStr(t, testData, tmplDir, fmt.Sprintf("%s/_lakefs_actions/delta_export.yaml", blockstore)),
+	})
+
+	runs := waitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
+	run := runs.Results[0]
+	require.Equal(t, "completed", run.Status)
+
+	amount := apigen.PaginationAmount(1)
+	tasks, err := client.ListRunHooksWithResponse(ctx, repo, run.RunId, &apigen.ListRunHooksParams{
+		Amount: &amount,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, tasks.JSON200)
+	require.Equal(t, 1, len(tasks.JSON200.Results))
+	require.Equal(t, "delta_exporter", tasks.JSON200.Results[0].HookId)
+	validateExportTestByStorageType(t, ctx, headCommit.Id, testData, blockstore)
 }

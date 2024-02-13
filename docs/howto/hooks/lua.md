@@ -102,19 +102,30 @@ The Lua runtime embedded in lakeFS is limited for security reasons. The provided
 
 Helper function to mark a table object as an array for the runtime by setting `_is_array: true` metatable field.
 
-### `aws/s3.get_object(bucket, key)`
+### `aws`
+
+### `aws/s3_client`
+S3 client library.
+
+```lua
+local aws = require("aws")
+-- pass valid AWS credentials
+local client = aws.s3_client("ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "REGION")
+```
+
+### `aws/s3_client.get_object(bucket, key)`
 
 Returns the body (as a Lua string) of the requested object and a boolean value that is true if the requested object exists
 
-### `aws/s3.put_object(bucket, key, value)`
+### `aws/s3_client.put_object(bucket, key, value)`
 
 Sets the object at the given bucket and key to the value of the supplied value string
 
-### `aws/s3.delete_object(bucket [, key])`
+### `aws/s3_client.delete_object(bucket [, key])`
 
 Deletes the object at the given key
 
-### `aws/s3.list_objects(bucket [, prefix, continuation_token, delimiter])`
+### `aws/s3_client.list_objects(bucket [, prefix, continuation_token, delimiter])`
 
 Returns a table of results containing the following structure:
 
@@ -143,7 +154,7 @@ or:
 }
 ```
 
-### `aws/s3.delete_recursive(bucket, prefix)`
+### `aws/s3_client.delete_recursive(bucket, prefix)`
 
 Deletes all objects under the given prefix
 
@@ -195,6 +206,34 @@ The `table_input` is the same as the argument in `glue.create_table` function.
 ### `aws/glue.delete_table(database, table_input, [, catalog_id])`
 
 Delete an existing Table in Glue Catalog.
+
+### `azure`
+
+### `azure/blob_client`
+Azure blob client library.
+
+```lua
+local azure = require("azure")
+-- pass valid Azure credentials
+local client = azure.blob_client("AZURE_STORAGE_ACCOUNT", "AZURE_ACCESS_KEY")
+```
+
+### `azure/blob_client.get_object(path_uri)`
+
+Returns the body (as a Lua string) of the requested object and a boolean value that is true if the requested object exists  
+`path_uri` - A valid Azure blob storage uri in the form of `https://myaccount.blob.core.windows.net/mycontainer/myblob`
+
+### `azure/blob_client.put_object(path_uri, value)`
+
+Sets the object at the given bucket and key to the value of the supplied value string  
+`path_uri` - A valid Azure blob storage uri in the form of `https://myaccount.blob.core.windows.net/mycontainer/myblob`
+
+### `azure/blob_client.delete_object(path_uri)`
+
+Deletes the object at the given key  
+`path_uri` - A valid Azure blob storage uri in the form of `https://myaccount.blob.core.windows.net/mycontainer/myblob`
+
+### `crypto`
 
 ### `crypto/aes/encryptCBC(key, plaintext)`
 
@@ -412,7 +451,7 @@ Parameters:
 
 A package used to export Delta Lake tables from lakeFS to an external cloud storage.
 
-### `lakefs/catalogexport/delta_exporter.export_delta_log(action, table_names, writer, delta_client, table_descriptors_path)`
+### `lakefs/catalogexport/delta_exporter.export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path)`
 
 The function used to export Delta Lake tables.
 The return value is a table with mapping of table names to external table location (from which it is possible to query the data).
@@ -420,12 +459,12 @@ The return value is a table with mapping of table names to external table locati
 Parameters:
 
 - `action`: The global action object
-- `table_names`: Delta tables name list (e.g. `{"table1", "table2"}`)
-- `writer`: A writer function with `function(bucket, key, data)` signature, used to write the exported Delta Log (e.g. `aws/s3.s3_client.put_object`)
+- `table_def_names`: Delta tables name list (e.g. `{"table1", "table2"}`)
+- `write_object`: A writer function with `function(bucket, key, data)` signature, used to write the exported Delta Log (e.g. `aws/s3_client.put_object` or `azure/blob_client.put_object`)
 - `delta_client`: A Delta Lake client that implements `get_table: function(repo, ref, prefix)`
-- `table_descriptors_path`: The path under which the table descriptors of the provided `table_names` reside
+- `table_descriptors_path`: The path under which the table descriptors of the provided `table_def_names` reside
 
-Example:
+Delta export example for AWS S3:
 
 ```yaml
 ---
@@ -444,7 +483,7 @@ hooks:
         local table_descriptors_path = "_lakefs_tables"
         local sc = aws.s3_client(args.aws.access_key_id, args.aws.secret_access_key, args.aws.region)
         local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.region)
-        local delta_table_locations = delta_exporter.export_delta_log(action, args.table_names, sc.put_object, delta_client, table_descriptors_path)
+        local delta_table_locations = delta_exporter.export_delta_log(action, args.table_defs, sc.put_object, delta_client, table_descriptors_path)
         
         for t, loc in pairs(delta_table_locations) do
           print("Delta Lake exported table \"" .. t .. "\"'s location: " .. loc .. "\n")
@@ -457,7 +496,7 @@ hooks:
         lakefs:
           access_key_id: <LAKEFS_ACCESS_KEY_ID> 
           secret_access_key: <LAKEFS_SECRET_ACCESS_KEY>
-        table_names:
+        table_defs:
           - mytable
 ```
 
@@ -467,6 +506,45 @@ For the table descriptor under the `_lakefs_tables/mytable.yaml`:
 name: myTableActualName
 type: delta
 path: a/path/to/my/delta/table
+```
+
+Delta export example for Azure Blob Storage:
+
+```yaml
+name: Delta Exporter
+on:
+  post-commit:
+    branches: ["{{ .Branch }}*"]
+hooks:
+  - id: delta_exporter
+    type: lua
+    properties:
+      script: |
+        local azure = require("azure")
+        local formats = require("formats")
+        local delta_exporter = require("lakefs/catalogexport/delta_exporter")
+
+        local table_descriptors_path = "_lakefs_tables"
+        local sc = azure.blob_client(args.azure.storage_account, args.azure.access_key)
+        local function write_object(_, key, buf)
+          return sc.put_object(key,buf)
+        end
+        local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key)
+        local delta_table_locations = delta_exporter.export_delta_log(action, args.table_names, write_object, delta_client, table_descriptors_path)
+
+        for t, loc in pairs(delta_table_locations) do
+          print("Delta Lake exported table \"" .. t .. "\"'s location: " .. loc .. "\n")
+        end
+      args:
+        azure:
+          storage_account: "{{ .AzureStorageAccount }}"
+          access_key: "{{ .AzureAccessKey }}"
+        lakefs: # provide credentials of a user that has access to the script and Delta Table
+          access_key_id: "{{ .LakeFSAccessKeyID }}"
+          secret_access_key: "{{ .LakeFSSecretAccessKey }}"
+        table_defs:
+          - mytable
+
 ```
 
 ### `lakefs/catalogexport/table_extractor`
@@ -605,59 +683,6 @@ Parameters:
 
 - `descriptor(Table)`: Object from (e.g. _lakefs_tables/my_table.yaml).
 - `action_info(Table)`: The global action object.
-
-### `lakefs/catalogexport/delta_exporter`
-
-A package used to export Delta Lake tables from lakeFS to an external cloud storage.
-
-### `lakefs/catalogexport/delta_exporter.export_delta_log(action, table_paths, writer, delta_client, table_descriptors_path)`
-
-The function used to export Delta Lake tables.
-The return value is a table with mapping of table names to external table location (from which it is possible to query the data).
-
-Parameters:
-
-- `action`: The global action object
-- `table_paths`: Paths list in lakeFS to Delta Tables (e.g. `{"path/to/table1", "path/to/table2"}`)
-- `writer`: A writer function with `function(bucket, key, data)` signature, used to write the exported Delta Log (e.g. `aws/s3.s3_client.put_object`)
-- `delta_client`: A Delta Lake client that implements `get_table: function(repo, ref, prefix)`
-- `table_descriptors_path`: The path under which the table descriptors of the provided `table_paths` reside  
-
-Example:
-
-```yaml
----
-name: delta_exporter
-on:
-  post-commit: null
-hooks:
-  - id: delta
-    type: lua
-    properties:
-      script: |
-        local aws = require("aws")
-        local formats = require("formats")
-        local delta_exporter = require("lakefs/catalogexport/delta_exporter")
-
-        local table_descriptors_path = "_lakefs_tables"
-        local sc = aws.s3_client(args.aws.access_key_id, args.aws.secret_access_key, args.aws.region)
-        local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.region)
-        local delta_table_locations = delta_exporter.export_delta_log(action, args.table_paths, sc.put_object, delta_client, table_descriptors_path)
-        
-        for t, loc in pairs(delta_table_locations) do
-          print("Delta Lake exported table \"" .. t .. "\"'s location: " .. loc .. "\n")
-        end
-      args:
-        aws:
-          access_key_id: <AWS_ACCESS_KEY_ID>
-          secret_access_key: <AWS_SECRET_ACCESS_KEY>
-          region: us-east-1
-        lakefs:
-          access_key_id: <LAKEFS_ACCESS_KEY_ID> 
-          secret_access_key: <LAKEFS_SECRET_ACCESS_KEY>
-        table_paths:
-          - my/delta/table/path
-```
 
 ### `lakefs/catalogexport/unity_exporter`
 
