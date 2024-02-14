@@ -1,5 +1,19 @@
 # Changelog
 
+# v1.11.0
+
+:new: What's new:
+
+- Delta Exporter: Azure Support (#7444)
+- Prohibit empty revert by default (#7308)
+
+:bug: Bugs fixed:
+
+- Fix: Skip ensureStorageNamespace when creating a read-only repository (#7449)
+- Fix: Show email or group name in place of ID in AttachModal (#7454)
+- Fix: Show email when available in the create credentials confirmation modal (#7456)
+- Fix: bug on creating bare repository as read-only (#7458)
+
 # v1.10.0
 
 :new: What's new:
