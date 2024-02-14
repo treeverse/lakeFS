@@ -2,13 +2,23 @@
 
 ## Unreleased
 
+## v0.4.0
+
+:new: What's new:
+
+- Return revert commit from Branch.revert() instead of None (#7353)
+  **Deprecation:** use `reference` argument instead of `reference_id` (will be removed in the next major version)
+- Allow kwargs in Branch commit creation (#7459)
+
+:bug: Bugs fixed:
+
+- Fix: Unconditionally assign body in ServerException constructor (#7315)
+
 ## v0.3.0
 
 :new: What's new:
 
 - Implement Cherry Pick (#7348)
-
-:bug: Bugs fixed:
 
 ## v0.2.1
 
