@@ -71,5 +71,5 @@ session.download_data(path=localpath, bucket=repo, key_prefix = branch + prefix)
 **Note:**
 Advanced AWS SageMaker features, like Autopilot jobs, are encapsulated and don't have the option to override the S3 endpoint.
 However, it is possible to [export]({% link howto/export.md %}) the required inputs from lakeFS to S3.
-<br/>If you're using SageMaker features that aren't supported by lakeFS, we'd love to [hear from you](https://join.slack.com/t/lakefs/shared_invite/zt-ks1fwp0w-bgD9PIekW86WF25nE_8_tw).
+<br/>If you're using SageMaker features that aren't supported by lakeFS, we'd love to [hear from you](https://lakefs.io/slack).
 {: .note}
