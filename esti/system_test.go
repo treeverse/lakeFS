@@ -146,6 +146,10 @@ func deleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
 
 const randomDataContentLength = 16
 
+// largeDataContentLength is >5 MiB, which is large enough to require
+// multipart operations.
+const largeDataContentLength = 6 << 20
+
 func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool) (checksum, content string, err error) {
 	objContent := randstr.String(randomDataContentLength)
 	checksum, err = uploadFileAndReport(ctx, repo, branch, objPath, objContent, direct)
