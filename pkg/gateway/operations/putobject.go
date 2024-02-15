@@ -66,14 +66,8 @@ func (controller *PutObject) RequiredPermissions(req *http.Request, repoID, _, d
 }
 
 // extractEntryFromCopyReq: get metadata from source file
-func extractEntryFromCopyReq(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource string) *catalog.DBEntry {
-	p, err := getPathFromSource(copySource)
-	if err != nil {
-		o.Log(req).WithError(err).Error("could not parse copy source path")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
-		return nil
-	}
-	ent, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, p.Reference, p.Path, catalog.GetEntryParams{})
+func extractEntryFromCopyReq(w http.ResponseWriter, req *http.Request, o *PathOperation, copySource path.ResolvedAbsolutePath) *catalog.DBEntry {
+	ent, err := o.Catalog.GetEntry(req.Context(), copySource.Repo, copySource.Reference, copySource.Path, catalog.GetEntryParams{})
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read copy source")
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
@@ -151,13 +145,31 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 	// https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPartCopy.html#API_UploadPartCopy_RequestSyntax
 	if copySource := req.Header.Get(CopySourceHeader); copySource != "" {
 		// see if there's a range passed as well
-		ent := extractEntryFromCopyReq(w, req, o, copySource)
+		resolvedCopySource, err := getPathFromSource(copySource)
+		if err != nil {
+			o.Log(req).WithField("copy_source", copySource).WithError(err).Error("could not parse copy source path")
+			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+			return
+		}
+		ent := extractEntryFromCopyReq(w, req, o, resolvedCopySource)
 		if ent == nil {
 			return // operation already failed
 		}
+		srcRepo := o.Repository
+		if resolvedCopySource.Repo != o.Repository.Name {
+			srcRepo, err = o.Catalog.GetRepository(req.Context(), resolvedCopySource.Repo)
+			if err != nil {
+				o.Log(req).
+					WithField("copy_source", copySource).
+					WithError(err).
+					Error("Failed to get repository")
+				_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+				return
+			}
+		}
 
 		src := block.ObjectPointer{
-			StorageNamespace: o.Repository.StorageNamespace,
+			StorageNamespace: srcRepo.StorageNamespace,
 			IdentifierType:   ent.AddressType.ToIdentifierType(),
 			Identifier:       ent.PhysicalAddress,
 		}
@@ -184,7 +196,13 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 		}
 
 		if err != nil {
-			o.Log(req).WithError(err).WithField("copy_source", ent.Path).Error("copy part " + partNumberStr + " upload failed")
+			o.Log(req).
+				WithFields(logging.Fields{
+					"copy_source": ent.Path,
+					"part":        partNumberStr,
+				}).
+				WithError(err).
+				Error("copy part: upload failed")
 			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 			return
 		}
@@ -204,7 +222,8 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 	},
 		byteSize, req.Body, uploadID, partNumber)
 	if err != nil {
-		o.Log(req).WithError(err).Error("part " + partNumberStr + " upload failed")
+		o.Log(req).WithField("part", partNumberStr).
+			WithError(err).Error("part upload failed")
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
