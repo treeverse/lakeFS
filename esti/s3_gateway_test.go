@@ -361,13 +361,13 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 			Object:     srcPath,
 			MatchRange: true,
 			Start:      0,
-			End:        minDataContentLengthForMultipart,
+			End:        minDataContentLengthForMultipart - 1,
 		}, {
 			Bucket:     repo,
 			Object:     srcPath,
 			MatchRange: true,
 			Start:      minDataContentLengthForMultipart,
-			End:        largeDataContentLength,
+			End:        largeDataContentLength - 1,
 		},
 	}
 
