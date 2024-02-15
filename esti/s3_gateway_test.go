@@ -345,7 +345,7 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 	destPath := gatewayTestPrefix + "dest-file"
 
 	// upload data
-	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
+	s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
 	_, err := s3lakefsClient.PutObject(ctx, repo, srcPath, objContent, largeDataContentLength,
 		minio.PutObjectOptions{})
 	require.NoError(t, err)
