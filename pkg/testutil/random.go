@@ -42,6 +42,9 @@ type randomReader struct {
 }
 
 func (r *randomReader) Read(p []byte) (int, error) {
+	if r.remaining <= 0 {
+		return 0, io.EOF
+	}
 	n := len(p)
 	if math.MaxInt >= r.remaining && n > int(r.remaining) {
 		n = int(r.remaining)
