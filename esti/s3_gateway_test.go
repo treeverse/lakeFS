@@ -334,7 +334,7 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 	defer tearDownTest(repo)
 
 	// additional repository for copy between repos
-	const destRepoName = "tests3copyobjectdest"
+	const destRepoName = "tests3copyobjectmultipartdest"
 	destRepo := createRepositoryByName(ctx, t, destRepoName)
 	defer deleteRepositoryIfAskedTo(ctx, destRepoName)
 
