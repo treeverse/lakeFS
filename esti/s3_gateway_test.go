@@ -357,15 +357,17 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 
 	srcs := []minio.CopySrcOptions{
 		{
-			Bucket: repo,
-			Object: srcPath,
-			Start:  0,
-			End:    minDataContentLengthForMultipart,
+			Bucket:     repo,
+			Object:     srcPath,
+			MatchRange: true,
+			Start:      0,
+			End:        minDataContentLengthForMultipart,
 		}, {
-			Bucket: repo,
-			Object: srcPath,
-			Start:  minDataContentLengthForMultipart,
-			End:    largeDataContentLength,
+			Bucket:     repo,
+			Object:     srcPath,
+			MatchRange: true,
+			Start:      minDataContentLengthForMultipart,
+			End:        largeDataContentLength,
 		},
 	}
 
