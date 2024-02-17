@@ -111,7 +111,8 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                     local code, obj = lakefs.stat_object(repo, commit_id, unescaped_path)
                     if code == 200 then
                         local obj_stat = json.unmarshal(obj)
-                        local physical_path = obj_stat["physical_address"]
+                        local u = url.parse(obj_stat["physical_address"])
+                        local physical_path = url.build_url(u["scheme"], u["host"], u["path"])
                         if entry.add ~= nil then
                             entry.add.path = physical_path
                         elseif entry.remove ~= nil then

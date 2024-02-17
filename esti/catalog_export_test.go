@@ -423,7 +423,15 @@ func validateExportTestByStorageType(t *testing.T, ctx context.Context, commit s
 	namespaceURL, err := url.Parse(resp.JSON200.StorageNamespace)
 	require.NoError(t, err)
 	keyTempl := "%s/_lakefs/exported/%s/%s/test_table/_delta_log/00000000000000000000.json"
+	tableStat, err := client.StatObjectWithResponse(ctx, testData.Repository, mainBranch, &apigen.StatObjectParams{
+		Path: "tables/test-table/test partition/0-845b8a42-579e-47ee-9935-921dd8d2ba7d-0.parquet",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, tableStat.JSON200)
+	expectedPath, err := url.Parse(tableStat.JSON200.PhysicalAddress)
+	require.NoError(t, err)
 
+	var reader io.ReadCloser
 	switch blockstoreType {
 	case block.BlockstoreTypeS3:
 		cfg, err := config.LoadDefaultConfig(ctx,
@@ -434,10 +442,11 @@ func validateExportTestByStorageType(t *testing.T, ctx context.Context, commit s
 
 		clt := s3.NewFromConfig(cfg)
 		key := fmt.Sprintf(keyTempl, strings.TrimPrefix(namespaceURL.Path, "/"), mainBranch, commit[:6])
-		_, err = clt.HeadObject(ctx, &s3.HeadObjectInput{
+		readResp, err := clt.GetObject(ctx, &s3.GetObjectInput{
 			Bucket: aws.String(namespaceURL.Host),
 			Key:    aws.String(key)})
 		require.NoError(t, err)
+		reader = readResp.Body
 
 	case block.BlockstoreTypeAzure:
 		azClient, err := azure.BuildAzureServiceClient(params.Azure{
@@ -448,12 +457,21 @@ func validateExportTestByStorageType(t *testing.T, ctx context.Context, commit s
 
 		containerName, prefix, _ := strings.Cut(namespaceURL.Path, uri.PathSeparator)
 		key := fmt.Sprintf(keyTempl, strings.TrimPrefix(prefix, "/"), mainBranch, commit[:6])
-		_, err = azClient.NewContainerClient(containerName).NewBlobClient(key).GetProperties(ctx, nil)
+		readResp, err := azClient.NewContainerClient(containerName).NewBlockBlobClient(key).DownloadStream(ctx, nil)
 		require.NoError(t, err)
+		reader = readResp.Body
 
 	default:
 		t.Fatal("validation failed on unsupported block adapter")
 	}
+
+	defer func() {
+		err := reader.Close()
+		require.NoError(t, err)
+	}()
+	contents, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	require.Contains(t, string(contents), expectedPath.String())
 }
 
 func TestDeltaCatalogExport(t *testing.T) {
@@ -508,4 +526,90 @@ func TestDeltaCatalogExport(t *testing.T) {
 	require.Equal(t, 1, len(tasks.JSON200.Results))
 	require.Equal(t, "delta_exporter", tasks.JSON200.Results[0].HookId)
 	validateExportTestByStorageType(t, ctx, headCommit.Id, testData, blockstore)
+}
+
+func TestDeltaCatalogImportExport(t *testing.T) {
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	requireBlockstoreType(t, block.BlockstoreTypeS3)
+	accessKeyID := viper.GetString("access_key_id")
+	secretAccessKey := viper.GetString("secret_access_key")
+	testData := &exportHooksTestData{
+		Repository:            repo,
+		Branch:                mainBranch,
+		LakeFSAccessKeyID:     accessKeyID,
+		LakeFSSecretAccessKey: secretAccessKey,
+	}
+	blockstore := setupCatalogExportTestByStorageType(t, testData)
+	tmplDir, err := fs.Sub(exportHooksFiles, "export_hooks_files/delta")
+	require.NoError(t, err)
+	err = fs.WalkDir(tmplDir, "data", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() {
+			buf, err := fs.ReadFile(tmplDir, path)
+			if err != nil {
+				return err
+			}
+			uploadToPhysicalAddress(t, ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf))
+		}
+		return nil
+	})
+	require.NoError(t, err)
+
+	headCommit := uploadAndCommitObjects(t, ctx, repo, mainBranch, map[string]string{
+		"_lakefs_actions/delta_export.yaml": renderTplFileAsStr(t, testData, tmplDir, fmt.Sprintf("%s/_lakefs_actions/delta_export.yaml", blockstore)),
+	})
+
+	runs := waitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
+	run := runs.Results[0]
+	require.Equal(t, "completed", run.Status)
+
+	amount := apigen.PaginationAmount(1)
+	tasks, err := client.ListRunHooksWithResponse(ctx, repo, run.RunId, &apigen.ListRunHooksParams{
+		Amount: &amount,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, tasks.JSON200)
+	require.Equal(t, 1, len(tasks.JSON200.Results))
+	require.Equal(t, "delta_exporter", tasks.JSON200.Results[0].HookId)
+	validateExportTestByStorageType(t, ctx, headCommit.Id, testData, blockstore)
+}
+
+func uploadToPhysicalAddress(t *testing.T, ctx context.Context, repo, branch, objPath, objContent string) {
+	t.Helper()
+	physicalAddress, err := url.Parse(getStorageNamespace(t, ctx, repo))
+	require.NoError(t, err)
+	physicalAddress = physicalAddress.JoinPath("data", objPath)
+
+	adapter, err := NewAdapter(physicalAddress.Scheme)
+	require.NoError(t, err)
+
+	stats, err := adapter.Upload(ctx, physicalAddress, strings.NewReader(objContent))
+	require.NoError(t, err)
+
+	mtime := stats.MTime.Unix()
+	unescapedAddress, err := url.PathUnescape(physicalAddress.String()) // catch: https://github.com/treeverse/lakeFS/issues/7460
+	require.NoError(t, err)
+
+	resp, err := client.StageObjectWithResponse(ctx, repo, branch, &apigen.StageObjectParams{
+		Path: objPath,
+	}, apigen.StageObjectJSONRequestBody{
+		Checksum:        stats.ETag,
+		Mtime:           &mtime,
+		PhysicalAddress: unescapedAddress,
+		SizeBytes:       stats.Size,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp.JSON201)
+}
+
+func getStorageNamespace(t *testing.T, ctx context.Context, repo string) string {
+	t.Helper()
+	resp, err := client.GetRepositoryWithResponse(ctx, repo)
+	require.NoError(t, err)
+	require.NotNil(t, resp.JSON200)
+	return resp.JSON200.StorageNamespace
 }
