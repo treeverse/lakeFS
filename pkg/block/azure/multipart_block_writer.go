@@ -174,9 +174,20 @@ func getMultipartSize(ctx context.Context, container container.Client, objName s
 	return int64(size), nil
 }
 
-func copyPartRange(ctx context.Context, destinationContainer container.Client, destinationObjName string, sourceBlobURL blockblob.Client, startPosition, count int64) (*block.UploadPartResponse, error) {
+func copyPartRange(ctx context.Context, clientCache *ClientCache, destinationKey, sourceKey BlobURLInfo, startPosition, count int64) (*block.UploadPartResponse, error) {
+	destinationContainer, err := clientCache.NewContainerClient(destinationKey.StorageAccountName, destinationKey.ContainerName)
+	if err != nil {
+		return nil, fmt.Errorf("copy part: get destination client: %w", err)
+	}
+	sourceContainer, err := clientCache.NewContainerClient(sourceKey.StorageAccountName, sourceKey.ContainerName)
+	if err != nil {
+		return nil, fmt.Errorf("copy part: get source client: %w", err)
+	}
 	base64BlockID := generateRandomBlockID()
-	_, err := sourceBlobURL.StageBlockFromURL(ctx, base64BlockID, sourceBlobURL.URL(),
+	destinationBlob := destinationContainer.NewBlockBlobClient(destinationKey.BlobURL)
+	sourceBlob := sourceContainer.NewBlockBlobClient(sourceKey.BlobURL)
+
+	stageBlockResponse, err := destinationBlob.StageBlockFromURL(ctx, base64BlockID, sourceBlob.URL(),
 		&blockblob.StageBlockFromURLOptions{
 			Range: blob.HTTPRange{
 				Offset: startPosition,
@@ -187,25 +198,20 @@ func copyPartRange(ctx context.Context, destinationContainer container.Client, d
 		return nil, err
 	}
 
-	// add size and id to etag
-	response, err := sourceBlobURL.GetProperties(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	etag := "\"" + hex.EncodeToString(response.ContentMD5) + "\""
-	size := response.ContentLength
+	// add size, etag
+	etag := "\"" + hex.EncodeToString(stageBlockResponse.ContentMD5) + "\""
 	base64Etag := base64.StdEncoding.EncodeToString([]byte(etag))
 	// stage id data
-	blobIDsURL := destinationContainer.NewBlockBlobClient(destinationObjName + idSuffix)
-	_, err = blobIDsURL.StageBlock(ctx, base64Etag, streaming.NopCloser(strings.NewReader(base64BlockID+"\n")), nil)
+	blobIDsBlob := destinationContainer.NewBlockBlobClient(destinationKey.BlobURL + idSuffix)
+	_, err = blobIDsBlob.StageBlock(ctx, base64Etag, streaming.NopCloser(strings.NewReader(base64BlockID+"\n")), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed staging part data: %w", err)
 	}
 
 	// stage size data
-	sizeData := fmt.Sprintf("%d\n", size)
-	blobSizesURL := destinationContainer.NewBlockBlobClient(destinationObjName + sizeSuffix)
-	_, err = blobSizesURL.StageBlock(ctx, base64Etag, streaming.NopCloser(strings.NewReader(sizeData)), nil)
+	sizeData := fmt.Sprintf("%d\n", count)
+	blobSizesBlob := destinationContainer.NewBlockBlobClient(destinationKey.BlobURL + sizeSuffix)
+	_, err = blobSizesBlob.StageBlock(ctx, base64Etag, streaming.NopCloser(strings.NewReader(sizeData)), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed staging part data: %w", err)
 	}
