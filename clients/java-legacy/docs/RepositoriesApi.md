@@ -202,6 +202,7 @@ null (empty response body)
 |-------------|-------------|------------------|
 **204** | deleted garbage collection rules successfully |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
@@ -1231,6 +1232,7 @@ null (empty response body)
 **204** | branch protection rule created successfully |  -  |
 **400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **412** | Precondition Failed |  -  |
 **420** | too many requests |  -  |
@@ -1325,6 +1327,7 @@ null (empty response body)
 |-------------|-------------|------------------|
 **204** | set garbage collection rules successfully |  -  |
 **401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |

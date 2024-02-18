@@ -2698,6 +2698,7 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
+
   /repositories/{repository}/settings/gc_rules:
     parameters:
       - in: path
@@ -2740,6 +2741,8 @@ paths:
           description: set garbage collection rules successfully
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         420:
@@ -2755,6 +2758,8 @@ paths:
           description: deleted garbage collection rules successfully
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         420:
@@ -2823,6 +2828,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         412:
@@ -5074,6 +5081,8 @@ paths:
                 $ref: "#/components/schemas/GarbageCollectionPrepareResponse"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         420:
@@ -5109,6 +5118,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         420:
