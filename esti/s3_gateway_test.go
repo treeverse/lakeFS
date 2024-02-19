@@ -328,6 +328,88 @@ func TestS3HeadBucket(t *testing.T) {
 	})
 }
 
+func TestS3CopyObjectMultipart(t *testing.T) {
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	// additional repository for copy between repos
+	const destRepoName = "tests3copyobjectmultipartdest"
+	destRepo := createRepositoryByName(ctx, t, destRepoName)
+	defer deleteRepositoryIfAskedTo(ctx, destRepoName)
+
+	// content
+	r := rand.New(rand.NewSource(17))
+	objContent := testutil.NewRandomReader(r, largeDataContentLength)
+	srcPath := gatewayTestPrefix + "source-file"
+	destPath := gatewayTestPrefix + "dest-file"
+
+	// upload data
+	s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
+	_, err := s3lakefsClient.PutObject(ctx, repo, srcPath, objContent, largeDataContentLength,
+		minio.PutObjectOptions{})
+	require.NoError(t, err)
+
+	dest := minio.CopyDestOptions{
+		Bucket: destRepo,
+		Object: destPath,
+	}
+
+	srcs := []minio.CopySrcOptions{
+		{
+			Bucket:     repo,
+			Object:     srcPath,
+			MatchRange: true,
+			Start:      0,
+			End:        minDataContentLengthForMultipart - 1,
+		}, {
+			Bucket:     repo,
+			Object:     srcPath,
+			MatchRange: true,
+			Start:      minDataContentLengthForMultipart,
+			End:        largeDataContentLength - 1,
+		},
+	}
+
+	ui, err := s3lakefsClient.ComposeObject(ctx, dest, srcs...)
+	if err != nil {
+		t.Fatalf("minio.Client.ComposeObject from(%+v) to(%+v): %s", srcs, dest, err)
+	}
+
+	if ui.Size != largeDataContentLength {
+		t.Errorf("Copied %d bytes when expecting %d", ui.Size, largeDataContentLength)
+	}
+
+	// Comparing 2 readers is too much work.  Instead just hash them.
+	// This will fail for malicious bad S3 gateways, but otherwise is
+	// fine.
+	uploadedReader, err := s3lakefsClient.GetObject(ctx, repo, srcPath, minio.GetObjectOptions{})
+	if err != nil {
+		t.Fatalf("Get uploaded object: %s", err)
+	}
+	defer uploadedReader.Close()
+	uploadedCRC, err := testutil.ChecksumReader(uploadedReader)
+	if err != nil {
+		t.Fatalf("Read uploaded object: %s", err)
+	}
+	if uploadedCRC == 0 {
+		t.Fatal("Impossibly bad luck: uploaded data with CRC64 == 0!")
+	}
+
+	copiedReader, err := s3lakefsClient.GetObject(ctx, repo, srcPath, minio.GetObjectOptions{})
+	if err != nil {
+		t.Fatalf("Get copied object: %s", err)
+	}
+	defer copiedReader.Close()
+	copiedCRC, err := testutil.ChecksumReader(copiedReader)
+	if err != nil {
+		t.Fatalf("Read copied object: %s", err)
+	}
+
+	if uploadedCRC != copiedCRC {
+		t.Fatal("Copy not equal")
+	}
+}
+
 func TestS3CopyObject(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)

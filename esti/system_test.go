@@ -144,7 +144,20 @@ func deleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
 	}
 }
 
-const randomDataContentLength = 16
+const (
+	// randomDataContentLength is the content length used for small
+	// objects.  It is intentionally not a round number.
+	randomDataContentLength = 16
+
+	// minDataContentLengthForMultipart is the content length for all
+	// parts of a multipart upload except the last.  Its value -- 5MiB
+	// -- is defined in the S3 protocol, and cannot be changed.
+	minDataContentLengthForMultipart = 5 << 20
+
+	// largeDataContentLength is >minDataContentLengthForMultipart,
+	// which is large enough to require multipart operations.
+	largeDataContentLength = 6 << 20
+)
 
 func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool) (checksum, content string, err error) {
 	objContent := randstr.String(randomDataContentLength)
