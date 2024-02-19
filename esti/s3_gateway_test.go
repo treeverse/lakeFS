@@ -329,7 +329,6 @@ func TestS3HeadBucket(t *testing.T) {
 }
 
 func TestS3CopyObjectMultipart(t *testing.T) {
-	const minDataContentLengthForMultipart = 5 << 20
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
