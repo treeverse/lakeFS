@@ -2365,3 +2365,85 @@ func TestGravelerCreateCommitRecord(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestGraveler_Revert(t *testing.T) {
+	type fields struct {
+		CommittedManager *testutil.CommittedFake
+		RefManager       *testutil.RefsFake
+	}
+	type args struct {
+		ctx          context.Context
+		branchID     graveler.BranchID
+		ref          graveler.Ref
+		parentNumber int
+		allowEmpty   bool
+	}
+	tests := []struct {
+		name        string
+		fields      fields
+		args        args
+		expectedVal graveler.CommitID
+		expectedErr error
+	}{
+		{
+			name: "valid revert",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{},
+				RefManager: &testutil.RefsFake{
+					Branch:  &graveler.Branch{CommitID: "c1", StagingToken: "token"},
+					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}},
+					Refs: map[graveler.Ref]*graveler.ResolvedRef{
+						"b1": {
+							Type:                   graveler.ReferenceTypeBranch,
+							ResolvedBranchModifier: 0,
+							BranchRecord: graveler.BranchRecord{
+								BranchID: "b1",
+								Branch: &graveler.Branch{
+									CommitID:     "c1",
+									StagingToken: "token",
+								},
+							},
+						},
+						"ref1": {
+							Type:                   graveler.ReferenceTypeCommit,
+							ResolvedBranchModifier: 0,
+							BranchRecord: graveler.BranchRecord{
+								Branch: &graveler.Branch{
+									CommitID: "c1",
+								},
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				ctx:          nil,
+				branchID:     "b1",
+				ref:          graveler.Ref("c1"),
+				parentNumber: 1,
+				allowEmpty:   false,
+			},
+			expectedErr: nil,
+			expectedVal: graveler.CommitID("c1"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := newGraveler(t, tt.fields.CommittedManager, nil, tt.fields.RefManager, nil, testutil.NewProtectedBranchesManagerFake())
+
+			got, err := g.Revert(context.Background(), repository, tt.args.branchID, tt.args.ref, tt.args.parentNumber, graveler.CommitParams{
+				AllowEmpty: tt.args.allowEmpty,
+			})
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
+			}
+			if err != nil {
+				return
+			}
+
+			if got != tt.expectedVal {
+				t.Errorf("got wrong commitID, got = %v, want %v", got, tt.expectedVal)
+			}
+		})
+	}
+}
