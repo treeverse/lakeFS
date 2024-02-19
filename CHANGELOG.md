@@ -2,10 +2,11 @@
 
 # v1.11.1
 
-:bug: What's new:
-
-- Fix S3 gateway cross-repo copies (#7468)
+:new: What's new:
 - Disable GC and branch protection for read-only repositories (#7471)
+
+:bug: Bugs fixed:
+- Fix S3 gateway cross-repo copies (#7468)
 - Delta export path unescape (#7473)
 
 # v1.11.0
