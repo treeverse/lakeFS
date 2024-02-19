@@ -39,6 +39,15 @@ var (
 			DefaultBranchID:  branch1ID,
 		},
 	}
+	repositoryRO = &graveler.RepositoryRecord{
+		RepositoryID: repoID,
+		Repository: &graveler.Repository{
+			StorageNamespace: "mock-sn",
+			CreationDate:     time.Now(),
+			DefaultBranchID:  branch1ID,
+			ReadOnly:         true,
+		},
+	}
 	branch1 = graveler.Branch{
 		CommitID:     commit1ID,
 		StagingToken: stagingToken1,

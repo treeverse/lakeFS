@@ -3,7 +3,6 @@ package graveler_test
 import (
 	"context"
 	"errors"
-	"github.com/mohae/deepcopy"
 	"strconv"
 	"testing"
 	"time"
@@ -1748,8 +1747,10 @@ func TestGraveler_PreCommitHook(t *testing.T) {
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
-			repo := deepcopy.Copy(repository).(*graveler.RepositoryRecord)
-			repo.ReadOnly = tt.readOnlyRepo
+			repo := repository
+			if tt.readOnlyRepo {
+				repo = repositoryRO
+			}
 			// call commit
 			_, err := g.Commit(ctx, repo, commitBranchID, graveler.CommitParams{
 				Committer: commitCommitter,
@@ -1864,8 +1865,10 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
-			repo := deepcopy.Copy(repository).(*graveler.RepositoryRecord)
-			repo.ReadOnly = tt.readOnlyRepo
+			repo := repository
+			if tt.readOnlyRepo {
+				repo = repositoryRO
+			}
 			// call merge
 			_, err := g.Merge(ctx, repo, mergeDestination, expectedCommitID.Ref(), graveler.CommitParams{
 				Committer: commitCommitter,
@@ -2017,8 +2020,10 @@ func TestGraveler_PreCreateTagHook(t *testing.T) {
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
-			repo := deepcopy.Copy(repository).(*graveler.RepositoryRecord)
-			repo.ReadOnly = tt.readOnlyRepo
+			repo := repository
+			if tt.readOnlyRepo {
+				repo = repositoryRO
+			}
 
 			err := g.CreateTag(ctx, repo, expectedTagID, expectedCommitID, graveler.WithForce(tt.readOnlyRepo))
 
@@ -2106,8 +2111,10 @@ func TestGraveler_PreDeleteTagHook(t *testing.T) {
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
-			repo := deepcopy.Copy(repository).(*graveler.RepositoryRecord)
-			repo.ReadOnly = tt.readOnlyRepo
+			repo := repository
+			if tt.readOnlyRepo {
+				repo = repositoryRO
+			}
 			err := g.DeleteTag(ctx, repo, expectedTagID, graveler.WithForce(tt.readOnlyRepo))
 
 			// verify we got an error
@@ -2200,8 +2207,10 @@ func TestGraveler_PreCreateBranchHook(t *testing.T) {
 			refManager.Err = graveler.ErrBranchNotFound
 
 			newBranch := newBranchPrefix + strconv.Itoa(i)
-			repo := deepcopy.Copy(repository).(*graveler.RepositoryRecord)
-			repo.ReadOnly = tt.readOnlyRepo
+			repo := repository
+			if tt.readOnlyRepo {
+				repo = repositoryRO
+			}
 			_, err := g.CreateBranch(ctx, repo, graveler.BranchID(newBranch), graveler.Ref(sourceBranchID), graveler.WithForce(tt.readOnlyRepo))
 
 			// verify we got an error
@@ -2295,8 +2304,10 @@ func TestGraveler_PreDeleteBranchHook(t *testing.T) {
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
-			repo := deepcopy.Copy(repository).(*graveler.RepositoryRecord)
-			repo.ReadOnly = tt.readOnlyRepo
+			repo := repository
+			if tt.readOnlyRepo {
+				repo = repositoryRO
+			}
 			err := g.DeleteBranch(ctx, repo, graveler.BranchID(sourceBranchID), graveler.WithForce(tt.readOnlyRepo))
 
 			// verify we got an error
