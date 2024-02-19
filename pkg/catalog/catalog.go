@@ -2472,6 +2472,9 @@ func (c *Catalog) SetGarbageCollectionRules(ctx context.Context, repositoryID st
 	if err != nil {
 		return err
 	}
+	if repository.ReadOnly {
+		return graveler.ErrReadOnlyRepository
+	}
 	return c.Store.SetGarbageCollectionRules(ctx, repository, rules)
 }
 
@@ -2489,6 +2492,9 @@ func (c *Catalog) SetBranchProtectionRules(ctx context.Context, repositoryID str
 	if err != nil {
 		return err
 	}
+	if repository.ReadOnly {
+		return graveler.ErrReadOnlyRepository
+	}
 	return c.Store.SetBranchProtectionRules(ctx, repository, rules, lastKnownChecksum)
 }
 
@@ -2501,6 +2507,9 @@ func (c *Catalog) PrepareExpiredCommits(ctx context.Context, repositoryID string
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
+	}
+	if repository.ReadOnly {
+		return nil, graveler.ErrReadOnlyRepository
 	}
 	return c.Store.SaveGarbageCollectionCommits(ctx, repository)
 }
@@ -2558,6 +2567,9 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return nil, err
+	}
+	if repository.ReadOnly {
+		return nil, graveler.ErrReadOnlyRepository
 	}
 
 	var runID string
