@@ -55,7 +55,7 @@ func (r *randomReader) Read(p []byte) (int, error) {
 	return n, nil
 }
 
-// RandomReader returns a reader that will return size bytes from rand.
-func RandomReader(rand *rand.Rand, size int64) io.Reader {
+// NewRandomReader returns a reader that will return size bytes from rand.
+func NewRandomReader(rand *rand.Rand, size int64) io.Reader {
 	return &randomReader{rand: rand, remaining: size}
 }

@@ -339,7 +339,7 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 
 	// content
 	r := rand.New(rand.NewSource(17))
-	objContent := testutil.RandomReader(r, largeDataContentLength)
+	objContent := testutil.NewRandomReader(r, largeDataContentLength)
 	srcPath := gatewayTestPrefix + "source-file"
 	destPath := gatewayTestPrefix + "dest-file"
 
