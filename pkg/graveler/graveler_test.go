@@ -3,6 +3,7 @@ package graveler_test
 import (
 	"context"
 	"errors"
+	"github.com/mohae/deepcopy"
 	"strconv"
 	"testing"
 	"time"
@@ -1708,24 +1709,34 @@ func TestGraveler_PreCommitHook(t *testing.T) {
 	const commitMessage = "message"
 	commitMetadata := graveler.Metadata{"key1": "val1"}
 	tests := []struct {
-		name string
-		hook bool
-		err  error
+		name         string
+		hook         bool
+		err          error
+		readOnlyRepo bool
 	}{
 		{
-			name: "without hook",
-			hook: false,
-			err:  nil,
+			name:         "without hook",
+			hook:         false,
+			err:          nil,
+			readOnlyRepo: false,
 		},
 		{
-			name: "hook no error",
-			hook: true,
-			err:  nil,
+			name:         "hook no error",
+			hook:         true,
+			err:          nil,
+			readOnlyRepo: false,
 		},
 		{
-			name: "hook error",
-			hook: true,
-			err:  errSomethingBad,
+			name:         "hook read only repo",
+			hook:         true,
+			err:          nil,
+			readOnlyRepo: true,
+		},
+		{
+			name:         "hook error",
+			hook:         true,
+			err:          errSomethingBad,
+			readOnlyRepo: false,
 		},
 	}
 	for _, tt := range tests {
@@ -1737,12 +1748,15 @@ func TestGraveler_PreCommitHook(t *testing.T) {
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
+			repo := deepcopy.Copy(repository).(*graveler.RepositoryRecord)
+			repo.ReadOnly = tt.readOnlyRepo
 			// call commit
-			_, err := g.Commit(ctx, repository, commitBranchID, graveler.CommitParams{
+			_, err := g.Commit(ctx, repo, commitBranchID, graveler.CommitParams{
 				Committer: commitCommitter,
 				Message:   commitMessage,
 				Metadata:  commitMetadata,
-			})
+			}, graveler.WithForce(tt.readOnlyRepo))
+
 			// check err composition
 			if !errors.Is(err, tt.err) {
 				t.Fatalf("Commit err=%v, expected=%v", err, tt.err)
@@ -1751,14 +1765,14 @@ func TestGraveler_PreCommitHook(t *testing.T) {
 			if err != nil && !errors.As(err, &hookErr) {
 				t.Fatalf("Commit err=%v, expected HookAbortError", err)
 			}
-			if tt.hook != h.Called {
-				t.Fatalf("Commit invalid pre-hook call, %t expected=%t", h.Called, tt.hook)
+			if (tt.hook && !tt.readOnlyRepo) != h.Called {
+				t.Fatalf("Commit invalid pre-hook call, %t expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
 			}
 			if !h.Called {
 				return
 			}
-			if h.RepositoryID != repository.RepositoryID {
-				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repository.RepositoryID)
+			if h.RepositoryID != repo.RepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repo.RepositoryID)
 			}
 			if h.BranchID != commitBranchID {
 				t.Errorf("Hook branch '%s', expected '%s'", h.BranchID, commitBranchID)
@@ -1811,24 +1825,34 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 		".lakefs.merge.strategy": "default",
 	}
 	tests := []struct {
-		name string
-		hook bool
-		err  error
+		name         string
+		hook         bool
+		err          error
+		readOnlyRepo bool
 	}{
 		{
-			name: "without hook",
-			hook: false,
-			err:  nil,
+			name:         "without hook",
+			hook:         false,
+			err:          nil,
+			readOnlyRepo: false,
 		},
 		{
-			name: "hook no error",
-			hook: true,
-			err:  nil,
+			name:         "hook no error",
+			hook:         true,
+			err:          nil,
+			readOnlyRepo: false,
 		},
 		{
-			name: "hook error",
-			hook: true,
-			err:  errSomethingBad,
+			name:         "hook read only repo",
+			hook:         true,
+			err:          nil,
+			readOnlyRepo: true,
+		},
+		{
+			name:         "hook error",
+			hook:         true,
+			err:          errSomethingBad,
+			readOnlyRepo: false,
 		},
 	}
 	for _, tt := range tests {
@@ -1840,12 +1864,14 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
+			repo := deepcopy.Copy(repository).(*graveler.RepositoryRecord)
+			repo.ReadOnly = tt.readOnlyRepo
 			// call merge
-			_, err := g.Merge(ctx, repository, mergeDestination, expectedCommitID.Ref(), graveler.CommitParams{
+			_, err := g.Merge(ctx, repo, mergeDestination, expectedCommitID.Ref(), graveler.CommitParams{
 				Committer: commitCommitter,
 				Message:   mergeMessage,
 				Metadata:  mergeMetadata,
-			}, "")
+			}, "", graveler.WithForce(tt.readOnlyRepo))
 			// verify we got an error
 			if !errors.Is(err, tt.err) {
 				t.Fatalf("Merge err=%v, pre-merge error expected=%v", err, tt.err)
@@ -1865,8 +1891,8 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 				t.Fatalf("Wrong CommitParents order, expected: (%s, %s), got: (%s, %s)", destinationCommitID, expectedCommitID, parents[0], parents[1])
 			}
 			// verify that calls made until the first error
-			if tt.hook != h.Called {
-				t.Fatalf("Merge hook h.Called=%t, expected=%t", h.Called, tt.hook)
+			if (tt.hook && !tt.readOnlyRepo) != h.Called {
+				t.Fatalf("Merge hook h.Called=%t, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
 			}
 			if !h.Called {
 				return
@@ -1955,9 +1981,10 @@ func TestGraveler_PreCreateTagHook(t *testing.T) {
 	// tests
 	errSomethingBad := errors.New("first error")
 	tests := []struct {
-		name string
-		hook bool
-		err  error
+		name         string
+		hook         bool
+		err          error
+		readOnlyRepo bool
 	}{
 		{
 			name: "without hook",
@@ -1974,6 +2001,12 @@ func TestGraveler_PreCreateTagHook(t *testing.T) {
 			hook: true,
 			err:  errSomethingBad,
 		},
+		{
+			name:         "read only repo",
+			hook:         true,
+			err:          nil,
+			readOnlyRepo: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1984,8 +2017,10 @@ func TestGraveler_PreCreateTagHook(t *testing.T) {
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
+			repo := deepcopy.Copy(repository).(*graveler.RepositoryRecord)
+			repo.ReadOnly = tt.readOnlyRepo
 
-			err := g.CreateTag(ctx, repository, expectedTagID, expectedCommitID)
+			err := g.CreateTag(ctx, repo, expectedTagID, expectedCommitID, graveler.WithForce(tt.readOnlyRepo))
 
 			// verify we got an error
 			if !errors.Is(err, tt.err) {
@@ -1997,8 +2032,8 @@ func TestGraveler_PreCreateTagHook(t *testing.T) {
 			}
 
 			// verify that calls made until the first error
-			if tt.hook != h.Called {
-				t.Fatalf("Pre-create tag hook h.Called=%t, expected=%t", h.Called, tt.hook)
+			if (tt.hook && !tt.readOnlyRepo) != h.Called {
+				t.Fatalf("Pre-create tag hook h.Called=%t, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
 			}
 			if !h.Called {
 				return
@@ -2033,9 +2068,10 @@ func TestGraveler_PreDeleteTagHook(t *testing.T) {
 	// tests
 	errSomethingBad := errors.New("first error")
 	tests := []struct {
-		name string
-		hook bool
-		err  error
+		name         string
+		hook         bool
+		err          error
+		readOnlyRepo bool
 	}{
 		{
 			name: "without hook",
@@ -2052,6 +2088,12 @@ func TestGraveler_PreDeleteTagHook(t *testing.T) {
 			hook: true,
 			err:  errSomethingBad,
 		},
+		{
+			name:         "read only repo",
+			hook:         true,
+			err:          nil,
+			readOnlyRepo: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -2064,8 +2106,9 @@ func TestGraveler_PreDeleteTagHook(t *testing.T) {
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
-
-			err := g.DeleteTag(ctx, repository, expectedTagID)
+			repo := deepcopy.Copy(repository).(*graveler.RepositoryRecord)
+			repo.ReadOnly = tt.readOnlyRepo
+			err := g.DeleteTag(ctx, repo, expectedTagID, graveler.WithForce(tt.readOnlyRepo))
 
 			// verify we got an error
 			if !errors.Is(err, tt.err) {
@@ -2077,8 +2120,8 @@ func TestGraveler_PreDeleteTagHook(t *testing.T) {
 			}
 
 			// verify that calls made until the first error
-			if tt.hook != h.Called {
-				t.Fatalf("Pre delete Tag hook h.Called=%t, expected=%t", h.Called, tt.hook)
+			if (tt.hook && !tt.readOnlyRepo) != h.Called {
+				t.Fatalf("Pre delete Tag hook h.Called=%t, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
 			}
 			if !h.Called {
 				return
@@ -2115,9 +2158,10 @@ func TestGraveler_PreCreateBranchHook(t *testing.T) {
 	// tests
 	errSomethingBad := errors.New("first error")
 	tests := []struct {
-		name string
-		hook bool
-		err  error
+		name         string
+		hook         bool
+		err          error
+		readOnlyRepo bool
 	}{
 		{
 			name: "without hook",
@@ -2133,6 +2177,12 @@ func TestGraveler_PreCreateBranchHook(t *testing.T) {
 			name: "hook error",
 			hook: true,
 			err:  errSomethingBad,
+		},
+		{
+			name:         "read only repo",
+			hook:         true,
+			err:          nil,
+			readOnlyRepo: true,
 		},
 	}
 	for i, tt := range tests {
@@ -2150,7 +2200,9 @@ func TestGraveler_PreCreateBranchHook(t *testing.T) {
 			refManager.Err = graveler.ErrBranchNotFound
 
 			newBranch := newBranchPrefix + strconv.Itoa(i)
-			_, err := g.CreateBranch(ctx, repository, graveler.BranchID(newBranch), graveler.Ref(sourceBranchID))
+			repo := deepcopy.Copy(repository).(*graveler.RepositoryRecord)
+			repo.ReadOnly = tt.readOnlyRepo
+			_, err := g.CreateBranch(ctx, repo, graveler.BranchID(newBranch), graveler.Ref(sourceBranchID), graveler.WithForce(tt.readOnlyRepo))
 
 			// verify we got an error
 			if !errors.Is(err, tt.err) {
@@ -2162,8 +2214,8 @@ func TestGraveler_PreCreateBranchHook(t *testing.T) {
 			}
 
 			// verify that calls made until the first error
-			if tt.hook != h.Called {
-				t.Fatalf("Pre-create branch hook h.Called=%t, expected=%t", h.Called, tt.hook)
+			if (tt.hook && !tt.readOnlyRepo) != h.Called {
+				t.Fatalf("Pre-create branch hook h.Called=%t, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
 			}
 			if !h.Called {
 				return
@@ -2207,9 +2259,10 @@ func TestGraveler_PreDeleteBranchHook(t *testing.T) {
 	// tests
 	errSomethingBad := errors.New("first error")
 	tests := []struct {
-		name string
-		hook bool
-		err  error
+		name         string
+		hook         bool
+		err          error
+		readOnlyRepo bool
 	}{
 		{
 			name: "without hook",
@@ -2226,6 +2279,12 @@ func TestGraveler_PreDeleteBranchHook(t *testing.T) {
 			hook: true,
 			err:  errSomethingBad,
 		},
+		{
+			name:         "read only repo",
+			hook:         true,
+			err:          nil,
+			readOnlyRepo: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -2236,8 +2295,9 @@ func TestGraveler_PreDeleteBranchHook(t *testing.T) {
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
-
-			err := g.DeleteBranch(ctx, repository, graveler.BranchID(sourceBranchID))
+			repo := deepcopy.Copy(repository).(*graveler.RepositoryRecord)
+			repo.ReadOnly = tt.readOnlyRepo
+			err := g.DeleteBranch(ctx, repo, graveler.BranchID(sourceBranchID), graveler.WithForce(tt.readOnlyRepo))
 
 			// verify we got an error
 			if !errors.Is(err, tt.err) {
@@ -2249,8 +2309,8 @@ func TestGraveler_PreDeleteBranchHook(t *testing.T) {
 			}
 
 			// verify that calls made until the first error
-			if tt.hook != h.Called {
-				t.Fatalf("Pre-delete branch hook h.Called=%t, expected=%t", h.Called, tt.hook)
+			if (tt.hook && !tt.readOnlyRepo) != h.Called {
+				t.Fatalf("Pre-delete branch hook h.Called=%t, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
 			}
 			if !h.Called {
 				return
