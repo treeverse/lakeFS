@@ -4578,6 +4578,37 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		}
 		verifyPrepareGarbageCollection(t, repo, 1, true)
 	})
+
+	t.Run("read_only_repo", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", true)
+		testutil.Must(t, err)
+		resp, err := clt.PrepareGarbageCollectionUncommittedWithResponse(ctx, repo, apigen.PrepareGarbageCollectionUncommittedJSONRequestBody{})
+		if err != nil {
+			t.Fatalf("PrepareGarbageCollectionUncommitted failed: %s", err)
+		}
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("PrepareGarbageCollectionUncommitted expected 403 code, got %d instead", resp.StatusCode())
+		}
+	})
+}
+
+func TestController_PrepareGarbageCollectionCommitted(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	t.Run("read_only_repo", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", true)
+		testutil.Must(t, err)
+		resp, err := clt.PrepareGarbageCollectionCommitsWithResponse(ctx, repo)
+		if err != nil {
+			t.Fatalf("PrepareGarbageCollectionCommits failed: %s", err)
+		}
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("PrepareGarbageCollectionCommits expected 403 code, got %d instead", resp.StatusCode())
+		}
+	})
 }
 
 func TestController_ClientDisconnect(t *testing.T) {
@@ -5165,6 +5196,24 @@ func TestController_BranchProtectionRules(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("read-only repo", func(t *testing.T) {
+		currCtx := context.Background()
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(currCtx, repo, onBlock(deps, repo), "main", true)
+		testutil.MustDo(t, "create repository", err)
+
+		resp, err := adminClt.SetBranchProtectionRulesWithResponse(currCtx, repo, &apigen.SetBranchProtectionRulesParams{}, apigen.SetBranchProtectionRulesJSONRequestBody{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp == nil {
+			t.Fatal("SetBranchProtectionRulesWithResponse got no response")
+		}
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("SetBranchProtectionRulesWithResponse expected to get 403 status code , got %d", resp.StatusCode())
+		}
+	})
 }
 
 func TestController_GarbageCollectionRules(t *testing.T) {
@@ -5217,13 +5266,33 @@ func TestController_GarbageCollectionRules(t *testing.T) {
 				t.Fatal(err)
 			}
 			if resp == nil {
-				t.Fatal("CreateBranchProtectionRuleWithResponse got no response")
+				t.Fatal("SetGCRulesWithResponse got no response")
 			}
 			if resp.Status() != respPreflight.Status() {
-				t.Fatalf("CreateBranchProtectionRuleWithResponse and preflight should return the same status. expected %d, got %d", respPreflight.StatusCode(), resp.StatusCode())
+				t.Fatalf("SetGCRulesWithResponse and preflight should return the same status. expected %d, got %d", respPreflight.StatusCode(), resp.StatusCode())
 			}
 		})
 	}
+
+	t.Run("read-only repo", func(t *testing.T) {
+		currCtx := context.Background()
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(currCtx, repo, onBlock(deps, repo), "main", true)
+		testutil.MustDo(t, "create repository", err)
+
+		resp, err := adminClt.SetGCRulesWithResponse(currCtx, repo, apigen.SetGCRulesJSONRequestBody{
+			Branches: []apigen.GarbageCollectionRule{{BranchId: "main", RetentionDays: 1}}, DefaultRetentionDays: 5,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp == nil {
+			t.Fatal("SetGCRulesWithResponse got no response")
+		}
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("SetGCRulesWithResponse expected to get 403 status code , got %d", resp.StatusCode())
+		}
+	})
 }
 
 func TestController_DumpRestoreRepository(t *testing.T) {
