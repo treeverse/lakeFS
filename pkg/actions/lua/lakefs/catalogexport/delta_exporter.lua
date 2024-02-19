@@ -111,6 +111,11 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                     local code, obj = lakefs.stat_object(repo, commit_id, unescaped_path)
                     if code == 200 then
                         local obj_stat = json.unmarshal(obj)
+                        --[[
+                        This code block handles escaping of the physical address path part
+                        Since we don't want to escape the entire URL (i.e. schema, host), we parse the url and rebuild it.
+                        Building the url will then handle any escaping needed on the relevant parts.
+                        ]]
                         local u = url.parse(obj_stat["physical_address"])
                         local physical_path = url.build_url(u["scheme"], u["host"], u["path"])
                         if entry.add ~= nil then
