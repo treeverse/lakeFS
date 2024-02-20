@@ -2,8 +2,13 @@
 
 # Unreleased
 
-- Task: Add If-None-Match to LinkPhysicalAddress (#7480)
-  Removes deprecation of If-Non-Match from upload object 
+# v1.12.0
+
+:new: What's new:
+- Add If-None-Match to LinkPhysicalAddress (#7480)
+  **Removes deprecation of If-Non-Match from upload object!**
+- Skip actions for read-only repositories (#7477)
+- [hooks] Log the user when fetching Lua script from lakeFS (#7486)
 
 # v1.11.1
 
