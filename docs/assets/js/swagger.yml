@@ -73,13 +73,11 @@ components:
     IfNonMatch:
       in: header
       name: If-None-Match
-      description: |
-        Currently supports only "*" to allow uploading an object only if one doesn't exist yet.
+      description: Set to "*" to atomically allow the upload only if the key has no object yet. Other values are not supported.
       example: "*"
       required: false
       schema:
         type: string
-        pattern: '^\*$' # Currently, only "*" is supported
 
   responses:
     NotFoundOrNoACL:

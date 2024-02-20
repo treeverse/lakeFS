@@ -1712,7 +1712,7 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 		// verify the key not found
 		_, err := g.Get(ctx, repository, Ref(branchID), key)
 		if err == nil { // Entry found, return precondition failed
-			err = ErrPreconditionFailed
+			return ErrPreconditionFailed
 		}
 		if !errors.Is(err, ErrNotFound) {
 			return err
