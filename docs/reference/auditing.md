@@ -17,7 +17,7 @@ lakeFS Cloud
 > Auditing is only available for [lakeFS Cloud]({% link understand/lakefs-cloud.md %}).
 
 {: .warning }
-> Please note, as of Jan 2024, the queryable interface within the lakeFS Cloud UI has been removed in favor of direct access to lakeFS audit logs. This document now describes how to set up and query this information using [AWS Athena](https://aws.amazon.com/athena/) as a reference.
+> Please note, as of Jan 2024, the queryable interface within the lakeFS Cloud UI has been removed in favor of direct access to lakeFS audit logs. This document now describes how to set up and query this information using [AWS Glue](https://aws.amazon.com/glue/) as a reference.
 
 The lakeFS audit log allows you to view all relevant user action information in a clear and organized table, including when the action was performed, by whom, and what it was they did. 
 
@@ -146,6 +146,7 @@ aws s3api get-object --bucket lakefs-logs-<generated>-s3alias --key lakefs-audit
 ### Path Values
 
 **region:** lakeFS installation region (e.g the region in lakeFS URL: https://<organization-name>.<region>.lakefscloud.io/)
+
 **organization:** Found in the lakeFS URL `https://<organization-name>.<region>.lakefscloud.io/`. The value in the S3 path must be prefixed with `org-<organization-name>`
 
 ### Partitions
@@ -183,7 +184,7 @@ Using Spark's [`printSchema()`](https://spark.apache.org/docs/3.1.1/api/python/r
 | `data_path`         | string | HTTP path used for this request                                                                                                                                                                                                     |
 | `data_operation_id` | string | Logical operation ID for this request. E.g. `list_objects`, `delete_repository`, ...                                                                                                                                                |
 | `data_method`       | string | HTTP method for the request                                                                                                                                                                                                         |
-| `date`              | string | datetime representing the start time of this request                                                                                                                                                                                |
+| `data_time`         | string | datetime representing the start time of this request, in [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format                                                                                                                                                        |
 
 
 ## IdP users: map user IDs from audit logs to an email in lakeFS
@@ -231,12 +232,10 @@ from pyspark.context import SparkContext
 from awsglue.context import GlueContext
 from awsglue.job import Job
 
-
 sc = SparkContext.getOrCreate()
 glueContext = GlueContext(sc)
 spark = glueContext.spark_session
 job = Job(glueContext)
-
 
 # connect to s3 access point 
 alias = 's3://<bucket-alias-name>'
