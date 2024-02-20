@@ -380,12 +380,17 @@ func ContextUnavailable() Logger {
 	}
 }
 
-func addFromContext(log Logger, ctx context.Context) Logger {
+// GetFieldsFromContext returns the logging fields on ctx or nil.
+func GetFieldsFromContext(ctx context.Context) Fields {
 	fields := ctx.Value(LogFieldsContextKey)
 	if fields == nil {
-		return log
+		return nil
 	}
-	loggerFields := fields.(Fields)
+	return fields.(Fields)
+}
+
+func addFromContext(log Logger, ctx context.Context) Logger {
+	loggerFields := GetFieldsFromContext(ctx)
 	return log.WithFields(loggerFields)
 }
 
