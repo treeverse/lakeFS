@@ -26,9 +26,9 @@ Unlike conventional mirroring, data isn't simply copied between regions - lakeFS
 ![mirroring architecture](../assets/img/mirroring/arch.png)
 
 
-### Uses cases
+## Uses cases
 
-#### Disaster recovery
+### Disaster recovery
 
 Typically, object stores provide a replication/batch copy API to allow for disaster recovery: as new objects are written, they are asynchronously copied to other geo locations. 
 
@@ -41,10 +41,10 @@ The problem is reasoning about what managed to arrive by the time of disaster an
 
 Reasoning about these is non-trivial, especially in the face of a regional disaster, However ensuring business continuity might require that we have these answers.
 
-Using lakeFS mirroring makes it much easier to answer: we are guaranteed that the latest commit that exists in the replica isin a consistent state and is fully usable, even if it isn't the absolute latest commit - it still reflects a known, consistent, point in time.
+Using lakeFS mirroring makes it much easier to answer: we are guaranteed that the latest commit that exists in the replica is in a consistent state and is fully usable, even if it isn't the absolute latest commit - it still reflects a known, consistent, point in time.
 
 
-#### Data Locality
+### Data Locality
 
 For certain workloads, it might be cheaper to have data available in multiple regions: Expensive hardware such as GPUs might fluctuate in price, so we'd want to pick the region that currently offers the best pricing. The difference could easily offset to cost of the replicated data.
 
@@ -54,7 +54,7 @@ If data is constantly flowing between regions, this might be harder to answer th
 
 Using consistent commits solves this problem - with lakeFS mirroring, it is guaranteed that a commit ID, regardless of location, will always contain the exact same data.
 
-We can train our model in region A, and a month later feed the  same commit ID into another region - and get back the same results.
+We can train our model in region A, and a month later feed the same commit ID into another region - and get back the same results.
 
 
 ## Setting up mirroring
@@ -200,6 +200,13 @@ Using the following parameters:
 * `MIRROR_NAME` - Name used for the read-only mirror to be created on the destination region
 * `MIRROR_STORAGE_NAMESPACE` - Location acting as the replication target for the storage namespace of our source repository
 
+### Mirroring and Garbage Collection
+
+Garbage collection won't run on mirrored repositories. 
+Deletions from garbage collection should be replicated from the source:
+1. Enable [DELETED marker replication](https://docs.aws.amazon.com/AmazonS3/latest/userguide/delete-marker-replication.html) on the source bucket.
+1. Create a [lifecycle policy](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html) on the destination bucket to delete the objects with the DELETED marker.
+
 ## RBAC
 
 These are the required RBAC permissions for working with the new cross-region replication feature:
@@ -254,10 +261,10 @@ curl --location --request DELETE 'https://<ORGANIZATION_ID>.<SOURCE_REGION>.lake
 -u <ACCESS_KEY_ID>:<SECRET_ACCESS_KEY>
 ```
 
-
 ## Limitations
 
+1. Mirroring is currently only supported on [AWS S3](https://aws.amazon.com/s3/) and [lakeFS Cloud for AWS](https://lakefs.cloud)
 1. Read-only mirrors cannot be written to. Mirroring is one-way, from source to destination(s)
-2. Currently, only branches are mirrored. Tags and arbitrary commits that do not belong to any branch are not replicated
-3. Replication is still asynchronous: reading from a branch will always return a valid commit that this branch has pointed to, but it is not guaranteed to be the **latest commit** this branch is pointing to.
-
+1. Currently, only branches are mirrored. Tags and arbitrary commits that do not belong to any branch are not replicated
+1. [lakeFS Hooks](./hooks) will only run on the source repository, not its replicas
+1. Replication is still asynchronous: reading from a branch will always return a valid commit that this branch has pointed to, but it is not guaranteed to be the **latest commit** this branch is pointing to.
