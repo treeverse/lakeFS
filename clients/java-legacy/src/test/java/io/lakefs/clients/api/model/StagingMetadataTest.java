@@ -92,4 +92,12 @@ public class StagingMetadataTest {
         // TODO: test force
     }
 
+    /**
+     * Test the property 'ifAbsent'
+     */
+    @Test
+    public void ifAbsentTest() {
+        // TODO: test ifAbsent
+    }
+
 }

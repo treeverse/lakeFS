@@ -683,8 +683,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
 	entry := entryBuilder.Build()
-
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithForce(swag.BoolValue(body.Force)))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithForce(swag.BoolValue(body.Force)), graveler.WithIfAbsent(swag.BoolValue(body.IfAbsent)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

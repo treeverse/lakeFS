@@ -8243,6 +8243,7 @@ components:
     StagingMetadata:
       description: information about uploaded object
       example:
+        if_absent: false
         size_bytes: 0
         user_metadata:
           key: user_metadata
@@ -8271,6 +8272,9 @@ components:
           description: Object media type
           type: string
         force:
+          default: false
+          type: boolean
+        if_absent:
           default: false
           type: boolean
       required:

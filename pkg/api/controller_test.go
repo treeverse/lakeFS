@@ -3007,6 +3007,50 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("link physical address twice if absent", func(t *testing.T) {
+		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, repo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar2"})
+		verifyResponseOK(t, linkResp, err)
+		if linkResp.JSON200 == nil {
+			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
+		}
+		const expectedSizeBytes = 38
+		ifAbsent := false
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+			},
+			IfAbsent: &ifAbsent,
+		})
+		verifyResponseOK(t, resp, err)
+
+		// Try again with ifAbsent == true and expect failure
+		linkResp, err = clt.GetPhysicalAddressWithResponse(ctx, repo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar2"})
+		verifyResponseOK(t, linkResp, err)
+		if linkResp.JSON200 == nil {
+			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
+		}
+		ifAbsent = true
+		resp, err = clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+			},
+			IfAbsent: &ifAbsent,
+		})
+		testutil.Must(t, err)
+		expectedStatusCode := http.StatusPreconditionFailed
+		if resp.HTTPResponse.StatusCode != expectedStatusCode {
+			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
+		}
+	})
+
 	t.Run("link physical address without getting it first", func(t *testing.T) {
 		const expectedSizeBytes = 38
 		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{

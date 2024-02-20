@@ -33,7 +33,8 @@ class StagingMetadata(BaseModel):
     user_metadata: Optional[Dict[str, StrictStr]] = None
     content_type: Optional[StrictStr] = Field(None, description="Object media type")
     force: Optional[StrictBool] = False
-    __properties = ["staging", "checksum", "size_bytes", "user_metadata", "content_type", "force"]
+    if_absent: Optional[StrictBool] = False
+    __properties = ["staging", "checksum", "size_bytes", "user_metadata", "content_type", "force", "if_absent"]
 
     class Config:
         """Pydantic configuration"""
@@ -79,7 +80,8 @@ class StagingMetadata(BaseModel):
             "size_bytes": obj.get("size_bytes"),
             "user_metadata": obj.get("user_metadata"),
             "content_type": obj.get("content_type"),
-            "force": obj.get("force") if obj.get("force") is not None else False
+            "force": obj.get("force") if obj.get("force") is not None else False,
+            "if_absent": obj.get("if_absent") if obj.get("if_absent") is not None else False
         })
         return _obj
 

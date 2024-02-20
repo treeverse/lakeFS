@@ -215,6 +215,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         },
         content_type="content_type_example",
         force=False,
+        if_absent=False,
     ) # StagingMetadata | 
 
     # example passing only required values which don't have defaults set

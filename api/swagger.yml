@@ -1299,6 +1299,9 @@ components:
         force:
           type: boolean
           default: false
+        if_absent:
+          type: boolean
+          default: false
       required:
         - staging
         - checksum

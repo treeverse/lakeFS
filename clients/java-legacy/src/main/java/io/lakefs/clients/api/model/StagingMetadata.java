@@ -58,6 +58,10 @@ public class StagingMetadata {
   @SerializedName(SERIALIZED_NAME_FORCE)
   private Boolean force = false;
 
+  public static final String SERIALIZED_NAME_IF_ABSENT = "if_absent";
+  @SerializedName(SERIALIZED_NAME_IF_ABSENT)
+  private Boolean ifAbsent = false;
+
 
   public StagingMetadata staging(StagingLocation staging) {
     
@@ -205,6 +209,29 @@ public class StagingMetadata {
   }
 
 
+  public StagingMetadata ifAbsent(Boolean ifAbsent) {
+    
+    this.ifAbsent = ifAbsent;
+    return this;
+  }
+
+   /**
+   * Get ifAbsent
+   * @return ifAbsent
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public Boolean getIfAbsent() {
+    return ifAbsent;
+  }
+
+
+  public void setIfAbsent(Boolean ifAbsent) {
+    this.ifAbsent = ifAbsent;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -219,12 +246,13 @@ public class StagingMetadata {
         Objects.equals(this.sizeBytes, stagingMetadata.sizeBytes) &&
         Objects.equals(this.userMetadata, stagingMetadata.userMetadata) &&
         Objects.equals(this.contentType, stagingMetadata.contentType) &&
-        Objects.equals(this.force, stagingMetadata.force);
+        Objects.equals(this.force, stagingMetadata.force) &&
+        Objects.equals(this.ifAbsent, stagingMetadata.ifAbsent);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(staging, checksum, sizeBytes, userMetadata, contentType, force);
+    return Objects.hash(staging, checksum, sizeBytes, userMetadata, contentType, force, ifAbsent);
   }
 
   @Override
@@ -237,6 +265,7 @@ public class StagingMetadata {
     sb.append("    userMetadata: ").append(toIndentedString(userMetadata)).append("\n");
     sb.append("    contentType: ").append(toIndentedString(contentType)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
+    sb.append("    ifAbsent: ").append(toIndentedString(ifAbsent)).append("\n");
     sb.append("}");
     return sb.toString();
   }
