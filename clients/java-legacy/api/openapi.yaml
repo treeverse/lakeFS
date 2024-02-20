@@ -4516,15 +4516,14 @@ paths:
         schema:
           type: string
         style: form
-      - description: |
-          Currently supports only "*" to allow uploading an object only if one doesn't exist yet.
+      - description: Set to "*" to atomically allow the upload only if the key has
+          no object yet. Other values are not supported.
         example: '*'
         explode: false
         in: header
         name: If-None-Match
         required: false
         schema:
-          pattern: ^\*$
           type: string
         style: simple
       requestBody:
@@ -4923,15 +4922,14 @@ paths:
         schema:
           type: string
         style: form
-      - description: |
-          Currently supports only "*" to allow uploading an object only if one doesn't exist yet.
+      - description: Set to "*" to atomically allow the upload only if the key has
+          no object yet. Other values are not supported.
         example: '*'
         explode: false
         in: header
         name: If-None-Match
         required: false
         schema:
-          pattern: ^\*$
           type: string
         style: simple
       - deprecated: true
@@ -6563,15 +6561,14 @@ components:
         type: string
       style: form
     IfNonMatch:
-      description: |
-        Currently supports only "*" to allow uploading an object only if one doesn't exist yet.
+      description: Set to "*" to atomically allow the upload only if the key has no
+        object yet. Other values are not supported.
       example: '*'
       explode: false
       in: header
       name: If-None-Match
       required: false
       schema:
-        pattern: ^\*$
         type: string
       style: simple
   requestBodies:

@@ -145,17 +145,10 @@ class StagingApi(object):
                 'enum': [
                 ],
                 'validation': [
-                    'if_none_match',
                 ]
             },
             root_map={
                 'validations': {
-                    ('if_none_match',): {
-
-                        'regex': {
-                            'pattern': r'^\*$',  # noqa: E501
-                        },
-                    },
                 },
                 'allowed_values': {
                 },
@@ -296,7 +289,7 @@ class StagingApi(object):
             staging_metadata (StagingMetadata):
 
         Keyword Args:
-            if_none_match (str): Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. . [optional]
+            if_none_match (str): Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.. [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

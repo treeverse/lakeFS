@@ -163,7 +163,7 @@ public class Example {
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
     StagingMetadata stagingMetadata = new StagingMetadata(); // StagingMetadata | 
-    String ifNoneMatch = "*"; // String | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. 
+    String ifNoneMatch = "*"; // String | Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.
     try {
       ObjectStats result = apiInstance.linkPhysicalAddress(repository, branch, path, stagingMetadata)
             .ifNoneMatch(ifNoneMatch)
@@ -188,7 +188,7 @@ public class Example {
 | **branch** | **String**|  | |
 | **path** | **String**| relative to the branch | |
 | **stagingMetadata** | [**StagingMetadata**](StagingMetadata.md)|  | |
-| **ifNoneMatch** | **String**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet.  | [optional] |
+| **ifNoneMatch** | **String**| Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. | [optional] |
 
 ### Return type
 

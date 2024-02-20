@@ -699,17 +699,10 @@ class ObjectsApi(object):
                 'enum': [
                 ],
                 'validation': [
-                    'if_none_match',
                 ]
             },
             root_map={
                 'validations': {
-                    ('if_none_match',): {
-
-                        'regex': {
-                            'pattern': r'^\*$',  # noqa: E501
-                        },
-                    },
                 },
                 'allowed_values': {
                 },
@@ -1380,7 +1373,7 @@ class ObjectsApi(object):
             path (str): relative to the branch
 
         Keyword Args:
-            if_none_match (str): Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. . [optional]
+            if_none_match (str): Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.. [optional]
             storage_class (str): Deprecated, this capability will not be supported in future releases.. [optional]
             force (bool): [optional] if omitted the server will use the default value of False
             content (file_type): Only a single file per upload which must be named \\\"content\\\".. [optional]

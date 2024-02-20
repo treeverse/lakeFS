@@ -222,7 +222,7 @@ public class StagingApi {
      * @param branch  (required)
      * @param path relative to the branch (required)
      * @param stagingMetadata  (required)
-     * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet.  (optional)
+     * @param ifNoneMatch Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -315,7 +315,7 @@ public class StagingApi {
      * @param branch  (required)
      * @param path relative to the branch (required)
      * @param stagingMetadata  (required)
-     * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet.  (optional)
+     * @param ifNoneMatch Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. (optional)
      * @return ObjectStats
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -343,7 +343,7 @@ public class StagingApi {
      * @param branch  (required)
      * @param path relative to the branch (required)
      * @param stagingMetadata  (required)
-     * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet.  (optional)
+     * @param ifNoneMatch Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. (optional)
      * @return ApiResponse&lt;ObjectStats&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -372,7 +372,7 @@ public class StagingApi {
      * @param branch  (required)
      * @param path relative to the branch (required)
      * @param stagingMetadata  (required)
-     * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet.  (optional)
+     * @param ifNoneMatch Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object

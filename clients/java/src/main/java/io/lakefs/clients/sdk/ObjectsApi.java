@@ -1990,7 +1990,7 @@ public class ObjectsApi {
 
         /**
          * Set ifNoneMatch
-         * @param ifNoneMatch Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet.  (optional)
+         * @param ifNoneMatch Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. (optional)
          * @return APIuploadObjectRequest
          */
         public APIuploadObjectRequest ifNoneMatch(String ifNoneMatch) {

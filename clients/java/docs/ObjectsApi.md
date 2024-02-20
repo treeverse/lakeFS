@@ -893,7 +893,7 @@ public class Example {
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
-    String ifNoneMatch = "*"; // String | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. 
+    String ifNoneMatch = "*"; // String | Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.
     String storageClass = "storageClass_example"; // String | Deprecated, this capability will not be supported in future releases.
     Boolean force = false; // Boolean | 
     File content = new File("/path/to/file"); // File | Only a single file per upload which must be named \\\"content\\\".
@@ -923,7 +923,7 @@ public class Example {
 | **repository** | **String**|  | |
 | **branch** | **String**|  | |
 | **path** | **String**| relative to the branch | |
-| **ifNoneMatch** | **String**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet.  | [optional] |
+| **ifNoneMatch** | **String**| Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. | [optional] |
 | **storageClass** | **String**| Deprecated, this capability will not be supported in future releases. | [optional] |
 | **force** | **Boolean**|  | [optional] [default to false] |
 | **content** | **File**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional] |

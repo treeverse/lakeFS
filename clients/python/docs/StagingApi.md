@@ -196,7 +196,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     branch = 'branch_example' # str | 
     path = 'path_example' # str | relative to the branch
     staging_metadata = lakefs_sdk.StagingMetadata() # StagingMetadata | 
-    if_none_match = '*' # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet.  (optional)
+    if_none_match = '*' # str | Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported. (optional)
 
     try:
         # associate staging on this physical address with a path
@@ -218,7 +218,7 @@ Name | Type | Description  | Notes
  **branch** | **str**|  | 
  **path** | **str**| relative to the branch | 
  **staging_metadata** | [**StagingMetadata**](StagingMetadata.md)|  | 
- **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet.  | [optional] 
+ **if_none_match** | **str**| Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. | [optional] 
 
 ### Return type
 
