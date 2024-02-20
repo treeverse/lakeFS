@@ -683,7 +683,8 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
 	entry := entryBuilder.Build()
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithForce(swag.BoolValue(body.Force)), graveler.WithIfAbsent(swag.BoolValue(body.IfAbsent)))
+	ifAbsent := params.IfNoneMatch != nil
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithForce(swag.BoolValue(body.Force)), graveler.WithIfAbsent(ifAbsent))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3005,10 +3006,6 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	//	and then graveler will check again when passed a SetOptions.
 	allowOverwrite := true
 	if params.IfNoneMatch != nil {
-		if swag.StringValue(params.IfNoneMatch) != "*" {
-			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
-			return
-		}
 		// check if exists
 		_, err := c.Catalog.GetEntry(ctx, repo.Name, branch, params.Path, catalog.GetEntryParams{})
 		if err == nil {

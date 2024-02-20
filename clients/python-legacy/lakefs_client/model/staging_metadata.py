@@ -94,7 +94,6 @@ class StagingMetadata(ModelNormal):
             'user_metadata': ({str: (str,)},),  # noqa: E501
             'content_type': (str,),  # noqa: E501
             'force': (bool,),  # noqa: E501
-            'if_absent': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -109,7 +108,6 @@ class StagingMetadata(ModelNormal):
         'user_metadata': 'user_metadata',  # noqa: E501
         'content_type': 'content_type',  # noqa: E501
         'force': 'force',  # noqa: E501
-        'if_absent': 'if_absent',  # noqa: E501
     }
 
     read_only_vars = {
@@ -161,7 +159,6 @@ class StagingMetadata(ModelNormal):
             user_metadata ({str: (str,)}): [optional]  # noqa: E501
             content_type (str): Object media type. [optional]  # noqa: E501
             force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
-            if_absent (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -254,7 +251,6 @@ class StagingMetadata(ModelNormal):
             user_metadata ({str: (str,)}): [optional]  # noqa: E501
             content_type (str): Object media type. [optional]  # noqa: E501
             force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
-            if_absent (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

@@ -79,10 +79,6 @@ public class StagingMetadata {
   @SerializedName(SERIALIZED_NAME_FORCE)
   private Boolean force = false;
 
-  public static final String SERIALIZED_NAME_IF_ABSENT = "if_absent";
-  @SerializedName(SERIALIZED_NAME_IF_ABSENT)
-  private Boolean ifAbsent = false;
-
   public StagingMetadata() {
   }
 
@@ -219,27 +215,6 @@ public class StagingMetadata {
     this.force = force;
   }
 
-
-  public StagingMetadata ifAbsent(Boolean ifAbsent) {
-    
-    this.ifAbsent = ifAbsent;
-    return this;
-  }
-
-   /**
-   * Get ifAbsent
-   * @return ifAbsent
-  **/
-  @javax.annotation.Nullable
-  public Boolean getIfAbsent() {
-    return ifAbsent;
-  }
-
-
-  public void setIfAbsent(Boolean ifAbsent) {
-    this.ifAbsent = ifAbsent;
-  }
-
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -300,14 +275,13 @@ public class StagingMetadata {
         Objects.equals(this.sizeBytes, stagingMetadata.sizeBytes) &&
         Objects.equals(this.userMetadata, stagingMetadata.userMetadata) &&
         Objects.equals(this.contentType, stagingMetadata.contentType) &&
-        Objects.equals(this.force, stagingMetadata.force) &&
-        Objects.equals(this.ifAbsent, stagingMetadata.ifAbsent)&&
+        Objects.equals(this.force, stagingMetadata.force)&&
         Objects.equals(this.additionalProperties, stagingMetadata.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(staging, checksum, sizeBytes, userMetadata, contentType, force, ifAbsent, additionalProperties);
+    return Objects.hash(staging, checksum, sizeBytes, userMetadata, contentType, force, additionalProperties);
   }
 
   @Override
@@ -320,7 +294,6 @@ public class StagingMetadata {
     sb.append("    userMetadata: ").append(toIndentedString(userMetadata)).append("\n");
     sb.append("    contentType: ").append(toIndentedString(contentType)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
-    sb.append("    ifAbsent: ").append(toIndentedString(ifAbsent)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -350,7 +323,6 @@ public class StagingMetadata {
     openapiFields.add("user_metadata");
     openapiFields.add("content_type");
     openapiFields.add("force");
-    openapiFields.add("if_absent");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

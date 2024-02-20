@@ -132,6 +132,7 @@ class StagingApi(object):
                     'branch',
                     'path',
                     'staging_metadata',
+                    'if_none_match',
                 ],
                 'required': [
                     'repository',
@@ -144,10 +145,17 @@ class StagingApi(object):
                 'enum': [
                 ],
                 'validation': [
+                    'if_none_match',
                 ]
             },
             root_map={
                 'validations': {
+                    ('if_none_match',): {
+
+                        'regex': {
+                            'pattern': r'^\*$',  # noqa: E501
+                        },
+                    },
                 },
                 'allowed_values': {
                 },
@@ -160,17 +168,21 @@ class StagingApi(object):
                         (str,),
                     'staging_metadata':
                         (StagingMetadata,),
+                    'if_none_match':
+                        (str,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'branch': 'branch',
                     'path': 'path',
+                    'if_none_match': 'If-None-Match',
                 },
                 'location_map': {
                     'repository': 'path',
                     'branch': 'path',
                     'path': 'query',
                     'staging_metadata': 'body',
+                    'if_none_match': 'header',
                 },
                 'collection_format_map': {
                 }
@@ -284,6 +296,7 @@ class StagingApi(object):
             staging_metadata (StagingMetadata):
 
         Keyword Args:
+            if_none_match (str): Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. . [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

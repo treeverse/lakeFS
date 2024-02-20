@@ -49,8 +49,7 @@ class TestStagingMetadata(unittest.TestCase):
                     'key' : ''
                     }, 
                 content_type = '', 
-                force = True, 
-                if_absent = True
+                force = True
             )
         else :
             return StagingMetadata(

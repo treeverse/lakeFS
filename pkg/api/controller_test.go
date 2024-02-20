@@ -2081,7 +2081,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		}
 		// overwrite
 		contentType, buf = writeMultipart("content", "baz2", "something else!")
-		all := "*"
+		all := apigen.IfNonMatch("*")
 		b, err = clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &apigen.UploadObjectParams{
 			Path:        "foo/baz2",
 			IfNoneMatch: &all,
@@ -2112,7 +2112,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		testutil.Must(t, err)
 
 		// overwrite after commit
-		all := "*"
+		all := apigen.IfNonMatch("*")
 		contentType, buf = writeMultipart("content", "baz3", "something else!")
 		b, err = clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "another-branch", &apigen.UploadObjectParams{
 			Path:        "foo/baz3",
@@ -2126,11 +2126,11 @@ func TestController_UploadObjectHandler(t *testing.T) {
 	})
 
 	t.Run("disable overwrite with if-none-match (no entry)", func(t *testing.T) {
-		ifNoneMatch := apiutil.Ptr("*")
+		ifNoneMatch := apigen.IfNonMatch("*")
 		contentType, buf := writeMultipart("content", "baz4", "something else!")
 		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &apigen.UploadObjectParams{
 			Path:        "foo/baz4",
-			IfNoneMatch: ifNoneMatch,
+			IfNoneMatch: &ifNoneMatch,
 		}, contentType, buf)
 		if err != nil {
 			t.Fatalf("UploadObject err=%s, expected no error", err)
@@ -3014,7 +3014,6 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
 		}
 		const expectedSizeBytes = 38
-		ifAbsent := false
 		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
 			Path: "foo/bar2",
 		}, apigen.LinkPhysicalAddressJSONRequestBody{
@@ -3023,7 +3022,6 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 			Staging: apigen.StagingLocation{
 				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
 			},
-			IfAbsent: &ifAbsent,
 		})
 		verifyResponseOK(t, resp, err)
 
@@ -3033,16 +3031,16 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 		if linkResp.JSON200 == nil {
 			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
 		}
-		ifAbsent = true
+		ifNonMatch := apigen.IfNonMatch("*")
 		resp, err = clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
-			Path: "foo/bar2",
+			Path:        "foo/bar2",
+			IfNoneMatch: &ifNonMatch,
 		}, apigen.LinkPhysicalAddressJSONRequestBody{
 			Checksum:  "afb0689fe58b82c5f762991453edbbec",
 			SizeBytes: expectedSizeBytes,
 			Staging: apigen.StagingLocation{
 				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
 			},
-			IfAbsent: &ifAbsent,
 		})
 		testutil.Must(t, err)
 		expectedStatusCode := http.StatusPreconditionFailed

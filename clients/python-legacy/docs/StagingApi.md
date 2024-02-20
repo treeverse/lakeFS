@@ -215,13 +215,22 @@ with lakefs_client.ApiClient(configuration) as api_client:
         },
         content_type="content_type_example",
         force=False,
-        if_absent=False,
     ) # StagingMetadata | 
+    if_none_match = "*" # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet.  (optional)
 
     # example passing only required values which don't have defaults set
     try:
         # associate staging on this physical address with a path
         api_response = api_instance.link_physical_address(repository, branch, path, staging_metadata)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling StagingApi->link_physical_address: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # associate staging on this physical address with a path
+        api_response = api_instance.link_physical_address(repository, branch, path, staging_metadata, if_none_match=if_none_match)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling StagingApi->link_physical_address: %s\n" % e)
@@ -236,6 +245,7 @@ Name | Type | Description  | Notes
  **branch** | **str**|  |
  **path** | **str**| relative to the branch |
  **staging_metadata** | [**StagingMetadata**](StagingMetadata.md)|  |
+ **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet.  | [optional]
 
 ### Return type
 

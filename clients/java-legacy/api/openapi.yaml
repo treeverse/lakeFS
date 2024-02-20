@@ -4516,6 +4516,17 @@ paths:
         schema:
           type: string
         style: form
+      - description: |
+          Currently supports only "*" to allow uploading an object only if one doesn't exist yet.
+        example: '*'
+        explode: false
+        in: header
+        name: If-None-Match
+        required: false
+        schema:
+          pattern: ^\*$
+          type: string
+        style: simple
       requestBody:
         content:
           application/json:
@@ -4912,19 +4923,8 @@ paths:
         schema:
           type: string
         style: form
-      - deprecated: true
-        description: Deprecated, this capability will not be supported in future releases.
-        explode: true
-        in: query
-        name: storageClass
-        required: false
-        schema:
-          type: string
-        style: form
-      - deprecated: true
-        description: |
+      - description: |
           Currently supports only "*" to allow uploading an object only if one doesn't exist yet.
-          Deprecated, this capability will not be supported in future releases.
         example: '*'
         explode: false
         in: header
@@ -4934,6 +4934,15 @@ paths:
           pattern: ^\*$
           type: string
         style: simple
+      - deprecated: true
+        description: Deprecated, this capability will not be supported in future releases.
+        explode: true
+        in: query
+        name: storageClass
+        required: false
+        schema:
+          type: string
+        style: form
       - explode: true
         in: query
         name: force
@@ -6553,6 +6562,18 @@ components:
       schema:
         type: string
       style: form
+    IfNonMatch:
+      description: |
+        Currently supports only "*" to allow uploading an object only if one doesn't exist yet.
+      example: '*'
+      explode: false
+      in: header
+      name: If-None-Match
+      required: false
+      schema:
+        pattern: ^\*$
+        type: string
+      style: simple
   requestBodies:
     inline_object_1:
       content:
@@ -8269,7 +8290,6 @@ components:
     StagingMetadata:
       description: information about uploaded object
       example:
-        if_absent: false
         size_bytes: 0
         user_metadata:
           key: user_metadata
@@ -8298,9 +8318,6 @@ components:
           description: Object media type
           type: string
         force:
-          default: false
-          type: boolean
-        if_absent:
           default: false
           type: boolean
       required:

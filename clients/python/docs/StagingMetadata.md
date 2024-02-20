@@ -12,7 +12,6 @@ Name | Type | Description | Notes
 **user_metadata** | **Dict[str, str]** |  | [optional] 
 **content_type** | **str** | Object media type | [optional] 
 **force** | **bool** |  | [optional] [default to False]
-**if_absent** | **bool** |  | [optional] [default to False]
 
 ## Example
 
