@@ -1413,13 +1413,13 @@ class ObjectsApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def upload_object(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], storage_class : Annotated[Optional[StrictStr], Field(description="Deprecated, this capability will not be supported in future releases.")] = None, if_none_match : Annotated[Optional[constr(strict=True)], Field(description="Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases. ")] = None, force : Optional[StrictBool] = None, content : Annotated[Optional[Union[StrictBytes, StrictStr]], Field(description="Only a single file per upload which must be named \\\"content\\\".")] = None, **kwargs) -> ObjectStats:  # noqa: E501
+    def upload_object(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], if_none_match : Annotated[Optional[StrictStr], Field(description="Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.")] = None, storage_class : Annotated[Optional[StrictStr], Field(description="Deprecated, this capability will not be supported in future releases.")] = None, force : Optional[StrictBool] = None, content : Annotated[Optional[Union[StrictBytes, StrictStr]], Field(description="Only a single file per upload which must be named \\\"content\\\".")] = None, **kwargs) -> ObjectStats:  # noqa: E501
         """upload_object  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.upload_object(repository, branch, path, storage_class, if_none_match, force, content, async_req=True)
+        >>> thread = api.upload_object(repository, branch, path, if_none_match, storage_class, force, content, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -1428,10 +1428,10 @@ class ObjectsApi(object):
         :type branch: str
         :param path: relative to the branch (required)
         :type path: str
+        :param if_none_match: Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.
+        :type if_none_match: str
         :param storage_class: Deprecated, this capability will not be supported in future releases.
         :type storage_class: str
-        :param if_none_match: Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases. 
-        :type if_none_match: str
         :param force:
         :type force: bool
         :param content: Only a single file per upload which must be named \\\"content\\\".
@@ -1450,16 +1450,16 @@ class ObjectsApi(object):
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
             raise ValueError("Error! Please call the upload_object_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.upload_object_with_http_info(repository, branch, path, storage_class, if_none_match, force, content, **kwargs)  # noqa: E501
+        return self.upload_object_with_http_info(repository, branch, path, if_none_match, storage_class, force, content, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def upload_object_with_http_info(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], storage_class : Annotated[Optional[StrictStr], Field(description="Deprecated, this capability will not be supported in future releases.")] = None, if_none_match : Annotated[Optional[constr(strict=True)], Field(description="Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases. ")] = None, force : Optional[StrictBool] = None, content : Annotated[Optional[Union[StrictBytes, StrictStr]], Field(description="Only a single file per upload which must be named \\\"content\\\".")] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def upload_object_with_http_info(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], if_none_match : Annotated[Optional[StrictStr], Field(description="Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.")] = None, storage_class : Annotated[Optional[StrictStr], Field(description="Deprecated, this capability will not be supported in future releases.")] = None, force : Optional[StrictBool] = None, content : Annotated[Optional[Union[StrictBytes, StrictStr]], Field(description="Only a single file per upload which must be named \\\"content\\\".")] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """upload_object  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.upload_object_with_http_info(repository, branch, path, storage_class, if_none_match, force, content, async_req=True)
+        >>> thread = api.upload_object_with_http_info(repository, branch, path, if_none_match, storage_class, force, content, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -1468,10 +1468,10 @@ class ObjectsApi(object):
         :type branch: str
         :param path: relative to the branch (required)
         :type path: str
+        :param if_none_match: Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.
+        :type if_none_match: str
         :param storage_class: Deprecated, this capability will not be supported in future releases.
         :type storage_class: str
-        :param if_none_match: Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases. 
-        :type if_none_match: str
         :param force:
         :type force: bool
         :param content: Only a single file per upload which must be named \\\"content\\\".
@@ -1507,8 +1507,8 @@ class ObjectsApi(object):
             'repository',
             'branch',
             'path',
-            'storage_class',
             'if_none_match',
+            'storage_class',
             'force',
             'content'
         ]

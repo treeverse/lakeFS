@@ -125,7 +125,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **link_physical_address**
-> ObjectStats link_physical_address(repository, branch, path, staging_metadata)
+> ObjectStats link_physical_address(repository, branch, path, staging_metadata, if_none_match=if_none_match)
 
 associate staging on this physical address with a path
 
@@ -196,10 +196,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     branch = 'branch_example' # str | 
     path = 'path_example' # str | relative to the branch
     staging_metadata = lakefs_sdk.StagingMetadata() # StagingMetadata | 
+    if_none_match = '*' # str | Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported. (optional)
 
     try:
         # associate staging on this physical address with a path
-        api_response = api_instance.link_physical_address(repository, branch, path, staging_metadata)
+        api_response = api_instance.link_physical_address(repository, branch, path, staging_metadata, if_none_match=if_none_match)
         print("The response of StagingApi->link_physical_address:\n")
         pprint(api_response)
     except Exception as e:
@@ -217,6 +218,7 @@ Name | Type | Description  | Notes
  **branch** | **str**|  | 
  **path** | **str**| relative to the branch | 
  **staging_metadata** | [**StagingMetadata**](StagingMetadata.md)|  | 
+ **if_none_match** | **str**| Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. | [optional] 
 
 ### Return type
 

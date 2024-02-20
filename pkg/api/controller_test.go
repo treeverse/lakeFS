@@ -2039,10 +2039,10 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		}, contentType, buf)
 
 		testutil.Must(t, err)
-		if b.StatusCode() == 500 {
+		if b.StatusCode() == http.StatusInternalServerError {
 			t.Fatalf("got 500 while uploading: %v", b.JSONDefault)
 		}
-		if b.StatusCode() != 201 {
+		if b.StatusCode() != http.StatusCreated {
 			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
 		}
 	})
@@ -2054,7 +2054,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 			Path: "foo/baz1",
 		}, contentType, buf)
 		testutil.Must(t, err)
-		if b.StatusCode() != 201 {
+		if b.StatusCode() != http.StatusCreated {
 			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
 		}
 		// overwrite
@@ -2064,7 +2064,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		}, contentType, buf)
 
 		testutil.Must(t, err)
-		if b.StatusCode() != 201 {
+		if b.StatusCode() != http.StatusCreated {
 			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
 		}
 	})
@@ -2076,19 +2076,19 @@ func TestController_UploadObjectHandler(t *testing.T) {
 			Path: "foo/baz2",
 		}, contentType, buf)
 		testutil.Must(t, err)
-		if b.StatusCode() != 201 {
+		if b.StatusCode() != http.StatusCreated {
 			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
 		}
 		// overwrite
 		contentType, buf = writeMultipart("content", "baz2", "something else!")
-		all := "*"
+		all := apigen.IfNonMatch("*")
 		b, err = clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &apigen.UploadObjectParams{
 			Path:        "foo/baz2",
 			IfNoneMatch: &all,
 		}, contentType, buf)
 
 		testutil.Must(t, err)
-		if b.StatusCode() != 412 {
+		if b.StatusCode() != http.StatusPreconditionFailed {
 			t.Fatalf("expected 412 for UploadObject, got %d", b.StatusCode())
 		}
 	})
@@ -2103,7 +2103,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 			Path: "foo/baz3",
 		}, contentType, buf)
 		testutil.Must(t, err)
-		if b.StatusCode() != 201 {
+		if b.StatusCode() != http.StatusCreated {
 			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
 		}
 
@@ -2112,7 +2112,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		testutil.Must(t, err)
 
 		// overwrite after commit
-		all := "*"
+		all := apigen.IfNonMatch("*")
 		contentType, buf = writeMultipart("content", "baz3", "something else!")
 		b, err = clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "another-branch", &apigen.UploadObjectParams{
 			Path:        "foo/baz3",
@@ -2120,23 +2120,38 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		}, contentType, buf)
 
 		testutil.Must(t, err)
-		if b.StatusCode() != 412 {
+		if b.StatusCode() != http.StatusPreconditionFailed {
 			t.Fatalf("expected 412 for UploadObject, got %d", b.StatusCode())
 		}
 	})
 
 	t.Run("disable overwrite with if-none-match (no entry)", func(t *testing.T) {
-		ifNoneMatch := apiutil.Ptr("*")
+		ifNoneMatch := apigen.IfNonMatch("*")
 		contentType, buf := writeMultipart("content", "baz4", "something else!")
 		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &apigen.UploadObjectParams{
 			Path:        "foo/baz4",
-			IfNoneMatch: ifNoneMatch,
+			IfNoneMatch: &ifNoneMatch,
 		}, contentType, buf)
 		if err != nil {
 			t.Fatalf("UploadObject err=%s, expected no error", err)
 		}
 		if resp.JSON201 == nil {
 			t.Fatalf("UploadObject status code=%d, expected 201", resp.StatusCode())
+		}
+	})
+
+	t.Run("invalid if non match value", func(t *testing.T) {
+		ifNoneMatch := apigen.IfNonMatch("invalid")
+		contentType, buf := writeMultipart("content", "baz4", "something else!")
+		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &apigen.UploadObjectParams{
+			Path:        "foo/baz4",
+			IfNoneMatch: &ifNoneMatch,
+		}, contentType, buf)
+		if err != nil {
+			t.Fatalf("UploadObject err=%s, expected no error", err)
+		}
+		if resp.JSON400 == nil {
+			t.Fatalf("UploadObject status code=%d, expected 400", resp.StatusCode())
 		}
 	})
 
@@ -2148,7 +2163,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		}, contentType, buf)
 
 		testutil.Must(t, err)
-		if b.StatusCode() != 500 {
+		if b.StatusCode() != http.StatusInternalServerError {
 			t.Fatalf("expected 500 for UploadObject, got %d", b.StatusCode())
 		}
 		if !strings.Contains(b.JSONDefault.Message, "missing key 'content'") {
@@ -2998,6 +3013,68 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 			SizeBytes: expectedSizeBytes,
 			Staging: apigen.StagingLocation{
 				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+			},
+		})
+		testutil.Must(t, err)
+		expectedStatusCode := http.StatusBadRequest
+		if resp.HTTPResponse.StatusCode != expectedStatusCode {
+			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
+		}
+	})
+
+	t.Run("link physical address twice if non match", func(t *testing.T) {
+		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, repo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar2"})
+		verifyResponseOK(t, linkResp, err)
+		if linkResp.JSON200 == nil {
+			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
+		}
+		const expectedSizeBytes = 38
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
+			Path: "foo/bar2",
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+			},
+		})
+		verifyResponseOK(t, resp, err)
+
+		// Try again with ifAbsent == true and expect failure
+		linkResp, err = clt.GetPhysicalAddressWithResponse(ctx, repo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar2"})
+		verifyResponseOK(t, linkResp, err)
+		if linkResp.JSON200 == nil {
+			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
+		}
+		ifNonMatch := apigen.IfNonMatch("*")
+		resp, err = clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
+			Path:        "foo/bar2",
+			IfNoneMatch: &ifNonMatch,
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+			},
+		})
+		testutil.Must(t, err)
+		expectedStatusCode := http.StatusPreconditionFailed
+		if resp.HTTPResponse.StatusCode != expectedStatusCode {
+			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
+		}
+	})
+
+	t.Run("link physical address invalid if non match", func(t *testing.T) {
+		const expectedSizeBytes = 38
+		ifNonMatch := apigen.IfNonMatch("invalid")
+		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
+			Path:        "foo/bar2",
+			IfNoneMatch: &ifNonMatch,
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "afb0689fe58b82c5f762991453edbbec",
+			SizeBytes: expectedSizeBytes,
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: swag.String(fmt.Sprintf("%s/some-physical-address", ns)),
 			},
 		})
 		testutil.Must(t, err)

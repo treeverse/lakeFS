@@ -1,5 +1,10 @@
 # Changelog
 
+# Unreleased
+
+- Task: Add If-Non-Match to LinkPhysicalAddress (#7480)
+  Removes deprecation of If-Non-Match from upload object 
+
 # v1.11.1
 
 :new: What's new:

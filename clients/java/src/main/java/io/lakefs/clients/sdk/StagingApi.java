@@ -283,7 +283,7 @@ public class StagingApi {
     public APIgetPhysicalAddressRequest getPhysicalAddress(String repository, String branch, String path) {
         return new APIgetPhysicalAddressRequest(repository, branch, path);
     }
-    private okhttp3.Call linkPhysicalAddressCall(String repository, String branch, String path, StagingMetadata stagingMetadata, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call linkPhysicalAddressCall(String repository, String branch, String path, StagingMetadata stagingMetadata, String ifNoneMatch, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -314,6 +314,10 @@ public class StagingApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("path", path));
         }
 
+        if (ifNoneMatch != null) {
+            localVarHeaderParams.put("If-None-Match", localVarApiClient.parameterToString(ifNoneMatch));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -335,7 +339,7 @@ public class StagingApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call linkPhysicalAddressValidateBeforeCall(String repository, String branch, String path, StagingMetadata stagingMetadata, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call linkPhysicalAddressValidateBeforeCall(String repository, String branch, String path, StagingMetadata stagingMetadata, String ifNoneMatch, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling linkPhysicalAddress(Async)");
@@ -356,20 +360,20 @@ public class StagingApi {
             throw new ApiException("Missing the required parameter 'stagingMetadata' when calling linkPhysicalAddress(Async)");
         }
 
-        return linkPhysicalAddressCall(repository, branch, path, stagingMetadata, _callback);
+        return linkPhysicalAddressCall(repository, branch, path, stagingMetadata, ifNoneMatch, _callback);
 
     }
 
 
-    private ApiResponse<ObjectStats> linkPhysicalAddressWithHttpInfo(String repository, String branch, String path, StagingMetadata stagingMetadata) throws ApiException {
-        okhttp3.Call localVarCall = linkPhysicalAddressValidateBeforeCall(repository, branch, path, stagingMetadata, null);
+    private ApiResponse<ObjectStats> linkPhysicalAddressWithHttpInfo(String repository, String branch, String path, StagingMetadata stagingMetadata, String ifNoneMatch) throws ApiException {
+        okhttp3.Call localVarCall = linkPhysicalAddressValidateBeforeCall(repository, branch, path, stagingMetadata, ifNoneMatch, null);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call linkPhysicalAddressAsync(String repository, String branch, String path, StagingMetadata stagingMetadata, final ApiCallback<ObjectStats> _callback) throws ApiException {
+    private okhttp3.Call linkPhysicalAddressAsync(String repository, String branch, String path, StagingMetadata stagingMetadata, String ifNoneMatch, final ApiCallback<ObjectStats> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = linkPhysicalAddressValidateBeforeCall(repository, branch, path, stagingMetadata, _callback);
+        okhttp3.Call localVarCall = linkPhysicalAddressValidateBeforeCall(repository, branch, path, stagingMetadata, ifNoneMatch, _callback);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -380,12 +384,23 @@ public class StagingApi {
         private final String branch;
         private final String path;
         private final StagingMetadata stagingMetadata;
+        private String ifNoneMatch;
 
         private APIlinkPhysicalAddressRequest(String repository, String branch, String path, StagingMetadata stagingMetadata) {
             this.repository = repository;
             this.branch = branch;
             this.path = path;
             this.stagingMetadata = stagingMetadata;
+        }
+
+        /**
+         * Set ifNoneMatch
+         * @param ifNoneMatch Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. (optional)
+         * @return APIlinkPhysicalAddressRequest
+         */
+        public APIlinkPhysicalAddressRequest ifNoneMatch(String ifNoneMatch) {
+            this.ifNoneMatch = ifNoneMatch;
+            return this;
         }
 
         /**
@@ -407,7 +422,7 @@ public class StagingApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return linkPhysicalAddressCall(repository, branch, path, stagingMetadata, _callback);
+            return linkPhysicalAddressCall(repository, branch, path, stagingMetadata, ifNoneMatch, _callback);
         }
 
         /**
@@ -428,7 +443,7 @@ public class StagingApi {
          </table>
          */
         public ObjectStats execute() throws ApiException {
-            ApiResponse<ObjectStats> localVarResp = linkPhysicalAddressWithHttpInfo(repository, branch, path, stagingMetadata);
+            ApiResponse<ObjectStats> localVarResp = linkPhysicalAddressWithHttpInfo(repository, branch, path, stagingMetadata, ifNoneMatch);
             return localVarResp.getData();
         }
 
@@ -450,7 +465,7 @@ public class StagingApi {
          </table>
          */
         public ApiResponse<ObjectStats> executeWithHttpInfo() throws ApiException {
-            return linkPhysicalAddressWithHttpInfo(repository, branch, path, stagingMetadata);
+            return linkPhysicalAddressWithHttpInfo(repository, branch, path, stagingMetadata, ifNoneMatch);
         }
 
         /**
@@ -472,7 +487,7 @@ public class StagingApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<ObjectStats> _callback) throws ApiException {
-            return linkPhysicalAddressAsync(repository, branch, path, stagingMetadata, _callback);
+            return linkPhysicalAddressAsync(repository, branch, path, stagingMetadata, ifNoneMatch, _callback);
         }
     }
 

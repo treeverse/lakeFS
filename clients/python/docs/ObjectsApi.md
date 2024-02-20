@@ -962,7 +962,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **upload_object**
-> ObjectStats upload_object(repository, branch, path, storage_class=storage_class, if_none_match=if_none_match, force=force, content=content)
+> ObjectStats upload_object(repository, branch, path, if_none_match=if_none_match, storage_class=storage_class, force=force, content=content)
 
 
 
@@ -1029,13 +1029,13 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     repository = 'repository_example' # str | 
     branch = 'branch_example' # str | 
     path = 'path_example' # str | relative to the branch
+    if_none_match = '*' # str | Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported. (optional)
     storage_class = 'storage_class_example' # str | Deprecated, this capability will not be supported in future releases. (optional)
-    if_none_match = '*' # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases.  (optional)
     force = False # bool |  (optional) (default to False)
     content = None # bytearray | Only a single file per upload which must be named \\\"content\\\". (optional)
 
     try:
-        api_response = api_instance.upload_object(repository, branch, path, storage_class=storage_class, if_none_match=if_none_match, force=force, content=content)
+        api_response = api_instance.upload_object(repository, branch, path, if_none_match=if_none_match, storage_class=storage_class, force=force, content=content)
         print("The response of ObjectsApi->upload_object:\n")
         pprint(api_response)
     except Exception as e:
@@ -1052,8 +1052,8 @@ Name | Type | Description  | Notes
  **repository** | **str**|  | 
  **branch** | **str**|  | 
  **path** | **str**| relative to the branch | 
+ **if_none_match** | **str**| Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. | [optional] 
  **storage_class** | **str**| Deprecated, this capability will not be supported in future releases. | [optional] 
- **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet. Deprecated, this capability will not be supported in future releases.  | [optional] 
  **force** | **bool**|  | [optional] [default to False]
  **content** | **bytearray**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional] 
 

@@ -684,8 +684,8 @@ class ObjectsApi(object):
                     'repository',
                     'branch',
                     'path',
-                    'storage_class',
                     'if_none_match',
+                    'storage_class',
                     'force',
                     'content',
                 ],
@@ -699,17 +699,10 @@ class ObjectsApi(object):
                 'enum': [
                 ],
                 'validation': [
-                    'if_none_match',
                 ]
             },
             root_map={
                 'validations': {
-                    ('if_none_match',): {
-
-                        'regex': {
-                            'pattern': r'^\*$',  # noqa: E501
-                        },
-                    },
                 },
                 'allowed_values': {
                 },
@@ -720,9 +713,9 @@ class ObjectsApi(object):
                         (str,),
                     'path':
                         (str,),
-                    'storage_class':
-                        (str,),
                     'if_none_match':
+                        (str,),
+                    'storage_class':
                         (str,),
                     'force':
                         (bool,),
@@ -733,8 +726,8 @@ class ObjectsApi(object):
                     'repository': 'repository',
                     'branch': 'branch',
                     'path': 'path',
-                    'storage_class': 'storageClass',
                     'if_none_match': 'If-None-Match',
+                    'storage_class': 'storageClass',
                     'force': 'force',
                     'content': 'content',
                 },
@@ -742,8 +735,8 @@ class ObjectsApi(object):
                     'repository': 'path',
                     'branch': 'path',
                     'path': 'query',
-                    'storage_class': 'query',
                     'if_none_match': 'header',
+                    'storage_class': 'query',
                     'force': 'query',
                     'content': 'form',
                 },
@@ -1380,8 +1373,8 @@ class ObjectsApi(object):
             path (str): relative to the branch
 
         Keyword Args:
+            if_none_match (str): Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.. [optional]
             storage_class (str): Deprecated, this capability will not be supported in future releases.. [optional]
-            if_none_match (str): Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases. . [optional]
             force (bool): [optional] if omitted the server will use the default value of False
             content (file_type): Only a single file per upload which must be named \\\"content\\\".. [optional]
             _return_http_data_only (bool): response data without head status

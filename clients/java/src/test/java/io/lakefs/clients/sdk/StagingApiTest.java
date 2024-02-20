@@ -64,7 +64,9 @@ public class StagingApiTest {
         String branch = null;
         String path = null;
         StagingMetadata stagingMetadata = null;
+        String ifNoneMatch = null;
         ObjectStats response = api.linkPhysicalAddress(repository, branch, path, stagingMetadata)
+                .ifNoneMatch(ifNoneMatch)
                 .execute();
         // TODO: test validations
     }

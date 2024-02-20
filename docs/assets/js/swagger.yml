@@ -69,6 +69,15 @@ components:
       description: delimiter used to group common prefixes by
       schema:
         type: string
+    
+    IfNonMatch:
+      in: header
+      name: If-None-Match
+      description: Set to "*" to atomically allow the upload only if the key has no object yet. Other values are not supported.
+      example: "*"
+      required: false
+      schema:
+        type: string
 
   responses:
     NotFoundOrNoACL:
@@ -4164,6 +4173,10 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/StagingMetadata"
+              
+      parameters:
+        - $ref: "#/components/parameters/IfNonMatch"
+          
       responses:
         200:
           # This actually violates HTTP, which requires returning 201 if a new object was
@@ -4397,6 +4410,7 @@ paths:
               format: binary
 
       parameters:
+        - $ref: "#/components/parameters/IfNonMatch"
         - in: query
           name: storageClass
           description: Deprecated, this capability will not be supported in future releases.
@@ -4404,17 +4418,6 @@ paths:
           deprecated: true
           schema:
             type: string
-        - in: header
-          name: If-None-Match
-          description: |
-            Currently supports only "*" to allow uploading an object only if one doesn't exist yet.
-            Deprecated, this capability will not be supported in future releases.
-          example: "*"
-          required: false
-          deprecated: true
-          schema:
-            type: string
-            pattern: '^\*$' # Currently, only "*" is supported
         - in: query
           name: force
           required: false

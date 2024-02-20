@@ -4516,6 +4516,16 @@ paths:
         schema:
           type: string
         style: form
+      - description: Set to "*" to atomically allow the upload only if the key has
+          no object yet. Other values are not supported.
+        example: '*'
+        explode: false
+        in: header
+        name: If-None-Match
+        required: false
+        schema:
+          type: string
+        style: simple
       requestBody:
         content:
           application/json:
@@ -4912,6 +4922,16 @@ paths:
         schema:
           type: string
         style: form
+      - description: Set to "*" to atomically allow the upload only if the key has
+          no object yet. Other values are not supported.
+        example: '*'
+        explode: false
+        in: header
+        name: If-None-Match
+        required: false
+        schema:
+          type: string
+        style: simple
       - deprecated: true
         description: "Deprecated, this capability will not be supported in future\
           \ releases."
@@ -4922,19 +4942,6 @@ paths:
         schema:
           type: string
         style: form
-      - deprecated: true
-        description: |
-          Currently supports only "*" to allow uploading an object only if one doesn't exist yet.
-          Deprecated, this capability will not be supported in future releases.
-        example: '*'
-        explode: false
-        in: header
-        name: If-None-Match
-        required: false
-        schema:
-          pattern: ^\*$
-          type: string
-        style: simple
       - explode: true
         in: query
         name: force
@@ -6542,6 +6549,17 @@ components:
       schema:
         type: string
       style: form
+    IfNonMatch:
+      description: Set to "*" to atomically allow the upload only if the key has no
+        object yet. Other values are not supported.
+      example: '*'
+      explode: false
+      in: header
+      name: If-None-Match
+      required: false
+      schema:
+        type: string
+      style: simple
   responses:
     NotFoundOrNoACL:
       content:

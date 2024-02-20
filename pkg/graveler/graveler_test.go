@@ -324,6 +324,7 @@ func TestGraveler_Set(t *testing.T) {
 			stagingMgr:          &testutil.StagingFake{},
 			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla"}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
 			expectedValueResult: nil,
+			expectedErr:         graveler.ErrPreconditionFailed,
 			ifAbsent:            true,
 		},
 		{
@@ -332,6 +333,7 @@ func TestGraveler_Set(t *testing.T) {
 			stagingMgr:          &testutil.StagingFake{Values: map[string]map[string]*graveler.Value{"st": {"key": sampleVal}}, LastSetValueRecord: &graveler.ValueRecord{Key: []byte("key"), Value: sampleVal}},
 			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla", StagingToken: "st"}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
 			expectedValueResult: &graveler.ValueRecord{Key: []byte("key"), Value: sampleVal},
+			expectedErr:         graveler.ErrPreconditionFailed,
 			ifAbsent:            true,
 		},
 		{
