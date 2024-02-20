@@ -2081,7 +2081,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		}
 		// overwrite
 		contentType, buf = writeMultipart("content", "baz2", "something else!")
-		all := apigen.IfNonMatch("*")
+		all := apigen.IfNoneMatch("*")
 		b, err = clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &apigen.UploadObjectParams{
 			Path:        "foo/baz2",
 			IfNoneMatch: &all,
@@ -2112,7 +2112,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		testutil.Must(t, err)
 
 		// overwrite after commit
-		all := apigen.IfNonMatch("*")
+		all := apigen.IfNoneMatch("*")
 		contentType, buf = writeMultipart("content", "baz3", "something else!")
 		b, err = clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "another-branch", &apigen.UploadObjectParams{
 			Path:        "foo/baz3",
@@ -2126,7 +2126,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 	})
 
 	t.Run("disable overwrite with if-none-match (no entry)", func(t *testing.T) {
-		ifNoneMatch := apigen.IfNonMatch("*")
+		ifNoneMatch := apigen.IfNoneMatch("*")
 		contentType, buf := writeMultipart("content", "baz4", "something else!")
 		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &apigen.UploadObjectParams{
 			Path:        "foo/baz4",
@@ -2141,7 +2141,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 	})
 
 	t.Run("invalid if non match value", func(t *testing.T) {
-		ifNoneMatch := apigen.IfNonMatch("invalid")
+		ifNoneMatch := apigen.IfNoneMatch("invalid")
 		contentType, buf := writeMultipart("content", "baz4", "something else!")
 		resp, err := clt.UploadObjectWithBodyWithResponse(ctx, "my-new-repo", "main", &apigen.UploadObjectParams{
 			Path:        "foo/baz4",
@@ -3046,7 +3046,7 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 		if linkResp.JSON200 == nil {
 			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
 		}
-		ifNonMatch := apigen.IfNonMatch("*")
+		ifNonMatch := apigen.IfNoneMatch("*")
 		resp, err = clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
 			Path:        "foo/bar2",
 			IfNoneMatch: &ifNonMatch,
@@ -3066,7 +3066,7 @@ func TestController_LinkPhysicalAddressHandler(t *testing.T) {
 
 	t.Run("link physical address invalid if non match", func(t *testing.T) {
 		const expectedSizeBytes = 38
-		ifNonMatch := apigen.IfNonMatch("invalid")
+		ifNonMatch := apigen.IfNoneMatch("invalid")
 		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
 			Path:        "foo/bar2",
 			IfNoneMatch: &ifNonMatch,
