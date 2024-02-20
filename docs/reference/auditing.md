@@ -38,7 +38,7 @@ The initial setup:
 1. Take note of the IAM Role ARN that will be used to access the data. This should be the user or role used by e.g. Athena.
 1. [Reach out to customer success](mailto:support@treeverse.io?subject=ARN to use for audit logs) and provide this ARN. Once receiving the ARN role, an access point will be created and you should get in response the following details:
    1. S3 Bucket (e.g. `arn:aws:s3:::lakefs-audit-logs-us-east-1-production`)
-   2. S3 URI to an access point (e.g. `s3://arn:aws:s3:us-east-1:924819537486:accesspoint/lakefs-logs-<organization>`)
+   2. S3 URI to an access point (e.g. `s3://arn:aws:s3:us-east-1:<treeverse-id>:accesspoint/lakefs-logs-<organization>`)
    3. Access Point alias. You can use this alias instead of the bucket name or Access Point ARN to access data through the Access Point. (e.g. `lakefs-logs-<generated>-s3alias`)
 3. Update your IAM Role policy and trust policy if required
 
@@ -57,8 +57,8 @@ A minimal example for IAM policy with 2 lakeFS installations in 2 regions (`us-e
                 "arn:aws:s3:::lakefs-audit-logs-us-east-1-production",
                 "arn:aws:s3:::lakefs-audit-logs-us-east-1-production/*",
                 "arn:aws:s3:::lakefs-logs-<generated>-s3alias/*",
-                "arn:aws:s3:us-east-1:924819537486:accesspoint/lakefs-logs-<organization>",
-                "arn:aws:s3:us-east-1:924819537486:accesspoint/lakefs-logs-<organization>/*"
+                "arn:aws:s3:us-east-1:<treeverse-id>:accesspoint/lakefs-logs-<organization>",
+                "arn:aws:s3:us-east-1:<treeverse-id>:accesspoint/lakefs-logs-<organization>/*"
             ],
             "Condition": {
                 "StringLike": {
@@ -80,8 +80,8 @@ A minimal example for IAM policy with 2 lakeFS installations in 2 regions (`us-e
                 "arn:aws:s3:::lakefs-audit-logs-us-east-1-production/etl/v1/data/region=<region_a>/organization=org-<organization>/*",
                 "arn:aws:s3:::lakefs-audit-logs-us-east-1-production/etl/v1/data/region=<region_b>/organization=org-<organization>/*",
                 "arn:aws:s3:::lakefs-logs-<generated>-s3alias/*",
-                "arn:aws:s3:us-east-1:924819537486:accesspoint/lakefs-logs-<organization>/object/etl/v1/data/region=<region_a>/organization=org-<organization>/*",
-                "arn:aws:s3:us-east-1:924819537486:accesspoint/lakefs-logs-<organization>/object/etl/v1/data/region=<region_b>/organization=org-<organization>/*"
+                "arn:aws:s3:us-east-1:<treeverse-id>:accesspoint/lakefs-logs-<organization>/object/etl/v1/data/region=<region_a>/organization=org-<organization>/*",
+                "arn:aws:s3:us-east-1:<treeverse-id>:accesspoint/lakefs-logs-<organization>/object/etl/v1/data/region=<region_b>/organization=org-<organization>/*"
             ]
         },
         {
@@ -89,7 +89,7 @@ A minimal example for IAM policy with 2 lakeFS installations in 2 regions (`us-e
                 "kms:Decrypt"
             ],
             "Resource": [
-                "arn:aws:kms:us-east-1:924819537486:key/a2ad86b0-99a3-4f56-8141-bc07ce7b0f08"
+                "arn:aws:kms:us-east-1:<treeverse-id>:key/<encryption-key-id>"
             ],
             "Effect": "Allow"
         }
@@ -126,7 +126,7 @@ aws sts assume-role --role-arn arn:aws:iam::<your-aws-account>:role/<reader-role
 aws sts get-caller-identity 
 
 # list objects (can be used with --recursive) with access point ARN
-aws s3 ls arn:aws:s3:us-east-1:924819537486:accesspoint/lakefs-logs-<organization>/etl/v1/data/region=<region>/organization=org-<organization>/
+aws s3 ls arn:aws:s3:us-east-1:<treeverse-id>:accesspoint/lakefs-logs-<organization>/etl/v1/data/region=<region>/organization=org-<organization>/
 
 # get object locally via s3 access point alias 
 aws s3api get-object --bucket lakefs-logs-<generated>-s3alias --key lakefs-audit-logs-us-east-1-production/etl/v1/data/region=<region>/organization=org-<organization>/year=<YY>/month=<MM>/day=<DD>/hour=<HH>/<file>-snappy.parquet sample.parquet 
