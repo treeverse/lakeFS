@@ -235,6 +235,7 @@ public class StagingApi {
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
+        <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -327,6 +328,7 @@ public class StagingApi {
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
+        <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -355,6 +357,7 @@ public class StagingApi {
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
+        <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -385,6 +388,7 @@ public class StagingApi {
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
+        <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>

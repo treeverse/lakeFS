@@ -4569,6 +4569,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/StagingLocation'
           description: "conflict with a commit, try here"
+        "412":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Precondition Failed
         "420":
           description: too many requests
         default:
