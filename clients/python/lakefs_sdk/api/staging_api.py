@@ -376,6 +376,7 @@ class StagingApi(object):
             '403': "Error",
             '404': "Error",
             '409': "StagingLocation",
+            '412': "Error",
             '420': None,
         }
 

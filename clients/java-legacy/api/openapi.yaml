@@ -4569,6 +4569,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/StagingLocation'
           description: conflict with a commit, try here
+        "412":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Precondition Failed
         "420":
           description: too many requests
         default:
@@ -6560,7 +6566,7 @@ components:
       schema:
         type: string
       style: form
-    IfNonMatch:
+    IfNoneMatch:
       description: Set to "*" to atomically allow the upload only if the key has no
         object yet. Other values are not supported.
       example: '*'
