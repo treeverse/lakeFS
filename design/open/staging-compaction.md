@@ -157,9 +157,14 @@ area is empty, the read flow will be as follows:
 The commit flow is slightly affected by the compaction process. If 
 compaction never happened, the commit flow is the same as today. If a 
 compaction happened, apply the changes to the compacted metarange instead of 
-the HEAD commit metarange.
+the HEAD commit metarange. A successful commit will reset the the 
+`CompactedMetaRangeID` field.
 
+## Metrics
 
+We can collect the following prometheus metrics:
+- Compaction time.
+- Number of sealed tokens.
 
 [^1]: The number of sealed tokens increases by one for every HEAD changing 
 operation (commit, merge, etc.) on the branch. The number of sealed tokens 
