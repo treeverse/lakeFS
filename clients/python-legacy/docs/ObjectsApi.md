@@ -1073,8 +1073,8 @@ with lakefs_client.ApiClient(configuration) as api_client:
     repository = "repository_example" # str | 
     branch = "branch_example" # str | 
     path = "path_example" # str | relative to the branch
+    if_none_match = "*" # str | Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported. (optional)
     storage_class = "storageClass_example" # str | Deprecated, this capability will not be supported in future releases. (optional)
-    if_none_match = "*" # str | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet. Deprecated, this capability will not be supported in future releases.  (optional)
     force = False # bool |  (optional) if omitted the server will use the default value of False
     content = open('/path/to/file', 'rb') # file_type | Only a single file per upload which must be named \\\"content\\\". (optional)
 
@@ -1088,7 +1088,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        api_response = api_instance.upload_object(repository, branch, path, storage_class=storage_class, if_none_match=if_none_match, force=force, content=content)
+        api_response = api_instance.upload_object(repository, branch, path, if_none_match=if_none_match, storage_class=storage_class, force=force, content=content)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->upload_object: %s\n" % e)
@@ -1102,8 +1102,8 @@ Name | Type | Description  | Notes
  **repository** | **str**|  |
  **branch** | **str**|  |
  **path** | **str**| relative to the branch |
+ **if_none_match** | **str**| Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. | [optional]
  **storage_class** | **str**| Deprecated, this capability will not be supported in future releases. | [optional]
- **if_none_match** | **str**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet. Deprecated, this capability will not be supported in future releases.  | [optional]
  **force** | **bool**|  | [optional] if omitted the server will use the default value of False
  **content** | **file_type**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional]
 

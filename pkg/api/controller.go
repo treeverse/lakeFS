@@ -640,6 +640,15 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	ifAbsent := false
+	if params.IfNoneMatch != nil {
+		if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
+			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
+			return
+		}
+		ifAbsent = true
+	}
+
 	blockStoreType := c.BlockAdapter.BlockstoreType()
 	expectedType := qk.GetStorageType().BlockstoreType()
 	if expectedType != blockStoreType {
@@ -683,8 +692,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
 	entry := entryBuilder.Build()
-
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithForce(swag.BoolValue(body.Force)))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithForce(swag.BoolValue(body.Force)), graveler.WithIfAbsent(ifAbsent))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3006,7 +3014,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	//	and then graveler will check again when passed a SetOptions.
 	allowOverwrite := true
 	if params.IfNoneMatch != nil {
-		if swag.StringValue(params.IfNoneMatch) != "*" {
+		if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
 			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
 			return
 		}

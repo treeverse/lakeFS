@@ -110,7 +110,7 @@ public class Example {
 
 <a id="linkPhysicalAddress"></a>
 # **linkPhysicalAddress**
-> ObjectStats linkPhysicalAddress(repository, branch, path, stagingMetadata).execute();
+> ObjectStats linkPhysicalAddress(repository, branch, path, stagingMetadata).ifNoneMatch(ifNoneMatch).execute();
 
 associate staging on this physical address with a path
 
@@ -163,8 +163,10 @@ public class Example {
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
     StagingMetadata stagingMetadata = new StagingMetadata(); // StagingMetadata | 
+    String ifNoneMatch = "*"; // String | Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.
     try {
       ObjectStats result = apiInstance.linkPhysicalAddress(repository, branch, path, stagingMetadata)
+            .ifNoneMatch(ifNoneMatch)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -186,6 +188,7 @@ public class Example {
 | **branch** | **String**|  | |
 | **path** | **String**| relative to the branch | |
 | **stagingMetadata** | [**StagingMetadata**](StagingMetadata.md)|  | |
+| **ifNoneMatch** | **String**| Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. | [optional] |
 
 ### Return type
 

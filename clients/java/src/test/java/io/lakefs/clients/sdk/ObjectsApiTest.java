@@ -192,13 +192,13 @@ public class ObjectsApiTest {
         String repository = null;
         String branch = null;
         String path = null;
-        String storageClass = null;
         String ifNoneMatch = null;
+        String storageClass = null;
         Boolean force = null;
         File content = null;
         ObjectStats response = api.uploadObject(repository, branch, path)
-                .storageClass(storageClass)
                 .ifNoneMatch(ifNoneMatch)
+                .storageClass(storageClass)
                 .force(force)
                 .content(content)
                 .execute();
