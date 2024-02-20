@@ -70,7 +70,7 @@ components:
       schema:
         type: string
     
-    IfNonMatch:
+    IfNoneMatch:
       in: header
       name: If-None-Match
       description: Set to "*" to atomically allow the upload only if the key has no object yet. Other values are not supported.
@@ -4175,7 +4175,7 @@ paths:
               $ref: "#/components/schemas/StagingMetadata"
               
       parameters:
-        - $ref: "#/components/parameters/IfNonMatch"
+        - $ref: "#/components/parameters/IfNoneMatch"
           
       responses:
         200:
@@ -4201,6 +4201,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StagingLocation"
+        412:
+          $ref: "#/components/responses/PreconditionFailed"
         420:
           description: too many requests
         default:
@@ -4410,7 +4412,7 @@ paths:
               format: binary
 
       parameters:
-        - $ref: "#/components/parameters/IfNonMatch"
+        - $ref: "#/components/parameters/IfNoneMatch"
         - in: query
           name: storageClass
           description: Deprecated, this capability will not be supported in future releases.

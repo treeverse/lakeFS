@@ -84,6 +84,23 @@ func (l *loggingBuffer) WriteString(s string) (n int, err error) {
 	return l.buf.WriteString(s)
 }
 
+// allowedFields are the logging fields that are safe to keep on the context
+// passed to Lua execution.  These logging fields will enter the Lua script
+// and a bug might allow the script to access them.
+var allowedFields = []string{logging.RepositoryFieldKey, logging.UserFieldKey}
+
+// getAllowedFields returns only logging fields that are in allowedFields.
+func getAllowedFields(fields logging.Fields) logging.Fields {
+	// This implementation is efficient when allowedFields is small.
+	ret := make(logging.Fields, len(allowedFields))
+	for _, f := range allowedFields {
+		if v, ok := fields[f]; ok {
+			ret[f] = v
+		}
+	}
+	return ret
+}
+
 func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *bytes.Buffer) error {
 	user, err := auth.GetUser(ctx)
 	if err != nil {
@@ -115,6 +132,7 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 			return err
 		}
 		req = req.WithContext(auth.WithUser(req.Context(), user))
+		req = req.WithContext(logging.AddFields(req.Context(), getAllowedFields(logging.GetFieldsFromContext(ctx))))
 		q := req.URL.Query()
 		q.Add("path", h.ScriptPath)
 		req.URL.RawQuery = q.Encode()
