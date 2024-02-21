@@ -250,7 +250,18 @@ To export to S3:
                     </testExcludes>
                 </configuration>
             </plugin>
-
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>com.gkatzioura.maven.cloud</groupId>
                 <artifactId>s3-storage-wagon</artifactId>
@@ -283,7 +294,6 @@ To export to S3:
             <artifactId>commons-lang3</artifactId>
             <version>3.12.0</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
@@ -309,7 +319,11 @@ To export to S3:
             <artifactId>commons-lang3</artifactId>
             <version>3.12.0</version>
         </dependency>
-
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
+        </dependency>
         <dependency>        <!-- needed for aws-java-sdk in tests(!) -->
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
@@ -329,42 +343,41 @@ To export to S3:
             <version>2.0.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+          <groupId>org.testcontainers</groupId>
+          <artifactId>testcontainers</artifactId>
+          <version>1.16.3</version>
+          <scope>test</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>mockwebserver</artifactId>
+            <version>4.10.0</version>
+            <scope>test</scope>
+        </dependency>
 
-	<dependency>
-	  <groupId>org.testcontainers</groupId>
-	  <artifactId>testcontainers</artifactId>
-	  <version>1.16.0</version>
-	  <scope>test</scope>
-	</dependency>
-    <!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver -->
-    <dependency>
-        <groupId>com.squareup.okhttp3</groupId>
-        <artifactId>mockwebserver</artifactId>
-        <version>4.10.0</version>
-        <scope>test</scope>
-    </dependency>
-
-	<!--
+	    <!--
 	     https://stackoverflow.com/questions/35569092/java-lang-classnotfoundexception-com-fasterxml-jackson-annotation-jsonincludev
 	     says to keep all of these on the same versions -->
-	<dependency>
-	  <groupId>com.fasterxml.jackson.core</groupId>
-	  <artifactId>jackson-databind</artifactId>
-	  <version>2.13.4.2</version>
-	  <scope>test</scope>
-	</dependency>
-	<dependency>
-	  <groupId>com.fasterxml.jackson.core</groupId>
-	  <artifactId>jackson-core</artifactId>
-	  <version>2.12.3</version>
-	  <scope>test</scope>
-	</dependency>
-	<dependency>
-	  <groupId>com.fasterxml.jackson.core</groupId>
-	  <artifactId>jackson-annotations</artifactId>
-	  <version>2.12.3</version>
-	  <scope>test</scope>
-	</dependency>
+        <dependency>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+          <version>2.13.4.2</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-core</artifactId>
+          <version>2.12.3</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-annotations</artifactId>
+          <version>2.12.3</version>
+          <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.mock-server</groupId>
@@ -372,14 +385,18 @@ To export to S3:
             <version>5.14.0</version>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.mock-server</groupId>
+            <artifactId>mockserver-core</artifactId>
+            <version>5.15.0</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.immutables</groupId>
             <artifactId>value</artifactId>
             <version>2.9.3</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
