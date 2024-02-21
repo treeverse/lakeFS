@@ -1,10 +1,6 @@
 package io.lakefs.storage;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URI;
-
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 
@@ -12,8 +8,13 @@ import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.utils.ObjectLocation;
 
 public interface StorageAccessStrategy {
-    public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation, CreateOutputStreamParams params)
+    default FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation,
+                                                     CreateOutputStreamParams params) throws ApiException, IOException {
+        return createDataOutputStream(objectLocation, params, true);
+    }
+
+    FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation, CreateOutputStreamParams params, boolean overwrite)
             throws ApiException, IOException;
 
-    public FSDataInputStream createDataInputStream(ObjectLocation objectLocation, int bufSize) throws ApiException, IOException;
+    FSDataInputStream createDataInputStream(ObjectLocation objectLocation, int bufSize) throws ApiException, IOException;
 }

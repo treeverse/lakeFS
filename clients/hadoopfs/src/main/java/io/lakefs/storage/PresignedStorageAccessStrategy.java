@@ -20,18 +20,18 @@ import io.lakefs.utils.ObjectLocation;
 
 public class PresignedStorageAccessStrategy implements StorageAccessStrategy {
 
-    private LakeFSFileSystem lakeFSFileSystem;
-    private LakeFSClient lfsClient;
+    private final LakeFSFileSystem lakeFSFileSystem;
+    private final LakeFSClient lfsClient;
 
     public PresignedStorageAccessStrategy(LakeFSFileSystem lakeFSFileSystem,
             LakeFSClient lfsClient) {
         this.lakeFSFileSystem = lakeFSFileSystem;
         this.lfsClient = lfsClient;
     }
-
+    
     @Override
     public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation,
-            CreateOutputStreamParams params) throws ApiException, IOException {
+            CreateOutputStreamParams params, boolean overwrite) throws ApiException, IOException {
         StagingApi stagingApi = lfsClient.getStagingApi();
         StagingLocation stagingLocation =
             stagingApi.getPhysicalAddress(objectLocation.getRepository(),
@@ -42,7 +42,7 @@ public class PresignedStorageAccessStrategy implements StorageAccessStrategy {
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/octet-stream");
         connection.setRequestMethod("PUT");
-        LakeFSLinker linker = new LakeFSLinker(lakeFSFileSystem, lfsClient, objectLocation, stagingLocation);
+        LakeFSLinker linker = new LakeFSLinker(lakeFSFileSystem, lfsClient, objectLocation, stagingLocation, overwrite);
         OutputStream out = new LakeFSFileSystemOutputStream(connection, linker);
         // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
         return new FSDataOutputStream(out, null);
