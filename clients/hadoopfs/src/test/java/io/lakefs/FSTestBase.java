@@ -60,7 +60,7 @@ import java.util.List;
  * See e.g. "Base Test Class Testing Pattern: Why and How to use",
  * https://eliasnogueira.com/base-test-class-testing-pattern-why-and-how-to-use/
  */
-abstract class FSTestBase {
+public abstract class FSTestBase {
     static protected final Long UNUSED_FILE_SIZE = 1L;
     static protected final Long UNUSED_MTIME = 0L;
     static protected final String UNUSED_CHECKSUM = "unused";
@@ -147,7 +147,7 @@ abstract class FSTestBase {
         mockServerClient.when(request()
                               .withMethod("GET")
                               .withPath("/config/storage"),
-                              Times.once())
+                              Times.unlimited())
             .respond(response()
                      .withStatusCode(200)
                      .withBody(gson.toJson(new StorageConfig()
