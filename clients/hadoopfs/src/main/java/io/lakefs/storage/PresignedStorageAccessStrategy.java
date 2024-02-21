@@ -28,12 +28,6 @@ public class PresignedStorageAccessStrategy implements StorageAccessStrategy {
         this.lakeFSFileSystem = lakeFSFileSystem;
         this.lfsClient = lfsClient;
     }
-
-    @Override
-    public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation,
-                                                     CreateOutputStreamParams params) throws ApiException, IOException {
-        return createDataOutputStream(objectLocation, params, true);
-    }
     
     @Override
     public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation,

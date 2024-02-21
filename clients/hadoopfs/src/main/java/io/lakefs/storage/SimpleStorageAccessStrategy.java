@@ -34,12 +34,6 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
         this.conf = conf;
         this.physicalAddressTranslator = physicalAddressTranslator;
     }
-
-    @Override
-    public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation,
-                                                     CreateOutputStreamParams params) throws ApiException, IOException {
-        return createDataOutputStream(objectLocation, params, true);
-    }
     
     @Override
     public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation,
