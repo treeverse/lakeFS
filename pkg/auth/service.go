@@ -1,6 +1,6 @@
 package auth
 
-//go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package auth -generate "types,client" -o client.gen.go ../../api/authorization.yml
+//go:generate go run github.com/deepmap/oapi-codegen/v2/cmd/oapi-codegen@v2.1.0 -package auth -generate "types,client" -o client.gen.go ../../api/authorization.yml
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mock -destination=mock/mock_auth_client.go github.com/treeverse/lakefs/pkg/auth ClientWithResponsesInterface
 
 import (
@@ -15,7 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/cenkalti/backoff/v4"
-	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	"github.com/deepmap/oapi-codegen/v2/pkg/securityprovider"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-openapi/swag"
 	"github.com/golang-jwt/jwt/v4"

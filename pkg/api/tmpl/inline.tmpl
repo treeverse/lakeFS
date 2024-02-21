@@ -2,7 +2,7 @@
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
-{{range .}}
+{{range .SpecParts}}
     "{{.}}",{{end}}
 }
 
