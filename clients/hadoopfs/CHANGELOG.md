@@ -2,6 +2,11 @@
 
 ## _Upcoming_
 
+## 0.2.2
+
+* Update lakeFS SDK to 1.12.0
+* Support overwrite in LakeFSLinker
+
 ## 0.2.1
 
 * Update lakeFS SDK to 1.0.0
