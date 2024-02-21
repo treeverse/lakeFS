@@ -13,13 +13,15 @@ public class LakeFSLinker {
     private final ObjectLocation objectLoc;
     private final LakeFSFileSystem lfs;
     private final LakeFSClient lakeFSClient;
+    private final boolean overwrite;
 
     public LakeFSLinker(LakeFSFileSystem lfs, LakeFSClient lfsClient,
-            ObjectLocation objectLoc, StagingLocation stagingLocation) {
+            ObjectLocation objectLoc, StagingLocation stagingLocation, boolean overwrite) {
         this.objectLoc = objectLoc;
         this.stagingLocation = stagingLocation;
         this.lfs = lfs;
         this.lakeFSClient = lfsClient;
+        this.overwrite = overwrite;
     }
 
     public void link(String eTag, long byteSize) throws IOException {
@@ -27,9 +29,12 @@ public class LakeFSLinker {
         StagingMetadata stagingMetadata =
                 new StagingMetadata().checksum(eTag).sizeBytes(byteSize).staging(stagingLocation);
         try {
-            staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(),
-                    objectLoc.getPath(), stagingMetadata)
-                .execute();
+            StagingApi.APIlinkPhysicalAddressRequest request = 
+                    staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), stagingMetadata);
+            if (!overwrite) {
+                request.ifNoneMatch("*");
+            }
+            request.execute();
         } catch (ApiException e) {
             throw new IOException("link lakeFS path to physical address", e);
         }
