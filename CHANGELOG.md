@@ -1,6 +1,12 @@
 # Changelog
 
-# Unreleased
+# v1.12.1
+
+:bug: Bugs fixed:
+
+* Check for correct RBAC action (GHSA-fvv5-h29g-f6w5).  This security
+  advisory has **moderate** severity (5.3/10), and does not affect users who
+  use the default ACL permissions.
 
 # v1.12.0
 
