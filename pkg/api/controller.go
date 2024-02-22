@@ -3219,7 +3219,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		Nodes: []permissions.Node{
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.ReadActionsAction,
+					Action:   permissions.ReadObjectAction,
 					Resource: permissions.ObjectArn(repository, srcPath),
 				},
 			},
