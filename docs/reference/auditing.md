@@ -129,7 +129,7 @@ aws sts get-caller-identity
 aws s3 ls arn:aws:s3:us-east-1:<treeverse-id>:accesspoint/lakefs-logs-<organization>/etl/v1/data/region=<region>/organization=org-<organization>/
 
 # get object locally via s3 access point alias 
-aws s3api get-object --bucket lakefs-logs-<generated>-s3alias --key lakefs-audit-logs-us-east-1-production/etl/v1/data/region=<region>/organization=org-<organization>/year=<YY>/month=<MM>/day=<DD>/hour=<HH>/<file>-snappy.parquet sample.parquet 
+aws s3api get-object --bucket lakefs-logs-<generated>-s3alias --key etl/v1/data/region=<region>/organization=org-<organization>/year=<YY>/month=<MM>/day=<DD>/hour=<HH>/<file>-snappy.parquet sample.parquet 
 ```
 
 ## Data layout
