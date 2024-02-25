@@ -55,6 +55,7 @@ var (
 	ErrMultipleParents              = errors.New("cannot have more than a single parent")
 	ErrParentOutOfRange             = errors.New("given commit does not have the given parent number")
 	ErrDereferenceCommitWithStaging = wrapError(ErrUserVisible, "reference to staging area with $ is not a commit")
+	ErrInvalidStagingToken          = errors.New("invalid staging token")
 	ErrDeleteDefaultBranch          = wrapError(ErrUserVisible, "cannot delete repository default branch")
 	ErrCommitMetaRangeDirtyBranch   = wrapError(ErrUserVisible, "cannot use source MetaRange on a branch with uncommitted changes")
 	ErrTooManyTries                 = errors.New("too many tries")

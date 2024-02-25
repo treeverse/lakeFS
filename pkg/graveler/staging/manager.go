@@ -100,6 +100,7 @@ func (m *Manager) Get(ctx context.Context, st graveler.StagingToken, key gravele
 func (m *Manager) Set(ctx context.Context, st graveler.StagingToken, key graveler.Key, value *graveler.Value, requireExists bool) error {
 	// Tombstone handling
 	if value == nil {
+		// TODO(Guys): This might be a good place to update the tombstoneSensor
 		value = new(graveler.Value)
 	} else if value.Identity == nil {
 		return graveler.ErrInvalidValue
