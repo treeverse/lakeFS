@@ -219,7 +219,6 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
     @Test
     public void testDelete_EmptyDirectoryExists() throws IOException {
         ObjectLocation dirObjLoc = new ObjectLocation("lakefs", "repo", "main", "delete/me");
-        String key = objectLocToS3ObjKey(dirObjLoc);
 
         mockStatObjectNotFound(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath());
         ObjectStats srcStats = makeObjectStats(dirObjLoc.getPath() + Constants.SEPARATOR);
@@ -230,6 +229,8 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
                     ImmutablePagination.builder().prefix("delete/me/").build(),
                     srcStats);
 
+        // Mock listing in createDirectoryMarkerIfNotExists to return listing
+        mockListing("repo", "main", ImmutablePagination.builder().prefix("delete/").build());
         mockDirectoryMarker(dirObjLoc.getParent());
         mockStatObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath(), srcStats);
         mockDeleteObject("repo", "main", "delete/me/");
@@ -299,6 +300,10 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         // recursive will always end successfully
         Path path = new Path("lakefs://repo/main/delete/sample");
 
+        // Mock listing in createDirectoryMarkerIfNotExists to return empty path
+        mockListing("repo", "main",
+                ImmutablePagination.builder().prefix("delete/").build());
+        
         mockDirectoryMarker(ObjectLocation.pathToObjectLocation(null, path.getParent()));
         // Must create a parent directory marker: it wasn't deleted, and now
         // perhaps is empty.
@@ -330,6 +335,9 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
             }
             mockDeleteObjects("repo", "main", pl);
         }
+        // Mock listing in createDirectoryMarkerIfNotExists to return empty path
+        mockListing("repo", "main",
+                ImmutablePagination.builder().prefix("delete/").build());
         // Mock parent directory marker creation at end of fs.delete to show
         // the directory marker exists.
         mockUploadObject("repo", "main", "delete/");
@@ -500,7 +508,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
      * file -> existing-directory-name: rename(src.txt, existing-dstdir) -> existing-dstdir/src.txt
      */
     @Test
-    public void testRename_existingFileToExistingDirName() throws ApiException, IOException {
+    public void testRename_existingFileToExistingDirName() throws IOException {
         Path src = new Path("lakefs://repo/main/existing-dir1/existing.src");
         ObjectStats srcStats = makeObjectStats("existing-dir1/existing.src");
         mockStatObject("repo", "main", "existing-dir1/existing.src", srcStats);
@@ -528,6 +536,10 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         mockGetBranch("repo", "main");
         mockDeleteObject("repo", "main", "existing-dir1/existing.src");
 
+        // Mock listing in createDirectoryMarkerIfNotExists to return empty path
+        mockListing("repo", "main",
+                ImmutablePagination.builder().prefix("existing-dir1/").build());
+        
         // Need a directory marker at the source because it's now empty!
         mockUploadObject("repo", "main", "existing-dir1/");
 

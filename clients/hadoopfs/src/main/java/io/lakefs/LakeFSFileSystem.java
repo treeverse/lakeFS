@@ -615,9 +615,17 @@ public class LakeFSFileSystem extends FileSystem {
         }
         try {
             ObjectsApi objects = lfsClient.getObjectsApi();
-            objects.uploadObject(objectLocation.getRepository(), objectLocation.getRef(), objectLocation.getPath())
-                .ifNoneMatch("*").content(emptyFile)
-                .execute();
+            ObjectStatsList osl = objects.listObjects(objectLocation.getRepository(), objectLocation.getRef())
+                    .userMetadata(false).presign(false).amount(5).prefix(objectLocation.getPath())
+                    .execute();
+            List<ObjectStats> l = osl.getResults();
+            if (l.isEmpty()) {
+                // No object with any name that starts with objectLocation - create a directory marker in place.
+                objects.uploadObject(objectLocation.getRepository(), objectLocation.getRef(), objectLocation.getPath())
+                        .ifNoneMatch("*").content(emptyFile)
+                        .execute();
+            }
+            
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_PRECONDITION_FAILED) {
                 LOG.trace("createDirectoryMarkerIfNotExists: Ignore {} response, marker exists");
