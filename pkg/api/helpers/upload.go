@@ -35,6 +35,9 @@ const DefaultUploadPartSize = MinUploadPartSize
 // DefaultUploadConcurrency is the default number of goroutines to spin up when uploading a multipart upload
 const DefaultUploadConcurrency = 5
 
+// DefaultBatchMultiPartsSize is the default size of batch which we will use to get pre-signed URL for
+const DefaultBatchMultiPartsSize = 10
+
 // ClientUpload uploads contents as a file via lakeFS
 func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*apigen.ObjectStats, error) {
 	pr, pw := io.Pipe()
@@ -167,54 +170,90 @@ type presignPartReader struct {
 }
 
 func (u *presignUpload) uploadMultipart(ctx context.Context) (*apigen.ObjectStats, error) {
-	mpu, err := u.initMultipart(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// prepare readers
-	parts := make([]presignPartReader, u.numParts)
-	rem := u.size
+	var (
+		donePresignedUrls []string
+		mpu               *apigen.PresignMultipartUpload
+		doneUploadParts   []apigen.UploadPart
+	)
+	u.initMultipart()
+	remainedParts := u.numParts
 	off := int64(0)
+	rem := u.size
+	// prepare readers
+	parts := make([]presignPartReader, remainedParts)
 	for i := range parts {
 		size := min(u.partSize, rem)
 		parts[i].Reader = io.NewSectionReader(u.readerAt, off, size) // use `readerAt`
-		parts[i].URL = (*mpu.PresignedUrls)[i]
 		rem -= size
 		off += size
 	}
 
-	// upload parts in parallel, fill uploadParts array with results
-	uploadParts := make([]apigen.UploadPart, u.numParts)
-	g, grpCtx := errgroup.WithContext(context.Background())
-	g.SetLimit(u.uploader.Concurrency)
-
-	for i := 0; i < u.numParts; i++ {
-		i := i // pinning
-		g.Go(func() error {
-			etag, err := u.uploadPart(grpCtx, parts[i].Reader, parts[i].URL)
-			if err != nil {
-				return fmt.Errorf("part %d %w", i+1, err)
-			}
-			uploadParts[i] = apigen.UploadPart{
-				PartNumber: i + 1,
-				Etag:       etag,
-			}
-			return nil
-		})
-	}
-
-	// wait for all parts to be uploaded
-	if err := g.Wait(); err != nil {
-		// abort upload using a new context to avoid context cancellation
-		abortErr := u.abortMultipart(context.Background(), mpu)
-		if abortErr != nil {
-			err = errors.Join(err, abortErr)
+	j := 0
+	for remainedParts > 0 {
+		partsToUpload := min(remainedParts, DefaultBatchMultiPartsSize)
+		remainedParts = remainedParts - partsToUpload
+		var err error
+		mpu, err = u.getMultipart(ctx, partsToUpload)
+		if err != nil {
+			return nil, err
 		}
-		return nil, err
-	}
 
-	return u.completeMultipart(ctx, mpu, uploadParts)
+		// upload parts in parallel, fill uploadParts array with results
+		uploadParts := make([]apigen.UploadPart, partsToUpload)
+		g, grpCtx := errgroup.WithContext(context.Background())
+		g.SetLimit(u.uploader.Concurrency)
+
+		for i := 0; i < partsToUpload; i, j = i+1, j+1 {
+			i := i // pinning
+			j := j // pinning
+			parts[j].URL = (*mpu.PresignedUrls)[i]
+			g.Go(func() error {
+				etag, err := u.uploadPart(grpCtx, parts[j].Reader, parts[j].URL)
+				if err != nil {
+					return fmt.Errorf("part %d %w", j, err)
+				}
+				uploadParts[i] = apigen.UploadPart{
+					PartNumber: j + 1,
+					Etag:       etag,
+				}
+				return nil
+			})
+		}
+		// wait for all parts to be uploaded
+		if err := g.Wait(); err != nil {
+			// abort upload using a new context to avoid context cancellation
+			abortErr := u.abortMultipart(context.Background(), mpu)
+			if abortErr != nil {
+				err = errors.Join(err, abortErr)
+			}
+			return nil, err
+		}
+		donePresignedUrls = append(donePresignedUrls, *mpu.PresignedUrls...)
+		doneUploadParts = append(doneUploadParts, uploadParts...)
+	}
+	mpu.PresignedUrls = &donePresignedUrls
+	return u.completeMultipart(ctx, mpu, doneUploadParts)
+}
+
+// adjustPartSize adjusts the part size based on the total size and maximum allowed parts.
+func (u *presignUpload) adjustPartSize() {
+	u.partSize = DefaultUploadPartSize
+	if u.size/u.partSize >= int64(MaxUploadParts) {
+		u.partSize = (u.size / int64(MaxUploadParts)) + 1
+	}
+}
+
+// calculateNumberOfParts calculates how many parts the upload will consist of.
+func (u *presignUpload) calculateNumberOfParts() {
+	u.numParts = int(u.size / u.partSize)
+	if u.size%u.partSize != 0 {
+		u.numParts++
+	}
+}
+
+func (u *presignUpload) initMultipart() {
+	u.adjustPartSize()
+	u.calculateNumberOfParts()
 }
 
 func (u *presignUpload) completeMultipart(ctx context.Context, mpu *apigen.PresignMultipartUpload, uploadParts []apigen.UploadPart) (*apigen.ObjectStats, error) {
@@ -260,24 +299,11 @@ func (u *presignUpload) abortMultipart(ctx context.Context, mpu *apigen.PresignM
 	return nil
 }
 
-func (u *presignUpload) initMultipart(ctx context.Context) (*apigen.PresignMultipartUpload, error) {
-	// adjust part size
-	u.partSize = DefaultUploadPartSize
-	if u.size/u.partSize >= int64(MaxUploadParts) {
-		// Add one to the part size to account for remainders
-		u.partSize = (u.size / int64(MaxUploadParts)) + 1
-	}
-
-	// calculate the number of parts
-	u.numParts = int(u.size / u.partSize)
-	if u.size%u.partSize != 0 {
-		u.numParts++
-	}
-
+func (u *presignUpload) getMultipart(ctx context.Context, numParts int) (*apigen.PresignMultipartUpload, error) {
 	// create presign multipart upload
 	resp, err := u.uploader.Client.CreatePresignMultipartUploadWithResponse(ctx, u.repoID, u.branchID, &apigen.CreatePresignMultipartUploadParams{
 		Path:  u.objectPath,
-		Parts: swag.Int(u.numParts),
+		Parts: swag.Int(numParts),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create presign multipart upload: %w", err)
@@ -292,8 +318,8 @@ func (u *presignUpload) initMultipart(ctx context.Context) (*apigen.PresignMulti
 	if mpu.PresignedUrls != nil {
 		presignedUrls = *mpu.PresignedUrls
 	}
-	if len(presignedUrls) != u.numParts {
-		return nil, fmt.Errorf("create presign multipart upload: %w, expected %d presigned urls, got %d", ErrRequestFailed, u.numParts, len(presignedUrls))
+	if len(presignedUrls) != numParts {
+		return nil, fmt.Errorf("create presign multipart upload: %w, expected %d presigned urls, got %d", ErrRequestFailed, numParts, len(presignedUrls))
 	}
 	return mpu, nil
 }
