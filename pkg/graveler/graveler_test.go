@@ -2386,12 +2386,56 @@ func TestGraveler_Revert(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			name: "valid revert",
+			name: "ref not found",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{},
 				RefManager: &testutil.RefsFake{
-					Branch:  &graveler.Branch{CommitID: "c1", StagingToken: "token"},
-					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}},
+					Branch: &graveler.Branch{CommitID: "c1"},
+					Commits: map[graveler.CommitID]*graveler.Commit{
+						"c1": {MetaRangeID: "mri1"},
+					},
+					Refs: map[graveler.Ref]*graveler.ResolvedRef{
+						"b1": {
+							Type:                   graveler.ReferenceTypeBranch,
+							ResolvedBranchModifier: 0,
+							BranchRecord: graveler.BranchRecord{
+								BranchID: "b1",
+								Branch: &graveler.Branch{
+									CommitID: "c1",
+								},
+							},
+						},
+						"c1": {
+							Type:                   graveler.ReferenceTypeCommit,
+							ResolvedBranchModifier: 0,
+							BranchRecord: graveler.BranchRecord{
+								Branch: &graveler.Branch{
+									CommitID: "c1",
+								},
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				ctx:          nil,
+				branchID:     "b1",
+				ref:          graveler.Ref("ref1"),
+				parentNumber: 0,
+				allowEmpty:   false,
+			},
+			expectedErr: graveler.ErrCommitNotFound,
+			expectedVal: "",
+		},
+		{
+			name: "fail on staging token",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{},
+				RefManager: &testutil.RefsFake{
+					Branch: &graveler.Branch{CommitID: "c1", StagingToken: "token"},
+					Commits: map[graveler.CommitID]*graveler.Commit{
+						"c1": {MetaRangeID: "mri1"},
+					},
 					Refs: map[graveler.Ref]*graveler.ResolvedRef{
 						"b1": {
 							Type:                   graveler.ReferenceTypeBranch,
@@ -2404,7 +2448,7 @@ func TestGraveler_Revert(t *testing.T) {
 								},
 							},
 						},
-						"ref1": {
+						"c1": {
 							Type:                   graveler.ReferenceTypeCommit,
 							ResolvedBranchModifier: 0,
 							BranchRecord: graveler.BranchRecord{
@@ -2420,16 +2464,69 @@ func TestGraveler_Revert(t *testing.T) {
 				ctx:          nil,
 				branchID:     "b1",
 				ref:          graveler.Ref("c1"),
-				parentNumber: 1,
+				parentNumber: 0,
 				allowEmpty:   false,
 			},
-			expectedErr: nil,
-			expectedVal: graveler.CommitID("c1"),
+			expectedErr: graveler.ErrDirtyBranch,
+			expectedVal: "",
+		},
+		{
+			name: "valid revert",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{},
+				RefManager: &testutil.RefsFake{
+					Branch: &graveler.Branch{CommitID: "c1", StagingToken: "token"},
+					Commits: map[graveler.CommitID]*graveler.Commit{
+						"c1": {MetaRangeID: "mri1"},
+						"c2": {MetaRangeID: "mri2", Parents: graveler.CommitParents{"c1"}},
+					},
+					Refs: map[graveler.Ref]*graveler.ResolvedRef{
+						"b1": {
+							Type:                   graveler.ReferenceTypeBranch,
+							ResolvedBranchModifier: 0,
+							BranchRecord: graveler.BranchRecord{
+								BranchID: "b1",
+								Branch: &graveler.Branch{
+									CommitID:     "c1",
+									StagingToken: "token",
+								},
+							},
+						},
+						"c2": {
+							Type:                   graveler.ReferenceTypeCommit,
+							ResolvedBranchModifier: 0,
+							BranchRecord: graveler.BranchRecord{
+								Branch: &graveler.Branch{
+									CommitID: "c2",
+								},
+							},
+						},
+						"c1": {
+							Type:                   graveler.ReferenceTypeCommit,
+							ResolvedBranchModifier: 0,
+							BranchRecord: graveler.BranchRecord{
+								Branch: &graveler.Branch{
+									CommitID: "c1",
+								},
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				ctx:          nil,
+				branchID:     "b1",
+				ref:          graveler.Ref("c2"),
+				parentNumber: 0,
+				allowEmpty:   false,
+			},
+			expectedErr: graveler.ErrCommitNotFound,
+			expectedVal: "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := newGraveler(t, tt.fields.CommittedManager, nil, tt.fields.RefManager, nil, testutil.NewProtectedBranchesManagerFake())
+			g := newGraveler(t, tt.fields.CommittedManager, &testutil.StagingFake{}, tt.fields.RefManager, nil, testutil.NewProtectedBranchesManagerFake())
 
 			got, err := g.Revert(context.Background(), repository, tt.args.branchID, tt.args.ref, tt.args.parentNumber, graveler.CommitParams{
 				AllowEmpty: tt.args.allowEmpty,
