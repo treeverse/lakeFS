@@ -56,7 +56,7 @@ Here are the available _lakectl local_ commands:
 | **[checkout](../reference/cli.md#lakectl-local-checkout)**                             | Syncs a local directory with the state of a lakeFS ref                                                                                              |                                                                                                                                                                                                                           |
 
 
-**Note:** The data size you work with locally should be reasonable for smooth operation on a local machine. 
+**Note:** The data size you work with locally should be reasonable for smooth operation on a local machine which is typically no larger than 15 GB.  
 {: .note }
 
 ## Example: Using _lakectl local_ in tandem with Git 
