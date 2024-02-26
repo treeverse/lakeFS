@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## v0.4.1
+
+:new: What's new:
+
+- Allow passing args/kwargs to lakefs.repository() (#7470)
+
+:bug: Bugs fixed:
+
+- Fix Client SSL configuration (#7516)
+
 ## v0.4.0
 
 :new: What's new:
