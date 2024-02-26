@@ -666,6 +666,7 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(key),
 		ContentType: aws.String(""),
+		Expires:     aws.Time(time.Now().Add(a.preSignedExpiry)),
 	}
 	if opts.StorageClass != nil {
 		input.StorageClass = types.StorageClass(*opts.StorageClass)
