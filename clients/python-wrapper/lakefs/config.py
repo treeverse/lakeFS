@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Optional
 
 import yaml
 from lakefs_sdk import Configuration
@@ -18,7 +19,7 @@ _LAKECTL_ACCESS_KEY_ID_ENV = "LAKECTL_CREDENTIALS_ACCESS_KEY_ID"
 _LAKECTL_SECRET_ACCESS_KEY_ENV = "LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY"
 
 
-class ClientConfig:
+class ClientConfig(Configuration):
     """
     Configuration class for the SDK Client.
     Instantiation will try to get authentication methods using the following chain:
@@ -45,12 +46,16 @@ class ClientConfig:
         access_key_id: str
         secret_access_key: str
 
-    configuration: Configuration
     server: Server
     credentials: Credentials
 
-    def __init__(self, **kwargs):
-        self.configuration = Configuration(**kwargs)
+    def __init__(self, verify_ssl: Optional[bool] = None, proxy: Optional[str] = None, **kwargs):
+        super().__init__(**kwargs)
+        if verify_ssl is not None:
+            self.verify_ssl = verify_ssl
+        if proxy is not None:
+            self.proxy = proxy
+
         if kwargs:
             return
 
@@ -71,10 +76,10 @@ class ClientConfig:
         key_env = os.getenv(_LAKECTL_ACCESS_KEY_ID_ENV)
         secret_env = os.getenv(_LAKECTL_SECRET_ACCESS_KEY_ENV)
 
-        self.configuration.host = endpoint_env if endpoint_env is not None else self.server.endpoint_url
-        self.configuration.username = key_env if key_env is not None else self.credentials.access_key_id
-        self.configuration.password = secret_env if secret_env is not None else self.credentials.secret_access_key
-        if len(self.configuration.username) > 0 and len(self.configuration.password) > 0:
+        self.host = endpoint_env if endpoint_env is not None else self.server.endpoint_url
+        self.username = key_env if key_env is not None else self.credentials.access_key_id
+        self.password = secret_env if secret_env is not None else self.credentials.secret_access_key
+        if len(self.username) > 0 and len(self.password) > 0:
             found = True
 
         # TODO: authentication via IAM Role
