@@ -1,4 +1,6 @@
+import ssl
 import time
+import pytest
 
 from tests.utests.common import expect_exception_context
 from lakefs.exceptions import NotFoundException, ConflictException, ObjectNotFoundException
@@ -123,3 +125,18 @@ def test_object_sanity(setup_repo):
     obj.delete()
     with expect_exception_context(ObjectNotFoundException):
         obj.stat()
+
+
+@pytest.mark.parametrize("ssl_enabled", (True, False, None))
+def test_ssl_configuration(ssl_enabled):
+    expected_ssl = ssl_enabled is not False
+    expected_cert_req = ssl.CERT_REQUIRED if expected_ssl else ssl.CERT_NONE
+    proxy = "http://someproxy:1234"
+    cert = "somecert"
+    clt = lakefs.client.Client(verify_ssl=ssl_enabled, proxy=proxy, ssl_ca_cert=cert)
+    assert clt.config.verify_ssl is expected_ssl
+    assert clt.config.proxy == proxy
+    assert clt.config.ssl_ca_cert == cert
+    assert clt.sdk_client._api.rest_client.pool_manager.connection_pool_kw.get("cert_reqs") is expected_cert_req
+    assert str(clt.sdk_client._api.rest_client.pool_manager.proxy) == proxy
+    assert clt.sdk_client._api.rest_client.pool_manager.connection_pool_kw.get("ca_certs") is cert

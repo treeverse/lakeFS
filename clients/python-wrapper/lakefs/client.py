@@ -70,7 +70,7 @@ class Client:
 
     def __init__(self, **kwargs):
         self._conf = ClientConfig(**kwargs)
-        self._client = LakeFSClient(self._conf.configuration, header_name='X-Lakefs-Client',
+        self._client = LakeFSClient(self._conf, header_name='X-Lakefs-Client',
                                     header_value='python-lakefs')
 
     @property
@@ -78,7 +78,7 @@ class Client:
         """
         Return the underlying lakefs_sdk configuration
         """
-        return self._conf.configuration
+        return self._conf
 
     @property
     def sdk_client(self):
