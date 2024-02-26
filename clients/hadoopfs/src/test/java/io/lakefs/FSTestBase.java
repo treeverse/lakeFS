@@ -56,11 +56,12 @@ import java.util.List;
 /**
  * Base for all LakeFSFilesystem tests.  Helps set common components up but
  * contains no tests of its own.
+ * The visibility of this class is public as it's being used by other libraries for testing purposes
  *
  * See e.g. "Base Test Class Testing Pattern: Why and How to use",
- * https://eliasnogueira.com/base-test-class-testing-pattern-why-and-how-to-use/
+ * <a href="https://eliasnogueira.com/base-test-class-testing-pattern-why-and-how-to-use/">...</a>
  */
-abstract class FSTestBase {
+public abstract class FSTestBase {
     static protected final Long UNUSED_FILE_SIZE = 1L;
     static protected final Long UNUSED_MTIME = 0L;
     static protected final String UNUSED_CHECKSUM = "unused";

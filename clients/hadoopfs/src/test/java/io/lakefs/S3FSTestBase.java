@@ -32,8 +32,9 @@ import java.util.List;
 /**
  * Base for all LakeFSFilesystem tests that need to access S3.  It adds a
  * MinIO container to FSTestBase, and configures to use it.
+ * The visibility of this class is public as it's being used by other libraries for testing purposes
  */
-abstract class S3FSTestBase extends FSTestBase {
+public abstract class S3FSTestBase extends FSTestBase {
     static private final Logger LOG = LoggerFactory.getLogger(S3FSTestBase.class);
 
     protected String s3Endpoint;
