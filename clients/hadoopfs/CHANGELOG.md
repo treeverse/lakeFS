@@ -2,6 +2,10 @@
 
 ## _Upcoming_
 
+## 0.2.3
+
+* Fix createDirectoryMarkerIfNotExists (#7510)
+
 ## 0.2.2
 
 * Update lakeFS SDK to 1.12.0
