@@ -31,6 +31,7 @@ See below for detailed instructions for using different technologies with lakeFS
         <td width="25%" align=center><a href="./aws_cli.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/cli.png" alt="cli logo"/><br/>AWS CLI</a></td>
         <td width="25%" align=center><a href="./cloudera.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/cloudera.png" alt="cloudera logo"/><br/>Cloudera</a></td>
         <td width="25%" align=center><a href="./delta.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/delta-lake.png" alt="delta lake logo"/><br/>Delta Lake</a></td>
+        <td width="25%" align=center><a href="./git.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/git.png" alt="git logo"/><br/>Git</a></td>
     </tr>
     <tr>
         <td width="25%" align=center><a href="./dremio.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/dremio.png" alt="dremio logo"/><br/>Dremio</a></td>
