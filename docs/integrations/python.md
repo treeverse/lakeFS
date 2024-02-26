@@ -59,7 +59,12 @@ clt = Client(
 For testing SSL endpoints you may wish to use a self-signed certificate.  If you do this and receive an `SSL: CERTIFICATE_VERIFY_FAILED` error message you might add the following configuration to your client:
 
 ```python
-clt.config.verify_ssl= False
+clt = Client(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    verify_ssl=False,
+)
 ```
 
 {: .warning }
@@ -70,8 +75,13 @@ production setting.
 Optionally, to enable communication via proxies, simply set the proxy configuration:
 
 ```python
-clt.config.ssl_ca_cert = <path to a file of concatenated CA certificates in PEM format> # Set this to customize the certificate file to verify the peer
-clt.config.proxy = <proxy server URL>
+clt = Client(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    ssl_ca_cert="<path to a file of concatenated CA certificates in PEM format>",  # Set this to customize the certificate file to verify the peer
+    proxy="<proxy server URL>",
+)
 ```
 
 ### Usage Examples
