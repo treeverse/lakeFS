@@ -562,8 +562,8 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeAzure)
-	info.ImportValidityRegex = `^https?://[a-z0-9_-]+\.(blob|adls)\.core\.windows\.net` // added adls for import hint validation in UI
-	info.ValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.windows\.net`
+	info.ImportValidityRegex = `^https?://[a-z0-9_-]+\.(blob|adls)\.core\.(windows\.net|chinacloudapi\.cn)` // added adls for import hint validation in UI
+	info.ValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.(windows\.net|chinacloudapi\.cn)`
 	info.Example = "https://mystorageaccount.blob.core.windows.net/mycontainer/"
 	if a.disablePreSigned {
 		info.PreSignSupport = false

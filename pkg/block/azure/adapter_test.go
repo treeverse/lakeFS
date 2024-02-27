@@ -51,6 +51,11 @@ func TestAdapterNamespace(t *testing.T) {
 			Success:   true,
 		},
 		{
+			Name:      "valid_https_china",
+			Namespace: "https://test.blob.core.chinacloudapi.cn/container1/repo1",
+			Success:   true,
+		},
+		{
 			Name:      "valid_http",
 			Namespace: "http://test.blob.core.windows.net/container1/repo1",
 			Success:   true,
@@ -73,6 +78,16 @@ func TestAdapterNamespace(t *testing.T) {
 		{
 			Name:      "invalid_string",
 			Namespace: "this is a bad string",
+			Success:   false,
+		},
+		{
+			Name:      "invalid_https_china_mix_1",
+			Namespace: "https://test.blob.core.chinacloudapi.net/container1/repo1",
+			Success:   false,
+		},
+		{
+			Name:      "invalid_https_china_mix_2",
+			Namespace: "https://test.blob.core.windows.cn/container1/repo1",
 			Success:   false,
 		},
 	}
