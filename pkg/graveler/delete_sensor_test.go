@@ -1,7 +1,10 @@
 package graveler_test
 
 import (
+	"context"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
@@ -10,7 +13,7 @@ func TestDeletedSensor(t *testing.T) {
 	type commandFlow struct {
 		repositoryID   graveler.RepositoryID
 		branchID       graveler.BranchID
-		stagingTokenID string
+		stagingTokenID graveler.StagingToken
 		count          int
 	}
 	tt := []struct {
@@ -96,19 +99,21 @@ func TestDeletedSensor(t *testing.T) {
 		},
 	}
 
+	ctx := context.Background()
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			triggredBranches := make(map[string]int)
-			cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID string) {
+			cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
 				triggredBranches[string(repositoryID)+"-"+string(branchID)]++
 			}
-			sensor := graveler.NewDeletedSensor(cb, tc.triggerAt)
+			sensor := graveler.NewDeleteSensor(ctx, tc.triggerAt, cb)
+			//defer sensor.Close()
 			for _, flow := range tc.commandFlow {
 				for i := 0; i < flow.count; i++ {
-					sensor.CountDelete(flow.repositoryID, flow.branchID, flow.stagingTokenID)
-
+					sensor.CountDelete(nil, flow.repositoryID, flow.branchID, flow.stagingTokenID)
 				}
 			}
+			sensor.Close()
 			if len(triggredBranches) != len(tc.expectedTriggeredBranchesCount) {
 				t.Errorf("expected %d branches to be triggered, got %d", len(tc.expectedTriggeredBranchesCount), len(triggredBranches))
 			}
@@ -120,4 +125,74 @@ func TestDeletedSensor(t *testing.T) {
 		})
 	}
 
+}
+
+func TestDeletedSensor_Close(t *testing.T) {
+	ctx := context.Background()
+	cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
+	}
+	sensor := graveler.NewDeleteSensor(ctx, 10, cb)
+	sensor.Close()
+}
+
+func TestDeletedSensor_CloseTwice(t *testing.T) {
+	ctx := context.Background()
+	cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
+	}
+	sensor := graveler.NewDeleteSensor(ctx, 10, cb)
+	sensor.Close()
+	sensor.Close()
+}
+
+func TestDeletedSensor_CountAfterClose(t *testing.T) {
+	ctx := context.Background()
+	cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
+	}
+	sensor := graveler.NewDeleteSensor(ctx, 10, cb)
+	sensor.Close()
+	sensor.CountDelete(nil, "repo1", "branch1", "uuid")
+}
+
+func TestDeletedSensor_CheckTimeOut(t *testing.T) {
+	ctx := context.Background()
+	gotToEndBeforeClose := false
+	cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
+		time.Sleep(400 * time.Millisecond)
+		gotToEndBeforeClose = true
+	}
+	sensor := graveler.NewDeleteSensor(ctx, 10, cb, graveler.WithGraceDuration(200*time.Millisecond))
+	for i := 0; i < 10; i++ {
+		sensor.CountDelete(nil, "repo1", "branch1", "uuid")
+	}
+	sensor.Close()
+	if gotToEndBeforeClose {
+		t.Errorf("expected not to get to end before close")
+	}
+}
+
+func TestDeletedSensor_CheckNonBlocking(t *testing.T) {
+	ctx := context.Background()
+	closerCall := sync.Once{}
+	closerCh := make(chan struct{})
+
+	cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
+		if inGrace {
+			return
+		}
+		time.Sleep(5 * time.Second)
+		closerCall.Do(func() {
+			close(closerCh)
+		})
+	}
+	sensor := graveler.NewDeleteSensor(ctx, 1, cb, graveler.WithCBBufferSize(1))
+
+	for i := 0; i < 11; i++ {
+		select {
+		case <-closerCh:
+			t.Fatal("should not block")
+			return
+		default:
+			sensor.CountDelete(ctx, "repo1", "branch1", "uuid")
+		}
+	}
 }
