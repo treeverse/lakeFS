@@ -22,7 +22,7 @@ lakeFS is a data versioning tool, functioning at the **object** level. This impl
 to whether the objects within a Delta table location represent a table, table metadata, or data. As per the Delta Lake [protocol](https://github.com/delta-io/delta/blob/master/PROTOCOL.md), 
 any modification to a table—whether it involves adding data or altering table metadata—results in the creation of a new object 
 in the table's [transaction log](https://www.databricks.com/blog/2019/08/21/diving-into-delta-lake-unpacking-the-transaction-log.html). 
-Typically residing under the _delta_log path, this new object has an incremented version compared to its predecessor.
+Typically, residing under the `_delta_log` path, relative to the root of the table's directory. This new object has an incremented version compared to its predecessor.
 
 Consequently, when making changes to a Delta table within the lakeFS environment, these changes are reflected as changes 
 to objects within the table location. For instance, inserting a record into a table named "my-table," which is partitioned 
