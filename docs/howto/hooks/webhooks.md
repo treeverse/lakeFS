@@ -35,7 +35,7 @@ lakeFS Actions supports secrets by using environment variables.
 The format `{% raw %}{{{% endraw %} ENV.SOME_ENV_VAR {% raw %}}}{% endraw %}` will be replaced with the value of `$SOME_ENV_VAR`
 during the execution of the action. If that environment variable doesn't exist in the lakeFS server environment, the action run will fail.
 
-For security purposes, any environment variable whose name begins with "LAKEFS" will be blocked. In this case, the variable will be evaluated to an empty string, effectively making it inaccessible.
+All environment variables need to begin with "LAKEFSACTIONS_". Otherwise, they will be blocked.
 Additionally, the `actions.env.enabled` configuration parameter can be set to `false` to block access to all environment variables.
 {: .note }
 
