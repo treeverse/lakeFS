@@ -14,6 +14,8 @@ Because lakeFS is format-agnostic, you can save data in Delta format within a la
 2. [CI/CD hooks][data-quality-gates] can validate Delta table contents, schema, or even referential integrity.
 3. lakeFS supports zero-copy branching for quick experimentation with full isolation.
 
+{% include toc.html %}
+
 ## Delta Lake Tables from the lakeFS Perspective
 
 lakeFS is a data versioning tool, functioning at the **object** level. This implies that, by default, lakeFS remains agnostic 
@@ -30,8 +32,6 @@ by 'category' and 'country,' is represented in lakeFS as added objects within th
 Similarly, when performing a metadata operation such as renaming a table column, new objects are appended to the table transaction log, 
 indicating the schema change.
 ![Record addition](../assets/img/delta-schema-change.png)
-
-{% include toc.html %}
 
 ## Using Delta Lake with lakeFS from Apache Spark
 
@@ -86,7 +86,10 @@ Here, 'main' is the name of the lakeFS branch from which the delta table was exp
 
 To enable Delta table exports to Unity catalog use the Unity [catalog integration guide](unity-catalog.md).
 
-## Limitations of Multi-Writer Support in lakeFS for Delta Lake Tables
+## Limitations
+
+### Multi-Writer Support in lakeFS for Delta Lake Tables
+{: .no_toc}
 
 lakeFS currently supports a single writer for Delta Lake tables. Attempting to utilize multiple writers for writing to a Delta table may result in two types of issues:
 1. Merge Conflicts: These conflicts arise when multiple writers modify a Delta table on different branches, and an attempt is made to merge these branches.
@@ -98,7 +101,7 @@ Note: lakeFS currently lacks its own implementation for a LogStore, and the defa
 {: .note }
 To address these limitations, consider following [best practices for implementing multi-writer support](#use-lakefs-branches-and-merges-to-support-multi-writers).
 
-## Best Practices for using Delta Lake with lakeFS
+## Best Practices
 
 ### Implementing Multi-Writer Support through lakeFS Branches and Merges
 
