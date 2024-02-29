@@ -1050,9 +1050,10 @@ type Graveler struct {
 	// available.
 	logger              logging.Logger
 	BranchUpdateBackOff backoff.BackOff
+	deleteSensor        *DeleteSensor
 }
 
-func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager) *Graveler {
+func NewGraveler(committedManager CommittedManager, stagingManager StagingManager, refManager RefManager, gcManager GarbageCollectionManager, protectedBranchesManager ProtectedBranchesManager, deleteSensor *DeleteSensor) *Graveler {
 	branchUpdateBackOff := backoff.NewExponentialBackOff()
 	branchUpdateBackOff.MaxInterval = BranchUpdateMaxInterval
 
@@ -1065,6 +1066,7 @@ func NewGraveler(committedManager CommittedManager, stagingManager StagingManage
 		protectedBranchesManager: protectedBranchesManager,
 		garbageCollectionManager: gcManager,
 		logger:                   logging.ContextUnavailable().WithField("service_name", "graveler_graveler"),
+		deleteSensor:             deleteSensor,
 	}
 }
 
@@ -1802,7 +1804,7 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "delete"})
 	err = g.safeBranchWrite(ctx, log, repository, branchID,
 		safeBranchWriteOptions{}, func(branch *Branch) error {
-			return g.deleteUnsafe(ctx, repository, branch, key, nil)
+			return g.deleteUnsafe(ctx, repository, branchID, branch, key, nil)
 		}, "delete")
 	return err
 }
@@ -1835,7 +1837,7 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{}, func(branch *Branch) error {
 		var cachedMetaRangeID MetaRangeID // used to cache the committed branch metarange ID
 		for _, key := range keys {
-			err := g.deleteUnsafe(ctx, repository, branch, key, &cachedMetaRangeID)
+			err := g.deleteUnsafe(ctx, repository, branchID, branch, key, &cachedMetaRangeID)
 			if err != nil {
 				m = multierror.Append(m, &DeleteError{Key: key, Err: err})
 			}
@@ -1845,9 +1847,9 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 	return err
 }
 
-func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecord, branch *Branch, key Key, cachedMetaRangeID *MetaRangeID) error {
+func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecord, branchID BranchID, branch *Branch, key Key, cachedMetaRangeID *MetaRangeID) error {
 	// First attempt to update on staging token
-	err := g.StagingManager.Set(ctx, branch.StagingToken, key, nil, true)
+	err := g.deleteAndNotify(ctx, repository.RepositoryID, branchID, branch, key, true)
 	if !errors.Is(err, kv.ErrPredicateFailed) {
 		return err
 	}
@@ -1867,7 +1869,7 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 	_, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, metaRangeID, key)
 	if err == nil {
 		// found in committed, set tombstone
-		return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, false)
+		return g.deleteAndNotify(ctx, repository.RepositoryID, branchID, branch, key, false)
 	}
 	if !errors.Is(err, ErrNotFound) {
 		// unknown error
@@ -1883,7 +1885,7 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 			return nil
 		}
 		// found in staging, set tombstone
-		return g.StagingManager.Set(ctx, branch.StagingToken, key, nil, false)
+		return g.deleteAndNotify(ctx, repository.RepositoryID, branchID, branch, key, false)
 	}
 	if !errors.Is(err, ErrNotFound) {
 		return fmt.Errorf("reading from staging: %w", err)
@@ -2382,10 +2384,21 @@ func (g *Graveler) Reset(ctx context.Context, repository *RepositoryRecord, bran
 	return nil
 }
 
+func (g *Graveler) deleteAndNotify(ctx context.Context, repositoryID RepositoryID, branchID BranchID, branch *Branch, key Key, requireExists bool) error {
+	err := g.StagingManager.Set(ctx, branch.StagingToken, key, nil, requireExists)
+	if err != nil {
+		return err
+	}
+	if g.deleteSensor != nil {
+		g.deleteSensor.CountDelete(ctx, repositoryID, branchID, branch.StagingToken)
+	}
+	return nil
+}
+
 // resetKey resets given key on branch
 // Since we cannot (will not) modify sealed tokens data, we overwrite changes done on entry on a new staging token, effectively reverting it
 // to the current state in the branch committed data. If entry is not committed return an error
-func (g *Graveler) resetKey(ctx context.Context, repository *RepositoryRecord, branch *Branch, key Key, stagedValue *Value, st StagingToken) error {
+func (g *Graveler) resetKey(ctx context.Context, repository *RepositoryRecord, branchID BranchID, branch *Branch, key Key, stagedValue *Value, st StagingToken) error {
 	isCommitted := true
 	committed, err := g.Get(ctx, repository, branch.CommitID.Ref(), key)
 	if err != nil {
@@ -2403,7 +2416,7 @@ func (g *Graveler) resetKey(ctx context.Context, repository *RepositoryRecord, b
 		// entry not committed and changed in staging area => override with tombstone
 		// If not committed and staging == tombstone => ignore
 	} else if !isCommitted && stagedValue != nil {
-		return g.StagingManager.Set(ctx, st, key, nil, false)
+		return g.deleteAndNotify(ctx, repository.RepositoryID, branchID, branch, key, false)
 	}
 
 	return nil
@@ -2439,7 +2452,7 @@ func (g *Graveler) ResetKey(ctx context.Context, repository *RepositoryRecord, b
 		return err
 	}
 
-	err = g.resetKey(ctx, repository, branch, key, staged, branch.StagingToken)
+	err = g.resetKey(ctx, repository, branchID, branch, key, staged, branch.StagingToken)
 	if err != nil {
 		if !errors.Is(err, ErrNotFound) { // Not found in staging => ignore
 			return err
@@ -2492,7 +2505,7 @@ func (g *Graveler) ResetPrefix(ctx context.Context, repository *RepositoryRecord
 				break
 			}
 			wg.Go(func() error {
-				err = g.resetKey(ctx, repository, branch, value.Key, value.Value, newStagingToken)
+				err = g.resetKey(ctx, repository, branchID, branch, value.Key, value.Value, newStagingToken)
 				if err != nil {
 					return err
 				}

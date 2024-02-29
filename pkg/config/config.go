@@ -287,6 +287,7 @@ type Config struct {
 	Graveler struct {
 		EnsureReadableRootNamespace bool `mapstructure:"ensure_readable_root_namespace"`
 		BatchDBIOTransactionMarkers bool `mapstructure:"batch_dbio_transaction_markers"`
+		TriggerDeleteSensorAt       int  `mapstructure:"trigger_delete_sensor_at"`
 		RepositoryCache             struct {
 			Size   int           `mapstructure:"size"`
 			Expiry time.Duration `mapstructure:"expiry"`
