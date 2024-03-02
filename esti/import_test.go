@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -12,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rs/xid"
+	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -30,7 +29,6 @@ const (
 	azureImportPath    = "https://esti.blob.core.windows.net/esti-system-testing-data/import-test-data/"
 	importTargetPrefix = "imported/new-prefix/"
 	importBranchBase   = "ingestion"
-	adlsTestImportPath = "import-test-cases"
 )
 
 var importFilesToCheck = []string{
@@ -72,29 +70,6 @@ func setupImportByBlockstoreType(t testing.TB) (string, string, int) {
 	return blockstoreType, importPath, expectedContentLength
 }
 
-func TestImport(t *testing.T) {
-	ctx, _, repoName := setupTest(t)
-	defer tearDownTest(repoName)
-	blockstoreType, importPath, expectedContentLength := setupImportByBlockstoreType(t)
-
-	t.Run("default", func(t *testing.T) {
-		importBranch := fmt.Sprintf("%s-%s", importBranchBase, "default")
-		testImport(t, ctx, repoName, importPath, importBranch)
-		verifyImportObjects(t, ctx, repoName, importTargetPrefix, importBranch, importFilesToCheck, expectedContentLength)
-	})
-
-	t.Run("parent", func(t *testing.T) {
-		importBranch := fmt.Sprintf("%s-%s", importBranchBase, "parent")
-		if blockstoreType == block.BlockstoreTypeLocal {
-			t.Skip("local always assumes import path is dir")
-		}
-		// import without the directory separator as suffix to include the parent directory
-		importPathParent := strings.TrimSuffix(importPath, "/")
-		testImport(t, ctx, repoName, importPathParent, importBranch)
-		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", importBranch, importFilesToCheck, expectedContentLength)
-	})
-}
-
 func setupLocalImportPath(t testing.TB) string {
 	const dirPerm = 0o755
 	importDir := filepath.Join(t.TempDir(), "import-test-data") + "/"
@@ -132,7 +107,7 @@ func verifyImportObjects(t testing.TB, ctx context.Context, repoName, prefix, im
 	for _, k := range importFilesToCheck {
 		// try to read some values from that ingested branch
 		objPath := prefix + k
-		objResp, err := client.GetObjectWithResponse(ctx, repoName, importBranch, &api.GetObjectParams{
+		objResp, err := client.GetObjectWithResponse(ctx, repoName, importBranch, &apigen.GetObjectParams{
 			Path: objPath,
 		})
 		require.NoError(t, err, "get object failed: %s", objPath)
@@ -142,16 +117,16 @@ func verifyImportObjects(t testing.TB, ctx context.Context, repoName, prefix, im
 		}
 	}
 	hasMore := true
-	after := api.PaginationAfter("")
+	after := apigen.PaginationAfter("")
 	count := 0
 	for hasMore {
-		listResp, err := client.ListObjectsWithResponse(ctx, repoName, importBranch, &api.ListObjectsParams{After: &after})
+		listResp, err := client.ListObjectsWithResponse(ctx, repoName, importBranch, &apigen.ListObjectsParams{After: &after})
 		require.NoError(t, err, "list objects failed")
 		require.NotNil(t, listResp.JSON200)
 
 		hasMore = listResp.JSON200.Pagination.HasMore
-		after = api.PaginationAfter(listResp.JSON200.Pagination.NextOffset)
-		prev := api.ObjectStats{}
+		after = apigen.PaginationAfter(listResp.JSON200.Pagination.NextOffset)
+		prev := apigen.ObjectStats{}
 		for _, obj := range listResp.JSON200.Results {
 			count++
 			require.True(t, strings.HasPrefix(obj.Path, prefix), "obj with wrong prefix imported", obj.Path, prefix)
@@ -162,142 +137,7 @@ func verifyImportObjects(t testing.TB, ctx context.Context, repoName, prefix, im
 	t.Log("Total objects imported:", count)
 }
 
-func ingestRange(t testing.TB, ctx context.Context, repoName, importPath string) ([]api.RangeMetadata, string) {
-	var (
-		after        string
-		token        *string
-		ranges       []api.RangeMetadata
-		stagingToken string
-	)
-	for {
-		resp, err := client.IngestRangeWithResponse(ctx, repoName, api.IngestRangeJSONRequestBody{
-			After:             after,
-			ContinuationToken: token,
-			FromSourceURI:     importPath,
-			Prepend:           importTargetPrefix,
-		})
-		require.NoError(t, err, "failed to ingest range")
-		require.Equal(t, http.StatusCreated, resp.StatusCode())
-		require.NotNil(t, resp.JSON201)
-		ranges = append(ranges, *resp.JSON201.Range)
-		stagingToken = api.StringValue(resp.JSON201.Pagination.StagingToken)
-		if !resp.JSON201.Pagination.HasMore {
-			break
-		}
-		after = resp.JSON201.Pagination.LastKey
-		token = resp.JSON201.Pagination.ContinuationToken
-	}
-	return ranges, stagingToken
-}
-
-func testImport(t testing.TB, ctx context.Context, repoName, importPath, importBranch string) {
-	ranges, stagingToken := ingestRange(t, ctx, repoName, importPath)
-
-	metarangeResp, err := client.CreateMetaRangeWithResponse(ctx, repoName, api.CreateMetaRangeJSONRequestBody{
-		Ranges: ranges,
-	})
-
-	require.NoError(t, err, "failed to create metarange")
-	require.Equal(t, http.StatusCreated, metarangeResp.StatusCode())
-	require.NotNil(t, metarangeResp.JSON201.Id, "failed to create metarange")
-
-	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
-		Name:   importBranch,
-		Source: "main",
-	})
-	require.NoError(t, err, "failed to create branch", importBranch)
-	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", importBranch)
-
-	commitResp, err := client.CommitWithResponse(ctx, repoName, importBranch, &api.CommitParams{
-		SourceMetarange: metarangeResp.JSON201.Id,
-	}, api.CommitJSONRequestBody{
-		Message: "created by import",
-		Metadata: &api.CommitCreation_Metadata{
-			AdditionalProperties: map[string]string{"created_by": "import"},
-		},
-	})
-	require.NoError(t, err, "failed to commit")
-	require.Equal(t, http.StatusCreated, commitResp.StatusCode(), "failed to commit")
-
-	if stagingToken != "" {
-		stageResp, err := client.UpdateBranchTokenWithResponse(ctx, repoName, importBranch, api.UpdateBranchTokenJSONRequestBody{StagingToken: stagingToken})
-		require.NoError(t, err, "failed to change branch token")
-		require.Equal(t, http.StatusNoContent, stageResp.StatusCode(), "failed to change branch token")
-
-		commitResp, err = client.CommitWithResponse(ctx, repoName, importBranch, &api.CommitParams{}, api.CommitJSONRequestBody{
-			Message: "created by import on skipped objects",
-			Metadata: &api.CommitCreation_Metadata{
-				AdditionalProperties: map[string]string{"created_by": "import"},
-			},
-		})
-		require.NoError(t, err, "failed to commit")
-		require.Equal(t, http.StatusCreated, commitResp.StatusCode(), "failed to commit")
-	}
-}
-
-func TestAzureDataLakeV2(t *testing.T) {
-	importPrefix := viper.GetString("adls_import_base_url")
-	if importPrefix == "" {
-		t.Skip("No Azure data lake storage path prefix was given")
-	}
-
-	ctx, _, repoName := setupTest(t)
-	defer tearDownTest(repoName)
-
-	tests := []struct {
-		name         string
-		prefix       string
-		filesToCheck []string
-	}{
-		{
-			name:         "import-test-data",
-			prefix:       "",
-			filesToCheck: importFilesToCheck,
-		},
-		{
-			name:         "empty-folders",
-			prefix:       adlsTestImportPath,
-			filesToCheck: []string{},
-		},
-		{
-			name:   "prefix-item-order",
-			prefix: adlsTestImportPath,
-			filesToCheck: []string{
-				"aaa",
-				"helloworld.csv",
-				"zero",
-				"helloworld/myfile.csv",
-			},
-		},
-		//{ // Use this configuration to run import on big dataset of ~620,000 objects
-		//	name:         "adls-big-import",
-		//	prefix:       "",
-		//	filesToCheck: []string{},
-		//},
-	}
-
-	for _, tt := range tests {
-		importBranch := fmt.Sprintf("%s-%s", importBranchBase, tt.name)
-		// each test is a folder under the prefix import
-		t.Run(tt.name, func(t *testing.T) {
-			importPath, err := url.JoinPath(importPrefix, tt.prefix, tt.name)
-			if err != nil {
-				t.Fatal("Import URL", err)
-			}
-			testImport(t, ctx, repoName, importPath, importBranch)
-			if len(tt.filesToCheck) == 0 {
-				resp, err := client.ListObjectsWithResponse(ctx, repoName, importBranch, &api.ListObjectsParams{})
-				require.NoError(t, err)
-				require.NotNil(t, resp.JSON200)
-				require.Empty(t, resp.JSON200.Results)
-			} else {
-				verifyImportObjects(t, ctx, repoName, filepath.Join(importTargetPrefix, tt.name)+"/", importBranch, tt.filesToCheck, 0)
-			}
-		})
-	}
-}
-
-func TestImportNew(t *testing.T) {
+func TestImport(t *testing.T) {
 	blockstoreType, importPath, expectedContentLength := setupImportByBlockstoreType(t)
 	metadata := map[string]string{"created_by": "import"}
 
@@ -305,22 +145,22 @@ func TestImportNew(t *testing.T) {
 		ctx, _, repoName := setupTest(t)
 		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "default")
-		paths := []api.ImportLocation{{
+		paths := []apigen.ImportLocation{{
 			Destination: importTargetPrefix,
 			Path:        importPath,
 			Type:        catalog.ImportPathTypePrefix,
 		}}
-		importID := testImportNew(t, ctx, repoName, branch, paths, nil)
+		importID := testImportNew(t, ctx, repoName, branch, paths, nil, false)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix, branch, importFilesToCheck, expectedContentLength)
 
 		// Verify we cannot cancel a completed import
-		cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, &api.ImportCancelParams{
+		cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, &apigen.ImportCancelParams{
 			Id: importID,
 		})
 		require.NoError(t, err)
 		require.Equal(t, http.StatusConflict, cancelResp.StatusCode())
 
-		statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, &api.ImportStatusParams{
+		statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, &apigen.ImportStatusParams{
 			Id: importID,
 		})
 		require.NoError(t, err)
@@ -337,7 +177,6 @@ func TestImportNew(t *testing.T) {
 		importMetadata, ok := repoMetadata[graveler.MetadataKeyLastImportTimeStamp]
 		require.True(t, ok)
 		require.Equal(t, strconv.FormatInt(statusResp.JSON200.Commit.CreationDate, 10), importMetadata)
-
 	})
 
 	t.Run("parent", func(t *testing.T) {
@@ -349,12 +188,12 @@ func TestImportNew(t *testing.T) {
 		}
 		// import without the directory separator as suffix to include the parent directory
 		importPathParent := strings.TrimSuffix(importPath, "/")
-		paths := []api.ImportLocation{{
+		paths := []apigen.ImportLocation{{
 			Destination: importTargetPrefix,
 			Path:        importPathParent,
 			Type:        catalog.ImportPathTypePrefix,
 		}}
-		_ = testImportNew(t, ctx, repoName, branch, paths, &metadata)
+		_ = testImportNew(t, ctx, repoName, branch, paths, metadata, false)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", branch, importFilesToCheck, expectedContentLength)
 	})
 
@@ -362,22 +201,22 @@ func TestImportNew(t *testing.T) {
 		ctx, _, repoName := setupTest(t)
 		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "several-paths")
-		var paths []api.ImportLocation
+		var paths []apigen.ImportLocation
 		for i := 1; i < 8; i++ {
 			prefix := fmt.Sprintf("prefix-%d/", i)
-			paths = append(paths, api.ImportLocation{
+			paths = append(paths, apigen.ImportLocation{
 				Destination: importTargetPrefix + prefix,
 				Path:        importPath + prefix,
 				Type:        catalog.ImportPathTypePrefix,
 			})
 		}
-		paths = append(paths, api.ImportLocation{
+		paths = append(paths, apigen.ImportLocation{
 			Destination: importTargetPrefix + "nested",
 			Path:        importPath + "nested/",
 			Type:        catalog.ImportPathTypePrefix,
 		})
 
-		_ = testImportNew(t, ctx, repoName, branch, paths, &metadata)
+		_ = testImportNew(t, ctx, repoName, branch, paths, metadata, false)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix, branch, importFilesToCheck, expectedContentLength)
 	})
 
@@ -385,10 +224,10 @@ func TestImportNew(t *testing.T) {
 		ctx, _, repoName := setupTest(t)
 		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "prefixes-and-objects")
-		var paths []api.ImportLocation
+		var paths []apigen.ImportLocation
 		for i := 1; i < 8; i++ {
 			prefix := fmt.Sprintf("prefix-%d/", i)
-			paths = append(paths, api.ImportLocation{
+			paths = append(paths, apigen.ImportLocation{
 				Destination: importTargetPrefix + prefix,
 				Path:        importPath + prefix,
 				Type:        catalog.ImportPathTypePrefix,
@@ -396,68 +235,68 @@ func TestImportNew(t *testing.T) {
 		}
 		for _, p := range importFilesToCheck {
 			if strings.HasPrefix(p, "nested") {
-				paths = append(paths, api.ImportLocation{
+				paths = append(paths, apigen.ImportLocation{
 					Destination: importTargetPrefix + p,
 					Path:        importPath + p,
 					Type:        catalog.ImportPathTypeObject,
 				})
 			}
 		}
-		_ = testImportNew(t, ctx, repoName, branch, paths, nil)
+		_ = testImportNew(t, ctx, repoName, branch, paths, nil, false)
 		verifyImportObjects(t, ctx, repoName, importTargetPrefix, branch, importFilesToCheck, expectedContentLength)
 	})
 }
 
-func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch string, paths []api.ImportLocation, metadata *map[string]string) string {
-	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
+func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch string, paths []apigen.ImportLocation, metadata map[string]string, force bool) string {
+	createResp, err := client.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{
 		Name:   importBranch,
 		Source: "main",
+		Force:  swag.Bool(force),
 	})
 	require.NoError(t, err, "failed to create branch", importBranch)
 	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", importBranch)
 
-	body := api.ImportStartJSONRequestBody{
-		Commit: api.CommitCreation{
+	body := apigen.ImportStartJSONRequestBody{
+		Commit: apigen.CommitCreation{
 			Message: "created by import",
 		},
 		Paths: paths,
+		Force: swag.Bool(force),
 	}
-	if metadata != nil {
-		body.Commit.Metadata = &api.CommitCreation_Metadata{AdditionalProperties: *metadata}
+	if len(metadata) > 0 {
+		body.Commit.Metadata = &apigen.CommitCreation_Metadata{AdditionalProperties: metadata}
 	}
 
 	importResp, err := client.ImportStartWithResponse(ctx, repoName, importBranch, body)
-	require.NotNil(t, importResp.JSON202, "failed to start import", err)
+	require.NoError(t, err, "failed to start import", importBranch)
+	require.NotNil(t, importResp.JSON202, "failed to start import", importResp.Status())
 	require.NotNil(t, importResp.JSON202.Id, "missing import ID")
 
 	var (
-		statusResp *api.ImportStatusResponse
+		statusResp *apigen.ImportStatusResponse
 		updateTime time.Time
 	)
 	importID := importResp.JSON202.Id
-	ticker := time.NewTicker(5 * time.Second)
+
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			t.Fatalf("context canceled")
-		case <-ticker.C:
-			statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, &api.ImportStatusParams{
-				Id: importID,
-			})
-			require.NoError(t, err)
-			require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
-			status := statusResp.JSON200
-			require.Nil(t, status.Error)
-			require.NotEqual(t, updateTime, status.UpdateTime)
-			updateTime = status.UpdateTime
-			t.Log("Import progress:", *status.IngestedObjects, importID)
-		}
-		if statusResp.JSON200.Completed {
-			t.Log("Import completed:", importID)
-			return importID
+	for range ticker.C {
+		statusResp, err = client.ImportStatusWithResponse(ctx, repoName, importBranch, &apigen.ImportStatusParams{
+			Id: importID,
+		})
+		require.NoError(t, err, "failed to get import status", importID)
+		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
+		status := statusResp.JSON200
+		require.Nil(t, status.Error, "import failed", err)
+		require.NotEqual(t, updateTime, status.UpdateTime)
+		updateTime = status.UpdateTime
+		t.Log("Import progress:", *status.IngestedObjects, importID)
+		if status.Completed {
+			break
 		}
 	}
+	t.Log("Import completed:", importID)
+	return importID
 }
 
 func TestImportCancel(t *testing.T) {
@@ -465,19 +304,19 @@ func TestImportCancel(t *testing.T) {
 	ctx, _, repoName := setupTest(t)
 	defer tearDownTest(repoName)
 	branch := fmt.Sprintf("%s-%s", importBranchBase, "canceled")
-	createResp, err := client.CreateBranchWithResponse(ctx, repoName, api.CreateBranchJSONRequestBody{
+	createResp, err := client.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{
 		Name:   branch,
 		Source: "main",
 	})
 	require.NoError(t, err, "failed to create branch", branch)
 	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", branch)
 
-	importResp, err := client.ImportStartWithResponse(ctx, repoName, branch, api.ImportStartJSONRequestBody{
-		Commit: api.CommitCreation{
+	importResp, err := client.ImportStartWithResponse(ctx, repoName, branch, apigen.ImportStartJSONRequestBody{
+		Commit: apigen.CommitCreation{
 			Message:  "created by import",
-			Metadata: &api.CommitCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
+			Metadata: &apigen.CommitCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
 		},
-		Paths: []api.ImportLocation{{
+		Paths: []apigen.ImportLocation{{
 			Destination: importTargetPrefix,
 			Path:        importPath,
 			Type:        catalog.ImportPathTypePrefix,
@@ -488,7 +327,7 @@ func TestImportCancel(t *testing.T) {
 
 	// Wait 1 second and cancel request
 	time.Sleep(1 * time.Second)
-	cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, &api.ImportCancelParams{
+	cancelResp, err := client.ImportCancelWithResponse(ctx, repoName, branch, &apigen.ImportCancelParams{
 		Id: importResp.JSON202.Id,
 	})
 	require.NoError(t, err)
@@ -498,7 +337,7 @@ func TestImportCancel(t *testing.T) {
 	var updateTime time.Time
 	timer := time.NewTimer(0)
 	for range timer.C {
-		statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, &api.ImportStatusParams{
+		statusResp, err := client.ImportStatusWithResponse(ctx, repoName, branch, &apigen.ImportStatusParams{
 			Id: importResp.JSON202.Id,
 		})
 		require.NoError(t, err)
@@ -512,70 +351,5 @@ func TestImportCancel(t *testing.T) {
 			break
 		}
 		timer.Reset(3 * time.Second) // Server updates status every 1 second - unless operation was canceled successfully
-	}
-}
-
-// #####################################################################################################################
-// #																																																										#
-// #																							BENCHMARKS																														#
-// #																																																										#
-// #####################################################################################################################
-func BenchmarkIngest_Azure(b *testing.B) {
-	requireBlockstoreType(b, block.BlockstoreTypeAzure)
-	ctx, _, repoName := setupTest(b)
-	defer tearDownTest(repoName)
-
-	b.Run("alds_gen2_ingest", func(b *testing.B) {
-		importPrefix := viper.GetString("adls_import_base_url")
-		if importPrefix == "" {
-			b.Skip("No Azure data lake storage path prefix was given")
-		}
-		importPath, err := url.JoinPath(importPrefix, "import-test-data/")
-		if err != nil {
-			b.Fatal("Import URL", err)
-		}
-		benchmarkIngest(b, ctx, repoName, importPath)
-	})
-
-	b.Run("blob_storage_ingest", func(b *testing.B) {
-		benchmarkIngest(b, ctx, repoName, azureImportPath)
-	})
-}
-
-func benchmarkIngest(b *testing.B, ctx context.Context, repoName, importPath string) {
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		ingestRange(b, ctx, repoName, importPath)
-	}
-}
-
-func BenchmarkImport_Azure(b *testing.B) {
-	requireBlockstoreType(b, block.BlockstoreTypeAzure)
-	ctx, _, repoName := setupTest(b)
-	defer tearDownTest(repoName)
-
-	b.Run("alds_gen2_import", func(b *testing.B) {
-		importPrefix := viper.GetString("adls_import_base_url")
-		if importPrefix == "" {
-			b.Skip("No Azure data lake storage path prefix was given")
-		}
-		importBranch := fmt.Sprintf("%s-%s", importBranchBase, makeRepositoryName(b.Name()))
-		importPath, err := url.JoinPath(importPrefix, "import-test-data/")
-		if err != nil {
-			b.Fatal("Import URL", err)
-		}
-		benchmarkImport(b, ctx, repoName, importPath, importBranch)
-	})
-
-	b.Run("blob_storage_import", func(b *testing.B) {
-		importBranch := fmt.Sprintf("%s-%s", importBranchBase, makeRepositoryName(b.Name()))
-		benchmarkImport(b, ctx, repoName, azureImportPath, importBranch)
-	})
-}
-
-func benchmarkImport(b *testing.B, ctx context.Context, repoName, importPath, importBranch string) {
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		testImport(b, ctx, repoName, importPath, fmt.Sprintf("%s-%s", importBranch, xid.New().String()))
 	}
 }

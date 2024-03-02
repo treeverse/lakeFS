@@ -20,7 +20,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/params"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"golang.org/x/exp/slices"
 )
 
@@ -35,7 +34,6 @@ type Adapter struct {
 
 var (
 	ErrPathNotWritable       = errors.New("path provided is not writable")
-	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
 	ErrInvalidUploadIDFormat = errors.New("invalid upload id format")
 	ErrBadPath               = errors.New("bad path traversal blocked")
 )
@@ -241,13 +239,13 @@ func (l *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 	}
 	r, err := l.Get(ctx, sourceObj, 0)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("copy get: %w", err)
 	}
 	md5Read := block.NewHashingReader(r, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
 	err = l.Put(ctx, block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("copy put: %w", err)
 	}
 	etag := hex.EncodeToString(md5Read.Md5.Sum(nil))
 	return &block.UploadPartResponse{
@@ -261,13 +259,13 @@ func (l *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 	}
 	r, err := l.GetRange(ctx, sourceObj, startPosition, endPosition)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("copy range get: %w", err)
 	}
 	md5Read := block.NewHashingReader(r, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
 	err = l.Put(ctx, block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("copy range put: %w", err)
 	}
 	etag := hex.EncodeToString(md5Read.Md5.Sum(nil))
 	return &block.UploadPartResponse{
@@ -520,10 +518,6 @@ func (l *Adapter) getPartFiles(uploadID string, obj block.ObjectPointer) ([]stri
 	return names, nil
 }
 
-func (l *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
-	return nil, ErrInventoryNotSupported
-}
-
 func (l *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeLocal
 }
@@ -586,4 +580,8 @@ func isValidUploadID(uploadID string) error {
 		return fmt.Errorf("%w: %s", ErrInvalidUploadIDFormat, err)
 	}
 	return nil
+}
+
+func (l *Adapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPointer, _ string, _ int) (string, error) {
+	return "", block.ErrOperationNotSupported
 }

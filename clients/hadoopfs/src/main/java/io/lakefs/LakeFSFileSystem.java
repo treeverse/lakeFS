@@ -38,19 +38,19 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.lakefs.Constants.AccessMode;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.BranchesApi;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.RepositoriesApi;
-import io.lakefs.clients.api.model.ObjectCopyCreation;
-import io.lakefs.clients.api.model.ObjectErrorList;
-import io.lakefs.clients.api.model.ObjectStageCreation;
-import io.lakefs.clients.api.model.ObjectStats;
-import io.lakefs.clients.api.model.ObjectStatsList;
-import io.lakefs.clients.api.model.Pagination;
-import io.lakefs.clients.api.model.PathList;
-import io.lakefs.clients.api.model.Repository;
-import io.lakefs.clients.api.model.StorageConfig;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.BranchesApi;
+import io.lakefs.clients.sdk.ObjectsApi;
+import io.lakefs.clients.sdk.RepositoriesApi;
+import io.lakefs.clients.sdk.model.ObjectCopyCreation;
+import io.lakefs.clients.sdk.model.ObjectErrorList;
+import io.lakefs.clients.sdk.model.ObjectStageCreation;
+import io.lakefs.clients.sdk.model.ObjectStats;
+import io.lakefs.clients.sdk.model.ObjectStatsList;
+import io.lakefs.clients.sdk.model.Pagination;
+import io.lakefs.clients.sdk.model.PathList;
+import io.lakefs.clients.sdk.model.Repository;
+import io.lakefs.clients.sdk.model.StorageConfig;
 import io.lakefs.storage.CreateOutputStreamParams;
 import io.lakefs.storage.PhysicalAddressTranslator;
 import io.lakefs.storage.PresignedStorageAccessStrategy;
@@ -136,7 +136,7 @@ public class LakeFSFileSystem extends FileSystem {
         } else if (accessMode == AccessMode.SIMPLE) {
             // setup address translator for simple storage access strategy
             try {
-                StorageConfig storageConfig = lfsClient.getConfigApi().getStorageConfig();
+                StorageConfig storageConfig = lfsClient.getInternalApi().getStorageConfig().execute();
                 physicalAddressTranslator = new PhysicalAddressTranslator(storageConfig.getBlockstoreType(),
                         storageConfig.getBlockstoreNamespaceValidityRegex());
             } catch (ApiException e) {
@@ -159,7 +159,7 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectLocation objectLoc = pathToObjectLocation(path);
         RepositoriesApi repositoriesApi = lfsClient.getRepositoriesApi();
         try {
-            Repository repository = repositoriesApi.getRepository(objectLoc.getRepository());
+            Repository repository = repositoriesApi.getRepository(objectLoc.getRepository()).execute();
             String storageNamespace = repository.getStorageNamespace();
             URI storageURI = URI.create(storageNamespace);
             Path physicalPath = physicalAddressTranslator.translate(storageNamespace);
@@ -421,6 +421,7 @@ public class LakeFSFileSystem extends FileSystem {
             LOG.debug("renameFile: dst {} exists and is a {}", dst, dstFileStatus.isDirectory() ? "directory" : "file");
             if (dstFileStatus.isDirectory()) {
                 dst = buildObjPathOnExistingDestinationDir(srcStatus.getPath(), dst);
+                LOG.debug("renameFile: use {} to create dst {}", srcStatus.getPath(), dst);
             }
         } catch (FileNotFoundException e) {
             LOG.debug("renameFile: dst does not exist, renaming src {} to a file called dst {}",
@@ -432,12 +433,6 @@ public class LakeFSFileSystem extends FileSystem {
         }
         return renameObject(srcStatus, dst);
     }
-
-    /**
-     * fallbackToStage determines whether the old StageObject API should be use,
-     * turn true when CopyObject API is not supported.
-     */
-    private boolean fallbackToStage = false;
 
     /**
      * Non-atomic rename operation.
@@ -455,42 +450,19 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectsApi objects = lfsClient.getObjectsApi();
         //TODO (Tals): Can we add metadata? we currently don't have an API to get the metadata of an object.
 
-        if (!fallbackToStage) {
-            try {
-                ObjectCopyCreation creationReq = new ObjectCopyCreation()
-                        .srcRef(srcObjectLoc.getRef())
-                        .srcPath(srcObjectLoc.getPath());
-                objects.copyObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
-                        creationReq);
-            } catch (ApiException e) {
-                if (e.getCode() != HttpStatus.SC_INTERNAL_SERVER_ERROR ||
-                        e.getResponseBody() == null ||
-                        !e.getResponseBody().contains("invalid API endpoint")) {
-                    throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst + ", failed to copy object", e);
-                }
-
-                LOG.warn("Copy API doesn't exist, falling back to stageObject");
-                fallbackToStage = true;
-            }
+        try {
+            ObjectCopyCreation creationReq = new ObjectCopyCreation()
+                    .srcRef(srcObjectLoc.getRef())
+                    .srcPath(srcObjectLoc.getPath());
+            objects.copyObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
+                               creationReq).execute();
+        } catch (ApiException e) {
+            throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst +
+                    ", call to copyObject failed", e);
         }
-
-        if (fallbackToStage) {
-            ObjectStageCreation stageCreationReq = new ObjectStageCreation()
-                    .checksum(srcStatus.getChecksum())
-                    .sizeBytes(srcStatus.getLen())
-                    .physicalAddress(srcStatus.getPhysicalAddress());
-            try {
-                objects.stageObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
-                        stageCreationReq);
-            } catch (ApiException e) {
-                throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst +
-                        ", failed to stage object", e);
-            }
-        }
-
         // delete src path
         try {
-            objects.deleteObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(), srcObjectLoc.getPath());
+            objects.deleteObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(), srcObjectLoc.getPath()).execute();
         } catch (ApiException e) {
             throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst +
                     ", failed to delete src", e);
@@ -569,7 +541,7 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectsApi objectsApi = clientFactory.newClient().getObjectsApi();
         return new BulkDeleter(deleteExecutor, new BulkDeleter.Callback() {
                 public ObjectErrorList apply(String repository, String branch, PathList pathList) throws ApiException {
-                    return objectsApi.deleteObjects(repository, branch, pathList);
+                    return objectsApi.deleteObjects(repository, branch, pathList).execute();
                 }
             }, repository, branch, conf.getInt(LAKEFS_DELETE_BULK_SIZE, 0));
     }
@@ -577,7 +549,7 @@ public class LakeFSFileSystem extends FileSystem {
     private boolean deleteHelper(ObjectLocation loc) throws IOException {
         try {
             ObjectsApi objectsApi = lfsClient.getObjectsApi();
-            objectsApi.deleteObject(loc.getRepository(), loc.getRef(), loc.getPath());
+            objectsApi.deleteObject(loc.getRepository(), loc.getRef(), loc.getPath()).execute();
         } catch (ApiException e) {
             // This condition mimics s3a behaviour in
             // https://github.com/apache/hadoop/blob/874c055e73293e0f707719ebca1819979fb211d8/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L619
@@ -643,7 +615,17 @@ public class LakeFSFileSystem extends FileSystem {
         }
         try {
             ObjectsApi objects = lfsClient.getObjectsApi();
-            objects.uploadObject(objectLocation.getRepository(), objectLocation.getRef(), objectLocation.getPath(), null, "*", emptyFile);
+            ObjectStatsList osl = objects.listObjects(objectLocation.getRepository(), objectLocation.getRef())
+                    .userMetadata(false).presign(false).amount(5).prefix(objectLocation.getPath())
+                    .execute();
+            List<ObjectStats> l = osl.getResults();
+            if (l.isEmpty()) {
+                // No object with any name that starts with objectLocation - create a directory marker in place.
+                objects.uploadObject(objectLocation.getRepository(), objectLocation.getRef(), objectLocation.getPath())
+                        .ifNoneMatch("*").content(emptyFile)
+                        .execute();
+            }
+            
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_PRECONDITION_FAILED) {
                 LOG.trace("createDirectoryMarkerIfNotExists: Ignore {} response, marker exists");
@@ -659,7 +641,7 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectLocation objectLoc = pathToObjectLocation(path);
         ObjectsApi objectsApi = lfsClient.getObjectsApi();
         try {
-            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), false, false);
+            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath()).userMetadata(false).presign(false).execute();
             LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc, objectStat);
             return new FileStatus[]{fileStatus};
         } catch (ApiException e) {
@@ -679,8 +661,11 @@ public class LakeFSFileSystem extends FileSystem {
         }
         // nothing to list - check if it is an empty directory marker
         try {
-            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(),
-                    objectLoc.getPath() + SEPARATOR, false, false);
+            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(),
+                                                           objectLoc.getRef(),
+                                                           objectLoc.getPath() + SEPARATOR)
+                .userMetadata(false).presign(false)
+                .execute();
             LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc, objectStat);
             if (fileStatus.isEmptyDirectory()) {
                 return new FileStatus[0];
@@ -750,7 +735,7 @@ public class LakeFSFileSystem extends FileSystem {
             ObjectLocation objectLoc = pathToObjectLocation(path).toDirectory();
             OutputStream out = storageAccessStrategy.createDataOutputStream(objectLoc, null);
             out.close();
-        } catch (io.lakefs.clients.api.ApiException e) {
+        } catch (io.lakefs.clients.sdk.ApiException e) {
             throw new IOException("createDirectoryMarker: " + e.getResponseBody(), e);
         }
     }
@@ -775,8 +760,13 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectsApi objectsApi = lfsClient.getObjectsApi();
         // get object status on path
         try {
-            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), false, false);
-            return convertObjectStatsToFileStatus(objectLoc, objectStat);
+            ObjectStats os = objectsApi.statObject(objectLoc.getRepository(),
+                                                   objectLoc.getRef(),
+                                                   objectLoc.getPath())
+                .userMetadata(false)
+                .presign(false)
+                .execute();
+            return convertObjectStatsToFileStatus(objectLoc, os);
         } catch (ApiException e) {
             if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
                 throw new IOException("statObject", e);
@@ -784,7 +774,11 @@ public class LakeFSFileSystem extends FileSystem {
         }
         // get object status on path + "/" for directory marker directory
         try {
-            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath() + SEPARATOR, false, false);
+            ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(),
+                                                           objectLoc.getRef(),
+                                                           objectLoc.getPath() + SEPARATOR)
+                .userMetadata(false).presign(false)
+                .execute();
             return convertObjectStatsToFileStatus(objectLoc, objectStat);
         } catch (ApiException e) {
             if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
@@ -872,7 +866,9 @@ public class LakeFSFileSystem extends FileSystem {
             // TODO(ariels,itaiad200): configure the "5" to the right value.
             // "Right" being: the number of objects that costs about the same to list as 1.
             // 5 is a good guess for now since that in DynamoDB backends listing 5 objects cost the same as 1.
-            ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef(), false, false, "", 5, "", objectLoc.getPath());
+            ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef())
+                .userMetadata(false).presign(false).amount(5).prefix(objectLoc.getPath())
+                .execute();
             List<ObjectStats> l = osl.getResults();
             if (l.isEmpty()) {
                 // No object with any name that starts with objectLoc.
@@ -914,7 +910,9 @@ public class LakeFSFileSystem extends FileSystem {
         // just check if path+"/" or something below it exist.
 
         try {
-            ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef(), false, false, "", 1, "", directoryPath);
+            ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef())
+                .userMetadata(false).presign(false).amount(1).prefix(directoryPath)
+                .execute();
             List<ObjectStats> l = osl.getResults();
             return ! l.isEmpty();
         } catch (ApiException e) {
@@ -926,7 +924,7 @@ public class LakeFSFileSystem extends FileSystem {
     private boolean isBranchExists(String repository, String branch) throws IOException {
         try {
             BranchesApi branches = lfsClient.getBranchesApi();
-            branches.getBranch(repository, branch);
+            branches.getBranch(repository, branch).execute();
             return true;
         } catch (ApiException e) {
             if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
@@ -993,7 +991,9 @@ public class LakeFSFileSystem extends FileSystem {
             do {
                 try {
                     ObjectsApi objectsApi = lfsClient.getObjectsApi();
-                    ObjectStatsList resp = objectsApi.listObjects(objectLocation.getRepository(), objectLocation.getRef(), false, false, nextOffset, amount, delimiter, objectLocation.getPath());
+                    ObjectStatsList resp = objectsApi.listObjects(objectLocation.getRepository(), objectLocation.getRef())
+                        .userMetadata(false).presign(false).after(nextOffset).amount(amount).delimiter(delimiter).prefix(objectLocation.getPath())
+                        .execute();
                     chunk = resp.getResults();
                     pos = 0;
                     Pagination pagination = resp.getPagination();

@@ -1,14 +1,14 @@
 package cmd
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var tagDeleteCmd = &cobra.Command{
-	Use:               "delete <tag uri>",
+	Use:               "delete <tag URI>",
 	Short:             "Delete a tag from a repository",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
@@ -18,11 +18,10 @@ var tagDeleteCmd = &cobra.Command{
 			Die("Delete tag aborted", 1)
 		}
 		client := getClient()
-		u := MustParseRefURI("tag", args[0])
-		fmt.Println("Tag ref:", u)
+		u := MustParseRefURI("tag URI", args[0])
 
 		ctx := cmd.Context()
-		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref)
+		resp, err := client.DeleteTagWithResponse(ctx, u.Repository, u.Ref, &apigen.DeleteTagParams{})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }

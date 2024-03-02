@@ -12,6 +12,7 @@ import (
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 )
 
 type Webhook struct {
@@ -35,7 +36,7 @@ var (
 	errWebhookWrongFormat   = errors.New("webhook wrong format")
 )
 
-func NewWebhook(h ActionHook, action *Action, cfg Config, e *http.Server) (Hook, error) {
+func NewWebhook(h ActionHook, action *Action, cfg Config, e *http.Server, _ string, _ stats.Collector) (Hook, error) {
 	url, ok := h.Properties[webhookURLPropertyKey]
 	if !ok {
 		return nil, fmt.Errorf("missing url: %w", errWebhookWrongFormat)
@@ -45,12 +46,13 @@ func NewWebhook(h ActionHook, action *Action, cfg Config, e *http.Server) (Hook,
 		return nil, fmt.Errorf("webhook url must be string: %w", errWebhookWrongFormat)
 	}
 
-	queryParams, err := extractQueryParams(h.Properties)
+	envGetter := NewEnvironmentVariableGetter(cfg.Env.Enabled, cfg.Env.Prefix)
+	queryParams, err := extractQueryParams(h.Properties, envGetter)
 	if err != nil {
 		return nil, fmt.Errorf("extracting query params: %w", err)
 	}
 
-	headers, err := extractHeaders(h.Properties)
+	headers, err := extractHeaders(h.Properties, envGetter)
 	if err != nil {
 		return nil, fmt.Errorf("extracting headers: %w", err)
 	}
@@ -170,7 +172,7 @@ func doHTTPRequestResponseWithLog(ctx context.Context, req *http.Request, respJS
 	return resp.StatusCode, nil
 }
 
-func extractQueryParams(props map[string]interface{}) (map[string][]SecureString, error) {
+func extractQueryParams(props map[string]interface{}, envGetter EnvGetter) (map[string][]SecureString, error) {
 	params, ok := props[queryParamsPropertyKey]
 	if !ok {
 		return nil, nil
@@ -189,8 +191,7 @@ func extractQueryParams(props map[string]interface{}) (map[string][]SecureString
 				if !ok {
 					return nil, fmt.Errorf("query params array should contains only strings: %w", errWebhookWrongFormat)
 				}
-
-				avs, err := NewSecureString(av)
+				avs, err := NewSecureString(av, envGetter)
 				if err != nil {
 					return nil, fmt.Errorf("reading query param: %w", err)
 				}
@@ -203,7 +204,7 @@ func extractQueryParams(props map[string]interface{}) (map[string][]SecureString
 			return nil, fmt.Errorf("query params single value should be of type string: %w", errWebhookWrongFormat)
 		}
 
-		avs, err := NewSecureString(av)
+		avs, err := NewSecureString(av, envGetter)
 		if err != nil {
 			return nil, fmt.Errorf("reading query param: %w", err)
 		}
@@ -213,7 +214,7 @@ func extractQueryParams(props map[string]interface{}) (map[string][]SecureString
 	return res, nil
 }
 
-func extractHeaders(props map[string]interface{}) (map[string]SecureString, error) {
+func extractHeaders(props map[string]interface{}, envGetter EnvGetter) (map[string]SecureString, error) {
 	params, ok := props[HeadersPropertyKey]
 	if !ok {
 		return map[string]SecureString{}, nil
@@ -231,7 +232,7 @@ func extractHeaders(props map[string]interface{}) (map[string]SecureString, erro
 			return nil, fmt.Errorf("headers array should contains only strings: %w", errWebhookWrongFormat)
 		}
 
-		vss, err := NewSecureString(vs)
+		vss, err := NewSecureString(vs, envGetter)
 		if err != nil {
 			return nil, fmt.Errorf("reading header: %w", err)
 		}

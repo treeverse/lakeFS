@@ -24,6 +24,7 @@ components:
       in: query
       name: prefix
       description: return items prefixed with this value
+      allowEmptyValue: true
       schema:
         type: string
 
@@ -31,6 +32,7 @@ components:
       in: query
       name: after
       description: return items after this value
+      allowEmptyValue: true
       schema:
         type: string
 
@@ -100,6 +102,14 @@ components:
           minimum: 0
           description: Maximal number of entries per page
 
+    VersionConfig:
+      type: object
+      required:
+        - version
+      properties:
+        version:
+          type: string
+
     Error:
       type: object
       required:
@@ -112,18 +122,14 @@ components:
     User:
       type: object
       required:
-        - id
         - name
         - username
         - creation_date
         - encryptedPassword
       properties:
-        id:
-          type: integer
-          format: int64
         username:
           type: string
-          description: a unique identifier for the user. In password-based authentication, this is the email.
+          description: a unique identifier for the user
         creation_date:
           type: integer
           format: int64
@@ -229,6 +235,8 @@ components:
         - creation_date
         - name
       properties:
+        id:
+          type: string
         name:
           type: string
         creation_date:
@@ -345,11 +353,13 @@ paths:
         - $ref: "#/components/parameters/PaginationAmount"
         - in: query
           name: id
+          allowEmptyValue: true
           schema:
             type: integer
             format: int64
         - in: query
           name: email
+          allowEmptyValue: true
           schema:
             type: string
         - in: query
@@ -1080,3 +1090,17 @@ paths:
       responses:
         204:
           description: NoContent
+
+  /config/version:
+    get:
+      tags:
+        - config
+      operationId: getVersion
+      description: get server version
+      responses:
+        200:
+          description: external authorization API server version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionConfig"

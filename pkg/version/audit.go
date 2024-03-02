@@ -47,14 +47,14 @@ type AuditChecker struct {
 	periodicResponse atomic.Value
 	wg               sync.WaitGroup
 	cancel           context.CancelFunc
-	latestReleases   VersionSource
+	latestReleases   Source
 }
 
-func NewDefaultAuditChecker(checkURL, installationID string, latestReleases VersionSource) *AuditChecker {
+func NewDefaultAuditChecker(checkURL, installationID string, latestReleases Source) *AuditChecker {
 	return NewAuditChecker(checkURL, Version, installationID, latestReleases)
 }
 
-func NewAuditChecker(checkURL, version, installationID string, latestReleases VersionSource) *AuditChecker {
+func NewAuditChecker(checkURL, version, installationID string, latestReleases Source) *AuditChecker {
 	ac := &AuditChecker{
 		CheckURL: checkURL,
 		Client: http.Client{

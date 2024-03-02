@@ -23,7 +23,7 @@ This reference uses `.` to denote the nesting of values.
 ## Reference
 
 * `logging.format` `(one of ["json", "text"] : "text")` - Format to output log message in
-* `logging.level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Logging level to output
+* `logging.level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "INFO")` - Logging level to output
 * `logging.audit_log_level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Audit logs level to output.
 
   **Note:** In case you configure this field to be lower than the main logger level, you won't be able to get the audit logs
@@ -33,6 +33,8 @@ This reference uses `.` to denote the nesting of values.
 * `logging.files_keep` `(int : 0)` - Number of log files to keep, default is all.
 * `actions.enabled` `(bool : true)` - Setting this to false will block hooks from being executed.
 * `actions.lua.net_http_enabled` `(bool : false)` - Setting this to true will load the `net/http` package.
+* `actions.env.enabled` `(bool : true)` - Environment variables accessible by hooks, disabled values evaluated to empty strings
+* `actions.env.prefix` `(string : "LAKEFSACTION_")` - Access to environment variables is restricted to those with the prefix. When environment access is enabled and no prefix is provided, all variables are accessible.
 
   **Note:** Deprecated - See `database` section
   {: .note }
@@ -65,6 +67,8 @@ This reference uses `.` to denote the nesting of values.
     + `database.cosmosdb.endpoint` `(string : "")` - CosmosDB account endpoint, e.g. `https://<account>.documents.azure.com/`.
     + `database.cosmosdb.database` `(string : "")` - CosmosDB database name.
     + `database.cosmosdb.container` `(string : "")` - CosmosDB container name.
+    + `database.cosmosdb.throughput` `(int32 : )` - CosmosDB container's RU/s. If not set - the default CosmosDB container throughput is used. 
+    + `database.cosmosdb.autoscale` `(bool : false)` - If set, CosmosDB container throughput is autoscaled (See CosmosDB docs for minimum throughput requirement). Otherwise, uses "Manual" mode ([Docs](https://learn.microsoft.com/en-us/azure/cosmos-db/provision-throughput-autoscale)).
   + `database.local` - Configuration section when using `database.type="local"`
     + `database.local.path` `(string : "~/lakefs/metadata")` - Local path on the filesystem to store embedded KV metadata, like branches and uncommitted entries
     + `database.local.sync_writes` `(bool: true)` - Ensure each write is written to the disk. Disable to increase performance
@@ -83,6 +87,8 @@ This reference uses `.` to denote the nesting of values.
 * `auth.cookie_domain` `(string : "")` - [Domain attribute](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define_where_cookies_are_sent) to set the access_token cookie on (the default is an empty string which defaults to the same host that sets the cookie)
 * `auth.api.endpoint` `(string: https://external.service/api/v1)` - URL to external Authorization Service described at [authorization.yml](https://github.com/treeverse/lakeFS/blob/master/api/authorization.yml);
 * `auth.api.token` `(string: eyJhbGciOiJIUzI1NiIsInR5...)` - API token used to authenticate requests to api endpoint
+* `auth.api.health_check_timeout` `(time duration : "20s")` - Timeout duration for external auth API health check
+* `auth.api.skip_health_check` `(bool : false)` - Skip external auth API health check
 
    **Note:** It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
    {: .note }
@@ -129,18 +135,20 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.credentials.session_token` `(string : )` - If specified, will be used as a static session token
 * `blockstore.s3.endpoint` `(string : )` - If specified, custom endpoint for the AWS S3 API (https://s3_compatible_service_endpoint:port)
 * `blockstore.s3.force_path_style` `(bool : false)` - When true, use path-style S3 URLs (https://<host>/<bucket> instead of https://<bucket>.<host>)
-* `blockstore.s3.streaming_chunk_size` `(int : 1048576)` - Object chunk size to buffer before streaming to blockstore (use a lower value for less reliable networks). Minimum is 8192.
-* `blockstore.s3.streaming_chunk_timeout` `(time duration : "60s")` - Per object chunk timeout for blockstore streaming operations (use a larger value for less reliable networks).
 * `blockstore.s3.discover_bucket_region` `(bool : true)` - (Can be turned off if the underlying S3 bucket doesn't support the GetBucketRegion API).
-* `blockstore.s3.skip_verify_certificate_test_only` `(boolean : false)` - Skip certificate verification while connecting to the storage endpoint. Should be used only for testing.
+* `blockstore.s3.skip_verify_certificate_test_only` `(bool : false)` - Skip certificate verification while connecting to the storage endpoint. Should be used only for testing.
 * `blockstore.s3.server_side_encryption` `(string : )` - Server side encryption format used (Example on AWS using SSE-KMS while passing "aws:kms")
 * `blockstore.s3.server_side_encryption_kms_key_id` `(string : )` - Server side encryption KMS key ID
 * `blockstore.s3.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
 * `blockstore.s3.disable_pre_signed` `(bool : false)` - Disable use of pre-signed URL.
 * `blockstore.s3.disable_pre_signed_ui` `(bool : true)` - Disable use of pre-signed URL in the UI.
+* `blockstore.s3.disable_pre_signed_multipart` `(bool : )` - Disable use of pre-signed multipart upload **experimental**, enabled on s3 block adapter with presign support.
+* `blockstore.s3.client_log_request` `(bool : false)` - Set SDK logging bit to log requests
+* `blockstore.s3.client_log_retries` `(bool : false)` - Set SDK logging bit to log retries
 * `graveler.reposiory_cache.size` `(int : 1000)` - How many items to store in the repository cache.
 * `graveler.reposiory_cache.ttl` `(time duration : "5s")` - How long to store an item in the repository cache.
 * `graveler.reposiory_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.
+* `graveler.ensure_readable_root_namespace` `(bool: true)` - When creating a new repository use this to verify that lakeFS has access to the root of the underlying storage namespace. Set `false` only if lakeFS should not have access (i.e pre-sign mode only).
 * `graveler.commit_cache.size` `(int : 50000)` - How many items to store in the commit cache.
 * `graveler.commit_cache.ttl` `(time duration : "10m")` - How long to store an item in the commit cache.
 * `graveler.commit_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.
@@ -190,6 +198,7 @@ This reference uses `.` to denote the nesting of values.
   local development, if using [virtual-host addressing](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html).
 * `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be in, it should match the region configuration used in AWS SDK clients
 * `gateways.s3.fallback_url` `(string)` - If specified, requests with a non-existing repository will be forwarded to this URL. This can be useful for using lakeFS side-by-side with S3, with the URL pointing at an [S3Proxy](https://github.com/gaul/s3proxy) instance.
+* `gateways.s3.verify_unsupported` `(bool : true)` - The S3 gateway errors on unsupported requests, but when disabled, defers to target-based handlers.
 * `stats.enabled` `(bool : true)` - Whether to periodically collect anonymous usage statistics
 * `stats.flush_interval` `(duration : 30s)` - Interval used to post anonymous statistics collected
 * `stats.flush_size` `(int : 100)` - A size (in records) of anonymous statistics collected in which we post
@@ -197,13 +206,11 @@ This reference uses `.` to denote the nesting of values.
 * `ui.enabled` `(bool: true)` - Whether to server the embedded UI from the binary
 * `ugc.prepare_max_file_size` `(int: 125829120)` - Uncommitted garbage collection prepare request, limit the produced file maximum size
 * `ugc.prepare_interval` `(duraction: 1m)` - Uncommitted garbage collection prepare request, limit produce time to interval
-* `diff.delta.plugin` `(string : )` - Name of the Delta Lake diff plugin.
-* `plugins.default_path` `(string : ~/.lakefs/plugins)` - Absolute path to the root of lakeFS's plugins location.
-* `plugins.properties.<plugin name>.path` `(string : )` - Absolute path to the location of `<plugin name>`'s binary location.
-* `plugins.properties.<plugin name>.version` `(uint : )` - Version of the `<plugin name>` plugin. The version must be > 0.
 * `installation.user_name` `(string : )` - When specified, an initial admin user will be created when the server is first run. Works only when `database.type` is set to local. Requires `installation.access_key_id` and `installation.secret_access_key`. 
 * `installation.access_key_id` `(string : )` - Admin's initial access key id (used once in the initial setup process)
 * `installation.secret_access_key` `(string : )` - Admin's initial secret access key (used once in the initial setup process)
+* `usage_report.enabled` `(bool : false)` - Store API and Gateway usage reports into key-value store.
+* `usage_report.flush_interval` `(duration : 5m)` - Sets interval for flushing in-memory usage data to key-value store.
 
 {: .ref-list }
 
@@ -235,7 +242,7 @@ logging:
 
 auth:
   encrypt:
-    secret_key: "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc09e90b6641"
+    secret_key: "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc"
 
 blockstore:
   type: local

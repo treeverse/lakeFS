@@ -26,14 +26,14 @@ var (
 
 var (
 	reTimestamp       = regexp.MustCompile(`timestamp: \d+\n`)
-	reTime            = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [-+]\d{4} \w{1,3}`)
+	reTime            = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [-+]\d{4} \w{1,4}`)
 	reCommitID        = regexp.MustCompile(`[\d|a-f]{64}`)
 	reShortCommitID   = regexp.MustCompile(`[\d|a-f]{16}`)
-	reChecksum        = regexp.MustCompile(`[\d|a-f]{32}`)
+	reChecksum        = regexp.MustCompile(`([\d|a-f]{32})|(0x[0-9A-F]{15})`)
 	reEndpoint        = regexp.MustCompile(`https?://\w+(:\d+)?/api/v\d+/`)
 	rePhysicalAddress = regexp.MustCompile(`/data/[0-9a-v]{20}/[0-9a-v]{20}`)
 	reVariable        = regexp.MustCompile(`\$\{([^${}]+)}`)
-	rePreSignURL      = regexp.MustCompile(`https://\S+data\S+`)
+	rePreSignURL      = regexp.MustCompile(`https://\S+\?\S+`)
 )
 
 func lakectlLocation() string {
@@ -130,12 +130,12 @@ func sanitize(output string, vars map[string]string) string {
 	if _, ok := vars["DATE"]; !ok {
 		s = normalizeProgramTimestamp(s)
 	}
-	s = normalizeRandomObjectKey(s, vars["STORAGE"])
 	s = normalizeCommitID(s)
 	s = normalizeChecksum(s)
 	s = normalizeShortCommitID(s)
 	s = normalizeEndpoint(s, vars["LAKEFS_ENDPOINT"])
-	s = normalizePreSignURL(s) // should be after storage and endpoint to enable non pre-sign url on azure
+	s = normalizePreSignURL(s)                       // should be after storage and endpoint to enable non pre-sign url on azure
+	s = normalizeRandomObjectKey(s, vars["STORAGE"]) // should be after pre-sign on azure in order not to break the pre-sign url
 	return s
 }
 
@@ -148,7 +148,7 @@ func RunCmdAndVerifyContainsText(t *testing.T, cmd string, isTerminal bool, expe
 	t.Helper()
 	s := sanitize(expectedRaw, vars)
 	expected, err := expandVariables(s, vars)
-	require.NoError(t, err, "Variable embed failed - %s", err)
+	require.NoErrorf(t, err, "Variable embed failed - %s", err)
 	sanitizedResult := runCmd(t, cmd, false, isTerminal, vars)
 	require.Contains(t, sanitizedResult, expected)
 }
@@ -179,9 +179,9 @@ func updateGoldenFile(t *testing.T, cmd string, isTerminal bool, goldenFile stri
 	result, _ := runShellCommand(t, cmd, isTerminal)
 	s := sanitize(string(result), vars)
 	s, err := embedVariables(s, vars)
-	require.NoError(t, err, "Variable embed failed - %s", err)
+	require.NoError(t, err, "Variable embed failed")
 	err = os.WriteFile(goldenFile, []byte(s), 0o600) //nolint: gomnd
-	require.NoError(t, err, "Failed to write file %s", goldenFile)
+	require.NoErrorf(t, err, "Failed to write file %s", goldenFile)
 }
 
 func RunCmdAndVerifySuccess(t *testing.T, cmd string, isTerminal bool, expected string, vars map[string]string) {
@@ -198,9 +198,9 @@ func runCmd(t *testing.T, cmd string, expectFail bool, isTerminal bool, vars map
 	t.Helper()
 	result, err := runShellCommand(t, cmd, isTerminal)
 	if expectFail {
-		require.Error(t, err, "Expected error in '%s' command did not occur. Output: %s", cmd, string(result))
+		require.Errorf(t, err, "Expected error in '%s' command did not occur. Output: %s", cmd, string(result))
 	} else {
-		require.NoError(t, err, "Failed to run '%s' command - %s", cmd, string(result))
+		require.NoErrorf(t, err, "Failed to run '%s' command - %s", cmd, string(result))
 	}
 	return sanitize(string(result), vars)
 }
@@ -213,7 +213,7 @@ func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal
 	}
 	sanitizedResult := runCmd(t, cmd, expectFail, isTerminal, vars)
 
-	require.Equal(t, expanded, sanitizedResult, "Unexpected output for %s command", cmd)
+	require.Equalf(t, expanded, sanitizedResult, "Unexpected output for %s command", cmd)
 }
 
 func normalizeProgramTimestamp(output string) string {

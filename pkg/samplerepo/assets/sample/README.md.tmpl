@@ -166,7 +166,7 @@ To start with, we'll load the lakes data into a DuckDB table so that we can mani
 
 ```sql
 CREATE OR REPLACE TABLE lakes AS 
-    SELECT * FROM READ_PARQUET('lakefs:/{{.RepoName}}denmark-lakes/lakes.parquet');
+    SELECT * FROM READ_PARQUET('lakefs://{{.RepoName}}/denmark-lakes/lakes.parquet');
 ```
 
 You'll see a row count of 100,000 to confirm that the DuckDB table has been created. 
@@ -442,7 +442,7 @@ Back in the object page and the DuckDB query we can see that the original file i
 <a name="actions-and-hooks"></a>
 # Actions and Hooks in lakeFS 🪝
 
-When we interact with lakeFS it can be useful to have certain checks performed at stages along the way. Let's see how [actions in lakeFS](/hooks/) can be of benefit here. 
+When we interact with lakeFS it can be useful to have certain checks performed at stages along the way. Let's see how [actions in lakeFS](https://docs.lakefs.io/howto/hooks/) can be of benefit here.
 
 We're going to enforce a rule that when a commit is made to any branch that begins with `etl`: 
 
@@ -649,7 +649,7 @@ lakeFS' community is important to us. Our **guiding principles** are.
 * We learn and grow together
 * Compassion and respect in every interaction
 
-We'd love for you to join [our **Slack group**](https://lakefs.io/slack) and come and introduce yourself on `#say-hello`. Or just lurk and soak up the vibes 😎
+We'd love for you to join [our **Slack group**](https://lakefs.io/slack) and come and introduce yourself on `#announcements-and-more`. Or just lurk and soak up the vibes 😎
 
 If you're interested in getting involved in lakeFS' development head over our [the **GitHub repo**](https://github.com/treeverse/lakeFS) to look at the code and peruse the issues. The comprehensive [contributing](https://docs.lakefs.io/contributing.html) document should have you covered on next steps but if you've any questions the `#dev` channel on [Slack](https://lakefs.io/slack) will be delighted to help.
 

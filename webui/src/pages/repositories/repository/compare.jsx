@@ -1,14 +1,13 @@
-import React, {useCallback, useState} from "react";
-
-import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
+import React, {useCallback, useEffect, useState, useRef} from "react";
+import { useOutletContext } from "react-router-dom";
 import {ActionGroup, ActionsBar, AlertError, Loading, RefreshButton} from "../../../lib/components/controls";
 import {useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {ArrowLeftIcon, ArrowSwitchIcon, GitMergeIcon} from "@primer/octicons-react";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
-import {refs, statistics} from "../../../lib/api";
+import {refs} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
-import {ChangesTreeContainer, defaultGetMoreChanges} from "../../../lib/components/repository/changes";
+import {ChangesTreeContainer, defaultGetMoreChanges, MetadataFields} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {appendMoreResults} from "./changes";
@@ -19,13 +18,12 @@ import Modal from "react-bootstrap/Modal";
 import {RepoError} from "./error";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
-import {ComingSoonModal} from "../../../lib/components/modals";
+import Form from "react-bootstrap/Form";
 
 const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
-    const [isTableMerge, setIsTableMerge] = useState(false);
 
     const router = useRouter();
     const handleSwitchRefs = useCallback(
@@ -116,7 +114,7 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                                         repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
                                         getMore={defaultGetMoreChanges(repo, reference.id, compareReference.id, delimiter)}
                                         loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}
-                                        setIsTableMerge={setIsTableMerge} changesTreeMessage={changesTreeMessage}/>
+                                        changesTreeMessage={changesTreeMessage}/>
     }
 
     const emptyDiff = (!loading && !error && !!results && results.length === 0);
@@ -163,11 +161,10 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
                     {(compareReference.type === RefTypeBranch && reference.type === RefTypeBranch) &&
                         <MergeButton
                             repo={repo}
-                            disabled={((compareReference.id === reference.id) || emptyDiff)}
+                            disabled={((compareReference.id === reference.id) || emptyDiff || repo?.read_only)}
                             source={compareReference.id}
                             dest={reference.id}
                             onDone={refresh}
-                            isTableMerge={isTableMerge}
                         />
                     }
                 </ActionGroup>
@@ -177,7 +174,9 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
     );
 };
 
-const MergeButton = ({repo, onDone, source, dest, disabled = false, isTableMerge}) => {
+const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
+    const textRef = useRef(null);
+    const [metadataFields, setMetadataFields] = useState([])
     const initialMerge = {
         merging: false,
         show: false,
@@ -186,25 +185,8 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false, isTableMerge
     }
     const [mergeState, setMergeState] = useState(initialMerge);
 
-    const [showDeltaMergeComingSoonModal, setShowDeltaMergeComingSoonModal] = useState(false);
-    const sendDeltaMergeStats = async () => {
-        const deltaMergeStatEvents = [
-            {
-                "class": "experimental-feature",
-                "name": "delta-merge",
-                "count": 1,
-            }
-        ];
-        await statistics.postStatsEvents(deltaMergeStatEvents);
-    }
-
-    const onClickMerge = useCallback((isTableMerge) => {
-        if (isTableMerge) {
-            sendDeltaMergeStats()
-            setShowDeltaMergeComingSoonModal(!showDeltaMergeComingSoonModal)
-        } else {
-            setMergeState({merging: mergeState.merging, err: mergeState.err, show: true, strategy: mergeState.strategy})}
-        }
+    const onClickMerge = useCallback(() => {
+        setMergeState({merging: mergeState.merging, err: mergeState.err, show: true, strategy: mergeState.strategy})}
     );
 
     const onStrategyChange = (event) => {
@@ -213,16 +195,21 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false, isTableMerge
     const hide = () => {
         if (mergeState.merging) return;
         setMergeState(initialMerge);
+        setMetadataFields([])
     }
 
     const onSubmit = async () => {
+        const message = textRef.current.value;
+        const metadata = {};
+        metadataFields.forEach(pair => metadata[pair.key] = pair.value)
+
         let strategy = mergeState.strategy;
         if (strategy === "none") {
             strategy = "";
         }
         setMergeState({merging: true, show: mergeState.show, err: mergeState.err, strategy: mergeState.strategy})
         try {
-            await refs.merge(repo.id, source, dest, strategy);
+            await refs.merge(repo.id, source, dest, strategy, message, metadata);
             setMergeState({merging: mergeState.merging, show: mergeState.show, err: null, strategy: mergeState.strategy})
             onDone();
             hide();
@@ -238,6 +225,13 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false, isTableMerge
                     <Modal.Title>Merge branch {source} into {dest}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
+                    <Form className="mb-2">
+                        <Form.Group controlId="message" className="mb-3">
+                            <Form.Control type="text" placeholder="Commit Message (Optional)" ref={textRef}/>
+                        </Form.Group>
+
+                        <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields}/>
+                    </Form>
                     <FormControl sx={{ m: 1, minWidth: 120 }}>
                         <InputLabel id="demo-select-small">Strategy</InputLabel>
                         <Select
@@ -267,12 +261,8 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false, isTableMerge
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <ComingSoonModal display={showDeltaMergeComingSoonModal}
-                             onCancel={() => setShowDeltaMergeComingSoonModal(false)}>
-                <div>lakeFS Delta Lake tables merge is under development</div>
-            </ComingSoonModal>
-            <Button variant="success" disabled={disabled} onClick={() => onClickMerge(isTableMerge)}>
-                <GitMergeIcon/> {isTableMerge ? "Merge Tables" : "Merge"}
+            <Button variant="success" disabled={disabled} onClick={() => onClickMerge()}>
+                <GitMergeIcon/> {"Merge"}
             </Button>
         </>
     );
@@ -315,11 +305,9 @@ const CompareContainer = () => {
 };
 
 const RepositoryComparePage = () => {
-    return (
-        <RepositoryPageLayout activePage={'compare'}>
-            <CompareContainer/>
-        </RepositoryPageLayout>
-    );
+  const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage("compare"), [setActivePage]);
+  return <CompareContainer />;
 };
 
 export default RepositoryComparePage;

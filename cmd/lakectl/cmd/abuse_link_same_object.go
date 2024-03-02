@@ -7,19 +7,19 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
 )
 
 var abuseLinkSameObjectCmd = &cobra.Command{
-	Use:               "link-same-object <source ref uri>",
+	Use:               "link-same-object <branch URI>",
 	Short:             "Link the same object in parallel.",
 	Hidden:            false,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("source ref", args[0])
+		u := MustParseBranchURI("branch URI", args[0])
 		amount := Must(cmd.Flags().GetInt("amount"))
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
 		key := Must(cmd.Flags().GetString("key"))
@@ -43,7 +43,7 @@ var abuseLinkSameObjectCmd = &cobra.Command{
 			for work := range input {
 				start := time.Now()
 
-				getResponse, err := client.GetPhysicalAddressWithResponse(ctx, u.Repository, u.Ref, &api.GetPhysicalAddressParams{Path: work})
+				getResponse, err := client.GetPhysicalAddressWithResponse(ctx, u.Repository, u.Ref, &apigen.GetPhysicalAddressParams{Path: work})
 				if err == nil && getResponse.JSON200 == nil {
 					err = helpers.ResponseAsError(getResponse)
 				}
@@ -57,14 +57,13 @@ var abuseLinkSameObjectCmd = &cobra.Command{
 
 				stagingLocation := getResponse.JSON200
 				linkResponse, err := client.LinkPhysicalAddressWithResponse(ctx, u.Repository, u.Ref,
-					&api.LinkPhysicalAddressParams{
+					&apigen.LinkPhysicalAddressParams{
 						Path: work,
 					},
-					api.LinkPhysicalAddressJSONRequestBody{
+					apigen.LinkPhysicalAddressJSONRequestBody{
 						Checksum: "00695c7307b0480c7b6bdc873cf05c15",
-						Staging: api.StagingLocation{
+						Staging: apigen.StagingLocation{
 							PhysicalAddress: stagingLocation.PhysicalAddress,
-							Token:           stagingLocation.Token,
 						},
 						UserMetadata: nil,
 					})

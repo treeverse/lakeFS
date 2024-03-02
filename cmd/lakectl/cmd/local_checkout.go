@@ -18,7 +18,7 @@ var localCheckoutCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		specifiedRef := Must(cmd.Flags().GetString("ref"))
 		all := Must(cmd.Flags().GetBool("all"))
-		_, localPath := getLocalArgs(args, false, all)
+		_, localPath := getSyncArgs(args, false, all)
 		if !all {
 			localCheckout(cmd, localPath, specifiedRef, true)
 			return
@@ -40,7 +40,7 @@ var localCheckoutCmd = &cobra.Command{
 
 func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, confirmByFlag bool) {
 	client := getClient()
-	locaSyncFlags := getLocalSyncFlags(cmd, client)
+	syncFlags := getSyncFlags(cmd, client)
 	idx, err := local.ReadIndex(localPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -56,8 +56,8 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 
 	currentBase := remote.WithRef(idx.AtHead)
 	diffs := local.Undo(localDiff(cmd.Context(), client, currentBase, idx.LocalPath()))
-	sigCtx := localHandleSyncInterrupt(cmd.Context())
-	syncMgr := local.NewSyncManager(sigCtx, client, locaSyncFlags.parallelism, locaSyncFlags.presign)
+	sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(checkoutOperation))
+	syncMgr := local.NewSyncManager(sigCtx, client, syncFlags)
 	// confirm on local changes
 	if confirmByFlag && len(diffs) > 0 {
 		fmt.Println("Uncommitted changes exist, the operation will revert all changes on local directory.")
@@ -78,7 +78,7 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 			newBase := newRemote.WithRef(newHead)
 
 			// write new index
-			_, err = local.WriteIndex(idx.LocalPath(), remote, newHead)
+			_, err = local.WriteIndex(idx.LocalPath(), remote, newHead, "")
 			if err != nil {
 				DieErr(err)
 			}
@@ -120,6 +120,6 @@ func init() {
 	localCheckoutCmd.Flags().Bool("all", false, "Checkout given source branch or reference for all linked directories")
 	localCheckoutCmd.MarkFlagsMutuallyExclusive("ref", "all")
 	AssignAutoConfirmFlag(localCheckoutCmd.Flags())
-	withLocalSyncFlags(localCheckoutCmd)
+	withSyncFlags(localCheckoutCmd)
 	localCmd.AddCommand(localCheckoutCmd)
 }

@@ -6,17 +6,24 @@ import (
 	"errors"
 	"time"
 
-	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v4"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 func partitionRange(partitionKey []byte) []byte {
-	return append(partitionKey, kv.PathDelimiter[0])
+	result := make([]byte, len(partitionKey)+1)
+	copy(result, partitionKey)
+	result[len(result)-1] = kv.PathDelimiter[0]
+	return result
 }
 
 func composeKey(partitionKey, key []byte) []byte {
-	return append(partitionRange(partitionKey), key...)
+	pr := partitionRange(partitionKey)
+	result := make([]byte, len(pr)+len(key))
+	copy(result, pr)
+	copy(result[len(pr):], key)
+	return result
 }
 
 type Store struct {
@@ -43,7 +50,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 
 	var value []byte
 	err := s.db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(composeKey(partitionKey, key))
+		item, err := txn.Get(k)
 		if errors.Is(err, badger.ErrKeyNotFound) {
 			return kv.ErrNotFound
 		}
@@ -62,7 +69,6 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	if err != nil {
 		return nil, err
 	}
-
 	return &kv.ValueWithPredicate{
 		Value:     value,
 		Predicate: kv.Predicate(value),
@@ -143,7 +149,7 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 			return kv.ErrPredicateFailed
 		}
 
-		return txn.Set(composeKey(partitionKey, key), value)
+		return txn.Set(k, value)
 	})
 	if errors.Is(err, badger.ErrConflict) { // Return predicate failed on transaction conflict - to retry
 		log.WithError(err).Trace("transaction conflict")

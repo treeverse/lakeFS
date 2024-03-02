@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check-out
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -36,6 +36,11 @@ jobs:
       - name: Build release
         working-directory: docs
         run: bundle exec jekyll build --config _config.yml -d _site/${{ steps.version.outputs.tag }} -b /${{ steps.version.outputs.tag }}
+
+      - name: Remove robots.txt
+        working-directory: docs/_site/${{ steps.version.outputs.tag }}
+        run: |
+          if [[ -f robots.txt ]]; then rm robots.txt; fi
 
       - name: Update published version
         env:

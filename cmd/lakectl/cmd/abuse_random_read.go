@@ -10,19 +10,19 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
 )
 
 var abuseRandomReadsCmd = &cobra.Command{
-	Use:               "random-read <source ref uri>",
+	Use:               "random-read <source ref URI>",
 	Short:             "Read keys from a file and generate random reads from the source ref for those keys.",
 	Hidden:            false,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("source ref", args[0])
+		u := MustParseRefURI("source ref URI", args[0])
 		amount := Must(cmd.Flags().GetInt("amount"))
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
 		fromFile := Must(cmd.Flags().GetString("from-file"))
@@ -38,7 +38,6 @@ var abuseRandomReadsCmd = &cobra.Command{
 		generator := stress.NewGenerator("read", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input
-		rand.Seed(time.Now().Unix())
 		generator.Setup(func(add stress.GeneratorAddFn) {
 			for i := 0; i < amount; i++ {
 				//nolint:gosec
@@ -52,7 +51,7 @@ var abuseRandomReadsCmd = &cobra.Command{
 			client := getClient()
 			for work := range input {
 				start := time.Now()
-				resp, err := client.StatObjectWithResponse(ctx, u.Repository, u.Ref, &api.StatObjectParams{
+				resp, err := client.StatObjectWithResponse(ctx, u.Repository, u.Ref, &apigen.StatObjectParams{
 					Path: work,
 				})
 				if err == nil && resp.StatusCode() != http.StatusOK {

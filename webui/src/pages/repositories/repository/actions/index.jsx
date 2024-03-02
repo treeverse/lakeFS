@@ -1,5 +1,5 @@
-import React, {useState} from "react";
-import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
+import React, {useEffect, useState} from "react";
+import { useOutletContext } from "react-router-dom";
 import {
     ActionGroup,
     ActionsBar,
@@ -18,10 +18,8 @@ import {
 import {Table} from "react-bootstrap";
 import {Paginator} from "../../../../lib/components/pagination";
 import {ActionStatusIcon} from "../../../../lib/components/repository/actions";
-import {Route, Routes} from "react-router-dom";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
-import RepositoryActionPage from "./run";
 import Alert from "react-bootstrap/Alert";
 import {RepoError} from "../error";
 
@@ -211,21 +209,10 @@ const ActionsContainer = () => {
     );
 };
 
-const RepositoryActionsPage = () => {
-    return (
-        <RepositoryPageLayout activePage={'actions'}>
-            <ActionsContainer/>
-        </RepositoryPageLayout>
-    );
+export const RepositoryActionsPage = () => {
+  const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage("actions"), [setActivePage]);
+  return <ActionsContainer/>;
 };
 
-const RepositoryActionsIndexPage = () => {
-    return (
-        <Routes>
-            <Route path="" element={<RepositoryActionsPage/>} />
-            <Route path=":runId" element={<RepositoryActionPage/>} />
-        </Routes>
-    );
-};
-
-export default RepositoryActionsIndexPage;
+export default RepositoryActionsPage;

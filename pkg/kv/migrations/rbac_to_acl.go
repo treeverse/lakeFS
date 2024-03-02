@@ -29,7 +29,7 @@ const (
 var (
 	// ErrTooMany is returned when this migration does not support a
 	// particular number of resources.  It should not occur on any
-	// reasonably-sized installation.
+	// reasonably sized installation.
 	ErrTooMany         = errors.New("too many")
 	ErrTooManyPolicies = fmt.Errorf("%w policies", ErrTooMany)
 	ErrTooManyGroups   = fmt.Errorf("%w groups", ErrTooMany)
@@ -42,7 +42,7 @@ var (
 
 	// allPermissions lists all permissions, from most restrictive to
 	// most permissive.  It includes "" for some edge cases.
-	allPermissions = []model.ACLPermission{"", acl.ACLRead, acl.ACLWrite, acl.ACLSuper, acl.ACLAdmin}
+	allPermissions = []model.ACLPermission{"", acl.ReadPermission, acl.WritePermission, acl.SuperPermission, acl.AdminPermission}
 )
 
 func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, logger logging.Logger, version int, force bool) error {
@@ -72,8 +72,7 @@ func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 	updateTime := time.Now()
 	authService := auth.NewAuthService(
 		kvStore,
-		crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
-		nil,
+		crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
 		authparams.ServiceCache(cfg.Auth.Cache),
 		logger.WithField("service", "auth_service"),
 	)
@@ -132,9 +131,9 @@ func reportACL(acl model.ACL) string {
 }
 
 // checkPolicyACLName fails if policy name is named as an ACL policy (start
-// with ACLPolicyPrefix) but is not an ACL policy.
+// with PolicyPrefix) but is not an ACL policy.
 func checkPolicyACLName(ctx context.Context, svc auth.Service, name string) error {
-	if !acl.IsACLPolicyName(name) {
+	if !acl.IsPolicyName(name) {
 		return nil
 	}
 
@@ -187,7 +186,7 @@ func rbacToACL(ctx context.Context, svc auth.Service, doUpdate bool, creationTim
 			"acl":   fmt.Sprintf("%+v", newACL),
 		}).Info("Computed ACL")
 
-		aclPolicyName := acl.ACLPolicyName(group.DisplayName)
+		aclPolicyName := acl.PolicyName(group.DisplayName)
 		err = checkPolicyACLName(ctx, svc, aclPolicyName)
 		if err != nil {
 			warnings = multierror.Append(warnings, warn)
@@ -259,7 +258,7 @@ type ACLsMigrator struct {
 }
 
 func makeSet(allEls ...[]string) map[string]struct{} {
-	ret := make(map[string]struct{}, 0)
+	ret := make(map[string]struct{})
 	for _, els := range allEls {
 		for _, el := range els {
 			ret[el] = struct{}{}
@@ -277,10 +276,10 @@ func NewACLsMigrator(svc auth.Service, doUpdate bool) *ACLsMigrator {
 		svc:      svc,
 		doUpdate: doUpdate,
 		Actions: map[model.ACLPermission]map[string]struct{}{
-			acl.ACLAdmin: makeSet(auth.GetActionsForPolicyTypeOrDie("AllAccess")),
-			acl.ACLSuper: makeSet(auth.GetActionsForPolicyTypeOrDie("FSFullAccess"), manageOwnCredentials, ciRead),
-			acl.ACLWrite: makeSet(auth.GetActionsForPolicyTypeOrDie("FSReadWrite"), manageOwnCredentials, ciRead),
-			acl.ACLRead:  makeSet(auth.GetActionsForPolicyTypeOrDie("FSRead"), manageOwnCredentials),
+			acl.AdminPermission: makeSet(auth.GetActionsForPolicyTypeOrDie("AllAccess")),
+			acl.SuperPermission: makeSet(auth.GetActionsForPolicyTypeOrDie("FSFullAccess"), manageOwnCredentials, ciRead),
+			acl.WritePermission: makeSet(auth.GetActionsForPolicyTypeOrDie("FSReadWrite"), manageOwnCredentials, ciRead),
+			acl.ReadPermission:  makeSet(auth.GetActionsForPolicyTypeOrDie("FSRead"), manageOwnCredentials),
 		},
 	}
 }
@@ -354,7 +353,7 @@ func (mig *ACLsMigrator) GetMinPermission(action string) model.ACLPermission {
 	}
 
 	// Try a wildcard match against all known actions: find the least
-	// permissions that allows all actions that the action pattern
+	// permission that allows all actions that the action pattern
 	// matches.
 	for _, permission := range allPermissions {
 		// This loop is reasonably efficient only for small numbers
@@ -363,11 +362,11 @@ func (mig *ACLsMigrator) GetMinPermission(action string) model.ACLPermission {
 		permissionOK := true
 		for _, a := range permissions.Actions {
 			if !wildcard.Match(action, a) {
-				// a does not include action.
+				// 'a' does not include action.
 				continue
 			}
 			if someActionMatches(a, actionsForPermission) {
-				// a is allowed at permission.
+				// 'a' is allowed at permission.
 				continue
 			}
 			permissionOK = false
@@ -401,8 +400,8 @@ func (mig *ACLsMigrator) ComputePermission(ctx context.Context, actions []string
 			}).Trace("Permission")
 		}
 	}
-	if permission == model.ACLPermission("") {
-		return permission, fmt.Errorf("%w actions", ErrEmpty)
+	if permission == "" {
+		return "", fmt.Errorf("%w actions", ErrEmpty)
 	}
 
 	return permission, nil
@@ -413,15 +412,15 @@ func (mig *ACLsMigrator) ComputePermission(ctx context.Context, actions []string
 func (mig *ACLsMigrator) ComputeAddedActions(permission model.ACLPermission, alreadyAllowedActions map[string]struct{}) []string {
 	var allAllowedActions map[string]struct{}
 	switch permission {
-	case acl.ACLRead:
-		allAllowedActions = mig.Actions[acl.ACLRead]
-	case acl.ACLWrite:
-		allAllowedActions = mig.Actions[acl.ACLWrite]
-	case acl.ACLSuper:
-		allAllowedActions = mig.Actions[acl.ACLSuper]
-	case acl.ACLAdmin:
+	case acl.ReadPermission:
+		allAllowedActions = mig.Actions[acl.ReadPermission]
+	case acl.WritePermission:
+		allAllowedActions = mig.Actions[acl.WritePermission]
+	case acl.SuperPermission:
+		allAllowedActions = mig.Actions[acl.SuperPermission]
+	case acl.AdminPermission:
 	default:
-		allAllowedActions = mig.Actions[acl.ACLAdmin]
+		allAllowedActions = mig.Actions[acl.AdminPermission]
 	}
 	addedActions := make(map[string]struct{}, len(allAllowedActions))
 	for _, action := range permissions.Actions {
@@ -441,14 +440,14 @@ func BroaderPermission(a, b model.ACLPermission) bool {
 	switch a {
 	case "":
 		return false
-	case acl.ACLRead:
+	case acl.ReadPermission:
 		return b == ""
-	case acl.ACLWrite:
-		return b == "" || b == acl.ACLRead
-	case acl.ACLSuper:
-		return b == "" || b == acl.ACLRead || b == acl.ACLWrite
-	case acl.ACLAdmin:
-		return b == "" || b == acl.ACLRead || b == acl.ACLWrite || b == acl.ACLSuper
+	case acl.WritePermission:
+		return b == "" || b == acl.ReadPermission
+	case acl.SuperPermission:
+		return b == "" || b == acl.ReadPermission || b == acl.WritePermission
+	case acl.AdminPermission:
+		return b == "" || b == acl.ReadPermission || b == acl.WritePermission || b == acl.SuperPermission
 	}
 	panic(fmt.Sprintf("impossible comparison %s and %s", a, b))
 }

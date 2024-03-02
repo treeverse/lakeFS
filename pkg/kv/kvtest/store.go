@@ -13,8 +13,8 @@ import (
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 )
 
 type MakeStore func(t testing.TB, ctx context.Context) kv.Store
@@ -50,9 +50,8 @@ func sampleEntry(prefix string, n int) kv.Entry {
 	return kv.Entry{Key: []byte(k), Value: []byte(v)}
 }
 
-func DriverTest(t *testing.T, name string, params kvparams.Config) {
+func DriverTest(t *testing.T, ms MakeStore) {
 	t.Helper()
-	ms := MakeStoreByName(name, params)
 	t.Run("Driver_Open", func(t *testing.T) { testDriverOpen(t, ms) })
 	t.Run("Store_SetGet", func(t *testing.T) { testStoreSetGet(t, ms) })
 	t.Run("Store_SetIf", func(t *testing.T) { testStoreSetIf(t, ms) })
@@ -298,7 +297,7 @@ func testStoreSetIf(t *testing.T, ms MakeStore) {
 
 	t.Run("predicate_empty_slice", func(t *testing.T) {
 		key := uniqueKey("predicate-empty-slice")
-		val1 := []byte{}
+		val1 := make([]byte, 0)
 		err := store.Set(ctx, []byte(testPartitionKey), key, val1)
 		if err != nil {
 			t.Fatalf("Set while testing predicate empty slice - key=%s value=%s: %s", key, val1, err)
@@ -457,19 +456,6 @@ func testStoreScan(t *testing.T, ms MakeStore) {
 	})
 }
 
-func MakeStoreByName(name string, kvParams kvparams.Config) MakeStore {
-	return func(t testing.TB, ctx context.Context) kv.Store {
-		t.Helper()
-		kvParams.Type = name
-		store, err := kv.Open(ctx, kvParams)
-		if err != nil {
-			t.Fatalf("failed to open kv '%s' store: %s", name, err)
-		}
-		t.Cleanup(store.Close)
-		return store
-	}
-}
-
 func testStoreMissingArgument(t *testing.T, ms MakeStore) {
 	ctx := context.Background()
 	store := ms(t, ctx)
@@ -575,7 +561,7 @@ func testStoreContextCancelled(t *testing.T, ms MakeStore) {
 	// cancel the context for all requests
 	cancel()
 	t.Run("Set", func(t *testing.T) {
-		// set test key with value1
+		// set the test key with value1
 		err := store.Set(ctx, []byte(testPartitionKey), testKey, testValue1)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			t.Fatalf("expected context cancellation error, got: %s", err)

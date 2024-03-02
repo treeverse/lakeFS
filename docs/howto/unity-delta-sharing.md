@@ -4,6 +4,7 @@ parent: lakeFS Cloud
 description: The lakeFS Delta Sharing service lets you export DeltaLake and HMS-style tables stored on lakeFS over the Delta Sharing protocol. This is particularly useful with DataBricks Unity.
 redirect_from:
   - /cloud/unity-delta-sharing.html
+  - /cloud/unity-delta-sharing-m0-users
 ---
 
 # Unity Delta Sharing
@@ -37,6 +38,9 @@ further assistance.
 * Configuration URL
 * Access key ID and secret access key for user `lakefs-delta-sharing-service`.
 
+Note: All YAML files extensions used in this guide must be `yaml`. Do not use a `yml` extension instead.
+{: .note }
+
 ### 2. Initial configuration
 
 Select a secret authorization token to share Unity catalog.  Unity catalog will use to authenticate to the lakeFS Delta Sharing server.  
@@ -63,8 +67,10 @@ repositories:
     - id: repo2
       share_name: share_two
       branches:
-      - *
+      - "*"
 ```
+
+Note that a plain "*" line must be quoted in YAML.
 
 Upload it to your config URL.  For instance if the config URL is `lakefs://repo/main/lakefs_delta_sharing.yaml`, you might use:
 
@@ -132,6 +138,9 @@ name: users
 type: delta
 path: path/to/users/
 ```
+
+Note: The filename of the 'yaml' file containing the table definition must match the 'name' of the table itself. In the example above, '_lakefs_tables/users.yaml'.
+{: .note }
 
 When placed inside `_lakefs_tables/users.yaml` this defines a table `users` on the prefix `path/to/users/` (so `path/to/users/` holds the prefix `_delta_log`).
 

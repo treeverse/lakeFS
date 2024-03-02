@@ -26,7 +26,6 @@ const (
 )
 
 var (
-	ErrNotImplemented      = errors.New("not implemented")
 	ErrMismatchPartETag    = errors.New("mismatch part ETag")
 	ErrMismatchPartName    = errors.New("mismatch part name")
 	ErrMaxMultipartObjects = errors.New("maximum multipart object reached")
@@ -54,7 +53,7 @@ func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
 func WithDisablePreSigned(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
 		if b {
-			a.disablePreSigned = false
+			a.disablePreSigned = true
 		}
 	}
 }
@@ -62,7 +61,7 @@ func WithDisablePreSigned(b bool) func(a *Adapter) {
 func WithDisablePreSignedUI(b bool) func(a *Adapter) {
 	return func(a *Adapter) {
 		if b {
-			a.disablePreSignedUI = false
+			a.disablePreSignedUI = true
 		}
 	}
 }
@@ -529,10 +528,6 @@ func (a *Adapter) composeMultipartUploadParts(ctx context.Context, bucketName st
 	return targetAttrs, nil
 }
 
-func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
-	return nil, fmt.Errorf("inventory %w", ErrNotImplemented)
-}
-
 func (a *Adapter) Close() error {
 	return a.client.Close()
 }
@@ -587,4 +582,8 @@ func formatMultipartFilename(uploadID string, partNumber int) string {
 
 func formatMultipartMarkerFilename(uploadID string) string {
 	return uploadID + markerSuffix
+}
+
+func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectPointer, uploadID string, partNumber int) (string, error) {
+	return "", block.ErrOperationNotSupported
 }

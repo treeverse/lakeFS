@@ -4,11 +4,11 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 type StatementDoc struct {
-	Statement []api.Statement `json:"statement"`
+	Statement []apigen.Statement `json:"statement"`
 }
 
 const policyDetailsTemplate = `

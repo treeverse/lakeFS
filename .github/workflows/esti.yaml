@@ -9,8 +9,10 @@ on:
 # These permissions are needed to interact with GitHub's OIDC Token endpoint.
 permissions:
   id-token: write
-  contents: read
+  contents: write
   packages: write
+  issues: write
+  pull-requests: write
 
 jobs:
   check-secrets:
@@ -25,37 +27,52 @@ jobs:
         run: |
           echo "Enable next jobs based on secrets existence: ${{ env.ENABLE_NEXT_JOBS != '' }}"
           echo "secretsavailable=${{ env.ENABLE_NEXT_JOBS != '' }}" >> $GITHUB_OUTPUT
+      
 
   gen-code:
     name: Generate code from latest lakeFS app
     runs-on: ubuntu-20.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_OUTPUT
 
       - name: Restore cache
         uses: actions/cache@v3
         id: restore-cache
         with:
           path: /tmp/generated.tar.gz
-          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**', './api/*', './webui/**') }}
           restore-keys: ${{ runner.os }}-go-
 
       - name: Setup Go
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
-          go-version: "1.20.6"
+          go-version: "1.21.4"
         id: go
+
+      - name: Setup NodeJS
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: "npm"
+          cache-dependency-path: webui/package-lock.json
 
       - name: Generate code
         if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
-          make -j3 gen-api VERSION=${{ steps.version.outputs.tag }}
-          mkdir webui/dist
-          touch webui/dist/index.html
-          tar -cf /tmp/generated.tar.gz ./pkg ./webui
+          make -j3 gen-api gen-ui VERSION=${{ steps.version.outputs.tag }}
+          tar -cf /tmp/generated.tar.gz ./webui/dist ./pkg/auth/client.gen.go ./pkg/permissions/actions.gen.go ./pkg/api/apigen/lakefs.gen.go
 
+        # must upload artifact in order to download generated later
       - name: Store generated code
         uses: actions/upload-artifact@v3
         with:
@@ -68,10 +85,10 @@ jobs:
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     runs-on: ubuntu-latest-16-cores
     outputs:
-      tag: ${{ steps.version.outputs.tag }}
+      tag: ${{ needs.gen-code.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Retrieve generated code
         uses: actions/download-artifact@v3
@@ -83,47 +100,45 @@ jobs:
         run: tar -xf /tmp/generated.tar.gz
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
 
-      - name: Extract version
-        shell: bash
-        run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_OUTPUT
-        id: version
-
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Build and Push
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ steps.version.outputs.tag }}
-          build-args: VERSION=${{ steps.version.outputs.tag }}
+          tags: ${{ steps.login-ecr.outputs.registry }}/lakefs:${{ needs.gen-code.outputs.tag }}
+          build-args: VERSION=${{ needs.gen-code.outputs.tag }}
           context: .
           cache-from: |
             type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs
           cache-to: |
             type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs,mode=max
+
   login-to-amazon-ecr:
     runs-on: ubuntu-latest
     needs: [check-secrets]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: us-east-1
           mask-aws-account-id: 'false'
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: 'false'
     outputs:
       registry: ${{ steps.login-ecr.outputs.registry }}
       docker_username: ${{ steps.login-ecr.outputs.docker_username_977611293394_dkr_ecr_us_east_1_amazonaws_com }}
@@ -131,7 +146,7 @@ jobs:
 
   unified-gc-test:
     name: Test unified gc
-    needs: [ gen-code, deploy-image, login-to-amazon-ecr, build-spark3-metadata-client ]
+    needs: [ gen-code, deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-latest-8-cores
     services:
       lakefs:
@@ -181,12 +196,12 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.19.2
+          go-version: "1.21.4"
         id: go
 
       - name: Generate uniquifying value
@@ -208,21 +223,21 @@ jobs:
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
-          key: metadata-client-core-${{ hashFiles('./clients/spark/**') }}
+          key: metadata-client-${{ hashFiles('./clients/spark/**') }}
 
       - name: GC test
         run: |
           go test -timeout 30m -v ./esti \
             -system-tests -use-local-credentials -run=TestUnifiedGC \
             -spark-image-tag=3.2.1 \
-            -metaclient-jar=$(pwd)/test/spark/metaclient/spark-assembly-core.jar
+            -metaclient-jar=$(pwd)/test/spark/metaclient/spark-assembly.jar
         env:
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/gc-tests/${{ steps.unique.outputs.value }}
           AWS_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          ESTI_VERSION: ${{ steps.version.outputs.tag }}
+          ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
           ESTI_SETUP_LAKEFS: true
 
   deploy-rclone-export-image:
@@ -234,10 +249,10 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
@@ -249,12 +264,12 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Build and Push to Amazon ECR
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/lakefs-rclone-export:${{ steps.version.outputs.tag }}
@@ -263,14 +278,14 @@ jobs:
 
   hadoopfs-tests:
     name: Test lakeFS Hadoop FileSystem
-    needs: deploy-image
+    needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Start lakeFS for contract tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -292,6 +307,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: minio123
           STORAGE_NAMESPACE: s3://test-bucket/data
           REPOSITORY: lakefsfs-contract-test
+
       - name: Build and test hadoopfs (hadoop2)
         working-directory: clients/hadoopfs
         run: mvn clean --quiet --batch-mode --update-snapshots -P'!treeverse-signing',contract-tests-hadoop2 verify
@@ -309,15 +325,15 @@ jobs:
 
   hadoopfs-s3a-mpu:
     name: Test lakeFS multipart upload with Hadoop S3A
-    needs: deploy-image
+    needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: actions/setup-java@v3
         with:
@@ -371,13 +387,14 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: actions/setup-java@v3
         with:
           distribution: "adopt-hotspot"
           java-version: "8"
           cache: "sbt"
+
       - name: Build lakeFS HadoopFS
         working-directory: clients/hadoopfs
         run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package -DskipTests
@@ -392,7 +409,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: actions/setup-java@v3
         with:
@@ -411,7 +428,7 @@ jobs:
 
   spark:
     name: Test lakeFS with Spark ${{ matrix.spark.tag }}.X
-    needs: [spark-prep, build-lakefs-hadoopfs, deploy-image]
+    needs: [spark-prep, build-lakefs-hadoopfs, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -422,11 +439,11 @@ jobs:
             sonnet_jar: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       SPARK_TAG: ${{ matrix.spark.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download lakeFS HadoopFS
         uses: actions/download-artifact@v3
@@ -440,7 +457,7 @@ jobs:
           name: spark-apps
           path: test/spark/app/target/
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
@@ -508,16 +525,16 @@ jobs:
         run: docker-compose logs --tail=2500 lakefs
   export:
     name: Test lakeFS rclone export functionality
-    needs: [deploy-image, deploy-rclone-export-image]
+    needs: [deploy-image, deploy-rclone-export-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       LAKEFS_TAG: ${{ needs.deploy-image.outputs.tag }}
       EXPORT_TAG: ${{ needs.deploy-rclone-export-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
 
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Start lakeFS for export tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -556,15 +573,15 @@ jobs:
         run: docker-compose logs --tail=1000
 
   metastore-client-with-trino:
-    name: Test metastore client commands using trino and dbt
-    needs: [gen-code, deploy-image]
+    name: Test metastore client commands using trino
+    needs: [gen-code, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Generate uniquifying value
         id: unique
@@ -578,21 +595,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Build and Push hive-metastore
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           push: true
           tags: ghcr.io/treeverse/hive-metastore:${{ needs.deploy-image.outputs.tag }}
           context: test/lakectl_metastore/hive
           cache-from: type=gha,scope=hive-metastore
           cache-to: type=gha,mode=max,scope=hive-metastore
-      - name: Build and Push dbt
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: ghcr.io/treeverse/dbt:${{ needs.deploy-image.outputs.tag }}
-          context: test/lakectl_metastore/dbt
-          cache-from: type=gha,scope=dbt
-          cache-to: type=gha,mode=max,scope=dbt
       - name: Start lakeFS for Metastore tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -608,8 +617,6 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-      - name: Build lakectl for dbt container
-        run: go build -o test/lakectl_metastore/etc/lakectl ./cmd/lakectl
 
       - name: Setup lakeFS for tests
         working-directory: test/lakectl_metastore
@@ -617,49 +624,28 @@ jobs:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-metaclient/${{ steps.unique.outputs.value }}
         run: ./setup-test.sh
 
-      - name: Test using DBT and lakectl metastore commands
-        env:
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-          REPOSITORY: gateway-test
-          SONNET_JAR: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
-        working-directory: test/lakectl_metastore
-        run: docker-compose run dbt
-
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/lakectl_metastore
         run: docker-compose logs --tail=2500 lakefs
 
-      - name: dbt Logs with failure
-        if: ${{ failure() }}
-        continue-on-error: true
-        working-directory: test/lakectl_metastore
-        run: docker-compose logs --tail=1000 dbt
-
   build-spark3-metadata-client:
     name: Build metadata client for Spark 3.x
     runs-on: ubuntu-latest-8-cores
-    needs: check-secrets
-    strategy:
-      matrix:
-        spark:
-          - project-variable: core3
-            project-suffix: "-301"
-          - project-variable: core
-            project-suffix: ""
+    needs: [check-secrets, deploy-image, login-to-amazon-ecr]
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Restore cache
         uses: actions/cache@v3
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
-          key: metadata-client-${{ matrix.spark.project-variable }}-${{ hashFiles('./clients/spark/**') }}
+          key: metadata-client-${{ hashFiles('./clients/spark/**') }}
 
       - uses: actions/setup-java@v3
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -672,7 +658,7 @@ jobs:
         if: steps.restore-cache.outputs.cache-hit != 'true'
         working-directory: clients/spark
         run: |
-          sbt 'set ${{ matrix.spark.project-variable }} / assembly / test := {}' lakefs-spark-client${{ matrix.spark.project-suffix }}/assembly
+          sbt 'set assembly / test := {}' assembly
 
       - name: Prepare Metaclient location for export
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -682,34 +668,25 @@ jobs:
         working-directory: clients/spark
         run: |
           mkdir -p ${{ github.workspace }}/test/spark/metaclient
-          cp target/core${{ matrix.spark.project-suffix }}/scala-2.12/lakefs-spark-client${{ matrix.spark.project-suffix }}-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark-assembly-${{ matrix.spark.project-variable }}.jar
+          cp target/scala-2.12/lakefs-spark-client-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark-assembly.jar
 
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x
-    needs: [deploy-image, build-spark3-metadata-client]
+    needs: [deploy-image, build-spark3-metadata-client, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        spark:
-          - version: 3.2.1
-            project: "core"
-          - version: 3.1.2
-            project: "core3"
-          - version: 3.0.2
-            project: "core3"
     env:
-      SPARK_TAG: ${{ matrix.spark.version }}
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      SPARK_TAG: 3.2.1
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Restore cache
         uses: actions/cache@v3
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
-          key: metadata-client-${{ matrix.spark.project }}-${{ hashFiles('./clients/spark/**') }}
+          key: metadata-client-${{ hashFiles('./clients/spark/**') }}
 
       - name: Generate uniquifying value
         id: unique
@@ -728,21 +705,21 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
       - name: Copy repository ref
-        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
+        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-metaclient/exporter/${{ steps.unique.outputs.value }}
 
       - name: Setup Exporter tests
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
         working-directory: test/spark
         run: ./setup-exporter-test.sh
 
       - name: Test Exporter with Spark 3.x
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
-          CLIENT_JAR: ${{ github.workspace }}/test/spark/metaclient/spark-assembly-${{ matrix.spark.project }}.jar
-          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.version }}-client-export/${{ steps.unique.outputs.value }}
+          CLIENT_JAR: ${{ github.workspace }}/test/spark/metaclient/spark-assembly.jar
+          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-client-export/${{ steps.unique.outputs.value }}
         working-directory: test/spark
         run: ./run-exporter-test.sh
 
@@ -754,18 +731,17 @@ jobs:
 
   run-system-aws-s3-kv-dynamodb:
     name: Run latest lakeFS app on AWS S3 DynamoDB KV
-    needs: [gen-code, deploy-image]
+    needs: [gen-code, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      # Setting Account_ID as a secret as a way to avoid specifying it here
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       LAKEFS_DATABASE_CONNECTION_STRING: "" # Override lakeFS docker compose settings
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Generate uniquifying value
         id: unique
@@ -781,13 +757,12 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           LAKEFS_DATABASE_TYPE: dynamodb
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
-          ESTI_TEST_DATA_ACCESS: true,false
+          DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          ESTI_VERSION: ${{ steps.version.outputs.tag }}
+          ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
           ESTI_DATABASE_KV_ENABLED: "true"
           ESTI_DATABASE_CONNECTION_STRING: "true"
 
@@ -811,17 +786,16 @@ jobs:
 
   run-system-aws-s3:
     name: Run latest lakeFS app on AWS S3
-    needs: [gen-code, deploy-image]
+    needs: [gen-code, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      # Setting Account_ID as a secret as a way to avoid specifying it here
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Generate uniquifying value
         id: unique
@@ -837,13 +811,12 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           LAKEFS_DATABASE_TYPE: postgres
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
-          ESTI_TEST_DATA_ACCESS: true,false
+          DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          ESTI_VERSION: ${{ steps.version.outputs.tag }}
+          ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
 
       - name: Check files in S3 bucket
         run: |
@@ -865,17 +838,16 @@ jobs:
 
   run-system-gcp-gs:
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
-    needs: [gen-code, deploy-image]
+    needs: [gen-code, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      # Setting Account_ID as a secret as a way to avoid specifying it here
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Generate uniquifying value
         id: unique
@@ -887,7 +859,7 @@ jobs:
           compose-file: esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           LAKEFS_BLOCKSTORE_TYPE: gs
           LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
@@ -901,12 +873,11 @@ jobs:
 
   run-system-azure-abfs:
     name: Run latest lakeFS app on Azure with Azure blobstore
-    needs: [gen-code, deploy-image]
+    needs: [gen-code, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      # Setting Account_ID as a secret as a way to avoid specifying it here
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -914,7 +885,7 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
     steps:
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Generate uniquifying value
         id: unique
@@ -926,11 +897,11 @@ jobs:
           compose-file: esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: azure
-          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti
-          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY2 }}
+          ESTI_AZURE_STORAGE_ACCOUNT: esti
+          ESTI_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY }}
           ESTI_BLOCKSTORE_TYPE: azure
           ESTI_STORAGE_NAMESPACE: https://esti.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
 
@@ -944,12 +915,11 @@ jobs:
 
   run-system-azure-adls-gen2:
     name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2 and CosmosDB
-    needs: [gen-code, deploy-image]
+    needs: [gen-code, deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-20.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      # Setting Account_ID as a secret as a way to avoid specifying it here
-      REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -963,9 +933,9 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-        
+
       - name: Check-out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Generate uniquifying value
         id: unique
@@ -977,18 +947,18 @@ jobs:
           compose-file: esti/ops/docker-compose-external-db.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
+          DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           LAKEFS_DATABASE_TYPE: cosmosdb
           LAKEFS_DATABASE_COSMOSDB_ENDPOINT: "https://${{ env.COSMOSDB_ACCOUNT }}.documents.azure.com"
           LAKEFS_DATABASE_COSMOSDB_DATABASE: ${{ env.COSMOSDB_DATABASE }}
           LAKEFS_DATABASE_COSMOSDB_CONTAINER: ${{ github.run_number }}-${{ steps.unique.outputs.value }}
           LAKEFS_DATABASE_COSMOSDB_KEY: ${{ secrets.LAKEFS_DATABASE_COSMOSDB_READWRITEKEY }}
           LAKEFS_BLOCKSTORE_TYPE: azure
-          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT: esti4hns
-          LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_GEN2_ACCESS_KEY }}
           ESTI_BLOCKSTORE_TYPE: azure
           ESTI_STORAGE_NAMESPACE: https://esti4hns.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
           ESTI_ADLS_IMPORT_BASE_URL: https://esti4hns.adls.core.windows.net/esti-system-testing-data/
+          ESTI_AZURE_STORAGE_ACCOUNT: esti4hns
+          ESTI_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_GEN2_ACCESS_KEY }}
 
       - name: cleanup cosmos db container
         if: always()
@@ -1001,3 +971,184 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+
+  python-wrapper:
+    name: Test lakeFS against the python wrapper client
+    needs: [deploy-image, login-to-amazon-ecr]
+    runs-on: ubuntu-22.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      LAKEFS_INSTALLATION_ACCESS_KEY_ID: AKIAIOSFDNN7EXAMPLEQ
+      LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+    services:
+      lakefs:
+        image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
+        credentials:
+          username: ${{ needs.login-to-amazon-ecr.outputs.docker_username }}
+          password: ${{ needs.login-to-amazon-ecr.outputs.docker_password }}
+        ports:
+          - '8000:8000'
+        env:
+          LAKEFS_DATABASE_TYPE: local
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_INSTALLATION_USER_NAME: admin
+          LAKEFS_INSTALLATION_ACCESS_KEY_ID: ${{ env.LAKEFS_INSTALLATION_ACCESS_KEY_ID }}
+          LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: ${{env.LAKEFS_INSTALLATION_SECRET_ACCESS_KEY }}
+          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
+          LAKEFS_STATS_ENABLED: false
+
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        working-directory: ./clients/python-wrapper
+        run: pip install -r requirements.txt pytest pytest-md pytest-emoji
+
+      - name: Generate uniquifying value
+        id: unique
+        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
+        
+      - name: Run Python Wrapper Tests
+        uses: pavelzw/pytest-action@v2
+        env:
+          LAKECTL_CREDENTIALS_ACCESS_KEY_ID: ${{ env.LAKEFS_INSTALLATION_ACCESS_KEY_ID }}
+          LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY: ${{env.LAKEFS_INSTALLATION_SECRET_ACCESS_KEY }}
+          LAKECTL_SERVER_ENDPOINT_URL: http://localhost:8000
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-python-wrapper/${{ steps.unique.outputs.value }}
+        with:
+          verbose: true
+          emoji: true
+          job-summary: true
+          custom-arguments: './clients/python-wrapper/tests/integration -rP -We'
+          click-to-expand: true
+          report-title: 'Python Wrapper System Tests Report'
+
+  # e2e-<db type>-<block adapter type>
+  e2e-ddb-local-local:
+    name: E2E - DynamoDB Local - Local Block Adapter
+    needs: 
+      - deploy-image
+      - login-to-amazon-ecr
+    runs-on: ubuntu-latest-8-cores
+    timeout-minutes: 20
+    services:
+      dynamodb:
+        image: amazon/dynamodb-local:1.13.6
+      lakefs:
+        image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
+        credentials:
+          username: ${{ needs.login-to-amazon-ecr.outputs.docker_username }}
+          password: ${{ needs.login-to-amazon-ecr.outputs.docker_password }}
+        ports:
+          - '8000:8000'
+        env:
+          LAKEFS_DATABASE_TYPE: dynamodb
+          LAKEFS_DATABASE_DYNAMODB_ENDPOINT: http://dynamodb:8000
+          LAKEFS_DATABASE_DYNAMODB_AWS_ACCESS_KEY_ID: AKIAIOSFDNN7EXAMPLEQ
+          LAKEFS_DATABASE_DYNAMODB_AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          LAKEFS_BLOCKSTORE_TYPE: local
+          LAKEFS_EMAIL_SUBSCRIPTION_ENABLED: true
+          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
+          LAKEFS_STATS_ENABLED: false
+          LAKEFS_LOGGING_LEVEL: DEBUG
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: "npm"
+          cache-dependency-path: webui/package-lock.json
+      - name: Install dependencies
+        working-directory: webui
+        run: npm ci
+      - name: Get installed Playwright version
+        id: playwright-version
+        working-directory: webui
+        run: echo "PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package-lock.json').dependencies['@playwright/test'].version)")" >> $GITHUB_ENV
+      - name: Cache Playwright binaries
+        uses: actions/cache@v3
+        id: playwright-cache
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            ~/.cache/ms-playwright-*
+          key: ${{ runner.os }}-playwright-${{ env.PLAYWRIGHT_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+      - name: Install browsers (no cache)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        working-directory: webui
+        run: npx playwright install --with-deps chromium
+      - name: Install browsers (with cache)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        working-directory: webui
+        run: npx playwright install-deps chromium
+      - name: Playwright run
+        env:
+          BASE_URL: http://localhost:8000
+        working-directory: webui
+        run: npx playwright test --project=common
+      - uses: actions/upload-artifact@v3
+        if: (success() || failure())
+        with:
+          name: playwright-report
+          path: webui/test-results/
+          retention-days: 7
+      - uses: test-summary/action@v2
+        if: ${{ github.event_name == 'pull_request' && (success() || failure()) }}
+        with:
+          paths: webui/test-results.xml
+          output: "test-results.md"
+      # will test and move to using the composite action once it's merged to master (GH limitation)
+      - uses: actions/github-script@v6
+        if: ${{ github.event_name == 'pull_request' && (success() || failure()) }}
+        env:
+          PLAYWRIGHT_PROJECT: "DynamoDB Local - Local Block Adapter"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require("fs");
+            // 1. Retrieve existing bot comments for the PR
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            })
+            const botComment = comments.find(comment => {
+              return comment.user.type === 'Bot' && comment.body.includes(`E2E Test Results - ${process.env.PLAYWRIGHT_PROJECT}`)
+            })
+            // 2. Read markdown files
+            const content = fs.readFileSync("test-results.md");
+            // 3. Prepare format of the comment
+            const output = `
+              # E2E Test Results - ${process.env.PLAYWRIGHT_PROJECT}
+              
+              ${content}
+            `;
+
+            // 4. If we have a comment, update it, otherwise create a new one
+            if (botComment) {
+              github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              })
+            } else {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: output
+              })
+            }

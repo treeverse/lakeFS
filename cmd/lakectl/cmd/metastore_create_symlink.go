@@ -5,14 +5,15 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/metastore"
 )
 
 var metastoreCreateSymlinkCmd = &cobra.Command{
-	Use:   "create-symlink",
-	Short: "Create symlink table and data",
-	Long:  "create table with symlinks, and create the symlinks in s3 in order to access from external services that could only access s3 directly (e.g athena)",
+	Use:        "create-symlink",
+	Short:      "Create symlink table and data",
+	Long:       "create table with symlinks, and create the symlinks in s3 in order to access from external services that could only access s3 directly (e.g athena)",
+	Deprecated: "Upcoming releases of lakectl will no longer support this command.",
 	Run: func(cmd *cobra.Command, args []string) {
 		repo := Must(cmd.Flags().GetString("repo"))
 		branch := Must(cmd.Flags().GetString("branch"))
@@ -28,7 +29,7 @@ var metastoreCreateSymlinkCmd = &cobra.Command{
 		defer fromClientDeferFunc()
 		defer toClientDeferFunc()
 
-		resp, err := apiClient.CreateSymlinkFileWithResponse(cmd.Context(), repo, branch, &api.CreateSymlinkFileParams{Location: &path})
+		resp, err := apiClient.CreateSymlinkFileWithResponse(cmd.Context(), repo, branch, &apigen.CreateSymlinkFileParams{Location: &path})
 		if err != nil {
 			DieErr(err)
 		}
@@ -38,7 +39,7 @@ var metastoreCreateSymlinkCmd = &cobra.Command{
 		}
 		location := resp.JSON201.Location
 
-		err = metastore.CopyOrMergeToSymlink(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, location, cfg.GetFixSparkPlaceholder())
+		err = metastore.CopyOrMergeToSymlink(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, location, cfg.Metastore.FixSparkPlaceholder)
 		if err != nil {
 			DieErr(err)
 		}

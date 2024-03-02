@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
@@ -36,6 +37,15 @@ var (
 			StorageNamespace: "mock-sn",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  branch1ID,
+		},
+	}
+	repositoryRO = &graveler.RepositoryRecord{
+		RepositoryID: repoID,
+		Repository: &graveler.Repository{
+			StorageNamespace: "mock-sn",
+			CreationDate:     time.Now(),
+			DefaultBranchID:  branch1ID,
+			ReadOnly:         true,
 		},
 	}
 	branch1 = graveler.Branch{
@@ -178,12 +188,12 @@ func TestGravelerMerge(t *testing.T) {
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: nil, // tombstone
-		}}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator(nil), nil)
+		}}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator(nil))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: value1,
-		}}), nil)
+		}}))
 	}
 	t.Run("merge successful", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
@@ -197,7 +207,7 @@ func TestGravelerMerge(t *testing.T) {
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit2ID).Times(1).Return(&commit2, nil)
 		test.RefManager.EXPECT().FindMergeBase(ctx, repository, commit2ID, commit1ID).Times(1).Return(&commit3, nil)
-		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageNamespace, mr1ID, mr2ID, mr3ID, graveler.MergeStrategyNone).Times(1).Return(mr4ID, nil)
+		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageNamespace, mr1ID, mr2ID, mr3ID, graveler.MergeStrategyNone, []graveler.SetOptionsFunc{}).Times(1).Return(mr4ID, nil)
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
 			require.Equal(t, mr4ID, commit.MetaRangeID)
 			return commit4ID, nil
@@ -237,15 +247,15 @@ func TestGravelerMerge(t *testing.T) {
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: nil, // tombstone
-		}}), nil)
+		}}))
 		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key2,
 			Value: value2,
-		}}), nil)
+		}}))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: value1,
-		}}), nil)
+		}}))
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
 
@@ -256,6 +266,11 @@ func TestGravelerMerge(t *testing.T) {
 
 	t.Run("merge successful with branchUpdate retry", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
+
+		// upgrade graveler branch update back-off to shorten test duration
+		const updateRetryDuration = 200 * time.Millisecond
+		test.Sut.BranchUpdateBackOff = backoff.NewConstantBackOff(updateRetryDuration)
+
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
@@ -266,7 +281,7 @@ func TestGravelerMerge(t *testing.T) {
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit2ID).Times(1).Return(&commit2, nil)
 		test.RefManager.EXPECT().FindMergeBase(ctx, repository, commit2ID, commit1ID).Times(1).Return(&commit3, nil)
-		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageNamespace, mr1ID, mr2ID, mr3ID, graveler.MergeStrategyNone).Times(1).Return(mr4ID, nil)
+		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageNamespace, mr1ID, mr2ID, mr3ID, graveler.MergeStrategyNone, []graveler.SetOptionsFunc{}).Times(1).Return(mr4ID, nil)
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
 			require.Equal(t, mr4ID, commit.MetaRangeID)
 			return commit4ID, nil
@@ -333,20 +348,20 @@ func TestGravelerRevert(t *testing.T) {
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: nil, // tombstone
-		}}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator(nil), nil)
+		}}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator(nil))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: value1,
-		}}), nil)
+		}}))
 	}
 	dirtyStagingTokenCombo := func(test *testutil.GravelerTest) {
-		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator(nil))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator(nil))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: value1,
-		}}), nil)
+		}}))
 	}
 	t.Run("revert successful", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
@@ -362,7 +377,7 @@ func TestGravelerRevert(t *testing.T) {
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit4).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit4ID}}}, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit2ID).Times(1).Return(&commit2, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit4ID).Times(1).Return(&commit4, nil)
-		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageNamespace, mr1ID, mr4ID, mr2ID, graveler.MergeStrategyNone).Times(1).Return(mr3ID, nil)
+		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageNamespace, mr1ID, mr4ID, mr2ID, graveler.MergeStrategyNone, []graveler.SetOptionsFunc{}).Times(1).Return(mr3ID, nil)
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
 			require.Equal(t, mr3ID, commit.MetaRangeID)
 			return commit3ID, nil
@@ -434,12 +449,12 @@ func TestGravelerCherryPick(t *testing.T) {
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: nil, // tombstone
-		}}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator(nil), nil)
+		}}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator(nil))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(times).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: value1,
-		}}), nil)
+		}}))
 	}
 	t.Run("cherry-pick successful", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
@@ -455,7 +470,7 @@ func TestGravelerCherryPick(t *testing.T) {
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit4).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit4ID}}}, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit2ID).Times(1).Return(&commit2, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit4ID).Times(1).Return(&commit4, nil)
-		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageNamespace, mr1ID, mr2ID, mr4ID, graveler.MergeStrategyNone).Times(1).Return(mr3ID, nil)
+		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageNamespace, mr1ID, mr2ID, mr4ID, graveler.MergeStrategyNone, []graveler.SetOptionsFunc{}).Times(1).Return(mr3ID, nil)
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
 			require.Equal(t, mr3ID, commit.MetaRangeID)
 			return commit3ID, nil
@@ -512,10 +527,10 @@ func TestGravelerCommit_v2(t *testing.T) {
 			}).Times(1)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
-		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any()).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, nil)
+		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
+		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any(), false, []graveler.SetOptionsFunc{}).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, nil)
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).Return(graveler.CommitID(""), nil)
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken1).Return(nil)
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken2).Return(nil)
@@ -554,10 +569,10 @@ func TestGravelerCommit_v2(t *testing.T) {
 			}).Times(1).Return(graveler.ErrNoChanges)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
-		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any()).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, graveler.ErrNoChanges)
+		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{}))
+		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageNamespace, mr1ID, gomock.Any(), false, []graveler.SetOptionsFunc{}).Times(1).Return(graveler.MetaRangeID(""), graveler.DiffSummary{}, graveler.ErrNoChanges)
 
 		val, err := test.Sut.Commit(ctx, repository, branch1ID, graveler.CommitParams{})
 
@@ -591,6 +606,26 @@ func TestGravelerCommit_v2(t *testing.T) {
 	})
 }
 
+func TestGravelerCreateCommitRecord_v2(t *testing.T) {
+	ctx := context.Background()
+	t.Run("create commit record", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		commit := graveler.Commit{
+			Committer:    "committer",
+			Message:      "message",
+			MetaRangeID:  "metaRangeID",
+			Parents:      []graveler.CommitID{"parent1", "parent2"},
+			Metadata:     graveler.Metadata{"key": "value"},
+			CreationDate: time.Now(),
+			Version:      graveler.CurrentCommitVersion,
+			Generation:   1,
+		}
+		test.RefManager.EXPECT().CreateCommitRecord(ctx, repository, graveler.CommitID("commitID"), commit).Return(nil)
+		err := test.Sut.CreateCommitRecord(ctx, repository, "commitID", commit)
+		require.NoError(t, err)
+	})
+}
+
 func TestGravelerImport(t *testing.T) {
 	ctx := context.Background()
 
@@ -610,15 +645,15 @@ func TestGravelerImport(t *testing.T) {
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: nil, // tombstone
-		}}), nil)
-		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator(nil), nil)
+		}}))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator(nil))
 		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(numReps).Return(testutils.NewFakeValueIterator([]*graveler.ValueRecord{{
 			Key:   key1,
 			Value: value1,
-		}}), nil)
+		}}))
 	}
 
-	t.Run("import successful", func(t *testing.T) {
+	importTest := func(t *testing.T, metadata graveler.Metadata) {
 		test := testutil.InitGravelerTest(t)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
@@ -626,7 +661,7 @@ func TestGravelerImport(t *testing.T) {
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch1ID)).Times(1).Return(rawRefCommit1, nil)
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
-		test.CommittedManager.EXPECT().Import(ctx, repository.StorageNamespace, mr1ID, mr2ID, nil).Times(1).Return(mr4ID, nil)
+		test.CommittedManager.EXPECT().Import(ctx, repository.StorageNamespace, mr1ID, mr2ID, nil, []graveler.SetOptionsFunc{}).Times(1).Return(mr4ID, nil)
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
 			require.Equal(t, mr4ID, commit.MetaRangeID)
 			return commit4ID, nil
@@ -646,9 +681,17 @@ func TestGravelerImport(t *testing.T) {
 		test.StagingManager.EXPECT().DropAsync(ctx, stagingToken3).Times(1)
 		test.RefManager.EXPECT().SetRepositoryMetadata(ctx, repository, gomock.Any())
 
-		val, err := test.Sut.Import(ctx, repository, branch1ID, commit2.MetaRangeID, graveler.CommitParams{Metadata: graveler.Metadata{}}, nil)
+		val, err := test.Sut.Import(ctx, repository, branch1ID, commit2.MetaRangeID, graveler.CommitParams{Metadata: metadata}, nil)
 		require.NoError(t, err)
 		require.NotNil(t, val)
 		require.Equal(t, commit4ID, graveler.CommitID(val.Ref()))
+	}
+
+	t.Run("import successful without metadata", func(t *testing.T) {
+		importTest(t, nil)
+	})
+
+	t.Run("import successful with metadata", func(t *testing.T) {
+		importTest(t, graveler.Metadata{"key": "value"})
 	})
 }

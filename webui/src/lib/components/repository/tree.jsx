@@ -25,7 +25,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Dropdown from "react-bootstrap/Dropdown";
 
-import { commits, linkToPath } from "../../api";
+import { commits, linkToPath, objects } from "../../api";
 import { ConfirmationModal } from "../modals";
 import { Paginator } from "../pagination";
 import { Link } from "../nav";
@@ -35,6 +35,7 @@ import Modal from "react-bootstrap/Modal";
 import { useAPI } from "../../hooks/api";
 import noop from "lodash/noop";
 import {FaDownload} from "react-icons/fa";
+import {CommitInfoCard} from "./commits";
 
 export const humanSize = (bytes) => {
   if (!bytes) return "0.0 B";
@@ -46,7 +47,7 @@ export const humanSize = (bytes) => {
 
 const Na = () => <span>&mdash;</span>;
 
-const EntryRowActions = ({ repo, reference, entry, onDelete, presign = false }) => {
+const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui = false }) => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const handleCloseDeleteConfirmation = () => setShowDeleteConfirmation(false);
   const handleShowDeleteConfirmation = () => setShowDeleteConfirmation(true);
@@ -75,14 +76,17 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign = false }) 
         </Dropdown.Toggle>
 
         <Dropdown.Menu>
-          {entry.path_type === "object" && (
-              <Dropdown.Item
-                  onClick={(e) => {
-                    copyTextToClipboard(
-                        entry.physical_address
-                    );
-                    e.preventDefault();
-                  }}
+          {entry.path_type === "object" && presign && (
+               <Dropdown.Item
+                onClick={async e => {
+                  try {
+                    const resp = await objects.getStat(repo.id, reference.id, entry.path, true);
+                    copyTextToClipboard(resp.physical_address);
+                  } catch (err) {
+                    alert(err);
+                  }
+                  e.preventDefault();
+                }}
               >
                 <LinkIcon /> Copy Presigned URL
               </Dropdown.Item>
@@ -93,7 +97,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign = false }) 
               reference={reference}
               repoId={repo.id}
               as={Dropdown.Item}
-              presign={presign}
+              presign={presign_ui}
             >
               <DownloadIcon /> Download
             </PathLink>
@@ -165,12 +169,12 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign = false }) 
 
 const StatModal = ({ show, onHide, entry }) => {
   return (
-    <Modal show={show} onHide={onHide} size={"lg"}>
+    <Modal show={show} onHide={onHide} size={"xl"}>
       <Modal.Header closeButton>
         <Modal.Title>Object Information</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <Table hover>
+        <Table responsive hover>
           <tbody>
             <tr>
               <td>
@@ -258,29 +262,6 @@ const EntryMetadata = ({ metadata }) => {
     )
 };
 
-
-const CommitMetadata = ({ metadata }) => {
-  const entries = Object.entries(metadata);
-  if (entries.length === 0) {
-    // empty state
-    return <small>No metadata fields</small>;
-  }
-  return (
-    <Table striped size="sm" responsive>
-      <tbody>
-        {entries.map(([key, value]) => (
-          <tr key={`blame-commit-md-${key}`}>
-            <td>{key}</td>
-            <td>
-              <code>{value}</code>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </Table>
-  );
-};
-
 const OriginModal = ({ show, onHide, entry, repo, reference }) => {
   const {
     response: commit,
@@ -307,69 +288,7 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
   }
   if (!loading && !error && commit) {
     content = (
-      <>
-        <Table hover responsive>
-          <tbody>
-            <tr>
-              <td>
-                <strong>Path</strong>
-              </td>
-              <td>
-                <code>{entry.path}</code>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Commit ID</strong>
-              </td>
-              <td>
-                <Link
-                  className="me-2"
-                  href={{
-                    pathname: "/repositories/:repoId/commits/:commitId",
-                    params: { repoId: repo.id, commitId: commit.id },
-                  }}
-                >
-                  <code>{commit.id}</code>
-                </Link>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Commit Message</strong>
-              </td>
-              <td>{commit.message}</td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Committed By</strong>
-              </td>
-              <td>{commit.committer}</td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Created At</strong>
-              </td>
-              <td>
-                <>
-                  {dayjs
-                    .unix(commit.creation_date)
-                    .format("MM/DD/YYYY HH:mm:ss")}
-                </>{" "}
-                ({dayjs.unix(commit.creation_date).fromNow()})
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <strong>Metadata</strong>
-              </td>
-              <td>
-                <CommitMetadata metadata={commit.metadata} />
-              </td>
-            </tr>
-          </tbody>
-        </Table>
-      </>
+      <CommitInfoCard bare={true} repo={repo} commit={commit}/>
     );
   }
 
@@ -553,6 +472,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
         entry={entry}
         onDelete={onDelete}
         presign={config.config.pre_sign_support}
+        presign_ui={config.config.pre_sign_support_ui}
       />
     );
   }
@@ -736,7 +656,7 @@ const GetStarted = ({ config, onUpload, onImport }) => {
           <DotIcon className="me-1 mt-1" />
           Use&nbsp;
           <a
-            href="https://docs.lakefs.io/integrations/distcp.html"
+            href="https://docs.lakefs.io/howto/copying.html#using-distcp"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -744,7 +664,7 @@ const GetStarted = ({ config, onUpload, onImport }) => {
           </a>
           &nbsp;or&nbsp;
           <a
-            href="https://docs.lakefs.io/integrations/rclone.html"
+            href="https://docs.lakefs.io/howto/copying.html#using-rclone"
             target="_blank"
             rel="noopener noreferrer"
           >

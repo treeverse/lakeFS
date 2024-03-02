@@ -4,26 +4,27 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 var tagListCmd = &cobra.Command{
-	Use:               "list <repository uri>",
+	Use:               "list <repository URI>",
 	Short:             "List tags in a repository",
-	Example:           "lakectl tag list lakefs://<repository>",
+	Example:           "lakectl tag list " + myRepoExample,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := Must(cmd.Flags().GetInt("amount"))
 		after := Must(cmd.Flags().GetString("after"))
 
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("repository URI", args[0])
 
 		ctx := cmd.Context()
 		client := getClient()
-		resp, err := client.ListTagsWithResponse(ctx, u.Repository, &api.ListTagsParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amount),
+		resp, err := client.ListTagsWithResponse(ctx, u.Repository, &apigen.ListTagsParams{
+			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {

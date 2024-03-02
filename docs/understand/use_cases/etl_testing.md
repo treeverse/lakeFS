@@ -25,7 +25,7 @@ Without lakeFS, the challenge with this approach is that it can be time-consumin
 
 ## How does lakeFS help with Dev/Test environments?
 
-lakeFS makes creating isolated dev/test environments for ETL testing quick and cheap. lakeFS uses Copy-on-Write which means that there is no duplication of data when you create a new environment. This frees you from spending time on environment maintenance and makes it possible to create as many environments as needed.
+lakeFS makes creating isolated dev/test environments for ETL testing quick and cheap. lakeFS uses zero-copy branching which means that there is no duplication of data when you create a new environment. This frees you from spending time on environment maintenance and makes it possible to create as many environments as needed.
 
 In a lakeFS repository, data is always located on a `branch`. You can think of each `branch` in lakeFS as its own environment. This is because branches are isolated, meaning changes on one branch have no effect other branches.
 
@@ -53,9 +53,9 @@ You can also [deploy lakeFS]({% link howto/deploy/index.md %}) locally or self-m
 
 ### Using lakeFS Playground on lakeFS Cloud
 
-In this tutorial, we will use [a lakeFS playground environment](https://demo.lakefs.io/) to create dev/test data environments for ETL testing. This allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
+In this tutorial, we will use [a lakeFS playground environment](https://lakefs.cloud/) to create dev/test data environments for ETL testing. This allows you to spin up a lakeFS instance in a click, create different data environments by simply branching out of your data repository and develop & test data pipelines in these isolated branches.
 
-First, let us spin up a [playground](https://demo.lakefs.io/) instance. Once you have a live environment, login to your instance with access and secret keys. Then, you can work with the sample data repository `my-repo` that is created for you.
+First, let us spin up a [playground](https://lakefs.cloud/) instance. Once you have a live environment, login to your instance with access and secret keys. Then, you can work with the sample data repository `my-repo` that is created for you.
 
 
 ![sample repository]({{ site.baseurl }}/assets/img/iso_env_myrepo.png)

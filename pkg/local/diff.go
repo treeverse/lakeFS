@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-openapi/swag"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -187,14 +187,17 @@ func Undo(c Changes) Changes {
 // DiffLocalWithHead Checks changes between a local directory and the head it is pointing to. The diff check assumes the remote
 // is an immutable set so any changes found resulted from changes in the local directory
 // left is an object channel which contains results from a remote source. rightPath is the local directory to diff with
-func DiffLocalWithHead(left <-chan api.ObjectStats, rightPath string) (Changes, error) {
+func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Changes, error) {
 	// left should be the base commit
 	changes := make([]*Change, 0)
 	var (
-		currentRemoteFile api.ObjectStats
+		currentRemoteFile apigen.ObjectStats
 		hasMore           bool
 	)
 	err := filepath.Walk(rightPath, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if info.IsDir() || diffShouldIgnore(info.Name()) {
 			return nil
 		}
@@ -249,7 +252,7 @@ func DiffLocalWithHead(left <-chan api.ObjectStats, rightPath string) (Changes, 
 }
 
 // ListRemote - Lists objects from a remote uri and inserts them into the objects channel
-func ListRemote(ctx context.Context, client api.ClientWithResponsesInterface, loc *uri.URI, objects chan<- api.ObjectStats) error {
+func ListRemote(ctx context.Context, client apigen.ClientWithResponsesInterface, loc *uri.URI, objects chan<- apigen.ObjectStats) error {
 	hasMore := true
 	var after string
 	defer func() {
@@ -257,9 +260,9 @@ func ListRemote(ctx context.Context, client api.ClientWithResponsesInterface, lo
 	}()
 
 	for hasMore {
-		listResp, err := client.ListObjectsWithResponse(ctx, loc.Repository, loc.Ref, &api.ListObjectsParams{
-			After:        (*api.PaginationAfter)(swag.String(after)),
-			Prefix:       (*api.PaginationPrefix)(loc.Path),
+		listResp, err := client.ListObjectsWithResponse(ctx, loc.Repository, loc.Ref, &apigen.ListObjectsParams{
+			After:        (*apigen.PaginationAfter)(swag.String(after)),
+			Prefix:       (*apigen.PaginationPrefix)(loc.Path),
 			UserMetadata: swag.Bool(true),
 		})
 		if err != nil {
@@ -267,7 +270,7 @@ func ListRemote(ctx context.Context, client api.ClientWithResponsesInterface, lo
 		}
 
 		if listResp.HTTPResponse.StatusCode != http.StatusOK {
-			return fmt.Errorf("HTTP %d: %w", listResp.StatusCode(), ErrRemoteDiffFailed)
+			return fmt.Errorf("list remote failed. HTTP %d: %w", listResp.StatusCode(), ErrRemoteFailure)
 		}
 		for _, o := range listResp.JSON200.Results {
 			path := strings.TrimPrefix(o.Path, loc.GetPath())
@@ -276,7 +279,7 @@ func ListRemote(ctx context.Context, client api.ClientWithResponsesInterface, lo
 				continue
 			}
 			path = strings.TrimPrefix(path, uri.PathSeparator)
-			objects <- api.ObjectStats{
+			objects <- apigen.ObjectStats{
 				Checksum:        o.Checksum,
 				ContentType:     o.ContentType,
 				Metadata:        o.Metadata,

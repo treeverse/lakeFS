@@ -5,6 +5,7 @@ package permissions
 var Actions = []string{
 	"fs:ReadRepository",
 	"fs:CreateRepository",
+	"fs:UpdateRepository",
 	"fs:AttachStorageNamespace",
 	"fs:ImportFromStorage",
 	"fs:ImportCancel",

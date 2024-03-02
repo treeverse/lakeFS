@@ -2,7 +2,6 @@ package azure
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,18 +20,16 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-var ErrNotImplemented = errors.New("not implemented")
-
 const (
 	sizeSuffix = "_size"
 	idSuffix   = "_id"
 	_1MiB      = 1024 * 1024
 	MaxBuffers = 1
 	// udcCacheSize - Arbitrary number: exceeding this number means that in the expiry timeframe we requested pre-signed urls from
-	// more the 5000 different accounts which is highly unlikely
+	// more the 5000 different accounts, which is highly unlikely
 	udcCacheSize = 5000
 
-	URLTemplate = "https://%s.blob.core.windows.net/"
+	BlobEndpointFormat = "https://%s.blob.core.windows.net/"
 )
 
 type Adapter struct {
@@ -92,7 +89,7 @@ func ResolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
 		return qk, err
 	}
 
-	// In azure the first part of the path is part of the storage namespace
+	// In azure, the first part of the path is part of the storage namespace
 	trimmedPath := strings.Trim(pathURL.Path, "/")
 	pathParts := strings.Split(trimmedPath, "/")
 	if len(pathParts) == 0 {
@@ -141,10 +138,6 @@ func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 		return info, nil
 	}
 	return ResolveBlobURLInfoFromURL(parsedKey)
-}
-
-func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool, _ []string) (block.Inventory, error) {
-	return nil, fmt.Errorf("inventory %w", ErrNotImplemented)
 }
 
 func (a *Adapter) translatePutOpts(ctx context.Context, opts block.PutOpts) azblob.UploadStreamOptions {
@@ -226,9 +219,9 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 			Write: true,
 		}
 	}
-	url, err := a.getPreSignedURL(ctx, obj, permissions)
+	preSignedURL, err := a.getPreSignedURL(ctx, obj, permissions)
 	// TODO(#6347): Report expiry.
-	return url, time.Time{}, err
+	return preSignedURL, time.Time{}, err
 }
 
 func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions sas.BlobPermissions) (string, error) {
@@ -247,9 +240,12 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		if err != nil {
 			return "", err
 		}
-		return container.NewBlobClient(qualifiedKey.BlobURL).GetSASURL(permissions, time.Time{}, a.newPreSignedTime())
+		client := container.NewBlobClient(qualifiedKey.BlobURL)
+		urlExpiry := a.newPreSignedTime()
+		return client.GetSASURL(permissions, urlExpiry, &blob.GetSASURLOptions{})
 	}
 
+	// Otherwise assume using role based credentials and build signed URL using user delegation credentials
 	urlExpiry := a.newPreSignedTime()
 	udc, err := a.clientCache.NewUDC(ctx, qualifiedKey.StorageAccountName, &urlExpiry)
 	if err != nil {
@@ -257,18 +253,25 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	}
 
 	// Create Blob Signature Values with desired permissions and sign with user delegation credential
-	sasQueryParams, err := sas.BlobSignatureValues{
+	blobSignatureValues := sas.BlobSignatureValues{
 		Protocol:      sas.ProtocolHTTPS,
 		ExpiryTime:    urlExpiry,
 		Permissions:   to.Ptr(permissions).String(),
 		ContainerName: qualifiedKey.ContainerName,
 		BlobName:      qualifiedKey.BlobURL,
-	}.SignWithUserDelegation(udc)
+	}
+	sasQueryParams, err := blobSignatureValues.SignWithUserDelegation(udc)
 	if err != nil {
 		return "", err
 	}
-	u := fmt.Sprintf("%s/%s?%s", qualifiedKey.ContainerURL, qualifiedKey.BlobURL, sasQueryParams.Encode())
 
+	// format blob URL with signed SAS query params
+	accountEndpoint := fmt.Sprintf(BlobEndpointFormat, qualifiedKey.StorageAccountName)
+	u, err := url.JoinPath(accountEndpoint, qualifiedKey.ContainerName, qualifiedKey.BlobURL)
+	if err != nil {
+		return "", err
+	}
+	u += "?" + sasQueryParams.Encode()
 	return u, nil
 }
 
@@ -530,22 +533,11 @@ func (a *Adapter) copyPartRange(ctx context.Context, sourceObj, destinationObj b
 		return nil, err
 	}
 
-	destinationContainer, err := a.clientCache.NewContainerClient(qualifiedDestinationKey.StorageAccountName, qualifiedDestinationKey.ContainerName)
-	if err != nil {
-		return nil, err
-	}
-	sourceContainer, err := a.clientCache.NewContainerClient(qualifiedSourceKey.StorageAccountName, qualifiedSourceKey.ContainerName)
-	if err != nil {
-		return nil, err
-	}
-
-	sourceBlobURL := sourceContainer.NewBlockBlobClient(qualifiedSourceKey.BlobURL)
-
-	return copyPartRange(ctx, *destinationContainer, qualifiedDestinationKey.BlobURL, *sourceBlobURL, startPosition, count)
+	return copyPartRange(ctx, a.clientCache, qualifiedDestinationKey, qualifiedSourceKey, startPosition, count)
 }
 
 func (a *Adapter) AbortMultiPartUpload(_ context.Context, _ block.ObjectPointer, _ string) error {
-	// Azure has no abort, in case of commit, uncommitted parts are erased, otherwise staged data is erased after 7 days
+	// Azure has no abort. In case of commit, uncommitted parts are erased. Otherwise, staged data is erased after 7 days
 	return nil
 }
 
@@ -570,7 +562,8 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeAzure)
-	info.ValidityRegex = `^https?://[a-z,0-9]+\.blob\.core\.windows\.net`
+	info.ImportValidityRegex = `^https?://[a-z0-9_-]+\.(blob|adls)\.core\.windows\.net` // added adls for import hint validation in UI
+	info.ValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.windows\.net`
 	info.Example = "https://mystorageaccount.blob.core.windows.net/mycontainer/"
 	if a.disablePreSigned {
 		info.PreSignSupport = false
@@ -591,4 +584,8 @@ func (a *Adapter) RuntimeStats() map[string]string {
 
 func (a *Adapter) newPreSignedTime() time.Time {
 	return time.Now().UTC().Add(a.preSignedExpiry)
+}
+
+func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectPointer, uploadID string, partNumber int) (string, error) {
+	return "", block.ErrOperationNotSupported
 }

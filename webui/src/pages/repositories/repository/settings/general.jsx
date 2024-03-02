@@ -1,5 +1,5 @@
-import React, {useRef, useState} from "react";
-
+import React, {useEffect, useRef, useState} from "react";
+import { useOutletContext } from "react-router-dom";
 import {useRefs} from "../../../../lib/hooks/repo";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -11,8 +11,7 @@ import {AlertError, Loading} from "../../../../lib/components/controls";
 import Modal from "react-bootstrap/Modal";
 import {repositories} from "../../../../lib/api";
 import {useRouter} from "../../../../lib/hooks/router";
-import {SettingsLayout} from "./layout";
-import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
+import {ReadOnlyBadge} from "../../../../lib/components/badges";
 
 const DeleteRepositoryModal = ({repo, show, onSubmit, onCancel}) => {
     const [isDisabled, setIsDisabled] = useState(true);
@@ -73,6 +72,14 @@ const SettingsContainer = () => {
             <Container>
                 <Row>
                     <Form.Label column md={{span:3}} className="mb-3">
+                        &nbsp;
+                    </Form.Label>
+                    <Col md={{span:4}}>
+                        <ReadOnlyBadge readOnly={repo?.read_only} style={{marginTop: 7}} />
+                    </Col>
+                </Row>
+                <Row>
+                    <Form.Label column md={{span:3}} className="mb-3">
                         Repository name
                     </Form.Label>
                     <Col md={{span:4}}>
@@ -97,7 +104,7 @@ const SettingsContainer = () => {
                 </Row>
             </Container>
 
-            <Button variant="danger" className="mt-3" onClick={() => setShowDeleteModal(!showingDeleteModal)}>
+            <Button variant="danger" className="mt-3" disabled={repo?.read_only} onClick={() => setShowDeleteModal(!showingDeleteModal)}>
                 <TrashIcon/> Delete Repository
             </Button>
 
@@ -119,13 +126,9 @@ const SettingsContainer = () => {
 
 
 const RepositoryGeneralSettingsPage = () => {
-    return (
-        <RepositoryPageLayout activePage={'settings'}>
-            <SettingsLayout activeTab={"general"}>
-                <SettingsContainer/>
-            </SettingsLayout>
-        </RepositoryPageLayout>
-    )
+  const [setActiveTab] = useOutletContext();
+  useEffect(() => setActiveTab("general"), [setActiveTab]);
+  return <SettingsContainer />;
 }
 
 

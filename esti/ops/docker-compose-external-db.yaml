@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
   lakefs:
     image: "${REPO:-treeverse}/lakefs:${TAG:-dev}"
@@ -15,11 +15,9 @@ services:
       - LAKEFS_BLOCKSTORE_LOCAL_ALLOWED_EXTERNAL_PREFIXES=/tmp
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
-      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
       - LAKEFS_LOGGING_LEVEL=DEBUG
       - LAKEFS_STATS_ENABLED=false
-      - ACTIONS_VAR=this_is_actions_var
+      - LAKEFSACTION_VAR=this_is_actions_var
       - LAKEFS_DATABASE_TYPE=cosmosdb
       - LAKEFS_DATABASE_COSMOSDB_ENDPOINT
       - LAKEFS_DATABASE_COSMOSDB_DATABASE
@@ -28,9 +26,9 @@ services:
       - AZURE_CLIENT_ID
       - AZURE_CLIENT_SECRET
       - AZURE_TENANT_ID
-    entrypoint: [ "/app/lakefs", "run" ]
+    entrypoint: ["/app/lakefs", "run"]
   esti:
-    image: "golang:1.20.6-alpine3.18"
+    image: "golang:1.21.4-alpine3.18"
     links:
       - lakefs:s3.local.lakefs.io
       - lakefs:testmultipartupload.s3.local.lakefs.io
@@ -43,7 +41,6 @@ services:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION=us-east-1
-      - ESTI_TEST_DATA_ACCESS
       - ESTI_STORAGE_NAMESPACE
       - ESTI_BLOCKSTORE_TYPE
       - ESTI_AWS_ACCESS_KEY_ID
@@ -55,6 +52,8 @@ services:
       - ESTI_FLAGS
       - ESTI_FORCE_PATH_STYLE
       - ESTI_ADLS_IMPORT_BASE_URL
+      - ESTI_AZURE_STORAGE_ACCOUNT
+      - ESTI_AZURE_STORAGE_ACCESS_KEY
     working_dir: /lakefs
     command:
       - /bin/sh
@@ -74,4 +73,3 @@ volumes:
       type: none
       device: ${LAKEFS_ROOT:-.}
   lakefs-app:
-

@@ -350,6 +350,7 @@ func BaseOpen(buf io.StringWriter) glua.Function {
 
 type OpenSafeConfig struct {
 	NetHTTPEnabled bool
+	LakeFSAddr     string // The domain (or "authority:port") that lakeFS listens to
 }
 
 func OpenSafe(l *glua.State, ctx context.Context, cfg OpenSafeConfig, buf io.StringWriter) {

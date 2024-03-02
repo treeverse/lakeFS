@@ -1,0 +1,64 @@
+name: Unit Test Python SDK Wrapper
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  paths-filter:
+    runs-on: ubuntu-latest
+    outputs:
+      client-change: ${{ steps.filter.outputs.client == 'true' }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            client: 
+              - 'clients/python-wrapper/**'
+              - '.github/workflows/python-wrapper-unit-tests.yaml'
+
+  always-succeed:
+    needs: paths-filter
+    if: ${{ needs.paths-filter.outputs.client-change != 'true' }}
+    name: Unit Test Python SDK Wrapper
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Always Succeed
+        run: echo "No changes in client - skipping unit tests"
+
+  unit-tests:
+    needs: paths-filter
+    if: ${{ needs.paths-filter.outputs.client-change == 'true' }}
+    name: Unit Test Python SDK Wrapper
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+      
+      - name: Install dependencies
+        working-directory: ./clients/python-wrapper
+        run: pip install -r requirements.txt pylint pytest pytest-md pytest-emoji
+
+      - name: Validate Documentation
+        run: make validate-python-wrapper
+
+      - name: Run Pylint
+        run: make python-wrapper-lint
+      
+      - name: Run Unit Tests 
+        uses: pavelzw/pytest-action@v2
+        with:
+          verbose: true
+          emoji: true
+          job-summary: true
+          custom-arguments: './clients/python-wrapper/tests/utests -q -We'
+          click-to-expand: true
+          report-title: 'Python Wrapper Unit Tests Report'

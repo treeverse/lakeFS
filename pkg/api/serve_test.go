@@ -16,9 +16,10 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -28,16 +29,14 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/logging"
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
-	"github.com/treeverse/lakefs/templates"
 )
 
 const (
@@ -46,7 +45,7 @@ const (
 
 type dependencies struct {
 	blocks      block.Adapter
-	catalog     catalog.Interface
+	catalog     *catalog.Catalog
 	authService auth.Service
 	collector   *memCollector
 	server      *httptest.Server
@@ -80,14 +79,14 @@ func (m *memCollector) SetInstallationID(installationID string) {
 	m.InstallationID = installationID
 }
 
-func (m *memCollector) CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool) {
+func (m *memCollector) CollectCommPrefs(_ stats.CommPrefs) {
 }
 
 func (m *memCollector) Close() {}
 
-func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {
+func createDefaultAdminUser(t testing.TB, clt apigen.ClientWithResponsesInterface) *authmodel.BaseCredential {
 	t.Helper()
-	res, err := clt.SetupWithResponse(context.Background(), api.SetupJSONRequestBody{
+	res, err := clt.SetupWithResponse(context.Background(), apigen.SetupJSONRequestBody{
 		Username: "admin",
 	})
 	testutil.Must(t, err)
@@ -101,10 +100,10 @@ func createDefaultAdminUser(t testing.TB, clt api.ClientWithResponsesInterface) 
 	}
 }
 
-func createUserWithDefaultGroup(t testing.TB, clt api.ClientWithResponsesInterface) *authmodel.BaseCredential {
+func createUserWithDefaultGroup(t testing.TB, clt apigen.ClientWithResponsesInterface) *authmodel.BaseCredential {
 	t.Helper()
 	// create the user
-	createUsrRes, err := clt.CreateUserWithResponse(context.Background(), api.CreateUserJSONRequestBody{
+	createUsrRes, err := clt.CreateUserWithResponse(context.Background(), apigen.CreateUserJSONRequestBody{
 		Id:         "test@example.com",
 		InviteUser: swag.Bool(false),
 	})
@@ -136,7 +135,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	}
 	viper.Set("database.type", mem.DriverName)
 	// Use 'internal' mode in order to have access to policies
-	viper.Set("auth.ui_config.rbac", "internal")
+	viper.Set("auth.ui_config.rbac", config.AuthRBACInternal)
 
 	collector := &memCollector{}
 
@@ -145,7 +144,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	kvStore := kvtest.GetStore(ctx, t)
 	actionsStore := actions.NewActionsKVStore(kvStore)
 	idGen := &actions.DecreasingIDGenerator{}
-	authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), nil, authparams.ServiceCache{
+	authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.ContextUnavailable())
 	meta := auth.NewKVMetadataManager("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
@@ -157,7 +156,6 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		WalkerFactory:         factory,
 		SettingsManagerOption: settings.WithCache(cache.NoCache),
 		PathProvider:          upload.DefaultPathProvider,
-		Limiter:               cfg.NewGravelerBackgroundLimiter(),
 	})
 	testutil.MustDo(t, "build catalog", err)
 
@@ -172,12 +170,13 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 		idGen,
 		collector,
 		actionsConfig,
+		"",
 	)
 
 	c.SetHooksHandler(actionsService)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
-	kvParams, err := cfg.DatabaseParams()
+	kvParams, err := kvparams.NewConfig(cfg)
 	testutil.Must(t, err)
 	migrator := kv.NewDatabaseMigrator(kvParams)
 
@@ -187,32 +186,8 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	})
 
 	auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, "", nil)
-	emailer, err := email.NewEmailer(email.Params(cfg.Email))
-	tmpl := templater.NewService(templates.Content, cfg, authService)
 
-	otfDiffService := tablediff.NewMockService()
-
-	testutil.Must(t, err)
-	handler := api.Serve(
-		cfg,
-		c,
-		authenticator,
-		authService,
-		c.BlockAdapter,
-		meta,
-		migrator,
-		collector,
-		nil,
-		actionsService,
-		auditChecker,
-		logging.ContextUnavailable(),
-		emailer,
-		tmpl,
-		nil,
-		nil,
-		upload.DefaultPathProvider,
-		otfDiffService,
-	)
+	handler := api.Serve(cfg, c, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,
@@ -226,7 +201,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	return setupHandlerWithWalkerFactory(t, store.NewFactory(nil))
 }
 
-func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secretAccessKey string, opts ...api.ClientOption) api.ClientWithResponsesInterface {
+func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secretAccessKey string, opts ...apigen.ClientOption) apigen.ClientWithResponsesInterface {
 	t.Helper()
 
 	if accessKeyID != "" {
@@ -234,9 +209,9 @@ func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secret
 		if err != nil {
 			t.Fatal("basic auth security provider", err)
 		}
-		opts = append(opts, api.WithRequestEditorFn(basicAuthProvider.Intercept))
+		opts = append(opts, apigen.WithRequestEditorFn(basicAuthProvider.Intercept))
 	}
-	clt, err := api.NewClientWithResponses(endpointURL+api.BaseURL, opts...)
+	clt, err := apigen.NewClientWithResponses(endpointURL+apiutil.BaseURL, opts...)
 	if err != nil {
 		t.Fatal("failed to create lakefs api client:", err)
 	}
@@ -265,12 +240,12 @@ func shouldUseServerTimeout() bool {
 	return withServerTimeout
 }
 
-func setupClientWithAdmin(t testing.TB) (api.ClientWithResponsesInterface, *dependencies) {
+func setupClientWithAdmin(t testing.TB) (apigen.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
 	return setupClientWithAdminAndWalkerFactory(t, store.NewFactory(nil))
 }
 
-func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFactory) (api.ClientWithResponsesInterface, *dependencies) {
+func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFactory) (apigen.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
 	handler, deps := setupHandlerWithWalkerFactory(t, factory)
 	server := setupServer(t, handler)
@@ -292,13 +267,13 @@ func TestInvalidRoute(t *testing.T) {
 	if err != nil {
 		t.Fatal("basic auth security provider", err)
 	}
-	clt, err = api.NewClientWithResponses(server.URL+api.BaseURL+"//", api.WithRequestEditorFn(basicAuthProvider.Intercept))
+	clt, err = apigen.NewClientWithResponses(server.URL+apiutil.BaseURL+"//", apigen.WithRequestEditorFn(basicAuthProvider.Intercept))
 	if err != nil {
 		t.Fatal("failed to create api client:", err)
 	}
 
 	ctx := context.Background()
-	resp, err := clt.ListRepositoriesWithResponse(ctx, &api.ListRepositoriesParams{})
+	resp, err := clt.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 	if err != nil {
 		t.Fatalf("failed to get lakefs server version")
 	}

@@ -2,20 +2,23 @@ package cmd
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var fsStageCmd = &cobra.Command{
-	Use:               "stage <path uri>",
-	Short:             "Stage a reference to an existing object, to be managed in lakeFS",
+	Use:   "stage <path URI>",
+	Short: "Link an external object with a path in a repository",
+	Long: `Link an external object with a path in a repository, creating an uncommitted change.
+The object location must be outside the repository's storage namespace`,
 	Hidden:            true,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := MustParsePathURI("path", args[0])
+		pathURI := MustParsePathURI("path URI", args[0])
 		flags := cmd.Flags()
 		size, _ := flags.GetInt64("size")
 		mtimeSeconds, _ := flags.GetInt64("mtime")
@@ -28,8 +31,13 @@ var fsStageCmd = &cobra.Command{
 		if mtimeSeconds != 0 {
 			mtime = &mtimeSeconds
 		}
-
-		obj := api.ObjectStageCreation{
+		repoResp, err := client.GetRepositoryWithResponse(cmd.Context(), pathURI.Repository)
+		DieOnErrorOrUnexpectedStatusCode(repoResp, err, http.StatusOK)
+		ns := strings.TrimSuffix(repoResp.JSON200.StorageNamespace, "/") + "/"
+		if strings.HasPrefix(location, ns) {
+			Die("The staged object must be outside the repository's storage namespace", 1)
+		}
+		obj := apigen.ObjectStageCreation{
 			Checksum:        checksum,
 			Mtime:           mtime,
 			PhysicalAddress: location,
@@ -37,15 +45,15 @@ var fsStageCmd = &cobra.Command{
 			ContentType:     &contentType,
 		}
 		if metaErr == nil {
-			metadata := api.ObjectUserMetadata{
+			metadata := apigen.ObjectUserMetadata{
 				AdditionalProperties: meta,
 			}
 			obj.Metadata = &metadata
 		}
 
-		resp, err := client.StageObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StageObjectParams{
+		resp, err := client.StageObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &apigen.StageObjectParams{
 			Path: *pathURI.Path,
-		}, api.StageObjectJSONRequestBody(obj))
+		}, apigen.StageObjectJSONRequestBody(obj))
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
 			Die("Bad response from server", 1)

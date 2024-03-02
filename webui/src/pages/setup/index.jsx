@@ -1,7 +1,6 @@
 import React, {useCallback, useEffect} from "react";
-import Layout from "../../lib/components/layout";
 import {useState} from "react";
-import {API_ENDPOINT, setup, SETUP_STATE_NOT_INITIALIZED, SETUP_STATE_INITIALIZED} from "../../lib/api";
+import {API_ENDPOINT, setup, SETUP_STATE_INITIALIZED} from "../../lib/api";
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {SetupComplete} from "./setupComplete";
@@ -28,7 +27,7 @@ const SetupContents = () => {
     }, [error, response]);
 
     const onSubmitUserConfiguration = useCallback(async (adminUser, userEmail, checked) => {
-        if (currentStep !== SETUP_STATE_NOT_INITIALIZED && !adminUser) {
+        if (!adminUser) {
             setSetupError("Please enter your admin username.");
             return;
         }
@@ -61,28 +60,24 @@ const SetupContents = () => {
 
     if (setupData && setupData.access_key_id) {
         return (
-            <Layout logged={false}>
-                <SetupComplete
-                    accessKeyId={setupData.access_key_id}
-                    secretAccessKey={setupData.secret_access_key}
-                    apiEndpoint={API_ENDPOINT}
-                    />
-            </Layout>
+            <SetupComplete
+                accessKeyId={setupData.access_key_id}
+                secretAccessKey={setupData.secret_access_key}
+                apiEndpoint={API_ENDPOINT}
+                />
         );
     }
 
     const notInitialized = currentStep !== SETUP_STATE_INITIALIZED;
     if (notInitialized || commPrefsMissing) {
         return (
-            <Layout logged={false}>
-                <UserConfiguration
-                    onSubmit={onSubmitUserConfiguration}
-                    setupError={setupError}
-                    disabled={disabled}
-                    requireAdmin={notInitialized}
-                    requireCommPrefs={commPrefsMissing}
-                />
-            </Layout>
+            <UserConfiguration
+                onSubmit={onSubmitUserConfiguration}
+                setupError={setupError}
+                disabled={disabled}
+                requireAdmin={notInitialized}
+                requireCommPrefs={commPrefsMissing}
+            />
         );
     }
 

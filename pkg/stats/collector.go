@@ -22,11 +22,19 @@ const (
 	heartbeatInterval = time.Hour
 )
 
+type CommPrefs struct {
+	InstallationID  string
+	Email           string
+	FeatureUpdates  bool
+	SecurityUpdates bool
+	BlockstoreType  string
+}
+
 type Collector interface {
 	CollectEvent(ev Event)
 	CollectEvents(ev Event, count uint64)
 	CollectMetadata(accountMetadata *Metadata)
-	CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool)
+	CollectCommPrefs(commPrefsEventData CommPrefs)
 	SetInstallationID(installationID string)
 
 	// Close must be called to ensure the delivery of pending stats
@@ -82,6 +90,7 @@ type CommPrefsData struct {
 	Email           string `json:"email"`
 	FeatureUpdates  bool   `json:"featureUpdates"`
 	SecurityUpdates bool   `json:"securityUpdates"`
+	BlockstoreType  string `json:"blockstoreType"`
 }
 
 type keyIndex map[Event]uint64
@@ -346,7 +355,7 @@ func (s *BufferedCollector) Stop() {
 		return
 	}
 
-	// wait until no new  in-flight requests
+	// wait until no new in-flight requests
 	s.inFlight.Wait()
 
 	// close update channel as no more updates will arrive,
@@ -398,24 +407,20 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 	}
 }
 
-func (s *BufferedCollector) CollectCommPrefs(email, installationID string, featureUpdates, securityUpdates bool) {
-	commPrefs := &CommPrefsData{
-		Email:           email,
-		InstallationID:  installationID,
-		FeatureUpdates:  featureUpdates,
-		SecurityUpdates: securityUpdates,
-	}
+func (s *BufferedCollector) CollectCommPrefs(commPrefsEventData CommPrefs) {
 	ctx := context.Background()
-	err := s.sender.UpdateCommPrefs(ctx, commPrefs)
-	eventName := "update_comm_prefs_success"
+	commPrefs := CommPrefsData(commPrefsEventData)
+	err := s.sender.UpdateCommPrefs(ctx, &commPrefs)
+	ev := Event{
+		Class: "global",
+	}
 	if err != nil {
 		s.log.WithError(err).Info("could not update comm prefs")
-		eventName = "update_comm_prefs_failed"
+		ev.Name = "update_comm_prefs_failed"
+	} else {
+		ev.Name = "update_comm_prefs_success"
 	}
-	s.CollectEvent(Event{
-		Class: "global",
-		Name:  eventName,
-	})
+	s.CollectEvent(ev)
 }
 
 func (s *BufferedCollector) SetInstallationID(installationID string) {

@@ -1,5 +1,3 @@
-import queryString from "query-string"
-
 export const API_ENDPOINT = '/api/v1';
 export const DEFAULT_LISTING_AMOUNT = 100;
 
@@ -26,17 +24,17 @@ class LocalCache {
 
 const cache = new LocalCache();
 
+export const qs = (queryParts) => {
+    const parts = Object.keys(queryParts).map(key => [key, queryParts[key]]);
+    return new URLSearchParams(parts).toString();
+};
+
 export const linkToPath = (repoId, branchId, path, presign = false) => {
     const query = qs({
         path,
         presign,
     });
     return `${API_ENDPOINT}/repositories/${repoId}/refs/${branchId}/objects?${query}`;
-};
-
-export const qs = (queryParts) => {
-    const parts = Object.keys(queryParts).map(key => [key, queryParts[key]]);
-    return new URLSearchParams(parts).toString();
 };
 
 export const extractError = async (response) => {
@@ -135,36 +133,6 @@ class Auth {
                 return await response.json();
             default:
                 throw new Error('Unknown');
-        }
-    }
-
-    async updatePasswordByToken(token, newPassword, email) {
-        const response = await fetch(`${API_ENDPOINT}/auth/password`, {
-            headers: new Headers(defaultAPIHeaders),
-            method: 'POST',
-            body: JSON.stringify({token: token, newPassword: newPassword, email: email})
-        });
-
-        if (response.status === 401) {
-            throw new AuthorizationError('user unauthorized');
-        }
-        if (response.status !== 201) {
-            throw new Error('failed to update password');
-        }
-    }
-
-    async passwordForgot(email) {
-        const response = await fetch(`${API_ENDPOINT}/auth/password/forgot`, {
-            headers: new Headers(defaultAPIHeaders),
-            method: 'POST',
-            body: JSON.stringify({email: email})
-        });
-
-        if (response.status === 400) {
-            throw new BadRequestError("invalid email");
-        }
-        if (response.status !== 204) {
-            throw new Error('failed to request password reset');
         }
     }
 
@@ -315,8 +283,8 @@ class Auth {
         }
     }
 
-    async createGroup(groupId) {
-        const response = await apiRequest(`/auth/groups`, {method: 'POST', body: JSON.stringify({id: groupId})});
+    async createGroup(groupName) {
+        const response = await apiRequest(`/auth/groups`, {method: 'POST', body: JSON.stringify({id: groupName})});
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
@@ -499,22 +467,6 @@ class Repositories {
             throw new Error(await extractError(response));
         }
     }
-
-    async otfDiff(repoId, leftRef, rightRef, tablePath = "", type) {
-        const query = qs({table_path: tablePath, type});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/otf/refs/${encodeURIComponent(leftRef)}/diff/${encodeURIComponent(rightRef)}?` + query);
-        if (response.status !== 200) {
-            switch (response.status) {
-                case 401:
-                    throw new AuthorizationError('user unauthorized');
-                case 404:
-                    throw new NotFoundError(`table ${tablePath} not found`);
-                default:
-                    throw new Error(await extractError(response));
-            }
-        }
-        return response.json();
-    }
 }
 
 class Branches {
@@ -569,16 +521,6 @@ class Branches {
         }
         return response.json();
     }
-
-    async updateToken(repoId, branch, staging_token) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branch)}/update_token`, {
-            method: 'PUT',
-            body: JSON.stringify({staging_token: staging_token}),
-        });
-        if (response.status !== 201) {
-            throw new Error(await extractError(response));
-        }
-    }
 }
 
 
@@ -626,31 +568,36 @@ class Tags {
 
 // uploadWithProgress uses good ol' XMLHttpRequest because progress indication in fetch() is
 //  still not well supported across browsers (see https://stackoverflow.com/questions/35711724/upload-progress-indicators-for-fetch).
-export const uploadWithProgress = (url, file, method = 'POST', onProgress = null) => {
+export const uploadWithProgress = (url, file, method = 'POST', onProgress = null, additionalHeaders = null) => {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.upload.addEventListener('progress', event => {
-            if (onProgress)
-                onProgress((event.loaded / event.total) * 100)
+            if (onProgress) {
+                onProgress((event.loaded / event.total) * 100);
+            }
         });
         xhr.addEventListener('load', () => {
           resolve({
               status: xhr.status,
               body: xhr.responseText,
               contentType: xhr.getResponseHeader('Content-Type'),
-              etag: xhr.getResponseHeader('ETag')
+              etag: xhr.getResponseHeader('ETag'),
+              contentMD5: xhr.getResponseHeader('Content-MD5'),
           })
         });
         xhr.addEventListener('error', () => reject(new Error('Upload Failed')));
         xhr.addEventListener('abort', () => reject(new Error('Upload Aborted')));
         xhr.open(method, url, true);
-        xhr.setRequestHeader('Accept', 'application/json')
-        xhr.setRequestHeader('X-Lakefs-Client', 'lakefs-webui/__buildVersion')
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('X-Lakefs-Client', 'lakefs-webui/__buildVersion');
+        if (additionalHeaders) {
+            Object.keys(additionalHeaders).map(key => xhr.setRequestHeader(key, additionalHeaders[key]))
+        }
         if (url.startsWith(API_ENDPOINT)) {
             // swagger API requires a form with a "content" field
             const data = new FormData();
             data.append('content', file);
-            xhr.send(data)
+            xhr.send(data);
         } else {
             xhr.send(file);
         }
@@ -786,18 +733,11 @@ class Commits {
         return response.json();
     }
 
-    async commit(repoId, branchId, message, metadata = {}, source_metarange = "") {
-        const requestURL = queryString.stringifyUrl({
-            url: `/repositories/${repoId}/branches/${branchId}/commits`,
-            query: {source_metarange: source_metarange}
-        });
-        const parsedURL = queryString.exclude(requestURL, (name, value) => value === "", {parseNumbers: true});
-        const response = await apiRequest(parsedURL, {
-
+    async commit(repoId, branchId, message, metadata = {}) {
+        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits`, {
             method: 'POST',
             body: JSON.stringify({message, metadata}),
         });
-
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
@@ -825,10 +765,10 @@ class Refs {
         return response.json();
     }
 
-    async merge(repoId, sourceBranch, destinationBranch, strategy = "") {
+    async merge(repoId, sourceBranch, destinationBranch, strategy = "", message = "", metadata = {}) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceBranch)}/merge/${encodeURIComponent(destinationBranch)}`, {
             method: 'POST',
-            body: JSON.stringify({strategy})
+            body: JSON.stringify({strategy, message, metadata})
         });
 
         let resp;
@@ -887,7 +827,7 @@ class Actions {
 
 class Retention {
     async getGCPolicy(repoID) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/gc_rules`);
         if (response.status === 404) {
             throw new NotFoundError('policy not found')
         }
@@ -906,8 +846,8 @@ class Retention {
     }
 
     async setGCPolicy(repoID, policy) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`, {
-            method: 'POST',
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/gc_rules`, {
+            method: 'PUT',
             body: policy
         });
         if (response.status !== 204) {
@@ -917,7 +857,7 @@ class Retention {
     }
 
     async deleteGCPolicy(repoID) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/gc/rules`, {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/gc_rules`, {
             method: 'DELETE',
         });
         if (response.status !== 204) {
@@ -986,18 +926,19 @@ class Setup {
 
 class Config {
     async getStorageConfig() {
-        const response = await apiRequest('/config/storage', {
+        const response = await apiRequest('/config', {
             method: 'GET',
         });
-        let cfg;
+        let cfg, storageCfg;
         switch (response.status) {
             case 200:
                 cfg = await response.json();
-                cfg.warnings = []
-                if (cfg.blockstore_type === 'mem') {
-                    cfg.warnings.push(`Block adapter ${cfg.blockstore_type} not usable in production`)
+                storageCfg = cfg.storage_config
+                storageCfg.warnings = []
+                if (storageCfg.blockstore_type === 'mem') {
+                    storageCfg.warnings.push(`Block adapter ${storageCfg.blockstore_type} not usable in production`)
                 }
-                return cfg;
+                return storageCfg;
             case 409:
                 throw new Error('Conflict');
             default:
@@ -1006,12 +947,14 @@ class Config {
     }
 
     async getLakeFSVersion() {
-        const response = await apiRequest('/config/version', {
+        const response = await apiRequest('/config', {
             method: 'GET',
         });
+        let cfg;
         switch (response.status) {
             case 200:
-                return await response.json();
+                cfg =  await response.json();
+                return cfg.version_config
             default:
                 throw new Error('Unknown');
         }
@@ -1020,88 +963,37 @@ class Config {
 
 class BranchProtectionRules {
     async getRules(repoID) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`);
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/branch_protection`);
         if (response.status === 404) {
             throw new NotFoundError('branch protection rules not found')
         }
         if (response.status !== 200) {
             throw new Error(`could not get branch protection rules: ${await extractError(response)}`);
         }
-        return response.json();
+        return {
+            'checksum': response.headers.get('ETag'),
+            'rules': await response.json()
+        }
     }
 
     async createRulePreflight(repoID) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection/set_allowed`);
-        if (response.status !== 204) {
-            return false;
-        }
-        return true;
+        return response.status === 204;
+
     }
 
-    async createRule(repoID, pattern) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`, {
-            method: 'POST',
-            body: JSON.stringify({pattern: pattern})
-        });
+    async setRules(repoID, rules, lastKnownChecksum) {
+        const additionalHeaders = {}
+        if (lastKnownChecksum) {
+            additionalHeaders['If-Match'] = lastKnownChecksum
+        }
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/settings/branch_protection`, {
+            method: 'PUT',
+            body: JSON.stringify(rules),
+        }, additionalHeaders);
         if (response.status !== 204) {
             throw new Error(`could not create protection rule: ${await extractError(response)}`);
         }
-    }
-
-    async deleteRule(repoID, pattern) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoID)}/branch_protection`, {
-            method: 'DELETE',
-            body: JSON.stringify({pattern: pattern})
-        });
-        if (response.status === 404) {
-            throw new NotFoundError('branch protection rule not found')
-        }
-        if (response.status !== 204) {
-            throw new Error(`could not delete protection rule: ${await extractError(response)}`);
-        }
-    }
-
-}
-
-class Ranges {
-    async createRange(repoID, fromSourceURI, after, prepend, continuation_token = "", staging_token="") {
-        const response = await apiRequest(`/repositories/${repoID}/branches/ranges`, {
-            method: 'POST',
-            body: JSON.stringify({fromSourceURI, after, prepend, continuation_token, staging_token}),
-        });
-        if (response.status !== 201) {
-            throw new Error(await extractError(response));
-        }
-        return response.json();
-    }
-}
-
-class MetaRanges {
-    async createMetaRange(repoID, ranges) {
-        const response = await apiRequest(`/repositories/${repoID}/branches/metaranges`, {
-            method: 'POST',
-            body: JSON.stringify({ranges}),
-        });
-        if (response.status !== 201) {
-            throw new Error(await extractError(response));
-        }
-        return response.json();
-    }
-}
-
-class Templates {
-    async expandTemplate(templateLocation, params) {
-        const urlParams = new URLSearchParams();
-        for (const [k, v] of Object.entries(params)) {
-            urlParams.set(k, v);
-        }
-        const response = await apiRequest(
-            `/templates/${encodeURI(templateLocation)}?${urlParams.toString()}`,
-            {method: 'GET'});
-        if (!response.ok) {
-            throw new Error(await extractError(response));
-        }
-        return response.text();
     }
 }
 
@@ -1137,18 +1029,6 @@ class Staging {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
             method: 'PUT',
             body: JSON.stringify({staging: staging, checksum: checksum, size_bytes: sizeBytes, content_type: contentType})
-        });
-        if (response.status !== 200) {
-            throw new Error(await extractError(response));
-        }
-        return response.json();
-    }
-}
-
-class OTFDiffs {
-    async get() {
-        const response = await apiRequest('/otf/diffs', {
-            method: 'GET'
         });
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -1219,10 +1099,6 @@ export const actions = new Actions();
 export const retention = new Retention();
 export const config = new Config();
 export const branchProtectionRules = new BranchProtectionRules();
-export const ranges = new Ranges();
-export const metaRanges = new MetaRanges();
-export const templates = new Templates();
 export const statistics = new Statistics();
 export const staging = new Staging();
-export const otfDiffs = new OTFDiffs();
 export const imports = new Import();

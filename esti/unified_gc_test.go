@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -23,8 +23,8 @@ type objectEvent struct {
 
 func gcTestCreateObject(t *testing.T, ctx context.Context, branch string, key string) string {
 	t.Helper()
-	_, _ = uploadFileRandomData(ctx, t, RepoName, branch, key, false)
-	res, err := client.StatObjectWithResponse(ctx, RepoName, branch, &api.StatObjectParams{
+	_, _ = uploadFileRandomData(ctx, t, RepoName, branch, key)
+	res, err := client.StatObjectWithResponse(ctx, RepoName, branch, &apigen.StatObjectParams{
 		Path:    key,
 		Presign: swag.Bool(true),
 	})
@@ -32,9 +32,10 @@ func gcTestCreateObject(t *testing.T, ctx context.Context, branch string, key st
 	require.Falsef(t, res.StatusCode() != 200, "Unexpected status code %d in stats object after upload", res.StatusCode())
 	return res.JSON200.PhysicalAddress
 }
+
 func gcTestDeleteObject(t *testing.T, ctx context.Context, branch string, key string) {
 	t.Helper()
-	res, err := client.DeleteObjectWithResponse(ctx, RepoName, branch, &api.DeleteObjectParams{Path: key})
+	res, err := client.DeleteObjectWithResponse(ctx, RepoName, branch, &apigen.DeleteObjectParams{Path: key})
 	testutil.MustDo(t, fmt.Sprintf("Delete %s", key), err)
 	require.Falsef(t, res.StatusCode() > 299, "Unexpected status code %d in delete object", res.StatusCode())
 }
@@ -42,13 +43,12 @@ func gcTestDeleteObject(t *testing.T, ctx context.Context, branch string, key st
 func gcTestCommit(t *testing.T, ctx context.Context, branch string, daysAgo int) {
 	t.Helper()
 	commitTimeSeconds := time.Now().AddDate(0, 0, -daysAgo).Unix()
-	res, err := client.CommitWithResponse(ctx, RepoName, branch, &api.CommitParams{}, api.CommitJSONRequestBody{Message: "commit event", Date: &commitTimeSeconds})
+	res, err := client.CommitWithResponse(ctx, RepoName, branch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "commit event", Date: &commitTimeSeconds})
 	testutil.MustDo(t, fmt.Sprintf("Commit branch %s", branch), err)
 	require.Falsef(t, res.StatusCode() > 299, "Unexpected status code %d in commit", res.StatusCode())
 }
 
 func TestUnifiedGC(t *testing.T) {
-	SkipTestIfAskedTo(t)
 	ctx := context.Background()
 	prepareForUnifiedGC(t, ctx)
 	committedCreateEvents := []objectEvent{
@@ -149,10 +149,10 @@ func TestUnifiedGC(t *testing.T) {
 	for _, e := range uncommittedDeleteEvents {
 		gcTestDeleteObject(t, ctx, e.branch, e.key)
 	}
-	deleteRes, err := client.DeleteBranchWithResponse(ctx, RepoName, "dev2")
+	deleteRes, err := client.DeleteBranchWithResponse(ctx, RepoName, "dev2", &apigen.DeleteBranchParams{})
 	testutil.MustDo(t, "Delete dev2 branch", err)
 	require.Falsef(t, deleteRes.StatusCode() > 299, "Unexpected status code %d in delete branch dev2", deleteRes.StatusCode())
-	revertRes, err := client.ResetBranchWithResponse(ctx, RepoName, "dev", api.ResetBranchJSONRequestBody{Type: "reset"})
+	revertRes, err := client.ResetBranchWithResponse(ctx, RepoName, "dev", apigen.ResetBranchJSONRequestBody{Type: "reset"})
 	require.Falsef(t, revertRes.StatusCode() > 299, "Unexpected status code %d in revert branch dev", revertRes.StatusCode())
 	testutil.MustDo(t, "Revert changes in dev branch", err)
 	err = runSparkSubmit(&sparkSubmitConfig{
@@ -194,13 +194,13 @@ func TestUnifiedGC(t *testing.T) {
 
 func prepareForUnifiedGC(t *testing.T, ctx context.Context) {
 	repo := createRepositoryByName(ctx, t, RepoName)
-	createBranchRes, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{Name: "dev", Source: mainBranch})
+	createBranchRes, err := client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{Name: "dev", Source: mainBranch})
 	testutil.MustDo(t, "Create branch dev", err)
 	require.False(t, createBranchRes.StatusCode() > 299, "Create branch dev")
-	createBranchRes, err = client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{Name: "dev2", Source: mainBranch})
+	createBranchRes, err = client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{Name: "dev2", Source: mainBranch})
 	testutil.MustDo(t, "Create branch dev2", err)
 	require.False(t, createBranchRes.StatusCode() > 299, "Create branch dev2")
-	setGCRulesRes, err := client.SetGarbageCollectionRulesWithResponse(ctx, repo, api.SetGarbageCollectionRulesJSONRequestBody{Branches: []api.GarbageCollectionRule{
+	setGCRulesRes, err := client.SetGCRulesWithResponse(ctx, repo, apigen.SetGCRulesJSONRequestBody{Branches: []apigen.GarbageCollectionRule{
 		{BranchId: "main", RetentionDays: 10}, {BranchId: "dev", RetentionDays: 7}, {BranchId: "dev", RetentionDays: 7},
 	}, DefaultRetentionDays: 7})
 	testutil.MustDo(t, "Set gc rules", err)

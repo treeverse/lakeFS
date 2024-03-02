@@ -1730,8 +1730,8 @@ func runMergeTests(tests testCases, t *testing.T) {
 					writer.EXPECT().Close(gomock.Any()).Return(&metaRangeId, nil).AnyTimes()
 					committedManager := committed.NewCommittedManager(metaRangeManager, rangeManager, params)
 					_, err := committedManager.Merge(ctx, "ns", destMetaRangeID, sourceMetaRangeID, baseMetaRangeID, mergeStrategy)
-					if err != expectedResult.expectedErr {
-						t.Fatal(err)
+					if !errors.Is(err, expectedResult.expectedErr) {
+						t.Fatalf("Merge error='%v', expected='%v'", err, expectedResult.expectedErr)
 					}
 				})
 			}

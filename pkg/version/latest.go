@@ -1,29 +1,36 @@
 package version
 
 import (
-	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
-	"github.com/google/go-github/v52/github"
 	goversion "github.com/hashicorp/go-version"
 )
 
 const (
 	latestVersionTimeout = 10 * time.Second
 
-	// releases URL
 	DefaultReleasesURL = "https://github.com/treeverse/lakeFS/releases"
-	GithubRepoOwner    = "treeverse"
-	GithubRepoName     = "lakeFS"
+	githubBaseURL      = "https://api.github.com/"
+
+	GithubRepoOwner = "treeverse"
+	GithubRepoName  = "lakeFS"
 )
 
-var (
-	ErrInvalidConfig = errors.New("invalid configuration for version source")
-	ErrHTTPStatus    = errors.New("unexpected HTTP status code")
-)
+var ErrHTTPStatus = errors.New("unexpected HTTP status code")
+
+type RepositoryRelease struct {
+	TagName    string `json:"tag_name,omitempty"`
+	Name       string `json:"name,omitempty"`
+	Draft      bool   `json:"draft,omitempty"`
+	Prerelease bool   `json:"prerelease,omitempty"`
+	ID         int64  `json:"id,omitempty"`
+	URL        string `json:"url,omitempty"`
+}
 
 type LatestVersionResponse struct {
 	CheckTime      time.Time `json:"check_time"`
@@ -32,24 +39,24 @@ type LatestVersionResponse struct {
 	CurrentVersion string    `json:"current_version"`
 }
 
-type VersionSource interface {
+type Source interface {
 	FetchLatestVersion() (string, error)
 }
 
 type CachedVersionSource struct {
-	Source        VersionSource
+	Source        Source
 	lastCheck     time.Time
 	cachePeriod   time.Duration
 	fetchErr      error
 	fetchResponse string
 }
 
-func NewDefaultVersionSource(cachePeriod time.Duration) VersionSource {
+func NewDefaultVersionSource(cachePeriod time.Duration) Source {
 	gh := NewGithubReleases(GithubRepoOwner, GithubRepoName)
-	return NewCachedSource(gh, latestVersionTimeout)
+	return NewCachedSource(gh, cachePeriod)
 }
 
-func NewCachedSource(src VersionSource, cachePeriod time.Duration) *CachedVersionSource {
+func NewCachedSource(src Source, cachePeriod time.Duration) *CachedVersionSource {
 	return &CachedVersionSource{
 		Source:      src,
 		cachePeriod: cachePeriod,
@@ -67,29 +74,46 @@ func (cs *CachedVersionSource) FetchLatestVersion() (string, error) {
 type GithubReleases struct {
 	owner      string
 	repository string
-	client     *github.Client
 }
 
 func NewGithubReleases(owner, repository string) *GithubReleases {
-	httpClient := &http.Client{Timeout: latestVersionTimeout}
-
 	return &GithubReleases{
 		owner:      owner,
 		repository: repository,
-		client:     github.NewClient(httpClient),
 	}
 }
 
 func (gh *GithubReleases) FetchLatestVersion() (string, error) {
-	release, resp, err := gh.client.Repositories.GetLatestRelease(context.Background(), gh.owner, gh.repository)
+	u, err := url.JoinPath(githubBaseURL, "repos", gh.owner, gh.repository, "releases", "latest")
 	if err != nil {
 		return "", err
 	}
+
+	req, err := http.NewRequest(http.MethodGet, u, nil)
+	if err != nil {
+		return "", err
+	}
+
+	client := &http.Client{
+		Timeout: latestVersionTimeout,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("unexpected HTTP response %d: %w", resp.StatusCode, ErrHTTPStatus)
 	}
 
-	return release.GetTagName(), nil
+	var release RepositoryRelease
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return "", err
+	}
+
+	return release.TagName, nil
 }
 
 func CheckLatestVersion(targetVersion string) (*LatestVersionResponse, error) {

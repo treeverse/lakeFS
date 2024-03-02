@@ -22,7 +22,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -37,17 +36,14 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	_ "github.com/treeverse/lakefs/pkg/kv/cosmosdb"
 	_ "github.com/treeverse/lakefs/pkg/kv/dynamodb"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/local"
 	"github.com/treeverse/lakefs/pkg/kv/mem"
-	"github.com/treeverse/lakefs/pkg/kv/params"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/logging"
-	tablediff "github.com/treeverse/lakefs/pkg/plugins/diff"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/templater"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
-	"github.com/treeverse/lakefs/templates"
 )
 
 const (
@@ -93,7 +89,7 @@ var runCmd = &cobra.Command{
 
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
-		kvParams, err := cfg.DatabaseParams()
+		kvParams, err := kvparams.NewConfig(cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Get KV params")
 		}
@@ -106,11 +102,6 @@ var runCmd = &cobra.Command{
 		_, err = kv.ValidateSchemaVersion(ctx, kvStore)
 		if err != nil && !errors.Is(err, kv.ErrNotFound) {
 			logger.WithError(err).Fatal("Failure on schema validation")
-		}
-
-		emailer, err := email.NewEmailer(email.Params(cfg.Email))
-		if err != nil {
-			logger.WithError(err).Fatal("Emailer has not been properly configured, check the values in sender field")
 		}
 
 		migrator := kv.NewDatabaseMigrator(kvParams)
@@ -126,34 +117,33 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Unsupported auth mode")
 		}
 		if cfg.IsAuthTypeAPI() {
-			var apiEmailer *email.Emailer
-			if !cfg.Auth.API.SupportsInvites {
-				// invites not supported by API - delegate it to emailer
-				apiEmailer = emailer
-			}
-			authService, err = auth.NewAPIAuthService(
+			apiService, err := auth.NewAPIAuthService(
 				cfg.Auth.API.Endpoint,
 				cfg.Auth.API.Token.SecureValue(),
-				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
+				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
 				authparams.ServiceCache(cfg.Auth.Cache),
-				apiEmailer,
 				logger.WithField("service", "auth_api"),
 			)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}
+			authService = apiService
+			if !cfg.Auth.API.SkipHealthCheck {
+				if err := apiService.CheckHealth(ctx, logger, cfg.Auth.API.HealthCheckTimeout); err != nil {
+					logger.WithError(err).Fatal("Auth API health check failed")
+				}
+			}
 		} else {
 			authService = auth.NewAuthService(
 				kvStore,
-				crypt.NewSecretStore(cfg.AuthEncryptionSecret()),
-				emailer,
+				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
 				authparams.ServiceCache(cfg.Auth.Cache),
 				logger.WithField("service", "auth_service"),
 			)
 		}
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		blockstoreType := cfg.BlockstoreType()
+		blockstoreType := cfg.Blockstore.Type
 		if blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
@@ -168,6 +158,7 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
+
 		bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
@@ -176,14 +167,21 @@ var runCmd = &cobra.Command{
 			Config:       cfg,
 			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
-			Limiter:      cfg.NewGravelerBackgroundLimiter(),
 		})
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create catalog")
 		}
 		defer func() { _ = c.Close() }()
 
-		deleteScheduler := getScheduler()
+		// usage report setup - default usage reporter is a no-op
+		usageReporter := stats.DefaultUsageReporter
+		if cfg.UsageReport.Enabled {
+			ur := stats.NewUsageReporter(metadata.InstallationID, kvStore)
+			ur.Start(ctx, cfg.UsageReport.FlushInterval, logger.WithField("service", "usage_report"))
+			usageReporter = ur
+		}
+
+		deleteScheduler := gocron.NewScheduler(time.UTC)
 		err = scheduleCleanupJobs(ctx, deleteScheduler, c)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to schedule cleanup jobs")
@@ -204,8 +202,6 @@ var runCmd = &cobra.Command{
 			}
 		}
 
-		templater := templater.NewService(templates.Content, cfg, authService)
-
 		actionsService := actions.NewService(
 			ctx,
 			actionsStore,
@@ -214,6 +210,7 @@ var runCmd = &cobra.Command{
 			idGen,
 			bufferedCollector,
 			actions.Config(cfg.Actions),
+			cfg.ListenAddress,
 		)
 
 		// wire actions into entry catalog
@@ -230,6 +227,7 @@ var runCmd = &cobra.Command{
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create remote authenticator")
 			}
+
 			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
 		}
 
@@ -250,9 +248,6 @@ var runCmd = &cobra.Command{
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
-		otfDiffService, closeOtfService := tablediff.NewService(cfg.Diff, cfg.Plugins)
-		defer closeOtfService()
-
 		// start API server
 		apiHandler := api.Serve(
 			cfg,
@@ -267,12 +262,10 @@ var runCmd = &cobra.Command{
 			actionsService,
 			auditChecker,
 			logger.WithField("service", "api_gateway"),
-			emailer,
-			templater,
 			cfg.Gateways.S3.DomainNames,
 			cfg.UISnippets(),
 			upload.DefaultPathProvider,
-			otfDiffService,
+			usageReporter,
 		)
 
 		// init gateway server
@@ -284,21 +277,15 @@ var runCmd = &cobra.Command{
 			}
 		}
 
-		lakefsBaseURL := cfg.Email.LakefsBaseURL
-		if lakefsBaseURL != "" {
-			_, err := url.Parse(lakefsBaseURL)
-			if err != nil {
-				logger.WithError(err).Warn("Failed to parse configured lakefs base url for email")
-			}
-		}
-
 		// setup authenticator for s3 gateway to also support swagger auth
+		oidcConfig := api.OIDCConfig(cfg.Auth.OIDC)
+		cookieAuthConfig := api.CookieAuthConfig(cfg.Auth.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
 			logger.WithField("service", "s3_gateway"),
 			middlewareAuthenticator,
 			authService,
-			&cfg.Auth.OIDC,
-			&cfg.Auth.CookieAuthVerification,
+			&oidcConfig,
+			&cookieAuthConfig,
 		)
 		if err != nil {
 			logger.WithError(err).Fatal("could not initialize authenticator for S3 gateway")
@@ -316,6 +303,7 @@ var runCmd = &cobra.Command{
 			s3FallbackURL,
 			cfg.Logging.AuditLogLevel,
 			cfg.Logging.TraceRequestHeaders,
+			cfg.Gateways.S3.VerifyUnsupported,
 		)
 		s3gatewayHandler = apiAuthenticator(s3gatewayHandler)
 
@@ -382,7 +370,7 @@ var runCmd = &cobra.Command{
 	},
 }
 
-// checkRepos iterates on all repos and validates that their settings are correct.
+// checkRepos iterating on all repos and validates that their settings are correct.
 func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager auth.MetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
 	initialized, err := authMetadataManager.IsInitialized(ctx)
 	if err != nil {
@@ -417,8 +405,6 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 				}
 
 				checkForeignRepo(repoStorageType, logger, adapterStorageType, repo.Name)
-				checkMetadataPrefix(ctx, repo, logger, blockStore, repoStorageType)
-
 				next = repo.Name
 			}
 		}
@@ -426,57 +412,48 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 }
 
 func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Catalog) error {
-	// delete expired link addresses
-	const deleteExpiredAddressPeriod = 3
-	job1, err := s.Every(deleteExpiredAddressPeriod * ref.LinkAddressTime).Do(func() {
-		c.DeleteExpiredLinkAddresses(ctx)
-	})
-	if err != nil {
-		return err
-	}
-	job1.SingletonMode()
+	const (
+		deleteExpiredLinkAddressesInterval = 3 * ref.LinkAddressTime
+		deleteExpiredTaskInterval          = 24 * time.Hour
+	)
 
-	// delete expired imports
-	job2, err := s.Every(ref.ImportExpiryTime).Do(func() {
-		c.DeleteExpiredImports(ctx)
-	})
-	if err != nil {
-		return err
+	jobData := []struct {
+		name     string
+		interval time.Duration
+		fn       func(context.Context)
+	}{
+		{
+			name:     "delete expired link addresses",
+			interval: deleteExpiredLinkAddressesInterval,
+			fn:       c.DeleteExpiredLinkAddresses,
+		},
+		{
+			name:     "delete expired imports",
+			interval: ref.ImportExpiryTime,
+			fn:       c.DeleteExpiredImports,
+		},
+		{
+			name:     "delete expired tasks",
+			interval: deleteExpiredTaskInterval,
+			fn:       c.DeleteExpiredTasks,
+		},
 	}
-	job2.SingletonMode()
 
+	for _, jd := range jobData {
+		job, err := s.Every(jd.interval).Do(jd.fn, ctx)
+		if err != nil {
+			return fmt.Errorf("schedule %s failed: %w", jd.name, err)
+		}
+		job.SingletonMode()
+	}
 	return nil
-}
-
-func getScheduler() *gocron.Scheduler {
-	return gocron.NewScheduler(time.UTC)
-}
-
-// checkMetadataPrefix checks for non-migrated repos of issue #2397 (https://github.com/treeverse/lakeFS/issues/2397)
-func checkMetadataPrefix(ctx context.Context, repo *catalog.Repository, logger logging.Logger, adapter block.Adapter, repoStorageType block.StorageType) {
-	if repoStorageType != block.StorageTypeGS &&
-		repoStorageType != block.StorageTypeAzure {
-		return
-	}
-
-	const dummyFile = "dummy"
-	if _, err := adapter.Get(ctx, block.ObjectPointer{
-		StorageNamespace: repo.StorageNamespace,
-		Identifier:       dummyFile,
-		IdentifierType:   block.IdentifierTypeRelative,
-	}, -1); err != nil {
-		logger.WithFields(logging.Fields{
-			"path":              dummyFile,
-			"storage_namespace": repo.StorageNamespace,
-		}).Fatal("Can't find dummy file in storage namespace, did you run the migration? " +
-			"(https://docs.lakefs.io/reference/upgrade.html#data-migration-for-version-v0500)")
-	}
 }
 
 // checkForeignRepo checks whether a repo storage namespace matches the block adapter.
 // A foreign repo is a repository which namespace doesn't match the current block adapter.
 // A foreign repo might exist if the lakeFS instance configuration changed after a repository was
-// already created. The behaviour of lakeFS for foreign repos is undefined and should be blocked.
+// already created.
+// The behavior of lakeFS for foreign repos is undefined and should be blocked.
 func checkForeignRepo(repoStorageType block.StorageType, logger logging.Logger, adapterStorageType, repoName string) {
 	if adapterStorageType != repoStorageType.BlockstoreType() {
 		logger.Fatalf("Mismatched adapter detected. lakeFS started with adapter of type '%s', but repository '%s' is of type '%s'",
@@ -559,7 +536,7 @@ func gracefulShutdown(ctx context.Context, services ...Shutter) {
 }
 
 // enableKVParamsMetrics returns a copy of params.KV with postgres metrics enabled.
-func enableKVParamsMetrics(p params.Config) params.Config {
+func enableKVParamsMetrics(p kvparams.Config) kvparams.Config {
 	if p.Postgres == nil || p.Postgres.Metrics {
 		return p
 	}

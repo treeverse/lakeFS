@@ -6,7 +6,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 var authUsersPoliciesList = &cobra.Command{
@@ -20,9 +21,9 @@ var authUsersPoliciesList = &cobra.Command{
 
 		clt := getClient()
 
-		resp, err := clt.ListUserPoliciesWithResponse(cmd.Context(), id, &api.ListUserPoliciesParams{
-			After:     api.PaginationAfterPtr(after),
-			Amount:    api.PaginationAmountPtr(amount),
+		resp, err := clt.ListUserPoliciesWithResponse(cmd.Context(), id, &apigen.ListUserPoliciesParams{
+			After:     apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount:    apiutil.Ptr(apigen.PaginationAmount(amount)),
 			Effective: &effective,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)

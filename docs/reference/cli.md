@@ -4,6 +4,7 @@ description: lakeFS comes with its own native CLI client. Here you can see the c
 parent: Reference
 redirect_from:
   - /reference/commands.html
+  - /quickstart/lakefs_cli.html
 ---
 
 {% comment %}
@@ -40,7 +41,7 @@ lakectl config
 # Config file /home/janedoe/.lakectl.yaml will be used
 # Access key ID: AKIAIOSFODNN7EXAMPLE
 # Secret access key: ****************************************
-# Server endpoint URL: http://localhost:8000/api/v1
+# Server endpoint URL: http://localhost:8000
 ```
 
 This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoint you've supplied.
@@ -92,7 +93,7 @@ lakectl [flags]
       --log-format string    set logging output format
       --log-level string     set logging level (default "none")
       --log-output strings   set logging output(s)
-      --no-color             don't use fancy output colors (default when not attached to an interactive terminal)
+      --no-color             don't use fancy output colors (default value can be set by NO_COLOR environment variable)
       --verbose              run in verbose mode
   -v, --version              version for lakectl
 ```
@@ -127,10 +128,10 @@ Abuse a running lakeFS instance. See sub commands for more info.
 
 ### lakectl abuse commit
 
-Commits to the source ref repeatedly
+Commits to the source branch repeatedly
 
 ```
-lakectl abuse commit <source ref uri> [flags]
+lakectl abuse commit <branch URI> [flags]
 ```
 
 #### Options
@@ -149,7 +150,7 @@ lakectl abuse commit <source ref uri> [flags]
 Create a lot of branches very quickly.
 
 ```
-lakectl abuse create-branches <source ref uri> [flags]
+lakectl abuse create-branches <source ref URI> [flags]
 ```
 
 #### Options
@@ -193,7 +194,7 @@ lakectl abuse help [command] [flags]
 Link the same object in parallel.
 
 ```
-lakectl abuse link-same-object <source ref uri> [flags]
+lakectl abuse link-same-object <branch URI> [flags]
 ```
 
 #### Options
@@ -213,7 +214,7 @@ lakectl abuse link-same-object <source ref uri> [flags]
 List from the source ref
 
 ```
-lakectl abuse list <source ref uri> [flags]
+lakectl abuse list <source ref URI> [flags]
 ```
 
 #### Options
@@ -233,7 +234,7 @@ lakectl abuse list <source ref uri> [flags]
 Read keys from a file and generate random reads from the source ref for those keys.
 
 ```
-lakectl abuse random-read <source ref uri> [flags]
+lakectl abuse random-read <source ref URI> [flags]
 ```
 
 #### Options
@@ -253,7 +254,7 @@ lakectl abuse random-read <source ref uri> [flags]
 Generate random writes to the source branch
 
 ```
-lakectl abuse random-write <source branch uri> [flags]
+lakectl abuse random-write <branch URI> [flags]
 ```
 
 #### Options
@@ -327,14 +328,14 @@ Describe run results
 Show information about the run and all the hooks that were executed as part of the run
 
 ```
-lakectl actions runs describe [flags]
+lakectl actions runs describe <repository URI> <run_id> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl actions runs describe lakefs://<repository> <run_id>
+lakectl actions runs describe lakefs://my-repo 20230719152411arS0z6I
 ```
 
 #### Options
@@ -381,14 +382,14 @@ List runs
 List all runs on a repository optional filter by branch or commit
 
 ```
-lakectl actions runs list [flags]
+lakectl actions runs list <repository URI> [--branch <branch>] [--commit <commit_id>] [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl actions runs list lakefs://<repository> [--branch <branch>] [--commit <commit_id>]
+lakectl actions runs list lakefs://my-repo --branch my-branch --commit 600dc0ffee
 ```
 
 #### Options
@@ -421,7 +422,7 @@ lakectl actions validate [flags]
 {:.no_toc}
 
 ```
-lakectl actions validate <path>
+lakectl actions validate path/to/my/file
 ```
 
 #### Options
@@ -438,7 +439,7 @@ lakectl actions validate <path>
 List entries under a given path, annotating each with the latest modifying commit
 
 ```
-lakectl annotate <path uri> [flags]
+lakectl annotate <path URI> [flags]
 ```
 
 #### Options
@@ -1439,7 +1440,7 @@ lakectl bisect run <command> [flags]
 Start a bisect session
 
 ```
-lakectl bisect start <bad ref> <good ref> [flags]
+lakectl bisect start <bad ref URI> <good ref URI> [flags]
 ```
 
 #### Options
@@ -1491,7 +1492,7 @@ Create delete and list branches within a lakeFS repository
 Create a new branch in a repository
 
 ```
-lakectl branch create <branch uri> -s <source ref uri> [flags]
+lakectl branch create <branch URI> -s <source ref URI> [flags]
 ```
 
 #### Examples
@@ -1516,14 +1517,14 @@ lakectl branch create lakefs://example-repo/new-branch -s lakefs://example-repo/
 Delete a branch in a repository, along with its uncommitted changes (CAREFUL)
 
 ```
-lakectl branch delete <branch uri> [flags]
+lakectl branch delete <branch URI> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl branch delete lakefs://example-repo/example-branch
+lakectl branch delete lakefs://my-repo/my-branch
 ```
 
 #### Options
@@ -1564,14 +1565,14 @@ lakectl branch help [command] [flags]
 List branches in a repository
 
 ```
-lakectl branch list <repository uri> [flags]
+lakectl branch list <repository URI> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl branch list lakefs://<repository>
+lakectl branch list lakefs://my-repo
 ```
 
 #### Options
@@ -1598,14 +1599,14 @@ reset changes.  There are four different ways to reset changes:
   3. reset uncommitted changes for specific object - reset lakefs://myrepo/main --object path
 
 ```
-lakectl branch reset <branch uri> [--prefix|--object] [flags]
+lakectl branch reset <branch URI> [--prefix|--object] [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl branch reset lakefs://example-repo/example-branch
+lakectl branch reset lakefs://my-repo/my-branch
 ```
 
 #### Options
@@ -1630,7 +1631,7 @@ Given a commit, record a new commit to reverse the effect of this commit
 The commits will be reverted in left-to-right order
 
 ```
-lakectl branch revert <branch uri> <commit ref to revert> [<more commits>...] [flags]
+lakectl branch revert <branch URI> <commit ref to revert> [<more commits>...] [flags]
 ```
 
 #### Examples
@@ -1647,9 +1648,10 @@ lakectl branch revert lakefs://example-repo/example-branch commitA
 {:.no_toc}
 
 ```
-  -h, --help                help for revert
-  -m, --parent-number int   the parent number (starting from 1) of the mainline. The revert will reverse the change relative to the specified parent.
-  -y, --yes                 Automatically say yes to all confirmations
+      --allow-empty-commit   allow empty commit (revert without changes)
+  -h, --help                 help for revert
+  -m, --parent-number int    the parent number (starting from 1) of the mainline. The revert will reverse the change relative to the specified parent.
+  -y, --yes                  Automatically say yes to all confirmations
 ```
 
 
@@ -1659,14 +1661,14 @@ lakectl branch revert lakefs://example-repo/example-branch commitA
 Show branch latest commit reference
 
 ```
-lakectl branch show <branch uri> [flags]
+lakectl branch show <branch URI> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl branch show lakefs://example-repo/example-branch
+lakectl branch show lakefs://my-repo/my-branch
 ```
 
 #### Options
@@ -1706,14 +1708,14 @@ Add a branch protection rule
 Add a branch protection rule for a given branch name pattern
 
 ```
-lakectl branch-protect add <repo uri> <pattern> [flags]
+lakectl branch-protect add <repository URI> <pattern> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl branch-protect add lakefs://<repository> 'stable_*'
+lakectl branch-protect add lakefs://my-repo 'stable_*'
 ```
 
 #### Options
@@ -1735,14 +1737,14 @@ Delete a branch protection rule
 Delete a branch protection rule for a given branch name pattern
 
 ```
-lakectl branch-protect delete <repo uri> <pattern> [flags]
+lakectl branch-protect delete <repository URI> <pattern> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl branch-protect delete lakefs://<repository> stable_*
+lakectl branch-protect delete lakefs://my-repo stable_*
 ```
 
 #### Options
@@ -1782,14 +1784,14 @@ lakectl branch-protect help [command] [flags]
 List all branch protection rules
 
 ```
-lakectl branch-protect list <repo uri> [flags]
+lakectl branch-protect list <repository URI> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl branch-protect list lakefs://<repository>
+lakectl branch-protect list lakefs://my-repo
 ```
 
 #### Options
@@ -1809,14 +1811,14 @@ lakectl branch-protect list lakefs://<repository>
 Cat actions hook output
 
 ```
-lakectl cat-hook-output [flags]
+lakectl cat-hook-output <repository URI> <run_id> <hook_id> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl cat-hook-output lakefs://<repository> <run_id> <run_hook_id>
+lakectl cat-hook-output lakefs://my-repo 20230719152411arS0z6I my_hook_name
 ```
 
 #### Options
@@ -1860,15 +1862,14 @@ Apply the changes introduced by an existing commit
 Apply the changes from the given commit to the tip of the branch. The changes will be added as a new commit.
 
 ```
-lakectl cherry-pick <commit ref> <branch> [flags]
+lakectl cherry-pick <commit URI> <branch> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl cherry-pick lakefs://example-repo/example-ref lakefs://example-repo/main
-
+lakectl cherry-pick lakefs://my-repo/600dc0ffee lakefs://my-repo/my-branch
 ```
 
 #### Options
@@ -1886,13 +1887,14 @@ lakectl cherry-pick lakefs://example-repo/example-ref lakefs://example-repo/main
 Commit changes on a given branch
 
 ```
-lakectl commit <branch uri> [flags]
+lakectl commit <branch URI> [flags]
 ```
 
 #### Options
 {:.no_toc}
 
 ```
+      --allow-empty-commit    allow a commit with no changes
       --allow-empty-message   allow an empty commit message
   -h, --help                  help for commit
   -m, --message string        commit message
@@ -1989,106 +1991,12 @@ lakectl config [flags]
 
 
 
-### lakectl dbt
-
-Integration with dbt commands
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for dbt
-```
-
-
-
-### lakectl dbt create-branch-schema
-
-Creates a new schema dedicated for branch and clones all dbt models to new schema
-
-```
-lakectl dbt create-branch-schema [flags]
-```
-
-#### Examples
-{:.no_toc}
-
-```
-lakectl dbt create-branch-schema --branch <branch-name>
-```
-
-#### Options
-{:.no_toc}
-
-```
-      --branch string               requested branch
-      --continue-on-error           prevent command from failing when a single table fails
-      --continue-on-schema-exists   allow running on existing schema
-      --create-branch               create a new branch for the schema
-      --dbfs-location string        
-      --from-client-type string     metastore type [hive, glue]
-  -h, --help                        help for create-branch-schema
-      --project-root string         location of dbt project (default ".")
-      --skip-views                  
-      --to-schema string            destination schema name [default is branch]
-```
-
-
-
-### lakectl dbt generate-schema-macro
-
-generates the a macro allowing lakectl to run dbt on dynamic schemas
-
-```
-lakectl dbt generate-schema-macro [flags]
-```
-
-#### Examples
-{:.no_toc}
-
-```
-lakectl dbt generate-schema-macro
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help                  help for generate-schema-macro
-      --project-root string   location of dbt project (default ".")
-```
-
-
-
-### lakectl dbt help
-
-Help about any command
-
-#### Synopsis
-{:.no_toc}
-
-Help provides help for any command in the application.
-Simply type dbt help [path to command] for full details.
-
-```
-lakectl dbt help [command] [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for help
-```
-
-
-
 ### lakectl diff
 
 Show changes between two commits, or the currently uncommitted changes
 
 ```
-lakectl diff <ref uri> [ref uri] [flags]
+lakectl diff <ref URI> [ref URI] [flags]
 ```
 
 #### Examples
@@ -2168,7 +2076,7 @@ lakectl doctor [flags]
 Find the commits for the merge operation
 
 ```
-lakectl find-merge-base <source ref> <destination ref> [flags]
+lakectl find-merge-base <source ref URI> <destination ref URI> [flags]
 ```
 
 #### Options
@@ -2198,16 +2106,15 @@ View and manipulate objects
 Dump content of object to stdout
 
 ```
-lakectl fs cat <path uri> [flags]
+lakectl fs cat <path URI> [flags]
 ```
 
 #### Options
 {:.no_toc}
 
 ```
-  -d, --direct     read directly from backing store (faster but requires more credentials)
   -h, --help       help for cat
-      --pre-sign   Use pre-sign link to access the data
+      --pre-sign   Use pre-signed URLs when downloading/uploading data (recommended) (default true)
 ```
 
 
@@ -2217,18 +2124,18 @@ lakectl fs cat <path uri> [flags]
 Download object(s) from a given repository path
 
 ```
-lakectl fs download <path uri> [<destination path>] [flags]
+lakectl fs download <path URI> [<destination path>] [flags]
 ```
 
 #### Options
 {:.no_toc}
 
 ```
-  -d, --direct         read directly from backing store (requires credentials)
-  -h, --help           help for download
-  -p, --parallel int   max concurrent downloads (default 6)
-      --pre-sign       Request pre-sign link to access the data
-  -r, --recursive      recursively all objects under path
+  -h, --help              help for download
+  -p, --parallelism int   Max concurrent operations to perform (default 25)
+      --part-size int     part size in bytes for multipart download (default 8388608)
+      --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
+  -r, --recursive         recursively download all objects under path
 ```
 
 
@@ -2261,7 +2168,7 @@ lakectl fs help [command] [flags]
 List entries under a given tree
 
 ```
-lakectl fs ls <path uri> [flags]
+lakectl fs ls <path URI> [flags]
 ```
 
 #### Options
@@ -2269,7 +2176,7 @@ lakectl fs ls <path uri> [flags]
 
 ```
   -h, --help        help for ls
-      --recursive   list all objects under the specified prefix
+  -r, --recursive   list all objects under the specified path
 ```
 
 
@@ -2279,7 +2186,7 @@ lakectl fs ls <path uri> [flags]
 Delete object
 
 ```
-lakectl fs rm <path uri> [flags]
+lakectl fs rm <path URI> [flags]
 ```
 
 #### Options
@@ -2298,10 +2205,16 @@ lakectl fs rm <path uri> [flags]
 **note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
 {: .note .note-warning }
 
-Stage a reference to an existing object, to be managed in lakeFS
+Link an external object with a path in a repository
+
+#### Synopsis
+{:.no_toc}
+
+Link an external object with a path in a repository, creating an uncommitted change.
+The object location must be outside the repository's storage namespace
 
 ```
-lakectl fs stage <path uri> [flags]
+lakectl fs stage <path URI> [flags]
 ```
 
 #### Options
@@ -2324,7 +2237,7 @@ lakectl fs stage <path uri> [flags]
 View object metadata
 
 ```
-lakectl fs stat <path uri> [flags]
+lakectl fs stat <path URI> [flags]
 ```
 
 #### Options
@@ -2332,7 +2245,7 @@ lakectl fs stat <path uri> [flags]
 
 ```
   -h, --help       help for stat
-      --pre-sign   Request pre-sign for physical address
+      --pre-sign   Use pre-signed URLs when downloading/uploading data (recommended) (default true)
 ```
 
 
@@ -2342,7 +2255,7 @@ lakectl fs stat <path uri> [flags]
 Upload a local file to the specified URI
 
 ```
-lakectl fs upload <path uri> [flags]
+lakectl fs upload <path URI> [flags]
 ```
 
 #### Options
@@ -2350,9 +2263,9 @@ lakectl fs upload <path uri> [flags]
 
 ```
       --content-type string   MIME type of contents
-  -d, --direct                write directly to backing store (faster but requires more credentials)
   -h, --help                  help for upload
-      --pre-sign              Use pre-sign link to access the data
+  -p, --parallelism int       Max concurrent operations to perform (default 25)
+      --pre-sign              Use pre-signed URLs when downloading/uploading data (recommended) (default true)
   -r, --recursive             recursively copy all files under local source
   -s, --source string         local file to upload, or "-" for stdin
 ```
@@ -2377,14 +2290,14 @@ Manage the garbage collection policy
 Deletes the garbage collection policy for the repository
 
 ```
-lakectl gc delete-config [flags]
+lakectl gc delete-config <repository URI> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl gc delete-config <repository uri>
+lakectl gc delete-config lakefs://my-repo
 ```
 
 #### Options
@@ -2401,14 +2314,14 @@ lakectl gc delete-config <repository uri>
 Show the garbage collection policy for this repository
 
 ```
-lakectl gc get-config [flags]
+lakectl gc get-config <repository URI> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl gc get-config <repository uri>
+lakectl gc get-config lakefs://my-repo
 ```
 
 #### Options
@@ -2468,14 +2381,14 @@ Example configuration file:
 }
 
 ```
-lakectl gc set-config [flags]
+lakectl gc set-config <repository URI> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl gc set-config <repository uri> -f config.json
+lakectl gc set-config lakefs://my-repo -f config.json
 ```
 
 #### Options
@@ -2523,12 +2436,13 @@ lakectl import --from <object store URI> --to <lakeFS path URI> [flags]
 {:.no_toc}
 
 ```
-      --from string      prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
-  -h, --help             help for import
-  -m, --message string   commit message (default "Import objects")
-      --meta strings     key value pair in the form of key=value
-      --no-progress      switch off the progress output
-      --to string        lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
+      --allow-empty-message   allow an empty commit message (default true)
+      --from string           prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
+  -h, --help                  help for import
+  -m, --message string        commit message
+      --meta strings          key value pair in the form of key=value
+      --no-progress           switch off the progress output
+      --to string             lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
 ```
 
 
@@ -2596,7 +2510,7 @@ lakectl local checkout [directory] [flags]
 Clone a path from a lakeFS repository into a new directory.
 
 ```
-lakectl local clone <path uri> [directory] [flags]
+lakectl local clone <path URI> [directory] [flags]
 ```
 
 #### Options
@@ -2623,9 +2537,9 @@ lakectl local commit [directory] [flags]
 {:.no_toc}
 
 ```
-      --allow-empty-message   Allow commit with empty message
+      --allow-empty-message   allow an empty commit message
   -h, --help                  help for commit
-  -m, --message string        Commit message
+  -m, --message string        commit message
       --meta strings          key value pair in the form of key=value
   -p, --parallelism int       Max concurrent operations to perform (default 25)
       --pre-sign              Use pre-signed URLs when downloading/uploading data (recommended) (default true)
@@ -2661,7 +2575,7 @@ lakectl local help [command] [flags]
 set a local directory to sync with a lakeFS path.
 
 ```
-lakectl local init <path uri> [directory] [flags]
+lakectl local init <path URI> [directory] [flags]
 ```
 
 #### Options
@@ -2740,7 +2654,7 @@ Show log of commits
 Show log of commits for a given branch
 
 ```
-lakectl log <branch uri> [flags]
+lakectl log <branch URI> [flags]
 ```
 
 #### Examples
@@ -2763,6 +2677,8 @@ lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg
       --objects strings      show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together
       --prefixes strings     show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together
       --show-meta-range-id   also show meta range ID
+      --since string         show results since this date-time (RFC3339 format)
+      --stop-at string       a Ref to stop at (included in results)
 ```
 
 
@@ -2784,8 +2700,11 @@ lakectl merge <source ref> <destination ref> [flags]
 {:.no_toc}
 
 ```
-  -h, --help              help for merge
-      --strategy string   In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ("dest-wins") or from the source branch("source-wins"). In case no selection is made, the merge process will fail in case of a conflict
+      --allow-empty-message   allow an empty commit message (default true)
+  -h, --help                  help for merge
+  -m, --message string        commit message
+      --meta strings          key value pair in the form of key=value
+      --strategy string       In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ("dest-wins") or from the source branch("source-wins"). In case no selection is made, the merge process will fail in case of a conflict
 ```
 
 
@@ -3023,14 +2942,17 @@ lakectl metastore import-all [flags]
 Dumps refs (branches, commits, tags) to the underlying object store
 
 ```
-lakectl refs-dump <repository uri> [flags]
+lakectl refs-dump <repository URI> [flags]
 ```
 
 #### Options
 {:.no_toc}
 
 ```
-  -h, --help   help for refs-dump
+  -h, --help                     help for refs-dump
+  -o, --output string            output filename (default stdout)
+      --poll-interval duration   poll status check interval (default 3s)
+      --timeout duration         timeout for polling status checks (default 1h0m0s)
 ```
 
 
@@ -3051,7 +2973,7 @@ This command is expected to run on a bare repository (i.e. one created with 'lak
 Since a bare repo is expected, in case of transient failure, delete the repository and recreate it as bare and retry.
 
 ```
-lakectl refs-restore <repository uri> [flags]
+lakectl refs-restore <repository URI> [flags]
 ```
 
 #### Examples
@@ -3065,8 +2987,10 @@ aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-restore lakefs
 {:.no_toc}
 
 ```
-  -h, --help                 help for refs-restore
-      --manifest refs-dump   path to a refs manifest json file (as generated by refs-dump). Alternatively, use "-" to read from stdin
+  -h, --help                     help for refs-restore
+      --manifest refs-dump       path to a refs manifest json file (as generated by refs-dump). Alternatively, use "-" to read from stdin
+      --poll-interval duration   poll status check interval (default 3s)
+      --timeout duration         timeout for polling status checks (default 1h0m0s)
 ```
 
 
@@ -3089,14 +3013,14 @@ Manage and explore repos
 Create a new repository
 
 ```
-lakectl repo create <repository uri> <storage namespace> [flags]
+lakectl repo create <repository URI> <storage namespace> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl repo create lakefs://some-repo-name s3://some-bucket-name
+lakectl repo create lakefs://my-repo s3://my-bucket
 ```
 
 #### Options
@@ -3117,14 +3041,14 @@ lakectl repo create lakefs://some-repo-name s3://some-bucket-name
 Create a new repository with no initial branch or commit
 
 ```
-lakectl repo create-bare <repository uri> <storage namespace> [flags]
+lakectl repo create-bare <repository URI> <storage namespace> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl create-bare lakefs://some-repo-name s3://some-bucket-name
+lakectl create-bare lakefs://my-repo s3://my-bucket
 ```
 
 #### Options
@@ -3142,7 +3066,14 @@ lakectl create-bare lakefs://some-repo-name s3://some-bucket-name
 Delete existing repository
 
 ```
-lakectl repo delete <repository uri> [flags]
+lakectl repo delete <repository URI> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl repo delete lakefs://my-repo
 ```
 
 #### Options
@@ -3215,7 +3146,7 @@ See detailed information about an entity
 See detailed information about a commit
 
 ```
-lakectl show commit <ref uri> [flags]
+lakectl show commit <commit URI> [flags]
 ```
 
 #### Options
@@ -3274,7 +3205,7 @@ Create delete and list tags within a lakeFS repository
 Create a new tag in a repository
 
 ```
-lakectl tag create <tag uri> <commit uri> [flags]
+lakectl tag create <tag URI> <commit URI> [flags]
 ```
 
 #### Examples
@@ -3299,7 +3230,7 @@ lakectl tag create lakefs://example-repo/example-tag lakefs://example-repo/2397c
 Delete a tag from a repository
 
 ```
-lakectl tag delete <tag uri> [flags]
+lakectl tag delete <tag URI> [flags]
 ```
 
 #### Options
@@ -3339,14 +3270,14 @@ lakectl tag help [command] [flags]
 List tags in a repository
 
 ```
-lakectl tag list <repository uri> [flags]
+lakectl tag list <repository URI> [flags]
 ```
 
 #### Examples
 {:.no_toc}
 
 ```
-lakectl tag list lakefs://<repository>
+lakectl tag list lakefs://my-repo
 ```
 
 #### Options
@@ -3365,7 +3296,7 @@ lakectl tag list lakefs://<repository>
 Show tag's commit reference
 
 ```
-lakectl tag show <tag uri> [flags]
+lakectl tag show <tag URI> [flags]
 ```
 
 #### Options
@@ -3373,6 +3304,65 @@ lakectl tag show <tag uri> [flags]
 
 ```
   -h, --help   help for show
+```
+
+
+
+### lakectl usage
+
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
+Usage reports from lakeFS
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for usage
+```
+
+
+
+### lakectl usage help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type usage help [path to command] for full details.
+
+```
+lakectl usage help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl usage summary
+
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
+Summary reports from lakeFS
+
+```
+lakectl usage summary [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for summary
 ```
 
 

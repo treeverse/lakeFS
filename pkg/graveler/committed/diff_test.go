@@ -350,7 +350,7 @@ func TestNextRange(t *testing.T) {
 		if it.NextRange() {
 			t.Fatal("expected false from iterator after close")
 		}
-		if err := it.Err(); err != committed.ErrNoRange {
+		if err := it.Err(); !errors.Is(err, committed.ErrNoRange) {
 			t.Fatalf("expected to get err=%s, got: %s", committed.ErrNoRange, err)
 		}
 	})
@@ -388,7 +388,7 @@ func TestNextErr(t *testing.T) {
 		val, rng := it.Value()
 		t.Fatalf("unexptected result from it.NextRange(), expected false, got true with value=%v , rng=%v", val, rng)
 	}
-	if err := it.Err(); err != committed.ErrNoRange {
+	if err := it.Err(); !errors.Is(err, committed.ErrNoRange) {
 		t.Fatalf("expected to get err=%s, got: %s", committed.ErrNoRange, err)
 	}
 }

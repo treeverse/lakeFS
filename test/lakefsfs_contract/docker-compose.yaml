@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
   minio:
-    image: minio/minio:RELEASE.2021-07-27T02-40-15Z
+    image: minio/minio:RELEASE.2023-11-20T22-40-07Z
     command: server --console-address ":9001" /home/shared
     networks:
       default:
@@ -52,9 +52,8 @@ services:
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=minio
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=minio123
       - LAKEFS_BLOCKSTORE_S3_ENDPOINT=http://s3.local.lakefs.io:9000
+      - LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE=true
       - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
-      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
-      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
     env_file:
       - tester.env
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]

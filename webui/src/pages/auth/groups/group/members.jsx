@@ -1,9 +1,8 @@
 import React, {useEffect, useState} from "react";
-
+import { useOutletContext } from "react-router-dom";
 import Button from "react-bootstrap/Button";
 
 import {GroupHeader} from "../../../../lib/components/auth/nav";
-import {AuthLayout} from "../../../../lib/components/auth/layout";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {auth} from "../../../../lib/api";
 import {Paginator} from "../../../../lib/components/pagination";
@@ -78,7 +77,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                     searchFn={prefix => auth.listUsers(prefix, "", 5).then(res => res.results)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
-                        Promise.all(selected.map(userId => auth.addUserToGroup(userId, groupId)))
+                        Promise.all(selected.map(user => auth.addUserToGroup(user.id, groupId)))
                             .then(() => { setRefresh(!refresh); setAttachError(null) })
                             .catch(error => { setAttachError(error) })
                             .finally(() => { setShowAddModal(false) });
@@ -120,11 +119,9 @@ const GroupMembersContainer = () => {
 };
 
 const GroupMembersPage = () => {
-    return (
-        <AuthLayout activeTab="groups">
-            <GroupMembersContainer/>
-        </AuthLayout>
-    );
+    const [setActiveTab] = useOutletContext();
+    useEffect(() => setActiveTab('groups'), [setActiveTab]);
+    return <GroupMembersContainer/>;
 };
 
 export default GroupMembersPage;

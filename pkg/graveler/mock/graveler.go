@@ -7,6 +7,7 @@ package mock
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 	graveler "github.com/treeverse/lakefs/pkg/graveler"
@@ -36,31 +37,41 @@ func (m *MockKeyValueStore) EXPECT() *MockKeyValueStoreMockRecorder {
 }
 
 // Delete mocks base method.
-func (m *MockKeyValueStore) Delete(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key) error {
+func (m *MockKeyValueStore) Delete(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, repository, branchID, key)
+	varargs := []interface{}{ctx, repository, branchID, key}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Delete", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockKeyValueStoreMockRecorder) Delete(ctx, repository, branchID, key interface{}) *gomock.Call {
+func (mr *MockKeyValueStoreMockRecorder) Delete(ctx, repository, branchID, key interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockKeyValueStore)(nil).Delete), ctx, repository, branchID, key)
+	varargs := append([]interface{}{ctx, repository, branchID, key}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockKeyValueStore)(nil).Delete), varargs...)
 }
 
 // DeleteBatch mocks base method.
-func (m *MockKeyValueStore) DeleteBatch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, keys []graveler.Key) error {
+func (m *MockKeyValueStore) DeleteBatch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, keys []graveler.Key, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteBatch", ctx, repository, branchID, keys)
+	varargs := []interface{}{ctx, repository, branchID, keys}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteBatch", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteBatch indicates an expected call of DeleteBatch.
-func (mr *MockKeyValueStoreMockRecorder) DeleteBatch(ctx, repository, branchID, keys interface{}) *gomock.Call {
+func (mr *MockKeyValueStoreMockRecorder) DeleteBatch(ctx, repository, branchID, keys interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBatch", reflect.TypeOf((*MockKeyValueStore)(nil).DeleteBatch), ctx, repository, branchID, keys)
+	varargs := append([]interface{}{ctx, repository, branchID, keys}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBatch", reflect.TypeOf((*MockKeyValueStore)(nil).DeleteBatch), varargs...)
 }
 
 // Get mocks base method.
@@ -186,48 +197,63 @@ func (m *MockVersionController) EXPECT() *MockVersionControllerMockRecorder {
 }
 
 // AddCommit mocks base method.
-func (m *MockVersionController) AddCommit(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
+func (m *MockVersionController) AddCommit(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddCommit", ctx, repository, commit)
+	varargs := []interface{}{ctx, repository, commit}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "AddCommit", varargs...)
 	ret0, _ := ret[0].(graveler.CommitID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AddCommit indicates an expected call of AddCommit.
-func (mr *MockVersionControllerMockRecorder) AddCommit(ctx, repository, commit interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) AddCommit(ctx, repository, commit interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCommit", reflect.TypeOf((*MockVersionController)(nil).AddCommit), ctx, repository, commit)
+	varargs := append([]interface{}{ctx, repository, commit}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCommit", reflect.TypeOf((*MockVersionController)(nil).AddCommit), varargs...)
 }
 
 // CherryPick mocks base method.
-func (m *MockVersionController) CherryPick(ctx context.Context, repository *graveler.RepositoryRecord, id graveler.BranchID, reference graveler.Ref, number *int, committer string) (graveler.CommitID, error) {
+func (m *MockVersionController) CherryPick(ctx context.Context, repository *graveler.RepositoryRecord, id graveler.BranchID, reference graveler.Ref, number *int, committer string, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CherryPick", ctx, repository, id, reference, number, committer)
+	varargs := []interface{}{ctx, repository, id, reference, number, committer}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CherryPick", varargs...)
 	ret0, _ := ret[0].(graveler.CommitID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CherryPick indicates an expected call of CherryPick.
-func (mr *MockVersionControllerMockRecorder) CherryPick(ctx, repository, id, reference, number, committer interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) CherryPick(ctx, repository, id, reference, number, committer interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CherryPick", reflect.TypeOf((*MockVersionController)(nil).CherryPick), ctx, repository, id, reference, number, committer)
+	varargs := append([]interface{}{ctx, repository, id, reference, number, committer}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CherryPick", reflect.TypeOf((*MockVersionController)(nil).CherryPick), varargs...)
 }
 
 // Commit mocks base method.
-func (m *MockVersionController) Commit(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, commitParams graveler.CommitParams) (graveler.CommitID, error) {
+func (m *MockVersionController) Commit(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, commitParams graveler.CommitParams, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Commit", ctx, repository, branchID, commitParams)
+	varargs := []interface{}{ctx, repository, branchID, commitParams}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Commit", varargs...)
 	ret0, _ := ret[0].(graveler.CommitID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Commit indicates an expected call of Commit.
-func (mr *MockVersionControllerMockRecorder) Commit(ctx, repository, branchID, commitParams interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) Commit(ctx, repository, branchID, commitParams interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockVersionController)(nil).Commit), ctx, repository, branchID, commitParams)
+	varargs := append([]interface{}{ctx, repository, branchID, commitParams}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockVersionController)(nil).Commit), varargs...)
 }
 
 // Compare mocks base method.
@@ -246,104 +272,110 @@ func (mr *MockVersionControllerMockRecorder) Compare(ctx, repository, left, righ
 }
 
 // CreateBareRepository mocks base method.
-func (m *MockVersionController) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, defaultBranchID graveler.BranchID) (*graveler.RepositoryRecord, error) {
+func (m *MockVersionController) CreateBareRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, defaultBranchID graveler.BranchID, readOnly bool) (*graveler.RepositoryRecord, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateBareRepository", ctx, repositoryID, storageNamespace, defaultBranchID)
+	ret := m.ctrl.Call(m, "CreateBareRepository", ctx, repositoryID, storageNamespace, defaultBranchID, readOnly)
 	ret0, _ := ret[0].(*graveler.RepositoryRecord)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateBareRepository indicates an expected call of CreateBareRepository.
-func (mr *MockVersionControllerMockRecorder) CreateBareRepository(ctx, repositoryID, storageNamespace, defaultBranchID interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) CreateBareRepository(ctx, repositoryID, storageNamespace, defaultBranchID, readOnly interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBareRepository", reflect.TypeOf((*MockVersionController)(nil).CreateBareRepository), ctx, repositoryID, storageNamespace, defaultBranchID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBareRepository", reflect.TypeOf((*MockVersionController)(nil).CreateBareRepository), ctx, repositoryID, storageNamespace, defaultBranchID, readOnly)
 }
 
 // CreateBranch mocks base method.
-func (m *MockVersionController) CreateBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error) {
+func (m *MockVersionController) CreateBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref, opts ...graveler.SetOptionsFunc) (*graveler.Branch, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateBranch", ctx, repository, branchID, ref)
+	varargs := []interface{}{ctx, repository, branchID, ref}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateBranch", varargs...)
 	ret0, _ := ret[0].(*graveler.Branch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateBranch indicates an expected call of CreateBranch.
-func (mr *MockVersionControllerMockRecorder) CreateBranch(ctx, repository, branchID, ref interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) CreateBranch(ctx, repository, branchID, ref interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBranch", reflect.TypeOf((*MockVersionController)(nil).CreateBranch), ctx, repository, branchID, ref)
+	varargs := append([]interface{}{ctx, repository, branchID, ref}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBranch", reflect.TypeOf((*MockVersionController)(nil).CreateBranch), varargs...)
 }
 
-// CreateBranchProtectionRule mocks base method.
-func (m *MockVersionController) CreateBranchProtectionRule(ctx context.Context, repository *graveler.RepositoryRecord, pattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
+// CreateCommitRecord mocks base method.
+func (m *MockVersionController) CreateCommitRecord(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, commit graveler.Commit, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateBranchProtectionRule", ctx, repository, pattern, blockedActions)
+	varargs := []interface{}{ctx, repository, commitID, commit}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateCommitRecord", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// CreateBranchProtectionRule indicates an expected call of CreateBranchProtectionRule.
-func (mr *MockVersionControllerMockRecorder) CreateBranchProtectionRule(ctx, repository, pattern, blockedActions interface{}) *gomock.Call {
+// CreateCommitRecord indicates an expected call of CreateCommitRecord.
+func (mr *MockVersionControllerMockRecorder) CreateCommitRecord(ctx, repository, commitID, commit interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBranchProtectionRule", reflect.TypeOf((*MockVersionController)(nil).CreateBranchProtectionRule), ctx, repository, pattern, blockedActions)
+	varargs := append([]interface{}{ctx, repository, commitID, commit}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCommitRecord", reflect.TypeOf((*MockVersionController)(nil).CreateCommitRecord), varargs...)
 }
 
 // CreateRepository mocks base method.
-func (m *MockVersionController) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID) (*graveler.RepositoryRecord, error) {
+func (m *MockVersionController) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID, readOnly bool) (*graveler.RepositoryRecord, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateRepository", ctx, repositoryID, storageNamespace, branchID)
+	ret := m.ctrl.Call(m, "CreateRepository", ctx, repositoryID, storageNamespace, branchID, readOnly)
 	ret0, _ := ret[0].(*graveler.RepositoryRecord)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateRepository indicates an expected call of CreateRepository.
-func (mr *MockVersionControllerMockRecorder) CreateRepository(ctx, repositoryID, storageNamespace, branchID interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) CreateRepository(ctx, repositoryID, storageNamespace, branchID, readOnly interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRepository", reflect.TypeOf((*MockVersionController)(nil).CreateRepository), ctx, repositoryID, storageNamespace, branchID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRepository", reflect.TypeOf((*MockVersionController)(nil).CreateRepository), ctx, repositoryID, storageNamespace, branchID, readOnly)
 }
 
 // CreateTag mocks base method.
-func (m *MockVersionController) CreateTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID, commitID graveler.CommitID) error {
+func (m *MockVersionController) CreateTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID, commitID graveler.CommitID, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateTag", ctx, repository, tagID, commitID)
+	varargs := []interface{}{ctx, repository, tagID, commitID}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateTag", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateTag indicates an expected call of CreateTag.
-func (mr *MockVersionControllerMockRecorder) CreateTag(ctx, repository, tagID, commitID interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) CreateTag(ctx, repository, tagID, commitID interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTag", reflect.TypeOf((*MockVersionController)(nil).CreateTag), ctx, repository, tagID, commitID)
+	varargs := append([]interface{}{ctx, repository, tagID, commitID}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTag", reflect.TypeOf((*MockVersionController)(nil).CreateTag), varargs...)
 }
 
 // DeleteBranch mocks base method.
-func (m *MockVersionController) DeleteBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) error {
+func (m *MockVersionController) DeleteBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteBranch", ctx, repository, branchID)
+	varargs := []interface{}{ctx, repository, branchID}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteBranch", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteBranch indicates an expected call of DeleteBranch.
-func (mr *MockVersionControllerMockRecorder) DeleteBranch(ctx, repository, branchID interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) DeleteBranch(ctx, repository, branchID interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBranch", reflect.TypeOf((*MockVersionController)(nil).DeleteBranch), ctx, repository, branchID)
-}
-
-// DeleteBranchProtectionRule mocks base method.
-func (m *MockVersionController) DeleteBranchProtectionRule(ctx context.Context, repository *graveler.RepositoryRecord, pattern string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteBranchProtectionRule", ctx, repository, pattern)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteBranchProtectionRule indicates an expected call of DeleteBranchProtectionRule.
-func (mr *MockVersionControllerMockRecorder) DeleteBranchProtectionRule(ctx, repository, pattern interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBranchProtectionRule", reflect.TypeOf((*MockVersionController)(nil).DeleteBranchProtectionRule), ctx, repository, pattern)
+	varargs := append([]interface{}{ctx, repository, branchID}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBranch", reflect.TypeOf((*MockVersionController)(nil).DeleteBranch), varargs...)
 }
 
 // DeleteExpiredImports mocks base method.
@@ -375,31 +407,41 @@ func (mr *MockVersionControllerMockRecorder) DeleteExpiredLinkAddresses(ctx, rep
 }
 
 // DeleteRepository mocks base method.
-func (m *MockVersionController) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
+func (m *MockVersionController) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteRepository", ctx, repositoryID)
+	varargs := []interface{}{ctx, repositoryID}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteRepository", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteRepository indicates an expected call of DeleteRepository.
-func (mr *MockVersionControllerMockRecorder) DeleteRepository(ctx, repositoryID interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) DeleteRepository(ctx, repositoryID interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRepository", reflect.TypeOf((*MockVersionController)(nil).DeleteRepository), ctx, repositoryID)
+	varargs := append([]interface{}{ctx, repositoryID}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRepository", reflect.TypeOf((*MockVersionController)(nil).DeleteRepository), varargs...)
 }
 
 // DeleteTag mocks base method.
-func (m *MockVersionController) DeleteTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID) error {
+func (m *MockVersionController) DeleteTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteTag", ctx, repository, tagID)
+	varargs := []interface{}{ctx, repository, tagID}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteTag", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteTag indicates an expected call of DeleteTag.
-func (mr *MockVersionControllerMockRecorder) DeleteTag(ctx, repository, tagID interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) DeleteTag(ctx, repository, tagID interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTag", reflect.TypeOf((*MockVersionController)(nil).DeleteTag), ctx, repository, tagID)
+	varargs := append([]interface{}{ctx, repository, tagID}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTag", reflect.TypeOf((*MockVersionController)(nil).DeleteTag), varargs...)
 }
 
 // Dereference mocks base method.
@@ -509,12 +551,13 @@ func (mr *MockVersionControllerMockRecorder) GetBranch(ctx, repository, branchID
 }
 
 // GetBranchProtectionRules mocks base method.
-func (m *MockVersionController) GetBranchProtectionRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, error) {
+func (m *MockVersionController) GetBranchProtectionRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, *string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBranchProtectionRules", ctx, repository)
 	ret0, _ := ret[0].(*graveler.BranchProtectionRules)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(*string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetBranchProtectionRules indicates an expected call of GetBranchProtectionRules.
@@ -614,33 +657,38 @@ func (mr *MockVersionControllerMockRecorder) GetTag(ctx, repository, tagID inter
 }
 
 // Import mocks base method.
-func (m *MockVersionController) Import(ctx context.Context, repository *graveler.RepositoryRecord, destination graveler.BranchID, source graveler.MetaRangeID, commitParams graveler.CommitParams, prefixes []graveler.Prefix) (graveler.CommitID, error) {
+func (m *MockVersionController) Import(ctx context.Context, repository *graveler.RepositoryRecord, destination graveler.BranchID, source graveler.MetaRangeID, commitParams graveler.CommitParams, prefixes []graveler.Prefix, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Import", ctx, repository, destination, source, commitParams, prefixes)
+	varargs := []interface{}{ctx, repository, destination, source, commitParams, prefixes}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Import", varargs...)
 	ret0, _ := ret[0].(graveler.CommitID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Import indicates an expected call of Import.
-func (mr *MockVersionControllerMockRecorder) Import(ctx, repository, destination, source, commitParams, prefixes interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) Import(ctx, repository, destination, source, commitParams, prefixes interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockVersionController)(nil).Import), ctx, repository, destination, source, commitParams, prefixes)
+	varargs := append([]interface{}{ctx, repository, destination, source, commitParams, prefixes}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockVersionController)(nil).Import), varargs...)
 }
 
 // IsLinkAddressExpired mocks base method.
-func (m *MockVersionController) IsLinkAddressExpired(token *graveler.LinkAddressData) (bool, error) {
+func (m *MockVersionController) IsLinkAddressExpired(address *graveler.LinkAddressData) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsLinkAddressExpired", token)
+	ret := m.ctrl.Call(m, "IsLinkAddressExpired", address)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // IsLinkAddressExpired indicates an expected call of IsLinkAddressExpired.
-func (mr *MockVersionControllerMockRecorder) IsLinkAddressExpired(token interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) IsLinkAddressExpired(address interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsLinkAddressExpired", reflect.TypeOf((*MockVersionController)(nil).IsLinkAddressExpired), token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsLinkAddressExpired", reflect.TypeOf((*MockVersionController)(nil).IsLinkAddressExpired), address)
 }
 
 // ListBranches mocks base method.
@@ -659,10 +707,10 @@ func (mr *MockVersionControllerMockRecorder) ListBranches(ctx, repository interf
 }
 
 // ListLinkAddresses mocks base method.
-func (m *MockVersionController) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
+func (m *MockVersionController) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.LinkAddressIterator, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListLinkAddresses", ctx, repository)
-	ret0, _ := ret[0].(graveler.AddressTokenIterator)
+	ret0, _ := ret[0].(graveler.LinkAddressIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -704,33 +752,38 @@ func (mr *MockVersionControllerMockRecorder) ListTags(ctx, repository interface{
 }
 
 // Log mocks base method.
-func (m *MockVersionController) Log(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, firstParent bool) (graveler.CommitIterator, error) {
+func (m *MockVersionController) Log(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, firstParent bool, since *time.Time) (graveler.CommitIterator, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Log", ctx, repository, commitID, firstParent)
+	ret := m.ctrl.Call(m, "Log", ctx, repository, commitID, firstParent, since)
 	ret0, _ := ret[0].(graveler.CommitIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Log indicates an expected call of Log.
-func (mr *MockVersionControllerMockRecorder) Log(ctx, repository, commitID, firstParent interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) Log(ctx, repository, commitID, firstParent, since interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockVersionController)(nil).Log), ctx, repository, commitID, firstParent)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockVersionController)(nil).Log), ctx, repository, commitID, firstParent, since)
 }
 
 // Merge mocks base method.
-func (m *MockVersionController) Merge(ctx context.Context, repository *graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitParams graveler.CommitParams, strategy string) (graveler.CommitID, error) {
+func (m *MockVersionController) Merge(ctx context.Context, repository *graveler.RepositoryRecord, destination graveler.BranchID, source graveler.Ref, commitParams graveler.CommitParams, strategy string, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Merge", ctx, repository, destination, source, commitParams, strategy)
+	varargs := []interface{}{ctx, repository, destination, source, commitParams, strategy}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Merge", varargs...)
 	ret0, _ := ret[0].(graveler.CommitID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Merge indicates an expected call of Merge.
-func (mr *MockVersionControllerMockRecorder) Merge(ctx, repository, destination, source, commitParams, strategy interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) Merge(ctx, repository, destination, source, commitParams, strategy interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Merge", reflect.TypeOf((*MockVersionController)(nil).Merge), ctx, repository, destination, source, commitParams, strategy)
+	varargs := append([]interface{}{ctx, repository, destination, source, commitParams, strategy}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Merge", reflect.TypeOf((*MockVersionController)(nil).Merge), varargs...)
 }
 
 // ParseRef mocks base method.
@@ -749,45 +802,79 @@ func (mr *MockVersionControllerMockRecorder) ParseRef(ref interface{}) *gomock.C
 }
 
 // Reset mocks base method.
-func (m *MockVersionController) Reset(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID) error {
+func (m *MockVersionController) Reset(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Reset", ctx, repository, branchID)
+	varargs := []interface{}{ctx, repository, branchID}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Reset", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Reset indicates an expected call of Reset.
-func (mr *MockVersionControllerMockRecorder) Reset(ctx, repository, branchID interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) Reset(ctx, repository, branchID interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reset", reflect.TypeOf((*MockVersionController)(nil).Reset), ctx, repository, branchID)
+	varargs := append([]interface{}{ctx, repository, branchID}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reset", reflect.TypeOf((*MockVersionController)(nil).Reset), varargs...)
+}
+
+// ResetHard mocks base method.
+func (m *MockVersionController) ResetHard(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref, opts ...graveler.SetOptionsFunc) error {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, repository, branchID, ref}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ResetHard", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResetHard indicates an expected call of ResetHard.
+func (mr *MockVersionControllerMockRecorder) ResetHard(ctx, repository, branchID, ref interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, repository, branchID, ref}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetHard", reflect.TypeOf((*MockVersionController)(nil).ResetHard), varargs...)
 }
 
 // ResetKey mocks base method.
-func (m *MockVersionController) ResetKey(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key) error {
+func (m *MockVersionController) ResetKey(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResetKey", ctx, repository, branchID, key)
+	varargs := []interface{}{ctx, repository, branchID, key}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ResetKey", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ResetKey indicates an expected call of ResetKey.
-func (mr *MockVersionControllerMockRecorder) ResetKey(ctx, repository, branchID, key interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) ResetKey(ctx, repository, branchID, key interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetKey", reflect.TypeOf((*MockVersionController)(nil).ResetKey), ctx, repository, branchID, key)
+	varargs := append([]interface{}{ctx, repository, branchID, key}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetKey", reflect.TypeOf((*MockVersionController)(nil).ResetKey), varargs...)
 }
 
 // ResetPrefix mocks base method.
-func (m *MockVersionController) ResetPrefix(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key) error {
+func (m *MockVersionController) ResetPrefix(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResetPrefix", ctx, repository, branchID, key)
+	varargs := []interface{}{ctx, repository, branchID, key}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ResetPrefix", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ResetPrefix indicates an expected call of ResetPrefix.
-func (mr *MockVersionControllerMockRecorder) ResetPrefix(ctx, repository, branchID, key interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) ResetPrefix(ctx, repository, branchID, key interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPrefix", reflect.TypeOf((*MockVersionController)(nil).ResetPrefix), ctx, repository, branchID, key)
+	varargs := append([]interface{}{ctx, repository, branchID, key}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPrefix", reflect.TypeOf((*MockVersionController)(nil).ResetPrefix), varargs...)
 }
 
 // ResolveRawRef mocks base method.
@@ -806,33 +893,52 @@ func (mr *MockVersionControllerMockRecorder) ResolveRawRef(ctx, repository, rawR
 }
 
 // Revert mocks base method.
-func (m *MockVersionController) Revert(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref, parentNumber int, commitParams graveler.CommitParams) (graveler.CommitID, error) {
+func (m *MockVersionController) Revert(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref, parentNumber int, commitParams graveler.CommitParams, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Revert", ctx, repository, branchID, ref, parentNumber, commitParams)
+	varargs := []interface{}{ctx, repository, branchID, ref, parentNumber, commitParams}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Revert", varargs...)
 	ret0, _ := ret[0].(graveler.CommitID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Revert indicates an expected call of Revert.
-func (mr *MockVersionControllerMockRecorder) Revert(ctx, repository, branchID, ref, parentNumber, commitParams interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) Revert(ctx, repository, branchID, ref, parentNumber, commitParams interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revert", reflect.TypeOf((*MockVersionController)(nil).Revert), ctx, repository, branchID, ref, parentNumber, commitParams)
+	varargs := append([]interface{}{ctx, repository, branchID, ref, parentNumber, commitParams}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revert", reflect.TypeOf((*MockVersionController)(nil).Revert), varargs...)
 }
 
 // SaveGarbageCollectionCommits mocks base method.
-func (m *MockVersionController) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, previousRunID string) (*graveler.GarbageCollectionRunMetadata, error) {
+func (m *MockVersionController) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.GarbageCollectionRunMetadata, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveGarbageCollectionCommits", ctx, repository, previousRunID)
+	ret := m.ctrl.Call(m, "SaveGarbageCollectionCommits", ctx, repository)
 	ret0, _ := ret[0].(*graveler.GarbageCollectionRunMetadata)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SaveGarbageCollectionCommits indicates an expected call of SaveGarbageCollectionCommits.
-func (mr *MockVersionControllerMockRecorder) SaveGarbageCollectionCommits(ctx, repository, previousRunID interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) SaveGarbageCollectionCommits(ctx, repository interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveGarbageCollectionCommits", reflect.TypeOf((*MockVersionController)(nil).SaveGarbageCollectionCommits), ctx, repository, previousRunID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveGarbageCollectionCommits", reflect.TypeOf((*MockVersionController)(nil).SaveGarbageCollectionCommits), ctx, repository)
+}
+
+// SetBranchProtectionRules mocks base method.
+func (m *MockVersionController) SetBranchProtectionRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetBranchProtectionRules", ctx, repository, rules, lastKnownChecksum)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetBranchProtectionRules indicates an expected call of SetBranchProtectionRules.
+func (mr *MockVersionControllerMockRecorder) SetBranchProtectionRules(ctx, repository, rules, lastKnownChecksum interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBranchProtectionRules", reflect.TypeOf((*MockVersionController)(nil).SetBranchProtectionRules), ctx, repository, rules, lastKnownChecksum)
 }
 
 // SetGarbageCollectionRules mocks base method.
@@ -862,61 +968,85 @@ func (mr *MockVersionControllerMockRecorder) SetHooksHandler(handler interface{}
 }
 
 // SetLinkAddress mocks base method.
-func (m *MockVersionController) SetLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+func (m *MockVersionController) SetLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetLinkAddress", ctx, repository, token)
+	ret := m.ctrl.Call(m, "SetLinkAddress", ctx, repository, physicalAddress)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetLinkAddress indicates an expected call of SetLinkAddress.
-func (mr *MockVersionControllerMockRecorder) SetLinkAddress(ctx, repository, token interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) SetLinkAddress(ctx, repository, physicalAddress interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLinkAddress", reflect.TypeOf((*MockVersionController)(nil).SetLinkAddress), ctx, repository, token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLinkAddress", reflect.TypeOf((*MockVersionController)(nil).SetLinkAddress), ctx, repository, physicalAddress)
+}
+
+// SetRepositoryMetadata mocks base method.
+func (m *MockVersionController) SetRepositoryMetadata(ctx context.Context, repository *graveler.RepositoryRecord, updateFunc graveler.RepoMetadataUpdateFunc) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetRepositoryMetadata", ctx, repository, updateFunc)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetRepositoryMetadata indicates an expected call of SetRepositoryMetadata.
+func (mr *MockVersionControllerMockRecorder) SetRepositoryMetadata(ctx, repository, updateFunc interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRepositoryMetadata", reflect.TypeOf((*MockVersionController)(nil).SetRepositoryMetadata), ctx, repository, updateFunc)
 }
 
 // UpdateBranch mocks base method.
-func (m *MockVersionController) UpdateBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref) (*graveler.Branch, error) {
+func (m *MockVersionController) UpdateBranch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref, opts ...graveler.SetOptionsFunc) (*graveler.Branch, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateBranch", ctx, repository, branchID, ref)
+	varargs := []interface{}{ctx, repository, branchID, ref}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateBranch", varargs...)
 	ret0, _ := ret[0].(*graveler.Branch)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateBranch indicates an expected call of UpdateBranch.
-func (mr *MockVersionControllerMockRecorder) UpdateBranch(ctx, repository, branchID, ref interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) UpdateBranch(ctx, repository, branchID, ref interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBranch", reflect.TypeOf((*MockVersionController)(nil).UpdateBranch), ctx, repository, branchID, ref)
+	varargs := append([]interface{}{ctx, repository, branchID, ref}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBranch", reflect.TypeOf((*MockVersionController)(nil).UpdateBranch), varargs...)
 }
 
 // VerifyLinkAddress mocks base method.
-func (m *MockVersionController) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+func (m *MockVersionController) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VerifyLinkAddress", ctx, repository, token)
+	ret := m.ctrl.Call(m, "VerifyLinkAddress", ctx, repository, physicalAddress)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // VerifyLinkAddress indicates an expected call of VerifyLinkAddress.
-func (mr *MockVersionControllerMockRecorder) VerifyLinkAddress(ctx, repository, token interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) VerifyLinkAddress(ctx, repository, physicalAddress interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyLinkAddress", reflect.TypeOf((*MockVersionController)(nil).VerifyLinkAddress), ctx, repository, token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyLinkAddress", reflect.TypeOf((*MockVersionController)(nil).VerifyLinkAddress), ctx, repository, physicalAddress)
 }
 
 // WriteMetaRangeByIterator mocks base method.
-func (m *MockVersionController) WriteMetaRangeByIterator(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.ValueIterator) (*graveler.MetaRangeID, error) {
+func (m *MockVersionController) WriteMetaRangeByIterator(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.ValueIterator, opts ...graveler.SetOptionsFunc) (*graveler.MetaRangeID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteMetaRangeByIterator", ctx, repository, it)
+	varargs := []interface{}{ctx, repository, it}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "WriteMetaRangeByIterator", varargs...)
 	ret0, _ := ret[0].(*graveler.MetaRangeID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // WriteMetaRangeByIterator indicates an expected call of WriteMetaRangeByIterator.
-func (mr *MockVersionControllerMockRecorder) WriteMetaRangeByIterator(ctx, repository, it interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) WriteMetaRangeByIterator(ctx, repository, it interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMetaRangeByIterator", reflect.TypeOf((*MockVersionController)(nil).WriteMetaRangeByIterator), ctx, repository, it)
+	varargs := append([]interface{}{ctx, repository, it}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMetaRangeByIterator", reflect.TypeOf((*MockVersionController)(nil).WriteMetaRangeByIterator), varargs...)
 }
 
 // MockPlumbing is a mock of Plumbing interface.
@@ -986,48 +1116,44 @@ func (mr *MockPlumbingMockRecorder) StageObject(ctx, stagingToken, object interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StageObject", reflect.TypeOf((*MockPlumbing)(nil).StageObject), ctx, stagingToken, object)
 }
 
-// UpdateBranchToken mocks base method.
-func (m *MockPlumbing) UpdateBranchToken(ctx context.Context, repository *graveler.RepositoryRecord, branchID, stagingToken string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateBranchToken", ctx, repository, branchID, stagingToken)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateBranchToken indicates an expected call of UpdateBranchToken.
-func (mr *MockPlumbingMockRecorder) UpdateBranchToken(ctx, repository, branchID, stagingToken interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBranchToken", reflect.TypeOf((*MockPlumbing)(nil).UpdateBranchToken), ctx, repository, branchID, stagingToken)
-}
-
 // WriteMetaRange mocks base method.
-func (m *MockPlumbing) WriteMetaRange(ctx context.Context, repository *graveler.RepositoryRecord, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
+func (m *MockPlumbing) WriteMetaRange(ctx context.Context, repository *graveler.RepositoryRecord, ranges []*graveler.RangeInfo, opts ...graveler.SetOptionsFunc) (*graveler.MetaRangeInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteMetaRange", ctx, repository, ranges)
+	varargs := []interface{}{ctx, repository, ranges}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "WriteMetaRange", varargs...)
 	ret0, _ := ret[0].(*graveler.MetaRangeInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // WriteMetaRange indicates an expected call of WriteMetaRange.
-func (mr *MockPlumbingMockRecorder) WriteMetaRange(ctx, repository, ranges interface{}) *gomock.Call {
+func (mr *MockPlumbingMockRecorder) WriteMetaRange(ctx, repository, ranges interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMetaRange", reflect.TypeOf((*MockPlumbing)(nil).WriteMetaRange), ctx, repository, ranges)
+	varargs := append([]interface{}{ctx, repository, ranges}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMetaRange", reflect.TypeOf((*MockPlumbing)(nil).WriteMetaRange), varargs...)
 }
 
 // WriteRange mocks base method.
-func (m *MockPlumbing) WriteRange(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
+func (m *MockPlumbing) WriteRange(ctx context.Context, repository *graveler.RepositoryRecord, it graveler.ValueIterator, opts ...graveler.SetOptionsFunc) (*graveler.RangeInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteRange", ctx, repository, it)
+	varargs := []interface{}{ctx, repository, it}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "WriteRange", varargs...)
 	ret0, _ := ret[0].(*graveler.RangeInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // WriteRange indicates an expected call of WriteRange.
-func (mr *MockPlumbingMockRecorder) WriteRange(ctx, repository, it interface{}) *gomock.Call {
+func (mr *MockPlumbingMockRecorder) WriteRange(ctx, repository, it interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteRange", reflect.TypeOf((*MockPlumbing)(nil).WriteRange), ctx, repository, it)
+	varargs := append([]interface{}{ctx, repository, it}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteRange", reflect.TypeOf((*MockPlumbing)(nil).WriteRange), varargs...)
 }
 
 // MockDumper is a mock of Dumper interface.
@@ -1122,45 +1248,60 @@ func (m *MockLoader) EXPECT() *MockLoaderMockRecorder {
 }
 
 // LoadBranches mocks base method.
-func (m *MockLoader) LoadBranches(ctx context.Context, repository *graveler.RepositoryRecord, metaRangeID graveler.MetaRangeID) error {
+func (m *MockLoader) LoadBranches(ctx context.Context, repository *graveler.RepositoryRecord, metaRangeID graveler.MetaRangeID, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadBranches", ctx, repository, metaRangeID)
+	varargs := []interface{}{ctx, repository, metaRangeID}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "LoadBranches", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // LoadBranches indicates an expected call of LoadBranches.
-func (mr *MockLoaderMockRecorder) LoadBranches(ctx, repository, metaRangeID interface{}) *gomock.Call {
+func (mr *MockLoaderMockRecorder) LoadBranches(ctx, repository, metaRangeID interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadBranches", reflect.TypeOf((*MockLoader)(nil).LoadBranches), ctx, repository, metaRangeID)
+	varargs := append([]interface{}{ctx, repository, metaRangeID}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadBranches", reflect.TypeOf((*MockLoader)(nil).LoadBranches), varargs...)
 }
 
 // LoadCommits mocks base method.
-func (m *MockLoader) LoadCommits(ctx context.Context, repository *graveler.RepositoryRecord, metaRangeID graveler.MetaRangeID) error {
+func (m *MockLoader) LoadCommits(ctx context.Context, repository *graveler.RepositoryRecord, metaRangeID graveler.MetaRangeID, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadCommits", ctx, repository, metaRangeID)
+	varargs := []interface{}{ctx, repository, metaRangeID}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "LoadCommits", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // LoadCommits indicates an expected call of LoadCommits.
-func (mr *MockLoaderMockRecorder) LoadCommits(ctx, repository, metaRangeID interface{}) *gomock.Call {
+func (mr *MockLoaderMockRecorder) LoadCommits(ctx, repository, metaRangeID interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadCommits", reflect.TypeOf((*MockLoader)(nil).LoadCommits), ctx, repository, metaRangeID)
+	varargs := append([]interface{}{ctx, repository, metaRangeID}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadCommits", reflect.TypeOf((*MockLoader)(nil).LoadCommits), varargs...)
 }
 
 // LoadTags mocks base method.
-func (m *MockLoader) LoadTags(ctx context.Context, repository *graveler.RepositoryRecord, metaRangeID graveler.MetaRangeID) error {
+func (m *MockLoader) LoadTags(ctx context.Context, repository *graveler.RepositoryRecord, metaRangeID graveler.MetaRangeID, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadTags", ctx, repository, metaRangeID)
+	varargs := []interface{}{ctx, repository, metaRangeID}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "LoadTags", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // LoadTags indicates an expected call of LoadTags.
-func (mr *MockLoaderMockRecorder) LoadTags(ctx, repository, metaRangeID interface{}) *gomock.Call {
+func (mr *MockLoaderMockRecorder) LoadTags(ctx, repository, metaRangeID interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadTags", reflect.TypeOf((*MockLoader)(nil).LoadTags), ctx, repository, metaRangeID)
+	varargs := append([]interface{}{ctx, repository, metaRangeID}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadTags", reflect.TypeOf((*MockLoader)(nil).LoadTags), varargs...)
 }
 
 // MockRepositoryIterator is a mock of RepositoryIterator interface.
@@ -1697,43 +1838,43 @@ func (mr *MockCommitIteratorMockRecorder) Value() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Value", reflect.TypeOf((*MockCommitIterator)(nil).Value))
 }
 
-// MockAddressTokenIterator is a mock of AddressTokenIterator interface.
-type MockAddressTokenIterator struct {
+// MockLinkAddressIterator is a mock of LinkAddressIterator interface.
+type MockLinkAddressIterator struct {
 	ctrl     *gomock.Controller
-	recorder *MockAddressTokenIteratorMockRecorder
+	recorder *MockLinkAddressIteratorMockRecorder
 }
 
-// MockAddressTokenIteratorMockRecorder is the mock recorder for MockAddressTokenIterator.
-type MockAddressTokenIteratorMockRecorder struct {
-	mock *MockAddressTokenIterator
+// MockLinkAddressIteratorMockRecorder is the mock recorder for MockLinkAddressIterator.
+type MockLinkAddressIteratorMockRecorder struct {
+	mock *MockLinkAddressIterator
 }
 
-// NewMockAddressTokenIterator creates a new mock instance.
-func NewMockAddressTokenIterator(ctrl *gomock.Controller) *MockAddressTokenIterator {
-	mock := &MockAddressTokenIterator{ctrl: ctrl}
-	mock.recorder = &MockAddressTokenIteratorMockRecorder{mock}
+// NewMockLinkAddressIterator creates a new mock instance.
+func NewMockLinkAddressIterator(ctrl *gomock.Controller) *MockLinkAddressIterator {
+	mock := &MockLinkAddressIterator{ctrl: ctrl}
+	mock.recorder = &MockLinkAddressIteratorMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockAddressTokenIterator) EXPECT() *MockAddressTokenIteratorMockRecorder {
+func (m *MockLinkAddressIterator) EXPECT() *MockLinkAddressIteratorMockRecorder {
 	return m.recorder
 }
 
 // Close mocks base method.
-func (m *MockAddressTokenIterator) Close() {
+func (m *MockLinkAddressIterator) Close() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Close")
 }
 
 // Close indicates an expected call of Close.
-func (mr *MockAddressTokenIteratorMockRecorder) Close() *gomock.Call {
+func (mr *MockLinkAddressIteratorMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockAddressTokenIterator)(nil).Close))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockLinkAddressIterator)(nil).Close))
 }
 
 // Err mocks base method.
-func (m *MockAddressTokenIterator) Err() error {
+func (m *MockLinkAddressIterator) Err() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Err")
 	ret0, _ := ret[0].(error)
@@ -1741,13 +1882,13 @@ func (m *MockAddressTokenIterator) Err() error {
 }
 
 // Err indicates an expected call of Err.
-func (mr *MockAddressTokenIteratorMockRecorder) Err() *gomock.Call {
+func (mr *MockLinkAddressIteratorMockRecorder) Err() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Err", reflect.TypeOf((*MockAddressTokenIterator)(nil).Err))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Err", reflect.TypeOf((*MockLinkAddressIterator)(nil).Err))
 }
 
 // Next mocks base method.
-func (m *MockAddressTokenIterator) Next() bool {
+func (m *MockLinkAddressIterator) Next() bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Next")
 	ret0, _ := ret[0].(bool)
@@ -1755,25 +1896,25 @@ func (m *MockAddressTokenIterator) Next() bool {
 }
 
 // Next indicates an expected call of Next.
-func (mr *MockAddressTokenIteratorMockRecorder) Next() *gomock.Call {
+func (mr *MockLinkAddressIteratorMockRecorder) Next() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockAddressTokenIterator)(nil).Next))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockLinkAddressIterator)(nil).Next))
 }
 
 // SeekGE mocks base method.
-func (m *MockAddressTokenIterator) SeekGE(address string) {
+func (m *MockLinkAddressIterator) SeekGE(address string) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SeekGE", address)
 }
 
 // SeekGE indicates an expected call of SeekGE.
-func (mr *MockAddressTokenIteratorMockRecorder) SeekGE(address interface{}) *gomock.Call {
+func (mr *MockLinkAddressIteratorMockRecorder) SeekGE(address interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeekGE", reflect.TypeOf((*MockAddressTokenIterator)(nil).SeekGE), address)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeekGE", reflect.TypeOf((*MockLinkAddressIterator)(nil).SeekGE), address)
 }
 
 // Value mocks base method.
-func (m *MockAddressTokenIterator) Value() *graveler.LinkAddressData {
+func (m *MockLinkAddressIterator) Value() *graveler.LinkAddressData {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Value")
 	ret0, _ := ret[0].(*graveler.LinkAddressData)
@@ -1781,9 +1922,9 @@ func (m *MockAddressTokenIterator) Value() *graveler.LinkAddressData {
 }
 
 // Value indicates an expected call of Value.
-func (mr *MockAddressTokenIteratorMockRecorder) Value() *gomock.Call {
+func (mr *MockLinkAddressIteratorMockRecorder) Value() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Value", reflect.TypeOf((*MockAddressTokenIterator)(nil).Value))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Value", reflect.TypeOf((*MockLinkAddressIterator)(nil).Value))
 }
 
 // MockRefManager is a mock of RefManager interface.
@@ -1867,6 +2008,20 @@ func (mr *MockRefManagerMockRecorder) CreateBranch(ctx, repository, branchID, br
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBranch", reflect.TypeOf((*MockRefManager)(nil).CreateBranch), ctx, repository, branchID, branch)
 }
 
+// CreateCommitRecord mocks base method.
+func (m *MockRefManager) CreateCommitRecord(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, commit graveler.Commit) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateCommitRecord", ctx, repository, commitID, commit)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateCommitRecord indicates an expected call of CreateCommitRecord.
+func (mr *MockRefManagerMockRecorder) CreateCommitRecord(ctx, repository, commitID, commit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCommitRecord", reflect.TypeOf((*MockRefManager)(nil).CreateCommitRecord), ctx, repository, commitID, commit)
+}
+
 // CreateRepository mocks base method.
 func (m *MockRefManager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
 	m.ctrl.T.Helper()
@@ -1939,17 +2094,22 @@ func (mr *MockRefManagerMockRecorder) DeleteExpiredLinkAddresses(ctx, repository
 }
 
 // DeleteRepository mocks base method.
-func (m *MockRefManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
+func (m *MockRefManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteRepository", ctx, repositoryID)
+	varargs := []interface{}{ctx, repositoryID}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteRepository", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteRepository indicates an expected call of DeleteRepository.
-func (mr *MockRefManagerMockRecorder) DeleteRepository(ctx, repositoryID interface{}) *gomock.Call {
+func (mr *MockRefManagerMockRecorder) DeleteRepository(ctx, repositoryID interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRepository", reflect.TypeOf((*MockRefManager)(nil).DeleteRepository), ctx, repositoryID)
+	varargs := append([]interface{}{ctx, repositoryID}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRepository", reflect.TypeOf((*MockRefManager)(nil).DeleteRepository), varargs...)
 }
 
 // DeleteTag mocks base method.
@@ -2107,18 +2267,18 @@ func (mr *MockRefManagerMockRecorder) GetTag(ctx, repository, tagID interface{})
 }
 
 // IsLinkAddressExpired mocks base method.
-func (m *MockRefManager) IsLinkAddressExpired(token *graveler.LinkAddressData) (bool, error) {
+func (m *MockRefManager) IsLinkAddressExpired(linkAddress *graveler.LinkAddressData) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsLinkAddressExpired", token)
+	ret := m.ctrl.Call(m, "IsLinkAddressExpired", linkAddress)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // IsLinkAddressExpired indicates an expected call of IsLinkAddressExpired.
-func (mr *MockRefManagerMockRecorder) IsLinkAddressExpired(token interface{}) *gomock.Call {
+func (mr *MockRefManagerMockRecorder) IsLinkAddressExpired(linkAddress interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsLinkAddressExpired", reflect.TypeOf((*MockRefManager)(nil).IsLinkAddressExpired), token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsLinkAddressExpired", reflect.TypeOf((*MockRefManager)(nil).IsLinkAddressExpired), linkAddress)
 }
 
 // ListBranches mocks base method.
@@ -2152,10 +2312,10 @@ func (mr *MockRefManagerMockRecorder) ListCommits(ctx, repository interface{}) *
 }
 
 // ListLinkAddresses mocks base method.
-func (m *MockRefManager) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
+func (m *MockRefManager) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.LinkAddressIterator, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListLinkAddresses", ctx, repository)
-	ret0, _ := ret[0].(graveler.AddressTokenIterator)
+	ret0, _ := ret[0].(graveler.LinkAddressIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -2197,18 +2357,18 @@ func (mr *MockRefManagerMockRecorder) ListTags(ctx, repository interface{}) *gom
 }
 
 // Log mocks base method.
-func (m *MockRefManager) Log(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, firstParent bool) (graveler.CommitIterator, error) {
+func (m *MockRefManager) Log(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, firstParent bool, since *time.Time) (graveler.CommitIterator, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Log", ctx, repository, commitID, firstParent)
+	ret := m.ctrl.Call(m, "Log", ctx, repository, commitID, firstParent, since)
 	ret0, _ := ret[0].(graveler.CommitIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Log indicates an expected call of Log.
-func (mr *MockRefManagerMockRecorder) Log(ctx, repository, commitID, firstParent interface{}) *gomock.Call {
+func (mr *MockRefManagerMockRecorder) Log(ctx, repository, commitID, firstParent, since interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockRefManager)(nil).Log), ctx, repository, commitID, firstParent)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockRefManager)(nil).Log), ctx, repository, commitID, firstParent, since)
 }
 
 // ParseRef mocks base method.
@@ -2270,17 +2430,17 @@ func (mr *MockRefManagerMockRecorder) SetBranch(ctx, repository, branchID, branc
 }
 
 // SetLinkAddress mocks base method.
-func (m *MockRefManager) SetLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+func (m *MockRefManager) SetLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetLinkAddress", ctx, repository, token)
+	ret := m.ctrl.Call(m, "SetLinkAddress", ctx, repository, physicalAddress)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetLinkAddress indicates an expected call of SetLinkAddress.
-func (mr *MockRefManagerMockRecorder) SetLinkAddress(ctx, repository, token interface{}) *gomock.Call {
+func (mr *MockRefManagerMockRecorder) SetLinkAddress(ctx, repository, physicalAddress interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLinkAddress", reflect.TypeOf((*MockRefManager)(nil).SetLinkAddress), ctx, repository, token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLinkAddress", reflect.TypeOf((*MockRefManager)(nil).SetLinkAddress), ctx, repository, physicalAddress)
 }
 
 // SetRepositoryMetadata mocks base method.
@@ -2298,17 +2458,17 @@ func (mr *MockRefManagerMockRecorder) SetRepositoryMetadata(ctx, repository, upd
 }
 
 // VerifyLinkAddress mocks base method.
-func (m *MockRefManager) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+func (m *MockRefManager) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VerifyLinkAddress", ctx, repository, token)
+	ret := m.ctrl.Call(m, "VerifyLinkAddress", ctx, repository, physicalAddress)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // VerifyLinkAddress indicates an expected call of VerifyLinkAddress.
-func (mr *MockRefManagerMockRecorder) VerifyLinkAddress(ctx, repository, token interface{}) *gomock.Call {
+func (mr *MockRefManagerMockRecorder) VerifyLinkAddress(ctx, repository, physicalAddress interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyLinkAddress", reflect.TypeOf((*MockRefManager)(nil).VerifyLinkAddress), ctx, repository, token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyLinkAddress", reflect.TypeOf((*MockRefManager)(nil).VerifyLinkAddress), ctx, repository, physicalAddress)
 }
 
 // MockCommittedManager is a mock of CommittedManager interface.
@@ -2335,9 +2495,13 @@ func (m *MockCommittedManager) EXPECT() *MockCommittedManagerMockRecorder {
 }
 
 // Commit mocks base method.
-func (m *MockCommittedManager) Commit(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
+func (m *MockCommittedManager) Commit(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator, allowEmpty bool, opts ...graveler.SetOptionsFunc) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Commit", ctx, ns, baseMetaRangeID, changes)
+	varargs := []interface{}{ctx, ns, baseMetaRangeID, changes, allowEmpty}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Commit", varargs...)
 	ret0, _ := ret[0].(graveler.MetaRangeID)
 	ret1, _ := ret[1].(graveler.DiffSummary)
 	ret2, _ := ret[2].(error)
@@ -2345,9 +2509,10 @@ func (m *MockCommittedManager) Commit(ctx context.Context, ns graveler.StorageNa
 }
 
 // Commit indicates an expected call of Commit.
-func (mr *MockCommittedManagerMockRecorder) Commit(ctx, ns, baseMetaRangeID, changes interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) Commit(ctx, ns, baseMetaRangeID, changes, allowEmpty interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockCommittedManager)(nil).Commit), ctx, ns, baseMetaRangeID, changes)
+	varargs := append([]interface{}{ctx, ns, baseMetaRangeID, changes, allowEmpty}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockCommittedManager)(nil).Commit), varargs...)
 }
 
 // Compare mocks base method.
@@ -2456,18 +2621,23 @@ func (mr *MockCommittedManagerMockRecorder) GetRangeIDByKey(ctx, ns, id, key int
 }
 
 // Import mocks base method.
-func (m *MockCommittedManager) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID, prefixes []graveler.Prefix) (graveler.MetaRangeID, error) {
+func (m *MockCommittedManager) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID, prefixes []graveler.Prefix, opts ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Import", ctx, ns, destination, source, prefixes)
+	varargs := []interface{}{ctx, ns, destination, source, prefixes}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Import", varargs...)
 	ret0, _ := ret[0].(graveler.MetaRangeID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Import indicates an expected call of Import.
-func (mr *MockCommittedManagerMockRecorder) Import(ctx, ns, destination, source, prefixes interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) Import(ctx, ns, destination, source, prefixes interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockCommittedManager)(nil).Import), ctx, ns, destination, source, prefixes)
+	varargs := append([]interface{}{ctx, ns, destination, source, prefixes}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockCommittedManager)(nil).Import), varargs...)
 }
 
 // List mocks base method.
@@ -2486,18 +2656,23 @@ func (mr *MockCommittedManagerMockRecorder) List(ctx, ns, rangeID interface{}) *
 }
 
 // Merge mocks base method.
-func (m *MockCommittedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, strategy graveler.MergeStrategy) (graveler.MetaRangeID, error) {
+func (m *MockCommittedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, strategy graveler.MergeStrategy, opts ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Merge", ctx, ns, destination, source, base, strategy)
+	varargs := []interface{}{ctx, ns, destination, source, base, strategy}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Merge", varargs...)
 	ret0, _ := ret[0].(graveler.MetaRangeID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Merge indicates an expected call of Merge.
-func (mr *MockCommittedManagerMockRecorder) Merge(ctx, ns, destination, source, base, strategy interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) Merge(ctx, ns, destination, source, base, strategy interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Merge", reflect.TypeOf((*MockCommittedManager)(nil).Merge), ctx, ns, destination, source, base, strategy)
+	varargs := append([]interface{}{ctx, ns, destination, source, base, strategy}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Merge", reflect.TypeOf((*MockCommittedManager)(nil).Merge), varargs...)
 }
 
 // WriteMetaRange mocks base method.
@@ -2640,12 +2815,11 @@ func (mr *MockStagingManagerMockRecorder) Get(ctx, st, key interface{}) *gomock.
 }
 
 // List mocks base method.
-func (m *MockStagingManager) List(ctx context.Context, st graveler.StagingToken, batchSize int) (graveler.ValueIterator, error) {
+func (m *MockStagingManager) List(ctx context.Context, st graveler.StagingToken, batchSize int) graveler.ValueIterator {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, st, batchSize)
 	ret0, _ := ret[0].(graveler.ValueIterator)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	return ret0
 }
 
 // List indicates an expected call of List.
@@ -2803,21 +2977,6 @@ func (mr *MockGarbageCollectionManagerMockRecorder) GetRules(ctx, storageNamespa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRules", reflect.TypeOf((*MockGarbageCollectionManager)(nil).GetRules), ctx, storageNamespace)
 }
 
-// GetRunExpiredCommits mocks base method.
-func (m *MockGarbageCollectionManager) GetRunExpiredCommits(ctx context.Context, storageNamespace graveler.StorageNamespace, runID string) ([]graveler.CommitID, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRunExpiredCommits", ctx, storageNamespace, runID)
-	ret0, _ := ret[0].([]graveler.CommitID)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRunExpiredCommits indicates an expected call of GetRunExpiredCommits.
-func (mr *MockGarbageCollectionManagerMockRecorder) GetRunExpiredCommits(ctx, storageNamespace, runID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRunExpiredCommits", reflect.TypeOf((*MockGarbageCollectionManager)(nil).GetRunExpiredCommits), ctx, storageNamespace, runID)
-}
-
 // GetUncommittedLocation mocks base method.
 func (m *MockGarbageCollectionManager) GetUncommittedLocation(runID string, sn graveler.StorageNamespace) (string, error) {
 	m.ctrl.T.Helper()
@@ -2848,18 +3007,18 @@ func (mr *MockGarbageCollectionManagerMockRecorder) NewID() *gomock.Call {
 }
 
 // SaveGarbageCollectionCommits mocks base method.
-func (m *MockGarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules, previouslyExpiredCommits []graveler.CommitID) (string, error) {
+func (m *MockGarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveGarbageCollectionCommits", ctx, repository, rules, previouslyExpiredCommits)
+	ret := m.ctrl.Call(m, "SaveGarbageCollectionCommits", ctx, repository, rules)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SaveGarbageCollectionCommits indicates an expected call of SaveGarbageCollectionCommits.
-func (mr *MockGarbageCollectionManagerMockRecorder) SaveGarbageCollectionCommits(ctx, repository, rules, previouslyExpiredCommits interface{}) *gomock.Call {
+func (mr *MockGarbageCollectionManagerMockRecorder) SaveGarbageCollectionCommits(ctx, repository, rules interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveGarbageCollectionCommits", reflect.TypeOf((*MockGarbageCollectionManager)(nil).SaveGarbageCollectionCommits), ctx, repository, rules, previouslyExpiredCommits)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveGarbageCollectionCommits", reflect.TypeOf((*MockGarbageCollectionManager)(nil).SaveGarbageCollectionCommits), ctx, repository, rules)
 }
 
 // SaveGarbageCollectionUncommitted mocks base method.
@@ -2913,56 +3072,14 @@ func (m *MockProtectedBranchesManager) EXPECT() *MockProtectedBranchesManagerMoc
 	return m.recorder
 }
 
-// Add mocks base method.
-func (m *MockProtectedBranchesManager) Add(ctx context.Context, repository *graveler.RepositoryRecord, branchNamePattern string, blockedActions []graveler.BranchProtectionBlockedAction) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Add", ctx, repository, branchNamePattern, blockedActions)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Add indicates an expected call of Add.
-func (mr *MockProtectedBranchesManagerMockRecorder) Add(ctx, repository, branchNamePattern, blockedActions interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockProtectedBranchesManager)(nil).Add), ctx, repository, branchNamePattern, blockedActions)
-}
-
-// Delete mocks base method.
-func (m *MockProtectedBranchesManager) Delete(ctx context.Context, repository *graveler.RepositoryRecord, branchNamePattern string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, repository, branchNamePattern)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Delete indicates an expected call of Delete.
-func (mr *MockProtectedBranchesManagerMockRecorder) Delete(ctx, repository, branchNamePattern interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockProtectedBranchesManager)(nil).Delete), ctx, repository, branchNamePattern)
-}
-
-// Get mocks base method.
-func (m *MockProtectedBranchesManager) Get(ctx context.Context, repository *graveler.RepositoryRecord, branchNamePattern string) ([]graveler.BranchProtectionBlockedAction, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, repository, branchNamePattern)
-	ret0, _ := ret[0].([]graveler.BranchProtectionBlockedAction)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get.
-func (mr *MockProtectedBranchesManagerMockRecorder) Get(ctx, repository, branchNamePattern interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockProtectedBranchesManager)(nil).Get), ctx, repository, branchNamePattern)
-}
-
 // GetRules mocks base method.
-func (m *MockProtectedBranchesManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, error) {
+func (m *MockProtectedBranchesManager) GetRules(ctx context.Context, repository *graveler.RepositoryRecord) (*graveler.BranchProtectionRules, *string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRules", ctx, repository)
 	ret0, _ := ret[0].(*graveler.BranchProtectionRules)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(*string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetRules indicates an expected call of GetRules.
@@ -2984,4 +3101,18 @@ func (m *MockProtectedBranchesManager) IsBlocked(ctx context.Context, repository
 func (mr *MockProtectedBranchesManagerMockRecorder) IsBlocked(ctx, repository, branchID, action interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsBlocked", reflect.TypeOf((*MockProtectedBranchesManager)(nil).IsBlocked), ctx, repository, branchID, action)
+}
+
+// SetRules mocks base method.
+func (m *MockProtectedBranchesManager) SetRules(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.BranchProtectionRules, lastKnownChecksum *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetRules", ctx, repository, rules, lastKnownChecksum)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetRules indicates an expected call of SetRules.
+func (mr *MockProtectedBranchesManagerMockRecorder) SetRules(ctx, repository, rules, lastKnownChecksum interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRules", reflect.TypeOf((*MockProtectedBranchesManager)(nil).SetRules), ctx, repository, rules, lastKnownChecksum)
 }

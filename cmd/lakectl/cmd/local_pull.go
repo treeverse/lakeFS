@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/diff"
 	"github.com/treeverse/lakefs/pkg/local"
 	"golang.org/x/sync/errgroup"
@@ -18,9 +18,9 @@ var localPullCmd = &cobra.Command{
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		_, localPath := getLocalArgs(args, false, false)
+		_, localPath := getSyncArgs(args, false, false)
 		force := Must(cmd.Flags().GetBool(localForceFlagName))
-		syncFlags := getLocalSyncFlags(cmd, client)
+		syncFlags := getSyncFlags(cmd, client)
 		idx, err := local.ReadIndex(localPath)
 		if err != nil {
 			DieErr(err)
@@ -30,6 +30,8 @@ var localPullCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+
+		dieOnInterruptedOperation(LocalOperation(idx.ActiveOperation), force)
 
 		currentBase := remote.WithRef(idx.AtHead)
 		// make sure no local changes
@@ -41,12 +43,12 @@ var localPullCmd = &cobra.Command{
 
 		// write new index
 		newHead := resolveCommitOrDie(cmd.Context(), client, remote.Repository, remote.Ref)
-		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead)
+		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead, "")
 		if err != nil {
 			DieErr(err)
 		}
 		newBase := remote.WithRef(newHead)
-		d := make(chan api.Diff, maxDiffPageSize)
+		d := make(chan apigen.Diff, maxDiffPageSize)
 		var wg errgroup.Group
 		wg.Go(func() error {
 			return diff.StreamRepositoryDiffs(cmd.Context(), client, currentBase, newBase, swag.StringValue(currentBase.Path), d, false)
@@ -63,8 +65,8 @@ var localPullCmd = &cobra.Command{
 			}
 			return nil
 		})
-		sigCtx := localHandleSyncInterrupt(cmd.Context())
-		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
+		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(pullOperation))
+		s := local.NewSyncManager(sigCtx, client, syncFlags)
 		err = s.Sync(idx.LocalPath(), newBase, c)
 		if err != nil {
 			DieErr(err)
@@ -87,6 +89,6 @@ var localPullCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	withForceFlag(localPullCmd, "Reset any uncommitted local change")
-	withLocalSyncFlags(localPullCmd)
+	withSyncFlags(localPullCmd)
 	localCmd.AddCommand(localPullCmd)
 }

@@ -27,15 +27,22 @@ func (controller *DeleteObjects) RequiredPermissions(_ *http.Request, _ string) 
 }
 
 func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
+	// verify we only handle delete request
+	query := req.URL.Query()
+	if !query.Has("delete") {
+		_ = o.EncodeError(w, req, nil, gerrors.ERRLakeFSNotSupported.ToAPIErr())
+		return
+	}
+
 	o.Incr("delete_objects", o.Principal, o.Repository.Name, "")
 	decodedXML := &serde.Delete{}
 	err := DecodeXMLBody(req.Body, decodedXML)
 	if err != nil {
-		_ = o.EncodeError(w, req, gerrors.Codes.ToAPIErr(gerrors.ErrBadRequest))
+		_ = o.EncodeError(w, req, err, gerrors.Codes.ToAPIErr(gerrors.ErrBadRequest))
 		return
 	}
 	if len(decodedXML.Object) == 0 || len(decodedXML.Object) > maxDeleteObjects {
-		_ = o.EncodeError(w, req, gerrors.Codes.ToAPIErr(gerrors.ErrMalformedXML))
+		_ = o.EncodeError(w, req, err, gerrors.Codes.ToAPIErr(gerrors.ErrMalformedXML))
 		return
 	}
 
@@ -152,6 +159,13 @@ func checkForDeleteError(log logging.Logger, key string, err error) *serde.Delet
 		log.Debug("tried to delete a non-existent object (OK)")
 	case errors.Is(err, graveler.ErrWriteToProtectedBranch):
 		apiErr := gerrors.Codes.ToAPIErr(gerrors.ErrWriteToProtectedBranch)
+		return &serde.DeleteError{
+			Code:    apiErr.Code,
+			Key:     key,
+			Message: fmt.Sprintf("error deleting object: %s", apiErr.Description),
+		}
+	case errors.Is(err, graveler.ErrReadOnlyRepository):
+		apiErr := gerrors.Codes.ToAPIErr(gerrors.ErrReadOnlyRepository)
 		return &serde.DeleteError{
 			Code:    apiErr.Code,
 			Key:     key,

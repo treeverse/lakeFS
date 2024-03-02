@@ -7,7 +7,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/diff"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
@@ -24,7 +25,7 @@ const (
 )
 
 var diffCmd = &cobra.Command{
-	Use:   `diff <ref uri> [ref uri]`,
+	Use:   `diff <ref URI> [ref URI]`,
 	Short: "Show changes between two commits, or the currently uncommitted changes",
 	Example: fmt.Sprintf(`
 	lakectl diff lakefs://example-repo/example-branch
@@ -54,7 +55,7 @@ var diffCmd = &cobra.Command{
 		client := getClient()
 		if len(args) == diffCmdMinArgs {
 			// got one arg ref: uncommitted changes diff
-			branchURI := MustParseRefURI("ref", args[0])
+			branchURI := MustParseBranchURI("branch URI", args[0])
 			fmt.Println("Ref:", branchURI)
 			printDiffBranch(cmd.Context(), client, branchURI.Repository, branchURI.Ref)
 			return
@@ -83,13 +84,13 @@ func (p *pageSize) Next() int {
 	return p.Value()
 }
 
-func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterface, repository string, branch string) {
+func printDiffBranch(ctx context.Context, client apigen.ClientWithResponsesInterface, repository string, branch string) {
 	var after string
 	pageSize := pageSize(minDiffPageSize)
 	for {
-		resp, err := client.DiffBranchWithResponse(ctx, repository, branch, &api.DiffBranchParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(int(pageSize)),
+		resp, err := client.DiffBranchWithResponse(ctx, repository, branch, &apigen.DiffBranchParams{
+			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount: apiutil.Ptr(apigen.PaginationAmount(pageSize)),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
@@ -108,8 +109,8 @@ func printDiffBranch(ctx context.Context, client api.ClientWithResponsesInterfac
 	}
 }
 
-func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface, left, right *uri.URI, twoDot bool) {
-	diffs := make(chan api.Diff, maxDiffPageSize)
+func printDiffRefs(ctx context.Context, client apigen.ClientWithResponsesInterface, left, right *uri.URI, twoDot bool) {
+	diffs := make(chan apigen.Diff, maxDiffPageSize)
 	var wg errgroup.Group
 	wg.Go(func() error {
 		return diff.StreamRepositoryDiffs(ctx, client, left, right, "", diffs, twoDot)
@@ -122,7 +123,7 @@ func printDiffRefs(ctx context.Context, client api.ClientWithResponsesInterface,
 	}
 }
 
-func FmtDiff(d api.Diff, withDirection bool) {
+func FmtDiff(d apigen.Diff, withDirection bool) {
 	action, color := diff.Fmt(d.Type)
 
 	if !withDirection {

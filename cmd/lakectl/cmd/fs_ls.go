@@ -5,18 +5,19 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 var fsLsCmd = &cobra.Command{
-	Use:               "ls <path uri>",
+	Use:               "ls <path URI>",
 	Short:             "List entries under a given tree",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		pathURI := MustParsePathURI("path", args[0])
-		recursive := Must(cmd.Flags().GetBool("recursive"))
+		pathURI := MustParsePathURI("path URI", args[0])
+		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		prefix := *pathURI.Path
 
 		// prefix we need to trim in ls output (non-recursive)
@@ -25,16 +26,16 @@ var fsLsCmd = &cobra.Command{
 			trimPrefix = prefix[:idx+1]
 		}
 		// delimiter used for listing
-		var paramsDelimiter api.PaginationDelimiter
+		var paramsDelimiter apigen.PaginationDelimiter
 		if !recursive {
 			paramsDelimiter = PathDelimiter
 		}
 		var from string
 		for {
-			pfx := api.PaginationPrefix(prefix)
-			params := &api.ListObjectsParams{
+			pfx := apigen.PaginationPrefix(prefix)
+			params := &apigen.ListObjectsParams{
 				Prefix:    &pfx,
-				After:     api.PaginationAfterPtr(from),
+				After:     apiutil.Ptr(apigen.PaginationAfter(from)),
 				Delimiter: &paramsDelimiter,
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
@@ -64,8 +65,7 @@ var fsLsCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	fsLsCmd.Flags().Bool("recursive", false, "list all objects under the specified prefix")
-
+	withRecursiveFlag(fsLsCmd, "list all objects under the specified path")
 	fsCmd.AddCommand(fsLsCmd)
 }
 

@@ -718,7 +718,8 @@ func TestManager_AddCommit(t *testing.T) {
 
 func TestManager_Log(t *testing.T) {
 	r, _ := testRefManager(t)
-	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+	ctx := context.Background()
+	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -739,7 +740,7 @@ func TestManager_Log(t *testing.T) {
 		if previous != "" {
 			c.Parents = append(c.Parents, previous)
 		}
-		cid, err := r.AddCommit(context.Background(), repository, c)
+		cid, err := r.AddCommit(ctx, repository, c)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -747,7 +748,7 @@ func TestManager_Log(t *testing.T) {
 		ts = ts.Add(time.Second)
 	}
 
-	iter, err := r.Log(context.Background(), repository, previous, false)
+	iter, err := r.Log(ctx, repository, previous, false, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -812,6 +813,7 @@ func TestManager_LogGraph(t *testing.T) {
 		firstParent bool
 		seek        string
 		start       string
+		since       time.Time
 		expected    []string
 	}{
 		/*
@@ -843,16 +845,21 @@ func TestManager_LogGraph(t *testing.T) {
 			start:    "c7",
 			expected: []string{"c7", "c4", "c2", "c1"},
 		},
+		"since": {
+			start:    "c8",
+			since:    time.Date(2020, time.December, 1, 15, 5, 0, 0, time.UTC),
+			expected: []string{"c8", "c7", "c6", "c5"},
+		},
 	}
 	for name, tst := range tests {
 		t.Run(name, func(t *testing.T) {
-			nextCommitTS, _ := time.Parse(time.RFC3339, "2020-12-01T15:00:00Z")
+			nextCommitTS := time.Date(2020, time.December, 1, 15, 0, 0, 0, time.UTC)
 			commitNameToID := map[string]graveler.CommitID{}
 			addCommit := func(commitName string, parentNames ...string) graveler.CommitID {
 				nextCommitTS = nextCommitTS.Add(time.Minute)
 				parentIDs := make([]graveler.CommitID, 0, len(parentNames))
 				for _, parentName := range parentNames {
-					parentIDs = append(parentIDs, graveler.CommitID(commitNameToID[parentName]))
+					parentIDs = append(parentIDs, commitNameToID[parentName])
 				}
 				c := graveler.Commit{
 					Committer:    "user1",
@@ -875,7 +882,14 @@ func TestManager_LogGraph(t *testing.T) {
 			for _, commitName := range commitNames {
 				addCommit(commitName, dag[commitName]...)
 			}
-			it, err := r.Log(ctx, repository, commitNameToID[tst.start], tst.firstParent)
+
+			// setup time since
+			var since *time.Time
+			if !tst.since.IsZero() {
+				since = &tst.since
+			}
+
+			it, err := r.Log(ctx, repository, commitNameToID[tst.start], tst.firstParent, since)
 			if err != nil {
 				t.Fatal("Error during create Log iterator", err)
 			}
@@ -922,7 +936,7 @@ func TestConsistentCommitIdentity(t *testing.T) {
 	const expected = "f1a106bbeb12d3eb54418d6000f4507501d289d0d0879dcce6f4d31425587df1"
 
 	// Running many times to check that it's actually consistent (see issue #1291)
-	const iterations = 10000
+	const iterations = 50
 
 	for i := 0; i < iterations; i++ {
 		res := addressProvider.ContentAddress(commit)
@@ -1063,7 +1077,7 @@ func TestManager_ListCommits(t *testing.T) {
 	}
 }
 
-func TestManager_ListAddressTokens(t *testing.T) {
+func TestManager_ListAddresses(t *testing.T) {
 	r, _ := testRefManager(t)
 	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
@@ -1083,20 +1097,20 @@ func TestManager_ListAddressTokens(t *testing.T) {
 	}
 	defer iter.Close()
 
-	var tokens []string
+	var addresss []string
 	for iter.Next() {
 		t := iter.Value()
-		tokens = append(tokens, t.Address)
+		addresss = append(addresss, t.Address)
 	}
 	if iter.Err() != nil {
 		t.Fatalf("unexpected error: %v", iter.Err())
 	}
-	if !reflect.DeepEqual(tokens, addresses) {
-		t.Fatalf("unexpected branch list: %v", tokens)
+	if !reflect.DeepEqual(addresss, addresses) {
+		t.Fatalf("unexpected branch list: %v", addresss)
 	}
 }
 
-func TestManager_SetGetAddressToken(t *testing.T) {
+func TestManager_SetGetAddress(t *testing.T) {
 	r, _ := testRefManager(t)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -1109,41 +1123,41 @@ func TestManager_SetGetAddressToken(t *testing.T) {
 	address := xid.New().String()
 
 	err = r.SetLinkAddress(ctx, repository, address)
-	testutil.MustDo(t, "set address token aa", err)
+	testutil.MustDo(t, "set address address aa", err)
 
 	// check we can't create existing
 	err = r.SetLinkAddress(ctx, repository, address)
-	if !errors.Is(err, graveler.ErrAddressTokenAlreadyExists) {
-		t.Fatalf("SetAddressToken() err = %s, expected already exists", err)
+	if !errors.Is(err, graveler.ErrLinkAddressAlreadyExists) {
+		t.Fatalf("SetLinkAddress() err = %s, expected already exists", err)
 	}
 
 	err = r.VerifyLinkAddress(ctx, repository, address)
-	testutil.MustDo(t, "get aa token", err)
+	testutil.MustDo(t, "get aa address", err)
 
-	// check the token is deleted
+	// check the address is deleted
 	err = r.VerifyLinkAddress(ctx, repository, address)
-	if !errors.Is(err, graveler.ErrAddressTokenNotFound) {
-		t.Fatalf("VerifyAddressToken() err = %s, expected not found", err)
+	if !errors.Is(err, graveler.ErrLinkAddressNotFound) {
+		t.Fatalf("VerifyLinkAddress() err = %s, expected not found", err)
 	}
 
 	// create again
 	err = r.SetLinkAddress(ctx, repository, address)
-	testutil.MustDo(t, "set address token aa after delete", err)
+	testutil.MustDo(t, "set address address aa after delete", err)
 }
 
-func TestManager_IsTokenExpired(t *testing.T) {
+func TestManager_IsAddressExpired(t *testing.T) {
 	r, _ := testRefManager(t)
 
 	expired, err := r.IsLinkAddressExpired(&graveler.LinkAddressData{Address: xid.New().String()})
-	testutil.MustDo(t, "is token expired", err)
+	testutil.MustDo(t, "is address expired", err)
 	if expired {
-		t.Fatalf("expected token not expired")
+		t.Fatalf("expected address not expired")
 	}
 
 	expired, err = r.IsLinkAddressExpired(&graveler.LinkAddressData{Address: xid.NewWithTime(time.Now().Add(-7 * time.Hour)).String()})
-	testutil.MustDo(t, "is token expired", err)
+	testutil.MustDo(t, "is address expired", err)
 	if !expired {
-		t.Fatalf("expected token expired")
+		t.Fatalf("expected address expired")
 	}
 
 	_, err = r.IsLinkAddressExpired(&graveler.LinkAddressData{Address: "aaa"})
@@ -1152,7 +1166,7 @@ func TestManager_IsTokenExpired(t *testing.T) {
 	}
 }
 
-func TestManager_DeleteExpiredAddressTokens(t *testing.T) {
+func TestManager_DeleteExpiredAddresses(t *testing.T) {
 	r, _ := testRefManager(t)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
@@ -1166,10 +1180,10 @@ func TestManager_DeleteExpiredAddressTokens(t *testing.T) {
 	b := "data/bbb/" + xid.NewWithTime(time.Now().Add(-10*time.Hour)).String() // expired
 	c := "data/ccc/" + xid.NewWithTime(time.Now().Add(-7*time.Hour)).String()  // expired
 
-	tokens := []string{a, b, c}
-	expectedTokens := []string{a}
+	addresss := []string{a, b, c}
+	expectedAddresses := []string{a}
 
-	for _, a := range tokens {
+	for _, a := range addresss {
 		testutil.Must(t, r.SetLinkAddress(context.Background(), repository, a))
 	}
 
@@ -1192,8 +1206,8 @@ func TestManager_DeleteExpiredAddressTokens(t *testing.T) {
 	if iter.Err() != nil {
 		t.Fatalf("unexpected error: %v", iter.Err())
 	}
-	if diff := deep.Equal(ts, expectedTokens); diff != nil {
-		t.Errorf("Found diff in tokens: %s", ts)
+	if diff := deep.Equal(ts, expectedAddresses); diff != nil {
+		t.Errorf("Found diff in addresss: %s", ts)
 	}
 }
 

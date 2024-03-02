@@ -1,13 +1,13 @@
 ---
 title: 1️⃣ Run lakeFS
 description: lakeFS quickstart / Run lakeFS locally pre-populated with a sample repository and data under Docker Compose
-parent: ⭐ Quickstart ⭐
+parent: ⭐ Quickstart
 nav_order: 5
 next: ["Query the pre-populated data", "./query.html"]
 previous: ["Quickstart introduction", "./index.html"]
 ---
 
-# 👩🏻‍💻 Spin up the environment 👨🏻‍💻
+# Spin up the environment
 
 {: .note}
 If you don't want to use Docker, you can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register). Once you launch the free trial you will have access to the same content as this quickstart within the provided repository once you login.

@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
   lakefs:
     image: "${REPO:-treeverse}/lakefs:${TAG:-dev}"
@@ -22,12 +22,10 @@ services:
       - LAKEFS_LOGGING_LEVEL=DEBUG
       - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
       - LAKEFS_STATS_ENABLED
-      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT
-      - LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY
       - AZURE_CLIENT_ID
       - AZURE_CLIENT_SECRET
       - AZURE_TENANT_ID
-      - ACTIONS_VAR=this_is_actions_var
+      - LAKEFSACTION_VAR=this_is_actions_var
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
     image: "postgres:11"
@@ -37,7 +35,7 @@ services:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
   esti:
-    image: "golang:1.20.6-alpine3.18"
+    image: "golang:1.21.4-alpine3.18"
     links:
       - lakefs:s3.local.lakefs.io
       - lakefs:testmultipartupload.s3.local.lakefs.io
@@ -50,7 +48,6 @@ services:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION=us-east-1
-      - ESTI_TEST_DATA_ACCESS
       - ESTI_STORAGE_NAMESPACE
       - ESTI_BLOCKSTORE_TYPE
       - ESTI_AWS_ACCESS_KEY_ID
@@ -63,6 +60,8 @@ services:
       - ESTI_FLAGS
       - ESTI_FORCE_PATH_STYLE
       - ESTI_ADLS_IMPORT_BASE_URL
+      - ESTI_AZURE_STORAGE_ACCOUNT
+      - ESTI_AZURE_STORAGE_ACCESS_KEY
     working_dir: /lakefs
     command:
       - /bin/sh
@@ -82,4 +81,3 @@ volumes:
       type: none
       device: ${LAKEFS_ROOT:-.}
   lakefs-app:
-

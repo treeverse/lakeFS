@@ -8,7 +8,8 @@ parent: Integrations
 
 {% include toc_2-3.html %}
 
-lakeFS provides its own implementation of the `SparkCatalog`, which handles the writing of the Iceberg data to lakeFS as well as reading from it and branching. Using straightforward table identifiers you can switch between branches when reading and writing data: 
+To enrich your Iceberg tables with lakeFS capabilities, you can use the lakeFS implementation of the Iceberg catalog.
+You will then be able to query your Iceberg tables using lakeFS references, such as branches, tags, and commit hashes: 
 
 ```sql
 SELECT * FROM catalog.ref.db.table
@@ -23,14 +24,13 @@ SELECT * FROM catalog.ref.db.table
   </ul>
   <div markdown="1" id="maven">
 
-
 Use the following Maven dependency to install the lakeFS custom catalog:
 
 ```xml
 <dependency>
   <groupId>io.lakefs</groupId>
   <artifactId>lakefs-iceberg</artifactId>
-  <version>0.1.2</version>
+  <version>0.1.4</version>
 </dependency>
 ```
 
@@ -39,90 +39,130 @@ Use the following Maven dependency to install the lakeFS custom catalog:
   Include the `lakefs-iceberg` jar in your package list along with Iceberg. For example: 
 
 ```python
-.config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.3.0,io.lakefs:lakefs-iceberg:0.1.2")
+.config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.3.0,io.lakefs:lakefs-iceberg:0.1.4")
 ```  
 </div>
 </div>
 
 ## Configure
 
-1. Set up the Spark SQL catalog: 
+<div class="tabs">
+  <ul>
+    <li><a href="#conf-pyspark">PySpark</a></li>
+    <li><a href="#conf-sparkshell">Spark Shell</a></li>
+  </ul>
+  <div markdown="1" id="conf-pyspark">
 
-    ```python
-    .config("spark.sql.catalog.lakefs", "org.apache.iceberg.spark.SparkCatalog") \
-    .config("spark.sql.catalog.lakefs.catalog-impl", "io.lakefs.iceberg.LakeFSCatalog") \
-    .config("spark.sql.catalog.lakefs.warehouse", f"lakefs://{repo_name}") \
-    ```
-
-2. Optionally, you can set the `lakeFS` catalog to be the default one, which means that you don't need to include the prefix when referencing tables. 
-
-    ```python
-    .config("spark.sql.defaultCatalog", "lakefs") \
-    ```
-
-3. Configure the S3A Hadoop FileSystem for lakeFS. 
-
-    ```python
-    .config("spark.hadoop.fs.s3.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
-    .config("spark.hadoop.fs.s3a.endpoint", lakefsEndPoint) \
-    .config("spark.hadoop.fs.s3a.access.key", lakefsAccessKey) \
-    .config("spark.hadoop.fs.s3a.secret.key", lakefsSecretKey) \
-    .config("spark.hadoop.fs.s3a.path.style.access", "true") \
-    ```
-
-### Iceberg and Catalog Metadata Caching
-
-By default, Iceberg caches metadata entries. This can result in unexpected behaviour when working on the same table with different references (such as branches) as it doesn't invalidate the cache. You can read more about this in more detail [here](https://github.com/treeverse/lakefs-iceberg/issues/27).
-
-For this reason it is recommended to disable the cache: 
-
+Set up the Spark SQL catalog: 
 ```python
-.config("spark.sql.catalog.lakefs.cache-enabled", "false") \
+.config("spark.sql.catalog.lakefs", "org.apache.iceberg.spark.SparkCatalog") \
+.config("spark.sql.catalog.lakefs.catalog-impl", "io.lakefs.iceberg.LakeFSCatalog") \
+.config("spark.sql.catalog.lakefs.warehouse", f"lakefs://{repo_name}") \ 
+.config("spark.sql.catalog.lakefs.cache-enabled", "false")
 ```
+
+Configure the S3A Hadoop FileSystem with your lakeFS connection details.
+Note that these are your lakeFS endpoint and credentials, not your S3 ones.
+    
+```python
+.config("spark.hadoop.fs.s3.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
+.config("spark.hadoop.fs.s3a.endpoint", "https://example-org.us-east-1.lakefscloud.io") \
+.config("spark.hadoop.fs.s3a.access.key", "AKIAIO5FODNN7EXAMPLE") \
+.config("spark.hadoop.fs.s3a.secret.key", "wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY") \
+.config("spark.hadoop.fs.s3a.path.style.access", "true")
+```
+
+  </div>
+
+  <div markdown="1" id="conf-sparkshell">
+```shell
+spark-shell --conf spark.sql.catalog.lakefs="org.apache.iceberg.spark.SparkCatalog" \
+   --conf spark.sql.catalog.lakefs.catalog-impl="io.lakefs.iceberg.LakeFSCatalog" \
+   --conf spark.sql.catalog.lakefs.warehouse="lakefs://example-repo" \
+   --conf spark.sql.catalog.lakefs.cache-enabled="false" \
+   --conf spark.hadoop.fs.s3.impl="org.apache.hadoop.fs.s3a.S3AFileSystem" \
+   --conf spark.hadoop.fs.s3a.endpoint="https://example-org.us-east-1.lakefscloud.io" \
+   --conf spark.hadoop.fs.s3a.access.key="AKIAIO5FODNN7EXAMPLE" \
+   --conf spark.hadoop.fs.s3a.secret.key="wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY" \
+   --conf spark.hadoop.fs.s3a.path.style.access="true"
+```
+  </div>
+</div>
+
 
 ## Using Iceberg tables with lakeFS
 
-When referencing tables you need to ensure that they have a database specified (as you would anyway), and then a lakeFS [reference][ref-expr] prefix. 
+### Create a table
 
-A reference is one of: 
+To create a table on your main branch, use the following syntax:
 
-* Branch
-* Tag
-* Expression (for example, `main~17` means _17 commits before main_)
+```sql
+CREATE TABLE lakefs.main.db1.table1 (id int, data string);
+```
 
-_If you have not set your default catalog then you need to include this as a prefix to the lakeFS reference._
+### Insert data into the table
+    
+```sql
+INSERT INTO lakefs.main.db1.table1 VALUES (1, 'data1');
+INSERT INTO lakefs.main.db1.table1 VALUES (2, 'data2');
+```
 
-Here are some examples: 
+### Create a branch
 
-* The table `db.table1` on the `main` branch of lakeFS: 
+We can now commit the creation of the table to the main branch:
 
-    ```sql
-    SELECT * FROM main.db.table1;
-    ```
+```shell
+lakectl commit lakefs://example-repo/main -m "my first iceberg commit"
+```
 
-* The table `db.table1` on the `dev` branch of lakeFS: 
+Then, create a branch:
 
-    ```sql
-    SELECT * FROM dev.db.table1;
-    ```
+```shell
+lakectl branch create lakefs://example-repo/dev -s lakefs://example-repo/main
+```
 
-* The table `db.table1` on the `dev` branch of lakeFS, configured through the Spark SQL catalog `foo`: 
+### Make changes on the branch
 
-    ```sql
-    SELECT * FROM foo.dev.db.table1;
-    ```
+We can now make changes on the branch:
 
-* One commit previous to the table `db.table1` on the `dev` branch of lakeFS
+```sql
+INSERT INTO lakefs.dev.db1.table1 VALUES (3, 'data3');
+```
 
-    ```sql
-    SELECT * FROM `dev~1`.db.table1;
-    ```
+### Query the table
 
-* Only committed data on the table `db.table1` on the `dev` branch of lakeFS
+If we query the table on the branch, we will see the data we inserted:
 
-    ```sql
-    SELECT * FROM `dev@`.db.table1;
-    ```
+```sql
+SELECT * FROM lakefs.dev.db1.table1;
+```
+
+Results in:
+```
++----+------+
+| id | data |
++----+------+
+| 1  | data1|
+| 2  | data2|
+| 3  | data3|
++----+------+
+```
+
+However, if we query the table on the main branch, we will not see the new changes:
+
+```sql
+SELECT * FROM lakefs.main.db1.table1;
+```
+
+Results in:
+```
++----+------+
+| id | data |
++----+------+
+| 1  | data1|
+| 2  | data2|
++----+------+
+```
 
 ## Migrating an existing Iceberg Table to lakeFS Catalog
 

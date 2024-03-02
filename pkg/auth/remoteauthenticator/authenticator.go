@@ -94,7 +94,7 @@ func (ra *Authenticator) doRequest(ctx context.Context, log logging.Logger, user
 	if err != nil {
 		return nil, fmt.Errorf("failed sending request to remote authenticator: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	log = log.WithField("status_code", resp.StatusCode)
 

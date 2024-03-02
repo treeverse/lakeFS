@@ -2,13 +2,15 @@ package esti
 
 import (
 	"bytes"
+	"context"
+	"github.com/google/uuid"
 	"net/http"
 	"testing"
 	"text/template"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var actionPreCommitTmpl = template.Must(template.New("action-pre-commit").Parse(
@@ -27,6 +29,21 @@ hooks:
       timeout : {{.Timeout}}
 `))
 
+var actionPreCreateBranchTmpl = template.Must(template.New("action-pre-create-branch").Parse(
+	`
+name: Test Create Branch
+description: set of checks to verify that branch is good
+on:
+  pre-create-branch:
+    branches:
+hooks:
+  - id: test_webhook
+    type: webhook
+    properties:
+      url: "{{.URL}}/{{.Path}}"
+      timeout : {{.Timeout}}
+`))
+
 const hooksTimeout = 2 * time.Second
 
 func TestHooksTimeout(t *testing.T) {
@@ -34,24 +51,16 @@ func TestHooksTimeout(t *testing.T) {
 }
 
 func TestHooksFail(t *testing.T) {
-	hookFailToCommit(t, "fail")
+	t.Run("commit", func(t *testing.T) {
+		hookFailToCommit(t, "fail")
+	})
+	t.Run("create_branch", func(t *testing.T) {
+		hookFailToCreateBranch(t, "fail")
+	})
 }
 
-func hookFailToCommit(t *testing.T, path string) {
-	ctx, logger, repo := setupTest(t)
-	defer tearDownTest(repo)
-	const branch = "feature-1"
-
-	logger.WithField("branch", branch).Info("Create branch")
-	resp, err := client.CreateBranchWithResponse(ctx, repo, api.CreateBranchJSONRequestBody{
-		Name:   branch,
-		Source: mainBranch,
-	})
-	require.NoError(t, err, "failed to create branch")
-	require.Equal(t, http.StatusCreated, resp.StatusCode())
-	ref := string(resp.Body)
-	logger.WithField("branchRef", ref).Info("Branch created")
-	logger.WithField("branch", branch).Info("Upload initial content")
+func createAction(t *testing.T, ctx context.Context, repo, branch, path string, tmp *template.Template) {
+	t.Helper()
 
 	// render actions based on templates
 	docData := struct {
@@ -66,16 +75,58 @@ func hookFailToCommit(t *testing.T, path string) {
 
 	var doc bytes.Buffer
 	doc.Reset()
-	err = actionPreCommitTmpl.Execute(&doc, docData)
+	err := tmp.Execute(&doc, docData)
 	require.NoError(t, err)
-	preCommitAction := doc.String()
-
-	uploadResp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/testing_pre_commit", preCommitAction)
+	content := doc.String()
+	uploadResp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/"+uuid.NewString(), content)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
 	logger.WithField("branch", branch).Info("Commit initial content")
+}
 
-	commitResp, err := client.CommitWithResponse(ctx, repo, branch, &api.CommitParams{}, api.CommitJSONRequestBody{
+func hookFailToCreateBranch(t *testing.T, path string) {
+	ctx, logger, repo := setupTest(t)
+	defer tearDownTest(repo)
+	const branch = "feature-1"
+
+	logger.WithField("branch", branch).Info("Create branch")
+	resp, err := client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+		Name:   branch,
+		Source: mainBranch,
+	})
+	require.NoError(t, err, "failed to create branch")
+	require.Equal(t, http.StatusCreated, resp.StatusCode())
+
+	createAction(t, ctx, repo, branch, path, actionPreCreateBranchTmpl)
+
+	logger.WithField("branch", "test_branch").Info("Create branch - expect failure")
+	resp, err = client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+		Name:   "test_branch",
+		Source: branch,
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusPreconditionFailed, resp.StatusCode())
+}
+
+func hookFailToCommit(t *testing.T, path string) {
+	ctx, logger, repo := setupTest(t)
+	defer tearDownTest(repo)
+	const branch = "feature-1"
+
+	logger.WithField("branch", branch).Info("Create branch")
+	resp, err := client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+		Name:   branch,
+		Source: mainBranch,
+	})
+	require.NoError(t, err, "failed to create branch")
+	require.Equal(t, http.StatusCreated, resp.StatusCode())
+	ref := string(resp.Body)
+	logger.WithField("branchRef", ref).Info("Branch created")
+	logger.WithField("branch", branch).Info("Upload initial content")
+
+	createAction(t, ctx, repo, branch, path, actionPreCommitTmpl)
+
+	commitResp, err := client.CommitWithResponse(ctx, repo, branch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Initial content",
 	})
 	require.NoError(t, err)

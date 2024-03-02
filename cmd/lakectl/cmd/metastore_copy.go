@@ -10,9 +10,10 @@ import (
 )
 
 var metastoreCopyCmd = &cobra.Command{
-	Use:   "copy",
-	Short: "Copy or merge table",
-	Long:  "Copy or merge table. the destination table will point to the selected branch",
+	Use:        "copy",
+	Short:      "Copy or merge table",
+	Long:       "Copy or merge table. the destination table will point to the selected branch",
+	Deprecated: "Upcoming releases of lakectl will no longer support this command.",
 	Run: func(cmd *cobra.Command, args []string) {
 		fromClientType := Must(cmd.Flags().GetString("from-client-type"))
 		fromDB := Must(cmd.Flags().GetString("from-schema"))
@@ -50,7 +51,7 @@ var metastoreCopyCmd = &cobra.Command{
 			"partition":        partition,
 		}).Info("Metadata copy or merge table")
 		fmt.Printf("copy %s.%s -> %s.%s\n", fromDB, fromTable, toDB, toTable)
-		err := metastore.CopyOrMerge(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, toBranch, serde, partition, cfg.GetFixSparkPlaceholder(), dbfsLocation)
+		err := metastore.CopyOrMerge(cmd.Context(), fromClient, toClient, fromDB, fromTable, toDB, toTable, toBranch, serde, partition, cfg.Metastore.FixSparkPlaceholder, dbfsLocation)
 		if err != nil {
 			DieErr(err)
 		}

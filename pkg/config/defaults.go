@@ -7,13 +7,14 @@ import (
 )
 
 const (
-	DefaultListenAddress        = "0.0.0.0:8000"
-	DefaultLoggingLevel         = "INFO"
-	DefaultLoggingAuditLogLevel = "DEBUG"
-	BlockstoreTypeKey           = "blockstore.type"
-	DefaultQuickstartUsername   = "quickstart"
-	DefaultQuickstartKeyID      = "AKIAIOSFOLQUICKSTART"
-	DefaultQuickstartSecretKey  = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" // nolint:gosec
+	DefaultListenAddress             = "0.0.0.0:8000"
+	DefaultLoggingLevel              = "INFO"
+	DefaultLoggingAuditLogLevel      = "DEBUG"
+	BlockstoreTypeKey                = "blockstore.type"
+	DefaultQuickstartUsername        = "quickstart"
+	DefaultQuickstartKeyID           = "AKIAIOSFOLQUICKSTART"                     //nolint:gosec
+	DefaultQuickstartSecretKey       = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" // nolint:gosec
+	DefaultAuthAPIHealthCheckTimeout = 20 * time.Second
 )
 
 //nolint:gomnd
@@ -44,6 +45,8 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("logging.file_max_size_mb", (1<<10)*100) // 100MiB
 
 	viper.SetDefault("actions.enabled", true)
+	viper.SetDefault("actions.env.enabled", true)
+	viper.SetDefault("actions.env.prefix", "LAKEFSACTION_")
 
 	viper.SetDefault("auth.cache.enabled", true)
 	viper.SetDefault("auth.cache.size", 1024)
@@ -60,10 +63,10 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("auth.remote_authenticator.default_user_group", "Viewers")
 	viper.SetDefault("auth.remote_authenticator.request_timeout", 10*time.Second)
 
+	viper.SetDefault("auth.api.health_check_timeout", DefaultAuthAPIHealthCheckTimeout)
+
 	viper.SetDefault("blockstore.local.path", "~/lakefs/data/block")
 	viper.SetDefault("blockstore.s3.region", "us-east-1")
-	viper.SetDefault("blockstore.s3.streaming_chunk_size", 2<<19)          // 1MiB by default per chunk
-	viper.SetDefault("blockstore.s3.streaming_chunk_timeout", time.Second) // or 1 seconds, whatever comes first
 	viper.SetDefault("blockstore.s3.max_retries", 5)
 	viper.SetDefault("blockstore.s3.discover_bucket_region", true)
 	viper.SetDefault("blockstore.s3.pre_signed_expiry", 15*time.Minute)
@@ -84,6 +87,7 @@ func setDefaults(cfgType string) {
 
 	viper.SetDefault("gateways.s3.domain_name", "s3.local.lakefs.io")
 	viper.SetDefault("gateways.s3.region", "us-east-1")
+	viper.SetDefault("gateways.s3.verify_unsupported", true)
 
 	viper.SetDefault("blockstore.gs.s3_endpoint", "https://storage.googleapis.com")
 	viper.SetDefault("blockstore.gs.pre_signed_expiry", 15*time.Minute)
@@ -103,11 +107,7 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("security.audit_check_interval", 24*time.Hour)
 	viper.SetDefault("security.audit_check_url", "https://audit.lakefs.io/audit")
 	viper.SetDefault("security.check_latest_version", true)
-	viper.SetDefault("security.check_latest_version_cache", 24*time.Hour)
-
-	viper.SetDefault("email.limit_every_duration", time.Minute)
-	viper.SetDefault("email.burst", 10)
-	viper.SetDefault("email.lakefs_base_url", "http://localhost:8000")
+	viper.SetDefault("security.check_latest_version_cache", time.Hour)
 
 	viper.SetDefault("ui.enabled", true)
 
@@ -117,11 +117,13 @@ func setDefaults(cfgType string) {
 
 	viper.SetDefault("database.dynamodb.table_name", "kvstore")
 	viper.SetDefault("database.dynamodb.scan_limit", 1024)
+	viper.SetDefault("database.dynamodb.max_attempts", 10)
 
 	viper.SetDefault("database.postgres.max_open_connections", 25)
 	viper.SetDefault("database.postgres.max_idle_connections", 25)
 	viper.SetDefault("database.postgres.connection_max_lifetime", "5m")
 
+	viper.SetDefault("graveler.ensure_readable_root_namespace", true)
 	viper.SetDefault("graveler.repository_cache.size", 1000)
 	viper.SetDefault("graveler.repository_cache.expiry", 5*time.Second)
 	viper.SetDefault("graveler.repository_cache.jitter", 2*time.Second)
@@ -129,8 +131,8 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("graveler.commit_cache.expiry", 10*time.Minute)
 	viper.SetDefault("graveler.commit_cache.jitter", 2*time.Second)
 
-	viper.SetDefault("plugins.default_path", "~/.lakefs/plugins")
-
 	viper.SetDefault("ugc.prepare_interval", time.Minute)
 	viper.SetDefault("ugc.prepare_max_file_size", 20*1024*1024)
+
+	viper.SetDefault("usage_report.flush_interval", 5*time.Minute)
 }

@@ -10,6 +10,7 @@ public class Constants {
     public static final String ENDPOINT_KEY_SUFFIX = "endpoint";
     public static final String LIST_AMOUNT_KEY_SUFFIX = "list.amount";
     public static final String ACCESS_MODE_KEY_SUFFIX = "access.mode";
+    public static final String SESSION_ID = "session_id";
 
     public static enum AccessMode {
         SIMPLE,

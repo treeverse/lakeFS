@@ -1,6 +1,357 @@
 # Changelog
 
-## UNRELEASED
+# v1.12.1
+
+:bug: Bugs fixed:
+
+* Check for correct RBAC action (GHSA-fvv5-h29g-f6w5).  This security
+  advisory has **moderate** severity (5.3/10), and does not affect users who
+  use the default ACL permissions.
+
+# v1.12.0
+
+:new: What's new:
+- Add If-None-Match to LinkPhysicalAddress (#7480)
+  **Removes deprecation of If-Non-Match from upload object!**
+- Skip actions for read-only repositories (#7477)
+- [hooks] Log the user when fetching Lua script from lakeFS (#7486)
+
+# v1.11.1
+
+:new: What's new:
+- Disable GC and branch protection for read-only repositories (#7471)
+
+:bug: Bugs fixed:
+- Fix S3 gateway cross-repo copies (#7468)
+- Delta export path unescape (#7473)
+
+# v1.11.0
+
+:new: What's new:
+
+- Delta Exporter: Azure Support (#7444)
+- Prohibit empty revert by default (#7308)
+
+:bug: Bugs fixed:
+
+- Fix: Skip ensureStorageNamespace when creating a read-only repository (#7449)
+- Fix: Show email or group name in place of ID in AttachModal (#7454)
+- Fix: Show email when available in the create credentials confirmation modal (#7456)
+- Fix: bug on creating bare repository as read-only (#7458)
+
+# v1.10.0
+
+:new: What's new:
+
+- Remove Delta Diff experimental support + code cleanup (#7343)
+
+:bug: Bugs fixed:
+
+- Handle empty metadata on import (#7363)
+- Remove unnecessary CreateBranch permission check on import (#7362)
+
+# v1.9.1
+
+ :bug: Bugs fixed:
+
+- API: make version and generation fields optional for commit- fix a breaking change introduced in v1.9.0 (#7323)
+
+# v1.9.0
+
+:new: What's new:
+
+- lakectl: download single file using presign now support multipart (#7284)
+- API: separate group id and display name (#7292)
+
+**Note:** the separation of group IDs from displayNames isn't a breaking change.
+However, if using older generated clients with the latest lakeFS version,
+IDs will be displayed instead of the human-readable displayNames when using an external authentication API.
+
+# v1.8.0
+
+:new: What's new:
+
+- Add "hard reset" operation (#7263)
+- Usage report for API and S3 gateway (#7281)
+
+:bug: Bugs fixed:
+
+- Fix docker image build for cross compile (#7286)
+
+
+# v1.7.0
+
+:new: What's new:
+
+- API: Presigned multipart uploads for S3. You can initiate presigned multipart uploads for Amazon S3 directly through the API. **experimental** (#7246)
+
+:bug: Bugs fixed:
+
+- UI: DuckDB cached files fixed with cache buster: No more worries about outdated files. (#7252)
+
+
+# v1.6.0
+
+:new: What's new:
+
+- Allow empty commits option #7186
+
+# v1.5.0
+
+:new: What's new:
+
+- Read-only repositories (#7157)
+- Add StopAt field to the CommitLog action (early-stop at a specific commit) (#7222)
+
+:bug: Bugs fixed:
+
+- Fix: Return "bad request - 400" on reset branch with unknown type  (#7210)
+- Fix: S3-gateway "delete" operation with branch protection should return 200 with error (#7211)
+
+# v1.4.0
+
+:new: What's new:
+
+- Delta Lake Catalog Exporter (#7078)
+- Unity Catalog Exporter (#7167)
+
+# v1.3.1
+
+:bug: Bugs fixed:
+
+- Fix: User with permission to write actions can impersonate another user when auth token is configured in environment variable
+  ([GHSA-26hr-q2wp-rvc5](https://github.com/treeverse/lakeFS/security/advisories/GHSA-26hr-q2wp-rvc5))
+- Fix: S3 Gateway block unsupported S3 operations (#7028)
+- Fix: Better error handling on hook error (#7081)
+- Fix: Upload object without specify content type (#7130)
+- Fix: UI notebook preview fix colors (#7141)
+- Fix: Match blockstore reader hash function (#7099) (thanks @hunjixin)
+- UI improve load by cache and split of embedded content (#7132,#7135)
+
+# v1.3.0
+
+:new: What's new:
+
+- Update AWS Go SDK v2 to support S3 express directory buckets (#7083)
+- API and lakectl: support long-running dump and restore operations (#6975)
+- lakectl: Improved performance for fs rm recursive command (#7035)
+- Glue Exporter: Support Hadoop directory markers (#7058)
+
+:bug: Bugs fixed:
+
+- API: Fix StatsObject returned metadata on empty metadata (#7026)
+- API: Return the right default pagination per page- 100 instead of 1000 (#7051)
+- DynamoDB KV: Check if a table exists before we try to create it (#7056)
+
+# v1.2.0
+
+:new: What's new:
+
+- UI: Allow commit message and metadata in merge action (#6897)
+- API: CreateRepository check if repository exists before trying to validate storage namespace (#6967)
+- lakectl: Add commit params to merge command (#6892)
+- Optimization - Reduce DynamoDB and CosmosDB calls by extending current range to include additional information (#6983)
+
+:bug: Bugs fixed:
+
+- Fix - Lakefs crashing when using database.type=”dynamodb” and scylladb as a database (#6924)
+- Change 'committer' field from UserID to Email, when Email is available (#6912)
+- Use Buf CLI to compile our proto files (#6784)
+- Log time.Duration _twice_ in all modes, as string and as nanoseconds (#6934)
+- External auth remove required id from user model (#6902)
+
+# v1.1.0
+
+:new: What's new:
+
+- API: Added optional since parameter to commit log request (#6851)
+- lakectl: supported log 'since' flag (#6854)
+- Improved lakectl validation error messages (#6816)
+
+:bug: Bugs fixed:
+
+- Fixed S3 gateway error on no underlying object (#6822)
+- Fixed branch protection 'not found' error (#6846)
+
+# v1.0.0
+
+:new: What's new:
+
+After more than 3 years since its initial public release...
+
+🎉 **lakeFS 1.0 is now generally available** 🎉
+
+This is a huge milestone for the lakeFS maintainers, contributors and community and we can't be more excited!
+
+## Benefits
+
+1.0 is more than just a cosmetic change - it includes a few important benefits and guarantees to anyone running or using lakeFS:
+
+* lakeFS 1.x ensures both [backwards]() and [forwards]() compatibility with any future 1.x release, as per [Semver](https://semver.org/).
+* Not just the [lakeFS Open API](https://docs.lakefs.io/reference/api.html): This is also true for the [new lakeFS Python SDK](https://docs.lakefs.io/integrations/python.html#using-the-lakefs-sdk), the [Java SDK](https://central.sonatype.com/artifact/io.lakefs/sdk?smo=true) and the [lakectl CLI](https://docs.lakefs.io/reference/cli.html) tool.
+* Bug fixes will be released for lakeFS 1.x even after the release of future major version, and at least until October 2024
+* Security fixes will be released (and if needed, backported) even after the release of future major version, and at least until June 2025(!).
+* While lakeFS is already trusted in production in hundreds of organizations around the world, 1.x ensures a stable API going forward and it is highly recommended for all lakeFS users.
+
+## Feature Highlights
+
+The lakeFS 1.0 release actually doesn't introduce any new capabilities other than the guarantees given above. However,
+for users of slightly older 0.x lakeFS versions, here are a few highlights from the last few months that are included with this version:
+
+- `lakectl local` - Allows syncing a local directory with remote data in lakeFS, including full Git integration ([read announcement](https://lakefs.io/blog/scalable-data-version-control-getting-the-best-of-both-worlds-with-lakefs/))
+- **iceberg catalog** - Making it possible to branch, commit and merge multiple Iceberg tables together and in tandem with other formats ([read announcement](https://lakefs.io/blog/using-lakefs-with-apache-iceberg/))
+- **lua based hooks** - Run your own custom logic when commits, merges and other events occur. No need to host a webhook server or deploy anything! ([read announcement](https://lakefs.io/blog/introducing-lua-hooks/))
+- **enhanced security with pre-signed URLs** - Allows lakeFS to version data it cannot even read! This enhanced security by leveraging pre-signed URLs supported on all common object stores, to allow lakeFS to authorize access to data without having to proxy that data through the lakeFS server ([read more](https://docs.lakefs.io/reference/security/presigned-url.html))
+- **[Many many](https://github.com/treeverse/lakeFS/pulls?q=is%3Apr+is%3Aclosed) bug fixes and performance improvements across the board** 
+
+## Notes on upgrading from lakeFS 0.x
+
+While most of the API hasn't changed much, there are a few notable API changes between 0.x and 1.x.
+
+The migration path is usually pretty simple and not many code changes are required - but *please read through the list of breaking changes*:
+
+[lakeFS 1.0 - Code Migration Guide](https://docs.lakefs.io/project/code-migrate-1.0-sdk.html)
+
+For more information on the benefits of upgrading to 1.0 and the migration path, please refer to the [lakeFS documentation](https://docs.lakefs.io/understand/towards-1.0-sdk.html) or [reach out on Slack](https://lakefs.io/slack).
+
+:bug: Bugs fixed:
+
+- Increased the maximum attempts for DynamoDB with configuration support (#6804)
+- Amended Azure import to utilize content MD5 instead of entry Etag (#6802)
+- Corrected issue where the UI upload failed due to conversion of undefined or null values (#6818)
+
+# v0.113.0
+
+:new: What's new:
+
+- Reintroduce recursive flag for lakectl fs download/upload (#6777)
+- Spark client update to use the latest lakefs SDK package (#6742)
+
+:bug: Bugs fixed:
+
+- Fix lakectl upload with pre-sign for Azure (#6660)
+- Fix lakeFSFS ETag value when using pre-signed mode (#6751)
+- Fix LinkPhysicalAddress trim quotes and spaces from checksum (#6749)
+- Fix lakectl upload using pre-signed use ContentMD5 header for ETag (#6750)
+- Fix LinkPhysicalAddress response with full path (#6748)
+- Fix lakectl download error with bad path traversal blocked (#6775)
+- Fix UI Azure pre-sign upload (#6764)
+- Fix UI upload azure pre-signed URL checksum as hex md5 (#6770)
+- Fix UI copy pre-signed URL not working when pre-sign UI disabled (#6776)
+- Fix delete branch protection prevent commit because invalid state (#6788)
+
+
+# v0.112.0
+
+:new: What's new:
+- New Java SDK (#6656)
+- New Pyhon SDK (#6562)
+- Export Hooks: Glue Catalog exporter (#6653)
+- Remove recursive flag from lakectl fs Upload and Download (#6681)
+- CosmosDB: Add throughput configuration (#6693)
+- lakectl: block `fs stage` command for objects in the storage namespace (#6696)
+- API: Deprecate stageObject (#6690)
+- API: linkPhysicalAddress do not verify external addresses (#6667)
+- API: GC prepare move operations to internal tag (#6700)
+- API: support response Too many requests 420 (#6711)
+- API: deprecate upload object If-None-Match and Storage Class (#6708)
+- LakeFSFileSystem is now compatible only with lakeFS versions >= 0.108.0 (#6725)
+
+# v0.111.1
+
+:bug: Bugs fixed:
+- Fix email display bug when using external auth provider (#6680)
+- Fix repository creation bug in quickstart mode (#6682)
+
+# v0.111.0
+
+:new: What's new:
+- lakectl endpoint configure and endpoint path reuse (#6609)
+- Remove UpdateBranchToken API (#6590)
+- Table Extractor Hook and _lakefs_tables format  (#6589)
+- Export Hooks: Symlink Exporter (#6636)
+- Move setting endpoints to be under `/settings/` (#6649)
+- Remove expired commits from prepare_gc_commits response (#6634)
+- Remove lakectl dbt deprecated functionality (#6632)
+- Remove lakectl direct deprecated functionality (#6623)
+- API cleanup: remove emailer service implementation (#6661)
+- API cleanup: consolidate lakefs level information API (#6647)
+- API cleanup: make createSymlinkFile internal (#6630)
+- API cleanup: Mark refs dump/restore current API as internal (#6640)
+
+:bug: Bug fixed:
+- Fix: lua s3 client endpoint configure if set (#6629)
+- Fix: UI alert if "quickstart" repository failed on local (#6622)
+- Fix: Lua runtime - marshaling arrays (#6655)
+- Fix: Presigned URL Cache - change to Default expiry due to bug in package (#6651)
+
+# v0.110.0
+
+:new: What's new:
+- Upgrade code to use AWS SDK go v2 (#6486)
+- Actions: Lua package to parse URL (#6597)
+- UI: Commit info consistent across screens (#6593)
+- API: Update APIs tag for internal use (#6582)
+- lakectl: dbt and metastore commands marked as deprecated (#6565)
+- Removed deprecated: expand template API (#6587)
+- Removed deprecated: remove the update and forgot password APIs (#6591)
+
+:bug: Bug fixed:
+- Fix lakectl local verify bad path error on Windows (#6602)
+- Fix Azure pre-signed URL for blob imported from different account (#6594)
+  
+# v0.109.0
+
+:new: What's new:
+- Restrict lakectl local to common prefixes only (#6510)
+- lakectl local gitignore end marker (#6522)
+- Remove logBranchCommits (#6528)
+- Lua package for yaml support (#6545)
+- lakectl skip stats for unrelased version (#6551)
+- Remove OTF diff APIs from non experimental tag/category (#6563)
+- S3 API: Propogate slowdown response from cosmosdb to client (#6556)
+- logging and lakectl NO_COLOR support (#6569)
+ 
+:bug: Bug fixed:
+- Fix: lakectl import with Azure Data Lake Storage (#6515)
+- Fix: UI pdf viewer by X-Frame-Options set to SAMEORIGIN (#6520)
+- Fix: Lua gs client close (#6547)
+- Fix: Lua path.Join to handle concatenation of two separators (#6549)
+- Fix latest version cache and remove the use of go-github (#6572)
+- Fix: DynamoDB SeekGE bug (#6561)
+
+# v0.108.0
+
+:new: What's new:
+- Support vertex AI (Datasets + Fuse) (#6492)
+- A better way to handle interrupts in lakectl local (#6455) 
+- When creating Repository: `dummy` file location changed from `<storage-namespace>/dummy` to `<storage-namespace>/_lakefs/dummy` (#6497)
+- Removed support for migration from lakeFS version < v0.50.0 (#6497)
+- Deprecate lakectl fs "--direct" flag (#6480)
+
+:bug: Bug fixed:
+- Fix: Ensure that metadata is included in merge operations (#6500)
+- Fix: Increase DynamoDB concurrent requests (#6489)
+- Fix: UI ignores presigned URL configuration for GetObject requests (#6477)
+- Fix: lakectl local sync parallelism (#6485)
+- Fix: UI object information slides outside the modal dialog (#6501)
+- Fix: CosmosDB SeekGE query from iterator start key (#6503)
+- Fix: UI ADLS import validity regex (#6509)
+
+# v0.107.1
+
+:bug: Bug fixed:
+- Fix: Allow disabling pre-signed URLs for google storage block adapter (#6462)
+- Fix: lakectl local with windows (#6464)
+
+# v0.107.0
+
+:new: What's new:
+- Experiment: Batch staging get operations for DBIO transaction markers (#6441)
+
+:bug: Bug fixed:
+- Fix kv local SeekGE fail to skip common prefix (#6435)
+- Fix lakectl local commit to use lakefs upload with user metadata (#6437)
 
 # v0.106.2
 

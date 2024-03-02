@@ -10,9 +10,10 @@ import (
 )
 
 var metastoreCopySchemaCmd = &cobra.Command{
-	Use:   "copy-schema",
-	Short: "Copy schema",
-	Long:  "Copy schema (without tables). the destination schema will point to the selected branch",
+	Use:        "copy-schema",
+	Short:      "Copy schema",
+	Long:       "Copy schema (without tables). the destination schema will point to the selected branch",
+	Deprecated: "Upcoming releases of lakectl will no longer support this command.",
 	Run: func(cmd *cobra.Command, args []string) {
 		fromClientType := Must(cmd.Flags().GetString("from-client-type"))
 		fromDB := Must(cmd.Flags().GetString("from-schema"))

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 )
 
 // KV Schema versions
@@ -39,6 +39,7 @@ var (
 	ErrSetupFailed         = errors.New("setup failed")
 	ErrUnknownDriver       = errors.New("unknown driver")
 	ErrTableNotActive      = errors.New("table not active")
+	ErrSlowDown            = errors.New("slow down")
 )
 
 // Precond Type for special conditionals provided as predicates for the SetIf method

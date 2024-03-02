@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
+import { useOutletContext } from "react-router-dom";
 import {CheckboxIcon, UploadIcon, XIcon} from "@primer/octicons-react";
-import { RepositoryPageLayout } from "../../../lib/components/repository/layout";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {
     ActionGroup,
@@ -178,20 +178,21 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
                 </Modal.Header>
                 <Modal.Body>
                     {
-                        (importPhase === ImportPhase.NotStarted ||
-                            importPhase === ImportPhase.Failed) &&
+
                         <ImportForm
                             config={config}
+                            repo={repoId}
+                            branch={branchId}
                             pathStyle={pathStyle}
                             sourceRef={sourceRef}
                             destRef={destRef}
                             updateSrcValidity={(isValid) => setIsImportEnabled(isValid)}
                             path={path}
                             commitMsgRef={commitMsgRef}
-                            shouldAddPath={true}
                             metadataFields={metadataFields}
                             setMetadataFields={setMetadataFields}
                             err={importError}
+                            className={importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed ? '' : 'd-none'}
                         />
                     }
                     {
@@ -225,17 +226,39 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
   );
 };
 
+function extractChecksumFromResponse(response) {
+  if (response.contentMD5) {
+    // convert base64 to hex
+    const raw = atob(response.contentMD5)
+    let result = '';
+    for (let i = 0; i < raw.length; i++) {
+      const hex = raw.charCodeAt(i).toString(16);
+      result += (hex.length === 2 ? hex : '0' + hex);
+    }
+    return result;
+  }
+
+  if (response.etag) {
+    // drop any quote and space
+    return response.etag.replace(/[" ]+/g, "");
+  }
+  return ""
+}
 
 const uploadFile = async (config, repo, reference, path, file, onProgress) => {
   const fpath = destinationPath(path, file);
   if (config.pre_sign_support_ui) {
+      let additionalHeaders;
+      if (config.blockstore_type === "azure") {
+          additionalHeaders = { "x-ms-blob-type": "BlockBlob" }
+      }
     const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
-    const { status, etag } = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress)
-    if (status >= 400) {
+    const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders)
+    if (uploadResponse.status >= 400) {
       throw new Error(`Error uploading file: HTTP ${status}`)
     }
-    const hash = etag.replace(/"/g, "");
-    await staging.link(repo.id, reference.id, fpath, getResp, hash, file.size, file.type);
+    const checksum = extractChecksumFromResponse(uploadResponse)
+    await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
   } else {
     await objects.upload(repo.id, reference.id, fpath, file, onProgress);
   }
@@ -285,7 +308,7 @@ const UploadCandidate = ({ repo, reference, path, file, state, onRemove = null }
   )
 };
 
-const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, show = false}) => {
+const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, show = false, disabled = false}) => {
   const initialState = {
     inProgress: false,
     error: null,
@@ -443,6 +466,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
 
     <Button
       variant={!config.import_support ? "success" : "light"}
+      disabled={disabled}
       onClick={onClick}
       >
       <UploadIcon /> Upload Object
@@ -684,6 +708,7 @@ const ObjectsBrowser = ({ config, configError }) => {
               setShowUpload(false);
             }}
             show={showUpload}
+            disabled={repo?.read_only}
           />
           <ImportButton onClick={() => setShowImport(true)} config={config} />
           <ImportModal
@@ -752,13 +777,10 @@ const ObjectsBrowser = ({ config, configError }) => {
 
 const RepositoryObjectsPage = () => {
   const config = useStorageConfig();
+  const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage("objects"), [setActivePage]);
 
-  return (
-    <RepositoryPageLayout activePage={"objects"}>
-      {config.loading && <Loading />}
-      <ObjectsBrowser config={config} configError={config.error} />
-    </RepositoryPageLayout>
-  );
+  return <ObjectsBrowser config={config} configError={config.error} />;
 };
 
 export default RepositoryObjectsPage;

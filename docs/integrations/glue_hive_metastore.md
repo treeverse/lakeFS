@@ -7,6 +7,10 @@ redirect_from: /using/glue_hive_metastore.html
 
 # Using lakeFS with the Glue/Hive Metastore
 
+{: .warning }
+**Deprecated Feature:** Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.
+You can read more about it [here]({% link howto/catalog_exports.md %}).
+
 {% include toc_2-3.html %}
 
 ## About Glue / Hive Metastore
@@ -60,7 +64,7 @@ metastore:
 metastore:
   type: glue
   glue:
-    catalog-id: 123456789012
+    catalog_id: 123456789012
     region: us-east-1
     profile: default # optional, implies using a credentials file
     credentials:

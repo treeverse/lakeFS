@@ -1,15 +1,15 @@
 ---
 title: 3️⃣ Create a branch
 description: lakeFS quickstart / Create a branch in lakeFS without copying data on disk, make a change to the branch, see that the original version of the data is unchanged. 
-parent: ⭐ Quickstart ⭐
+parent: ⭐ Quickstart
 nav_order: 15
 next: ["Merge the branch back into main", "./commit-and-merge.html"]
 previous: ["Query the pre-populated data", "./query.html"]
 ---
 
-# Create a Branch 🪓
+# Create a Branch
 
-lakeFS uses branches in a similar way to Git. It's a great way to isolate changes until, or if, we are ready to re-integrate them. lakeFS uses a copy-on-write technique which means that it's very efficient to create branches of your data. 
+lakeFS uses branches in a similar way to Git. It's a great way to isolate changes until, or if, we are ready to re-integrate them. lakeFS uses a zero-copy branching technique which means that it's very efficient to create branches of your data. 
 
 Having seen the lakes data in the previous step we're now going to create a new dataset to hold data only for lakes in Denmark. Why? Well, because :)
 
@@ -131,4 +131,4 @@ DESC LIMIT 5;
 ```
 <img src="{{ site.baseurl }}/assets/img/quickstart/duckdb-main-02.png" alt="The lakeFS object browser showing DuckDB querying lakes.parquet on the main branch. The results are the same as they were before we made the changes to the denmark-lakes branch, which is as expected." class="quickstart"/>
 
-In the next step we'll see how to merge our branch back into main. 
+In the next step we'll see how to commit our changes and merge our branch back into main. 

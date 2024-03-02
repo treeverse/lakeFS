@@ -42,9 +42,10 @@ var (
 	ErrConflictFound                = wrapError(ErrUserVisible, "conflict found")
 	ErrBranchExists                 = fmt.Errorf("branch already exists: %w", ErrNotUnique)
 	ErrTagAlreadyExists             = fmt.Errorf("tag already exists: %w", ErrNotUnique)
-	ErrAddressTokenAlreadyExists    = fmt.Errorf("address token already exists: %w", ErrNotUnique)
-	ErrAddressTokenNotFound         = fmt.Errorf("address token %w", ErrNotFound)
-	ErrAddressTokenExpired          = errors.New("address token has expired")
+	ErrLinkAddressAlreadyExists     = fmt.Errorf("address token already exists: %w", ErrNotUnique)
+	ErrCommitAlreadyExists          = fmt.Errorf("commit already exists: %w", ErrNotUnique)
+	ErrLinkAddressNotFound          = fmt.Errorf("address token %w", ErrNotFound)
+	ErrLinkAddressExpired           = errors.New("address token has expired")
 	ErrDirtyBranch                  = wrapError(ErrUserVisible, "uncommitted changes (dirty branch)")
 	ErrMetaRangeNotFound            = errors.New("metarange not found")
 	ErrLockNotAcquired              = errors.New("lock not acquired")
@@ -59,6 +60,7 @@ var (
 	ErrTooManyTries                 = errors.New("too many tries")
 	ErrSkipValueUpdate              = errors.New("skip value update")
 	ErrImport                       = wrapError(ErrUserVisible, "import error")
+	ErrReadOnlyRepository           = wrapError(ErrUserVisible, "read-only repository")
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.

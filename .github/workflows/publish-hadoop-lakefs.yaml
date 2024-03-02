@@ -17,7 +17,7 @@ jobs:
     environment: Treeverse signing
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
         # Extract the version to 'version' based on workflow_dispatch or triggered tag in the published event
       - name: Extract version
@@ -49,7 +49,7 @@ jobs:
         run: sed -i.bak 's/<version>.*<\/version><!--MARKER.*/<version>'${{ steps.version.outputs.tag }}'<\/version>/' pom.xml
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}

@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/ory/dockertest/v3"
 	dc "github.com/ory/dockertest/v3/docker"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/dynamodb"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 )
 
 const (
@@ -20,8 +21,6 @@ const (
 	DynamodbLocalURI          = "http://localhost:6432"
 	chars                     = "abcdef1234567890"
 	charsSize                 = 8
-	DynamoDBReadCapacity      = 1000
-	DynamoDBWriteCapacity     = 1000
 	DynamoDBScanLimit         = 10
 )
 
@@ -30,6 +29,7 @@ func GetDynamoDBInstance() (string, func(), error) {
 	if err != nil {
 		return "", nil, fmt.Errorf("could not connect to Docker: %w", err)
 	}
+	dockerPool.MaxWait = dbContainerTimeoutSeconds * time.Second
 
 	dynamodbDockerRunOptions := &dockertest.RunOptions{
 		Repository: "amazon/dynamodb-local",
@@ -59,9 +59,9 @@ func GetDynamoDBInstance() (string, func(), error) {
 	}
 
 	err = dockerPool.Retry(func() error {
-		// waiting for dynamodb container to be ready by issuing an HTTP get request with
-		// exponential backoff retry. The response is not really meaningful for that case
-		// and so is ignored
+		// Waiting for dynamodb container to be ready by issuing an HTTP get request with
+		// exponential backoff retry.
+		// The response is not really meaningful for that case and so is ignored.
 		resp, err := http.Get(DynamodbLocalURI)
 		if err != nil {
 			return err
@@ -78,7 +78,11 @@ func GetDynamoDBInstance() (string, func(), error) {
 }
 
 func UniqueKVTableName() string {
-	return "kvstore_" + nanoid.MustGenerate(chars, charsSize)
+	return "kvstore_" + UniqueName()
+}
+
+func UniqueName() string {
+	return nanoid.MustGenerate(chars, charsSize)
 }
 
 func GetDynamoDBProd(ctx context.Context, tb testing.TB) kv.Store {

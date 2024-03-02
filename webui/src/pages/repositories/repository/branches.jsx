@@ -1,5 +1,5 @@
-import React, {useMemo, useRef, useState} from "react";
-
+import React, {useEffect, useMemo, useRef, useState} from "react";
+import { useOutletContext } from "react-router-dom";
 import {
     GitBranchIcon,
     LinkIcon,
@@ -19,7 +19,6 @@ import {
     AlertError, LinkButton,
     Loading, PrefixSearchWidget, RefreshButton
 } from "../../../lib/components/controls";
-import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {useRefs} from "../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {Paginator} from "../../../lib/components/pagination";
@@ -116,7 +115,7 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
 };
 
 
-const CreateBranchButton = ({ repo, variant = "success", onCreate = null, children }) => {
+const CreateBranchButton = ({ repo, variant = "success", onCreate = null, readOnly = false, children }) => {
     const [show, setShow] = useState(false);
     const [disabled, setDisabled] = useState(false);
     const [error, setError] = useState(null);
@@ -193,7 +192,7 @@ const CreateBranchButton = ({ repo, variant = "success", onCreate = null, childr
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant={variant} onClick={display}>{children}</Button>
+            <Button variant={variant} disabled={readOnly} onClick={display}>{children}</Button>
         </>
     );
 };
@@ -240,7 +239,7 @@ const BranchList = ({ repo, prefix, after, onPaginate }) => {
 
                     <RefreshButton onClick={doRefresh}/>
 
-                    <CreateBranchButton repo={repo} variant="success" onCreate={doRefresh}>
+                    <CreateBranchButton repo={repo} readOnly={repo?.read_only} variant="success" onCreate={doRefresh}>
                         <GitBranchIcon/> Create Branch
                     </CreateBranchButton>
 
@@ -278,11 +277,9 @@ const BranchesContainer = () => {
 
 
 const RepositoryBranchesPage = () => {
-    return (
-            <RepositoryPageLayout activePage={'branches'}>
-                <BranchesContainer/>
-            </RepositoryPageLayout>
-    )
+  const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage("branches"), [setActivePage]);
+  return <BranchesContainer />;
 }
 
 export default RepositoryBranchesPage;

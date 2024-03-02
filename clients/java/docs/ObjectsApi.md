@@ -1,42 +1,40 @@
 # ObjectsApi
 
-All URIs are relative to *http://localhost/api/v1*
+All URIs are relative to */api/v1*
 
-Method | HTTP request | Description
-------------- | ------------- | -------------
-[**copyObject**](ObjectsApi.md#copyObject) | **POST** /repositories/{repository}/branches/{branch}/objects/copy | create a copy of an object
-[**deleteObject**](ObjectsApi.md#deleteObject) | **DELETE** /repositories/{repository}/branches/{branch}/objects | delete object. Missing objects will not return a NotFound error.
-[**deleteObjects**](ObjectsApi.md#deleteObjects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects. Missing objects will not return a NotFound error.
-[**getObject**](ObjectsApi.md#getObject) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content
-[**getUnderlyingProperties**](ObjectsApi.md#getUnderlyingProperties) | **GET** /repositories/{repository}/refs/{ref}/objects/underlyingProperties | get object properties on underlying storage
-[**headObject**](ObjectsApi.md#headObject) | **HEAD** /repositories/{repository}/refs/{ref}/objects | check if object exists
-[**listObjects**](ObjectsApi.md#listObjects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix
-[**stageObject**](ObjectsApi.md#stageObject) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
-[**statObject**](ObjectsApi.md#statObject) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
-[**uploadObject**](ObjectsApi.md#uploadObject) | **POST** /repositories/{repository}/branches/{branch}/objects | 
-[**uploadObjectPreflight**](ObjectsApi.md#uploadObjectPreflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
+| Method | HTTP request | Description |
+|------------- | ------------- | -------------|
+| [**copyObject**](ObjectsApi.md#copyObject) | **POST** /repositories/{repository}/branches/{branch}/objects/copy | create a copy of an object |
+| [**deleteObject**](ObjectsApi.md#deleteObject) | **DELETE** /repositories/{repository}/branches/{branch}/objects | delete object. Missing objects will not return a NotFound error. |
+| [**deleteObjects**](ObjectsApi.md#deleteObjects) | **POST** /repositories/{repository}/branches/{branch}/objects/delete | delete objects. Missing objects will not return a NotFound error. |
+| [**getObject**](ObjectsApi.md#getObject) | **GET** /repositories/{repository}/refs/{ref}/objects | get object content |
+| [**getUnderlyingProperties**](ObjectsApi.md#getUnderlyingProperties) | **GET** /repositories/{repository}/refs/{ref}/objects/underlyingProperties | get object properties on underlying storage |
+| [**headObject**](ObjectsApi.md#headObject) | **HEAD** /repositories/{repository}/refs/{ref}/objects | check if object exists |
+| [**listObjects**](ObjectsApi.md#listObjects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix |
+| [**statObject**](ObjectsApi.md#statObject) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata |
+| [**uploadObject**](ObjectsApi.md#uploadObject) | **POST** /repositories/{repository}/branches/{branch}/objects |  |
 
 
-<a name="copyObject"></a>
+<a id="copyObject"></a>
 # **copyObject**
-> ObjectStats copyObject(repository, branch, destPath, objectCopyCreation)
+> ObjectStats copyObject(repository, branch, destPath, objectCopyCreation).execute();
 
 create a copy of an object
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
+    defaultClient.setBasePath("/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -48,10 +46,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -65,13 +59,18 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | destination branch for the copy
     String destPath = "destPath_example"; // String | destination path relative to the branch
     ObjectCopyCreation objectCopyCreation = new ObjectCopyCreation(); // ObjectCopyCreation | 
     try {
-      ObjectStats result = apiInstance.copyObject(repository, branch, destPath, objectCopyCreation);
+      ObjectStats result = apiInstance.copyObject(repository, branch, destPath, objectCopyCreation)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#copyObject");
@@ -86,12 +85,12 @@ public class Example {
 
 ### Parameters
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **String**|  |
- **branch** | **String**| destination branch for the copy |
- **destPath** | **String**| destination path relative to the branch |
- **objectCopyCreation** | [**ObjectCopyCreation**](ObjectCopyCreation.md)|  |
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **repository** | **String**|  | |
+| **branch** | **String**| destination branch for the copy | |
+| **destPath** | **String**| destination path relative to the branch | |
+| **objectCopyCreation** | [**ObjectCopyCreation**](ObjectCopyCreation.md)|  | |
 
 ### Return type
 
@@ -99,7 +98,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -109,32 +108,34 @@ Name | Type | Description  | Notes
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**201** | Copy object response |  -  |
-**400** | Validation Error |  -  |
-**401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
-**0** | Internal Server Error |  -  |
+| **201** | Copy object response |  -  |
+| **400** | Validation Error |  -  |
+| **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
+| **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
 
-<a name="deleteObject"></a>
+<a id="deleteObject"></a>
 # **deleteObject**
-> deleteObject(repository, branch, path)
+> deleteObject(repository, branch, path).force(force).execute();
 
 delete object. Missing objects will not return a NotFound error.
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
+    defaultClient.setBasePath("/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -146,10 +147,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -163,12 +160,19 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
+    Boolean force = false; // Boolean | 
     try {
-      apiInstance.deleteObject(repository, branch, path);
+      apiInstance.deleteObject(repository, branch, path)
+            .force(force)
+            .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#deleteObject");
       System.err.println("Status code: " + e.getCode());
@@ -182,11 +186,12 @@ public class Example {
 
 ### Parameters
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **String**|  |
- **branch** | **String**|  |
- **path** | **String**| relative to the branch |
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **repository** | **String**|  | |
+| **branch** | **String**|  | |
+| **path** | **String**| relative to the branch | |
+| **force** | **Boolean**|  | [optional] [default to false] |
 
 ### Return type
 
@@ -194,7 +199,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -204,32 +209,33 @@ null (empty response body)
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**204** | object deleted successfully |  -  |
-**401** | Unauthorized |  -  |
-**403** | Forbidden |  -  |
-**404** | Resource Not Found |  -  |
-**0** | Internal Server Error |  -  |
+| **204** | object deleted successfully |  -  |
+| **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
+| **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
 
-<a name="deleteObjects"></a>
+<a id="deleteObjects"></a>
 # **deleteObjects**
-> ObjectErrorList deleteObjects(repository, branch, pathList)
+> ObjectErrorList deleteObjects(repository, branch, pathList).force(force).execute();
 
 delete objects. Missing objects will not return a NotFound error.
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
+    defaultClient.setBasePath("/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -241,10 +247,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -258,12 +260,19 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     PathList pathList = new PathList(); // PathList | 
+    Boolean force = false; // Boolean | 
     try {
-      ObjectErrorList result = apiInstance.deleteObjects(repository, branch, pathList);
+      ObjectErrorList result = apiInstance.deleteObjects(repository, branch, pathList)
+            .force(force)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#deleteObjects");
@@ -278,11 +287,12 @@ public class Example {
 
 ### Parameters
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **String**|  |
- **branch** | **String**|  |
- **pathList** | [**PathList**](PathList.md)|  |
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **repository** | **String**|  | |
+| **branch** | **String**|  | |
+| **pathList** | [**PathList**](PathList.md)|  | |
+| **force** | **Boolean**|  | [optional] [default to false] |
 
 ### Return type
 
@@ -290,7 +300,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -300,32 +310,33 @@ Name | Type | Description  | Notes
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | Delete objects response |  -  |
-**401** | Unauthorized |  -  |
-**403** | Forbidden |  -  |
-**404** | Resource Not Found |  -  |
-**0** | Internal Server Error |  -  |
+| **200** | Delete objects response |  -  |
+| **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
+| **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
 
-<a name="getObject"></a>
+<a id="getObject"></a>
 # **getObject**
-> File getObject(repository, ref, path, range, ifNoneMatch, presign)
+> File getObject(repository, ref, path).range(range).ifNoneMatch(ifNoneMatch).presign(presign).execute();
 
 get object content
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
+    defaultClient.setBasePath("/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -337,10 +348,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -354,6 +361,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
@@ -362,7 +373,11 @@ public class Example {
     String ifNoneMatch = "abc123efg"; // String | Returns response only if the object does not have a matching ETag
     Boolean presign = true; // Boolean | 
     try {
-      File result = apiInstance.getObject(repository, ref, path, range, ifNoneMatch, presign);
+      File result = apiInstance.getObject(repository, ref, path)
+            .range(range)
+            .ifNoneMatch(ifNoneMatch)
+            .presign(presign)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#getObject");
@@ -377,14 +392,14 @@ public class Example {
 
 ### Parameters
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **String**|  |
- **ref** | **String**| a reference (could be either a branch or a commit ID) |
- **path** | **String**| relative to the ref |
- **range** | **String**| Byte range to retrieve | [optional]
- **ifNoneMatch** | **String**| Returns response only if the object does not have a matching ETag | [optional]
- **presign** | **Boolean**|  | [optional]
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **repository** | **String**|  | |
+| **ref** | **String**| a reference (could be either a branch or a commit ID) | |
+| **path** | **String**| relative to the ref | |
+| **range** | **String**| Byte range to retrieve | [optional] |
+| **ifNoneMatch** | **String**| Returns response only if the object does not have a matching ETag | [optional] |
+| **presign** | **Boolean**|  | [optional] |
 
 ### Return type
 
@@ -392,7 +407,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -402,36 +417,37 @@ Name | Type | Description  | Notes
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | object content |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
-**206** | partial object content |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
-**302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
-**304** | Content Not modified |  -  |
-**401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
-**410** | object expired |  -  |
-**416** | Requested Range Not Satisfiable |  -  |
-**0** | Internal Server Error |  -  |
+| **200** | object content |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
+| **206** | partial object content |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
+| **302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
+| **304** | Content Not modified |  -  |
+| **401** | Unauthorized |  -  |
+| **404** | Resource Not Found |  -  |
+| **410** | object expired |  -  |
+| **416** | Requested Range Not Satisfiable |  -  |
+| **420** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
 
-<a name="getUnderlyingProperties"></a>
+<a id="getUnderlyingProperties"></a>
 # **getUnderlyingProperties**
-> UnderlyingObjectProperties getUnderlyingProperties(repository, ref, path)
+> UnderlyingObjectProperties getUnderlyingProperties(repository, ref, path).execute();
 
 get object properties on underlying storage
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
+    defaultClient.setBasePath("/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -443,10 +459,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -460,12 +472,17 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     String path = "path_example"; // String | relative to the branch
     try {
-      UnderlyingObjectProperties result = apiInstance.getUnderlyingProperties(repository, ref, path);
+      UnderlyingObjectProperties result = apiInstance.getUnderlyingProperties(repository, ref, path)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#getUnderlyingProperties");
@@ -480,11 +497,11 @@ public class Example {
 
 ### Parameters
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **String**|  |
- **ref** | **String**| a reference (could be either a branch or a commit ID) |
- **path** | **String**| relative to the branch |
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **repository** | **String**|  | |
+| **ref** | **String**| a reference (could be either a branch or a commit ID) | |
+| **path** | **String**| relative to the branch | |
 
 ### Return type
 
@@ -492,7 +509,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -502,31 +519,32 @@ Name | Type | Description  | Notes
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | object metadata on underlying storage |  -  |
-**401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
-**0** | Internal Server Error |  -  |
+| **200** | object metadata on underlying storage |  -  |
+| **401** | Unauthorized |  -  |
+| **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
 
-<a name="headObject"></a>
+<a id="headObject"></a>
 # **headObject**
-> headObject(repository, ref, path, range)
+> headObject(repository, ref, path).range(range).execute();
 
 check if object exists
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
+    defaultClient.setBasePath("/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -538,10 +556,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -555,13 +569,19 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     String path = "path_example"; // String | relative to the ref
     String range = "bytes=0-1023"; // String | Byte range to retrieve
     try {
-      apiInstance.headObject(repository, ref, path, range);
+      apiInstance.headObject(repository, ref, path)
+            .range(range)
+            .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#headObject");
       System.err.println("Status code: " + e.getCode());
@@ -575,12 +595,12 @@ public class Example {
 
 ### Parameters
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **String**|  |
- **ref** | **String**| a reference (could be either a branch or a commit ID) |
- **path** | **String**| relative to the ref |
- **range** | **String**| Byte range to retrieve | [optional]
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **repository** | **String**|  | |
+| **ref** | **String**| a reference (could be either a branch or a commit ID) | |
+| **path** | **String**| relative to the ref | |
+| **range** | **String**| Byte range to retrieve | [optional] |
 
 ### Return type
 
@@ -588,7 +608,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -598,34 +618,35 @@ null (empty response body)
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | object exists |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
-**206** | partial object content info |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
-**401** | Unauthorized |  -  |
-**404** | object not found |  -  |
-**410** | object expired |  -  |
-**416** | Requested Range Not Satisfiable |  -  |
-**0** | internal server error |  -  |
+| **200** | object exists |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
+| **206** | partial object content info |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
+| **401** | Unauthorized |  -  |
+| **404** | object not found |  -  |
+| **410** | object expired |  -  |
+| **416** | Requested Range Not Satisfiable |  -  |
+| **420** | too many requests |  -  |
+| **0** | internal server error |  -  |
 
-<a name="listObjects"></a>
+<a id="listObjects"></a>
 # **listObjects**
-> ObjectStatsList listObjects(repository, ref, userMetadata, presign, after, amount, delimiter, prefix)
+> ObjectStatsList listObjects(repository, ref).userMetadata(userMetadata).presign(presign).after(after).amount(amount).delimiter(delimiter).prefix(prefix).execute();
 
 list objects under a given prefix
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
+    defaultClient.setBasePath("/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -637,10 +658,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -654,6 +671,10 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
@@ -664,7 +685,14 @@ public class Example {
     String delimiter = "delimiter_example"; // String | delimiter used to group common prefixes by
     String prefix = "prefix_example"; // String | return items prefixed with this value
     try {
-      ObjectStatsList result = apiInstance.listObjects(repository, ref, userMetadata, presign, after, amount, delimiter, prefix);
+      ObjectStatsList result = apiInstance.listObjects(repository, ref)
+            .userMetadata(userMetadata)
+            .presign(presign)
+            .after(after)
+            .amount(amount)
+            .delimiter(delimiter)
+            .prefix(prefix)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#listObjects");
@@ -679,16 +707,16 @@ public class Example {
 
 ### Parameters
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **String**|  |
- **ref** | **String**| a reference (could be either a branch or a commit ID) |
- **userMetadata** | **Boolean**|  | [optional] [default to true]
- **presign** | **Boolean**|  | [optional]
- **after** | **String**| return items after this value | [optional]
- **amount** | **Integer**| how many items to return | [optional] [default to 100]
- **delimiter** | **String**| delimiter used to group common prefixes by | [optional]
- **prefix** | **String**| return items prefixed with this value | [optional]
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **repository** | **String**|  | |
+| **ref** | **String**| a reference (could be either a branch or a commit ID) | |
+| **userMetadata** | **Boolean**|  | [optional] [default to true] |
+| **presign** | **Boolean**|  | [optional] |
+| **after** | **String**| return items after this value | [optional] |
+| **amount** | **Integer**| how many items to return | [optional] [default to 100] |
+| **delimiter** | **String**| delimiter used to group common prefixes by | [optional] |
+| **prefix** | **String**| return items prefixed with this value | [optional] |
 
 ### Return type
 
@@ -696,7 +724,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -706,130 +734,32 @@ Name | Type | Description  | Notes
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | object listing |  -  |
-**401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
-**0** | Internal Server Error |  -  |
+| **200** | object listing |  -  |
+| **401** | Unauthorized |  -  |
+| **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
 
-<a name="stageObject"></a>
-# **stageObject**
-> ObjectStats stageObject(repository, branch, path, objectStageCreation)
-
-stage an object&#39;s metadata for the given branch
-
-### Example
-```java
-// Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ObjectsApi;
-
-public class Example {
-  public static void main(String[] args) {
-    ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
-    
-    // Configure HTTP basic authorization: basic_auth
-    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
-    basic_auth.setUsername("YOUR USERNAME");
-    basic_auth.setPassword("YOUR PASSWORD");
-
-    // Configure API key authorization: cookie_auth
-    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
-    cookie_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
-
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
-    // Configure API key authorization: saml_auth
-    ApiKeyAuth saml_auth = (ApiKeyAuth) defaultClient.getAuthentication("saml_auth");
-    saml_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //saml_auth.setApiKeyPrefix("Token");
-
-    ObjectsApi apiInstance = new ObjectsApi(defaultClient);
-    String repository = "repository_example"; // String | 
-    String branch = "branch_example"; // String | 
-    String path = "path_example"; // String | relative to the branch
-    ObjectStageCreation objectStageCreation = new ObjectStageCreation(); // ObjectStageCreation | 
-    try {
-      ObjectStats result = apiInstance.stageObject(repository, branch, path, objectStageCreation);
-      System.out.println(result);
-    } catch (ApiException e) {
-      System.err.println("Exception when calling ObjectsApi#stageObject");
-      System.err.println("Status code: " + e.getCode());
-      System.err.println("Reason: " + e.getResponseBody());
-      System.err.println("Response headers: " + e.getResponseHeaders());
-      e.printStackTrace();
-    }
-  }
-}
-```
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **String**|  |
- **branch** | **String**|  |
- **path** | **String**| relative to the branch |
- **objectStageCreation** | [**ObjectStageCreation**](ObjectStageCreation.md)|  |
-
-### Return type
-
-[**ObjectStats**](ObjectStats.md)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
-
-### HTTP request headers
-
- - **Content-Type**: application/json
- - **Accept**: application/json
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**201** | object metadata |  -  |
-**400** | Validation Error |  -  |
-**401** | Unauthorized |  -  |
-**403** | Forbidden |  -  |
-**404** | Resource Not Found |  -  |
-**0** | Internal Server Error |  -  |
-
-<a name="statObject"></a>
+<a id="statObject"></a>
 # **statObject**
-> ObjectStats statObject(repository, ref, path, userMetadata, presign)
+> ObjectStats statObject(repository, ref, path).userMetadata(userMetadata).presign(presign).execute();
 
 get object metadata
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
+    defaultClient.setBasePath("/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -842,10 +772,6 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
-
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -857,6 +783,10 @@ public class Example {
     saml_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
 
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
@@ -865,7 +795,10 @@ public class Example {
     Boolean userMetadata = true; // Boolean | 
     Boolean presign = true; // Boolean | 
     try {
-      ObjectStats result = apiInstance.statObject(repository, ref, path, userMetadata, presign);
+      ObjectStats result = apiInstance.statObject(repository, ref, path)
+            .userMetadata(userMetadata)
+            .presign(presign)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#statObject");
@@ -880,13 +813,13 @@ public class Example {
 
 ### Parameters
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **String**|  |
- **ref** | **String**| a reference (could be either a branch or a commit ID) |
- **path** | **String**| relative to the branch |
- **userMetadata** | **Boolean**|  | [optional] [default to true]
- **presign** | **Boolean**|  | [optional]
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **repository** | **String**|  | |
+| **ref** | **String**| a reference (could be either a branch or a commit ID) | |
+| **path** | **String**| relative to the branch | |
+| **userMetadata** | **Boolean**|  | [optional] [default to true] |
+| **presign** | **Boolean**|  | [optional] |
 
 ### Return type
 
@@ -894,7 +827,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -904,33 +837,34 @@ Name | Type | Description  | Notes
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | object metadata |  -  |
-**401** | Unauthorized |  -  |
-**404** | Resource Not Found |  -  |
-**400** | Bad Request |  -  |
-**410** | object gone (but partial metadata may be available) |  -  |
-**0** | Internal Server Error |  -  |
+| **200** | object metadata |  -  |
+| **401** | Unauthorized |  -  |
+| **404** | Resource Not Found |  -  |
+| **400** | Bad Request |  -  |
+| **410** | object gone (but partial metadata may be available) |  -  |
+| **420** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
 
-<a name="uploadObject"></a>
+<a id="uploadObject"></a>
 # **uploadObject**
-> ObjectStats uploadObject(repository, branch, path, storageClass, ifNoneMatch, content)
+> ObjectStats uploadObject(repository, branch, path).ifNoneMatch(ifNoneMatch).storageClass(storageClass).force(force).content(content).execute();
 
 
 
 ### Example
 ```java
 // Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ObjectsApi;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ObjectsApi;
 
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
+    defaultClient.setBasePath("/api/v1");
     
     // Configure HTTP basic authorization: basic_auth
     HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
@@ -942,10 +876,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -959,15 +889,25 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //saml_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
     ObjectsApi apiInstance = new ObjectsApi(defaultClient);
     String repository = "repository_example"; // String | 
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
-    String storageClass = "storageClass_example"; // String | 
-    String ifNoneMatch = "*"; // String | Currently supports only \"*\" to allow uploading an object only if one doesn't exist yet
+    String ifNoneMatch = "*"; // String | Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.
+    String storageClass = "storageClass_example"; // String | Deprecated, this capability will not be supported in future releases.
+    Boolean force = false; // Boolean | 
     File content = new File("/path/to/file"); // File | Only a single file per upload which must be named \\\"content\\\".
     try {
-      ObjectStats result = apiInstance.uploadObject(repository, branch, path, storageClass, ifNoneMatch, content);
+      ObjectStats result = apiInstance.uploadObject(repository, branch, path)
+            .ifNoneMatch(ifNoneMatch)
+            .storageClass(storageClass)
+            .force(force)
+            .content(content)
+            .execute();
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#uploadObject");
@@ -982,14 +922,15 @@ public class Example {
 
 ### Parameters
 
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **String**|  |
- **branch** | **String**|  |
- **path** | **String**| relative to the branch |
- **storageClass** | **String**|  | [optional]
- **ifNoneMatch** | **String**| Currently supports only \&quot;*\&quot; to allow uploading an object only if one doesn&#39;t exist yet | [optional]
- **content** | **File**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional]
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **repository** | **String**|  | |
+| **branch** | **String**|  | |
+| **path** | **String**| relative to the branch | |
+| **ifNoneMatch** | **String**| Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. | [optional] |
+| **storageClass** | **String**| Deprecated, this capability will not be supported in future releases. | [optional] |
+| **force** | **Boolean**|  | [optional] [default to false] |
+| **content** | **File**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional] |
 
 ### Return type
 
@@ -997,116 +938,22 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
- - **Content-Type**: multipart/form-data
+ - **Content-Type**: multipart/form-data, application/octet-stream
  - **Accept**: application/json
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**201** | object metadata |  -  |
-**400** | Validation Error |  -  |
-**401** | Unauthorized |  -  |
-**403** | Forbidden |  -  |
-**404** | Resource Not Found |  -  |
-**412** | Precondition Failed |  -  |
-**0** | Internal Server Error |  -  |
-
-<a name="uploadObjectPreflight"></a>
-# **uploadObjectPreflight**
-> uploadObjectPreflight(repository, branch, path)
-
-
-
-### Example
-```java
-// Import classes:
-import io.lakefs.clients.api.ApiClient;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.Configuration;
-import io.lakefs.clients.api.auth.*;
-import io.lakefs.clients.api.models.*;
-import io.lakefs.clients.api.ObjectsApi;
-
-public class Example {
-  public static void main(String[] args) {
-    ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost/api/v1");
-    
-    // Configure HTTP basic authorization: basic_auth
-    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
-    basic_auth.setUsername("YOUR USERNAME");
-    basic_auth.setPassword("YOUR PASSWORD");
-
-    // Configure API key authorization: cookie_auth
-    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
-    cookie_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP bearer authorization: jwt_token
-    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
-    jwt_token.setBearerToken("BEARER TOKEN");
-
-    // Configure API key authorization: oidc_auth
-    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
-    oidc_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //oidc_auth.setApiKeyPrefix("Token");
-
-    // Configure API key authorization: saml_auth
-    ApiKeyAuth saml_auth = (ApiKeyAuth) defaultClient.getAuthentication("saml_auth");
-    saml_auth.setApiKey("YOUR API KEY");
-    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
-    //saml_auth.setApiKeyPrefix("Token");
-
-    ObjectsApi apiInstance = new ObjectsApi(defaultClient);
-    String repository = "repository_example"; // String | 
-    String branch = "branch_example"; // String | 
-    String path = "path_example"; // String | relative to the branch
-    try {
-      apiInstance.uploadObjectPreflight(repository, branch, path);
-    } catch (ApiException e) {
-      System.err.println("Exception when calling ObjectsApi#uploadObjectPreflight");
-      System.err.println("Status code: " + e.getCode());
-      System.err.println("Reason: " + e.getResponseBody());
-      System.err.println("Response headers: " + e.getResponseHeaders());
-      e.printStackTrace();
-    }
-  }
-}
-```
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **String**|  |
- **branch** | **String**|  |
- **path** | **String**| relative to the branch |
-
-### Return type
-
-null (empty response body)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**204** | User has permissions to upload this object. This does not guarantee that the upload will be successful or even possible. It indicates only the permission at the time of calling this endpoint |  -  |
-**401** | Unauthorized |  -  |
-**403** | Forbidden |  -  |
-**404** | Resource Not Found |  -  |
-**0** | Internal Server Error |  -  |
+| **201** | object metadata |  -  |
+| **400** | Validation Error |  -  |
+| **401** | Unauthorized |  -  |
+| **403** | Forbidden |  -  |
+| **404** | Resource Not Found |  -  |
+| **412** | Precondition Failed |  -  |
+| **420** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
 

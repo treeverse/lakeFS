@@ -1,0 +1,16 @@
+
+ID:            <COMMIT_ID>
+Author:        esti
+Date:          <DATE> <TIME> <TZ>
+Merge:         <COMMIT_ID>, <COMMIT_ID>
+
+	${MESSAGE}
+
+Metadata:
+	
+	.lakefs.merge.strategy = default
+	
+	key1               = value1
+	
+	key2               = value2
+	

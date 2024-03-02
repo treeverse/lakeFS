@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var (
@@ -134,7 +134,7 @@ func ResponseAsError(response interface{}) error {
 	f = r.FieldByName("Body")
 	if f.IsValid() && f.Type().Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.Uint8 {
 		body := f.Bytes()
-		var apiError api.Error
+		var apiError apigen.Error
 		if json.Unmarshal(body, &apiError) == nil && apiError.Message != "" {
 			message = apiError.Message
 		}
@@ -162,7 +162,7 @@ func HTTPResponseAsError(httpResponse *http.Response) error {
 	var message string
 	body, err := io.ReadAll(httpResponse.Body)
 	if err == nil {
-		var apiError api.Error
+		var apiError apigen.Error
 		if json.Unmarshal(body, &apiError) == nil && apiError.Message != "" {
 			message = apiError.Message
 		}

@@ -1,6 +1,6 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
+import {useOutletContext} from "react-router-dom";
 
-import {AuthLayout} from "../../../../lib/components/auth/layout";
 import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {auth} from "../../../../lib/api";
@@ -85,11 +85,9 @@ const UserEffectivePoliciesContainer = () => {
 };
 
 const UserEffectivePoliciesPage = () => {
-    return (
-        <AuthLayout activeTab="users">
-            <UserEffectivePoliciesContainer/>
-        </AuthLayout>
-    );
+    const {setActiveTab} = useOutletContext();
+    useEffect(() => setActiveTab("users"), [setActiveTab]);
+    return <UserEffectivePoliciesContainer/>;
 };
 
 export default UserEffectivePoliciesPage;

@@ -1,6 +1,5 @@
-import React from "react";
-
-import {AuthLayout} from "../../../../lib/components/auth/layout";
+import React, {useEffect} from "react";
+import {useOutletContext} from "react-router-dom";
 import {UserHeaderWithContext} from "./userHeaderWithContext";
 import {
     ActionGroup,
@@ -75,7 +74,7 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
                     searchFn={prefix => auth.listPolicies(prefix, "", 5).then(res => res.results)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
-                        Promise.all(selected.map(policyId => auth.attachPolicyToUser(userId, policyId)))
+                        Promise.all(selected.map(policy => auth.attachPolicyToUser(userId, policy.id)))
                             .then(() => { setRefresh(!refresh); setAttachError(null) })
                             .catch(error => { setAttachError(error) })
                             .finally(() => { setShowAddModal(false) });
@@ -117,11 +116,9 @@ const UserPoliciesContainer = () => {
 };
 
 const UserPoliciesPage = () => {
-    return (
-        <AuthLayout activeTab="users">
-            <UserPoliciesContainer />
-        </AuthLayout>
-    );
+    const {setActiveTab} = useOutletContext();
+    useEffect(() => setActiveTab("users"), [setActiveTab]);
+    return <UserPoliciesContainer/>;
 };
 
 export default UserPoliciesPage;

@@ -13,14 +13,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-openapi/swag"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
-	"github.com/treeverse/lakefs/pkg/auth/email"
 	"github.com/treeverse/lakefs/pkg/auth/keys"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
@@ -28,7 +28,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
-	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -74,9 +73,11 @@ type CredentialsCreator interface {
 	CreateCredentials(ctx context.Context, username string) (*model.Credential, error)
 }
 
-type Service interface {
-	InviteHandler
+type EmailInviter interface {
+	InviteUser(ctx context.Context, email string) error
+}
 
+type Service interface {
 	SecretStore() crypt.SecretStore
 	Cache() Cache
 
@@ -90,16 +91,16 @@ type Service interface {
 	ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// groups
-	CreateGroup(ctx context.Context, group *model.Group) error
-	DeleteGroup(ctx context.Context, groupDisplayName string) error
-	GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error)
+	CreateGroup(ctx context.Context, group *model.Group) (*model.Group, error)
+	DeleteGroup(ctx context.Context, groupID string) error
+	GetGroup(ctx context.Context, groupID string) (*model.Group, error)
 	ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error)
 
 	// group<->user memberships
-	AddUserToGroup(ctx context.Context, username, groupDisplayName string) error
-	RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error
+	AddUserToGroup(ctx context.Context, username, groupID string) error
+	RemoveUserFromGroup(ctx context.Context, username, groupID string) error
 	ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error)
-	ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
+	ListGroupUsers(ctx context.Context, groupID string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// policies
 	WritePolicy(ctx context.Context, policy *model.Policy, update bool) error
@@ -114,7 +115,6 @@ type Service interface {
 	GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error)
 	GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error)
 	ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error)
-	HashAndUpdatePassword(ctx context.Context, username string, password string) error
 
 	// policy<->user attachments
 	AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error
@@ -123,9 +123,9 @@ type Service interface {
 	ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// policy<->group attachments
-	AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
-	DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error
-	ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupID string) error
+	DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupID string) error
+	ListGroupPolicies(ctx context.Context, groupID string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	Authorizer
 
@@ -163,8 +163,11 @@ func (s *AuthService) ListKVPaged(ctx context.Context, protoType protoreflect.Me
 	p := &model.Paginator{}
 	for len(entries) < amount && it.Next() {
 		entry := it.Entry()
-		value := entry.Value
-		entries = append(entries, value)
+		// skip nil entries (deleted), kv can hold nil values
+		if entry == nil {
+			continue
+		}
+		entries = append(entries, entry.Value)
 		if len(entries) == amount {
 			p.NextPageToken = strings.TrimPrefix(string(entry.Key), string(prefix))
 			break
@@ -182,10 +185,9 @@ type AuthService struct {
 	secretStore crypt.SecretStore
 	cache       Cache
 	log         logging.Logger
-	*EmailInviteHandler
 }
 
-func NewAuthService(store kv.Store, secretStore crypt.SecretStore, emailer *email.Emailer, cacheConf params.ServiceCache, logger logging.Logger) *AuthService {
+func NewAuthService(store kv.Store, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) *AuthService {
 	logger.Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
@@ -199,7 +201,6 @@ func NewAuthService(store kv.Store, secretStore crypt.SecretStore, emailer *emai
 		cache:       cache,
 		log:         logger,
 	}
-	res.EmailInviteHandler = NewEmailInviteHandler(res, logger, emailer)
 	return res
 }
 
@@ -529,9 +530,9 @@ func (s *AuthService) ListGroupPolicies(ctx context.Context, groupDisplayName st
 	return model.ConvertPolicyDataList(msgs), paginator, err
 }
 
-func (s *AuthService) CreateGroup(ctx context.Context, group *model.Group) error {
+func (s *AuthService) CreateGroup(ctx context.Context, group *model.Group) (*model.Group, error) {
 	if err := model.ValidateAuthEntityID(group.DisplayName); err != nil {
-		return err
+		return nil, err
 	}
 
 	groupKey := model.GroupPath(group.DisplayName)
@@ -540,18 +541,23 @@ func (s *AuthService) CreateGroup(ctx context.Context, group *model.Group) error
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
 		}
-		return fmt.Errorf("save group (groupKey %s): %w", groupKey, err)
+		return nil, fmt.Errorf("save group (groupKey %s): %w", groupKey, err)
 	}
-	return err
+	retGroup := &model.Group{
+		DisplayName: group.DisplayName,
+		ID:          group.DisplayName,
+		CreatedAt:   group.CreatedAt,
+	}
+	return retGroup, nil
 }
 
-func (s *AuthService) DeleteGroup(ctx context.Context, groupDisplayName string) error {
-	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
+func (s *AuthService) DeleteGroup(ctx context.Context, groupID string) error {
+	if _, err := s.GetGroup(ctx, groupID); err != nil {
 		return err
 	}
 
 	// delete user membership to group
-	usersKey := model.GroupUserPath(groupDisplayName, "")
+	usersKey := model.GroupUserPath(groupID, "")
 	it, err := kv.NewSecondaryIterator(ctx, s.store, (&model.UserData{}).ProtoReflect().Type(), model.PartitionKey, usersKey, []byte(""))
 	if err != nil {
 		return err
@@ -560,7 +566,7 @@ func (s *AuthService) DeleteGroup(ctx context.Context, groupDisplayName string) 
 	for it.Next() {
 		entry := it.Entry()
 		user := entry.Value.(*model.UserData)
-		if err = s.removeUserFromGroupNoValidation(ctx, user.Username, groupDisplayName); err != nil {
+		if err = s.removeUserFromGroupNoValidation(ctx, user.Username, groupID); err != nil {
 			return err
 		}
 	}
@@ -569,7 +575,7 @@ func (s *AuthService) DeleteGroup(ctx context.Context, groupDisplayName string) 
 	}
 
 	// delete policy attachment to group
-	policiesKey := model.GroupPolicyPath(groupDisplayName, "")
+	policiesKey := model.GroupPolicyPath(groupID, "")
 	itr, err := kv.NewSecondaryIterator(ctx, s.store, (&model.PolicyData{}).ProtoReflect().Type(), model.PartitionKey, policiesKey, []byte(""))
 	if err != nil {
 		return err
@@ -578,7 +584,7 @@ func (s *AuthService) DeleteGroup(ctx context.Context, groupDisplayName string) 
 	for itr.Next() {
 		entry := itr.Entry()
 		policy := entry.Value.(*model.PolicyData)
-		if err = s.DetachPolicyFromGroupNoValidation(ctx, policy.DisplayName, groupDisplayName); err != nil {
+		if err = s.DetachPolicyFromGroupNoValidation(ctx, policy.DisplayName, groupID); err != nil {
 			return err
 		}
 	}
@@ -587,23 +593,23 @@ func (s *AuthService) DeleteGroup(ctx context.Context, groupDisplayName string) 
 	}
 
 	// delete group
-	groupPath := model.GroupPath(groupDisplayName)
+	groupPath := model.GroupPath(groupID)
 	err = s.store.Delete(ctx, []byte(model.PartitionKey), groupPath)
 	if err != nil {
 		return fmt.Errorf("delete user (userKey %s): %w", groupPath, err)
 	}
-	return err
+	return nil
 }
 
-func (s *AuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
-	groupKey := model.GroupPath(groupDisplayName)
+func (s *AuthService) GetGroup(ctx context.Context, groupID string) (*model.Group, error) {
+	groupKey := model.GroupPath(groupID)
 	m := model.GroupData{}
 	_, err := kv.GetMsg(ctx, s.store, model.PartitionKey, groupKey, &m)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
 			err = ErrNotFound
 		}
-		return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
+		return nil, fmt.Errorf("%s: %w", groupID, err)
 	}
 	return model.GroupFromProto(&m), nil
 }
@@ -636,26 +642,26 @@ func (s *AuthService) AddUserToGroup(ctx context.Context, username, groupDisplay
 		}
 		return fmt.Errorf("add user to group: (key %s): %w", gu, err)
 	}
-	return err
+	return nil
 }
 
-func (s *AuthService) removeUserFromGroupNoValidation(ctx context.Context, username, groupDisplayName string) error {
-	gu := model.GroupUserPath(groupDisplayName, username)
+func (s *AuthService) removeUserFromGroupNoValidation(ctx context.Context, username, groupID string) error {
+	gu := model.GroupUserPath(groupID, username)
 	err := s.store.Delete(ctx, []byte(model.PartitionKey), gu)
 	if err != nil {
 		return fmt.Errorf("remove user from group: (key %s): %w", gu, err)
 	}
-	return err
+	return nil
 }
 
-func (s *AuthService) RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error {
+func (s *AuthService) RemoveUserFromGroup(ctx context.Context, username, groupID string) error {
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return err
 	}
-	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
+	if _, err := s.GetGroup(ctx, groupID); err != nil {
 		return err
 	}
-	return s.removeUserFromGroupNoValidation(ctx, username, groupDisplayName)
+	return s.removeUserFromGroupNoValidation(ctx, username, groupID)
 }
 
 func (s *AuthService) ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
@@ -683,7 +689,12 @@ func (s *AuthService) ListUserGroups(ctx context.Context, username string, param
 				return nil, nil, err
 			}
 			if err == nil {
-				userGroups = append(userGroups, group)
+				appendGroup := &model.Group{
+					DisplayName: group.DisplayName,
+					ID:          group.DisplayName,
+					CreatedAt:   group.CreatedAt,
+				}
+				userGroups = append(userGroups, appendGroup)
 			}
 			if len(userGroups) == params.Amount {
 				resPaginator.NextPageToken = group.DisplayName
@@ -698,12 +709,12 @@ func (s *AuthService) ListUserGroups(ctx context.Context, username string, param
 	return userGroups, &resPaginator, nil
 }
 
-func (s *AuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
-	if _, err := s.GetGroup(ctx, groupDisplayName); err != nil {
+func (s *AuthService) ListGroupUsers(ctx context.Context, groupID string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+	if _, err := s.GetGroup(ctx, groupID); err != nil {
 		return nil, nil, err
 	}
 	var policy model.UserData
-	userGroupKey := model.GroupUserPath(groupDisplayName, params.Prefix)
+	userGroupKey := model.GroupUserPath(groupID, params.Prefix)
 
 	msgs, paginator, err := s.ListKVPaged(ctx, (&policy).ProtoReflect().Type(), params, userGroupKey, true)
 	if msgs == nil {
@@ -815,7 +826,7 @@ func (s *AuthService) DeletePolicy(ctx context.Context, policyDisplayName string
 	if err != nil {
 		return fmt.Errorf("delete policy (policyKey %s): %w", policyPath, err)
 	}
-	return err
+	return nil
 }
 
 func (s *AuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
@@ -870,7 +881,7 @@ func (s *AuthService) AddCredentials(ctx context.Context, username, accessKeyID,
 		return nil, fmt.Errorf("save credentials (credentialsKey %s): %w", credentialsKey, err)
 	}
 
-	return c, err
+	return c, nil
 }
 
 func IsValidAccessKeyID(key string) bool {
@@ -891,7 +902,7 @@ func (s *AuthService) DeleteCredentials(ctx context.Context, username, accessKey
 	if err != nil {
 		return fmt.Errorf("delete credentials (credentialsKey %s): %w", credPath, err)
 	}
-	return err
+	return nil
 }
 
 func (s *AuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
@@ -912,7 +923,7 @@ func (s *AuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName
 		}
 		return fmt.Errorf("policy attachment to group: (key %s): %w", pg, err)
 	}
-	return err
+	return nil
 }
 
 func (s *AuthService) DetachPolicyFromGroupNoValidation(ctx context.Context, policyDisplayName, groupDisplayName string) error {
@@ -921,7 +932,7 @@ func (s *AuthService) DetachPolicyFromGroupNoValidation(ctx context.Context, pol
 	if err != nil {
 		return fmt.Errorf("policy detachment to group: (key %s): %w", pg, err)
 	}
-	return err
+	return nil
 }
 
 func (s *AuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
@@ -986,31 +997,6 @@ func (s *AuthService) GetCredentials(ctx context.Context, accessKeyID string) (*
 		}
 		return nil, fmt.Errorf("credentials %w", ErrNotFound)
 	})
-}
-
-func (s *AuthService) HashAndUpdatePassword(ctx context.Context, username string, password string) error {
-	user, err := s.GetUser(ctx, username)
-	if err != nil {
-		return err
-	}
-	pw, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-	userKey := model.UserPath(user.Username)
-	userUpdatePassword := model.User{
-		CreatedAt:         user.CreatedAt,
-		Username:          user.Username,
-		FriendlyName:      user.FriendlyName,
-		Email:             user.Email,
-		EncryptedPassword: pw,
-		Source:            user.Source,
-	}
-	err = kv.SetMsgIf(ctx, s.store, model.PartitionKey, userKey, model.ProtoFromUser(&userUpdatePassword), user)
-	if err != nil {
-		return fmt.Errorf("update user password (userKey %s): %w", userKey, err)
-	}
-	return err
 }
 
 func interpolateUser(resource string, username string) string {
@@ -1167,18 +1153,19 @@ func (s *AuthService) deleteTokens(ctx context.Context) error {
 	return it.Err()
 }
 
+const (
+	healthCheckMaxInterval     = 5 * time.Second
+	healthCheckInitialInterval = 1 * time.Second
+)
+
 type APIAuthService struct {
-	apiClient              ClientWithResponsesInterface
-	secretStore            crypt.SecretStore
-	logger                 logging.Logger
-	cache                  Cache
-	delegatedInviteHandler *EmailInviteHandler
+	apiClient   ClientWithResponsesInterface
+	secretStore crypt.SecretStore
+	logger      logging.Logger
+	cache       Cache
 }
 
 func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
-	if a.delegatedInviteHandler != nil {
-		return a.delegatedInviteHandler.InviteUser(ctx, email)
-	}
 	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
 		Email:    swag.String(email),
 		Invite:   swag.Bool(true),
@@ -1189,10 +1176,6 @@ func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
 		return err
 	}
 	return a.validateResponse(resp, http.StatusCreated)
-}
-
-func (a *APIAuthService) IsInviteSupported() bool {
-	return true
 }
 
 func (a *APIAuthService) SecretStore() crypt.SecretStore {
@@ -1219,7 +1202,7 @@ func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (stri
 		return InvalidUserID, err
 	}
 
-	return fmt.Sprint(resp.JSON201.Id), nil
+	return resp.JSON201.Username, nil
 }
 
 func (a *APIAuthService) DeleteUser(ctx context.Context, username string) error {
@@ -1351,29 +1334,23 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 	return users, toPagination(pagination), nil
 }
 
-func (a *APIAuthService) HashAndUpdatePassword(ctx context.Context, username string, password string) error {
-	encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-	resp, err := a.apiClient.UpdatePasswordWithResponse(ctx, username, UpdatePasswordJSONRequestBody{EncryptedPassword: encryptedPassword})
-	if err != nil {
-		a.logger.WithField("username", username).WithError(err).Error("failed to update password")
-		return err
-	}
-
-	return a.validateResponse(resp, http.StatusOK)
-}
-
-func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) error {
+func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) (*model.Group, error) {
 	resp, err := a.apiClient.CreateGroupWithResponse(ctx, CreateGroupJSONRequestBody{
 		Id: group.DisplayName,
 	})
 	if err != nil {
 		a.logger.WithError(err).WithField("group", group).Error("failed to create group")
-		return err
+		return nil, err
 	}
-	return a.validateResponse(resp, http.StatusCreated)
+
+	if err = a.validateResponse(resp, http.StatusCreated); err != nil {
+		return nil, err
+	}
+	return &model.Group{
+		CreatedAt:   time.Unix(resp.JSON201.CreationDate, 0),
+		DisplayName: resp.JSON201.Name,
+		ID:          groupIDOrDisplayName(*resp.JSON201),
+	}, nil
 }
 
 // validateResponse returns ErrUnexpectedStatusCode if the response status code is not as expected
@@ -1411,27 +1388,29 @@ func paginationAmount(amount int) *PaginationAmount {
 	return &p
 }
 
-func (a *APIAuthService) DeleteGroup(ctx context.Context, groupDisplayName string) error {
-	resp, err := a.apiClient.DeleteGroupWithResponse(ctx, groupDisplayName)
+func (a *APIAuthService) DeleteGroup(ctx context.Context, groupID string) error {
+	resp, err := a.apiClient.DeleteGroupWithResponse(ctx, groupID)
 	if err != nil {
-		a.logger.WithError(err).WithField("group", groupDisplayName).Error("failed to delete group")
+		a.logger.WithError(err).WithField("group", groupID).Error("failed to delete group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusNoContent)
 }
 
-func (a *APIAuthService) GetGroup(ctx context.Context, groupDisplayName string) (*model.Group, error) {
-	resp, err := a.apiClient.GetGroupWithResponse(ctx, groupDisplayName)
+func (a *APIAuthService) GetGroup(ctx context.Context, groupID string) (*model.Group, error) {
+	resp, err := a.apiClient.GetGroupWithResponse(ctx, groupID)
 	if err != nil {
-		a.logger.WithError(err).WithField("group", groupDisplayName).Error("failed to get group")
+		a.logger.WithError(err).WithField("group", groupID).Error("failed to get group")
 		return nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
 		return nil, err
 	}
+
 	return &model.Group{
 		CreatedAt:   time.Unix(resp.JSON200.CreationDate, 0),
 		DisplayName: resp.JSON200.Name,
+		ID:          groupIDOrDisplayName(*resp.JSON200),
 	}, nil
 }
 
@@ -1454,24 +1433,25 @@ func (a *APIAuthService) ListGroups(ctx context.Context, params *model.Paginatio
 		groups[i] = &model.Group{
 			CreatedAt:   time.Unix(r.CreationDate, 0),
 			DisplayName: r.Name,
+			ID:          groupIDOrDisplayName(r),
 		}
 	}
 	return groups, toPagination(resp.JSON200.Pagination), nil
 }
 
-func (a *APIAuthService) AddUserToGroup(ctx context.Context, username, groupDisplayName string) error {
-	resp, err := a.apiClient.AddGroupMembershipWithResponse(ctx, groupDisplayName, username)
+func (a *APIAuthService) AddUserToGroup(ctx context.Context, username, groupID string) error {
+	resp, err := a.apiClient.AddGroupMembershipWithResponse(ctx, groupID, username)
 	if err != nil {
-		a.logger.WithError(err).WithField("group", groupDisplayName).WithField("username", username).Error("failed to add user to group")
+		a.logger.WithError(err).WithField("group", groupID).WithField("username", username).Error("failed to add user to group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusCreated)
 }
 
-func (a *APIAuthService) RemoveUserFromGroup(ctx context.Context, username, groupDisplayName string) error {
-	resp, err := a.apiClient.DeleteGroupMembershipWithResponse(ctx, groupDisplayName, username)
+func (a *APIAuthService) RemoveUserFromGroup(ctx context.Context, username, groupID string) error {
+	resp, err := a.apiClient.DeleteGroupMembershipWithResponse(ctx, groupID, username)
 	if err != nil {
-		a.logger.WithError(err).WithField("group", groupDisplayName).WithField("username", username).Error("failed to remove user from group")
+		a.logger.WithError(err).WithField("group", groupID).WithField("username", username).Error("failed to remove user from group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusNoContent)
@@ -1495,19 +1475,20 @@ func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, pa
 		userGroups[i] = &model.Group{
 			CreatedAt:   time.Unix(r.CreationDate, 0),
 			DisplayName: r.Name,
+			ID:          groupIDOrDisplayName(r),
 		}
 	}
 	return userGroups, toPagination(resp.JSON200.Pagination), nil
 }
 
-func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
-	resp, err := a.apiClient.ListGroupMembersWithResponse(ctx, groupDisplayName, &ListGroupMembersParams{
+func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupID string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+	resp, err := a.apiClient.ListGroupMembersWithResponse(ctx, groupID, &ListGroupMembersParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
 		Amount: paginationAmount(params.Amount),
 	})
 	if err != nil {
-		a.logger.WithError(err).WithField("group", groupDisplayName).Error("failed to list group users")
+		a.logger.WithError(err).WithField("group", groupID).Error("failed to list group users")
 		return nil, nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1714,7 +1695,7 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 		if credentials == nil {
 			return nil, fmt.Errorf("get credentials api %w", ErrInvalidResponse)
 		}
-		username := aws.StringValue(credentials.UserName)
+		username := aws.ToString(credentials.UserName)
 		if username == "" {
 			user, err := a.GetUserByID(ctx, model.ConvertDBID(credentials.UserId))
 			if err != nil {
@@ -1840,36 +1821,36 @@ func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username str
 	return a.listUserPolicies(ctx, username, params, true)
 }
 
-func (a *APIAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
-	resp, err := a.apiClient.AttachPolicyToGroupWithResponse(ctx, groupDisplayName, policyDisplayName)
+func (a *APIAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupID string) error {
+	resp, err := a.apiClient.AttachPolicyToGroupWithResponse(ctx, groupID, policyDisplayName)
 	if err != nil {
 		a.logger.WithError(err).
-			WithFields(logging.Fields{"policy": policyDisplayName, "group": groupDisplayName}).
+			WithFields(logging.Fields{"policy": policyDisplayName, "group": groupID}).
 			Error("failed to attach policy to group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusCreated)
 }
 
-func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupDisplayName string) error {
-	resp, err := a.apiClient.DetachPolicyFromGroupWithResponse(ctx, groupDisplayName, policyDisplayName)
+func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupID string) error {
+	resp, err := a.apiClient.DetachPolicyFromGroupWithResponse(ctx, groupID, policyDisplayName)
 	if err != nil {
 		a.logger.WithError(err).
-			WithFields(logging.Fields{"policy": policyDisplayName, "group": groupDisplayName}).
+			WithFields(logging.Fields{"policy": policyDisplayName, "group": groupID}).
 			Error("failed to detach policy from group")
 		return err
 	}
 	return a.validateResponse(resp, http.StatusNoContent)
 }
 
-func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
-	resp, err := a.apiClient.ListGroupPoliciesWithResponse(ctx, groupDisplayName, &ListGroupPoliciesParams{
+func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupID string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	resp, err := a.apiClient.ListGroupPoliciesWithResponse(ctx, groupID, &ListGroupPoliciesParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
 		Amount: paginationAmount(params.Amount),
 	})
 	if err != nil {
-		a.logger.WithError(err).WithField("group", groupDisplayName).Error("failed to list policies")
+		a.logger.WithError(err).WithField("group", groupID).Error("failed to list policies")
 		return nil, nil, err
 	}
 	if err := a.validateResponse(resp, http.StatusOK); err != nil {
@@ -1920,7 +1901,39 @@ func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, e
 	return a.validateResponse(res, http.StatusCreated)
 }
 
-func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, emailer *email.Emailer, logger logging.Logger) (*APIAuthService, error) {
+func (a *APIAuthService) CheckHealth(ctx context.Context, logger logging.Logger, timeout time.Duration) error {
+	logger.Info("perform health check, this can take up to ", timeout)
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxInterval = healthCheckMaxInterval
+	bo.InitialInterval = healthCheckInitialInterval
+	bo.MaxElapsedTime = timeout
+	err := backoff.Retry(func() error {
+		healthResp, err := a.apiClient.HealthCheckWithResponse(ctx)
+		switch {
+		case err != nil:
+			return err
+		case healthResp.StatusCode() == http.StatusNoContent:
+			return nil
+		default:
+			return fmt.Errorf("health check returned status %s: %w", healthResp.Status(), ErrInvalidResponse)
+		}
+	}, bo)
+	if err != nil {
+		return err
+	}
+
+	resp, err := a.apiClient.GetVersionWithResponse(ctx)
+	if err != nil {
+		return fmt.Errorf("get version failed: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return fmt.Errorf("get version returned status %s: %w", resp.Status(), ErrInvalidResponse)
+	}
+	logger.Info("auth API server version: ", resp.JSON200.Version)
+	return nil
+}
+
+func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
 	if token == "" {
 		// when no token is provided, generate one.
 		// communicate with auth service always uses a token
@@ -1958,9 +1971,6 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 		logger:      logger,
 		cache:       cache,
 	}
-	if emailer != nil {
-		res.delegatedInviteHandler = NewEmailInviteHandler(res, logging.ContextUnavailable(), emailer)
-	}
 	return res, nil
 }
 
@@ -1980,6 +1990,14 @@ func generateAuthAPIJWT(secret []byte) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	logging.ContextUnavailable().WithField("id", id).Info("generated auth api token")
 	return token.SignedString(secret)
+}
+
+func groupIDOrDisplayName(group Group) string {
+	stringID := swag.StringValue(group.Id)
+	if stringID != "" {
+		return stringID
+	}
+	return group.Name
 }
 
 func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {

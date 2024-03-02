@@ -9,13 +9,14 @@ import (
 	"strings"
 	"testing"
 
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/go-test/deep"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/block/gs"
 	"github.com/treeverse/lakefs/pkg/block/local"
-	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -91,7 +92,7 @@ func TestConfig_EnvironmentVariables(t *testing.T) {
 
 	c, err := newConfigFromFile("testdata/valid_config.yaml")
 	testutil.Must(t, err)
-	kvParams, err := c.DatabaseParams()
+	kvParams, err := kvparams.NewConfig(c)
 	testutil.Must(t, err)
 	if kvParams.Postgres.ConnectionString != dbString {
 		t.Errorf("got DB connection string %s, expected to override to %s", kvParams.Postgres.ConnectionString, dbString)
@@ -120,10 +121,11 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("s3 block adapter", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_s3_adapter_config.yaml")
 		testutil.Must(t, err)
-		adapter, err := factory.BuildBlockAdapter(ctx, nil, c)
-		testutil.Must(t, err)
-		if _, ok := adapter.(*s3a.Adapter); !ok {
-			t.Fatalf("expected an s3 block adapter, got something else instead")
+
+		_, err = factory.BuildBlockAdapter(ctx, nil, c)
+		var errProfileNotExists awsconfig.SharedConfigProfileNotExistError
+		if !errors.As(err, &errProfileNotExists) {
+			t.Fatalf("expected a config.SharedConfigProfileNotExistError, got '%v'", err)
 		}
 	})
 
@@ -166,29 +168,4 @@ func TestConfig_JSONLogger(t *testing.T) {
 	if _, ok := m["msg"]; !ok {
 		t.Fatalf("expected a msg field, could not find one")
 	}
-}
-
-func verifyAWSConfig(t *testing.T, c *config.Config) {
-	awsConfig := c.GetAwsConfig()
-	credentials, err := awsConfig.Credentials.Get()
-	testutil.Must(t, err)
-	if credentials.AccessKeyID != "my-key-id" {
-		t.Fatalf("unexpected key id in credentials. expected %s got %s", "my-key-id", credentials.AccessKeyID)
-	}
-	if credentials.SecretAccessKey != "my-secret-key" {
-		t.Fatalf("unexpected secret access key in credentials. expected %s got %s", "my-secret-key", credentials.SecretAccessKey)
-	}
-}
-
-func TestConfig_AWSConfig(t *testing.T) {
-	t.Run("use secret_access_key configuration", func(t *testing.T) {
-		c, err := newConfigFromFile("testdata/aws_credentials.yaml")
-		testutil.Must(t, err)
-		verifyAWSConfig(t, c)
-	})
-	t.Run("use alias access_secret_key configuration", func(t *testing.T) {
-		c, err := newConfigFromFile("testdata/aws_credentials_with_alias.yaml")
-		testutil.Must(t, err)
-		verifyAWSConfig(t, c)
-	})
 }

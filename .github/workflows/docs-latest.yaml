@@ -4,8 +4,10 @@ on:
   push:
     paths:
       - "docs/**"
+      - ".github/workflows/docs-*.yaml"
     branches:
       - master
+  workflow_dispatch:
 
 jobs:
   docs-latest:
@@ -13,7 +15,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check-out
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -26,6 +28,11 @@ jobs:
         id: build-latest
         working-directory: docs
         run: bundle exec jekyll build --config _config.yml -d _site/
+
+      - name: Update robots.txt
+        working-directory: docs/_site
+        run: |
+          sed -i 's/^Sitemap: /Sitemap: https:\/\/docs.lakefs.io/' robots.txt
 
       - name: Publish to docs repository
         uses: dmnemec/copy_file_to_another_repo_action@v1.1.1

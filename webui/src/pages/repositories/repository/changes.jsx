@@ -1,5 +1,5 @@
-import React, {useRef, useState} from "react";
-
+import React, {useEffect, useRef, useState} from "react";
+import { useOutletContext } from "react-router-dom";
 import {GitCommitIcon, HistoryIcon,} from "@primer/octicons-react";
 
 import Modal from "react-bootstrap/Modal";
@@ -14,7 +14,6 @@ import {useRefs} from "../../../lib/hooks/repo";
 import {ConfirmationModal} from "../../../lib/components/modals";
 import {ActionGroup, ActionsBar, AlertError, Loading, RefreshButton} from "../../../lib/components/controls";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
-import {RepositoryPageLayout} from "../../../lib/components/repository/layout";
 import {formatAlertText} from "../../../lib/components/repository/errors";
 import {ChangesTreeContainer, MetadataFields} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
@@ -203,12 +202,12 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
 
                     <RefreshButton onClick={refresh}/>
 
-                    <RevertButton enabled={results.length > 0} onRevert={() => {
+                    <RevertButton enabled={results.length > 0 && !repo?.read_only} onRevert={() => {
                         branches.reset(repo.id, reference.id, {type: 'reset'})
                             .then(refresh)
                             .catch(error => setActionError(error))
                     }}/>
-                    <CommitButton repo={repo} enabled={results.length > 0} onCommit={async (commitDetails, done) => {
+                    <CommitButton repo={repo} enabled={results.length > 0 && !repo?.read_only} onCommit={async (commitDetails, done) => {
                         try {
                             await commits.commit(repo.id, reference.id, commitDetails.message, commitDetails.metadata);
                             setActionError(null);
@@ -257,11 +256,9 @@ const ChangesContainer = () => {
 }
 
 const RepositoryChangesPage = () => {
-    return (
-            <RepositoryPageLayout activePage={'changes'}>
-                <ChangesContainer/>
-            </RepositoryPageLayout>
-    )
+  const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage('changes'), [setActivePage]);
+  return <ChangesContainer />;
 }
 
 export default RepositoryChangesPage;

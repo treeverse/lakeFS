@@ -3,32 +3,21 @@ package config
 import (
 	"errors"
 	"fmt"
-	"math"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	apiparams "github.com/treeverse/lakefs/pkg/api/params"
-	"github.com/treeverse/lakefs/pkg/block"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
-	"github.com/treeverse/lakefs/pkg/graveler/committed"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
 	"github.com/treeverse/lakefs/pkg/logging"
-	pyramidparams "github.com/treeverse/lakefs/pkg/pyramid/params"
-	"go.uber.org/ratelimit"
 )
 
 var (
 	ErrBadConfiguration    = errors.New("bad configuration")
-	ErrMissingSecretKey    = fmt.Errorf("%w: auth.encrypt.secret_key cannot be empty", ErrBadConfiguration)
-	ErrInvalidProportion   = fmt.Errorf("%w: total proportion isn't 1.0", ErrBadConfiguration)
 	ErrBadDomainNames      = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
 	ErrMissingRequiredKeys = fmt.Errorf("%w: missing required keys", ErrBadConfiguration)
 )
@@ -51,7 +40,7 @@ type OIDC struct {
 // CookieAuthVerification is related to auth based on a cookie set by an external service
 // TODO(isan) consolidate with OIDC
 type CookieAuthVerification struct {
-	// ValidateIDTokenClaims if set will validate the values  (e.g department: "R&D") exist in the token claims
+	// ValidateIDTokenClaims if set will validate the values (e.g., department: "R&D") exist in the token claims
 	ValidateIDTokenClaims map[string]string `mapstructure:"validate_id_token_claims"`
 	// DefaultInitialGroups is a list of groups to add to the user on the lakeFS side
 	DefaultInitialGroups []string `mapstructure:"default_initial_groups"`
@@ -70,36 +59,10 @@ type S3AuthInfo struct {
 	CredentialsFile string `mapstructure:"credentials_file"`
 	Profile         string
 	Credentials     *struct {
-		AccessKeyID SecureString `mapstructure:"access_key_id"`
-		// AccessSecretKey is the old name for SecretAccessKey.
-		//
-		// Deprecated: use SecretAccessKey instead.
-		AccessSecretKey SecureString `mapstructure:"access_secret_key"`
+		AccessKeyID     SecureString `mapstructure:"access_key_id"`
 		SecretAccessKey SecureString `mapstructure:"secret_access_key"`
 		SessionToken    SecureString `mapstructure:"session_token"`
 	}
-}
-
-// PluginProps struct holds the properties needed to run a plugin
-type PluginProps struct {
-	Path    string `mapstructure:"path"`
-	Version int    `mapstructure:"version"`
-}
-
-// Plugins struct holds the plugins dir default location and a map of optional plugin location with higher precedence
-type Plugins struct {
-	DefaultPath string                 `mapstructure:"default_path"`
-	Properties  map[string]PluginProps `mapstructure:"properties"`
-}
-
-// DeltaDiffPlugin includes properties for the Delta Lake diff plugin
-type DeltaDiffPlugin struct {
-	PluginName string `mapstructure:"plugin"`
-}
-
-// DiffProps struct holds the properties that define the details necessary to run a diff.
-type DiffProps struct {
-	Delta DeltaDiffPlugin `mapstructure:"delta"`
 }
 
 // Config - Output struct of configuration, used to validate.  If you read a key using a viper accessor
@@ -119,7 +82,11 @@ type Config struct {
 		Lua     struct {
 			NetHTTPEnabled bool `mapstructure:"net_http_enabled"`
 		} `mapstructure:"lua"`
-	}
+		Env struct {
+			Enabled bool   `mapstructure:"enabled"`
+			Prefix  string `mapstructure:"prefix"`
+		} `mapstructure:"env"`
+	} `mapstructure:"actions"`
 
 	Logging struct {
 		Format        string   `mapstructure:"format"`
@@ -184,13 +151,18 @@ type Config struct {
 			// HealthCheckInterval - Interval to run health check for the DynamoDB instance
 			// Won't run when is equal or less than 0.
 			HealthCheckInterval time.Duration `mapstructure:"health_check_interval"`
+
+			// MaxAttempts - Specifies the maximum number attempts to make on a request.
+			MaxAttempts int `mapstructure:"max_attempts"`
 		} `mapstructure:"dynamodb"`
 
 		CosmosDB *struct {
-			Key       SecureString `mapstructure:"key"`
-			Endpoint  string       `mapstructure:"endpoint"`
-			Database  string       `mapstructure:"database"`
-			Container string       `mapstructure:"container"`
+			Key        SecureString `mapstructure:"key"`
+			Endpoint   string       `mapstructure:"endpoint"`
+			Database   string       `mapstructure:"database"`
+			Container  string       `mapstructure:"container"`
+			Throughput int32        `mapstructure:"throughput"`
+			Autoscale  bool         `mapstructure:"autoscale"`
 		} `mapstructure:"cosmosdb"`
 	}
 
@@ -205,9 +177,11 @@ type Config struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
 		} `mapstructure:"encrypt"`
 		API struct {
-			Endpoint        string       `mapstructure:"endpoint"`
-			Token           SecureString `mapstructure:"token"`
-			SupportsInvites bool         `mapstructure:"supports_invites"`
+			Endpoint           string        `mapstructure:"endpoint"`
+			Token              SecureString  `mapstructure:"token"`
+			SupportsInvites    bool          `mapstructure:"supports_invites"`
+			HealthCheckTimeout time.Duration `mapstructure:"health_check_timeout"`
+			SkipHealthCheck    bool          `mapstructure:"skip_health_check"`
 		} `mapstructure:"api"`
 		RemoteAuthenticator struct {
 			// Enabled if set true will enable remote authentication
@@ -248,8 +222,6 @@ type Config struct {
 			S3AuthInfo                    `mapstructure:",squash"`
 			Region                        string        `mapstructure:"region"`
 			Endpoint                      string        `mapstructure:"endpoint"`
-			StreamingChunkSize            int           `mapstructure:"streaming_chunk_size"`
-			StreamingChunkTimeout         time.Duration `mapstructure:"streaming_chunk_timeout"`
 			MaxRetries                    int           `mapstructure:"max_retries"`
 			ForcePathStyle                bool          `mapstructure:"force_path_style"`
 			DiscoverBucketRegion          bool          `mapstructure:"discover_bucket_region"`
@@ -259,6 +231,9 @@ type Config struct {
 			PreSignedExpiry               time.Duration `mapstructure:"pre_signed_expiry"`
 			DisablePreSigned              bool          `mapstructure:"disable_pre_signed"`
 			DisablePreSignedUI            bool          `mapstructure:"disable_pre_signed_ui"`
+			DisablePreSignedMultipart     bool          `mapstructure:"disable_pre_signed_multipart"`
+			ClientLogRetries              bool          `mapstructure:"client_log_retries"`
+			ClientLogRequest              bool          `mapstructure:"client_log_request"`
 			WebIdentity                   *struct {
 				SessionDuration     time.Duration `mapstructure:"session_duration"`
 				SessionExpiryWindow time.Duration `mapstructure:"session_expiry_window"`
@@ -310,7 +285,9 @@ type Config struct {
 		PrepareInterval    time.Duration `mapstructure:"prepare_interval"`
 	} `mapstructure:"ugc"`
 	Graveler struct {
-		RepositoryCache struct {
+		EnsureReadableRootNamespace bool `mapstructure:"ensure_readable_root_namespace"`
+		BatchDBIOTransactionMarkers bool `mapstructure:"batch_dbio_transaction_markers"`
+		RepositoryCache             struct {
 			Size   int           `mapstructure:"size"`
 			Expiry time.Duration `mapstructure:"expiry"`
 			Jitter time.Duration `mapstructure:"jitter"`
@@ -326,9 +303,10 @@ type Config struct {
 	} `mapstructure:"graveler"`
 	Gateways struct {
 		S3 struct {
-			DomainNames Strings `mapstructure:"domain_name"`
-			Region      string  `mapstructure:"region"`
-			FallbackURL string  `mapstructure:"fallback_url"`
+			DomainNames       Strings `mapstructure:"domain_name"`
+			Region            string  `mapstructure:"region"`
+			FallbackURL       string  `mapstructure:"fallback_url"`
+			VerifyUnsupported bool    `mapstructure:"verify_unsupported"`
 		} `mapstructure:"s3"`
 	}
 	Stats struct {
@@ -353,19 +331,6 @@ type Config struct {
 		AuditCheckInterval      time.Duration `mapstructure:"audit_check_interval"`
 		AuditCheckURL           string        `mapstructure:"audit_check_url"`
 	} `mapstructure:"security"`
-
-	Email struct {
-		SMTPHost           string        `mapstructure:"smtp_host"`
-		SMTPPort           int           `mapstructure:"smtp_port"`
-		UseSSL             bool          `mapstructure:"use_ssl"`
-		Username           string        `mapstructure:"username"`
-		Password           string        `mapstructure:"password"`
-		LocalName          string        `mapstructure:"local_name"`
-		Sender             string        `mapstructure:"sender"`
-		LimitEveryDuration time.Duration `mapstructure:"limit_every_duration"`
-		Burst              int           `mapstructure:"burst"`
-		LakefsBaseURL      string        `mapstructure:"lakefs_base_url"`
-	} `mapstructure:"email"`
 	UI struct {
 		// Enabled - control serving of embedded UI
 		Enabled  bool `mapstructure:"enabled"`
@@ -374,8 +339,10 @@ type Config struct {
 			Code string `mapstructure:"code"`
 		} `mapstructure:"snippets"`
 	} `mapstructure:"ui"`
-	Diff    DiffProps `mapstructure:"diff"`
-	Plugins Plugins   `mapstructure:"plugins"`
+	UsageReport struct {
+		Enabled       bool          `mapstructure:"enabled"`
+		FlushInterval time.Duration `mapstructure:"flush_interval"`
+	} `mapstructure:"usage_report"`
 }
 
 func NewConfig(cfgType string) (*Config, error) {
@@ -405,7 +372,10 @@ func newConfig(cfgType string) (*Config, error) {
 
 	// setup logging package
 	logging.SetOutputFormat(c.Logging.Format)
-	logging.SetOutputs(c.Logging.Output, c.Logging.FileMaxSizeMB, c.Logging.FilesKeep)
+	err = logging.SetOutputs(c.Logging.Output, c.Logging.FileMaxSizeMB, c.Logging.FilesKeep)
+	if err != nil {
+		return nil, err
+	}
 	logging.SetLevel(c.Logging.Level)
 	return c, nil
 }
@@ -453,99 +423,6 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) DatabaseParams() (kvparams.Config, error) {
-	p := kvparams.Config{
-		Type: c.Database.Type,
-	}
-	if c.Database.Local != nil {
-		localPath, err := homedir.Expand(c.Database.Local.Path)
-		if err != nil {
-			return kvparams.Config{}, fmt.Errorf("parse database local path '%s': %w", c.Database.Local.Path, err)
-		}
-		p.Local = &kvparams.Local{
-			Path:         localPath,
-			PrefetchSize: c.Database.Local.PrefetchSize,
-		}
-	}
-
-	if c.Database.Postgres != nil {
-		p.Postgres = &kvparams.Postgres{
-			ConnectionString:      c.Database.Postgres.ConnectionString.SecureValue(),
-			MaxIdleConnections:    c.Database.Postgres.MaxIdleConnections,
-			MaxOpenConnections:    c.Database.Postgres.MaxOpenConnections,
-			ConnectionMaxLifetime: c.Database.Postgres.ConnectionMaxLifetime,
-		}
-	}
-
-	if c.Database.DynamoDB != nil {
-		p.DynamoDB = &kvparams.DynamoDB{
-			TableName:           c.Database.DynamoDB.TableName,
-			ScanLimit:           c.Database.DynamoDB.ScanLimit,
-			Endpoint:            c.Database.DynamoDB.Endpoint,
-			AwsRegion:           c.Database.DynamoDB.AwsRegion,
-			AwsProfile:          c.Database.DynamoDB.AwsProfile,
-			AwsAccessKeyID:      c.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
-			AwsSecretAccessKey:  c.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
-			HealthCheckInterval: c.Database.DynamoDB.HealthCheckInterval,
-		}
-	}
-
-	if c.Database.CosmosDB != nil {
-		p.CosmosDB = &kvparams.CosmosDB{
-			Key:               c.Database.CosmosDB.Key.SecureValue(),
-			Endpoint:          c.Database.CosmosDB.Endpoint,
-			Database:          c.Database.CosmosDB.Database,
-			Container:         c.Database.CosmosDB.Container,
-			StrongConsistency: true,
-		}
-	}
-
-	return p, nil
-}
-
-func (c *Config) GetAwsConfig() *aws.Config {
-	logger := logging.ContextUnavailable().WithField("sdk", "aws")
-	cfg := &aws.Config{
-		Logger: &logging.AWSAdapter{Logger: logger},
-	}
-	if c.Blockstore.S3.Region != "" {
-		cfg.Region = aws.String(c.Blockstore.S3.Region)
-	}
-	level := strings.ToLower(logging.Level())
-	if level == "trace" {
-		cfg.LogLevel = aws.LogLevel(aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
-	}
-	if c.Blockstore.S3.Profile != "" || c.Blockstore.S3.CredentialsFile != "" {
-		cfg.Credentials = credentials.NewSharedCredentials(
-			c.Blockstore.S3.CredentialsFile,
-			c.Blockstore.S3.Profile,
-		)
-	}
-	if c.Blockstore.S3.Credentials != nil {
-		secretAccessKey := c.Blockstore.S3.Credentials.SecretAccessKey
-		if secretAccessKey == "" {
-			logging.ContextUnavailable().Warn("blockstore.s3.credentials.access_secret_key is deprecated. Use instead: blockstore.s3.credentials.secret_access_key.")
-			secretAccessKey = c.Blockstore.S3.Credentials.AccessSecretKey
-		}
-		cfg.Credentials = credentials.NewStaticCredentials(
-			c.Blockstore.S3.Credentials.AccessKeyID.SecureValue(),
-			secretAccessKey.SecureValue(),
-			c.Blockstore.S3.Credentials.SessionToken.SecureValue(),
-		)
-	}
-
-	s3Endpoint := c.Blockstore.S3.Endpoint
-	if len(s3Endpoint) > 0 {
-		cfg = cfg.WithEndpoint(s3Endpoint)
-	}
-	s3ForcePathStyle := c.Blockstore.S3.ForcePathStyle
-	if s3ForcePathStyle {
-		cfg = cfg.WithS3ForcePathStyle(true)
-	}
-	cfg = cfg.WithMaxRetries(c.Blockstore.S3.MaxRetries)
-	return cfg
-}
-
 func (c *Config) BlockstoreType() string {
 	return c.Blockstore.Type
 }
@@ -558,10 +435,22 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 			SessionExpiryWindow: c.Blockstore.S3.WebIdentity.SessionExpiryWindow,
 		}
 	}
+
+	var creds blockparams.S3Credentials
+	if c.Blockstore.S3.Credentials != nil {
+		creds.AccessKeyID = c.Blockstore.S3.Credentials.AccessKeyID.SecureValue()
+		creds.SecretAccessKey = c.Blockstore.S3.Credentials.SecretAccessKey.SecureValue()
+		creds.SessionToken = c.Blockstore.S3.Credentials.SessionToken.SecureValue()
+	}
+
 	return blockparams.S3{
-		AwsConfig:                     c.GetAwsConfig(),
-		StreamingChunkSize:            c.Blockstore.S3.StreamingChunkSize,
-		StreamingChunkTimeout:         c.Blockstore.S3.StreamingChunkTimeout,
+		Region:                        c.Blockstore.S3.Region,
+		Profile:                       c.Blockstore.S3.Profile,
+		CredentialsFile:               c.Blockstore.S3.CredentialsFile,
+		Credentials:                   creds,
+		MaxRetries:                    c.Blockstore.S3.MaxRetries,
+		Endpoint:                      c.Blockstore.S3.Endpoint,
+		ForcePathStyle:                c.Blockstore.S3.ForcePathStyle,
 		DiscoverBucketRegion:          c.Blockstore.S3.DiscoverBucketRegion,
 		SkipVerifyCertificateTestOnly: c.Blockstore.S3.SkipVerifyCertificateTestOnly,
 		ServerSideEncryption:          c.Blockstore.S3.ServerSideEncryption,
@@ -569,6 +458,9 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 		PreSignedExpiry:               c.Blockstore.S3.PreSignedExpiry,
 		DisablePreSigned:              c.Blockstore.S3.DisablePreSigned,
 		DisablePreSignedUI:            c.Blockstore.S3.DisablePreSignedUI,
+		DisablePreSignedMultipart:     c.Blockstore.S3.DisablePreSignedMultipart,
+		ClientLogRetries:              c.Blockstore.S3.ClientLogRetries,
+		ClientLogRequest:              c.Blockstore.S3.ClientLogRequest,
 		WebIdentity:                   webIdentity,
 	}, nil
 }
@@ -614,60 +506,10 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 	}, nil
 }
 
-func (c *Config) AuthEncryptionSecret() []byte {
-	secret := c.Auth.Encrypt.SecretKey
-	if len(secret) == 0 {
-		panic(fmt.Errorf("%w. Please set it to a unique, randomly generated value and store it somewhere safe", ErrMissingSecretKey))
-	}
-	return []byte(secret)
-}
-
-const floatSumTolerance = 1e-6
-
-// GetCommittedTierFSParams returns parameters for building a tierFS.  Caller must separately
-// build and populate Adapter.
-func (c *Config) GetCommittedTierFSParams(adapter block.Adapter) (*pyramidparams.ExtParams, error) {
-	rangePro := c.Committed.LocalCache.RangeProportion
-	metaRangePro := c.Committed.LocalCache.MetaRangeProportion
-
-	if math.Abs(rangePro+metaRangePro-1) > floatSumTolerance {
-		return nil, fmt.Errorf("range_proportion(%f) and metarange_proportion(%f): %w", rangePro, metaRangePro, ErrInvalidProportion)
-	}
-
-	localCacheDir, err := homedir.Expand(c.Committed.LocalCache.Dir)
-	if err != nil {
-		return nil, fmt.Errorf("expand %s: %w", c.Committed.LocalCache.Dir, err)
-	}
-
-	logger := logging.ContextUnavailable().WithField("module", "pyramid")
-	return &pyramidparams.ExtParams{
-		RangeAllocationProportion:     rangePro,
-		MetaRangeAllocationProportion: metaRangePro,
-		SharedParams: pyramidparams.SharedParams{
-			Logger:             logger,
-			Adapter:            adapter,
-			BlockStoragePrefix: c.Committed.BlockStoragePrefix,
-			Local: pyramidparams.LocalDiskParams{
-				BaseDir:             localCacheDir,
-				TotalAllocatedBytes: c.Committed.LocalCache.SizeBytes,
-			},
-			PebbleSSTableCacheSizeBytes: c.Committed.SSTable.Memory.CacheSizeBytes,
-		},
-	}, nil
-}
-
-func (c *Config) CommittedParams() committed.Params {
-	return committed.Params{
-		MinRangeSizeBytes:          c.Committed.Permanent.MinRangeSizeBytes,
-		MaxRangeSizeBytes:          c.Committed.Permanent.MaxRangeSizeBytes,
-		RangeSizeEntriesRaggedness: c.Committed.Permanent.RangeRaggednessEntries,
-		MaxUploaders:               c.Committed.LocalCache.MaxUploadersPerWriter,
-	}
-}
-
 const (
 	AuthRBACSimplified = "simplified"
 	AuthRBACExternal   = "external"
+	AuthRBACInternal   = "internal"
 )
 
 func (c *Config) IsAuthUISimplified() bool {
@@ -687,12 +529,4 @@ func (c *Config) UISnippets() []apiparams.CodeSnippet {
 		})
 	}
 	return snippets
-}
-
-func (c *Config) NewGravelerBackgroundLimiter() ratelimit.Limiter {
-	rateLimit := c.Graveler.Background.RateLimit
-	if rateLimit == 0 {
-		return ratelimit.NewUnlimited()
-	}
-	return ratelimit.New(rateLimit)
 }

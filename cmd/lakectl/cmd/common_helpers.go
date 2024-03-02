@@ -18,7 +18,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/pflag"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/term"
@@ -39,11 +39,17 @@ const (
 const (
 	internalPageSize           = 1000 // when retrieving all records, use this page size under the hood
 	defaultAmountArgumentValue = 100  // when no amount is specified, use this value for the argument
+
+	defaultPollInterval = 3 * time.Second // default interval while pulling tasks status
+	minimumPollInterval = time.Second     // minimum interval while pulling tasks status
+	defaultPollTimeout  = time.Hour       // default expiry for pull status with no update
 )
 
 const resourceListTemplate = `{{.Table | table -}}
 {{.Pagination | paginate }}
 `
+
+var ErrTaskNotCompleted = errors.New("task not completed")
 
 //nolint:gochecknoinits
 func init() {
@@ -145,8 +151,7 @@ func WriteTo(tpl string, data interface{}, w io.Writer) {
 			var b strings.Builder
 			for _, row := range tab.Rows {
 				for ic, cell := range row {
-					callValue := fmt.Sprintf("%s", cell)
-					b.WriteString(callValue)
+					b.WriteString(fmt.Sprint(cell))
 					if ic < len(row)-1 {
 						b.WriteString("\t")
 					}
@@ -184,7 +189,7 @@ func DieFmt(msg string, args ...interface{}) {
 }
 
 type APIError interface {
-	GetPayload() *api.Error
+	GetPayload() *apigen.Error
 }
 
 func DieErr(err error) {
@@ -250,7 +255,7 @@ func DieOnHTTPError(httpResponse *http.Response) {
 	}
 }
 
-func PrintTable(rows [][]interface{}, headers []interface{}, paginator *api.Pagination, amount int) {
+func PrintTable(rows [][]interface{}, headers []interface{}, paginator *apigen.Pagination, amount int) {
 	ctx := struct {
 		Table      *Table
 		Pagination *Pagination
@@ -274,10 +279,10 @@ func PrintTable(rows [][]interface{}, headers []interface{}, paginator *api.Pagi
 func MustParseRepoURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
-		DieFmt("Invalid '%s': %s", name, err)
+		DieFmt("%s %s", name, err)
 	}
-	if !u.IsRepository() {
-		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidRepoURI)
+	if err = u.ValidateRepository(); err != nil {
+		DieFmt("%s %s", name, err)
 	}
 	return u
 }
@@ -285,10 +290,10 @@ func MustParseRepoURI(name, s string) *uri.URI {
 func MustParseRefURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
-		DieFmt("Invalid '%s': %s", name, err)
+		DieFmt("%s %s", name, err)
 	}
-	if !u.IsRef() {
-		DieFmt("Invalid %s: %s", name, uri.ErrInvalidRefURI)
+	if err = u.ValidateRef(); err != nil {
+		DieFmt("%s %s", name, err)
 	}
 	return u
 }
@@ -296,10 +301,10 @@ func MustParseRefURI(name, s string) *uri.URI {
 func MustParseBranchURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
-		DieFmt("Invalid '%s': %s", name, err)
+		DieFmt("%s %s", name, err)
 	}
-	if !u.IsBranch() {
-		DieFmt("Invalid %s: %s", name, uri.ErrInvalidBranchURI)
+	if err = u.ValidateBranch(); err != nil {
+		DieFmt("%s %s", name, err)
 	}
 	return u
 }
@@ -307,10 +312,10 @@ func MustParseBranchURI(name, s string) *uri.URI {
 func MustParsePathURI(name, s string) *uri.URI {
 	u, err := uri.ParseWithBaseURI(s, baseURI)
 	if err != nil {
-		DieFmt("Invalid '%s': %s", name, err)
+		DieFmt("%s %s", name, err)
 	}
-	if !u.IsFullyQualified() {
-		DieFmt("Invalid '%s': %s", name, uri.ErrInvalidPathURI)
+	if err = u.ValidateFullyQualified(); err != nil {
+		DieFmt("%s %s", name, err)
 	}
 	return u
 }
@@ -400,7 +405,7 @@ func OpenByPath(path string) (io.ReadSeekCloser, error) {
 	return temp, nil
 }
 
-// Must return the call value or die with err if err is not nil
+// Must return the call value or die with error if err is not nil
 func Must[T any](v T, err error) T {
 	if err != nil {
 		DieErr(err)

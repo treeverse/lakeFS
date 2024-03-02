@@ -1,7 +1,6 @@
 package sig
 
 import (
-	"context"
 	"crypto/hmac"
 	"crypto/sha1" //nolint:gosec
 	"encoding/base64"
@@ -33,7 +32,7 @@ var (
 //nolint:gochecknoinits
 func init() {
 	interestingResourcesContainer := []string{
-		"accelerate", "acl", "cors", "defaultObjectAcl",
+		"accelerate", "acl", "copy-source", "cors", "defaultObjectAcl",
 		"location", "logging", "partNumber", "policy",
 		"requestPayment", "torrent",
 		"versioning", "versionId", "versions", "website",
@@ -76,23 +75,26 @@ func (a v2Context) GetAccessKeyID() string {
 }
 
 type V2SigAuthenticator struct {
-	r      *http.Request
-	sigCtx v2Context
+	req        *http.Request
+	bareDomain string
+	sigCtx     v2Context
 }
 
-func NewV2SigAuthenticator(r *http.Request) *V2SigAuthenticator {
+func NewV2SigAuthenticator(r *http.Request, bareDomain string) *V2SigAuthenticator {
 	return &V2SigAuthenticator{
-		r: r,
+		req:        r,
+		bareDomain: bareDomain,
 	}
 }
 
-func (a *V2SigAuthenticator) Parse(ctx context.Context) (SigContext, error) {
+func (a *V2SigAuthenticator) Parse() (SigContext, error) {
+	ctx := a.req.Context()
 	var sigCtx v2Context
-	headerValue := a.r.Header.Get(v2authHeaderName)
+	headerValue := a.req.Header.Get(v2authHeaderName)
 	if len(headerValue) > 0 {
 		match := V2AuthHeaderRegexp.FindStringSubmatch(headerValue)
 		if len(match) == 0 {
-			logging.FromContext(ctx).WithField("header", v2authHeaderName).Error("log header does not match v2 structure")
+			logging.FromContext(ctx).Error("log header does not match v2 structure")
 			return sigCtx, ErrHeaderMalformed
 		}
 		result := make(map[string]string)
@@ -105,7 +107,7 @@ func (a *V2SigAuthenticator) Parse(ctx context.Context) (SigContext, error) {
 		// parse signature
 		sig, err := base64.StdEncoding.DecodeString(result["Signature"])
 		if err != nil {
-			logging.FromContext(ctx).WithField("header", v2authHeaderName).Error("log header does not match v2 structure (isn't proper base64)")
+			logging.FromContext(ctx).Error("log header does not match v2 structure (isn't proper base64)")
 			return sigCtx, ErrHeaderMalformed
 		}
 		sigCtx.signature = sig
@@ -220,7 +222,7 @@ func buildPath(host string, bareDomain string, path string) string {
 	return ""
 }
 
-func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) error {
+func (a *V2SigAuthenticator) Verify(creds *model.Credential) error {
 	/*
 		s3 sigV2 implementation:
 		the s3 signature is somewhat different from general aws signature implementation.
@@ -240,10 +242,10 @@ func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) 
 	*/
 
 	// Prefer the raw path if it exists -- *this* is what SigV2 signs
-	rawPath := a.r.URL.EscapedPath()
+	rawPath := a.req.URL.EscapedPath()
 
-	path := buildPath(a.r.Host, bareDomain, rawPath)
-	stringToSign := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
+	path := buildPath(a.req.Host, a.bareDomain, rawPath)
+	stringToSign := canonicalString(a.req.Method, a.req.URL.Query(), path, a.req.Header)
 	digest := signCanonicalString(stringToSign, []byte(creds.SecretAccessKey))
 	if !Equal(digest, a.sigCtx.signature) {
 		return errors.ErrSignatureDoesNotMatch

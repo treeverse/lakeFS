@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/kv"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 )
 
 type MockDriver struct {

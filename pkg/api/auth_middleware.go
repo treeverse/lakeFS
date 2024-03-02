@@ -11,12 +11,11 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
-	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/sessions"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	oidc_encoding "github.com/treeverse/lakefs/pkg/auth/oidc/encoding"
-	"github.com/treeverse/lakefs/pkg/config"
+	oidcencoding "github.com/treeverse/lakefs/pkg/auth/oidc/encoding"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -42,15 +41,31 @@ func extractSecurityRequirements(router routers.Router, r *http.Request) (openap
 	return *route.Operation.Security, nil
 }
 
-func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, oidcConfig *config.OIDC, cookieAuthconfig *config.CookieAuthVerification) (func(next http.Handler) http.Handler, error) {
-	swagger, err := GetSwagger()
+type OIDCConfig struct {
+	ValidateIDTokenClaims  map[string]string
+	DefaultInitialGroups   []string
+	InitialGroupsClaimName string
+	FriendlyNameClaimName  string
+}
+
+type CookieAuthConfig struct {
+	ValidateIDTokenClaims   map[string]string
+	DefaultInitialGroups    []string
+	InitialGroupsClaimName  string
+	FriendlyNameClaimName   string
+	ExternalUserIDClaimName string
+	AuthSource              string
+}
+
+func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig) (func(next http.Handler) http.Handler, error) {
+	swagger, err := apigen.GetSwagger()
 	if err != nil {
 		return nil, err
 	}
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			user, err := checkSecurityRequirements(r, swagger.Security, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthconfig)
+			user, err := checkSecurityRequirements(r, swagger.Security, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
 			if err != nil {
 				writeError(w, r, http.StatusUnauthorized, err)
 				return
@@ -64,7 +79,7 @@ func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticat
 	}, nil
 }
 
-func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *config.OIDC, cookieAuthconfig *config.CookieAuthVerification) func(next http.Handler) http.Handler {
+func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig) func(next http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
 		panic(err)
@@ -81,7 +96,7 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				writeError(w, r, http.StatusBadRequest, err)
 				return
 			}
-			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthconfig)
+			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
 			if err != nil {
 				writeError(w, r, http.StatusUnauthorized, err)
 				return
@@ -103,8 +118,8 @@ func checkSecurityRequirements(r *http.Request,
 	authenticator auth.Authenticator,
 	authService auth.Service,
 	sessionStore sessions.Store,
-	oidcConfig *config.OIDC,
-	cookieAuthConfig *config.CookieAuthVerification,
+	oidcConfig *OIDCConfig,
+	cookieAuthConfig *CookieAuthConfig,
 ) (*model.User, error) {
 	ctx := r.Context()
 	var user *model.User
@@ -186,8 +201,8 @@ func enhanceWithFriendlyName(user *model.User, friendlyName string) *model.User 
 // userFromSAML returns a user from an existing SAML session.
 // If the user doesn't exist on the lakeFS side, it is created.
 // This function does not make any calls to an external provider.
-func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, cookieAuthConfig *config.CookieAuthVerification) (*model.User, error) {
-	idTokenClaims, ok := authSession.Values[SAMLTokenClaimsSessionKey].(oidc_encoding.Claims)
+func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, cookieAuthConfig *CookieAuthConfig) (*model.User, error) {
+	idTokenClaims, ok := authSession.Values[SAMLTokenClaimsSessionKey].(oidcencoding.Claims)
 	if idTokenClaims == nil {
 		return nil, nil
 	}
@@ -275,8 +290,8 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 // userFromOIDC returns a user from an existing OIDC session.
 // If the user doesn't exist on the lakeFS side, it is created.
 // This function does not make any calls to an external provider.
-func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *config.OIDC) (*model.User, error) {
-	idTokenClaims, ok := authSession.Values[IDTokenClaimsSessionKey].(oidc_encoding.Claims)
+func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.Service, authSession *sessions.Session, oidcConfig *OIDCConfig) (*model.User, error) {
+	idTokenClaims, ok := authSession.Values[IDTokenClaimsSessionKey].(oidcencoding.Claims)
 	if idTokenClaims == nil {
 		return nil, nil
 	}
@@ -378,19 +393,4 @@ func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.A
 		return nil, ErrAuthenticatingRequest
 	}
 	return user, nil
-}
-
-func VerifyResetPasswordToken(ctx context.Context, authService auth.Service, token string) (*jwt.StandardClaims, error) {
-	secret := authService.SecretStore().SharedSecret()
-	claims, err := auth.VerifyTokenWithAudience(secret, token, auth.ResetPasswordAudience)
-	if err != nil {
-		return nil, err
-	}
-	tokenID := claims.Id
-	tokenExpiresAt := claims.ExpiresAt
-	err = authService.ClaimTokenIDOnce(ctx, tokenID, tokenExpiresAt)
-	if err != nil {
-		return nil, err
-	}
-	return claims, nil
 }

@@ -18,7 +18,7 @@ There are several ways to use lakeFS with Spark:
 
 * [The S3-compatible API](#s3-compatible-api): Scalable and best to get started. <span class="badge">All Storage Vendors</span>
 * [The lakeFS FileSystem](#lakefs-hadoop-filesystem): Direct data flow from client to storage, highly scalable. <span class="badge">AWS S3</span>
-   * [lakeFS FileSystem in Presigned mode](#hadoop-filesystem-in-presigned-mode-beta): Best of both worlds, but still in beta. <span class="badge mr-1">AWS S3</span><span class="badge">Azure Blob</span>
+   * [lakeFS FileSystem in Presigned mode](#hadoop-filesystem-in-presigned-mode): Best of both worlds. <span class="badge mr-1">AWS S3</span><span class="badge">Azure Blob</span>
 
 See how SimilarWeb is using lakeFS with Spark to [manage algorithm changes in data pipelines](https://grdoron.medium.com/a-smarter-way-to-manage-algorithm-changes-in-data-pipelines-with-lakefs-a4e284f8c756).
 {: .note }
@@ -390,6 +390,36 @@ spark.hadoop.fs.lakefs.endpoint=â€˜https://example-org.us-east-1.lakefscloud.ioâ
 
 For more details about [Mounting cloud object storage on Databricks](https://docs.databricks.com/dbfs/mounts.html).
 
+### Configuring Databricks SQL Warehouse with the S3-compatible API
+
+A SQL warehouse is a compute resource that lets you run SQL commands on data 
+objects within Databricks SQL.
+
+If you use Databricks SQL warehouse, you can take advantage of the lakeFS 
+S3-compatible API with the S3A FileSystem. 
+
+Define your SQL Warehouse configurations in the following way:
+
+1. In the top right, select `Admin Settings` and then `SQL warehouse settings`.
+
+2. Under `Data Access Configuration` add the following key-value pairs for 
+   each lakeFS repository you want to access:
+
+```
+spark.hadoop.fs.s3a.impl shaded.databricks.org.apache.hadoop.fs.s3a.S3AFileSystem
+spark.hadoop.fs.s3a.bucket.example-repo.access.key AKIAIOSFODNN7EXAMPLE // The access key to your lakeFS server
+spark.hadoop.fs.s3a.bucket.example-repo.secret.key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY // The secret key to your lakeFS server
+spark.hadoop.fs.s3a.bucket.example-repo.endpoint https://example-org.us-east-1.lakefscloud.io // The endpoint of your lakeFS server
+spark.hadoop.fs.s3a.bucket.example-repo.path.style.access true               
+```
+
+3. Changes are applied automatically after the SQL Warehouse restarts.
+4. You can now use the lakeFS S3-compatible API with your SQL Warehouse, e.g.:
+
+```sql
+SELECT * FROM delta.`s3a://example-repo/main/datasets/delta-table/` LIMIT 100
+```
+
 ## lakeFS Hadoop FileSystem
 
 If you're using lakeFS on top of S3, this mode will enhance your application's performance.
@@ -412,7 +442,7 @@ interact with your data on lakeFS.
 Add the package to your `spark-submit` command:
 
   ```
-  --packages io.lakefs:hadoop-lakefs-assembly:0.1.15
+  --packages io.lakefs:hadoop-lakefs-assembly:0.2.1
   ```
 
   </div>
@@ -420,7 +450,7 @@ Add the package to your `spark-submit` command:
 In  your cluster settings, under the _Libraries_ tab, add the following Maven package:
 
 ```
-io.lakefs:hadoop-lakefs-assembly:0.1.15
+io.lakefs:hadoop-lakefs-assembly:0.2.1
 ```
 
 Once installed, it should look something like this:
@@ -433,7 +463,7 @@ Once installed, it should look something like this:
 Add the package to your `pyspark` or `spark-submit` command:
 
   ```
-  --packages io.lakefs:hadoop-lakefs-assembly:0.1.15
+  --packages io.lakefs:hadoop-lakefs-assembly:0.2.1
   ```
 
 Add the configuration to access the S3 bucket used by lakeFS to your `pyspark` or `spark-submit` command or add this configuration at the Cloudera cluster level (see below):
@@ -488,7 +518,7 @@ spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAIOSFODNN7EXAMPLE' \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.15 \
+              --packages io.lakefs:hadoop-lakefs-assembly:0.2.1 \
               io.example.ExampleClass
 ```
   </div>
@@ -597,7 +627,7 @@ df.write.partitionBy("example-column").parquet(s"lakefs://${repo}/${branch}/outp
 
 The data is now created in lakeFS as new changes in your branch. You can now commit these changes or revert them.
 
-## Hadoop FileSystem in Presigned mode <sup>BETA</sup>
+## Hadoop FileSystem in Presigned mode
 
 _Available starting version 0.1.13 of the FileSystem_
 
@@ -617,13 +647,12 @@ When using this mode, you don't need to configure the client with access to your
   </ul> 
   <div markdown="1" id="config-cli">
 ```shell
-spark-shell --conf spark.hadoop.fs.access.mode=presigned \
+spark-shell --conf spark.hadoop.fs.lakefs.access.mode=presigned \
               --conf spark.hadoop.fs.lakefs.impl=io.lakefs.LakeFSFileSystem \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.1.15 \
-              io.example.ExampleClass
+              --packages io.lakefs:hadoop-lakefs-assembly:0.2.1
 ```
   </div>
   <div markdown="1" id="config-scala">

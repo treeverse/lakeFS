@@ -4,7 +4,8 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 const actionsRunsListTemplate = `{{.ActionsRunsTable | table -}}
@@ -12,10 +13,10 @@ const actionsRunsListTemplate = `{{.ActionsRunsTable | table -}}
 `
 
 var actionsRunsListCmd = &cobra.Command{
-	Use:               "list",
+	Use:               "list <repository URI> [--branch <branch>] [--commit <commit_id>]",
 	Short:             "List runs",
 	Long:              `List all runs on a repository optional filter by branch or commit`,
-	Example:           "lakectl actions runs list lakefs://<repository> [--branch <branch>] [--commit <commit_id>]",
+	Example:           "lakectl actions runs list " + myRepoExample + " --branch " + myBranchExample + " --commit " + myDigestExample,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -23,7 +24,7 @@ var actionsRunsListCmd = &cobra.Command{
 		after := Must(cmd.Flags().GetString("after"))
 		commit := Must(cmd.Flags().GetString("commit"))
 		branch := Must(cmd.Flags().GetString("branch"))
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("repository URI", args[0])
 		if commit != "" && branch != "" {
 			Die("Can't specify 'commit' and 'branch'", 1)
 		}
@@ -41,9 +42,9 @@ var actionsRunsListCmd = &cobra.Command{
 			optionalCommit = &commit
 		}
 
-		resp, err := client.ListRepositoryRunsWithResponse(ctx, u.Repository, &api.ListRepositoryRunsParams{
-			After:  api.PaginationAfterPtr(after),
-			Amount: api.PaginationAmountPtr(amount),
+		resp, err := client.ListRepositoryRunsWithResponse(ctx, u.Repository, &apigen.ListRepositoryRunsParams{
+			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 			Branch: optionalBranch,
 			Commit: optionalCommit,
 		})

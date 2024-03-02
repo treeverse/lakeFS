@@ -5,21 +5,22 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 var fsStatCmd = &cobra.Command{
-	Use:               "stat <path uri>",
+	Use:               "stat <path URI>",
 	Short:             "View object metadata",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		pathURI := MustParsePathURI("path", args[0])
-		preSign := Must(cmd.Flags().GetBool("pre-sign"))
+		pathURI := MustParsePathURI("path URI", args[0])
 		client := getClient()
-		resp, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &api.StatObjectParams{
+		preSignMode := getPresignMode(cmd, client)
+
+		resp, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &apigen.StatObjectParams{
 			Path:         *pathURI.Path,
-			Presign:      swag.Bool(preSign),
+			Presign:      swag.Bool(preSignMode.Enabled),
 			UserMetadata: swag.Bool(true),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
@@ -49,7 +50,6 @@ Metadata:
 
 //nolint:gochecknoinits
 func init() {
-	fsStatCmd.Flags().Bool("pre-sign", false, "Request pre-sign for physical address")
-
+	withPresignFlag(fsStatCmd)
 	fsCmd.AddCommand(fsStatCmd)
 }

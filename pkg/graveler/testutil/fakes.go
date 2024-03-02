@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
@@ -79,21 +80,21 @@ func (c *CommittedFake) Compare(context.Context, graveler.StorageNamespace, grav
 	return c.DiffIterator, nil
 }
 
-func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID, _ graveler.MergeStrategy) (graveler.MetaRangeID, error) {
+func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID, _ graveler.MergeStrategy, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}
 	return c.MetaRangeID, nil
 }
 
-func (c *CommittedFake) Import(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.MetaRangeID, _ []graveler.Prefix) (graveler.MetaRangeID, error) {
+func (c *CommittedFake) Import(_ context.Context, _ graveler.StorageNamespace, _, _ graveler.MetaRangeID, _ []graveler.Prefix, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}
 	return c.MetaRangeID, nil
 }
 
-func (c *CommittedFake) Commit(_ context.Context, _ graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator) (graveler.MetaRangeID, graveler.DiffSummary, error) {
+func (c *CommittedFake) Commit(_ context.Context, _ graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator, allowEmpty bool, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	if c.Err != nil {
 		return "", graveler.DiffSummary{}, c.Err
 	}
@@ -206,10 +207,7 @@ func (s *StagingFake) DropKey(_ context.Context, _ graveler.StagingToken, key gr
 	return nil
 }
 
-func (s *StagingFake) List(_ context.Context, st graveler.StagingToken, _ int) (graveler.ValueIterator, error) {
-	if s.Err != nil {
-		return nil, s.Err
-	}
+func (s *StagingFake) List(_ context.Context, st graveler.StagingToken, _ int) graveler.ValueIterator {
 	if s.Values != nil && s.Values[st.String()] != nil {
 		keys := make([]string, 0)
 		for k := range s.Values[st.String()] {
@@ -223,9 +221,9 @@ func (s *StagingFake) List(_ context.Context, st graveler.StagingToken, _ int) (
 				Value: s.Values[st.String()][k],
 			})
 		}
-		return NewValueIteratorFake(values), nil
+		return NewValueIteratorFake(values)
 	}
-	return s.ValueIterator, nil
+	return s.ValueIterator
 }
 
 type AddedCommitData struct {
@@ -242,7 +240,7 @@ type RefsFake struct {
 	ListCommitsRes      graveler.CommitIterator
 	Refs                map[graveler.Ref]*graveler.ResolvedRef
 	ListTagsRes         graveler.TagIterator
-	addressTokenIter    graveler.AddressTokenIterator
+	linkAddressIterator graveler.LinkAddressIterator
 	CommitIter          graveler.CommitIterator
 	RefType             graveler.ReferenceType
 	Branch              *graveler.Branch
@@ -341,7 +339,7 @@ func (m *RefsFake) ListRepositories(context.Context) (graveler.RepositoryIterato
 	return m.ListRepositoriesRes, nil
 }
 
-func (m *RefsFake) DeleteRepository(context.Context, graveler.RepositoryID) error {
+func (m *RefsFake) DeleteRepository(context.Context, graveler.RepositoryID, ...graveler.SetOptionsFunc) error {
 	return nil
 }
 
@@ -424,7 +422,7 @@ func (m *RefsFake) FindMergeBase(context.Context, *graveler.RepositoryRecord, ..
 	return &graveler.Commit{}, nil
 }
 
-func (m *RefsFake) Log(context.Context, *graveler.RepositoryRecord, graveler.CommitID, bool) (graveler.CommitIterator, error) {
+func (m *RefsFake) Log(context.Context, *graveler.RepositoryRecord, graveler.CommitID, bool, *time.Time) (graveler.CommitIterator, error) {
 	return m.CommitIter, nil
 }
 
@@ -436,8 +434,8 @@ func (m *RefsFake) SetLinkAddress(context.Context, *graveler.RepositoryRecord, s
 	return nil
 }
 
-func (m *RefsFake) ListLinkAddresses(context.Context, *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
-	return m.addressTokenIter, nil
+func (m *RefsFake) ListLinkAddresses(context.Context, *graveler.RepositoryRecord) (graveler.LinkAddressIterator, error) {
+	return m.linkAddressIterator, nil
 }
 
 func (m *RefsFake) IsLinkAddressExpired(*graveler.LinkAddressData) (bool, error) {
@@ -892,6 +890,11 @@ func (m *RefsFake) GetRepositoryMetadata(_ context.Context, _ graveler.Repositor
 }
 
 func (m *RefsFake) SetRepositoryMetadata(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.RepoMetadataUpdateFunc) error {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (m *RefsFake) CreateCommitRecord(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.CommitID, _ graveler.Commit) error {
 	// TODO implement me
 	panic("implement me")
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/diff"
 	"github.com/treeverse/lakefs/pkg/local"
 	"golang.org/x/sync/errgroup"
@@ -19,7 +19,7 @@ var localStatusCmd = &cobra.Command{
 	Short: "show modifications (both remote and local) to the directory and the remote location it tracks",
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
-		_, localPath := getLocalArgs(args, false, false)
+		_, localPath := getSyncArgs(args, false, false)
 		abs, err := filepath.Abs(localPath)
 		if err != nil {
 			DieErr(err)
@@ -36,6 +36,9 @@ var localStatusCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+
+		dieOnInterruptedOperation(LocalOperation(idx.ActiveOperation), false)
+
 		remoteBase := remote.WithRef(idx.AtHead)
 		client := getClient()
 		c := localDiff(cmd.Context(), client, remoteBase, idx.LocalPath())
@@ -43,7 +46,7 @@ var localStatusCmd = &cobra.Command{
 		// compare both
 		if !localOnly {
 			fmt.Printf("diff '%s' <--> '%s'...\n", remoteBase, remote)
-			d := make(chan api.Diff, maxDiffPageSize)
+			d := make(chan apigen.Diff, maxDiffPageSize)
 			var wg errgroup.Group
 			wg.Go(func() error {
 				return diff.StreamRepositoryDiffs(cmd.Context(), client, remoteBase, remote, swag.StringValue(remoteBase.Path), d, false)

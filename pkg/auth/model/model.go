@@ -21,7 +21,6 @@ const (
 	StatementEffectAllow   = "allow"
 	StatementEffectDeny    = "deny"
 	PartitionKey           = "auth"
-	PackageName            = "auth"
 	groupsPrefix           = "groups"
 	groupsUsersPrefix      = "gUsers"
 	groupsPoliciesPrefix   = "gPolicies"
@@ -123,6 +122,13 @@ type User struct {
 	ExternalID        *string `db:"external_id" json:"external_id"`
 }
 
+func (u *User) Committer() string {
+	if u.Email != nil && *u.Email != "" {
+		return *u.Email
+	}
+	return u.Username
+}
+
 type DBUser struct {
 	ID int64 `db:"id"`
 	User
@@ -134,6 +140,7 @@ func ConvertDBID(id int64) string {
 }
 
 type Group struct {
+	ID          string    `db:"id"`
 	CreatedAt   time.Time `db:"created_at"`
 	DisplayName string    `db:"display_name" json:"display_name"`
 }
@@ -257,6 +264,7 @@ func GroupFromProto(pb *GroupData) *Group {
 	return &Group{
 		CreatedAt:   pb.CreatedAt.AsTime(),
 		DisplayName: pb.DisplayName,
+		ID:          pb.DisplayName,
 	}
 }
 
@@ -350,14 +358,6 @@ func protoFromStatements(s *Statements) []*StatementData {
 	return statements
 }
 
-func ConvertUsersList(users []*DBUser) []*User {
-	kvUsers := make([]*User, 0, len(users))
-	for _, u := range users {
-		kvUsers = append(kvUsers, &u.User)
-	}
-	return kvUsers
-}
-
 func ConvertUsersDataList(users []proto.Message) []*User {
 	kvUsers := make([]*User, 0, len(users))
 	for _, u := range users {
@@ -365,25 +365,6 @@ func ConvertUsersDataList(users []proto.Message) []*User {
 		kvUsers = append(kvUsers, UserFromProto(a))
 	}
 	return kvUsers
-}
-
-func ConvertCredList(creds []*DBCredential, username string) []*Credential {
-	res := make([]*Credential, 0, len(creds))
-	for _, c := range creds {
-		res = append(res, &Credential{
-			Username:       username,
-			BaseCredential: c.BaseCredential,
-		})
-	}
-	return res
-}
-
-func ConvertGroupList(groups []*DBGroup) []*Group {
-	res := make([]*Group, 0, len(groups))
-	for _, g := range groups {
-		res = append(res, &g.Group)
-	}
-	return res
 }
 
 func ConvertGroupDataList(group []proto.Message) []*Group {

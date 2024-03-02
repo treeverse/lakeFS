@@ -1,5 +1,4 @@
 import React, {useState} from "react";
-import Layout from "../../lib/components/layout";
 import Row from "react-bootstrap/Row";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
@@ -22,14 +21,6 @@ interface LoginConfig {
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
     const [loginError, setLoginError] = useState(null);
-    const { response, error, loading } = useAPI(() => auth.getAuthCapabilities());
-    if (loading) {
-        return null;
-    }
-
-    const showResetPwd = !error && response && response.forgot_password;
-    const usernamePlaceholder = showResetPwd ? "Email / Access Key ID" : "Access Key ID"
-    const passwordPlaceholder = showResetPwd ? "Password / Secret Access Key" : "Secret Access Key"
     const { next } = router.query;
 
     return (
@@ -53,11 +44,11 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             }
                         }}>
                             <Form.Group controlId="username" className="mb-3">
-                                <Form.Control type="text" placeholder={usernamePlaceholder} autoFocus/>
+                                <Form.Control type="text" placeholder={"Access Key ID"} autoFocus/>
                             </Form.Group>
 
                             <Form.Group controlId="password" className="mb-3">
-                                <Form.Control type="password" placeholder={passwordPlaceholder}/>
+                                <Form.Control type="password" placeholder={"Secret Access Key"}/>
                             </Form.Group>
 
                             {(!!loginError) && <AlertError error={loginError}/>}
@@ -65,10 +56,6 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             <Button variant="primary" type="submit">Login</Button>
                         </Form>
                         <div className={"mt-2 mb-1"}>
-                            { showResetPwd ?
-                                <Button variant="link" className={"text-secondary mt-2"}  onClick={()=> {router.push("/auth/resetpassword")}}>Reset password</Button>
-                                : ""
-                            }
                             { loginConfig.fallback_login_url ?
                                 <Button variant="link" className="text-secondary mt-2" onClick={async ()=> {
                                     loginConfig.login_cookie_names?.forEach(
@@ -108,12 +95,11 @@ const LoginPage = () => {
             return null;
         }
         delete router.query.redirected;
+
         router.push({pathname: '/auth/login', query: router.query})
     }
     return (
-        <Layout logged={false}>
-            <LoginForm loginConfig={loginConfig}/>
-        </Layout>
+        <LoginForm loginConfig={loginConfig}/>
     );
 };
 

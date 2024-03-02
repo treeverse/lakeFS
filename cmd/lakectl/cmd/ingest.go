@@ -9,7 +9,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
@@ -21,11 +22,11 @@ Staged {{ .Objects | yellow }} external objects (total of {{ .Bytes | human_byte
 type stageRequest struct {
 	repository string
 	branch     string
-	params     *api.StageObjectParams
-	body       api.StageObjectJSONRequestBody
+	params     *apigen.StageObjectParams
+	body       apigen.StageObjectJSONRequestBody
 }
 
-func stageWorker(ctx context.Context, client api.ClientWithResponsesInterface, wg *sync.WaitGroup, requests <-chan *stageRequest, responses chan<- *api.StageObjectResponse) {
+func stageWorker(ctx context.Context, client apigen.ClientWithResponsesInterface, wg *sync.WaitGroup, requests <-chan *stageRequest, responses chan<- *apigen.StageObjectResponse) {
 	defer wg.Done()
 	for req := range requests {
 		resp, err := client.StageObjectWithResponse(ctx, req.repository, req.branch, req.params, req.body)
@@ -49,14 +50,14 @@ var ingestCmd = &cobra.Command{
 		from := Must(cmd.Flags().GetString("from"))
 		to := Must(cmd.Flags().GetString("to"))
 		concurrency := Must(cmd.Flags().GetInt("concurrency"))
-		lakefsURI := MustParsePathURI("to", to)
+		lakefsURI := MustParsePathURI("lakeFS path URI", to)
 
 		// initialize worker pool
 		client := getClient()
 		var wg sync.WaitGroup
 		wg.Add(concurrency)
 		requests := make(chan *stageRequest)
-		responses := make(chan *api.StageObjectResponse)
+		responses := make(chan *apigen.StageObjectResponse)
 		for w := 0; w < concurrency; w++ {
 			go stageWorker(ctx, client, &wg, requests, responses)
 		}
@@ -93,10 +94,10 @@ var ingestCmd = &cobra.Command{
 				requests <- &stageRequest{
 					repository: lakefsURI.Repository,
 					branch:     lakefsURI.Ref,
-					params: &api.StageObjectParams{
+					params: &apigen.StageObjectParams{
 						Path: path + key,
 					},
-					body: api.StageObjectJSONRequestBody{
+					body: apigen.StageObjectJSONRequestBody{
 						Checksum:        e.ETag,
 						Mtime:           &mtime,
 						PhysicalAddress: e.Address,
@@ -116,7 +117,7 @@ var ingestCmd = &cobra.Command{
 		elapsed := time.Now()
 		for response := range responses {
 			summary.Objects += 1
-			summary.Bytes += api.Int64Value(response.JSON201.SizeBytes)
+			summary.Bytes += apiutil.Value(response.JSON201.SizeBytes)
 
 			if verbose {
 				Write("Staged "+fsStatTemplate+"\n", response.JSON201)

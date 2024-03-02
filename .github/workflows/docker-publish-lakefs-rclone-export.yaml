@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Extract version
         shell: bash
@@ -32,7 +32,7 @@ jobs:
         id: version
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
@@ -42,7 +42,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Login to DockerHub
         uses: docker/login-action@v2
@@ -51,7 +51,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       
       - name: Build and push image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           context: deployments/tools/export
           push: true

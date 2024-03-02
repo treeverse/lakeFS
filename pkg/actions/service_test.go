@@ -51,10 +51,10 @@ func (c *ActionStatsMockCollector) CollectEvents(ev stats.Event, count uint64) {
 	c.Hits[ev.Name] += int(count)
 }
 
-func (c *ActionStatsMockCollector) CollectMetadata(_ *stats.Metadata)       {}
-func (c *ActionStatsMockCollector) SetInstallationID(_ string)              {}
-func (c *ActionStatsMockCollector) CollectCommPrefs(_, _ string, _, _ bool) {}
-func (c *ActionStatsMockCollector) Close()                                  {}
+func (c *ActionStatsMockCollector) CollectMetadata(_ *stats.Metadata)  {}
+func (c *ActionStatsMockCollector) SetInstallationID(_ string)         {}
+func (c *ActionStatsMockCollector) CollectCommPrefs(_ stats.CommPrefs) {}
+func (c *ActionStatsMockCollector) Close()                             {}
 
 type getService func(t *testing.T, ctx context.Context, source actions.Source, writer actions.OutputWriter, stats stats.Collector, runHooks bool) actions.Service
 
@@ -63,7 +63,8 @@ func GetKVService(t *testing.T, ctx context.Context, source actions.Source, writ
 	kvStore := kvtest.GetStore(ctx, t)
 	cfg := actions.Config{Enabled: runHooks}
 	cfg.Lua.NetHTTPEnabled = true
-	return actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, writer, &actions.DecreasingIDGenerator{}, stats, cfg)
+	cfg.Env.Enabled = true
+	return actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, writer, &actions.DecreasingIDGenerator{}, stats, cfg, "")
 }
 
 func TestServiceRun(t *testing.T) {

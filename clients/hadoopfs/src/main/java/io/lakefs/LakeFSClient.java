@@ -1,7 +1,7 @@
 package io.lakefs;
 
-import io.lakefs.clients.api.*;
-import io.lakefs.clients.api.auth.HttpBasicAuth;
+import io.lakefs.clients.sdk.*;
+import io.lakefs.clients.sdk.auth.HttpBasicAuth;
 import org.apache.hadoop.conf.Configuration;
 
 import java.io.IOException;
@@ -18,6 +18,7 @@ public class LakeFSClient {
     private final RepositoriesApi repositoriesApi;
     private final BranchesApi branchesApi;
     private final ConfigApi configApi;
+    private final InternalApi internalApi;
 
     public LakeFSClient(String scheme, Configuration conf) throws IOException {
         String accessKey = FSConfiguration.get(conf, scheme, Constants.ACCESS_KEY_KEY_SUFFIX);
@@ -30,7 +31,7 @@ public class LakeFSClient {
             throw new IOException("Missing lakeFS secret key");
         }
 
-        ApiClient apiClient = io.lakefs.clients.api.Configuration.getDefaultApiClient();
+        ApiClient apiClient = io.lakefs.clients.sdk.Configuration.getDefaultApiClient();
         String endpoint = FSConfiguration.get(conf, scheme, Constants.ENDPOINT_KEY_SUFFIX, Constants.DEFAULT_CLIENT_ENDPOINT);
         if (endpoint.endsWith(Constants.SEPARATOR)) {
             endpoint = endpoint.substring(0, endpoint.length() - 1);
@@ -41,27 +42,28 @@ public class LakeFSClient {
         basicAuth.setUsername(accessKey);
         basicAuth.setPassword(secretKey);
 
+        String sessionId = FSConfiguration.get(conf, scheme, Constants.SESSION_ID);
+        if (sessionId != null) {
+            apiClient.addDefaultCookie("sessionId", sessionId);
+        }
+
         this.objectsApi = new ObjectsApi(apiClient);
         this.stagingApi = new StagingApi(apiClient);
         this.repositoriesApi = new RepositoriesApi(apiClient);
         this.branchesApi = new BranchesApi(apiClient);
         this.configApi = new ConfigApi(apiClient);
+        this.internalApi = new InternalApi(apiClient);
     }
 
-    public ObjectsApi getObjectsApi() {
-        return objectsApi;
-    }
+    public ObjectsApi getObjectsApi() { return objectsApi; }
 
-    public StagingApi getStagingApi() {
-        return stagingApi;
-    }
+    public StagingApi getStagingApi() { return stagingApi; }
 
     public RepositoriesApi getRepositoriesApi() { return repositoriesApi; }
 
     public BranchesApi getBranchesApi() { return branchesApi; }
 
-    public ConfigApi getConfigApi() {
-        return configApi;
-    }
+    public ConfigApi getConfigApi() { return configApi; }
 
+    public InternalApi getInternalApi() { return internalApi; }
 }

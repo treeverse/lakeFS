@@ -14,12 +14,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/schollz/progressbar/v3"
-	vegeta "github.com/tsenart/vegeta/v12/lib"
-
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
+	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
 type Loader struct {
@@ -81,7 +81,7 @@ func (t *Loader) Run() error {
 	_ = t.Reader.Close()
 	if t.Config.RepoName == "" && !t.Config.KeepRepo {
 		ctx := context.Background()
-		resp, err := apiClient.DeleteRepositoryWithResponse(ctx, t.NewRepoName)
+		resp, err := apiClient.DeleteRepositoryWithResponse(ctx, t.NewRepoName, &apigen.DeleteRepositoryParams{})
 		if err != nil {
 			return err
 		}
@@ -106,15 +106,15 @@ func (t *Loader) Run() error {
 	return nil
 }
 
-func (t *Loader) createRepo(apiClient api.ClientWithResponsesInterface) (string, error) {
+func (t *Loader) createRepo(apiClient apigen.ClientWithResponsesInterface) (string, error) {
 	if t.Config.RepoName != "" {
 		// using an existing repo, no need to create one
 		return t.Config.RepoName, nil
 	}
 	t.NewRepoName = uuid.New().String()
 	ctx := context.Background()
-	resp, err := apiClient.CreateRepositoryWithResponse(ctx, &api.CreateRepositoryParams{}, api.CreateRepositoryJSONRequestBody{
-		DefaultBranch:    api.StringPtr("main"),
+	resp, err := apiClient.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    apiutil.Ptr("main"),
 		Name:             t.NewRepoName,
 		StorageNamespace: t.Config.StorageNamespace,
 	})
@@ -127,7 +127,7 @@ func (t *Loader) createRepo(apiClient api.ClientWithResponsesInterface) (string,
 	return t.NewRepoName, nil
 }
 
-func (t *Loader) getClient() (api.ClientWithResponsesInterface, error) {
+func (t *Loader) getClient() (apigen.ClientWithResponsesInterface, error) {
 	if t.Config.RepoName != "" {
 		// using an existing repo, no need to create a client
 		return nil, nil
@@ -137,11 +137,11 @@ func (t *Loader) getClient() (api.ClientWithResponsesInterface, error) {
 		return nil, err
 	}
 
-	serverEndpoint := t.Config.ServerAddress + api.BaseURL
-	apiClient, err := api.NewClientWithResponses(
+	serverEndpoint := t.Config.ServerAddress + apiutil.BaseURL
+	apiClient, err := apigen.NewClientWithResponses(
 		serverEndpoint,
-		api.WithRequestEditorFn(basicAuthProvider.Intercept),
-		api.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+		apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
+		apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
 			req.Header.Set("User-Agent", "lakefs-loadtest/"+version.Version)
 			return nil
 		}),

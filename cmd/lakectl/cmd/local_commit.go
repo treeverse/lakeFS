@@ -7,17 +7,12 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/diff"
 	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
-)
-
-const (
-	localCommitAllowEmptyMessage = "allow-empty-message"
-	localCommitMessageFlagName   = "message"
 )
 
 func findConflicts(changes local.Changes) (conflicts []string) {
@@ -35,13 +30,10 @@ var localCommitCmd = &cobra.Command{
 	Args:  localDefaultArgsRange,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		_, localPath := getLocalArgs(args, false, false)
-		syncFlags := getLocalSyncFlags(cmd, client)
-		message := Must(cmd.Flags().GetString(localCommitMessageFlagName))
-		allowEmptyMessage := Must(cmd.Flags().GetBool(localCommitAllowEmptyMessage))
-		if message == "" && !allowEmptyMessage {
-			DieFmt("Commit message empty! To commit with empty message pass --%s flag", localCommitAllowEmptyMessage)
-		}
+		_, localPath := getSyncArgs(args, false, false)
+		syncFlags := getSyncFlags(cmd, client)
+		message, kvPairs := getCommitFlags(cmd)
+
 		idx, err := local.ReadIndex(localPath)
 		if err != nil {
 			DieErr(err)
@@ -50,6 +42,14 @@ var localCommitCmd = &cobra.Command{
 		remote, err := idx.GetCurrentURI()
 		if err != nil {
 			DieErr(err)
+		}
+
+		if idx.ActiveOperation != "" {
+			fmt.Printf("Latest 'local %s' operation was interrupted, running 'local commit' operation now might lead to data loss.\n", idx.ActiveOperation)
+			confirmation, err := Confirm(cmd.Flags(), "Proceed")
+			if err != nil || !confirmation {
+				Die("command aborted", 1)
+			}
 		}
 
 		fmt.Printf("\nGetting branch: %s\n", remote.Ref)
@@ -64,7 +64,7 @@ var localCommitCmd = &cobra.Command{
 		if branchCommit != idx.AtHead { // check for changes and conflicts with new head
 			newRemote := remote.WithRef(branchCommit)
 			fmt.Printf("\ndiff '%s' <--> '%s'...\n", newRemote, remote)
-			d := make(chan api.Diff, maxDiffPageSize)
+			d := make(chan apigen.Diff, maxDiffPageSize)
 			var wg errgroup.Group
 			wg.Go(func() error {
 				return diff.StreamRepositoryDiffs(cmd.Context(), client, baseRemote, newRemote, swag.StringValue(remote.Path), d, false)
@@ -97,6 +97,11 @@ var localCommitCmd = &cobra.Command{
 			}
 		}
 
+		if len(changes) == 0 {
+			fmt.Printf("\nNo changes\n")
+			return
+		}
+
 		// sync changes
 		c := make(chan *local.Change, filesChanSize)
 		go func() {
@@ -105,8 +110,8 @@ var localCommitCmd = &cobra.Command{
 				c <- change
 			}
 		}()
-		sigCtx := localHandleSyncInterrupt(cmd.Context())
-		s := local.NewSyncManager(sigCtx, client, syncFlags.parallelism, syncFlags.presign)
+		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(commitOperation))
+		s := local.NewSyncManager(sigCtx, client, syncFlags)
 		err = s.Sync(idx.LocalPath(), remote, c)
 		if err != nil {
 			DieErr(err)
@@ -119,11 +124,6 @@ var localCommitCmd = &cobra.Command{
 			Tasks:     s.Summary(),
 		})
 		fmt.Printf("Finished syncing changes. Perform commit on branch...\n")
-		// add kv pairs if any
-		kvPairs, err := getKV(cmd, metaFlagName)
-		if err != nil {
-			DieErr(err)
-		}
 		// add git context to kv pairs, if any
 		if git.IsRepository(idx.LocalPath()) {
 			gitRef, err := git.CurrentCommit(idx.LocalPath())
@@ -138,12 +138,13 @@ var localCommitCmd = &cobra.Command{
 		}
 
 		// commit!
-		response, err := client.CommitWithResponse(cmd.Context(), remote.Repository, remote.Ref, &api.CommitParams{}, api.CommitJSONRequestBody{
+		response, err := client.CommitWithResponse(cmd.Context(), remote.Repository, remote.Ref, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 			Message: message,
-			Metadata: &api.CommitCreation_Metadata{
+			Metadata: &apigen.CommitCreation_Metadata{
 				AdditionalProperties: kvPairs,
 			},
 		})
+		DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusCreated)
 		commit := response.JSON201
 		if commit == nil {
 			Die("Bad response from server", 1)
@@ -153,14 +154,14 @@ var localCommitCmd = &cobra.Command{
 			Repository: remote.Repository,
 			Ref:        remote.Ref,
 		}
-		DieOnErrorOrUnexpectedStatusCode(response, err, http.StatusCreated)
+
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
-			Commit *api.Commit
+			Commit *apigen.Commit
 		}{Branch: branchURI, Commit: commit})
 
 		newHead := response.JSON201.Id
-		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead)
+		_, err = local.WriteIndex(idx.LocalPath(), remote, newHead, "")
 		if err != nil {
 			DieErr(err)
 		}
@@ -169,10 +170,7 @@ var localCommitCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	localCommitCmd.Flags().StringP(localCommitMessageFlagName, "m", "", "Commit message")
-	localCommitCmd.Flags().Bool(localCommitAllowEmptyMessage, false, "Allow commit with empty message")
-	localCommitCmd.MarkFlagsMutuallyExclusive(localCommitMessageFlagName, localCommitAllowEmptyMessage)
-	localCommitCmd.Flags().StringSlice(metaFlagName, []string{}, "key value pair in the form of key=value")
-	withLocalSyncFlags(localCommitCmd)
+	withCommitFlags(localCommitCmd, false)
+	withSyncFlags(localCommitCmd)
 	localCmd.AddCommand(localCommitCmd)
 }

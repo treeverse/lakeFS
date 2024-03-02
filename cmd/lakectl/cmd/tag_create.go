@@ -5,13 +5,13 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
 const tagCreateRequiredArgs = 2
 
 var tagCreateCmd = &cobra.Command{
-	Use:     "create <tag uri> <commit uri>",
+	Use:     "create <tag URI> <commit URI>",
 	Short:   "Create a new tag in a repository",
 	Example: "lakectl tag create lakefs://example-repo/example-tag lakefs://example-repo/2397cc9a9d04c20a4e5739b42c1dd3d8ba655c0b3a3b974850895a13d8bf9917",
 	Args:    cobra.ExactArgs(tagCreateRequiredArgs),
@@ -22,9 +22,8 @@ var tagCreateCmd = &cobra.Command{
 		return validRepositoryToComplete(cmd.Context(), toComplete)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		tagURI := MustParseRefURI("tag uri", args[0])
-		commitURI := MustParseRefURI("commit uri", args[1])
-		fmt.Println("Tag ref:", tagURI)
+		tagURI := MustParseRefURI("tag URI", args[0])
+		commitURI := MustParseRefURI("commit URI", args[1])
 
 		client := getClient()
 		ctx := cmd.Context()
@@ -42,13 +41,13 @@ var tagCreateCmd = &cobra.Command{
 				Die("Bad response from server", 1)
 			}
 
-			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref)
+			resp, err := client.DeleteTagWithResponse(ctx, tagURI.Repository, tagURI.Ref, &apigen.DeleteTagParams{})
 			if err != nil && (resp == nil || resp.JSON404 == nil) {
 				DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 			}
 		}
 
-		resp, err := client.CreateTagWithResponse(ctx, tagURI.Repository, api.CreateTagJSONRequestBody{
+		resp, err := client.CreateTagWithResponse(ctx, tagURI.Repository, apigen.CreateTagJSONRequestBody{
 			Id:  tagURI.Ref,
 			Ref: commitURI.Ref,
 		})

@@ -1,9 +1,9 @@
 import React, {createContext, useCallback, useEffect, useState} from "react";
-import {Route, Routes} from "react-router-dom";
+import {Outlet} from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 
 import Button from "react-bootstrap/Button";
 
-import {AuthLayout} from "../../../lib/components/auth/layout";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {auth} from "../../../lib/api";
 import useUser from "../../../lib/hooks/user";
@@ -22,7 +22,6 @@ import {
     Loading,
     RefreshButton
 } from "../../../lib/components/controls";
-import UserPage from "./user";
 import validator from "validator/es";
 import { disallowPercentSign, INVALID_USER_NAME_ERROR_MESSAGE } from "../validation";
 
@@ -84,8 +83,8 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
                         setRefresh(!refresh);
                     });
                 }}
-                title={canInviteUsers ? "Create Integration User" : "Create User"}
-                placeholder={canInviteUsers ? "Integration Name (e.g. Spark)" : "Username (e.g. 'jane.doe')"}
+                title={canInviteUsers ? "Create API User" : "Create User"}
+                placeholder={canInviteUsers ? "Name (e.g. Spark)" : "Username (e.g. 'jane.doe')"}
                 actionName={"Create"}
                 validationFunction={disallowPercentSign(INVALID_USER_NAME_ERROR_MESSAGE)}
             />
@@ -147,7 +146,7 @@ const UserActionsActionGroup = ({canInviteUsers, selected, onClickInvite, onClic
             <Button
                 variant="success"
                 onClick={onClickCreate}>
-                {canInviteUsers ? "Create Integration User" : "Create User"}
+                {canInviteUsers ? "Create API User" : "Create User"}
             </Button>
             <ConfirmationButton
                 onConfirm={onConfirmDelete}
@@ -160,22 +159,23 @@ const UserActionsActionGroup = ({canInviteUsers, selected, onClickInvite, onClic
     );
 }
 
-const UsersPage = ({nextPage, refresh, setRefresh, error, loading, userListResults}) => {
+export const UsersPage = () => {
+    const { setActiveTab, refresh, loading, error, nextPage, setRefresh, usersList } = useOutletContext();
+    useEffect(() => setActiveTab("users"), [setActiveTab]);
     return (
-        <AuthLayout activeTab="users">
-            <UsersContainer
-                refresh={refresh}
-                loading={loading}
-                error={error}
-                nextPage={nextPage}
-                setRefresh={setRefresh}
-                userListResults={userListResults}
-            />
-        </AuthLayout>
+        <UsersContainer
+            refresh={refresh}
+            loading={loading}
+            error={error}
+            nextPage={nextPage}
+            setRefresh={setRefresh}
+            userListResults={usersList}
+        />
     );
 };
 
 const UsersIndexPage = () => {
+    const [setActiveTab] = useOutletContext();
     const [refresh, setRefresh] = useState(false);
     const [usersList, setUsersList] = useState([]);
     const router = useRouter();
@@ -201,19 +201,7 @@ const UsersIndexPage = () => {
 
     return (
         <GetUserEmailByIdContext.Provider value={getUserEmailById}>
-            <Routes>
-                <Route path=":userId/*" element={<UserPage getUserEmailById={getUserEmailById} />} />
-                <Route path="" element={
-                    <UsersPage 
-                        refresh={refresh}
-                        loading={loading}
-                        error={error}
-                        nextPage={nextPage}
-                        setRefresh={setRefresh}
-                        userListResults={usersList}
-                    />
-                } />
-            </Routes>
+            <Outlet context={{setActiveTab, refresh, loading, error, nextPage, setRefresh, usersList, getUserEmailById}} />
         </GetUserEmailByIdContext.Provider>
     )
 }

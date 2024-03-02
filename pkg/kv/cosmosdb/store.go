@@ -16,7 +16,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
-	kvparams "github.com/treeverse/lakefs/pkg/kv/params"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -129,6 +129,17 @@ func getOrCreateDatabase(ctx context.Context, client *azcosmos.Client, params *k
 }
 
 func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient, params *kvparams.CosmosDB) (*azcosmos.ContainerClient, error) {
+	var opts *azcosmos.CreateContainerOptions
+	if params.Throughput > 0 {
+		var throughputProperties azcosmos.ThroughputProperties
+		if params.Autoscale {
+			throughputProperties = azcosmos.NewAutoscaleThroughputProperties(params.Throughput)
+		} else {
+			throughputProperties = azcosmos.NewManualThroughputProperties(params.Throughput)
+		}
+		opts = &azcosmos.CreateContainerOptions{ThroughputProperties: &throughputProperties}
+	}
+
 	_, err := dbClient.CreateContainer(ctx,
 		azcosmos.ContainerProperties{
 			ID: params.Container,
@@ -144,7 +155,7 @@ func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient
 				IncludedPaths: []azcosmos.IncludedPath{{Path: "/*"}},
 				ExcludedPaths: []azcosmos.ExcludedPath{{Path: "/value/?"}},
 			},
-		}, nil)
+		}, opts)
 	if err != nil {
 		if errStatusCode(err) != http.StatusConflict {
 			return nil, fmt.Errorf("creating container: %w", err)
@@ -188,10 +199,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	// Read an item
 	itemResponse, err := s.containerClient.ReadItem(ctx, pk, item.ID, nil)
 	if err != nil {
-		if isErrStatusCode(err, http.StatusNotFound) {
-			return nil, kv.ErrNotFound
-		}
-		return nil, err
+		return nil, convertError(err)
 	}
 
 	var itemResponseBody Document
@@ -220,6 +228,21 @@ func errStatusCode(err error) int {
 
 func isErrStatusCode(err error, code int) bool {
 	return errStatusCode(err) == code
+}
+
+func convertError(err error) error {
+	statusCode := errStatusCode(err)
+	switch statusCode {
+	case http.StatusTooManyRequests:
+		return kv.ErrSlowDown
+	case http.StatusPreconditionFailed:
+		return kv.ErrPredicateFailed
+	case http.StatusNotFound:
+		return kv.ErrNotFound
+	case http.StatusConflict:
+		return kv.ErrPredicateFailed
+	}
+	return err
 }
 
 func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error {
@@ -251,7 +274,7 @@ func (s *Store) Set(ctx context.Context, partitionKey, key, value []byte) error 
 	pk := azcosmos.NewPartitionKeyString(item.PartitionKey)
 
 	_, err = s.containerClient.UpsertItem(ctx, pk, b, &itemOptions)
-	return err
+	return convertError(err)
 }
 
 func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valuePredicate kv.Predicate) error {
@@ -285,9 +308,6 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 	switch valuePredicate {
 	case nil:
 		_, err = s.containerClient.CreateItem(ctx, pk, b, &itemOptions)
-		if isErrStatusCode(err, http.StatusConflict) {
-			return kv.ErrPredicateFailed
-		}
 	case kv.PrecondConditionalExists:
 		patch := azcosmos.PatchOperations{}
 		patch.AppendReplace("/value", item.Value)
@@ -305,11 +325,8 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 		etag := azcore.ETag(valuePredicate.([]byte))
 		itemOptions.IfMatchEtag = &etag
 		_, err = s.containerClient.UpsertItem(ctx, pk, b, &itemOptions)
-		if isErrStatusCode(err, http.StatusPreconditionFailed) {
-			return kv.ErrPredicateFailed
-		}
 	}
-	return err
+	return convertError(err)
 }
 
 func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
@@ -322,12 +339,15 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(partitionKey))
 
 	_, err := s.containerClient.DeleteItem(ctx, pk, s.hashID(key), nil)
-	var respErr *azcore.ResponseError
-	if errors.As(err, &respErr) && respErr.StatusCode != http.StatusNotFound {
+	if err != nil {
+		err = convertError(err)
+	}
+	if !errors.Is(err, kv.ErrNotFound) {
 		return err
 	}
 	return nil
 }
+
 func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
@@ -340,9 +360,8 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		queryCtx:     ctx,
 		encoding:     encoding,
 	}
-	it.runQuery()
-	if it.err != nil {
-		return nil, it.err
+	if err := it.runQuery(); err != nil {
+		return nil, convertError(err)
 	}
 	return it, nil
 }
@@ -362,7 +381,10 @@ type EntriesIterator struct {
 	queryPager   *runtime.Pager[azcosmos.QueryItemsResponse]
 	queryCtx     context.Context
 	currPage     azcosmos.QueryItemsResponse
-	encoding     *base32.Encoding
+	// currPageSeekedKey is the key we seeked to get this page, will be nil if this page wasn't returned by the query
+	currPageSeekedKey []byte
+	// currPageHasMore is true if the current page has more after it
+	encoding *base32.Encoding
 }
 
 func (e *EntriesIterator) getKeyValue(i int) ([]byte, []byte) {
@@ -384,6 +406,7 @@ func (e *EntriesIterator) getKeyValue(i int) ([]byte, []byte) {
 	}
 	return key, value
 }
+
 func (e *EntriesIterator) Next() bool {
 	if e.err != nil {
 		return false
@@ -396,14 +419,14 @@ func (e *EntriesIterator) Next() bool {
 		var err error
 		e.currPage, err = e.queryPager.NextPage(e.queryCtx)
 		if err != nil {
-			e.err = fmt.Errorf("getting next page: %w", err)
+			e.err = fmt.Errorf("getting next page: %w", convertError(err))
 			return false
 		}
 		if len(e.currPage.Items) == 0 {
 			// returned page is empty, no more items
 			return false
 		}
-
+		e.currPageSeekedKey = nil
 		e.currEntryIdx = -1
 	}
 	e.currEntryIdx++
@@ -420,17 +443,25 @@ func (e *EntriesIterator) Next() bool {
 }
 
 func (e *EntriesIterator) SeekGE(key []byte) {
-	if !e.isInRange(key) {
-		e.runQuery()
+	e.startKey = key
+	if !e.isInRange() {
+		if err := e.runQuery(); err != nil {
+			e.err = convertError(err)
+		}
 		return
 	}
-	e.currEntryIdx = sort.Search(len(e.currPage.Items), func(i int) bool {
+	idx := sort.Search(len(e.currPage.Items), func(i int) bool {
 		currentKey, _ := e.getKeyValue(i)
 		if e.err != nil {
 			return false
 		}
 		return bytes.Compare(key, currentKey) <= 0
-	}) - 1
+	})
+	if idx == -1 {
+		// not found, set to the end
+		e.currEntryIdx = len(e.currPage.Items)
+	}
+	e.currEntryIdx = idx - 1
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {
@@ -445,7 +476,7 @@ func (e *EntriesIterator) Close() {
 	e.err = kv.ErrClosedEntries
 }
 
-func (e *EntriesIterator) runQuery() {
+func (e *EntriesIterator) runQuery() error {
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(e.partitionKey))
 	e.queryPager = e.store.containerClient.NewQueryItemsPager("select * from c where c.key >= @start order by c.key", pk, &azcosmos.QueryOptions{
 		ConsistencyLevel: e.store.consistencyLevel.ToPtr(),
@@ -455,16 +486,49 @@ func (e *EntriesIterator) runQuery() {
 			Value: encoding.EncodeToString(e.startKey),
 		}},
 	})
+	currPage, err := e.queryPager.NextPage(e.queryCtx)
+	if err != nil {
+		return err
+	}
 	e.currEntryIdx = -1
 	e.entry = nil
-	e.currPage, e.err = e.queryPager.NextPage(e.queryCtx)
+	e.currPage = currPage
+	e.currPageSeekedKey = e.startKey
+	return nil
 }
 
-func (e *EntriesIterator) isInRange(key []byte) bool {
-	if len(e.currPage.Items) == 0 {
+// isInRange checks if e.startKey falls within the range of keys on the current page.
+// To optimize range checking:
+// - If the current page is a result of a seek operation, the seeked key is used as the minimum key.
+// - If the current page is the last page, all keys greater than the minimum key are considered in range.
+// This function returns true if e.startKey is within these defined range criteria.
+func (e *EntriesIterator) isInRange() bool {
+	if e.err != nil {
 		return false
 	}
-	minKey, _ := e.getKeyValue(0)
+	var minKey []byte
+	if e.currPageSeekedKey != nil {
+		minKey = e.currPageSeekedKey
+	} else {
+		if len(e.currPage.Items) == 0 {
+			return false
+		}
+		minKey, _ = e.getKeyValue(0)
+		if minKey == nil {
+			return false
+		}
+	}
+	if bytes.Compare(e.startKey, minKey) < 0 {
+		return false
+	}
+	if !e.queryPager.More() {
+		// last page, all keys greater than minKey are considered in range (in order to avoid unnecessary queries)
+		return true
+	}
+	if len(e.currPage.Items) == 0 {
+		// cosmosdb returned empty page but has more results, should not happen
+		return false
+	}
 	maxKey, _ := e.getKeyValue(len(e.currPage.Items) - 1)
-	return minKey != nil && maxKey != nil && bytes.Compare(key, minKey) >= 0 && bytes.Compare(key, maxKey) <= 0
+	return maxKey != nil && bytes.Compare(e.startKey, maxKey) <= 0
 }

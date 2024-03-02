@@ -1,5 +1,5 @@
-import React, {useState} from "react";
-
+import React, {useEffect, useState} from "react";
+import { useOutletContext } from "react-router-dom";
 import dayjs from "dayjs";
 import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
 
@@ -16,15 +16,12 @@ import {
     LinkButton,
     Loading, RefreshButton
 } from "../../../../lib/components/controls";
-import {RepositoryPageLayout} from "../../../../lib/components/repository/layout";
 import {useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {Paginator} from "../../../../lib/components/pagination";
 import RefDropdown from "../../../../lib/components/repository/refDropdown";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
-import {Route, Routes} from "react-router-dom";
-import RepositoryCommitPage from "./commit";
 import {RepoError} from "../error";
 
 
@@ -159,20 +156,9 @@ const CommitsContainer = () => {
 
 
 const RepositoryCommitsPage = () => {
-    return (
-        <RepositoryPageLayout activePage={'commits'}>
-            <CommitsContainer/>
-        </RepositoryPageLayout>
-    );
+  const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage('commits'), [setActivePage]);
+  return <CommitsContainer />;
 };
 
-const RepositoryCommitsIndexPage = () => {
-    return (
-        <Routes>
-            <Route path="" element={<RepositoryCommitsPage/>} />
-            <Route path=":commitId" element={<RepositoryCommitPage/>} />
-        </Routes>
-    )
-}
-
-export default RepositoryCommitsIndexPage;
+export default RepositoryCommitsPage;

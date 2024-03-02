@@ -8,19 +8,22 @@ import (
 	"sync"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
+const deleteChunkSize = 1000
+
 var fsRmCmd = &cobra.Command{
-	Use:               "rm <path uri>",
+	Use:               "rm <path URI>",
 	Short:             "Delete object",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		recursive := Must(cmd.Flags().GetBool("recursive"))
+		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		concurrency := Must(cmd.Flags().GetInt("concurrency"))
-		pathURI := MustParsePathURI("path", args[0])
+		pathURI := MustParsePathURI("path URI", args[0])
 		client := getClient()
 		if !recursive {
 			// Delete a single object in the main thread
@@ -44,20 +47,20 @@ var fsRmCmd = &cobra.Command{
 		}()
 
 		var deleteWg sync.WaitGroup
-		paths := make(chan *uri.URI)
+		paths := make(chan string)
 		deleteWg.Add(concurrency)
 		for i := 0; i < concurrency; i++ {
-			go deleteObjectWorker(cmd.Context(), client, paths, errors, &deleteWg)
+			go deleteObjectWorker(cmd.Context(), client, pathURI.Repository, pathURI.Ref, paths, errors, &deleteWg)
 		}
 
 		prefix := *pathURI.Path
-		var paramsDelimiter api.PaginationDelimiter = ""
+		var paramsDelimiter apigen.PaginationDelimiter = ""
 		var from string
-		pfx := api.PaginationPrefix(prefix)
+		pfx := apigen.PaginationPrefix(prefix)
 		for {
-			params := &api.ListObjectsParams{
+			params := &apigen.ListObjectsParams{
 				Prefix:    &pfx,
-				After:     api.PaginationAfterPtr(from),
+				After:     apiutil.Ptr(apigen.PaginationAfter(from)),
 				Delimiter: &paramsDelimiter,
 			}
 			resp, err := client.ListObjectsWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, params)
@@ -68,12 +71,7 @@ var fsRmCmd = &cobra.Command{
 
 			results := resp.JSON200.Results
 			for i := range results {
-				destURI := uri.URI{
-					Repository: pathURI.Repository,
-					Ref:        pathURI.Ref,
-					Path:       &results[i].Path,
-				}
-				paths <- &destURI
+				paths <- results[i].Path
 			}
 
 			pagination := resp.JSON200.Pagination
@@ -92,29 +90,46 @@ var fsRmCmd = &cobra.Command{
 	},
 }
 
-func deleteObjectWorker(ctx context.Context, client api.ClientWithResponsesInterface, paths <-chan *uri.URI, errors chan<- error, wg *sync.WaitGroup) {
+func deleteObjectWorker(ctx context.Context, client apigen.ClientWithResponsesInterface, repository, branch string, paths <-chan string, errors chan<- error, wg *sync.WaitGroup) {
 	defer wg.Done()
-	for pathURI := range paths {
-		err := deleteObject(ctx, client, pathURI)
+	objs := make([]string, 0, deleteChunkSize)
+	for objPath := range paths {
+		objs = append(objs, objPath)
+		if len(objs) >= deleteChunkSize {
+			resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{
+				Paths: objs,
+			})
+			err = RetrieveError(resp, err)
+			if err != nil {
+				rmErr := fmt.Errorf("rm objects - %w", err)
+				errors <- rmErr
+			}
+			clear(objs)
+		}
+	}
+	if len(objs) > 0 {
+		resp, err := client.DeleteObjectsWithResponse(ctx, repository, branch, &apigen.DeleteObjectsParams{}, apigen.DeleteObjectsJSONRequestBody{
+			Paths: objs,
+		})
+		err = RetrieveError(resp, err)
 		if err != nil {
-			rmErr := fmt.Errorf("rm %s - %w", pathURI, err)
+			rmErr := fmt.Errorf("rm objects - %w", err)
 			errors <- rmErr
 		}
 	}
 }
 
-func deleteObject(ctx context.Context, client api.ClientWithResponsesInterface, pathURI *uri.URI) error {
-	resp, err := client.DeleteObjectWithResponse(ctx, pathURI.Repository, pathURI.Ref, &api.DeleteObjectParams{
+func deleteObject(ctx context.Context, client apigen.ClientWithResponsesInterface, pathURI *uri.URI) error {
+	resp, err := client.DeleteObjectWithResponse(ctx, pathURI.Repository, pathURI.Ref, &apigen.DeleteObjectParams{
 		Path: *pathURI.Path,
 	})
-
 	return RetrieveError(resp, err)
 }
 
 //nolint:gochecknoinits
 func init() {
 	const defaultConcurrency = 50
-	fsRmCmd.Flags().BoolP("recursive", "r", false, "recursively delete all objects under the specified path")
+	withRecursiveFlag(fsRmCmd, "recursively delete all objects under the specified path")
 	fsRmCmd.Flags().IntP("concurrency", "C", defaultConcurrency, "max concurrent single delete operations to send to the lakeFS server")
 
 	fsCmd.AddCommand(fsRmCmd)

@@ -95,7 +95,7 @@ func CommitFromProto(pb *CommitData) *Commit {
 		CreationDate: pb.CreationDate.AsTime(),
 		Parents:      parents,
 		Metadata:     pb.Metadata,
-		Generation:   int(pb.Generation),
+		Generation:   CommitGeneration(pb.Generation),
 	}
 }
 
@@ -128,6 +128,7 @@ func RepoFromProto(pb *RepositoryData) *RepositoryRecord {
 			CreationDate:     pb.CreationDate.AsTime(),
 			InstanceUID:      pb.InstanceUid,
 			State:            pb.State,
+			ReadOnly:         pb.ReadOnly,
 		},
 	}
 }
@@ -140,6 +141,7 @@ func ProtoFromRepo(repo *RepositoryRecord) *RepositoryData {
 		CreationDate:     timestamppb.New(repo.Repository.CreationDate),
 		State:            repo.State,
 		InstanceUid:      repo.InstanceUID,
+		ReadOnly:         repo.Repository.ReadOnly,
 	}
 }
 

@@ -1,27 +1,55 @@
 package cmd
 
 import (
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/glue"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/metastore"
-	"github.com/treeverse/lakefs/pkg/metastore/glue"
+	metastoreglue "github.com/treeverse/lakefs/pkg/metastore/glue"
 	"github.com/treeverse/lakefs/pkg/metastore/hive"
+	"golang.org/x/net/context"
 )
 
 var metastoreCmd = &cobra.Command{
-	Use:   "metastore",
-	Short: "Manage metastore commands",
+	Use:        "metastore",
+	Short:      "Manage metastore commands",
+	Deprecated: "Upcoming releases of lakectl will no longer support this command.",
+}
+
+func getGlueClient(c *Configuration) *glue.Client {
+	cfg, err := config.LoadDefaultConfig(
+		context.TODO(),
+		config.WithRegion(string(c.Metastore.Glue.Region)),
+		config.WithSharedCredentialsFiles([]string{string(c.Metastore.Glue.CredentialsFile)}),
+		config.WithSharedConfigProfile(string(c.Metastore.Glue.Profile)),
+	)
+	if err != nil {
+		return nil
+	}
+
+	client := glue.NewFromConfig(cfg, func(options *glue.Options) {
+		if c.Metastore.Glue.Credentials != nil {
+			options.Credentials = credentials.NewStaticCredentialsProvider(
+				string(c.Metastore.Glue.Credentials.AccessKeyID),
+				string(c.Metastore.Glue.Credentials.AccessSecretKey),
+				string(c.Metastore.Glue.Credentials.SessionToken),
+			)
+		}
+	})
+	return client
 }
 
 func getMetastoreClient(msType, hiveAddress string) (metastore.Client, func()) {
 	if msType == "" {
-		msType = cfg.GetMetastoreType()
+		msType = cfg.Metastore.Type.String()
 	}
 	switch msType {
 	case "hive":
 		if len(hiveAddress) == 0 {
-			hiveAddress = cfg.GetMetastoreHiveURI()
+			hiveAddress = cfg.Metastore.Hive.URI.String()
 		}
-		hiveClient, err := hive.NewMSClient(hiveAddress, false, cfg.GetHiveDBLocationURI())
+		hiveClient, err := hive.NewMSClient(hiveAddress, false, cfg.Metastore.Hive.DBLocationURI.String())
 		if err != nil {
 			DieErr(err)
 		}
@@ -34,7 +62,8 @@ func getMetastoreClient(msType, hiveAddress string) (metastore.Client, func()) {
 		return hiveClient, deferFunc
 
 	case "glue":
-		client, err := glue.NewMSClient(cfg.GetMetastoreAwsConfig(), cfg.GetMetastoreGlueCatalogID(), cfg.GetGlueDBLocationURI())
+		glueClient := getGlueClient(cfg)
+		client, err := metastoreglue.NewMSClient(glueClient, cfg.Metastore.Glue.CatalogID.String(), cfg.Metastore.Glue.DBLocationURI.String())
 		if err != nil {
 			DieErr(err)
 		}
@@ -47,7 +76,7 @@ func getMetastoreClient(msType, hiveAddress string) (metastore.Client, func()) {
 }
 
 func getClients(fromClientType, toClientType, fromAddress, toAddress string) (metastore.Client, metastore.Client, func(), func()) {
-	msType := cfg.GetMetastoreType()
+	msType := cfg.Metastore.Type.String()
 	if len(fromClientType) == 0 {
 		fromClientType = msType
 	}

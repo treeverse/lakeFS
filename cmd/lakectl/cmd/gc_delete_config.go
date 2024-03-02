@@ -9,15 +9,15 @@ import (
 const gcDeleteConfigCmdArgs = 1
 
 var gcDeleteConfigCmd = &cobra.Command{
-	Use:               "delete-config",
+	Use:               "delete-config <repository URI>",
 	Short:             "Deletes the garbage collection policy for the repository",
-	Example:           "lakectl gc delete-config <repository uri>",
+	Example:           "lakectl gc delete-config " + myRepoExample,
 	Args:              cobra.ExactArgs(gcDeleteConfigCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRepoURI("repository", args[0])
+		u := MustParseRepoURI("repository URI", args[0])
 		client := getClient()
-		resp, err := client.DeleteGarbageCollectionRulesWithResponse(cmd.Context(), u.Repository)
+		resp, err := client.DeleteGCRulesWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }

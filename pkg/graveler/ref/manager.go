@@ -280,10 +280,18 @@ func (m *Manager) deleteRepository(ctx context.Context, repo *graveler.Repositor
 	return m.kvStore.Delete(ctx, []byte(graveler.RepositoriesPartition()), []byte(graveler.RepoPath(repo.RepositoryID)))
 }
 
-func (m *Manager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID) error {
+func (m *Manager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID, opts ...graveler.SetOptionsFunc) error {
 	repo, err := m.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
+	}
+
+	options := &graveler.SetOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	if repo.ReadOnly && !options.Force {
+		return graveler.ErrReadOnlyRepository
 	}
 
 	// Set repository state to deleted and then perform background delete.
@@ -562,6 +570,21 @@ func (m *Manager) AddCommit(ctx context.Context, repository *graveler.Repository
 	return m.addCommit(ctx, graveler.RepoPartition(repository), commit)
 }
 
+func (m *Manager) CreateCommitRecord(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID, commit graveler.Commit) error {
+	if m.addressProvider.ContentAddress(commit) != commitID.String() {
+		return graveler.ErrInvalidCommitID
+	}
+	c := graveler.ProtoFromCommit(commitID, &commit)
+	commitKey := graveler.CommitPath(commitID)
+	err := kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(commitKey), c, nil)
+	if errors.Is(err, kv.ErrPredicateFailed) {
+		return graveler.ErrCommitAlreadyExists
+	} else if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (m *Manager) RemoveCommit(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) error {
 	commitKey := graveler.CommitPath(commitID)
 	return m.kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), []byte(commitKey))
@@ -575,11 +598,12 @@ func (m *Manager) FindMergeBase(ctx context.Context, repository *graveler.Reposi
 	return FindMergeBase(ctx, m, repository, commitIDs[0], commitIDs[1])
 }
 
-func (m *Manager) Log(ctx context.Context, repository *graveler.RepositoryRecord, from graveler.CommitID, firstParent bool) (graveler.CommitIterator, error) {
+func (m *Manager) Log(ctx context.Context, repository *graveler.RepositoryRecord, from graveler.CommitID, firstParent bool, since *time.Time) (graveler.CommitIterator, error) {
 	return NewCommitIterator(ctx, &CommitIteratorConfig{
 		repository:  repository,
 		start:       from,
 		firstParent: firstParent,
+		since:       since,
 		manager:     m,
 	}), nil
 }
@@ -599,52 +623,61 @@ func newCache(cfg CacheConfig) cache.Cache {
 	return cache.NewCache(cfg.Size, cfg.Expiry, cache.NewJitterFn(cfg.Jitter))
 }
 
-func (m *Manager) SetLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
-	a := &graveler.LinkAddressData{
-		Address: token,
+func (m *Manager) SetLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
+	if physicalAddress == "" {
+		return graveler.ErrLinkAddressNotFound
 	}
-	err := kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(graveler.LinkedAddressPath(token)), a, nil)
+	a := &graveler.LinkAddressData{
+		Address: physicalAddress,
+	}
+	err := kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(graveler.LinkedAddressPath(physicalAddress)), a, nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
-			err = graveler.ErrAddressTokenAlreadyExists
+			err = graveler.ErrLinkAddressAlreadyExists
 		}
 		return err
 	}
 	return nil
 }
 
-func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, token string) error {
+func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
+	if physicalAddress == "" {
+		return graveler.ErrLinkAddressNotFound
+	}
+
 	data := graveler.LinkAddressData{}
-	addrPath := []byte(graveler.LinkedAddressPath(token))
+	addrPath := []byte(graveler.LinkedAddressPath(physicalAddress))
 	_, err := kv.GetMsg(ctx, m.kvStore, graveler.RepoPartition(repository), addrPath, &data)
 	if err != nil {
 		if errors.Is(err, kv.ErrNotFound) {
-			err = graveler.ErrAddressTokenNotFound
+			err = graveler.ErrLinkAddressNotFound
 		}
 		return err
 	}
+
 	expired, err := m.IsLinkAddressExpired(&data)
 	if err != nil {
 		return err
 	}
 	if expired {
-		err = graveler.ErrAddressTokenExpired
+		err = graveler.ErrLinkAddressExpired
 	}
-	_ = deleteLinkAddress(ctx, m.kvStore, repository, token)
+
+	_ = deleteLinkAddress(ctx, m.kvStore, repository, physicalAddress)
 	return err
 }
 
-func deleteLinkAddress(ctx context.Context, kvStore kv.Store, repository *graveler.RepositoryRecord, token string) error {
-	addrPath := []byte(graveler.LinkedAddressPath(token))
+func deleteLinkAddress(ctx context.Context, kvStore kv.Store, repository *graveler.RepositoryRecord, physicalAddress string) error {
+	addrPath := []byte(graveler.LinkedAddressPath(physicalAddress))
 	return kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), addrPath)
 }
 
-func (m *Manager) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.AddressTokenIterator, error) {
-	return NewAddressTokenIterator(ctx, m.kvStore, repository)
+func (m *Manager) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.LinkAddressIterator, error) {
+	return NewLinkAddressIterator(ctx, m.kvStore, repository)
 }
 
-func (m *Manager) IsLinkAddressExpired(token *graveler.LinkAddressData) (bool, error) {
-	creationTime, err := m.resolveLinkAddressTime(token.Address)
+func (m *Manager) IsLinkAddressExpired(linkAddress *graveler.LinkAddressData) (bool, error) {
+	creationTime, err := m.resolveLinkAddressTime(linkAddress.Address)
 	if err != nil {
 		return false, err
 	}
@@ -663,19 +696,19 @@ func (m *Manager) resolveLinkAddressTime(address string) (time.Time, error) {
 // DeleteExpiredLinkAddresses delete expired link addresses from kv store. This call uses limiter to access
 // kv, assuming the call does in the background.
 func (m *Manager) DeleteExpiredLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) error {
-	itr, err := NewAddressTokenIterator(ctx, m.kvStoreLimited, repository)
+	itr, err := NewLinkAddressIterator(ctx, m.kvStoreLimited, repository)
 	if err != nil {
 		return err
 	}
 	defer itr.Close()
 	for itr.Next() {
-		token := itr.Value()
-		expired, err := m.IsLinkAddressExpired(token)
+		linkAddress := itr.Value()
+		expired, err := m.IsLinkAddressExpired(linkAddress)
 		if err != nil {
 			return err
 		}
 		if expired {
-			err := deleteLinkAddress(ctx, m.kvStoreLimited, repository, token.Address)
+			err := deleteLinkAddress(ctx, m.kvStoreLimited, repository, linkAddress.Address)
 			if err != nil {
 				return err
 			}

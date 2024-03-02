@@ -66,7 +66,7 @@ func TestMain(m *testing.M) {
 		panic("could not expire minio container: " + err.Error())
 	}
 
-	// Create test client and bucket
+	// Create a test client and bucket
 	client, err := newClient(resource.GetPort("9000/tcp"))
 	if err != nil {
 		log.Fatalf("create client: %s", err)

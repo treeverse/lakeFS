@@ -1,5 +1,6 @@
 import {imports} from "../../../lib/api";
 import Row from "react-bootstrap/Row";
+import InputGroup from 'react-bootstrap/InputGroup';
 import Col from "react-bootstrap/Col";
 import {LinearProgress} from "@mui/material";
 import React, {useState} from "react";
@@ -88,17 +89,17 @@ const ImportForm = ({
                         destRef,
                         path,
                         commitMsgRef,
+                        repo,
+                        branch,
                         updateSrcValidity,
                         metadataFields,
                         setMetadataFields,
-                        shouldAddPath = false,
                         err = null,
-
-
+                        ...rest
                     }) => {
     const [isSourceValid, setIsSourceValid] = useState(true);
-    const storageNamespaceValidityRegexStr = config.blockstore_namespace_ValidityRegex;
-    const storageNamespaceValidityRegex = RegExp(storageNamespaceValidityRegexStr);
+    const importValidityRegexStr = config.import_validity_regex;
+    const storageNamespaceValidityRegex = RegExp(importValidityRegexStr);
     const updateSourceURLValidity = () => {
         if (!sourceRef.current.value) {
             updateSrcValidity(true);
@@ -110,21 +111,21 @@ const ImportForm = ({
         setIsSourceValid(isValid);
     };
     const sourceURIExample = config ? config.blockstore_namespace_example : "s3://my-bucket/path/";
-    return (<>
+    return (<div {...rest}>
         <Alert variant="info">
-            Import doesn&apos;t copy objects. It only creates links to the objects in the lakeFS metadata layer.
-            Don&apos;t worry, we will never change objects in the import source.
-            <a href="https://docs.lakefs.io/howto/import.html" target="_blank" rel="noreferrer"> Learn more.</a>
+            This feature doesn&apos;t copy data. It only creates pointers in the lakeFS metadata.<br/>
+            lakeFS will never change objects in the import source.
+            &#160;<a href="https://docs.lakefs.io/howto/import.html" target="_blank" rel="noreferrer">Learn more</a>
         </Alert>
-        <form>
-            <Form.Group className='form-group'>
-                <Form.Label><strong>Import from:</strong></Form.Label>
-                <Form.Control type="text" name="import-from" style={pathStyle} sm={8} ref={sourceRef} autoFocus
+        <Form>
+            <Form.Group className='mt-4 form-group'>
+                <Form.Label>Import from</Form.Label>
+                <Form.Control type="text" name="import-from" style={pathStyle} ref={sourceRef} autoFocus
                               placeholder={sourceURIExample}
                               onChange={updateSourceURLValidity}/>
                 {isSourceValid === false &&
                     <Form.Text className="text-danger">
-                        {`Import source should match the following pattern: "${storageNamespaceValidityRegexStr}"`}
+                        {`Import source should match the following pattern: "${importValidityRegexStr}"`}
                     </Form.Text>
                 }
                 {isSourceValid &&
@@ -133,24 +134,28 @@ const ImportForm = ({
                     </Form.Text>
                 }
             </Form.Group>
-            {shouldAddPath &&
-                <Form.Group className='form-group'>
-                    <Form.Label><strong>Destination:</strong></Form.Label>
-                        <Form.Control type="text" autoFocus name="destination" ref={destRef} defaultValue={path}/>
-                    <Form.Text style={{color: 'grey'}} md={{offset: 2, span: 10000}}>
-                        Leave empty to import to the repository&apos;s root.
-                    </Form.Text>
-                </Form.Group>
-            }
-            <Form.Group className='form-group'>
-                <Form.Label><strong>Commit Message:</strong></Form.Label>
-                <Form.Control sm={8} type="text" ref={commitMsgRef} name="commit-message" autoFocus defaultValue={`Imported data from ${config.blockstore_type}`}/>
+            <Form.Group className='mt-4 form-group'>
+                <Form.Label>Destination</Form.Label>
+                <InputGroup>
+                    <div className={"input-group-prepend"}>
+                        <InputGroup.Text className={"text-muted"}>lakefs://{repo}/{branch}/</InputGroup.Text>
+                    </div>
+                    <Form.Control type="text" name="destination" ref={destRef} defaultValue={path}/>
+                </InputGroup>
+                <Form.Text style={{color: 'grey'}} md={{offset: 2, span: 10000}}>
+                    Leave empty to import to the repository&apos;s root.
+                </Form.Text>
             </Form.Group>
-            <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields}/>
+
+            <Form.Group className='mt-4 form-group'>
+                <Form.Label>Commit message</Form.Label>
+                <Form.Control type="text" ref={commitMsgRef} name="commit-message"/>
+            </Form.Group>
+            <MetadataFields className={"mt-4"} metadataFields={metadataFields} setMetadataFields={setMetadataFields}/>
             {err &&
-                <Alert variant={"danger"}>{err.message}</Alert>}
-        </form>
-    </>)
+                <Alert className="mt-4 small" variant={"danger"}>{err.message}</Alert>}
+        </Form>
+    </div>)
 }
 
 export {

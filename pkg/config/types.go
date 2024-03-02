@@ -55,6 +55,10 @@ var (
 	ErrMustBeString = errors.New("must be a string")
 )
 
+func (o OnlyString) String() string {
+	return string(o)
+}
+
 // DecodeOnlyString is a mapstructure.HookFuncType that decodes a string
 // value as an OnlyString, but fails on all other values.  It is useful to
 // force parsing of a field that can contain just digits as a string, when

@@ -21,7 +21,7 @@ lakeFS is an interface to manage objects in an object store.
 
 {: .tip }
 > The actual data itself is not stored inside lakeFS directly but in an [underlying object store](#concepts-unique-to-lakefs).
-> lakeFS manages pointers and additional metadata about these objects. 
+> lakeFS manages pointers and additional metadata about these objects.
 
 ## Version Control
 
@@ -29,11 +29,11 @@ lakeFS is spearheading version control semantics for data. Most of these concept
 
 ### Repository
 
-In lakeFS, a _repository_ is a set of related objects (or collections of objects). In many cases, these represent tables of [various formats](https://lakefs.io/hudi-iceberg-and-delta-lake-data-lake-table-formats-compared/){:target="_blank"} for tabular data, semi-structured data such as JSON or log files - or a set of unstructured objects such as images, videos, sensor data, etc.
+In lakeFS, a _repository_ is a set of related objects (or collections of objects). In many cases, these represent tables of [various formats](https://lakefs.io/blog/hudi-iceberg-and-delta-lake-data-lake-table-formats-compared/){:target="_blank"} for tabular data, semi-structured data such as JSON or log files - or a set of unstructured objects such as images, videos, sensor data, etc.
 
 lakeFS represents repositories as a logical namespace used to group together objects, branches, and commits - analogous to a repository in Git.
 
-lakeFS repository naming requirements are as follows: 
+lakeFS repository naming requirements are as follows:
 
 - Start with a lower case letter or number
 - Contain only lower case letters, numbers and hyphens
@@ -47,13 +47,11 @@ These commits are immutable "checkpoints" containing all contents of a repositor
 
 Each commit contains metadata - the committer, timestamp, a commit message, as well as arbitrary key/value pairs you can choose to add.
 
-
   **Identifying Commits**<br/><br/>
   A commit is identified by its _commit ID_, a digest of all contents of the commit. <br/>
   Commit IDs are by nature long, so you may use a unique prefix to abbreviate them. A commit may also be identified by using a textual definition, called a _ref_. <br/><br/>
   Examples of refs include tags, branch names, and expressions.
 {: .note }
-
 
 ### Branches
 
@@ -61,18 +59,22 @@ Branches in lakeFS allow users to create their own "isolated" view of the reposi
 
 Changes on one branch do not appear on other branches. Users can take changes from one branch and apply it to another by [merging](#merge) them.
 
-Under the hood, branches are simply a pointer to a [commit](#commits) along with a set of uncommitted changes.
+#### Zero-copy branching
 
+Under the hood, branches are simply a pointer to a [commit](#commits) along with a set of uncommitted changes.
+Creating a branch is a **zero-copy operation**; instead of duplicating data, it involves creating a pointer to the source commit for the branch.
 
 ### Tags
 
-Tags are a way to give a meaningful name to a specific commit. 
-Using tags allow users to reference specific releases, experiments or versions by using a human friendly name.
+Tags are a way to give a meaningful name to a specific commit.
+Using tags allow users to reference specific releases, experiments, or versions by using a human friendly name.
 
 Example tags:
 
-* `v2.3` to mark a release.
-* `dev:jane-before-v2.3-merge` to mark Jane's private temporary point.
+- `v2.3` to mark a release.
+- `dev-jane-before-v2.3-merge` to mark Jane's private temporary point.
+
+Tag names adhere to the same rules as [git ref names](https://git-scm.com/docs/git-check-ref-format).
 
 ### History
 
@@ -87,25 +89,24 @@ The result of a merge is a new commit, with the destination as the first parent 
 To learn more about how merging works in lakeFS, see the [merge reference]({% link understand/how/merge.md %})
 {: .note }
 
-
 ### Ref expressions
 
 lakeFS also supports _expressions_ for creating a ref. These are similar to [revisions in
 Git](https://git-scm.com/docs/gitrevisions#_specifying_revisions); indeed all `~` and `^`
 examples at the end of that section will work unchanged in lakeFS.
 
-* A branch or a tag are ref expressions.
-* If `<ref>` is a ref expression, then:
-  + `<ref>^` is a ref expression referring to its first parent.
-  + `<ref>^N` is a ref expression referring to its N'th parent; in particular `<ref>^1` is the
+- A branch or a tag are ref expressions.
+- If `<ref>` is a ref expression, then:
+  - `<ref>^` is a ref expression referring to its first parent.
+  - `<ref>^N` is a ref expression referring to its N'th parent; in particular `<ref>^1` is the
     same as `<ref>^`.
-  + `<ref>~` is a ref expression referring to its first parent; in particular `<ref>~` is the
+  - `<ref>~` is a ref expression referring to its first parent; in particular `<ref>~` is the
     same as `<ref>^` and `<ref>~`.
-  + `<ref>~N` is a ref expression referring to its N'th parent, always traversing to the first
+  - `<ref>~N` is a ref expression referring to its N'th parent, always traversing to the first
     parent.  So `<ref>~N` is the same as `<ref>^^...^` with N consecutive carets `^`.
 
-
 ## Concepts unique to lakeFS
+
 The _underlying storage_ is a location in an object store where lakeFS keeps your objects and some immutable metadata.
 
 When creating a lakeFS repository, you assign it with a _storage namespace_. The repository's

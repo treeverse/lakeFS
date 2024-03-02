@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -10,19 +9,19 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
 )
 
 var abuseCommitCmd = &cobra.Command{
-	Use:               "commit <source ref uri>",
-	Short:             "Commits to the source ref repeatedly",
+	Use:               "commit <branch URI>",
+	Short:             "Commits to the source branch repeatedly",
 	Hidden:            false,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		u := MustParseRefURI("source ref", args[0])
+		u := MustParseBranchURI("branch URI", args[0])
 		amount := Must(cmd.Flags().GetInt("amount"))
 		gapDuration := Must(cmd.Flags().GetDuration("gap"))
 
@@ -31,7 +30,6 @@ var abuseCommitCmd = &cobra.Command{
 		generator := stress.NewGenerator("commit", 1, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
 		// generate randomly selected keys as input
-		rand.Seed(time.Now().Unix())
 		generator.Setup(func(add stress.GeneratorAddFn) {
 			for i := 0; i < amount; i++ {
 				add(strconv.Itoa(i + 1))
@@ -52,8 +50,8 @@ var abuseCommitCmd = &cobra.Command{
 			client := getClient()
 			for work := range input {
 				start := time.Now()
-				resp, err := client.CommitWithResponse(ctx, u.Repository, u.Ref, &api.CommitParams{},
-					api.CommitJSONRequestBody(api.CommitCreation{Message: work}))
+				resp, err := client.CommitWithResponse(ctx, u.Repository, u.Ref, &apigen.CommitParams{},
+					apigen.CommitJSONRequestBody(apigen.CommitCreation{Message: work}))
 				if err == nil && resp.StatusCode() != http.StatusOK {
 					err = helpers.ResponseAsError(resp)
 				}

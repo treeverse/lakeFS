@@ -1,8 +1,6 @@
 package git
 
 import (
-	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -19,12 +17,12 @@ import (
 
 const (
 	IgnoreFile        = ".gitignore"
-	IgnoreDefaultMode = 0644
+	IgnoreDefaultMode = 0o644
 	NoRemoteRC        = 2
 )
 
 var (
-	RemoteRegex     = regexp.MustCompile(`(?P<server>[\w.:]+)[/:](?P<owner>[\w.]+)/(?P<project>[\w.]+)\.git$`)
+	RemoteRegex     = regexp.MustCompile(`(?P<server>[\w.:]+)[/:](?P<owner>[\w.-]+)/(?P<project>[\w.-]+)\.git$`)
 	CommitTemplates = map[string]string{
 		"github.com":    "https://github.com/{{ .Owner }}/{{ .Project }}/commit/{{ .Ref }}",
 		"gitlab.com":    "https://gitlab.com/{{ .Owner }}/{{ .Project }}/-/commit/{{ .Ref }}",
@@ -39,7 +37,7 @@ type URL struct {
 }
 
 func git(dir string, args ...string) (string, int, error) {
-	_, err := exec.LookPath("git") // assume git is in path, otherwise consider as not having git support
+	_, err := exec.LookPath("git") // assume git is in the path, otherwise consider as not having git support
 	if err != nil {
 		return "", 0, ErrNoGit
 	}
@@ -92,32 +90,63 @@ func createEntriesForIgnore(dir string, paths []string, exclude bool) ([]string,
 	return entries, nil
 }
 
+// updateIgnoreFileSection updates or inserts a section, identified by a marker, within a file's contents,
+// and returns the modified contents as a byte slice. The section begins with "# [marker]" and ends with "# End [marker]".
+// It retains existing entries and appends new entries from the provided slice.
 func updateIgnoreFileSection(contents []byte, marker string, entries []string) []byte {
-	var newContent []byte
-	scanner := bufio.NewScanner(bytes.NewReader(contents))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		newContent = append(newContent, []byte(fmt.Sprintln(line))...)
-		if line == marker {
-			for scanner.Scan() {
-				line = strings.TrimSpace(scanner.Text())
-				if line == "" {
-					break
-				}
-				if !slices.Contains(entries, line) {
-					newContent = append(newContent, []byte(fmt.Sprintln(line))...)
-				}
-			}
-			buffer := strings.Join(entries, fmt.Sprintln("")) + fmt.Sprintln("")
-			newContent = append(newContent, buffer...)
+	var lines []string
+	if len(contents) > 0 {
+		lines = strings.Split(string(contents), "\n")
+	}
+
+	// point to the existing section or to the end of the file
+	startIdx := slices.IndexFunc(lines, func(s string) bool {
+		return strings.HasPrefix(s, "# "+marker)
+	})
+	var endIdx int
+	if startIdx == -1 {
+		startIdx = len(lines)
+		endIdx = startIdx
+	} else {
+		endIdx = slices.IndexFunc(lines[startIdx:], func(s string) bool {
+			return s == "" || strings.HasPrefix(s, "# End "+marker)
+		})
+		if endIdx == -1 {
+			endIdx = len(lines)
+		} else {
+			endIdx += startIdx + 1
 		}
 	}
 
-	return newContent
+	// collect existing entries - entries found in the section that are not commented out
+	var existing []string
+	for i := startIdx; i < endIdx; i++ {
+		if lines[i] == "" ||
+			strings.HasPrefix(lines[i], "#") ||
+			slices.Contains(entries, lines[i]) {
+			continue
+		}
+		existing = append(existing, lines[i])
+	}
+
+	// delete and insert new content
+	lines = slices.Delete(lines, startIdx, endIdx)
+	newContent := []string{"# " + marker}
+	newContent = append(newContent, existing...)
+	newContent = append(newContent, entries...)
+	newContent = append(newContent, "# End "+marker)
+	lines = slices.Insert(lines, startIdx, newContent...)
+
+	// join lines make sure content ends with new line
+	if lines[len(lines)-1] != "" {
+		lines = append(lines, "")
+	}
+	result := strings.Join(lines, "\n")
+	return []byte(result)
 }
 
 // Ignore modify/create .ignore file to include a section headed by the marker string and contains the provided ignore and exclude paths.
-// If section exists, it will append paths to the given section, otherwise writes the section at the end of the file.
+// If the section exists, it will append paths to the given section, otherwise writes the section at the end of the file.
 // All file paths must be absolute.
 // dir is a path in the git repository, if a .gitignore file is not found, a new file will be created in the repository root
 func Ignore(dir string, ignorePaths, excludePaths []string, marker string) (string, error) {
@@ -136,35 +165,23 @@ func Ignore(dir string, ignorePaths, excludePaths []string, marker string) (stri
 	}
 	ignoreEntries = append(ignoreEntries, excludeEntries...)
 
-	var (
-		mode       os.FileMode = IgnoreDefaultMode
-		ignoreFile []byte
-	)
+	// read ignore file content
 	ignoreFilePath := filepath.Join(gitDir, IgnoreFile)
-	markerLine := "# " + marker
-	info, err := os.Stat(ignoreFilePath)
-	switch {
-	case err == nil: // ignore file exists
-		mode = info.Mode()
-		ignoreFile, err = os.ReadFile(ignoreFilePath)
-		if err != nil {
-			return "", err
-		}
-		idx := bytes.Index(ignoreFile, []byte(markerLine))
-		if idx == -1 {
-			section := fmt.Sprintln(markerLine) + strings.Join(ignoreEntries, fmt.Sprintln("")) + fmt.Sprintln("")
-			ignoreFile = append(ignoreFile, section...)
-		} else { // Update section
-			ignoreFile = updateIgnoreFileSection(ignoreFile, markerLine, ignoreEntries)
-		}
-
-	case !os.IsNotExist(err):
+	ignoreFile, err := os.ReadFile(ignoreFilePath)
+	if err != nil && !os.IsNotExist(err) {
 		return "", err
-	default: // File doesn't exist
-		section := fmt.Sprintln(markerLine) + strings.Join(ignoreEntries, fmt.Sprintln("")) + fmt.Sprintln("")
-		ignoreFile = append(ignoreFile, []byte(section)...)
 	}
 
+	// get current file mode, if exists
+	var mode os.FileMode = IgnoreDefaultMode
+	if ignoreFile != nil {
+		if info, err := os.Stat(ignoreFilePath); err == nil {
+			mode = info.Mode()
+		}
+	}
+
+	// update ignore file local section and write back
+	ignoreFile = updateIgnoreFileSection(ignoreFile, marker, ignoreEntries)
 	if err = os.WriteFile(ignoreFilePath, ignoreFile, mode); err != nil {
 		return "", err
 	}

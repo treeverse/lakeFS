@@ -1,8 +1,8 @@
 ---
 title: Single Sign On (SSO)
 description: How to configure Single Sign On (SSO) for lakeFS Cloud and lakeFS Enterprise.
+grand_parent: Reference
 parent: Security
-grant_parent: Reference
 redirect_from:
   - /cloud/sso.html
   - /enterprise/sso.html
@@ -81,7 +81,7 @@ Once you finish registering lakeFS Cloud with AD FS, save the **AD FS URL** and 
 Prerequisites:
 * Azure account with permissions to manage applications in Azure Active Directory
 
-**Note**: If you've already set uplakeFS Cloud with your Azure account, you can skip the [Register lakeFS Cloud with Azure](#register-lakefs-cloud-with-azure) and [Add client secret](#add-a-secret) and go directly to [Add a redirect URI](#add-a-redirect-uri).
+**Note**: If you've already set up lakeFS Cloud with your Azure account, you can skip the [Register lakeFS Cloud with Azure](#register-lakefs-cloud-with-azure) and [Add client secret](#add-a-secret) and go directly to [Add a redirect URI](#add-a-redirect-uri).
 
 ### Register lakeFS Cloud with Azure
 
@@ -103,8 +103,6 @@ Important: new app registrations are hidden to users by default. When you are re
 ### Add a secret
 Sometimes called an application password, a client secret is a string value your app can use in place of a certificate to identity itself.
 
-Client secrets are considered less secure than certificate credentials. Application developers sometimes use client secrets during local app development because of their ease of use. However, you should use certificate credentials for any of your applications that are running in production.
-
 Steps:
 1. In the Azure portal, in App registrations, select your application.
 2. Select Certificates & secrets > Client secrets > New client secret.
@@ -120,7 +118,7 @@ A redirect URI is the location where the Microsoft identity platform redirects a
 
 You add and modify redirect URIs for your registered applications by configuring their platform settings.
 
-Enter https://lakefs-cloud.us.auth0.com/login/callback or https://lakefs-cloud.eu.auth0.com/login/callback (depends on your organization data location) as your redirect URI.
+Enter https://lakefs-cloud.us.auth0.com/login/callback as your redirect URI.
 
 Settings for each application type, including redirect URIs, are configured in Platform configurations in the Azure portal. Some platforms, like Web and Single-page applications, require you to manually specify a redirect URI. For other platforms, like mobile and desktop, you can select from redirect URIs generated for you when you configure their other settings.
 
@@ -131,7 +129,12 @@ Steps:
 4. Under Configure platforms, select the web option.
 5. Select Configure to complete the platform configuration.
 
-Once you finish registering lakeFS Cloud with Azure AD, save the **Application (Client) ID**, **Application Secret Value** and send this to Treeverse's team to finish the integration.
+Once you finish registering lakeFS Cloud with Azure AD send the following items to the Treeverse's team:
+1. **Client ID**
+2. **Client Secret**
+3. **Azure AD Domain**
+4. **Identity API Version** (v1 for Azure AD or v2 for Microsoft Identity Platform/Entra) 
+
   </div>
 </div>
 

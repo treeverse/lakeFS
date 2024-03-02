@@ -22,6 +22,7 @@ import (
 )
 
 func TestNewLuaHook(t *testing.T) {
+	mockStatsCollector := NewActionStatsMockCollector()
 	_, err := actions.NewLuaHook(
 		actions.ActionHook{
 			ID:          "myHook",
@@ -45,13 +46,14 @@ func TestNewLuaHook(t *testing.T) {
 				NetHTTPEnabled: true,
 			},
 		},
-		nil)
+		nil, "", &mockStatsCollector)
 	if err != nil {
 		t.Errorf("unexpedcted error: %v", err)
 	}
 }
 
 func TestLuaRun(t *testing.T) {
+	mockStatsCollector := NewActionStatsMockCollector()
 	h, err := actions.NewLuaHook(
 		actions.ActionHook{
 			ID:          "myHook",
@@ -75,7 +77,7 @@ func TestLuaRun(t *testing.T) {
 				NetHTTPEnabled: true,
 			},
 		},
-		nil)
+		nil, "", &mockStatsCollector)
 	if err != nil {
 		t.Errorf("unexpedcted error: %v", err)
 	}
@@ -111,6 +113,7 @@ func TestLuaRun(t *testing.T) {
 }
 
 func TestLuaRun_NetHttpDisabled(t *testing.T) {
+	mockStatsCollector := NewActionStatsMockCollector()
 	h, err := actions.NewLuaHook(
 		actions.ActionHook{
 			ID:          "myHook",
@@ -127,7 +130,7 @@ func TestLuaRun_NetHttpDisabled(t *testing.T) {
 			Hooks:       nil,
 		},
 		actions.Config{Enabled: true},
-		nil)
+		nil, "", &mockStatsCollector)
 	if err != nil {
 		t.Errorf("unexpedcted error: %v", err)
 	}
@@ -260,6 +263,7 @@ print(code .. " " .. body .. " " .. status)
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
+			mockStatsCollector := NewActionStatsMockCollector()
 			h, err := actions.NewLuaHook(
 				actions.ActionHook{
 					ID:   "myLuaHook",
@@ -277,7 +281,7 @@ print(code .. " " .. body .. " " .. status)
 						NetHTTPEnabled: true,
 					},
 				},
-				nil)
+				nil, "", &mockStatsCollector)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -357,6 +361,19 @@ func TestLuaRunTable(t *testing.T) {
 			Input:  "testdata/lua/strings_partition.lua",
 			Output: "testdata/lua/strings_partition.output",
 		},
+		{
+			Name:   "catalogexport_hive_partition_pager",
+			Input:  "testdata/lua/catalogexport_hive_partition_pager.lua",
+			Output: "testdata/lua/catalogexport_hive_partition_pager.output",
+		},
+		{
+			Name:  "catalogexport_delta",
+			Input: "testdata/lua/catalogexport_delta.lua",
+		},
+		{
+			Name:  "catalogexport_unity",
+			Input: "testdata/lua/catalogexport_unity.lua",
+		},
 	}
 
 	for _, testCase := range tests {
@@ -368,6 +385,7 @@ func TestLuaRunTable(t *testing.T) {
 		script := string(data)
 
 		t.Run(testCase.Name, func(t *testing.T) {
+			mockStatsCollector := NewActionStatsMockCollector()
 			h, err := actions.NewLuaHook(
 				actions.ActionHook{
 					ID:   "myHook",
@@ -390,7 +408,7 @@ func TestLuaRunTable(t *testing.T) {
 						NetHTTPEnabled: true,
 					},
 				},
-				nil)
+				nil, "", &mockStatsCollector)
 			if err != nil {
 				t.Errorf("unexpedcted error: %v", err)
 			}
@@ -452,7 +470,8 @@ func TestDescendArgs(t *testing.T) {
 				"e":        []interface{}{"a", 1, false, "{{ ENV.magic_environ123123 }}"},
 			},
 		}
-		out, err := actions.DescendArgs(v)
+		envGetter := actions.NewEnvironmentVariableGetter(true, "")
+		out, err := actions.DescendArgs(v, envGetter)
 		if err != nil {
 			t.Fatalf("unexpected err: %s", err)
 		}
@@ -491,9 +510,71 @@ func TestDescendArgs(t *testing.T) {
 				"e":        []interface{}{"a", 1, false, "{{ ENV.magic_environ123123456 }}"}, // <- shouldn't exist?
 			},
 		}
-		_, err := actions.DescendArgs(v)
+
+		envGetter := actions.NewEnvironmentVariableGetter(true, "")
+		_, err := actions.DescendArgs(v, envGetter)
 		if err == nil {
 			t.Fatalf("expected error!")
+		}
+	})
+
+	t.Run("env_disabled", func(t *testing.T) {
+		testutil.WithEnvironmentVariable(t, "magic_environ123123", "magic_environ_value")
+		v := map[string]interface{}{
+			"key":        "value",
+			"secure_key": "value with {{ ENV.magic_environ123123 }}",
+		}
+		envGetter := actions.NewEnvironmentVariableGetter(false, "")
+		args, err := actions.DescendArgs(v, envGetter)
+		if err != nil {
+			t.Fatalf("DescendArgs failed: %s", err)
+		}
+		argsMap, ok := args.(map[string]interface{})
+		if !ok {
+			t.Fatalf("expected map[string]interface{}, got a %T", argsMap)
+		}
+		secureString, ok := argsMap["secure_key"].(string)
+		if !ok {
+			t.Fatalf("expected a string, got a %T", argsMap["secure_key"])
+		}
+		const expectedValue = "value with "
+		if secureString != expectedValue {
+			t.Fatalf("expected '%s' as value from env when env is disabled, got '%s'", expectedValue, secureString)
+		}
+	})
+
+	t.Run("env_prefix", func(t *testing.T) {
+		testutil.WithEnvironmentVariable(t, "magic_environ123123", "magic_environ_value")
+		v := map[string]interface{}{
+			"key":        "value{{ ENV.no_magic_environ123123 }}",
+			"secure_key": "value with {{ ENV.magic_environ123123 }}",
+		}
+		envGetter := actions.NewEnvironmentVariableGetter(true, "magic_")
+		args, err := actions.DescendArgs(v, envGetter)
+		if err != nil {
+			t.Fatalf("DescendArgs failed: %s", err)
+		}
+		argsMap, ok := args.(map[string]interface{})
+		if !ok {
+			t.Fatalf("expected map[string]interface{}, got a %T", argsMap)
+		}
+
+		// verify that we have value access to keys with the prefix
+		secureString, ok := argsMap["secure_key"].(string)
+		if !ok {
+			t.Fatalf("expected a string, got a %T", argsMap["secure_key"])
+		}
+		if secureString != "value with magic_environ_value" {
+			t.Fatalf("expected magic environ value, got '%s'", secureString)
+		}
+
+		// verify that we don't have value access to keys without the prefix
+		secureString, ok = argsMap["key"].(string)
+		if !ok {
+			t.Fatalf("expected a string, got a %T", argsMap["key"])
+		}
+		if secureString != "value" {
+			t.Fatalf("expected just value for 'key', got '%s'", secureString)
 		}
 	})
 }

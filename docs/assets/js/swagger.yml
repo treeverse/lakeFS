@@ -5,8 +5,8 @@ info:
   title: lakeFS API
   license:
     name: "Apache 2.0"
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  version: 0.1.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
 
 servers:
   - url: "/api/v1"
@@ -69,6 +69,15 @@ components:
       description: delimiter used to group common prefixes by
       schema:
         type: string
+    
+    IfNoneMatch:
+      in: header
+      name: If-None-Match
+      description: Set to "*" to atomically allow the upload only if the key has no object yet. Other values are not supported.
+      example: "*"
+      required: false
+      schema:
+        type: string
 
   responses:
     NotFoundOrNoACL:
@@ -77,7 +86,7 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorNoACL"
-            
+
     Unauthorized:
       description: Unauthorized
       content:
@@ -151,25 +160,6 @@ components:
           minimum: 0
           description: Maximal number of entries per page
 
-    ImportPagination:
-      type: object
-      required:
-        - has_more
-        - last_key
-      properties:
-        has_more:
-          type: boolean
-          description: More keys to be ingested.
-        continuation_token:
-          type: string
-          description: Opaque. Token used to import the next range.
-        last_key:
-          type: string
-          description: Last object store key that was ingested.
-        staging_token:
-          type: string
-          description: Staging token for skipped objects during ingest
-
     Repository:
       type: object
       required:
@@ -189,11 +179,35 @@ components:
         storage_namespace:
           type: string
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
+        read_only:
+          type: boolean
+          description: Whether the repository is a read-only repository- not relevant for bare repositories
 
     RepositoryMetadata:
       type: object
       additionalProperties:
         type: string
+
+    RepositoryMetadataSet:
+      type: object
+      required:
+        - metadata
+      properties:
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+
+    RepositoryMetadataKeys:
+      type: object
+      required:
+        - keys
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+            description: metadata key
 
     RepositoryList:
       type: object
@@ -254,6 +268,10 @@ components:
           type: boolean
           example: "true"
           default: false
+        read_only:
+          type: boolean
+          example: "true"
+          default: false
 
     PathList:
       type: object
@@ -290,9 +308,9 @@ components:
           type: integer
           format: int64
           description: |
-            If present and nonzero, physical_address is a presigned URL and
+            If present and nonzero, physical_address is a pre-signed URL and
             will expire at this Unix Epoch time.  This will be shorter than
-            the presigned URL lifetime if an authentication token is about
+            the pre-signed URL lifetime if an authentication token is about
             to expire.
 
             This field is *optional*.
@@ -335,6 +353,9 @@ components:
         src_ref:
           type: string
           description: a reference, if empty uses the provided branch as ref
+        force:
+          type: boolean
+          default: false
 
     ObjectStageCreation:
       type: object
@@ -359,6 +380,9 @@ components:
         content_type:
           type: string
           description: Object media type
+        force:
+          type: boolean
+          default: false
 
     ObjectUserMetadata:
       type: object
@@ -427,58 +451,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Diff"
-    OtfDiffEntry:
-      type: object
-      required:
-        - id
-        - operation
-        - timestamp
-        - operation_content
-        - operation_type
-      properties:
-        id:
-          type: string
-        timestamp:
-          type: integer
-        operation:
-          type: string
-        operation_content:
-          type: object
-          description: free form content describing the returned operation diff
-        operation_type:
-          type: string
-          enum: [ create, update, delete ]
-          description: the operation category (CUD)
-
-    OtfDiffList:
-      type: object
-      required:
-        - results
-      properties:
-        diff_type:
-          type: string
-          enum: [ created, dropped, changed ]
-        results:
-          type: array
-          items:
-            $ref: "#/components/schemas/OtfDiffEntry"
-
-    DiffProperties:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-
-    OTFDiffs:
-      title: A list of available Output Table Format diffs.
-      type: object
-      properties:
-        diffs:
-          type: array
-          items:
-            $ref: "#/components/schemas/DiffProperties"
 
     ResetCreation:
       type: object
@@ -488,8 +460,12 @@ components:
         type:
           type: string
           enum: [object, common_prefix, reset]
+          description: What to reset according to path.
         path:
           type: string
+        force:
+          type: boolean
+          default: false
 
     RevertCreation:
       type: object
@@ -503,6 +479,13 @@ components:
         parent_number:
           type: integer
           description: when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.
+        force:
+          type: boolean
+          default: false
+        allow_empty:
+          type: boolean
+          default: false
+          description: allow empty commit (revert without changes)
 
     CherryPickCreation:
       type: object
@@ -515,8 +498,11 @@ components:
         parent_number:
           type: integer
           description: |
-            when cherry-picking a merge commit, the parent number (starting from 1) relative to which to perform the diff.
-            The destination branch is parent 1, which is the default behaviour.
+            When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff.
+            The default branch is parent 1.
+        force:
+          type: boolean
+          default: false
 
     Commit:
       type: object
@@ -548,6 +534,13 @@ components:
           type: object
           additionalProperties:
             type: string
+        generation:
+          type: integer
+          format: int64
+        version:
+          type: integer
+          minimum: 0
+          maximum: 1
 
     CommitList:
       type: object
@@ -577,6 +570,64 @@ components:
           description: set date to override creation date in the commit (Unix Epoch in seconds)
           type: integer
           format: int64
+        allow_empty:
+          description: sets whether a commit can contain no changes
+          type: boolean
+          default: false
+        force:
+          type: boolean
+          default: false
+
+    CommitRecordCreation:
+      type: object
+      required:
+        - commit_id
+        - version
+        - committer
+        - message
+        - metarange_id
+        - creation_date
+        - parents
+        - generation
+      properties:
+        commit_id:
+          type: string
+          description: id of the commit record
+        version:
+          type: integer
+          minimum: 0
+          maximum: 1
+          description: version of the commit record
+        committer:
+          type: string
+          description: committer of the commit record
+        message:
+          type: string
+          description: message of the commit record
+        metarange_id:
+          type: string
+          description: metarange_id of the commit record
+        creation_date:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
+        parents:
+          type: array
+          items:
+            type: string
+          description: parents of the commit record
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          description: metadata of the commit record
+        generation:
+          type: integer
+          format: int64
+          description: generation of the commit record
+        force:
+          type: boolean
+          default: false
 
     Merge:
       type: object
@@ -590,6 +641,9 @@ components:
         strategy:
           description: In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict
           type: string
+        force:
+          type: boolean
+          default: false
 
     BranchCreation:
       type: object
@@ -601,16 +655,72 @@ components:
           type: string
         source:
           type: string
+        force:
+          type: boolean
+          default: false
 
     TagCreation:
       type: object
+      description: Make tag ID point at this REF.
       required:
         - id
         - ref
       properties:
         id:
           type: string
+          description: ID of tag to create
         ref:
+          type: string
+          description: the commit to tag
+        force:
+          type: boolean
+          default: false
+
+    TaskInfo:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: ID of the task
+
+    RepositoryDumpStatus:
+      type: object
+      required:
+        - id
+        - done
+        - update_time
+      properties:
+        id:
+          type: string
+          description: ID of the task
+        done:
+          type: boolean
+        update_time:
+          type: string
+          format: date-time
+        error:
+          type: string
+        refs:
+            $ref: "#/components/schemas/RefsDump"
+
+    RepositoryRestoreStatus:
+      type: object
+      required:
+        - id
+        - done
+        - update_time
+      properties:
+        id:
+          type: string
+          description: ID of the task
+        done:
+          type: boolean
+        update_time:
+          type: string
+          format: date-time
+        error:
           type: string
 
     RefsDump:
@@ -626,6 +736,23 @@ components:
           type: string
         branches_meta_range_id:
           type: string
+
+    RefsRestore:
+      type: object
+      required:
+        - branches_meta_range_id
+        - tags_meta_range_id
+        - commits_meta_range_id
+      properties:
+        commits_meta_range_id:
+          type: string
+        tags_meta_range_id:
+          type: string
+        branches_meta_range_id:
+          type: string
+        force:
+          type: boolean
+          default: false
 
     StorageURI:
       description: URI to a path in a storage provider (e.g. "s3://bucket1/path/to/object")
@@ -691,15 +818,22 @@ components:
       properties:
         id:
           type: string
-          description: a unique identifier for the user. In password-based authentication, this is the email.
+          description: A unique identifier for the user. Cannot be edited.
         creation_date:
           type: integer
           format: int64
           description: Unix Epoch in seconds
         friendly_name:
           type: string
+          description: |
+            A shorter name for the user than the id. Unlike id it does not identify the user (it
+            might not be unique). Used in some places in the UI.
         email:
           type: string
+          description: |
+            The email address of the user. If API authentication is enabled, this field is mandatory and will be invited to login.
+            If API authentication is disabled, this field will be ignored. All current APIAuthenticators require the email to be 
+            lowercase and unique, although custom authenticators may not enforce this.
 
     CurrentUser:
       type: object
@@ -709,20 +843,12 @@ components:
         user:
           $ref: "#/components/schemas/User"
 
-    ForgotPasswordRequest:
-      type: object
-      required:
-        - email
-      properties:
-        email:
-          type: string
-
     UserCreation:
       type: object
       properties:
         id:
           type: string
-          description: a unique identifier for the user. In password-based authentication, this is the email.
+          description: a unique identifier for the user.
         invite_user:
           type: boolean
       required:
@@ -760,9 +886,9 @@ components:
           description: URL to use for logging out.
           type: string
       required:
-      - login_url
-      - login_cookie_names
-      - logout_url
+        - login_url
+        - login_cookie_names
+        - logout_url
 
     SetupState:
       type: object
@@ -812,30 +938,15 @@ components:
           description: the provided email
           type: string
         featureUpdates:
-          description: was "feature updates" checked
+          description: user preference to receive feature updates
           type: boolean
         securityUpdates:
-          description: was "security updates" checked
+          description: user preference to receive security updates
           type: boolean
       required:
         - featureUpdates
         - securityUpdates
 
-    UpdatePasswordByToken:
-      type: object
-      properties:
-        token:
-          description: token used for authentication
-          type: string
-        newPassword:
-          description: new password to update
-          type: string
-        email:
-          description: optional user email to match the token for verification
-          type: string
-      required:
-        - token
-        - newPassword
 
     Credentials:
       type: object
@@ -886,6 +997,8 @@ components:
         - id
       properties:
         id:
+          type: string
+        name:
           type: string
         creation_date:
           type: integer
@@ -1027,6 +1140,7 @@ components:
         - pre_sign_support
         - pre_sign_support_ui
         - import_support
+        - import_validity_regex
       properties:
         blockstore_type:
           type: string
@@ -1042,7 +1156,18 @@ components:
           type: boolean
         import_support:
           type: boolean
+        import_validity_regex:
+          type: string
+        pre_sign_multipart_upload:
+          type: boolean
 
+    Config:
+      type: object
+      properties:
+        version_config:
+          $ref: "#/components/schemas/VersionConfig"
+        storage_config:
+          $ref: "#/components/schemas/StorageConfig"
     VersionConfig:
       type: object
       properties:
@@ -1143,25 +1268,20 @@ components:
     StagingLocation:
       type: object
       description: location for placing an object when staging it
-      required:
-        - token
       properties:
         physical_address:
           type: string
-        token:
-          type: string
-          description: opaque staging token to use to link uploaded object
         presigned_url:
           type: string
           nullable: true
-          description: if presign=true is passed in the request, this field will contain a presigned URL to use when uploading
+          description: if presign=true is passed in the request, this field will contain a pre-signed URL to use when uploading
         presigned_url_expiry:
           type: integer
           format: int64
           description: |
-            If present and nonzero, physical_address is a presigned URL and
+            If present and nonzero, physical_address is a pre-signed URL and
             will expire at this Unix Epoch time.  This will be shorter than
-            the presigned URL lifetime if an authentication token is about
+            the pre-signed URL lifetime if an authentication token is about
             to expire.
 
             This field is *optional*.
@@ -1185,18 +1305,13 @@ components:
         content_type:
           type: string
           description: Object media type
+        force:
+          type: boolean
+          default: false
       required:
         - staging
         - checksum
         - size_bytes
-
-    GarbageCollectionPrepareRequest:
-      type: object
-      properties:
-        previous_run_id:
-          type: string
-          description: run id of a previous successful GC job
-          example: 64eaa103-d726-4a33-bcb8-7c0b4abfe09e
 
     GarbageCollectionPrepareResponse:
       type: object
@@ -1289,11 +1404,14 @@ components:
           description: Path type, can either be 'common_prefix' or 'object'
         path:
           type: string
-          description: A source location to ingested path or to a single object. Must match the lakeFS installation blockstore type.
+          description: A source location to a 'common_prefix' or to a single object. Must match the lakeFS installation blockstore type.
           example: s3://my-bucket/production/collections/
         destination:
           type: string
-          description: Destination for the imported objects on the branch 
+          description: |
+            Destination for the imported objects on the branch. Must be a relative path to the branch.
+            If the type is an 'object', the destination is the exact object name under the branch.
+            If the type is a 'common_prefix', the destination is the prefix under the branch.
           example: collections/
 
     ImportCreation:
@@ -1308,6 +1426,9 @@ components:
             $ref: "#/components/schemas/ImportLocation"
         commit:
           $ref: "#/components/schemas/CommitCreation"
+        force:
+          type: boolean
+          default: false
       example:
         paths:
           - path: s3://my-bucket/production/collections/
@@ -1316,32 +1437,6 @@ components:
           - path: s3://my-bucket/production/collections/file1
             destination: collections/file1
             type: object
-
-    StageRangeCreation:
-      type: object
-      required:
-        - fromSourceURI
-        - after
-        - prepend
-      properties:
-        fromSourceURI:
-          type: string
-          description: The source location of the ingested files. Must match the lakeFS installation blockstore type.
-          example: s3://my-bucket/production/collections/
-        after:
-          type: string
-          description: Only objects after this key would be ingested.
-          example: production/collections/some/file.parquet
-        prepend:
-          type: string
-          description: A prefix to prepend to ingested objects.
-          example: collections/
-        continuation_token:
-          type: string
-          description: Opaque. Client should pass the continuation_token received from server to continue creation ranges from the same key.
-        staging_token:
-          type: string
-          description: Opaque. Client should pass staging_token if received from server on previous request
 
     RangeMetadata:
       type: object
@@ -1371,15 +1466,7 @@ components:
           type: integer
           description: Estimated size of the range in bytes
 
-    IngestRangeCreationResponse:
-      type: object
-      properties:
-        range:
-          $ref: "#/components/schemas/RangeMetadata"
-        pagination:
-          $ref: "#/components/schemas/ImportPagination"
-
-    ImportStatusResp:
+    ImportStatus:
       type: object
       properties:
         completed:
@@ -1400,14 +1487,14 @@ components:
       required:
         - update_time
         - completed
-    
+
     ImportCreationResponse:
       type: object
       properties:
         id:
           description: The id of the import process
           type: string
-      required: 
+      required:
         - id
 
     MetaRangeCreation:
@@ -1463,11 +1550,95 @@ components:
           items:
             $ref: "#/components/schemas/StatsEvent"
 
+    PresignMultipartUpload:
+      type: object
+      properties:
+        upload_id:
+          type: string
+        physical_address:
+          type: string
+        presigned_urls:
+          type: array
+          items:
+            type: string
+      required:
+        - upload_id
+        - physical_address
+
+    UploadPart:
+      type: object
+      properties:
+        part_number:
+          type: integer
+        etag:
+          type: string
+      required:
+        - part_number
+        - etag
+
+    CompletePresignMultipartUpload:
+      type: object
+      properties:
+        physical_address:
+          type: string
+        parts:
+          type: array
+          description: "List of uploaded parts, should be ordered by ascending part number"
+          items:
+            $ref: "#/components/schemas/UploadPart"
+        user_metadata:
+          type: object
+          additionalProperties:
+            type: string
+        content_type:
+          type: string
+          description: Object media type
+      required:
+        - physical_address
+        - parts
+
+    AbortPresignMultipartUpload:
+      type: object
+      properties:
+        physical_address:
+          type: string
+      required:
+        - physical_address
+
+    UsageReport:
+      type: object
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+        count:
+          type: integer
+          format: int64
+      required:
+        - year
+        - month
+        - count
+
+    InstallationUsageReport:
+      type: object
+      properties:
+        installation_id:
+          type: string
+        reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/UsageReport"
+      required:
+        - installation_id
+        - reports
+
+
 paths:
   /setup_comm_prefs:
     post:
       tags:
-        - config
+        - internal
       operationId: setupCommPrefs
       summary: setup communications preferences
       security: []
@@ -1492,13 +1663,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
   /setup_lakefs:
     get:
       tags:
-        - config
+        - internal
       operationId: getSetupState
       summary: check if the lakeFS installation is already set up
       security: []
@@ -1509,11 +1682,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SetupState"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     post:
       tags:
-        - config
+        - internal
       operationId: setup
       summary: setup lakeFS and create a first user
       security: []
@@ -1538,6 +1713,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1581,56 +1758,17 @@ paths:
                 $ref: "#/components/schemas/AuthenticationToken"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
-  /auth/password:
-    post:
-      tags:
-        - auth
-      operationId: updatePassword
-      summary: Update user password by reset_password token
-      security:
-        - cookie_auth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdatePasswordByToken"
-      responses:
-        201:
-          description: successful reset
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        default:
-          $ref: "#/components/responses/ServerError"
 
-  /auth/password/forgot:
-    post:
-      tags:
-        - auth
-      operationId: forgotPassword
-      summary: forgot password request initiates the password reset process
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ForgotPasswordRequest"
-      responses:
-        204:
-          description: No content
-        400:
-          $ref: "#/components/responses/BadRequest"
-        default:
-          $ref: "#/components/responses/ServerError"
 
   /auth/capabilities:
     get:
       tags:
-        - auth
+        - internal
       operationId: getAuthCapabilities
       summary: list authentication capabilities supported
       security: []
@@ -1641,6 +1779,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthCapabilities"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1663,6 +1803,8 @@ paths:
                 $ref: "#/components/schemas/UserList"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     post:
@@ -1692,6 +1834,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         409:
           $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1718,6 +1862,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -1732,6 +1878,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1754,6 +1902,8 @@ paths:
                 $ref: "#/components/schemas/GroupList"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     post:
@@ -1777,6 +1927,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1803,6 +1955,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -1817,6 +1971,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1839,6 +1995,8 @@ paths:
                 $ref: "#/components/schemas/PolicyList"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     post:
@@ -1865,6 +2023,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         409:
           $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1891,6 +2051,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     put:
@@ -1917,6 +2079,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -1931,6 +2095,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1952,13 +2118,15 @@ paths:
         - $ref: "#/components/parameters/PaginationAmount"
       responses:
         200:
-          description: group memeber list
+          description: group member list
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserList"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -1986,6 +2154,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2001,6 +2171,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2031,6 +2203,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2050,6 +2224,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2077,6 +2253,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2096,6 +2274,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2126,6 +2306,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2162,6 +2344,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2189,6 +2373,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -2203,6 +2389,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2233,6 +2421,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2260,6 +2450,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2275,6 +2467,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2304,6 +2498,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2323,6 +2519,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFoundOrNoACL"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2345,6 +2543,8 @@ paths:
                 $ref: "#/components/schemas/RepositoryList"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     post:
@@ -2378,6 +2578,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         409:
           $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2404,6 +2606,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -2411,6 +2615,13 @@ paths:
         - repositories
       operationId: deleteRepository
       summary: delete repository
+      parameters:
+        - in: query
+          name: force
+          schema:
+            type: boolean
+            default: false
+          description: Bypass read-only protection and delete the repository
       responses:
         204:
           description: repository deleted successfully
@@ -2418,6 +2629,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2444,76 +2657,194 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-
-  /otf/diffs:
-    get:
+    post:
       tags:
-        - experimental
-        - otf diff
-      operationId: getOtfDiffs
-      summary: get the available Open Table Format diffs
+        - internal
+      operationId: setRepositoryMetadata
+      summary: set repository metadata
+      description: |
+        Set repository metadata. This will only add or update the provided keys, and will not remove any existing keys.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepositoryMetadataSet"
       responses:
-        200:
-          description: available Open Table Format diffs
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OTFDiffs"
+        204:
+          description: repository metadata set successfully
         401:
           $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - internal
+      operationId: deleteRepositoryMetadata
+      summary: delete repository metadata
+      description: |
+        Delete specified keys from the repository's metadata.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepositoryMetadataKeys"
+      responses:
+        204:
+          description: repository metadata keys deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
-  /repositories/{repository}/otf/refs/{left_ref}/diff/{right_ref}:
+  /repositories/{repository}/settings/gc_rules:
     parameters:
       - in: path
         name: repository
         required: true
         schema:
           type: string
-      - in: path
-        name: left_ref
-        required: true
-        schema:
-          type: string
-      - in: path
-        name: right_ref
-        required: true
-        schema:
-          type: string
-      - in: query
-        name: table_path
-        required: true
-        description: a path to the table location under the specified ref.
-        schema:
-          type: string
-      - in: query
-        name: type
-        required: true
-        description: the type of otf
-        schema:
-          type: string
     get:
       tags:
-        - experimental
-        - otf diff
-      operationId: otfDiff
-      summary: perform otf diff
+        - repositories
+      operationId: getGCRules
+      summary: get repository GC rules
       responses:
         200:
-          description: diff list
+          description: repository GC rules
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OtfDiffList"
+                $ref: "#/components/schemas/GarbageCollectionRules"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+    put:
+      tags:
+        - repositories
+      operationId: setGCRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GarbageCollectionRules"
+      responses:
+        204:
+          description: set garbage collection rules successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - repositories
+      operationId: deleteGCRules
+      responses:
+        204:
+          description: deleted garbage collection rules successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/settings/branch_protection:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - repositories
+      operationId: getBranchProtectionRules
+      summary: get branch protection rules
+      responses:
+        200:
+          description: branch protection rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BranchProtectionRule"
+          headers:
+            ETag:
+              schema:
+                type: string
+                description: ETag of the branch protection rules
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    put:
+      parameters:
+        - in: header
+          name: If-Match
+          schema:
+            type: string
+          description: if provided, the branch protection rules will be updated only if the current ETag match the provided value
+          allowEmptyValue: true
+      tags:
+        - repositories
+      operationId: setBranchProtectionRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/BranchProtectionRule"
+      responses:
+        204:
+          description: branch protection rule created successfully
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
         412:
           $ref: "#/components/responses/PreconditionFailed"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2526,9 +2857,11 @@ paths:
           type: string
     put:
       tags:
-        - refs
+        - internal
       operationId: dumpRefs
-      summary: Dump repository refs (tags, commits, branches) to object store
+      summary: |
+        Dump repository refs (tags, commits, branches) to object store
+        Deprecated: a new API will introduce long running operations
       responses:
         201:
           description: refs dump
@@ -2542,6 +2875,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2554,15 +2889,17 @@ paths:
           type: string
     put:
       tags:
-        - refs
+        - internal
       operationId: restoreRefs
-      summary: Restore repository refs (tags, commits, branches) from object store
+      summary: |
+        Restore repository refs (tags, commits, branches) from object store.
+        Deprecated: a new API will introduce long running operations
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RefsDump"
+              $ref: "#/components/schemas/RefsRestore"
       responses:
         200:
           description: refs successfully loaded
@@ -2572,6 +2909,128 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/dump:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - repositories
+      operationId: dumpSubmit
+      summary: Backup the repository metadata (tags, commits, branches) and save the backup to the object store.
+      responses:
+        202:
+          description: dump task information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskInfo"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    get:
+      tags:
+        - repositories
+      operationId: dumpStatus
+      summary: Status of a repository dump task
+      parameters:
+        - in: query
+          name: task_id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: dump task status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepositoryDumpStatus"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/restore:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - repositories
+      operationId: restoreSubmit
+      summary: Restore repository from a dump in the object store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefsRestore"
+      responses:
+        202:
+          description: restore task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskInfo"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/ServerError"
+    get:
+      tags:
+        - repositories
+      operationId: restoreStatus
+      summary: Status of a restore request
+      parameters:
+        - in: query
+          name: task_id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: restore task status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepositoryRestoreStatus"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2602,6 +3061,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2627,10 +3088,14 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         409:
           $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2662,6 +3127,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -2669,13 +3136,23 @@ paths:
         - tags
       operationId: deleteTag
       summary: delete tag
+      parameters:
+        - in: query
+          name: force
+          required: false
+          schema:
+            type: boolean
       responses:
         204:
           description: tag deleted successfully
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2706,6 +3183,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     post:
@@ -2730,10 +3209,14 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         409:
           $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2781,6 +3264,17 @@ paths:
           description: if set to true, follow only the first parent upon reaching a merge commit
           schema:
             type: boolean
+        - in: query
+          name: since
+          description: Show commits more recent than a specific date-time. In case used with stop_at parameter, will stop at the first commit that meets any of the conditions.
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: stop_at
+          description: A reference to stop at. In case used with since parameter, will stop at the first commit that meets any of the conditions.
+          schema:
+            type: string
       responses:
         200:
           description: commit log
@@ -2792,6 +3286,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2807,30 +3303,6 @@ paths:
         required: true
         schema:
           type: string
-    get:
-      deprecated: true
-      tags:
-        - commits
-      operationId: logBranchCommits
-      summary: |
-        get commit log from branch.
-        Deprecated: replaced by logCommits by passing branch name as ref
-      parameters:
-        - $ref: "#/components/parameters/PaginationAfter"
-        - $ref: "#/components/parameters/PaginationAmount"
-      responses:
-        200:
-          description: commit log
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CommitList"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
     post:
       parameters:
         - in: query
@@ -2864,14 +3336,52 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
+        409:
+          $ref: "#/components/responses/Conflict"
         412:
           description: Precondition Failed (e.g. a pre-commit hook returned a failure)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/commits:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - internal
+      operationId: CreateCommitRecord
+      summary: create commit record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitRecordCreation"
+      responses:
+        204:
+          description: commit record created
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
 
   /repositories/{repository}/branches/{branch}:
     parameters:
@@ -2901,6 +3411,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -2908,6 +3420,13 @@ paths:
         - branches
       operationId: deleteBranch
       summary: delete branch
+      parameters:
+        - in: query
+          name: force
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         204:
           description: branch deleted successfully
@@ -2917,6 +3436,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     put:
@@ -2933,10 +3454,65 @@ paths:
       responses:
         204:
           description: reset successful
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/hard_reset:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - experimental
+      operationId: hardResetBranch
+      summary: hard reset branch
+      description:
+        Relocate branch to refer to ref.  Branch must not contain
+        uncommitted data.
+      parameters:
+        - in: query
+          name: ref
+          required: true
+          schema:
+            type: string
+          description: After reset, branch will point at this reference.
+        - in: query
+          name: force
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        204:
+          description: reset successful
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -2970,6 +3546,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         409:
@@ -2978,6 +3556,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3015,6 +3595,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         409:
@@ -3023,6 +3605,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3084,6 +3668,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     get:
@@ -3104,6 +3690,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3140,6 +3728,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3189,6 +3779,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3220,6 +3812,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3321,8 +3915,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
         410:
           description: object expired
           content:
@@ -3335,6 +3927,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
     head:
       tags:
         - objects
@@ -3388,8 +3984,144 @@ paths:
           description: object expired
         416:
           description: Requested Range Not Satisfiable
+        420:
+          description: too many requests
         default:
           description: internal server error
+
+  /repositories/{repository}/branches/{branch}/staging/pmpu:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: path
+        description: relative to the branch
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: parts
+        description: number of presigned URL parts required to upload
+        schema:
+          type: integer
+    post:
+      tags:
+        - experimental
+      operationId: createPresignMultipartUpload
+      summary: Initiate a multipart upload
+      description: |
+        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional).
+        Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation.
+        For example working with S3 blockstore, minimum size is 5MB (excluding the last part).
+      responses:
+        201:
+          description: Presign multipart upload initiated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PresignMultipartUpload"
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: uploadId
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: path
+        description: relative to the branch
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - experimental
+      operationId: completePresignMultipartUpload
+      summary: Complete a presign multipart upload request
+      description: Completes a presign multipart upload by assembling the uploaded parts.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompletePresignMultipartUpload"
+      responses:
+        200:
+          description: Presign multipart upload completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectStats"
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        409:
+          description: conflict with a commit, try here
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StagingLocation"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+    delete:
+      tags:
+        - experimental
+      operationId: abortPresignMultipartUpload
+      summary: Abort a presign multipart upload
+      description: Aborts a presign multipart upload.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AbortPresignMultipartUpload"
+      responses:
+        204:
+          description: Presign multipart upload aborted
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
 
   /repositories/{repository}/branches/{branch}/staging/backing:
     parameters:
@@ -3413,7 +4145,7 @@ paths:
       tags:
         - staging
       operationId: getPhysicalAddress
-      summary: get a physical address and a return token to write object to underlying storage
+      summary: generate an address to which the client can upload an object
       parameters:
         - in: query
           name: presign
@@ -3431,6 +4163,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3440,19 +4174,18 @@ paths:
       operationId: linkPhysicalAddress
       summary: associate staging on this physical address with a path
       description: |
-        If the supplied token matches the current staging token, associate the object as the
-        physical address with the supplied path.
-
-        Otherwise, if staging has been committed and the token has expired, return a conflict
-        and hint where to place the object to try again.  Caller should copy the object to the
-        new physical address and PUT again with the new staging token.  (No need to back off,
-        this is due to losing the race against a concurrent commit operation.)
+        Link the physical address with the path in lakeFS, creating an uncommitted change.
+        The given address can be one generated by getPhysicalAddress, or an address outside the repository's storage namespace.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/StagingMetadata"
+              
+      parameters:
+        - $ref: "#/components/parameters/IfNoneMatch"
+          
       responses:
         200:
           # This actually violates HTTP, which requires returning 201 if a new object was
@@ -3467,6 +4200,8 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/ServerError"
         409:
@@ -3475,6 +4210,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StagingLocation"
+        412:
+          $ref: "#/components/responses/PreconditionFailed"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3508,11 +4247,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ImportStatusResp"
+                $ref: "#/components/schemas/ImportStatus"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     post:
@@ -3537,8 +4278,12 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -3564,114 +4309,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         409:
           $ref: "#/components/responses/Conflict"
-        default:
-          $ref: "#/components/responses/ServerError"
-
-  /repositories/{repository}/branches/metaranges:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-    post:
-      tags:
-        - import
-      operationId: createMetaRange
-      summary: create a lakeFS metarange file from the given ranges
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/MetaRangeCreation"
-      responses:
-        201:
-          description: metarange metadata
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MetaRangeCreationResponse"
-        400:
-          $ref: "#/components/responses/ValidationError"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        403:
-          $ref: "#/components/responses/Forbidden"
-        404:
-          $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
-
-  /repositories/{repository}/branches/ranges:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-    post:
-      tags:
-        - import
-      operationId: ingestRange
-      summary: create a lakeFS range file from the source uri
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/StageRangeCreation"
-      responses:
-        201:
-          description: range metadata
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/IngestRangeCreationResponse"
-
-        400:
-          $ref: "#/components/responses/ValidationError"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
-
-  /repositories/{repository}/branches/{branch}/update_token:
-    parameters:
-      - in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-      - in: path
-        name: branch
-        required: true
-        schema:
-          type: string
-    put:
-      tags:
-        - staging
-      operationId: updateBranchToken
-      summary: modify branch staging token
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateToken"
-      responses:
-        204:
-          description: branch updated successfully
-        400:
-          $ref: "#/components/responses/ValidationError"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        403:
-          $ref: "#/components/responses/Forbidden"
-        404:
-          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3695,7 +4334,7 @@ paths:
           type: string
     get:
       tags:
-        - objects
+        - internal
       operationId: uploadObjectPreflight
       responses:
         204:
@@ -3706,6 +4345,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3728,8 +4369,9 @@ paths:
         schema:
           type: string
     put:
+      deprecated: true
       tags:
-        - objects
+        - internal
       operationId: stageObject
       summary: stage an object's metadata for the given branch
       requestBody:
@@ -3753,6 +4395,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3771,21 +4415,26 @@ paths:
                   description: Only a single file per upload which must be named "content".
                   type: string
                   format: binary
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
 
       parameters:
+        - $ref: "#/components/parameters/IfNoneMatch"
         - in: query
           name: storageClass
+          description: Deprecated, this capability will not be supported in future releases.
           required: false
+          deprecated: true
           schema:
             type: string
-        - in: header
-          name: If-None-Match
-          description: Currently supports only "*" to allow uploading an object only if one doesn't exist yet
-          example: "*"
+        - in: query
+          name: force
           required: false
           schema:
-            type: string
-            pattern: '^\*$' # Currently, only "*" is supported
+            type: boolean
+            default: false
       responses:
         201:
           description: object metadata
@@ -3803,6 +4452,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         412:
           $ref: "#/components/responses/PreconditionFailed"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -3810,6 +4461,13 @@ paths:
         - objects
       operationId: deleteObject
       summary: delete object. Missing objects will not return a NotFound error.
+      parameters:
+        - in: query
+          name: force
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         204:
           description: object deleted successfully
@@ -3819,6 +4477,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3834,6 +4494,12 @@ paths:
         required: true
         schema:
           type: string
+      - in: query
+        name: force
+        required: false
+        schema:
+          type: boolean
+          default: false
     post:
       tags:
         - objects
@@ -3858,6 +4524,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3902,8 +4570,12 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3957,6 +4629,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         410:
           description: object gone (but partial metadata may be available)
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3995,6 +4669,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4043,6 +4719,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4065,7 +4743,7 @@ paths:
         description: path to the table data
     post:
       tags:
-        - metadata
+        - internal
       operationId: createSymlinkFile
       summary: creates symlink files corresponding to the given directory
 
@@ -4080,6 +4758,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4116,6 +4796,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4147,6 +4829,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4180,6 +4864,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4217,6 +4903,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4253,6 +4941,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4289,6 +4979,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4301,7 +4993,7 @@ paths:
           type: string
     get:
       tags:
-        - retention
+        - internal
       operationId: setGarbageCollectionRulesPreflight
       responses:
         204:
@@ -4310,6 +5002,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4321,9 +5015,10 @@ paths:
         schema:
           type: string
     get:
+      deprecated: true
       tags:
-        - retention
-      operationId: getGarbageCollectionRules
+        - internal
+      operationId: internalGetGarbageCollectionRules
       responses:
         200:
           description: gc rule list
@@ -4335,13 +5030,16 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-    
+
     post:
+      deprecated: true
       tags:
-        - retention
-      operationId: set garbage collection rules
+        - internal
+      operationId: internalSetGarbageCollectionRules
       requestBody:
         required: true
         content:
@@ -4355,12 +5053,15 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
+      deprecated: true
       tags:
-        - retention
-      operationId: delete garbage collection rules
+        - internal
+      operationId: internalDeleteGarbageCollectionRules
       responses:
         204:
           description: deleted garbage collection rules successfully
@@ -4368,6 +5069,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4379,15 +5082,10 @@ paths:
         schema:
           type: string
     post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/GarbageCollectionPrepareRequest"
       tags:
-        - retention
+        - internal
       operationId: prepareGarbageCollectionCommits
-      summary: save lists of active and expired commits for garbage collection
+      summary: save lists of active commits for garbage collection
       responses:
         201:
           description: paths to commit dataset
@@ -4397,8 +5095,12 @@ paths:
                 $ref: "#/components/schemas/GarbageCollectionPrepareResponse"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4416,7 +5118,7 @@ paths:
             schema:
               $ref: "#/components/schemas/PrepareGCUncommittedRequest"
       tags:
-        - retention
+        - internal
       operationId: prepareGarbageCollectionUncommitted
       summary: save repository uncommitted metadata for garbage collection
       responses:
@@ -4430,8 +5132,12 @@ paths:
           $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4444,7 +5150,7 @@ paths:
           type: string
     get:
       tags:
-        - repositories
+        - internal
       operationId: createBranchProtectionRulePreflight
       responses:
         204:
@@ -4455,6 +5161,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         409:
           $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4466,9 +5174,10 @@ paths:
         schema:
           type: string
     get:
+      deprecated: true
       tags:
-        - repositories
-      operationId: getBranchProtectionRules
+        - internal
+      operationId: internalGetBranchProtectionRules
       summary: get branch protection rules
       responses:
         200:
@@ -4483,13 +5192,16 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
 
     post:
+      deprecated: true
       tags:
-        - repositories
-      operationId: createBranchProtectionRule
+        - internal
+      operationId: internalCreateBranchProtectionRule
       requestBody:
         required: true
         content:
@@ -4503,12 +5215,15 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
     delete:
+      deprecated: true
       tags:
-        - repositories
-      operationId: deleteBranchProtectionRule
+        - internal
+      operationId: internalDeleteBranchProtectionRule
       requestBody:
         required: true
         content:
@@ -4527,6 +5242,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
   /healthcheck:
@@ -4539,12 +5256,28 @@ paths:
       responses:
         204:
           description: NoContent
-  /config/version:
+  /config:
     get:
       tags:
         - config
+      operationId: getConfig
+      description: retrieve lakeFS configuration
+      responses:
+        200:
+          description: lakeFS configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+  /config/version:
+    get:
+      tags:
+        - internal
       operationId: getLakeFSVersion
       description: get version of lakeFS server
+      deprecated: true
       responses:
         200:
           description: lakeFS version
@@ -4557,9 +5290,10 @@ paths:
   /config/storage:
     get:
       tags:
-        - config
+        - internal
       operationId: getStorageConfig
       description: retrieve lakeFS storage configuration
+      deprecated: true
       responses:
         200:
           description: lakeFS storage configuration
@@ -4572,7 +5306,7 @@ paths:
   /config/garbage-collection:
     get:
       tags:
-        - config
+        - internal
       operationId: getGarbageCollectionConfig
       description: get information of gc settings
       responses:
@@ -4584,48 +5318,11 @@ paths:
                 $ref: "#/components/schemas/GarbageCollectionConfig"
         401:
           $ref: "#/components/responses/Unauthorized"
-  /templates/{template_location}:
-    get:
-      tags:
-        - templates
-      operationId: expandTemplate
-      description: fetch and expand template
-      parameters:
-        - in: path
-          name: template_location
-          required: true
-          schema:
-            type: string
-          description: URL of the template; must be relative (to a URL configured on the server).
-          example: spark.submit.conf.tt
-        - in: query
-          name: params
-          schema:
-            type: object
-            additionalProperties:
-              type: string
-            example:
-              lakefs_url: https://lakefs.example.com
-          style: form
-          explode: true
-      responses:
-        200:
-          description: expanded template
-          content:
-            "*/*":
-              schema:
-                format: binary
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
 
   /statistics:
     post:
       tags:
-        - statistics
+        - internal
       operationId: postStatsEvents
       summary: post stats events, this endpoint is meant for internal use only
       requestBody:
@@ -4641,5 +5338,34 @@ paths:
           $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /usage-report/summary:
+    get:
+      tags:
+        - internal
+      operationId: getUsageReportSummary
+      summary: get usage report summary
+      responses:
+        200:
+          description: Usage report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstallationUsageReport"
+            application/text:
+              schema:
+                type: string
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"

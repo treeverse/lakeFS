@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
   lakefs:
     image: "${REPO:-treeverse}/lakefs:${TAG:-dev}"
@@ -21,19 +21,19 @@ services:
       - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
       - LAKEFS_STATS_ENABLED
       - LAKEFS_DATABASE_DYNAMODB_ENDPOINT=http://dynamodb:8000
-      - ACTIONS_VAR=this_is_actions_var
+      - LAKEFSACTION_VAR=this_is_actions_var
       - LAKEFS_DATABASE_TYPE=dynamodb
       - LAKEFS_DATABASE_KV_ENABLED=true
       - LAKEFS_DATABASE_DYNAMODB_AWS_REGION=us-east-1
       - LAKEFS_DATABASE_DYNAMODB_AWS_ACCESS_KEY_ID=AKIAIO5FODNN7EXAMPLE
       - LAKEFS_DATABASE_DYNAMODB_AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY
-    entrypoint: [ "/app/lakefs", "run" ]
+    entrypoint: ["/app/lakefs", "run"]
   dynamodb:
     image: "amazon/dynamodb-local:1.18.0"
     ports:
       - "6432:8000"
   esti:
-    image: "golang:1.20.6-alpine3.18"
+    image: "golang:1.21.4-alpine3.18"
     links:
       - lakefs:s3.local.lakefs.io
       - lakefs:testmultipartupload.s3.local.lakefs.io
@@ -46,7 +46,6 @@ services:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION=us-east-1
-      - ESTI_TEST_DATA_ACCESS
       - ESTI_STORAGE_NAMESPACE
       - ESTI_BLOCKSTORE_TYPE
       - ESTI_AWS_ACCESS_KEY_ID
@@ -78,4 +77,3 @@ volumes:
       type: none
       device: ${LAKEFS_ROOT:-.}
   lakefs-app:
-

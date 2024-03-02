@@ -14,18 +14,18 @@ import org.apache.hadoop.fs.Path;
 import io.lakefs.LakeFSClient;
 import io.lakefs.LakeFSFileSystem;
 import io.lakefs.LakeFSLinker;
-import io.lakefs.clients.api.ApiException;
-import io.lakefs.clients.api.ObjectsApi;
-import io.lakefs.clients.api.StagingApi;
-import io.lakefs.clients.api.model.ObjectStats;
-import io.lakefs.clients.api.model.StagingLocation;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.ObjectsApi;
+import io.lakefs.clients.sdk.StagingApi;
+import io.lakefs.clients.sdk.model.ObjectStats;
+import io.lakefs.clients.sdk.model.StagingLocation;
 import io.lakefs.utils.ObjectLocation;
 
 public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
-    private PhysicalAddressTranslator physicalAddressTranslator;
-    private LakeFSFileSystem lakeFSFileSystem;
-    private LakeFSClient lfsClient;
-    private Configuration conf;
+    private final PhysicalAddressTranslator physicalAddressTranslator;
+    private final LakeFSFileSystem lakeFSFileSystem;
+    private final LakeFSClient lfsClient;
+    private final Configuration conf;
 
     public SimpleStorageAccessStrategy(LakeFSFileSystem lakeFSFileSystem, LakeFSClient lfsClient,
             Configuration conf, PhysicalAddressTranslator physicalAddressTranslator) {
@@ -34,13 +34,16 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
         this.conf = conf;
         this.physicalAddressTranslator = physicalAddressTranslator;
     }
-
+    
     @Override
     public FSDataOutputStream createDataOutputStream(ObjectLocation objectLocation,
-            CreateOutputStreamParams params) throws ApiException, IOException {
+            CreateOutputStreamParams params, boolean overwrite) throws ApiException, IOException {
         StagingApi staging = lfsClient.getStagingApi();
-        StagingLocation stagingLocation = staging.getPhysicalAddress(objectLocation.getRepository(),
-                objectLocation.getRef(), objectLocation.getPath(), false);
+        StagingLocation stagingLocation =
+            staging.getPhysicalAddress(objectLocation.getRepository(),
+                                       objectLocation.getRef(), objectLocation.getPath())
+            .presign(false)
+            .execute();
         Path physicalPath;
         try {
             physicalPath = physicalAddressTranslator.translate(Objects.requireNonNull(stagingLocation.getPhysicalAddress()));
@@ -56,7 +59,7 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
             physicalOut = physicalFs.create(physicalPath);
         }
         MetadataClient metadataClient = new MetadataClient(physicalFs);
-        LakeFSLinker linker = new LakeFSLinker(lakeFSFileSystem, lfsClient, objectLocation, stagingLocation);
+        LakeFSLinker linker = new LakeFSLinker(lakeFSFileSystem, lfsClient, objectLocation, stagingLocation, overwrite);
         LinkOnCloseOutputStream out = new LinkOnCloseOutputStream(physicalPath.toUri(), metadataClient, physicalOut, linker);
         // TODO(ariels): add fs.FileSystem.Statistics here to keep track.
         return new FSDataOutputStream(out, null);
@@ -67,7 +70,9 @@ public class SimpleStorageAccessStrategy implements StorageAccessStrategy {
             throws ApiException, IOException {
         ObjectsApi objects = lfsClient.getObjectsApi();
         ObjectStats stats = objects.statObject(objectLocation.getRepository(),
-                objectLocation.getRef(), objectLocation.getPath(), false, false);
+                                               objectLocation.getRef(), objectLocation.getPath())
+            .userMetadata(false).presign(false)
+            .execute();
         Path physicalPath;
         try {
             physicalPath = physicalAddressTranslator.translate(Objects.requireNonNull(stats.getPhysicalAddress()));

@@ -31,7 +31,7 @@ func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, external
 
 func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
 	ctx := context.Background()
-	contents := "test_file"
+	const contents = "test_file"
 	size := int64(len(contents))
 
 	cases := []struct {
@@ -50,7 +50,7 @@ func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, ex
 			obj := block.ObjectPointer{
 				StorageNamespace: storageNamespace,
 				Identifier:       c.path,
-				IdentifierType:   block.IdentifierTypeRelative,
+				IdentifierType:   c.identifierType,
 			}
 
 			err := adapter.Put(ctx, obj, size, strings.NewReader(contents), block.PutOpts{})
@@ -58,7 +58,9 @@ func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, ex
 
 			reader, err := adapter.Get(ctx, obj, size)
 			require.NoError(t, err)
-			defer reader.Close()
+			defer func() {
+				require.NoError(t, reader.Close())
+			}()
 			got, err := io.ReadAll(reader)
 			require.NoError(t, err)
 			require.Equal(t, contents, string(got))

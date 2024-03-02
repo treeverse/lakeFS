@@ -25,7 +25,7 @@ const (
 	sampleRepoCommitMsg  = "Add sample data"
 )
 
-func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catalog.Interface, pathProvider upload.PathProvider, blockAdapter block.Adapter, user *model.User) error {
+func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat *catalog.Catalog, pathProvider upload.PathProvider, blockAdapter block.Adapter, user *model.User) error {
 	// upload sample data
 	// we skip checking if the repo and branch exist, since we just created them
 	// we also skip checking if the file exists, since we know the repo is empty
@@ -105,7 +105,6 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catal
 
 		return nil
 	})
-
 	if err != nil {
 		return err
 	}
@@ -113,15 +112,16 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat catal
 	// if we succeeded, commit the changes
 	// commit changes
 	_, err = cat.Commit(ctx, repo.Name, repo.DefaultBranch, sampleRepoCommitMsg,
-		user.Username, map[string]string{}, swag.Int64(time.Now().Unix()), nil)
+		user.Username, map[string]string{}, swag.Int64(time.Now().Unix()), nil, false)
 
 	return err
 }
 
-func SampleRepoAddBranchProtection(ctx context.Context, repo *catalog.Repository, cat catalog.Interface) error {
-	// Set branch protection on main branch
-
-	err := cat.CreateBranchProtectionRule(ctx, repo.Name, repo.DefaultBranch, []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT})
-
-	return err
+func AddBranchProtection(ctx context.Context, repo *catalog.Repository, cat *catalog.Catalog) error {
+	return cat.SetBranchProtectionRules(ctx, repo.Name, &graveler.BranchProtectionRules{
+		BranchPatternToBlockedActions: map[string]*graveler.BranchProtectionBlockedActions{
+			repo.DefaultBranch: {Value: []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_COMMIT,
+				graveler.BranchProtectionBlockedAction_STAGING_WRITE}},
+		},
+	}, swag.String(""))
 }

@@ -7,16 +7,23 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/aes"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/hmac"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/sha256"
+	"github.com/treeverse/lakefs/pkg/actions/lua/databricks"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/base64"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/hex"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/json"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/parquet"
+	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/yaml"
+	"github.com/treeverse/lakefs/pkg/actions/lua/formats"
 	"github.com/treeverse/lakefs/pkg/actions/lua/net/http"
+	"github.com/treeverse/lakefs/pkg/actions/lua/net/url"
 	"github.com/treeverse/lakefs/pkg/actions/lua/path"
 	"github.com/treeverse/lakefs/pkg/actions/lua/regexp"
 	"github.com/treeverse/lakefs/pkg/actions/lua/storage/aws"
+	"github.com/treeverse/lakefs/pkg/actions/lua/storage/azure"
+	"github.com/treeverse/lakefs/pkg/actions/lua/storage/gcloud"
 	"github.com/treeverse/lakefs/pkg/actions/lua/strings"
 	"github.com/treeverse/lakefs/pkg/actions/lua/time"
+	"github.com/treeverse/lakefs/pkg/actions/lua/util"
 	"github.com/treeverse/lakefs/pkg/actions/lua/uuid"
 )
 
@@ -26,7 +33,9 @@ import (
 func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	regexp.Open(l)
 	strings.Open(l)
+	util.Open(l)
 	json.Open(l)
+	yaml.Open(l)
 	time.Open(l)
 	hmac.Open(l)
 	base64.Open(l)
@@ -37,6 +46,11 @@ func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	parquet.Open(l)
 	path.Open(l)
 	aws.Open(l, ctx)
+	gcloud.Open(l, ctx)
+	azure.Open(l, ctx)
+	url.Open(l)
+	formats.Open(l, ctx, cfg.LakeFSAddr)
+	databricks.Open(l, ctx)
 	if cfg.NetHTTPEnabled {
 		http.Open(l)
 	}

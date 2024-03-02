@@ -17,9 +17,9 @@ func TestIsRepository(t *testing.T) {
 	tmpSubdir, err := os.MkdirTemp(tmpdir, "")
 	require.NoError(t, err)
 	defer func(name string) {
-		err = os.Remove(name)
+		err = os.RemoveAll(name)
 		if err != nil {
-
+			t.Error("failed to remove temp dir", err)
 		}
 	}(tmpSubdir)
 	tmpFile, err := os.CreateTemp(tmpSubdir, "")
@@ -79,45 +79,35 @@ func TestIgnore(t *testing.T) {
 		trackedFile  = "file1"
 		marker       = "Test Marker"
 	)
-	var err error
-	tmpdir := t.TempDir()
-	tmpdir, err = filepath.EvalSymlinks(tmpdir) // on macOS tmpdir is a symlink
+	tmpdir, err := filepath.EvalSymlinks(t.TempDir()) // on macOS tmpdir is a symlink
 	require.NoError(t, err)
+	// create sub dir and file
 	tmpSubdir, err := os.MkdirTemp(tmpdir, "")
 	require.NoError(t, err)
-	defer func(name string) {
-		err = os.Remove(name)
-		if err != nil {
-
-		}
-	}(tmpSubdir)
 	tmpFile, err := os.CreateTemp(tmpSubdir, "")
 	require.NoError(t, err)
-	defer func() {
-		_ = os.Remove(tmpFile.Name())
-		_ = tmpFile.Close()
-	}()
 	excludedPath := filepath.Join(tmpSubdir, excludedFile)
 
+	// Test we can't ignore if not a git repo
 	_, err = git.Ignore(tmpdir, []string{}, []string{}, marker)
 	require.ErrorIs(t, err, git.ErrNotARepository)
 	_, err = git.Ignore(tmpFile.Name(), []string{}, []string{}, marker)
 	require.Error(t, err)
 
 	// Init git repo on tmpdir
-	require.NoError(t, exec.Command("git", "init", "-q", tmpdir).Run())
+	err = exec.Command("git", "init", "-q", tmpdir).Run()
+	require.NoError(t, err)
 	ignorePath := filepath.Join(tmpdir, git.IgnoreFile)
 
 	// Create files in repo
-	fd, err := os.Create(filepath.Join(tmpdir, trackedFile))
-	require.NoError(t, err)
-	require.NoError(t, fd.Close())
-	fd, err = os.Create(filepath.Join(tmpSubdir, "should_be_ignored"))
-	require.NoError(t, err)
-	require.NoError(t, fd.Close())
-	fd, err = os.Create(excludedPath)
-	require.NoError(t, err)
-	require.NoError(t, fd.Close())
+	for _, fn := range []string{
+		filepath.Join(tmpdir, trackedFile),
+		filepath.Join(tmpSubdir, "should_be_ignored"),
+		excludedPath,
+	} {
+		err = os.WriteFile(fn, []byte("content\n"), 0o644)
+		require.NoError(t, err, "failed to create file %s", fn)
+	}
 
 	// Changing the working directory
 	require.NoError(t, os.Chdir(tmpdir))
@@ -128,40 +118,36 @@ func TestIgnore(t *testing.T) {
 	result, err := git.Ignore(tmpdir, []string{}, []string{excludedPath}, marker)
 	require.NoError(t, err)
 	require.Equal(t, ignorePath, result)
-	rel, err := filepath.Rel(tmpdir, excludedPath)
+	relExcludedPath, err := filepath.Rel(tmpdir, excludedPath)
 	require.NoError(t, err)
-	expected := fmt.Sprintf("!%s\n", rel)
 
 	verifyPathTracked(t, []string{filepath.Base(tmpSubdir), trackedFile})
 
 	_, err = git.Ignore(tmpSubdir, []string{tmpFile.Name()}, []string{excludedPath}, marker)
 	require.NoError(t, err)
-	rel, err = filepath.Rel(tmpdir, tmpFile.Name())
+	relDataFile, err := filepath.Rel(tmpdir, tmpFile.Name())
 	require.NoError(t, err)
-	expected = fmt.Sprintf("%s\n", rel) + expected
 	verifyPathTracked(t, []string{trackedFile})
 
 	_, err = git.Ignore(tmpSubdir, []string{tmpSubdir, filepath.Join(tmpdir, trackedFile)}, []string{}, marker)
 	require.NoError(t, err)
-	rel, err = filepath.Rel(tmpdir, tmpSubdir)
-	require.NoError(t, err)
-	expected += fmt.Sprintf("%s\n%s\n", filepath.Join(rel, "*"), trackedFile)
+	relDataSubDir, err := filepath.Rel(tmpdir, tmpSubdir)
 	require.NoError(t, err)
 	verifyPathTracked(t, []string{git.IgnoreFile})
 
 	_, err = git.Ignore(tmpSubdir, []string{tmpSubdir, filepath.Join(tmpdir, trackedFile), ignorePath}, []string{}, marker)
 	require.NoError(t, err)
 	require.Equal(t, ignorePath, result)
-	expected += fmt.Sprintf("%s\n", git.IgnoreFile)
-	expected = fmt.Sprintf("# %s\n", marker) + expected
 
-	contents, _ := os.ReadFile(ignorePath)
-	fmt.Println(string(contents))
-	verifyPathTracked(t, []string{})
-
-	contents, err = os.ReadFile(ignorePath)
+	contents, err := os.ReadFile(ignorePath)
 	require.NoError(t, err)
-	require.Equal(t, expected, string(contents))
+	verifyPathTracked(t, nil)
+
+	expectedGitIgnore := fmt.Sprintf("# %s\n%s\n!%s\n%s\n%s\n%s\n# End %s\n",
+		marker,
+		relDataFile, relExcludedPath, filepath.Join(relDataSubDir, "*"), trackedFile, git.IgnoreFile,
+		marker)
+	require.Equal(t, expectedGitIgnore, string(contents))
 }
 
 func verifyPathTracked(t *testing.T, paths []string) {
@@ -226,6 +212,14 @@ func TestParseURL(t *testing.T) {
 				Server:  "192.168.1.20:22",
 				Owner:   "MyGroup",
 				Project: "MyProject",
+			},
+		},
+		{
+			Url: "git://git@github.com:Hyphened-Owner/Hyphened-Project.git",
+			ExpectedUrl: &git.URL{
+				Server:  "github.com",
+				Owner:   "Hyphened-Owner",
+				Project: "Hyphened-Project",
 			},
 		},
 		{

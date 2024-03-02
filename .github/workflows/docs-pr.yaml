@@ -2,8 +2,10 @@ name: Docs Preview and Link Check
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, closed]
     paths:
       - "docs/**"
+      - ".github/workflows/docs-*.yaml"
     branches:
       - master
 
@@ -14,7 +16,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check-out
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -57,7 +59,7 @@ jobs:
 
       - name: Check links
         id: lychee
-        uses: lycheeverse/lychee-action@v1.7.0
+        uses: lycheeverse/lychee-action@v1.8.0
         with:
           args: docs/_site --no-progress --exclude-file=docs/.lycheeignore
           fail: true

@@ -5,17 +5,16 @@ NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 
 UID_GID := $(shell id -u):$(shell id -g)
 
-# Protoc is a Docker dependency (since it's a pain to install locally and manage versions of it)
-PROTOC_IMAGE="treeverse/protoc:3.14.0"
-PROTOC=$(DOCKER) run --rm -v $(shell pwd):/mnt $(PROTOC_IMAGE)
-
 CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 
 # https://openapi-generator.tech
-OPENAPI_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.3.0
+OPENAPI_LEGACY_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.3.0
+OPENAPI_LEGACY_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_LEGACY_GENERATOR_IMAGE)
+OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.0.1
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
 GOLANGCI_LINT_VERSION=v1.53.3
+BUF_CLI_VERSION=v1.28.1
 
 ifndef PACKAGE_VERSION
 	PACKAGE_VERSION=0.1.0-SNAPSHOT
@@ -64,7 +63,7 @@ clean:
 		$(LAKEFS_BINARY_NAME) \
 		$(UI_BUILD_DIR) \
 		$(UI_DIR)/node_modules \
-		pkg/api/lakefs.gen.go \
+		pkg/api/apigen/lakefs.gen.go \
 		pkg/auth/client.gen.go
 
 check-licenses: check-licenses-go-mod check-licenses-npm
@@ -106,48 +105,87 @@ gen-metastore: ## Run Metastore Code generation
 
 tools: ## Install tools
 	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
-	$(GOCMD) install google.golang.org/protobuf/cmd/protoc-gen-go
+	$(GOCMD) install github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION)
 
+client-python: sdk-python-legacy sdk-python
 
-client-python: api/swagger.yml  ## Generate SDK for Python client
+sdk-python-legacy: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 5.3.0
 	# remove the build folder as it also holds lakefs_client folder which keeps because we skip it during find
+	rm -rf clients/python-legacy/build; cd clients/python-legacy && \
+		find . -depth -name lakefs_client -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache -or -name python-codegen-config.yaml \) -delete
+	$(OPENAPI_LEGACY_GENERATOR) generate \
+		-i /mnt/$< \
+		-g python \
+		-t /mnt/clients/python-legacy/templates \
+		--package-name lakefs_client \
+		--http-user-agent "lakefs-python-sdk/$(PACKAGE_VERSION)-legacy" \
+		--git-user-id treeverse --git-repo-id lakeFS \
+		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs_client,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-client,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python-legacy \
+		-c /mnt/clients/python-legacy/python-codegen-config.yaml \
+		-o /mnt/clients/python-legacy \
+		--ignore-file-override /mnt/clients/python/.openapi-generator-ignore
+
+sdk-python: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
+	# remove the build folder as it also holds lakefs_sdk folder which keeps because we skip it during find
 	rm -rf clients/python/build; cd clients/python && \
-		find . -depth -name lakefs_client -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache \) -delete
+		find . -depth -name lakefs_sdk -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache -or -name python-codegen-config.yaml \) -delete
 	$(OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
 		-g python \
 		-t /mnt/clients/python/templates \
-		--package-name lakefs_client \
+		--package-name lakefs_sdk \
 		--http-user-agent "lakefs-python-sdk/$(PACKAGE_VERSION)" \
 		--git-user-id treeverse --git-repo-id lakeFS \
-		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs_client,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-client,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
-		-c /mnt/clients/python-codegen-config.yaml \
-		-o /mnt/clients/python
+		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageVersion=$(PACKAGE_VERSION),packageName=lakefs_sdk,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-sdk,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
+		-c /mnt/clients/python/python-codegen-config.yaml \
+		-o /mnt/clients/python \
+		--ignore-file-override /mnt/clients/python/.openapi-generator-ignore
 
-client-java: api/swagger.yml  ## Generate SDK for Java (and Scala) client
-	rm -rf clients/java
-	$(OPENAPI_GENERATOR) generate \
+client-java-legacy: api/swagger.yml api/java-gen-ignore  ## Generate legacy SDK for Java (and Scala) client
+	rm -rf clients/java-legacy
+	$(OPENAPI_LEGACY_GENERATOR) generate \
 		-i /mnt/$< \
+		--ignore-file-override /mnt/api/java-gen-ignore \
 		-g java \
 		--invoker-package io.lakefs.clients.api \
-		--http-user-agent "lakefs-java-sdk/$(PACKAGE_VERSION)" \
-		--additional-properties=hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.api,modelPackage=io.lakefs.clients.api.model,mainPackage=io.lakefs.clients.api,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
+		--http-user-agent "lakefs-java-sdk/$(PACKAGE_VERSION)-legacy" \
+		--additional-properties hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client legacy SDK',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.api,modelPackage=io.lakefs.clients.api.model,mainPackage=io.lakefs.clients.api,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
+		-o /mnt/clients/java-legacy
+
+client-java: api/swagger.yml api/java-gen-ignore  ## Generate SDK for Java (and Scala) client
+	rm -rf clients/java
+	mkdir -p clients/java
+	cp api/java-gen-ignore clients/java/.openapi-generator-ignore
+	$(OPENAPI_GENERATOR) generate \
+		-i /mnt/api/swagger.yml \
+		-g java \
+		--invoker-package io.lakefs.clients.sdk \
+		--http-user-agent "lakefs-java-sdk/$(PACKAGE_VERSION)-v1" \
+		--additional-properties disallowAdditionalPropertiesIfNotPresent=false,useSingleRequestParameter=true,hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='sdk',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.sdk,modelPackage=io.lakefs.clients.sdk.model,mainPackage=io.lakefs.clients.sdk,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
 		-o /mnt/clients/java
 
-.PHONY: clients client-python client-java
-clients: client-python client-java
+.PHONY: clients client-python sdk-python-legacy sdk-python client-java client-java-legacy
+clients: client-python client-java client-java-legacy
 
-package-python: client-python
+package-python: package-python-client package-python-sdk
+
+package-python-client: client-python
+	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-legacy $(PYTHON_IMAGE) /bin/bash -c \
+		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
+
+package-python-sdk: sdk-python
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) /bin/bash -c \
+		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
+
+package-python-wrapper:
+	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c \
 		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
 
 package: package-python
 
 .PHONY: gen-api
 gen-api: docs/assets/js/swagger.yml ## Run the swagger code generator
-	$(GOGENERATE) \
-		./pkg/api \
-		./pkg/auth
+	$(GOGENERATE) ./pkg/api/apigen ./pkg/auth
 
 .PHONY: gen-code
 gen-code: gen-api ## Run the generator for inline commands
@@ -193,7 +231,7 @@ system-tests: # Run system tests locally
 	./esti/scripts/runner.sh -r all
 
 build-docker: build ## Build Docker image file (Docker required)
-	$(DOCKER) buildx build --target lakefs-plugins -t treeverse/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+	$(DOCKER) buildx build --target lakefs -t treeverse/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 gofmt:  ## gofmt code formating
 	@echo Running go formating with the following command:
@@ -211,7 +249,7 @@ validate-fmt:  ## Validate go format
 	fi
 
 .PHONY: validate-proto
-validate-proto: proto  ## build proto and check if diff found
+validate-proto: gen-proto  ## build proto and check if diff found
 	git diff --quiet -- pkg/actions/actions.pb.go || (echo "Modification verification failed! pkg/actions/actions.pb.go"; false)
 	git diff --quiet -- pkg/auth/model/model.pb.go || (echo "Modification verification failed! pkg/auth/model/model.pb.go"; false)
 	git diff --quiet -- pkg/catalog/catalog.pb.go || (echo "Modification verification failed! pkg/catalog/catalog.pb.go"; false)
@@ -240,14 +278,30 @@ validate-permissions-gen: gen-code
 validate-reference:
 	git diff --quiet -- docs/reference/cli.md || (echo "Modification verification failed! docs/reference/cli.md"; false)
 
-validate-client-python:
+validate-client-python: validate-python-sdk-legacy validate-python-sdk
+
+validate-python-sdk-legacy:
+	git diff --quiet -- clients/python-legacy || (echo "Modification verification failed! python client"; false)
+
+validate-python-sdk:
 	git diff --quiet -- clients/python || (echo "Modification verification failed! python client"; false)
 
 validate-client-java:
 	git diff --quiet -- clients/java || (echo "Modification verification failed! java client"; false)
 
+validate-python-wrapper:
+	sphinx-apidoc -o clients/python-wrapper/docs clients/python-wrapper/lakefs sphinx-apidoc --full -A 'Treeverse' -eq
+	git diff --quiet -- clients/python-wrapper || (echo 'Modification verification failed! python wrapper client'; false)
+
 # Run all validation/linting steps
 checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference validate-mockgen validate-permissions-gen
+
+python-wrapper-lint:
+	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c "./pylint.sh"
+
+python-wrapper-gen-docs:
+	sphinx-build -b html -W clients/python-wrapper/docs clients/python-wrapper/_site/
+	sphinx-build -b html -W clients/python-wrapper/docs clients/python-wrapper/_site/$$(python clients/python-wrapper/setup.py --version)
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
@@ -255,16 +309,8 @@ $(UI_DIR)/node_modules:
 gen-ui: $(UI_DIR)/node_modules  ## Build UI web app
 	cd $(UI_DIR) && $(NPM) run build
 
-proto: tools ## Build proto (Protocol Buffers) files
-	$(PROTOC) --proto_path=pkg/actions --go_out=pkg/actions --go_opt=paths=source_relative actions.proto
-	$(PROTOC) --proto_path=pkg/auth/model --go_out=pkg/auth/model --go_opt=paths=source_relative model.proto
-	$(PROTOC) --proto_path=pkg/catalog --go_out=pkg/catalog --go_opt=paths=source_relative catalog.proto
-	$(PROTOC) --proto_path=pkg/gateway/multipart --go_out=pkg/gateway/multipart --go_opt=paths=source_relative multipart.proto
-	$(PROTOC) --proto_path=pkg/graveler --go_out=pkg/graveler --go_opt=paths=source_relative graveler.proto
-	$(PROTOC) --proto_path=pkg/graveler/committed --go_out=pkg/graveler/committed --go_opt=paths=source_relative committed.proto
-	$(PROTOC) --proto_path=pkg/graveler/settings --go_out=pkg/graveler/settings --go_opt=paths=source_relative test_settings.proto
-	$(PROTOC) --proto_path=pkg/kv --go_out=pkg/kv --go_opt=paths=source_relative secondary_index.proto
-	$(PROTOC) --proto_path=pkg/kv/kvtest --go_out=pkg/kv/kvtest --go_opt=paths=source_relative test_model.proto
+gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
+	go run github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION) generate
 
 publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
 	cd clients/spark && sbt assembly && sbt s3Upload && sbt publishSigned
@@ -279,7 +325,3 @@ help:  ## Show Help menu
 
 # helpers
 gen: gen-ui gen-api clients gen-docs
-
-delta-plugin: ## Build delta plugin
-	cargo clean --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml
-	cargo build --release --manifest-path pkg/plugins/diff/delta_diff_server/Cargo.toml

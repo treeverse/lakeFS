@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 )
 
 const (
@@ -42,7 +43,7 @@ var kvGetCmd = &cobra.Command{
 		}
 
 		ctx := cmd.Context()
-		kvParams, err := cfg.DatabaseParams()
+		kvParams, err := kvparams.NewConfig(cfg)
 		if err != nil {
 			return fmt.Errorf("KV params: %w", err)
 		}
@@ -108,7 +109,7 @@ var kvScanCmd = &cobra.Command{
 		}
 
 		ctx := cmd.Context()
-		kvParams, err := cfg.DatabaseParams()
+		kvParams, err := kvparams.NewConfig(cfg)
 		if err != nil {
 			return fmt.Errorf("KV params: %w", err)
 		}

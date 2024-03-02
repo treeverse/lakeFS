@@ -20,6 +20,8 @@ import {
 } from "./types";
 import imageUriReplacer from "../../../../lib/remark-plugins/imageUriReplacer";
 
+import "react-ipynb-renderer/dist/styles/default.css";
+
 export const ObjectTooLarge: FC<RendererComponent> = ({ path, sizeBytes }) => {
   return (
     <Alert variant="warning" className="m-5">

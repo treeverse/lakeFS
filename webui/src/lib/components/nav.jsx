@@ -4,7 +4,6 @@ import {NavLink as RouterLink, useHref, useLinkClickHandler} from "react-router-
 import Nav from "react-bootstrap/Nav";
 
 import {buildURL} from "../hooks/router";
-import {Tabs} from "@mui/material";
 
 const wrapComponent = (component) => {
     const linkWrapper = React.forwardRef(({navigate, onClick, to, target, replace, state, ...rest}, ref) => {
@@ -61,26 +60,3 @@ export const NavItem = ({href, active, children}) => {
         </Nav.Item>
     );
 };
-
-export const TabsWrapper = ({
-                                isCentered,
-                                children,
-                                defaultTabIndex,
-                                handleTabChange,
-                                ariaLabel = '',
-                                textColor = 'primary',
-                                indicatorColor = 'primary'
-                            }) => {
-    return (
-        <Tabs
-            value={defaultTabIndex}
-            onChange={handleTabChange}
-            textColor={textColor}
-            indicatorColor={indicatorColor}
-            aria-label={ariaLabel}
-            centered={isCentered}
-        >
-            {children}
-        </Tabs>
-    );
-}

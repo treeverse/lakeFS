@@ -14,6 +14,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/version"
@@ -48,7 +49,7 @@ var superuserCmd = &cobra.Command{
 
 		logger := logging.ContextUnavailable()
 		ctx := cmd.Context()
-		kvParams, err := cfg.DatabaseParams()
+		kvParams, err := kvparams.NewConfig(cfg)
 		if err != nil {
 			fmt.Printf("KV params: %s\n", err)
 			os.Exit(1)
@@ -58,11 +59,11 @@ var superuserCmd = &cobra.Command{
 			fmt.Printf("Failed to open KV store: %s\n", err)
 			os.Exit(1)
 		}
-		authService := auth.NewAuthService(kvStore, crypt.NewSecretStore(cfg.AuthEncryptionSecret()), nil, authparams.ServiceCache(cfg.Auth.Cache), logger.WithField("service", "auth_service"))
+		authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)), authparams.ServiceCache(cfg.Auth.Cache), logger.WithField("service", "auth_service"))
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 		metadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(ctx, logger, cfg.BlockstoreType(), authMetadataManager, metadataProvider)
+		metadata := stats.NewMetadata(ctx, logger, cfg.Blockstore.Type, authMetadataManager, metadataProvider)
 		credentials, err := setup.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
 			User: model.User{
 				CreatedAt: time.Now(),

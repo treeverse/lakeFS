@@ -22,7 +22,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/mock"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
-	auth_testutil "github.com/treeverse/lakefs/pkg/auth/testutil"
+	authtestutil "github.com/treeverse/lakefs/pkg/auth/testutil"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -105,7 +105,7 @@ func userWithACLs(t testing.TB, s auth.Service, a model.ACL) string {
 func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
-	s := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	s := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.ContextUnavailable())
 
@@ -155,7 +155,7 @@ func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
 func TestAuthService_ListPaged(t *testing.T) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
-	s := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	s := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.ContextUnavailable())
 
@@ -212,9 +212,9 @@ func TestAuthService_DeleteUserWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService, _ := auth_testutil.SetupService(t, ctx, someSecret)
+	authService, _ := authtestutil.SetupService(t, ctx, someSecret)
 
-	// create initial data set and verify users groups and policies are create and related as expected
+	// create initial data set and verify users groups and policies are created and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
 	users, _, err := authService.ListUsers(ctx, &model.PaginationParams{Amount: 100})
 	require.NoError(t, err)
@@ -280,7 +280,7 @@ func TestAuthService_DeleteGroupWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService, _ := auth_testutil.SetupService(t, ctx, someSecret)
+	authService, _ := authtestutil.SetupService(t, ctx, someSecret)
 
 	// create initial data set and verify users groups and policies are created and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
@@ -364,9 +364,9 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 	policyNames := []string{"policy01", "policy02", "policy03", "policy04"}
 
 	ctx := context.Background()
-	authService, _ := auth_testutil.SetupService(t, ctx, someSecret)
+	authService, _ := authtestutil.SetupService(t, ctx, someSecret)
 
-	// create initial data set and verify users groups and policies are create and related as expected
+	// create initial data set and verify users groups and policies are created and related as expected
 	createInitialDataSet(t, ctx, authService, userNames, groupNames, policyNames)
 	policies, _, err := authService.ListPolicies(ctx, &model.PaginationParams{Amount: 100})
 	require.NoError(t, err)
@@ -397,7 +397,7 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 		require.Equal(t, len(policyNames), len(policies))
 	}
 
-	// delete a user policy (beginning of the names list)
+	// delete a user policy (beginning of the name list)
 	err = authService.DeletePolicy(ctx, policyNames[0])
 	require.NoError(t, err)
 
@@ -486,8 +486,8 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 
 // createInitialDataSet -
 // Creates K users with 2 credentials each, L groups and M policies
-// Adds all users to all groups
-// Attaches M/2 of the policies to all K users and the other M-M/2 policies to all L groups
+// Add all users to all groups
+// Attach M/2 of the policies to all K users and the other M-M/2 policies to all L groups
 func createInitialDataSet(t *testing.T, ctx context.Context, svc auth.Service, userNames, groupNames, policyNames []string) {
 	for _, userName := range userNames {
 		if _, err := svc.CreateUser(ctx, &model.User{Username: userName}); err != nil {
@@ -502,7 +502,7 @@ func createInitialDataSet(t *testing.T, ctx context.Context, svc auth.Service, u
 	}
 
 	for _, groupName := range groupNames {
-		if err := svc.CreateGroup(ctx, &model.Group{DisplayName: groupName}); err != nil {
+		if _, err := svc.CreateGroup(ctx, &model.Group{DisplayName: groupName}); err != nil {
 			t.Fatalf("CreateGroup(%s): %s", groupName, err)
 		}
 		for _, userName := range userNames {
@@ -538,16 +538,16 @@ func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, b)
 
-	serviceWithoutCache := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	serviceWithoutCache := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.ContextUnavailable())
-	serviceWithCache := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	serviceWithCache := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: true,
 		Size:    1024,
 		TTL:     20 * time.Second,
 		Jitter:  3 * time.Second,
 	}, logging.ContextUnavailable())
-	serviceWithCacheLowTTL := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), nil, authparams.ServiceCache{
+	serviceWithCacheLowTTL := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: true,
 		Size:    1024,
 		TTL:     1 * time.Millisecond,
@@ -585,14 +585,14 @@ func describeAllowed(allowed bool) string {
 }
 
 func TestACL(t *testing.T) {
-	hierarchy := []model.ACLPermission{acl.ACLRead, acl.ACLWrite, acl.ACLSuper, acl.ACLAdmin}
+	hierarchy := []model.ACLPermission{acl.ReadPermission, acl.WritePermission, acl.SuperPermission, acl.AdminPermission}
 
 	type PermissionFrom map[model.ACLPermission][]permissions.Permission
 	type TestCase struct {
 		// Name is an identifier for this test case.
 		Name string
 		// ACL is the ACL to test.  ACL.Permission will be tested
-		// with each of hierarchy.
+		// with each of the hierarchies.
 		ACL model.ACL
 		// PermissionFrom holds permissions that must hold starting
 		// at the ACLPermission key in the hierarchy.
@@ -604,25 +604,25 @@ func TestACL(t *testing.T) {
 			Name: "all repos",
 			ACL:  model.ACL{},
 			PermissionFrom: PermissionFrom{
-				acl.ACLRead: []permissions.Permission{
+				acl.ReadPermission: []permissions.Permission{
 					{Action: permissions.ReadObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.ListObjectsAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.ListObjectsAction, Resource: permissions.ObjectArn("quux", "")},
 					{Action: permissions.CreateCredentialsAction, Resource: permissions.UserArn("${user}")},
 				},
-				acl.ACLWrite: []permissions.Permission{
+				acl.WritePermission: []permissions.Permission{
 					{Action: permissions.WriteObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.DeleteObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.CreateBranchAction, Resource: permissions.BranchArn("foo", "twig")},
 					{Action: permissions.CreateCommitAction, Resource: permissions.BranchArn("foo", "twig")},
 					{Action: permissions.CreateMetaRangeAction, Resource: permissions.RepoArn("foo")},
 				},
-				acl.ACLSuper: []permissions.Permission{
+				acl.SuperPermission: []permissions.Permission{
 					{Action: permissions.AttachStorageNamespaceAction, Resource: permissions.StorageNamespace("storage://bucket/path")},
 					{Action: permissions.ImportFromStorageAction, Resource: permissions.StorageNamespace("storage://bucket/path")},
 					{Action: permissions.ImportCancelAction, Resource: permissions.BranchArn("foo", "twig")},
 				},
-				acl.ACLAdmin: []permissions.Permission{
+				acl.AdminPermission: []permissions.Permission{
 					{Action: permissions.CreateUserAction, Resource: permissions.UserArn("you")},
 				},
 			},
@@ -633,7 +633,7 @@ func TestACL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			s, _ := auth_testutil.SetupService(t, ctx, someSecret)
+			s, _ := authtestutil.SetupService(t, ctx, someSecret)
 			userID := make(map[model.ACLPermission]string, len(hierarchy))
 			for _, aclPermission := range hierarchy {
 				tt.ACL.Permission = aclPermission
@@ -823,14 +823,12 @@ func TestAuthApiGetUserCache(t *testing.T) {
 	ctx := context.Background()
 	mockClient, s := NewTestApiService(t, true)
 	const userID = "123"
-	const uid = int64(123)
 
 	const username = "foo"
 	userMail := "foo@test.com"
 	externalId := "1234"
 	userResult := auth.User{
 		Username:   username,
-		Id:         uid,
 		Email:      &userMail,
 		ExternalId: &externalId,
 	}
@@ -917,7 +915,6 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 		friendlyName       string
 		source             string
 		responseStatusCode int
-		responseID         int64
 		expectedResponseID string
 		expectedErr        error
 	}{
@@ -927,9 +924,8 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 			email:              "foo@gmail.com",
 			friendlyName:       "friendly foo",
 			source:             "internal",
-			responseID:         1,
 			responseStatusCode: http.StatusCreated,
-			expectedResponseID: "1",
+			expectedResponseID: "foo",
 			expectedErr:        nil,
 		},
 		{
@@ -969,7 +965,7 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 					StatusCode: tt.responseStatusCode,
 				},
 				JSON201: &auth.User{
-					Id: tt.responseID,
+					Username: tt.userName,
 				},
 			}
 			mockClient.EXPECT().CreateUserWithResponse(gomock.Any(), auth.CreateUserJSONRequestBody{
@@ -2418,7 +2414,7 @@ func TestAPIAuthService_CreateGroup(t *testing.T) {
 				Id: tt.groupName,
 			}).Return(response, nil)
 			ctx := context.Background()
-			err := s.CreateGroup(ctx, &model.Group{
+			_, err := s.CreateGroup(ctx, &model.Group{
 				DisplayName: tt.groupName,
 			})
 			if !errors.Is(err, tt.expectedErr) {

@@ -8,9 +8,11 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"golang.org/x/exp/slices"
 )
 
@@ -46,7 +48,7 @@ func (d *dotWriter) End() {
 	_, _ = fmt.Fprint(d.w, "\n}\n")
 }
 
-func (d *dotWriter) Write(commits []api.Commit) {
+func (d *dotWriter) Write(commits []apigen.Commit) {
 	repoID := url.PathEscape(d.repositoryID)
 	for _, commit := range commits {
 		isMerge := len(commit.Parents) > 1
@@ -55,7 +57,7 @@ func (d *dotWriter) Write(commits []api.Commit) {
 			label = fmt.Sprintf("<b>%s</b>", label)
 		}
 		baseURL := strings.TrimSuffix(strings.TrimSuffix(
-			string(cfg.Values.Server.EndpointURL), "/api/v1"), "/")
+			string(cfg.Server.EndpointURL), apiutil.BaseURL), "/")
 		_, _ = fmt.Fprintf(d.w, "\n\t\"%s\" [shape=note target=\"_blank\" href=\"%s/repositories/%s/commits/%s\" label=< %s >]\n",
 			commit.Id, baseURL, repoID, commit.Id, label)
 		for _, parent := range commit.Parents {
@@ -66,7 +68,7 @@ func (d *dotWriter) Write(commits []api.Commit) {
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
-	Use:               "log <branch uri>",
+	Use:               "log <branch URI>",
 	Short:             "Show log of commits",
 	Long:              "Show log of commits for a given branch",
 	Example:           "lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg",
@@ -76,10 +78,12 @@ var logCmd = &cobra.Command{
 		amount := Must(cmd.Flags().GetInt("amount"))
 		after := Must(cmd.Flags().GetString("after"))
 		limit := Must(cmd.Flags().GetBool("limit"))
+		since := Must(cmd.Flags().GetString("since"))
 		dot := Must(cmd.Flags().GetBool("dot"))
 		firstParent := Must(cmd.Flags().GetBool("first-parent"))
 		objects := Must(cmd.Flags().GetStringSlice("objects"))
 		prefixes := Must(cmd.Flags().GetStringSlice("prefixes"))
+		stopAt := Must(cmd.Flags().GetString("stop-at"))
 
 		if slices.Contains(objects, "") {
 			Die("Objects list contains empty string!", 1)
@@ -88,25 +92,33 @@ var logCmd = &cobra.Command{
 			Die("Prefixes list contains empty string!", 1)
 		}
 
-		pagination := api.Pagination{HasMore: true}
+		pagination := apigen.Pagination{HasMore: true}
 		showMetaRangeID := Must(cmd.Flags().GetBool("show-meta-range-id"))
 		client := getClient()
-		branchURI := MustParseRefURI("branch", args[0])
+		branchURI := MustParseBranchURI("branch URI", args[0])
 		amountForPagination := amount
 		if amountForPagination <= 0 {
 			amountForPagination = internalPageSize
 		}
-		logCommitsParams := &api.LogCommitsParams{
-			After:       api.PaginationAfterPtr(after),
-			Amount:      api.PaginationAmountPtr(amountForPagination),
+		logCommitsParams := &apigen.LogCommitsParams{
+			After:       apiutil.Ptr(apigen.PaginationAfter(after)),
+			Amount:      apiutil.Ptr(apigen.PaginationAmount(amountForPagination)),
 			Limit:       &limit,
 			FirstParent: &firstParent,
+			StopAt:      &stopAt,
 		}
 		if len(objects) > 0 {
 			logCommitsParams.Objects = &objects
 		}
 		if len(prefixes) > 0 {
 			logCommitsParams.Prefixes = &prefixes
+		}
+		if since != "" {
+			sinceParsed, err := time.Parse(time.RFC3339, since)
+			if err != nil {
+				DieFmt("Failed to parse 'since' - %s", err)
+			}
+			logCommitsParams.Since = &sinceParsed
 		}
 
 		graph := &dotWriter{
@@ -124,9 +136,9 @@ var logCmd = &cobra.Command{
 				Die("Bad response from server", 1)
 			}
 			pagination = resp.JSON200.Pagination
-			logCommitsParams.After = api.PaginationAfterPtr(pagination.NextOffset)
+			logCommitsParams.After = apiutil.Ptr(apigen.PaginationAfter(pagination.NextOffset))
 			data := struct {
-				Commits         []api.Commit
+				Commits         []apigen.Commit
 				Pagination      *Pagination
 				ShowMetaRangeID bool
 			}{
@@ -168,4 +180,6 @@ func init() {
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 	logCmd.Flags().StringSlice("objects", nil, "show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together")
 	logCmd.Flags().StringSlice("prefixes", nil, "show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together")
+	logCmd.Flags().String("since", "", "show results since this date-time (RFC3339 format)")
+	logCmd.Flags().String("stop-at", "", "a Ref to stop at (included in results)")
 }
