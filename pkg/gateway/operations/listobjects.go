@@ -123,7 +123,7 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 			WithError(err).
 			WithField("path", params.Get("prefix")).
 			Error("could not resolve path for prefix")
-		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest, nil))
 		return
 	}
 
@@ -135,7 +135,7 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 		branches, hasMore, err := o.Catalog.ListBranches(req.Context(), o.Repository.Name, branchPrefix, maxKeys, fromStr)
 		if err != nil {
 			o.Log(req).WithError(err).Error("could not list branches")
-			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError, nil))
 			return
 		}
 		// return branch response
@@ -172,7 +172,7 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 					"path":   prefix.Path,
 					"from":   fromStr,
 				}).Error("invalid marker - doesnt start with branch name")
-				_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+				_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest, nil))
 				return
 			}
 		}
@@ -194,7 +194,7 @@ func (controller *ListObjects) ListV2(w http.ResponseWriter, req *http.Request, 
 			log.Debug("could not list objects in path")
 		} else if err != nil {
 			log.Error("could not list objects in path")
-			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest, nil))
 			return
 		}
 	}
@@ -247,7 +247,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 			WithError(err).
 			WithField("path", params.Get("prefix")).
 			Error("could not resolve path for prefix")
-		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest, nil))
 		return
 	}
 
@@ -257,7 +257,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 		if err != nil {
 			// TODO incorrect error type
 			o.Log(req).WithError(err).Error("could not list branches")
-			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest, nil))
 			return
 		}
 		// return branch response
@@ -287,7 +287,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 		prefix, err := path.ResolvePath(params.Get("prefix"))
 		if err != nil {
 			o.Log(req).WithError(err).Error("could not list branches")
-			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest, nil))
 			return
 		}
 		ref = prefix.Ref
@@ -302,7 +302,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 					"path":   prefix.Path,
 					"marker": marker,
 				}).Error("invalid marker - doesnt start with branch name")
-				_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+				_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest, nil))
 				return
 			}
 		}
@@ -322,7 +322,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 				"branch": prefix.Ref,
 				"path":   prefix.Path,
 			}).Error("could not list objects in path")
-			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest, nil))
 			return
 		}
 	}
@@ -390,6 +390,6 @@ func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, 
 		controller.ListV2(w, req, o)
 	default:
 		o.Log(req).WithField("list-type", listType).Error("listObjects version not supported")
-		_ = o.EncodeError(w, req, nil, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+		_ = o.EncodeError(w, req, nil, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest, nil))
 	}
 }

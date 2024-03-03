@@ -176,20 +176,24 @@ const (
 
 type errorCodeMap map[APIErrorCode]APIError
 
-func (e errorCodeMap) ToAPIErr(errCode APIErrorCode) APIError {
+func (e errorCodeMap) ToAPIErr(errCode APIErrorCode, err error) APIError {
 	apiErr, ok := e[errCode]
 	if !ok {
 		return e[ErrInternalError]
+	}
+
+	if err != nil { // Use error as description if exists
+		apiErr.Description = err.Error()
 	}
 	return apiErr
 }
 
 func (a APIErrorCode) Error() string {
-	return Codes.ToAPIErr(a).Code
+	return Codes.ToAPIErr(a, nil).Code
 }
 
 func (a APIErrorCode) ToAPIErr() APIError {
-	return Codes.ToAPIErr(a)
+	return Codes.ToAPIErr(a, nil)
 }
 
 // Codes - error code to APIError structure, these fields carry respective

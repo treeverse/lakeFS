@@ -536,3 +536,58 @@ func TestS3PutObjectTagging(t *testing.T) {
 	require.Equal(t, "ERRLakeFSNotSupported", errResponse.Code)
 	require.Equal(t, "This operation is not supported in LakeFS", errResponse.Message)
 }
+
+func TestS3CopyObjectErrors(t *testing.T) {
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	// additional repository for copy between repos
+	const destRepoName = "tests3copyobjectdest"
+	//destRepo := createRepositoryByName(ctx, t, destRepoName)
+	//defer deleteRepositoryIfAskedTo(ctx, destRepoName)
+
+	// content
+	r := rand.New(rand.NewSource(17))
+	objContent := testutil.RandomString(r, randomDataContentLength)
+	srcPath := gatewayTestPrefix + "source-file"
+	destPath := gatewayTestPrefix + "dest-file"
+
+	// upload data
+	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
+	_, err := s3lakefsClient.PutObject(ctx, repo, srcPath, strings.NewReader(objContent), int64(len(objContent)),
+		minio.PutObjectOptions{})
+	require.NoError(t, err)
+
+	t.Run("source not found", func(t *testing.T) {
+		// Create object in lakeFS with wrong physical address
+		getResp, err := client.GetPhysicalAddressWithResponse(ctx, repo, mainBranch, &apigen.GetPhysicalAddressParams{
+			Path: "data/not-found",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, getResp.JSON200)
+		linkResp, err := client.LinkPhysicalAddressWithResponse(ctx, repo, mainBranch, &apigen.LinkPhysicalAddressParams{
+			Path: "data/not-found",
+		}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum:  "12345",
+			SizeBytes: 10,
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: getResp.JSON200.PhysicalAddress,
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, linkResp.JSON200)
+
+		// copy the object to the same repository
+		_, err = s3lakefsClient.CopyObject(ctx,
+			minio.CopyDestOptions{
+				Bucket: repo,
+				Object: destPath,
+			},
+			minio.CopySrcOptions{
+				Bucket: repo,
+				Object: "main/data/not-found",
+			})
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "NoSuchKey")
+	})
+}

@@ -54,15 +54,15 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 
 	if errors.Is(err, graveler.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
-		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey, nil))
 		return
 	}
 	if errors.Is(err, catalog.ErrExpired) {
-		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion, nil))
 		return
 	}
 	if err != nil {
-		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError, nil))
 		return
 	}
 
@@ -77,7 +77,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		if err != nil {
 			o.Log(req).WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
 			if errors.Is(err, httputil.ErrUnsatisfiableRange) {
-				_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidRange))
+				_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidRange, nil))
 				return
 			}
 		}
@@ -107,7 +107,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		if errors.Is(err, block.ErrDataNotFound) {
 			code = gatewayerrors.ErrNoSuchVersion
 		}
-		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(code))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(code, nil))
 		return
 	}
 
