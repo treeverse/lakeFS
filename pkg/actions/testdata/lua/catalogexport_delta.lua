@@ -81,7 +81,7 @@ local function mock_delta_client(table_logs_content)
             --[[ For the given table's path:
                 {"0" = <logical log content>, "1" = <logical log content>}
             ]]
-            return table_logs_content[path], {id=path}
+            return table_logs_content[path], {description="Description for " .. path}
         end
     }
 end
@@ -104,6 +104,19 @@ local function assert_physical_address(delta_table_details, table_paths)
         local expected_location = pathlib.join("/", table_export_prefix, table_name)
         if expected_location ~= table_details["path"] then
             error(string.format("unexpected table location \"%s\".\nexpected: \"%s\"", table_details["path"], expected_location))
+        end
+    end
+end
+
+local function assert_metadata(delta_table_details, table_paths)
+    for _, table_path in ipairs(table_paths) do
+        local table_details = delta_table_details[table_path]
+        if table_details == nil then
+            error("missing table location: " .. table_path)
+        end
+        local expected_description = "Description for " .. table_path
+        if expected_description ~= table_details["metadata"]["description"] then
+            error(string.format("unexpected table description \"%s\".\nexpected: \"%s\"", table_details["path"], expected_description))
         end
     end
 end
@@ -195,3 +208,4 @@ local delta_table_details = delta_export.export_delta_log(
 assert_lakefs_stats(test_table_names, data_paths)
 assert_physical_address(delta_table_details, test_table_names)
 assert_delta_log_content(delta_table_details, test_data.table_expected_log)
+assert_metadata(delta_table_details, test_table_names)
