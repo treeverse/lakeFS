@@ -81,7 +81,7 @@ local function mock_delta_client(table_logs_content)
             --[[ For the given table's path:
                 {"0" = <logical log content>, "1" = <logical log content>}
             ]]
-            return table_logs_content[path]
+            return table_logs_content[path], {id=path}
         end
     }
 end
@@ -97,13 +97,13 @@ local function assert_physical_address(delta_table_locations, table_paths)
 
     for _, table_path in ipairs(table_paths) do
         local table_name = pathlib.parse(table_path)["base_name"]
-        local table_loc = delta_table_locations[table_path]
-        if table_loc == nil then
+        local table_details = delta_table_locations[table_path]
+        if table_details == nil then
             error("missing table location: " .. table_path)
         end
         local expected_location = pathlib.join("/", table_export_prefix, table_name)
-        if expected_location ~= table_loc then
-            error(string.format("unexpected table location \"%s\".\nexpected: \"%s\"", table_loc, expected_location))
+        if expected_location ~= table_details["path"] then
+            error(string.format("unexpected table location \"%s\".\nexpected: \"%s\"", table_details["path"], expected_location))
         end
     end
 end
@@ -123,7 +123,8 @@ local function assert_lakefs_stats(table_names, content_paths)
 end
 
 local function assert_delta_log_content(delta_table_locations, table_to_physical_content)
-    for table_path, table_loc in pairs(delta_table_locations) do
+    for table_path, table_details in pairs(delta_table_locations) do
+        local table_loc = table_details["path"]
         local table_name = pathlib.parse(table_path)["base_name"]
         local table_loc_key = utils.parse_storage_uri(table_loc).key
         local content_table = table_to_physical_content[table_name]
