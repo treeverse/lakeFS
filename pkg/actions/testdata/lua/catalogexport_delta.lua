@@ -90,14 +90,14 @@ local function mock_object_writer(_, key, data)
     test_data.output_delta_log[key] = data
 end
 
-local function assert_physical_address(delta_table_locations, table_paths)
+local function assert_physical_address(delta_table_details, table_paths)
     local ns = action.storage_namespace
     local commit_id = action.commit_id
     local table_export_prefix = utils.get_storage_uri_prefix(ns, commit_id, action)
 
     for _, table_path in ipairs(table_paths) do
         local table_name = pathlib.parse(table_path)["base_name"]
-        local table_details = delta_table_locations[table_path]
+        local table_details = delta_table_details[table_path]
         if table_details == nil then
             error("missing table location: " .. table_path)
         end
@@ -122,8 +122,8 @@ local function assert_lakefs_stats(table_names, content_paths)
     end
 end
 
-local function assert_delta_log_content(delta_table_locations, table_to_physical_content)
-    for table_path, table_details in pairs(delta_table_locations) do
+local function assert_delta_log_content(delta_table_details, table_to_physical_content)
+    for table_path, table_details in pairs(delta_table_details) do
         local table_loc = table_details["path"]
         local table_name = pathlib.parse(table_path)["base_name"]
         local table_loc_key = utils.parse_storage_uri(table_loc).key
@@ -183,7 +183,7 @@ end
 
 
 -- Run Delta export test
-local delta_table_locations = delta_export.export_delta_log(
+local delta_table_details = delta_export.export_delta_log(
         action,
         test_table_names,
         mock_object_writer,
@@ -193,5 +193,5 @@ local delta_table_locations = delta_export.export_delta_log(
 
 -- Test results
 assert_lakefs_stats(test_table_names, data_paths)
-assert_physical_address(delta_table_locations, test_table_names)
-assert_delta_log_content(delta_table_locations, test_data.table_expected_log)
+assert_physical_address(delta_table_details, test_table_names)
+assert_delta_log_content(delta_table_details, test_data.table_expected_log)
