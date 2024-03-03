@@ -2688,7 +2688,30 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("get object not modified", func(t *testing.T) {
+	t.Run("get object returns expected response with different etag", func(t *testing.T) {
+		newChecksum := `"11ee22ff33445566778899"`
+		eTagInput := "\"" + newChecksum + "\""
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
+			Path:        "foo/bar",
+			IfNoneMatch: &eTagInput,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.HTTPResponse.StatusCode != http.StatusOK {
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusOK)
+		}
+
+		if resp.HTTPResponse.ContentLength != 37 {
+			t.Errorf("expected 37 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
+		}
+		etag := resp.HTTPResponse.Header.Get("ETag")
+		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
+			t.Errorf("got unexpected etag: %s", etag)
+		}
+	})
+
+	t.Run("get object returns not modified with same etag", func(t *testing.T) {
 		eTagInput := "\"" + blob.Checksum + "\""
 		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
 			Path:        "foo/bar",

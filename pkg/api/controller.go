@@ -4197,6 +4197,14 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 
+	etag := httputil.ETag(entry.Checksum)
+
+	// check ETag if not modified in request
+	if *params.IfNoneMatch == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
 	// if pre-sign, return a redirect
 	pointer := block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
@@ -4210,14 +4218,6 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		}
 		w.Header().Set("Location", location)
 		w.WriteHeader(http.StatusFound)
-		return
-	}
-
-	etag := httputil.ETag(entry.Checksum)
-
-	// check ETag if not modified in request
-	if r.Header.Get("If-None-Match") == etag {
-		w.WriteHeader(http.StatusNotModified)
 		return
 	}
 
