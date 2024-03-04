@@ -8,13 +8,12 @@ import (
 	"regexp"
 	"strings"
 
-	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
-
 	"github.com/Shopify/go-lua"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
 )
 
 // identifierRegex https://docs.databricks.com/en/sql/language-manual/sql-ref-identifiers.html
