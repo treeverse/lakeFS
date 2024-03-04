@@ -2,6 +2,7 @@ package esti
 
 import (
 	"bytes"
+	"github.com/treeverse/lakefs/pkg/block"
 	"io"
 	"math/rand"
 	"net/http"
@@ -540,6 +541,8 @@ func TestS3PutObjectTagging(t *testing.T) {
 func TestS3CopyObjectErrors(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
+
+	requireBlockstoreType(t, block.BlockstoreTypeS3)
 
 	// content
 	r := rand.New(rand.NewSource(17))
