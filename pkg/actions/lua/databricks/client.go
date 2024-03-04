@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
 	"net/url"
 	"regexp"
 	"strings"
+
+	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
 
 	"github.com/Shopify/go-lua"
 	"github.com/databricks/databricks-sdk-go"

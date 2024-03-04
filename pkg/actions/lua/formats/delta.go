@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/csimplestring/delta-go/action"
 	"net/url"
 	"regexp"
+
+	"github.com/csimplestring/delta-go/action"
 
 	"github.com/Shopify/go-lua"
 	"github.com/aws/aws-sdk-go-v2/aws"
