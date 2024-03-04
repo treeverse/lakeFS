@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
 )
 
 // identifierRegex https://docs.databricks.com/en/sql/language-manual/sql-ref-identifiers.html
@@ -49,11 +50,16 @@ func validateTableInput(tableName, location string) error {
 	return errors.Join(errName, errLocation)
 }
 
-func (client *Client) createExternalTable(warehouseID, catalogName, schemaName, tableName, location string) (string, error) {
+func (client *Client) createExternalTable(warehouseID, catalogName, schemaName, tableName, location string, metadata map[string]any) (string, error) {
 	if err := validateTableInput(tableName, location); err != nil {
 		return "", fmt.Errorf("external table \"%s\" creation failed: %w", tableName, err)
 	}
 	statement := fmt.Sprintf(`CREATE EXTERNAL TABLE %s LOCATION '%s'`, tableName, location)
+	if metadata != nil && metadata["description"] != "" {
+		if ms, ok := metadata["description"].(string); ok {
+			statement = fmt.Sprintf(`%s COMMENT '%s'`, statement, ms)
+		}
+	}
 	esr, err := client.workspaceClient.StatementExecution.ExecuteAndWait(client.ctx, sql.ExecuteStatementRequest{
 		WarehouseId: warehouseID,
 		Catalog:     catalogName,
@@ -117,8 +123,12 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 	warehouseID := lua.CheckString(l, 3)
 	catalogName := lua.CheckString(l, 4)
 	schemaName := lua.CheckString(l, 5)
-
-	status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location)
+	metadata, _ := luautil.PullTable(l, 6)
+	var metadataMap map[string]any
+	if metadata != nil {
+		metadataMap = metadata.(map[string]any)
+	}
+	status, err := client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
 	if err != nil {
 		if alreadyExists(err) {
 			err = client.deleteTable(catalogName, schemaName, tableName)
@@ -126,7 +136,7 @@ func (client *Client) RegisterExternalTable(l *lua.State) int {
 				lua.Errorf(l, "%s", err.Error())
 				panic("unreachable")
 			}
-			status, err = client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location)
+			status, err = client.createExternalTable(warehouseID, catalogName, schemaName, tableName, location, metadataMap)
 			if err != nil {
 				lua.Errorf(l, "%s", err.Error())
 				panic("unreachable")

@@ -10,6 +10,7 @@ import (
 	"github.com/Shopify/go-lua"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	delta "github.com/csimplestring/delta-go"
+	"github.com/csimplestring/delta-go/action"
 	"github.com/csimplestring/delta-go/storage"
 	deltaStore "github.com/csimplestring/delta-go/store"
 	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
@@ -28,12 +29,44 @@ type DeltaClient struct {
 	ctx            context.Context
 }
 
-func (dc *DeltaClient) fetchS3Table(repo, ref, prefix string, awsProps *storage.AWSProperties) (map[int64][]string, error) {
+func newDeltaTableMetadata(meta *action.Metadata) map[string]any {
+	return map[string]any{
+		"description":       meta.Description,
+		"id":                meta.ID,
+		"name":              meta.Name,
+		"schema_string":     meta.SchemaString,
+		"partition_columns": meta.PartitionColumns,
+		"configuration":     meta.Configuration,
+		"created_time":      *meta.CreatedTime,
+	}
+}
+
+func (dc *DeltaClient) fetchS3Table(repo, ref, prefix string, awsProps *storage.AWSProperties) (map[int64][]string, map[string]any, error) {
 	table, err := dc.getS3DeltaTable(repo, ref, prefix, awsProps)
+	if err != nil {
+		return nil, nil, err
+	}
+	log, err := dc.buildLog(table)
+	if err != nil {
+		return nil, nil, err
+	}
+	meta, err := dc.getTableMetadata(table)
+	if err != nil {
+		return nil, nil, err
+	}
+	return log, meta, nil
+}
+
+func (dc *DeltaClient) getTableMetadata(log delta.Log) (map[string]any, error) {
+	s, err := log.Snapshot()
 	if err != nil {
 		return nil, err
 	}
-	return dc.buildLog(table)
+	m, err := s.Metadata()
+	if err != nil {
+		return nil, err
+	}
+	return newDeltaTableMetadata(m), nil
 }
 
 func (dc *DeltaClient) getS3DeltaTable(repo, ref, prefix string, awsProps *storage.AWSProperties) (delta.Log, error) {
@@ -82,13 +115,13 @@ func (dc *DeltaClient) buildLog(table delta.Log) (map[int64][]string, error) {
 	return entries, nil
 }
 
-func (dc *DeltaClient) fetchTableLog(repo, ref, prefix string) (map[int64][]string, error) {
+func (dc *DeltaClient) fetchTableLog(repo, ref, prefix string) (map[int64][]string, map[string]any, error) {
 	ap, _ := dc.accessProvider.GetAccessProperties()
 	switch access := ap.(type) {
 	case AWSInfo:
 		return dc.fetchS3Table(repo, ref, prefix, &access.AWSProps)
 	default:
-		return nil, errUnimplementedProvided
+		return nil, nil, errUnimplementedProvided
 	}
 }
 
@@ -97,13 +130,14 @@ func getTable(client *DeltaClient) lua.Function {
 		repo := lua.CheckString(l, 1)
 		ref := lua.CheckString(l, 2)
 		prefix := lua.CheckString(l, 3)
-		tableLog, err := client.fetchTableLog(repo, ref, prefix)
+		tableLog, metadata, err := client.fetchTableLog(repo, ref, prefix)
 		if err != nil {
 			lua.Errorf(l, "%s", err.Error())
 			panic("failed fetching table log")
 		}
 		luautil.DeepPush(l, tableLog)
-		return 1
+		luautil.DeepPush(l, metadata)
+		return 2
 	}
 }
 

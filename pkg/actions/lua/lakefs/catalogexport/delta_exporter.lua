@@ -72,7 +72,7 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
         end
 
         -- Get Delta table
-        local t = delta_client.get_table(repo, commit_id, table_path)
+        local t, metadata = delta_client.get_table(repo, commit_id, table_path)
         local sortedKeys = utils.sortedKeys(t)
         --[[ Pairs of (version, map of json content):
                 (1,
@@ -158,7 +158,11 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
             local version_key = storage_props.key .. "/" .. entry_version
             write_object(storage_props.bucket, version_key, table_entry_string)
         end
-        response[table_name_yaml] = table_physical_path
+        local table_val = {
+            path=table_physical_path,
+            metadata=metadata,
+        }
+        response[table_name_yaml] = table_val
     end
     return response
 end

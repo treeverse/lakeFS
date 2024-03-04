@@ -26,7 +26,7 @@ local function register_tables(action, table_descriptors_path, delta_table_paths
     end
     local branch_id = action.branch_id
     local response = {}
-    for table_name_yaml, physical_path in pairs(delta_table_paths) do
+    for table_name_yaml, table_details in pairs(delta_table_paths) do
         local tny  = table_name_yaml
         if not strings.has_suffix(tny, ".yaml") then
             tny = tny .. ".yaml"
@@ -49,7 +49,9 @@ local function register_tables(action, table_descriptors_path, delta_table_paths
         if not schema_name then
             error("failed creating/getting catalog's schema: " .. catalog .. "." .. branch_id)
         end
-        local status = databricks_client.register_external_table(table_name, physical_path, warehouse_id, catalog, schema_name)
+        local physical_path = table_details.path
+        local table_metadata = table_details.metadata
+        local status = databricks_client.register_external_table(table_name, physical_path, warehouse_id, catalog, schema_name, table_metadata)
         response[table_name_yaml] = status
     end
     return response
