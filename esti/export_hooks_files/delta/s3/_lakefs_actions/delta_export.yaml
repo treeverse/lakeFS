@@ -17,7 +17,17 @@ hooks:
         local delta_table_details = delta_exporter.export_delta_log(action, args.table_names, sc.put_object, delta_client, table_descriptors_path)
 
         for t, details in pairs(delta_table_details) do
+          if details["path"] == nil then
+            error("Delta Lake exported table \"" .. t .. "\"'s location is not available\n")
+          end
           print("Delta Lake exported table \"" .. t .. "\"'s location: " .. details["path"] .. "\n")
+          if details["metadata"] == nil then
+            error("Delta Lake exported table \"" .. t .. "\"'s metadata is not available\n")
+          end
+          print("Delta Lake exported table \"" .. t .. "\"'s metadata:\n")
+          for k, v in pairs(details["metadata"]) do
+            print("\t" .. k .. " = " .. v .. "\n")
+          end
         end
       args:
         aws:
