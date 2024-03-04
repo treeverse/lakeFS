@@ -10,6 +10,7 @@ hooks:
         local azure = require("azure")
         local formats = require("formats")
         local delta_exporter = require("lakefs/catalogexport/delta_exporter")
+        local json = require("encoding/json")
         
         local table_descriptors_path = "_lakefs_tables"
         local sc = azure.blob_client(args.azure.storage_account, args.azure.access_key)
@@ -29,7 +30,11 @@ hooks:
           end
           print("Delta Lake exported table \"" .. t .. "\"'s metadata:\n")
           for k, v in pairs(details["metadata"]) do
-            print("\t" .. k .. " = " .. v .. "\n")
+            if type(v) ~= "table" then
+              print("\t" .. k .. " = " .. v .. "\n")
+            else 
+              print("\t" .. k .. " = " .. json.marshal(v) .. "\n")
+            end
           end
         end
       args:
