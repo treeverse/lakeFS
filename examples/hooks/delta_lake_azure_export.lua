@@ -14,10 +14,10 @@ local table_descriptors_path = "_lakefs_tables"
 local sc = azure.blob_client(args.azure.storage_account, args.azure.access_key)
 local function write_object(_, key, buf)
     return sc.put_object(key,buf)
-end 
+end
 local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key)
-local delta_table_locations = delta_exporter.export_delta_log(action, args.table_names, write_object, delta_client, table_descriptors_path)
+local delta_table_details = delta_exporter.export_delta_log(action, args.table_names, write_object, delta_client, table_descriptors_path)
 
-for t, loc in pairs(delta_table_locations) do
-    print("Delta Lake exported table \"" .. t .. "\"'s location: " .. loc .. "\n")
+for t, details in pairs(delta_table_details) do
+    print("Delta Lake exported table \"" .. t .. "\"'s location: " .. details["path"] .. "\n")
 end

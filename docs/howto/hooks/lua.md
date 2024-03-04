@@ -373,9 +373,32 @@ Creates a new Delta Lake client used to interact with the lakeFS server.
 ### `formats/delta_client.get_table(repository_id, reference_id, prefix)`
 
 Returns a representation of a Delta Lake table under the given repository, reference, and prefix.
-The format of the response is a table `{number, {string}}` where `number` is a version in the Delta Log, and the mapped 
-`{string}` table (list) contains JSON strings of the different Delta Lake log operations listed in the mapped version entry. 
-
+The format of the response is two tables: 
+1. the first is a table of the format `{number, {string}}` where `number` is a version in the Delta Log, and the mapped `{string}` 
+array contains JSON strings of the different Delta Lake log operations listed in the mapped version entry. e.g.:
+```lua
+{
+  0 = {
+    "{\"commitInfo\":...}",
+    "{\"add\": ...}",
+    "{\"remove\": ...}"
+  },
+  1 = {
+    "{\"commitInfo\":...}",
+    "{\"add\": ...}",
+    "{\"remove\": ...}"
+  }
+}
+```
+2. the second is a table of the metadata of the current table snapshot. The metadata table can be used to initialize the Delta Lake table in an external Catalog.  
+It consists of the following fields:
+    - `id`: The table's ID
+    - `name`: The table's name
+    - `description`: The table's description
+    - `schema_string`: The table's schema string
+    - `partition_columns`: The table's partition columns
+    - `configuration`: The table's configuration
+    - `created_time`: The table's creation time
 
 ### `gcloud`
 
