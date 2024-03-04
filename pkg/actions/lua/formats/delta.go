@@ -31,13 +31,13 @@ type DeltaClient struct {
 
 func newDeltaTableMetadata(meta *action.Metadata) map[string]any {
 	return map[string]any{
-		"description":      meta.Description,
-		"id":               meta.ID,
-		"name":             meta.Name,
-		"schema_string":    meta.SchemaString,
-		"partition_column": meta.PartitionColumns,
-		"configuration":    meta.Configuration,
-		"created_time":     *meta.CreatedTime,
+		"description":       meta.Description,
+		"id":                meta.ID,
+		"name":              meta.Name,
+		"schema_string":     meta.SchemaString,
+		"partition_columns": meta.PartitionColumns,
+		"configuration":     meta.Configuration,
+		"created_time":      *meta.CreatedTime,
 	}
 }
 
