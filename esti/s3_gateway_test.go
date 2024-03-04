@@ -541,11 +541,6 @@ func TestS3CopyObjectErrors(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	// additional repository for copy between repos
-	const destRepoName = "tests3copyobjectdest"
-	//destRepo := createRepositoryByName(ctx, t, destRepoName)
-	//defer deleteRepositoryIfAskedTo(ctx, destRepoName)
-
 	// content
 	r := rand.New(rand.NewSource(17))
 	objContent := testutil.RandomString(r, randomDataContentLength)

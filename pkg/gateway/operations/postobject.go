@@ -41,12 +41,12 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 	branchExists, err := o.Catalog.BranchExists(req.Context(), o.Repository.Name, o.Reference)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not check if branch exists")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError, nil))
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	if !branchExists {
 		o.Log(req).Debug("branch not found")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNoSuchBucket, nil))
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNoSuchBucket))
 		return
 	}
 	address := o.PathProvider.NewPath()
@@ -59,7 +59,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 	}, req, opts)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not create multipart upload")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError, nil))
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	mpu := multipart.Upload{
@@ -73,7 +73,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 	err = o.MultipartTracker.Create(req.Context(), mpu)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write multipart upload to DB")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError, nil))
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	o.SetHeaders(w, resp.ServerSideHeader)
@@ -91,7 +91,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	multiPart, err := o.MultipartTracker.Get(req.Context(), uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read multipart record")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError, nil))
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	objName := multiPart.PhysicalAddress
@@ -99,14 +99,14 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	xmlMultipartComplete, err := io.ReadAll(req.Body)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read request body")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError, nil))
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	var multipartList block.MultipartUploadCompletion
 	err = xml.Unmarshal(xmlMultipartComplete, &multipartList)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not parse multipart XML on complete multipart")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError, nil))
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	normalizeMultipartUploadCompletion(&multipartList)
@@ -120,21 +120,21 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		&multipartList)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not complete multipart upload")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError, nil))
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	checksum := strings.Split(resp.ETag, "-")[0]
 	err = o.finishUpload(req, checksum, objName, resp.ContentLength, true, multiPart.Metadata, multiPart.ContentType)
 	if errors.Is(err, graveler.ErrWriteToProtectedBranch) {
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrWriteToProtectedBranch, nil))
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrWriteToProtectedBranch))
 		return
 	}
 	if errors.Is(err, graveler.ErrReadOnlyRepository) {
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrReadOnlyRepository, nil))
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrReadOnlyRepository))
 		return
 	}
 	if err != nil {
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError, nil))
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
 	err = o.MultipartTracker.Delete(req.Context(), uploadID)

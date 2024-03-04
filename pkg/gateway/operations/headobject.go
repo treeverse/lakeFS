@@ -29,17 +29,17 @@ func (controller *HeadObject) Handle(w http.ResponseWriter, req *http.Request, o
 	if errors.Is(err, graveler.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
 		o.Log(req).Debug("path not found")
-		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey, nil))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
 	if err != nil {
 		o.Log(req).WithError(err).Error("failed querying path")
-		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError, nil))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 	if entry.Expired {
 		o.Log(req).WithError(err).Info("querying expired object")
-		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion, nil))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
 		return
 	}
 

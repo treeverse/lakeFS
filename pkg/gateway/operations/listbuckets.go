@@ -33,7 +33,7 @@ func (controller *ListBuckets) Handle(w http.ResponseWriter, req *http.Request, 
 		// list repositories
 		repos, hasMore, err := o.Catalog.ListRepositories(req.Context(), -1, "", after)
 		if err != nil {
-			_ = o.EncodeError(w, req, err, errors.Codes.ToAPIErr(errors.ErrInternalError, nil))
+			_ = o.EncodeError(w, req, err, errors.Codes.ToAPIErr(errors.ErrInternalError))
 			return
 		}
 
