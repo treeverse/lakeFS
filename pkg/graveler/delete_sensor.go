@@ -2,7 +2,6 @@ package graveler
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,21 +27,16 @@ type stagingTokenData struct {
 	stagingTokenID StagingToken
 }
 
-func (s *stagingTokenData) CombinedKey() string {
-	return fmt.Sprintf("%s:%s", s.repositoryID, s.branchID)
-}
-
 type DeleteSensor struct {
-	ctx       context.Context
 	cb        DeleteSensorCB
 	triggerAt int
 	callbacks chan stagingTokenData
 	wg        sync.WaitGroup
-	mutex     *sync.RWMutex
+	mutex     *sync.Mutex
 	// stopped used as flag that the sensor has stopped. stop processing CountDelete.
 	stopped                int32
 	graceDuration          time.Duration
-	branchTombstoneCounter map[string]*StagingTokenCounter
+	branchTombstoneCounter map[RepositoryID]map[BranchID]*StagingTokenCounter
 }
 
 type DeleteSensorOpts func(s *DeleteSensor)
@@ -58,15 +52,14 @@ func WithGraceDuration(d time.Duration) DeleteSensorOpts {
 		s.graceDuration = d
 	}
 }
-func NewDeleteSensor(ctx context.Context, triggerAt int, cb DeleteSensorCB, opts ...DeleteSensorOpts) *DeleteSensor {
+func NewDeleteSensor(triggerAt int, cb DeleteSensorCB, opts ...DeleteSensorOpts) *DeleteSensor {
 	ds := &DeleteSensor{
-		ctx:                    ctx,
 		cb:                     cb,
 		triggerAt:              triggerAt,
 		stopped:                0,
 		graceDuration:          graceDuration,
-		mutex:                  &sync.RWMutex{},
-		branchTombstoneCounter: make(map[string]*StagingTokenCounter),
+		mutex:                  &sync.Mutex{},
+		branchTombstoneCounter: make(map[RepositoryID]map[BranchID]*StagingTokenCounter),
 		callbacks:              make(chan stagingTokenData, callbackChannelSize),
 	}
 	for _, opt := range opts {
@@ -84,22 +77,28 @@ func (s *DeleteSensor) isStopped() bool {
 func (s *DeleteSensor) triggerTombstone(ctx context.Context, st stagingTokenData) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	combinedKey := st.CombinedKey()
-	stCounter, ok := s.branchTombstoneCounter[combinedKey]
+	if _, ok := s.branchTombstoneCounter[st.repositoryID]; !ok {
+		s.branchTombstoneCounter[st.repositoryID] = make(map[BranchID]*StagingTokenCounter)
+	}
+	stCounter, ok := s.branchTombstoneCounter[st.repositoryID][st.branchID]
 	if !ok {
 		stCounter = &StagingTokenCounter{
 			StagingTokenID: st.stagingTokenID,
 			Counter:        1,
 		}
-		s.branchTombstoneCounter[combinedKey] = stCounter
+		s.branchTombstoneCounter[st.repositoryID][st.branchID] = stCounter
 		return
 	}
+	// Reset the counter if the staging token has changed, under the assumption that staging tokens are updated only during sealing processes, which occur following a commit or compaction.
 	if stCounter.StagingTokenID != st.stagingTokenID {
 		stCounter.StagingTokenID = st.stagingTokenID
 		stCounter.Counter = 1
 		return
 	}
-	if stCounter.Counter >= s.triggerAt-1 {
+	if stCounter.Counter < s.triggerAt {
+		stCounter.Counter++
+	}
+	if stCounter.Counter >= s.triggerAt {
 		select {
 		case s.callbacks <- st:
 			stCounter.Counter = 0
@@ -108,7 +107,6 @@ func (s *DeleteSensor) triggerTombstone(ctx context.Context, st stagingTokenData
 		}
 		return
 	}
-	stCounter.Counter++
 }
 
 func (s *DeleteSensor) processCallbacks() {
@@ -141,6 +139,7 @@ func (s *DeleteSensor) stop() {
 	case <-done:
 		return
 	case <-time.After(s.graceDuration):
+		logging.ContextUnavailable().Error("delete sensor grace period expired, stopping without waiting for callbacks to finish")
 		return
 	}
 }

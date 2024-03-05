@@ -98,7 +98,6 @@ func TestDeletedSensor(t *testing.T) {
 			},
 		},
 	}
-
 	ctx := context.Background()
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
@@ -106,11 +105,10 @@ func TestDeletedSensor(t *testing.T) {
 			cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
 				triggredBranches[string(repositoryID)+"-"+string(branchID)]++
 			}
-			sensor := graveler.NewDeleteSensor(ctx, tc.triggerAt, cb)
-			//defer sensor.Close()
+			sensor := graveler.NewDeleteSensor(tc.triggerAt, cb)
 			for _, flow := range tc.commandFlow {
 				for i := 0; i < flow.count; i++ {
-					sensor.CountDelete(nil, flow.repositoryID, flow.branchID, flow.stagingTokenID)
+					sensor.CountDelete(ctx, flow.repositoryID, flow.branchID, flow.stagingTokenID)
 				}
 			}
 			sensor.Close()
@@ -128,33 +126,30 @@ func TestDeletedSensor(t *testing.T) {
 }
 
 func TestDeletedSensor_Close(t *testing.T) {
-	ctx := context.Background()
 	cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
 	}
-	sensor := graveler.NewDeleteSensor(ctx, 10, cb)
+	sensor := graveler.NewDeleteSensor(10, cb)
 	sensor.Close()
 }
 
 func TestDeletedSensor_CloseTwice(t *testing.T) {
-	ctx := context.Background()
 	cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
 	}
-	sensor := graveler.NewDeleteSensor(ctx, 10, cb)
+	sensor := graveler.NewDeleteSensor(10, cb)
 	sensor.Close()
 	sensor.Close()
 }
 
 func TestDeletedSensor_CountAfterClose(t *testing.T) {
-	ctx := context.Background()
 	cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
 	}
-	sensor := graveler.NewDeleteSensor(ctx, 10, cb)
+	sensor := graveler.NewDeleteSensor(10, cb)
 	sensor.Close()
-	sensor.CountDelete(nil, "repo1", "branch1", "uuid")
+	ctx := context.Background()
+	sensor.CountDelete(ctx, "repo1", "branch1", "uuid")
 }
 
 func TestDeletedSensor_CheckNonBlocking(t *testing.T) {
-	ctx := context.Background()
 	closerCall := sync.Once{}
 	closerCh := make(chan struct{})
 
@@ -167,8 +162,8 @@ func TestDeletedSensor_CheckNonBlocking(t *testing.T) {
 			close(closerCh)
 		})
 	}
-	sensor := graveler.NewDeleteSensor(ctx, 1, cb, graveler.WithCBBufferSize(1))
-
+	sensor := graveler.NewDeleteSensor(1, cb, graveler.WithCBBufferSize(1))
+	ctx := context.Background()
 	for i := 0; i < 11; i++ {
 		select {
 		case <-closerCh:

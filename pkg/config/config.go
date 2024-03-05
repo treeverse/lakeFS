@@ -285,10 +285,10 @@ type Config struct {
 		PrepareInterval    time.Duration `mapstructure:"prepare_interval"`
 	} `mapstructure:"ugc"`
 	Graveler struct {
-		EnsureReadableRootNamespace bool `mapstructure:"ensure_readable_root_namespace"`
-		BatchDBIOTransactionMarkers bool `mapstructure:"batch_dbio_transaction_markers"`
-		TriggerDeleteSensorAt       int  `mapstructure:"trigger_delete_sensor_at"`
-		RepositoryCache             struct {
+		EnsureReadableRootNamespace     bool `mapstructure:"ensure_readable_root_namespace"`
+		BatchDBIOTransactionMarkers     bool `mapstructure:"batch_dbio_transaction_markers"`
+		NumDeletesToTriggerDeleteSensor int  `mapstructure:"num_deletes_to_trigger_delete_sensor"`
+		RepositoryCache                 struct {
 			Size   int           `mapstructure:"size"`
 			Expiry time.Duration `mapstructure:"expiry"`
 			Jitter time.Duration `mapstructure:"jitter"`

@@ -2384,6 +2384,7 @@ func (g *Graveler) Reset(ctx context.Context, repository *RepositoryRecord, bran
 	return nil
 }
 
+// deleteAndNotify deletes a key from the staging area and notifies the delete sensor
 func (g *Graveler) deleteAndNotify(ctx context.Context, repositoryID RepositoryID, branchID BranchID, branch *Branch, key Key, requireExists bool) error {
 	err := g.StagingManager.Set(ctx, branch.StagingToken, key, nil, requireExists)
 	if err != nil {

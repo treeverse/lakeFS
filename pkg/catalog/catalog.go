@@ -367,7 +367,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
 	stagingManager := staging.NewManager(ctx, cfg.KVStore, storeLimiter, cfg.Config.Graveler.BatchDBIOTransactionMarkers, executor)
 	var deleteSensor *graveler.DeleteSensor
-	if cfg.Config.Graveler.TriggerDeleteSensorAt > 0 {
+	if cfg.Config.Graveler.NumDeletesToTriggerDeleteSensor > 0 {
 		cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
 			logging.FromContext(ctx).WithFields(logging.Fields{
 				"repositoryID":   repositoryID,
@@ -376,7 +376,8 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 				"inGrace":        inGrace,
 			}).Info("delete sensor callback")
 		}
-		deleteSensor = graveler.NewDeleteSensor(ctx, cfg.Config.Graveler.TriggerDeleteSensorAt, cb)
+		deleteSensor = graveler.NewDeleteSensor(cfg.Config.Graveler.NumDeletesToTriggerDeleteSensor, cb)
+		defer deleteSensor.Close()
 	}
 	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager, deleteSensor)
 
