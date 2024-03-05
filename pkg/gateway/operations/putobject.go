@@ -95,7 +95,11 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 	srcPath, err := getPathFromSource(copySource)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not parse copy source path")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+		// This is a solution to avoid misleading error messages in gateway. This is a pinpoint fix for the copy object
+		// API, since we decided not to change the entire gateway error handling in order to avoid breaking changes.
+		// See: https://github.com/treeverse/lakeFS/issues/7452
+		apiErr := gatewayErrors.Codes.ToAPIErrWithInternalError(gatewayErrors.ErrInvalidCopySource, err)
+		_ = o.EncodeError(w, req, err, apiErr)
 		return
 	}
 
@@ -103,7 +107,8 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 	entry, err := o.Catalog.CopyEntry(ctx, srcPath.Repo, srcPath.Reference, srcPath.Path, repository, branch, o.Path)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could create a copy")
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopyDest))
+		apiErr := gatewayErrors.Codes.ToAPIErrWithInternalError(gatewayErrors.ErrInvalidCopyDest, err)
+		_ = o.EncodeError(w, req, err, apiErr)
 		return
 	}
 

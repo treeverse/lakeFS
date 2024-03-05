@@ -184,6 +184,12 @@ func (e errorCodeMap) ToAPIErr(errCode APIErrorCode) APIError {
 	return apiErr
 }
 
+func (e errorCodeMap) ToAPIErrWithInternalError(errCode APIErrorCode, err error) APIError {
+	apiErr := e.ToAPIErr(errCode)
+	apiErr.Description = err.Error()
+	return apiErr
+}
+
 func (a APIErrorCode) Error() string {
 	return Codes.ToAPIErr(a).Code
 }
