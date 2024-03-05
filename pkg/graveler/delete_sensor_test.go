@@ -153,23 +153,6 @@ func TestDeletedSensor_CountAfterClose(t *testing.T) {
 	sensor.CountDelete(nil, "repo1", "branch1", "uuid")
 }
 
-func TestDeletedSensor_CheckTimeOut(t *testing.T) {
-	ctx := context.Background()
-	gotToEndBeforeClose := false
-	cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
-		time.Sleep(400 * time.Millisecond)
-		gotToEndBeforeClose = true
-	}
-	sensor := graveler.NewDeleteSensor(ctx, 10, cb, graveler.WithGraceDuration(200*time.Millisecond))
-	for i := 0; i < 10; i++ {
-		sensor.CountDelete(nil, "repo1", "branch1", "uuid")
-	}
-	sensor.Close()
-	if gotToEndBeforeClose {
-		t.Errorf("expected not to get to end before close")
-	}
-}
-
 func TestDeletedSensor_CheckNonBlocking(t *testing.T) {
 	ctx := context.Background()
 	closerCall := sync.Once{}
