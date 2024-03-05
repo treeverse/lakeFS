@@ -2,7 +2,6 @@ package esti
 
 import (
 	"bytes"
-	"github.com/treeverse/lakefs/pkg/block"
 	"io"
 	"math/rand"
 	"net/http"
@@ -19,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/block"
 	gtwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -543,18 +543,25 @@ func TestS3CopyObjectErrors(t *testing.T) {
 	defer tearDownTest(repo)
 
 	requireBlockstoreType(t, block.BlockstoreTypeS3)
-
-	// content
-	r := rand.New(rand.NewSource(17))
-	objContent := testutil.RandomString(r, randomDataContentLength)
-	srcPath := gatewayTestPrefix + "source-file"
 	destPath := gatewayTestPrefix + "dest-file"
 
 	// upload data
 	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
-	_, err := s3lakefsClient.PutObject(ctx, repo, srcPath, strings.NewReader(objContent), int64(len(objContent)),
-		minio.PutObjectOptions{})
-	require.NoError(t, err)
+
+	t.Run("malformed dest", func(t *testing.T) {
+		// copy the object to a non-existent repo - tests internal lakeFS error
+		_, err := s3lakefsClient.CopyObject(ctx,
+			minio.CopyDestOptions{
+				Bucket: "wrong-repo",
+				Object: destPath,
+			},
+			minio.CopySrcOptions{
+				Bucket: repo,
+				Object: "main/data/not-found",
+			})
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "The specified bucket does not exist")
+	})
 
 	t.Run("source not found", func(t *testing.T) {
 		// Create object in lakeFS with wrong physical address
