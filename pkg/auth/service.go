@@ -1515,7 +1515,7 @@ func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy, 
 	for i, s := range policy.Statement {
 		stmts[i] = Statement{
 			Action:   s.Action,
-			Effect:   s.Effect,
+			Effect:   StatementEffect(s.Effect),
 			Resource: s.Resource,
 		}
 	}
@@ -1551,7 +1551,7 @@ func serializePolicyToModalPolicy(p Policy) *model.Policy {
 	stmts := make(model.Statements, len(p.Statement))
 	for i, apiStatement := range p.Statement {
 		stmts[i] = model.Statement{
-			Effect:   apiStatement.Effect,
+			Effect:   string(apiStatement.Effect),
 			Action:   apiStatement.Action,
 			Resource: apiStatement.Resource,
 		}
