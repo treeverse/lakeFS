@@ -477,7 +477,9 @@ A package used to export Delta Lake tables from lakeFS to an external cloud stor
 ### `lakefs/catalogexport/delta_exporter.export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path)`
 
 The function used to export Delta Lake tables.
-The return value is a table with mapping of table names to external table location (from which it is possible to query the data).
+The return value is a table with mapping of table names to external table location (from which it is possible to query the data) and latest Delta table version's metadata.  
+The response is of the form: 
+`{<table_name> = {path = "s3://mybucket/mypath/mytable", metadata = {id = "table_id", name = "table_name", ...}}}`.
 
 Parameters:
 
@@ -502,14 +504,23 @@ hooks:
         local aws = require("aws")
         local formats = require("formats")
         local delta_exporter = require("lakefs/catalogexport/delta_exporter")
+        local json = require("encoding/json")
 
         local table_descriptors_path = "_lakefs_tables"
         local sc = aws.s3_client(args.aws.access_key_id, args.aws.secret_access_key, args.aws.region)
         local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.region)
-        local delta_table_locations = delta_exporter.export_delta_log(action, args.table_defs, sc.put_object, delta_client, table_descriptors_path)
+        local delta_table_details = delta_export.export_delta_log(action, args.table_defs, sc.put_object, delta_client, table_descriptors_path)
         
-        for t, loc in pairs(delta_table_locations) do
-          print("Delta Lake exported table \"" .. t .. "\"'s location: " .. loc .. "\n")
+        for t, details in pairs(delta_table_details) do
+          print("Delta Lake exported table \"" .. t .. "\"'s location: " .. details["path"] .. "\n")
+          print("Delta Lake exported table \"" .. t .. "\"'s metadata:\n")
+          for k, v in pairs(details["metadata"]) do
+            if type(v) == "table" then
+              print("\t" .. k .. " = " .. json.marshal(v) .. "\n")
+            else
+              print("\t" .. k .. " = " .. v .. "\n")
+            end
+          end
         end
       args:
         aws:
@@ -553,10 +564,18 @@ hooks:
           return sc.put_object(key,buf)
         end
         local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key)
-        local delta_table_locations = delta_exporter.export_delta_log(action, args.table_names, write_object, delta_client, table_descriptors_path)
-
-        for t, loc in pairs(delta_table_locations) do
-          print("Delta Lake exported table \"" .. t .. "\"'s location: " .. loc .. "\n")
+        local delta_table_details = delta_export.export_delta_log(action, args.table_defs, sc.put_object, delta_client, table_descriptors_path)
+        
+        for t, details in pairs(delta_table_details) do
+          print("Delta Lake exported table \"" .. t .. "\"'s location: " .. details["path"] .. "\n")
+          print("Delta Lake exported table \"" .. t .. "\"'s metadata:\n")
+          for k, v in pairs(details["metadata"]) do
+            if type(v) == "table" then
+              print("\t" .. k .. " = " .. json.marshal(v) .. "\n")
+            else
+              print("\t" .. k .. " = " .. v .. "\n")
+            end
+          end
         end
       args:
         azure:
