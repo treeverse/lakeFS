@@ -4200,7 +4200,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	etag := httputil.ETag(entry.Checksum)
 
 	// check ETag if not modified in request
-	if *params.IfNoneMatch == etag {
+	if swag.StringValue(params.IfNoneMatch) == etag {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
@@ -4221,7 +4221,6 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 
-	// setup response
 	// set response headers
 	w.Header().Set("ETag", etag)
 	lastModified := httputil.HeaderTimestamp(entry.CreationDate)

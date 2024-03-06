@@ -453,7 +453,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
     path = "path_example" # str | relative to the ref
     range = "bytes=0-1023" # str | Byte range to retrieve (optional)
-    if_none_match = "abc123efg" # str | Returns response only if the object does not have a matching ETag (optional)
+    if_none_match = "33a64df551425fcc55e4d42a148795d9f25f89d4" # str | Returns response only if the object does not have a matching ETag (optional)
     presign = True # bool |  (optional)
 
     # example passing only required values which don't have defaults set

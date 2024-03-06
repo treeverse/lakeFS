@@ -365,7 +365,7 @@ public class Example {
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     String path = "path_example"; // String | relative to the ref
     String range = "bytes=0-1023"; // String | Byte range to retrieve
-    String ifNoneMatch = "abc123efg"; // String | Returns response only if the object does not have a matching ETag
+    String ifNoneMatch = "33a64df551425fcc55e4d42a148795d9f25f89d4"; // String | Returns response only if the object does not have a matching ETag
     Boolean presign = true; // Boolean | 
     try {
       File result = apiInstance.getObject(repository, ref, path, range, ifNoneMatch, presign);

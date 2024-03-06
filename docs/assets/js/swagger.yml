@@ -3853,7 +3853,7 @@ paths:
         - in: header
           name: If-None-Match
           description: Returns response only if the object does not have a matching ETag
-          example: "abc123efg"
+          example: "33a64df551425fcc55e4d42a148795d9f25f89d4"
           required: false
           schema:
             type: string
