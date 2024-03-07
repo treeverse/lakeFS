@@ -1632,8 +1632,39 @@ components:
       required:
         - installation_id
         - reports
-
-
+    ExternalPrincipalList: 
+      type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalPrincipal"
+    ExternalPrincipalSettings:
+      type: object
+      additionalProperties:
+        type: string
+      description: Additional settings for the external principal.
+    ExternalPrincipal:
+      type: object
+      required:
+        - users
+      properties:
+        users:
+          type: array
+          items:
+            type: string
+          description: |
+            List of lakeFS user IDs that are associated with the external principal.
+            Currently, the only 1 user is allowed.
+        settings:
+          type: object
+          items:
+            $ref: "#/components/schemas/ExternalPrincipalSettings"
 paths:
   /setup_comm_prefs:
     post:
@@ -2523,7 +2554,98 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-
+  /auth/external/principals:
+    get: 
+      tags: 
+        - auth
+        - external
+      operationId: listExternalPrincipals
+      summary: list external principals
+      parameters: 
+        - $ref: "#/components/parameters/PaginationPrefix"
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+      responses: 
+        200: 
+          description: external principal list
+          content: 
+            application/json: 
+              schema: 
+                $ref: "#/components/schemas/ExternalPrincipalList"
+        401: 
+          $ref: "#/components/responses/Unauthorized"
+        420: 
+          description: too many requests
+        default: 
+          $ref: "#/components/responses/ServerError"
+    post: 
+      tags: 
+        - auth
+        - external
+      operationId: createExternalPrincipal
+      summary: Create principal as external identity connected to lakeFS user
+      requestBody: 
+        required: true
+        content: 
+          application/json: 
+            schema: 
+              $ref: "#/components/schemas/ExternalPrincipal"
+      responses: 
+        201: 
+          description: external principal created successfully
+        401: 
+          $ref: "#/components/responses/Unauthorized"
+        409:
+          $ref: "#/components/responses/Conflict"
+        420: 
+          description: too many requests
+        default: 
+          $ref: "#/components/responses/ServerError"
+  /auth/external/principals/{principalId}:
+    parameters: 
+      - in: path
+        name: principalId
+        required: true
+        schema:
+          type: string
+    get:
+      tags: 
+        - auth
+        - external
+      operationId: getExternalPrincipal
+      summary: Get principal information
+      responses: 
+        200: 
+          description: external principal
+          content: 
+            application/json: 
+              schema: 
+                $ref: "#/components/schemas/ExternalPrincipal"
+        401: 
+          $ref: "#/components/responses/Unauthorized"
+        404: 
+          $ref: "#/components/responses/NotFound"
+        420: 
+          description: too many requests
+        default: 
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags: 
+        - auth
+        - external
+      operationId: deleteExternalPrincipal
+      summary: Delete principal and lakeFS attachments
+      responses: 
+        204: 
+          description: external principal deleted successfully
+        401: 
+          $ref: "#/components/responses/Unauthorized"
+        404: 
+          $ref: "#/components/responses/NotFound"
+        420: 
+          description: too many requests
+        default: 
+          $ref: "#/components/responses/ServerError"
   /repositories:
     get:
       tags:

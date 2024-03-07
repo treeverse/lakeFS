@@ -5233,3 +5233,28 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
+
+func (c *Controller) ListExternalPrincipals(w http.ResponseWriter, r *http.Request, params apigen.ListExternalPrincipalsParams) {
+
+}
+func (c *Controller) CreateExternalPrincipal(w http.ResponseWriter, r *http.Request, body apigen.CreateExternalPrincipalJSONRequestBody) {
+
+	// 	CreatedAt:   time.Now().UTC(),
+	// 	DisplayName: policyID,
+	// 	Statement:   stmts,
+	// }
+	// err := c.Auth.WritePolicy(ctx, p, true)
+	// if c.handleAPIError(ctx, w, r, err) {
+	// 	return
+	// }
+	// response := serializePolicy(p)
+	// writeResponse(w, r, http.StatusOK, response)
+}
+
+func (c *Controller) DeleteExternalPrincipal(w http.ResponseWriter, r *http.Request, principalID string) {
+
+}
+
+func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request, principalID string) {
+
+}
