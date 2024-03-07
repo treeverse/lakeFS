@@ -107,8 +107,9 @@ public class ObjectsApiTest {
         String ref = null;
         String path = null;
         String range = null;
+        String ifNoneMatch = null;
         Boolean presign = null;
-                File response = api.getObject(repository, ref, path, range, presign);
+                File response = api.getObject(repository, ref, path, range, ifNoneMatch, presign);
         // TODO: test validations
     }
     

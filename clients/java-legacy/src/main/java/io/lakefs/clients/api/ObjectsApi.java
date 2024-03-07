@@ -553,6 +553,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the ref (required)
      * @param range Byte range to retrieve (optional)
+     * @param ifNoneMatch Returns response only if the object does not have a matching ETag (optional)
      * @param presign  (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
@@ -563,6 +564,7 @@ public class ObjectsApi {
         <tr><td> 200 </td><td> object content </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 206 </td><td> partial object content </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
+        <tr><td> 304 </td><td> Content Not modified </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -571,7 +573,7 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getObjectCall(String repository, String ref, String path, String range, Boolean presign, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call getObjectCall(String repository, String ref, String path, String range, String ifNoneMatch, Boolean presign, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -597,6 +599,10 @@ public class ObjectsApi {
             localVarHeaderParams.put("Range", localVarApiClient.parameterToString(range));
         }
 
+        if (ifNoneMatch != null) {
+            localVarHeaderParams.put("If-None-Match", localVarApiClient.parameterToString(ifNoneMatch));
+        }
+
         final String[] localVarAccepts = {
             "application/octet-stream", "application/json"
         };
@@ -616,7 +622,7 @@ public class ObjectsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call getObjectValidateBeforeCall(String repository, String ref, String path, String range, Boolean presign, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call getObjectValidateBeforeCall(String repository, String ref, String path, String range, String ifNoneMatch, Boolean presign, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -634,7 +640,7 @@ public class ObjectsApi {
         }
         
 
-        okhttp3.Call localVarCall = getObjectCall(repository, ref, path, range, presign, _callback);
+        okhttp3.Call localVarCall = getObjectCall(repository, ref, path, range, ifNoneMatch, presign, _callback);
         return localVarCall;
 
     }
@@ -646,6 +652,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the ref (required)
      * @param range Byte range to retrieve (optional)
+     * @param ifNoneMatch Returns response only if the object does not have a matching ETag (optional)
      * @param presign  (optional)
      * @return File
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -655,6 +662,7 @@ public class ObjectsApi {
         <tr><td> 200 </td><td> object content </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 206 </td><td> partial object content </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
+        <tr><td> 304 </td><td> Content Not modified </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -663,8 +671,8 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public File getObject(String repository, String ref, String path, String range, Boolean presign) throws ApiException {
-        ApiResponse<File> localVarResp = getObjectWithHttpInfo(repository, ref, path, range, presign);
+    public File getObject(String repository, String ref, String path, String range, String ifNoneMatch, Boolean presign) throws ApiException {
+        ApiResponse<File> localVarResp = getObjectWithHttpInfo(repository, ref, path, range, ifNoneMatch, presign);
         return localVarResp.getData();
     }
 
@@ -675,6 +683,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the ref (required)
      * @param range Byte range to retrieve (optional)
+     * @param ifNoneMatch Returns response only if the object does not have a matching ETag (optional)
      * @param presign  (optional)
      * @return ApiResponse&lt;File&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -684,6 +693,7 @@ public class ObjectsApi {
         <tr><td> 200 </td><td> object content </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 206 </td><td> partial object content </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
+        <tr><td> 304 </td><td> Content Not modified </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -692,8 +702,8 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<File> getObjectWithHttpInfo(String repository, String ref, String path, String range, Boolean presign) throws ApiException {
-        okhttp3.Call localVarCall = getObjectValidateBeforeCall(repository, ref, path, range, presign, null);
+    public ApiResponse<File> getObjectWithHttpInfo(String repository, String ref, String path, String range, String ifNoneMatch, Boolean presign) throws ApiException {
+        okhttp3.Call localVarCall = getObjectValidateBeforeCall(repository, ref, path, range, ifNoneMatch, presign, null);
         Type localVarReturnType = new TypeToken<File>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -705,6 +715,7 @@ public class ObjectsApi {
      * @param ref a reference (could be either a branch or a commit ID) (required)
      * @param path relative to the ref (required)
      * @param range Byte range to retrieve (optional)
+     * @param ifNoneMatch Returns response only if the object does not have a matching ETag (optional)
      * @param presign  (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
@@ -715,6 +726,7 @@ public class ObjectsApi {
         <tr><td> 200 </td><td> object content </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 206 </td><td> partial object content </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
+        <tr><td> 304 </td><td> Content Not modified </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -723,9 +735,9 @@ public class ObjectsApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getObjectAsync(String repository, String ref, String path, String range, Boolean presign, final ApiCallback<File> _callback) throws ApiException {
+    public okhttp3.Call getObjectAsync(String repository, String ref, String path, String range, String ifNoneMatch, Boolean presign, final ApiCallback<File> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = getObjectValidateBeforeCall(repository, ref, path, range, presign, _callback);
+        okhttp3.Call localVarCall = getObjectValidateBeforeCall(repository, ref, path, range, ifNoneMatch, presign, _callback);
         Type localVarReturnType = new TypeToken<File>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

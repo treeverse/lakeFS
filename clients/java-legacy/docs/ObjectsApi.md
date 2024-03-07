@@ -314,7 +314,7 @@ Name | Type | Description  | Notes
 
 <a name="getObject"></a>
 # **getObject**
-> File getObject(repository, ref, path, range, presign)
+> File getObject(repository, ref, path, range, ifNoneMatch, presign)
 
 get object content
 
@@ -365,9 +365,10 @@ public class Example {
     String ref = "ref_example"; // String | a reference (could be either a branch or a commit ID)
     String path = "path_example"; // String | relative to the ref
     String range = "bytes=0-1023"; // String | Byte range to retrieve
+    String ifNoneMatch = "33a64df551425fcc55e4d42a148795d9f25f89d4"; // String | Returns response only if the object does not have a matching ETag
     Boolean presign = true; // Boolean | 
     try {
-      File result = apiInstance.getObject(repository, ref, path, range, presign);
+      File result = apiInstance.getObject(repository, ref, path, range, ifNoneMatch, presign);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#getObject");
@@ -388,6 +389,7 @@ Name | Type | Description  | Notes
  **ref** | **String**| a reference (could be either a branch or a commit ID) |
  **path** | **String**| relative to the ref |
  **range** | **String**| Byte range to retrieve | [optional]
+ **ifNoneMatch** | **String**| Returns response only if the object does not have a matching ETag | [optional]
  **presign** | **Boolean**|  | [optional]
 
 ### Return type
@@ -409,6 +411,7 @@ Name | Type | Description  | Notes
 **200** | object content |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **206** | partial object content |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
+**304** | Content Not modified |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **410** | object expired |  -  |
