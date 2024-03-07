@@ -18,7 +18,7 @@ local extractor = require("lakefs/catalogexport/table_extractor")
 
     Returns a "<table name>: status" map for registration of provided tables.
 ]]
-local function register_tables(action, table_descriptors_path, delta_table_paths, databricks_client, warehouse_id)
+local function register_tables(action, table_descriptors_path, delta_table_details, databricks_client, warehouse_id)
     local repo = action.repository_id
     local commit_id = action.commit_id
     if not commit_id then
@@ -26,7 +26,7 @@ local function register_tables(action, table_descriptors_path, delta_table_paths
     end
     local branch_id = action.branch_id
     local response = {}
-    for table_name_yaml, table_details in pairs(delta_table_paths) do
+    for table_name_yaml, table_details in pairs(delta_table_details) do
         local tny  = table_name_yaml
         if not strings.has_suffix(tny, ".yaml") then
             tny = tny .. ".yaml"

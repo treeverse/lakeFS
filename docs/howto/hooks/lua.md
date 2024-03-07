@@ -284,7 +284,7 @@ local client = databricks.client("https://my-host.cloud.databricks.com", "my-ser
 local schema_name = client.create_schema("main", "mycatalog", true)
 ```
 
-### `databricks/client.register_external_table(table_name, physical_path, warehouse_id, catalog_name, schema_name)`
+### `databricks/client.register_external_table(table_name, physical_path, warehouse_id, catalog_name, schema_name, metadata)`
 
 Registers an external table under the provided warehouse ID, catalog name, and schema name.
 In order for this method call to succeed, an external location should be configured in the catalog, with the 
@@ -299,6 +299,8 @@ Parameters:
 `Connection Details`, or by running `databricks warehouses get`, choosing your SQL warehouse and fetching its ID).
 - `catalog_name(string)`: The name of the catalog under which a schema will be created (or fetched from).
 - `schema_name(string)`: The name of the schema under which the table will be created.
+- `metadata(table)`: A table of metadata to be added to the table's registration. The metadata table should be of the form:
+  `{key1 = "value1", key2 = "value2", ...}`.
 
 Example:
 
@@ -730,7 +732,7 @@ Parameters:
 
 A package used to register exported Delta Lake tables to Databricks' Unity catalog.
 
-### `lakefs/catalogexport/unity_exporter.register_tables(action, table_descriptors_path, delta_table_paths, databricks_client, warehouse_id)`
+### `lakefs/catalogexport/unity_exporter.register_tables(action, table_descriptors_path, delta_table_details, databricks_client, warehouse_id)`
 
 The function used to register exported Delta Lake tables in Databricks' Unity Catalog.
 The registration will use the following paths to register the table:
@@ -741,7 +743,7 @@ Parameters:
 
 - `action(table)`: The global action table
 - `table_descriptors_path(string)`: The path under which the table descriptors of the provided `table_paths` reside.
-- `delta_table_paths(table)`: Table names to physical paths mapping (e.g. `{ table1 = "s3://mybucket/mytable1", table2 = "s3://mybucket/mytable2" }`)
+- `delta_table_details(table)`: Table names to physical paths mapping and table metadata (e.g. `{table1 = {path = "s3://mybucket/mytable1", metadata = {id = "table_1_id", name = "table1", ...}}, table2 = {path = "s3://mybucket/mytable2", metadata = {id = "table_2_id", name = "table2", ...}}}`.)
 - `databricks_client(table)`: A Databricks client that implements `create_or_get_schema: function(id, catalog_name)` and `register_external_table: function(table_name, physical_path, warehouse_id, catalog_name, schema_name)`
 - `warehouse_id(string)`: Databricks warehouse ID.
 
