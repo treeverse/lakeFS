@@ -5238,17 +5238,6 @@ func (c *Controller) ListExternalPrincipals(w http.ResponseWriter, r *http.Reque
 
 }
 func (c *Controller) CreateExternalPrincipal(w http.ResponseWriter, r *http.Request, body apigen.CreateExternalPrincipalJSONRequestBody) {
-
-	// 	CreatedAt:   time.Now().UTC(),
-	// 	DisplayName: policyID,
-	// 	Statement:   stmts,
-	// }
-	// err := c.Auth.WritePolicy(ctx, p, true)
-	// if c.handleAPIError(ctx, w, r, err) {
-	// 	return
-	// }
-	// response := serializePolicy(p)
-	// writeResponse(w, r, http.StatusOK, response)
 }
 
 func (c *Controller) DeleteExternalPrincipal(w http.ResponseWriter, r *http.Request, principalID string) {

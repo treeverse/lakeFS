@@ -1664,7 +1664,7 @@ components:
             type: string
           description: |
             List of lakeFS user IDs that are associated with the external principal.
-            Currently, the only 1 user is allowed.
+            Currently, only 1 user is allowed.
         settings:
           type: object
           items:
