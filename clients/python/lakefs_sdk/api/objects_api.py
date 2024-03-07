@@ -556,13 +556,13 @@ class ObjectsApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def get_object(self, repository : StrictStr, ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID)")], path : Annotated[StrictStr, Field(..., description="relative to the ref")], range : Annotated[Optional[constr(strict=True)], Field(description="Byte range to retrieve")] = None, presign : Optional[StrictBool] = None, **kwargs) -> bytearray:  # noqa: E501
+    def get_object(self, repository : StrictStr, ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID)")], path : Annotated[StrictStr, Field(..., description="relative to the ref")], range : Annotated[Optional[constr(strict=True)], Field(description="Byte range to retrieve")] = None, if_none_match : Annotated[Optional[StrictStr], Field(description="Returns response only if the object does not have a matching ETag")] = None, presign : Optional[StrictBool] = None, **kwargs) -> bytearray:  # noqa: E501
         """get object content  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.get_object(repository, ref, path, range, presign, async_req=True)
+        >>> thread = api.get_object(repository, ref, path, range, if_none_match, presign, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -573,6 +573,8 @@ class ObjectsApi(object):
         :type path: str
         :param range: Byte range to retrieve
         :type range: str
+        :param if_none_match: Returns response only if the object does not have a matching ETag
+        :type if_none_match: str
         :param presign:
         :type presign: bool
         :param async_req: Whether to execute the request asynchronously.
@@ -589,16 +591,16 @@ class ObjectsApi(object):
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
             raise ValueError("Error! Please call the get_object_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.get_object_with_http_info(repository, ref, path, range, presign, **kwargs)  # noqa: E501
+        return self.get_object_with_http_info(repository, ref, path, range, if_none_match, presign, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def get_object_with_http_info(self, repository : StrictStr, ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID)")], path : Annotated[StrictStr, Field(..., description="relative to the ref")], range : Annotated[Optional[constr(strict=True)], Field(description="Byte range to retrieve")] = None, presign : Optional[StrictBool] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def get_object_with_http_info(self, repository : StrictStr, ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID)")], path : Annotated[StrictStr, Field(..., description="relative to the ref")], range : Annotated[Optional[constr(strict=True)], Field(description="Byte range to retrieve")] = None, if_none_match : Annotated[Optional[StrictStr], Field(description="Returns response only if the object does not have a matching ETag")] = None, presign : Optional[StrictBool] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """get object content  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.get_object_with_http_info(repository, ref, path, range, presign, async_req=True)
+        >>> thread = api.get_object_with_http_info(repository, ref, path, range, if_none_match, presign, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -609,6 +611,8 @@ class ObjectsApi(object):
         :type path: str
         :param range: Byte range to retrieve
         :type range: str
+        :param if_none_match: Returns response only if the object does not have a matching ETag
+        :type if_none_match: str
         :param presign:
         :type presign: bool
         :param async_req: Whether to execute the request asynchronously.
@@ -643,6 +647,7 @@ class ObjectsApi(object):
             'ref',
             'path',
             'range',
+            'if_none_match',
             'presign'
         ]
         _all_params.extend(
@@ -691,6 +696,9 @@ class ObjectsApi(object):
         if _params['range']:
             _header_params['Range'] = _params['range']
 
+        if _params['if_none_match']:
+            _header_params['If-None-Match'] = _params['if_none_match']
+
         # process the form parameters
         _form_params = []
         _files = {}
@@ -707,6 +715,7 @@ class ObjectsApi(object):
             '200': "bytearray",
             '206': "bytearray",
             '302': None,
+            '304': None,
             '401': "Error",
             '404': "Error",
             '410': "Error",

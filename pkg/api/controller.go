@@ -4197,6 +4197,14 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 
+	etag := httputil.ETag(entry.Checksum)
+
+	// check ETag if not modified in request
+	if swag.StringValue(params.IfNoneMatch) == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
 	// if pre-sign, return a redirect
 	pointer := block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
@@ -4214,7 +4222,6 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	}
 
 	// set response headers
-	etag := httputil.ETag(entry.Checksum)
 	w.Header().Set("ETag", etag)
 	lastModified := httputil.HeaderTimestamp(entry.CreationDate)
 	w.Header().Set("Last-Modified", lastModified)

@@ -282,6 +282,7 @@ class ObjectsApi(object):
                     'ref',
                     'path',
                     'range',
+                    'if_none_match',
                     'presign',
                 ],
                 'required': [
@@ -317,6 +318,8 @@ class ObjectsApi(object):
                         (str,),
                     'range':
                         (str,),
+                    'if_none_match':
+                        (str,),
                     'presign':
                         (bool,),
                 },
@@ -325,6 +328,7 @@ class ObjectsApi(object):
                     'ref': 'ref',
                     'path': 'path',
                     'range': 'Range',
+                    'if_none_match': 'If-None-Match',
                     'presign': 'presign',
                 },
                 'location_map': {
@@ -332,6 +336,7 @@ class ObjectsApi(object):
                     'ref': 'path',
                     'path': 'query',
                     'range': 'header',
+                    'if_none_match': 'header',
                     'presign': 'query',
                 },
                 'collection_format_map': {
@@ -1002,6 +1007,7 @@ class ObjectsApi(object):
 
         Keyword Args:
             range (str): Byte range to retrieve. [optional]
+            if_none_match (str): Returns response only if the object does not have a matching ETag. [optional]
             presign (bool): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.

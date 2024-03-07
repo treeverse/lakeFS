@@ -47,6 +47,7 @@ import (
 
 const (
 	DefaultUserID = "example_user"
+	DefaultETag   = `"3c4838fe975c762ee97cf39fbbe566f1"`
 )
 
 type Statuser interface {
@@ -2506,25 +2507,11 @@ func TestController_ObjectsHeadObjectHandler(t *testing.T) {
 
 	t.Run("head object", func(t *testing.T) {
 		resp, err := clt.HeadObjectWithResponse(ctx, repo, "main", &apigen.HeadObjectParams{Path: "foo/bar"})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if resp.HTTPResponse.StatusCode != http.StatusOK {
-			t.Errorf("HeadObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusOK)
-		}
-
-		if resp.HTTPResponse.ContentLength != 37 {
-			t.Errorf("expected 37 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
-		}
-		etag := resp.HTTPResponse.Header.Get("ETag")
-		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
-			t.Errorf("got unexpected etag: %s", etag)
-		}
-
-		body := string(resp.Body)
-		if body != "" {
-			t.Errorf("got unexpected body: '%s'", body)
-		}
+		require.Nil(t, err)
+		require.Equal(t, http.StatusOK, resp.HTTPResponse.StatusCode)
+		require.Equal(t, int64(37), resp.HTTPResponse.ContentLength)
+		require.Equal(t, DefaultETag, resp.HTTPResponse.Header.Get("ETag"))
+		require.Empty(t, string(resp.Body))
 	})
 
 	t.Run("head object byte range", func(t *testing.T) {
@@ -2533,26 +2520,11 @@ func TestController_ObjectsHeadObjectHandler(t *testing.T) {
 			Path:  "foo/bar",
 			Range: &rng,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if resp.HTTPResponse.StatusCode != http.StatusPartialContent {
-			t.Errorf("HeadObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, http.StatusPartialContent)
-		}
-
-		if resp.HTTPResponse.ContentLength != 10 {
-			t.Errorf("expected 10 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
-		}
-
-		etag := resp.HTTPResponse.Header.Get("ETag")
-		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
-			t.Errorf("got unexpected etag: %s", etag)
-		}
-
-		body := string(resp.Body)
-		if body != "" {
-			t.Errorf("got unexpected body: '%s'", body)
-		}
+		require.Nil(t, err)
+		require.Equal(t, http.StatusPartialContent, resp.HTTPResponse.StatusCode)
+		require.Equal(t, int64(10), resp.HTTPResponse.ContentLength)
+		require.Equal(t, DefaultETag, resp.HTTPResponse.Header.Get("ETag"))
+		require.Empty(t, string(resp.Body))
 	})
 
 	t.Run("head object bad byte range", func(t *testing.T) {
@@ -2621,7 +2593,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 			t.Errorf("expected 37 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
 		}
 		etag := resp.HTTPResponse.Header.Get("ETag")
-		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
+		if etag != DefaultETag {
 			t.Errorf("got unexpected etag: %s", etag)
 		}
 
@@ -2649,7 +2621,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		}
 
 		etag := resp.HTTPResponse.Header.Get("ETag")
-		if etag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
+		if etag != DefaultETag {
 			t.Errorf("got unexpected etag: %s", etag)
 		}
 
@@ -2686,6 +2658,31 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		if apiutil.Value(properties.StorageClass) != expensiveString {
 			t.Errorf("expected to get \"%s\" storage class, got %#v", expensiveString, properties)
 		}
+	})
+
+	t.Run("get object returns expected response with different etag", func(t *testing.T) {
+		newChecksum := `"11ee22ff33445566778899"`
+		eTagInput := "\"" + newChecksum + "\""
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
+			Path:        "foo/bar",
+			IfNoneMatch: &eTagInput,
+		})
+		require.Nil(t, err)
+		require.Equal(t, http.StatusOK, resp.HTTPResponse.StatusCode)
+		require.Equal(t, int64(37), resp.HTTPResponse.ContentLength)
+		require.Equal(t, DefaultETag, resp.HTTPResponse.Header.Get("ETag"))
+	})
+
+	t.Run("get object returns not modified with same etag", func(t *testing.T) {
+		eTagInput := "\"" + blob.Checksum + "\""
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
+			Path:        "foo/bar",
+			IfNoneMatch: &eTagInput,
+		})
+		require.Nil(t, err)
+		require.Equal(t, http.StatusNotModified, resp.HTTPResponse.StatusCode)
+		require.Equal(t, int64(0), resp.HTTPResponse.ContentLength)
+		require.Empty(t, resp.HTTPResponse.Header.Get("ETag"))
 	})
 }
 

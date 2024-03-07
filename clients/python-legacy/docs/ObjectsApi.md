@@ -453,6 +453,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     ref = "ref_example" # str | a reference (could be either a branch or a commit ID)
     path = "path_example" # str | relative to the ref
     range = "bytes=0-1023" # str | Byte range to retrieve (optional)
+    if_none_match = "33a64df551425fcc55e4d42a148795d9f25f89d4" # str | Returns response only if the object does not have a matching ETag (optional)
     presign = True # bool |  (optional)
 
     # example passing only required values which don't have defaults set
@@ -467,7 +468,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # get object content
-        api_response = api_instance.get_object(repository, ref, path, range=range, presign=presign)
+        api_response = api_instance.get_object(repository, ref, path, range=range, if_none_match=if_none_match, presign=presign)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ObjectsApi->get_object: %s\n" % e)
@@ -482,6 +483,7 @@ Name | Type | Description  | Notes
  **ref** | **str**| a reference (could be either a branch or a commit ID) |
  **path** | **str**| relative to the ref |
  **range** | **str**| Byte range to retrieve | [optional]
+ **if_none_match** | **str**| Returns response only if the object does not have a matching ETag | [optional]
  **presign** | **bool**|  | [optional]
 
 ### Return type
@@ -505,6 +507,7 @@ Name | Type | Description  | Notes
 **200** | object content |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **206** | partial object content |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
+**304** | Content Not modified |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **410** | object expired |  -  |
