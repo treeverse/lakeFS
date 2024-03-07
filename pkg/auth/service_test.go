@@ -1793,7 +1793,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 		policyName             string
 		responseStatusCode     int
 		firstStatementResource string
-		firstStatementEffect   string
+		firstStatementEffect   auth.StatementEffect
 		firstStatementAction   []string
 		responseName           string
 		expectedErr            error

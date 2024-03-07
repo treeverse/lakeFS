@@ -43,15 +43,15 @@ func (c *Change) String() string {
 	return fmt.Sprintf("%s\t%s\t%s", ChangeSourceString(c.Source), ChangeTypeString(c.Type), c.Path)
 }
 
-func ChangeTypeFromString(changeType string) ChangeType {
+func ChangeTypeFromString(changeType apigen.DiffType) ChangeType {
 	switch changeType {
-	case "added":
+	case apigen.DiffTypeAdded:
 		return ChangeTypeAdded
-	case "removed":
+	case apigen.DiffTypeRemoved:
 		return ChangeTypeRemoved
-	case "modified", "changed":
+	case apigen.DiffType("modified"), apigen.DiffTypeChanged:
 		return ChangeTypeModified
-	case "conflict":
+	case apigen.DiffTypeConflict:
 		return ChangeTypeConflict
 	default:
 		panic("invalid change type")

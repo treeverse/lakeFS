@@ -225,10 +225,8 @@ func (u *presignUpload) completeMultipart(ctx context.Context, mpu *apigen.Presi
 		apigen.CompletePresignMultipartUploadJSONRequestBody{
 			Parts:           uploadParts,
 			PhysicalAddress: mpu.PhysicalAddress,
-			UserMetadata: &apigen.CompletePresignMultipartUpload_UserMetadata{
-				AdditionalProperties: u.metadata,
-			},
-			ContentType: apiutil.Ptr(u.contentType),
+			UserMetadata:    &u.metadata,
+			ContentType:     apiutil.Ptr(u.contentType),
 		},
 	)
 	if err != nil {
@@ -367,13 +365,11 @@ func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, 
 	}
 
 	linkReqBody := apigen.LinkPhysicalAddressJSONRequestBody{
-		Checksum:  etag,
-		SizeBytes: u.size,
-		Staging:   *stagingLocation,
-		UserMetadata: &apigen.StagingMetadata_UserMetadata{
-			AdditionalProperties: u.metadata,
-		},
-		ContentType: apiutil.Ptr(u.contentType),
+		Checksum:     etag,
+		SizeBytes:    u.size,
+		Staging:      *stagingLocation,
+		UserMetadata: &u.metadata,
+		ContentType:  apiutil.Ptr(u.contentType),
 	}
 	linkResp, err := u.uploader.Client.LinkPhysicalAddressWithResponse(ctx, u.repoID, u.branchID,
 		&apigen.LinkPhysicalAddressParams{

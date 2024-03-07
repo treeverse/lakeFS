@@ -11,7 +11,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
-func MetricsMiddleware(swagger *openapi3.Swagger) func(http.Handler) http.Handler {
+func MetricsMiddleware(swagger *openapi3.T) func(http.Handler) http.Handler {
 	// router for operation ID lookup
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {

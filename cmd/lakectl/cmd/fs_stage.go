@@ -45,9 +45,7 @@ The object location must be outside the repository's storage namespace`,
 			ContentType:     &contentType,
 		}
 		if metaErr == nil {
-			metadata := apigen.ObjectUserMetadata{
-				AdditionalProperties: meta,
-			}
+			metadata := apigen.ObjectUserMetadata(meta)
 			obj.Metadata = &metadata
 		}
 

@@ -124,7 +124,7 @@ func printDiffRefs(ctx context.Context, client apigen.ClientWithResponsesInterfa
 }
 
 func FmtDiff(d apigen.Diff, withDirection bool) {
-	action, color := diff.Fmt(d.Type)
+	action, color := diff.Fmt(string(d.Type))
 
 	if !withDirection {
 		_, _ = os.Stdout.WriteString(

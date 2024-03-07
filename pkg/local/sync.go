@@ -39,7 +39,7 @@ func getMtimeFromStats(stats apigen.ObjectStats) (int64, error) {
 	if stats.Metadata == nil {
 		return stats.Mtime, nil
 	}
-	clientMtime, hasClientMtime := stats.Metadata.Get(ClientMtimeMetadataKey)
+	clientMtime, hasClientMtime := (*stats.Metadata)[ClientMtimeMetadataKey]
 	if hasClientMtime {
 		// parse
 		return strconv.ParseInt(clientMtime, 10, 64)

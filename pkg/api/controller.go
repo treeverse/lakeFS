@@ -370,7 +370,7 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 		Checksum(checksum).
 		ContentType(swag.StringValue(body.ContentType))
 	if body.UserMetadata != nil {
-		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
+		entryBuilder.Metadata(catalog.Metadata(*body.UserMetadata))
 	}
 	entry := entryBuilder.Build()
 
@@ -379,7 +379,7 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 		return
 	}
 
-	metadata := apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
+	metadata := apigen.ObjectUserMetadata(entry.Metadata)
 	response := apigen.ObjectStats{
 		Checksum:        entry.Checksum,
 		ContentType:     swag.String(entry.ContentType),
@@ -766,7 +766,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		Checksum(checksum).
 		ContentType(swag.StringValue(body.ContentType))
 	if body.UserMetadata != nil {
-		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
+		entryBuilder.Metadata(catalog.Metadata(*body.UserMetadata))
 	}
 	entry := entryBuilder.Build()
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithForce(swag.BoolValue(body.Force)), graveler.WithIfAbsent(ifAbsent))
@@ -774,7 +774,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	metadata := apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
+	metadata := apigen.ObjectUserMetadata(entry.Metadata)
 	response := apigen.ObjectStats{
 		Checksum:        entry.Checksum,
 		ContentType:     swag.String(entry.ContentType),
@@ -1162,7 +1162,7 @@ func serializePolicy(p *model.Policy) apigen.Policy {
 	for _, s := range p.Statement {
 		stmts = append(stmts, apigen.Statement{
 			Action:   s.Action,
-			Effect:   s.Effect,
+			Effect:   apigen.StatementEffect(s.Effect),
 			Resource: s.Resource,
 		})
 	}
@@ -1284,7 +1284,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body a
 	stmts := make(model.Statements, len(body.Statement))
 	for i, apiStatement := range body.Statement {
 		stmts[i] = model.Statement{
-			Effect:   apiStatement.Effect,
+			Effect:   string(apiStatement.Effect),
 			Action:   apiStatement.Action,
 			Resource: apiStatement.Resource,
 		}
@@ -1383,7 +1383,7 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body a
 	stmts := make(model.Statements, len(body.Statement))
 	for i, apiStatement := range body.Statement {
 		stmts[i] = model.Statement{
-			Effect:   apiStatement.Effect,
+			Effect:   string(apiStatement.Effect),
 			Action:   apiStatement.Action,
 			Resource: apiStatement.Resource,
 		}
@@ -2141,7 +2141,7 @@ func (c *Controller) GetRepositoryMetadata(w http.ResponseWriter, r *http.Reques
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	writeResponse(w, r, http.StatusOK, apigen.RepositoryMetadata{AdditionalProperties: metadata})
+	writeResponse(w, r, http.StatusOK, apigen.RepositoryMetadata(metadata))
 }
 
 func (c *Controller) SetRepositoryMetadata(w http.ResponseWriter, r *http.Request, body apigen.SetRepositoryMetadataJSONRequestBody, repository string) {
@@ -2155,7 +2155,7 @@ func (c *Controller) SetRepositoryMetadata(w http.ResponseWriter, r *http.Reques
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "update_repo_metadata", r, repository, "", "")
-	err := c.Catalog.UpdateRepositoryMetadata(ctx, repository, body.Metadata.AdditionalProperties)
+	err := c.Catalog.UpdateRepositoryMetadata(ctx, repository, body.Metadata)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2397,7 +2397,7 @@ func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository, 
 		EventType: runResult.EventType,
 		StartTime: runResult.StartTime,
 		EndTime:   &runResult.EndTime,
-		Status:    status,
+		Status:    apigen.ActionRunStatus(status),
 		Branch:    runResult.BranchID,
 		CommitId:  runResult.CommitID,
 	}
@@ -2819,11 +2819,11 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ap
 	}
 	metadata := map[string]string{}
 	if body.Commit.Metadata != nil {
-		metadata = body.Commit.Metadata.AdditionalProperties
+		metadata = *body.Commit.Metadata
 	}
 	paths := make([]catalog.ImportPath, 0, len(body.Paths))
 	for _, p := range body.Paths {
-		pathType, err := catalog.GetImportPathType(p.Type)
+		pathType, err := catalog.GetImportPathType(string(p.Type))
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
@@ -2867,6 +2867,7 @@ func importStatusToResponse(status *graveler.ImportStatus) apigen.ImportStatus {
 	}
 
 	commitLog := catalog.CommitRecordToLog(status.Commit)
+	metadata := map[string]string(commitLog.Metadata)
 	if commitLog != nil {
 		resp.Commit = &apigen.Commit{
 			Committer:    commitLog.Committer,
@@ -2874,7 +2875,7 @@ func importStatusToResponse(status *graveler.ImportStatus) apigen.ImportStatus {
 			Id:           commitLog.Reference,
 			Message:      commitLog.Message,
 			MetaRangeId:  commitLog.MetaRangeID,
-			Metadata:     &apigen.Commit_Metadata{AdditionalProperties: commitLog.Metadata},
+			Metadata:     &metadata,
 			Parents:      commitLog.Parents,
 			Version:      apiutil.Ptr(int(commitLog.Version)),
 			Generation:   apiutil.Ptr(int64(commitLog.Generation)),
@@ -2940,7 +2941,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 	}
 	var metadata map[string]string
 	if body.Metadata != nil {
-		metadata = body.Metadata.AdditionalProperties
+		metadata = *body.Metadata
 	}
 
 	newCommit, err := c.Catalog.Commit(ctx, repository, branch, body.Message, user.Committer(), metadata, body.Date, params.SourceMetarange, swag.BoolValue(body.AllowEmpty), graveler.WithForce(swag.BoolValue(body.Force)))
@@ -2966,7 +2967,7 @@ func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, 
 		writeError(w, r, http.StatusUnauthorized, "missing user")
 		return
 	}
-	err = c.Catalog.CreateCommitRecord(ctx, repository, body.CommitId, body.Version, body.Committer, body.Message, body.MetarangeId, body.CreationDate, body.Parents, body.Metadata.AdditionalProperties, int(body.Generation), graveler.WithForce(swag.BoolValue(body.Force)))
+	err = c.Catalog.CreateCommitRecord(ctx, repository, body.CommitId, body.Version, body.Committer, body.Message, body.MetarangeId, body.CreationDate, body.Parents, *body.Metadata, int(body.Generation), graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2975,13 +2976,14 @@ func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, 
 }
 
 func commitResponse(w http.ResponseWriter, r *http.Request, newCommit *catalog.CommitLog) {
+	metadata := map[string]string(newCommit.Metadata)
 	response := apigen.Commit{
 		Committer:    newCommit.Committer,
 		CreationDate: newCommit.CreationDate.Unix(),
 		Id:           newCommit.Reference,
 		Message:      newCommit.Message,
 		MetaRangeId:  newCommit.MetaRangeID,
-		Metadata:     &apigen.Commit_Metadata{AdditionalProperties: newCommit.Metadata},
+		Metadata:     &metadata,
 		Parents:      newCommit.Parents,
 		Version:      apiutil.Ptr(int(newCommit.Version)),
 		Generation:   apiutil.Ptr(int64(newCommit.Generation)),
@@ -3023,7 +3025,7 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 		diff := apigen.Diff{
 			Path:     d.Path,
 			Type:     transformDifferenceTypeToString(d.Type),
-			PathType: pathType,
+			PathType: apigen.DiffPathType(pathType),
 		}
 		if !d.CommonLevel {
 			diff.SizeBytes = swag.Int64(d.Size)
@@ -3226,7 +3228,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       swag.Int64(blob.Size),
 		ContentType:     &contentType,
-		Metadata:        &apigen.ObjectUserMetadata{AdditionalProperties: meta},
+		Metadata:        (*apigen.ObjectUserMetadata)(&meta),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -3280,7 +3282,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 		Checksum(body.Checksum).
 		ContentType(swag.StringValue(body.ContentType))
 	if body.Metadata != nil {
-		entryBuilder.Metadata(body.Metadata.AdditionalProperties)
+		entryBuilder.Metadata(catalog.Metadata(*body.Metadata))
 	}
 	entry := entryBuilder.Build()
 
@@ -3374,7 +3376,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		PhysicalAddress: qk.Format(),
 		SizeBytes:       swag.Int64(entry.Size),
 		ContentType:     swag.String(entry.ContentType),
-		Metadata:        &apigen.ObjectUserMetadata{AdditionalProperties: metadata},
+		Metadata:        (*apigen.ObjectUserMetadata)(&metadata),
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -3478,7 +3480,7 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 		CreationDate: commit.CreationDate.Unix(),
 		Message:      commit.Message,
 		MetaRangeId:  commit.MetaRangeID,
-		Metadata:     &apigen.Commit_Metadata{AdditionalProperties: commit.Metadata},
+		Metadata:     (*map[string]string)(&commit.Metadata),
 		Parents:      commit.Parents,
 		Generation:   apiutil.Ptr(int64(commit.Generation)),
 		Version:      apiutil.Ptr(int(commit.Version)),
@@ -4141,7 +4143,7 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 		diff := apigen.Diff{
 			Path:     d.Path,
 			Type:     transformDifferenceTypeToString(d.Type),
-			PathType: pathType,
+			PathType: apigen.DiffPathType(pathType),
 		}
 		if !d.CommonLevel {
 			diff.SizeBytes = swag.Int64(d.Size)
@@ -4183,15 +4185,12 @@ func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, reposito
 
 	serializedCommits := make([]apigen.Commit, 0, len(commitLog))
 	for _, commit := range commitLog {
-		metadata := apigen.Commit_Metadata{
-			AdditionalProperties: commit.Metadata,
-		}
 		serializedCommits = append(serializedCommits, apigen.Commit{
 			Committer:    commit.Committer,
 			CreationDate: commit.CreationDate.Unix(),
 			Id:           commit.Reference,
 			Message:      commit.Message,
-			Metadata:     &metadata,
+			Metadata:     (*map[string]string)(&commit.Metadata),
 			MetaRangeId:  commit.MetaRangeID,
 			Parents:      commit.Parents,
 			Generation:   apiutil.Ptr(int64(commit.Generation)),
@@ -4424,7 +4423,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				ContentType:     swag.String(entry.ContentType),
 			}
 			if (params.UserMetadata == nil || *params.UserMetadata) && entry.Metadata != nil {
-				objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
+				objStat.Metadata = (*apigen.ObjectUserMetadata)(&entry.Metadata)
 			}
 			if swag.BoolValue(params.Presign) {
 				// check if the user has read permissions for this object
@@ -4517,7 +4516,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 	} else {
 		metadata = map[string]string{}
 	}
-	objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: metadata}
+	objStat.Metadata = (*apigen.ObjectUserMetadata)(&metadata)
 
 	code := http.StatusOK
 	if entry.Expired {
@@ -4598,7 +4597,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	}
 	metadata := map[string]string{}
 	if body.Metadata != nil {
-		metadata = body.Metadata.AdditionalProperties
+		metadata = *body.Metadata
 	}
 
 	reference, err := c.Catalog.Merge(ctx,
@@ -4742,7 +4741,7 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 
 func newLoginConfig(c *config.Config) *apigen.LoginConfig {
 	return &apigen.LoginConfig{
-		RBAC:               &c.Auth.UIConfig.RBAC,
+		RBAC:               (*apigen.LoginConfigRBAC)(&c.Auth.UIConfig.RBAC),
 		LoginUrl:           c.Auth.UIConfig.LoginURL,
 		LoginFailedMessage: &c.Auth.UIConfig.LoginFailedMessage,
 		FallbackLoginUrl:   c.Auth.UIConfig.FallbackLoginURL,
@@ -4752,13 +4751,17 @@ func newLoginConfig(c *config.Config) *apigen.LoginConfig {
 	}
 }
 
+func makePtr[T any](t T) *T {
+	return &t
+}
+
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// external auth reports as initialized to avoid triggering the setup wizard
 	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
 		response := apigen.SetupState{
-			State:            swag.String(string(auth.SetupStateInitialized)),
+			State:            makePtr(apigen.Initialized),
 			LoginConfig:      newLoginConfig(c.Config),
 			CommPrefsMissing: swag.Bool(false),
 		}
@@ -4776,7 +4779,7 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := apigen.SetupState{
-		State:       swag.String(string(savedState)),
+		State:       (*apigen.SetupStateState)(&savedState),
 		LoginConfig: newLoginConfig(c.Config),
 	}
 
