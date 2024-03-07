@@ -1643,7 +1643,7 @@ components:
         results:
           type: array
           items:
-            $ref: "#/components/schemas/ExternalPrincipal"
+            type: string
     ExternalPrincipalSettings:
       type: object
       additionalProperties:
@@ -1653,7 +1653,11 @@ components:
       type: object
       required:
         - users
+        - id
       properties:
+        id:
+          type: string
+          description: A unique identifier for the external principal
         users:
           type: array
           items:
