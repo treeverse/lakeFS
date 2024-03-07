@@ -61,7 +61,7 @@ var importCmd = &cobra.Command{
 			},
 		}
 		if len(metadata) > 0 {
-			body.Commit.Metadata = &apigen.CommitCreation_Metadata{AdditionalProperties: metadata}
+			body.Commit.Metadata = &metadata
 		}
 
 		importResp, err := client.ImportStartWithResponse(ctx, toURI.Repository, toURI.Ref, body)
