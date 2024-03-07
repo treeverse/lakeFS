@@ -2563,6 +2563,7 @@ paths:
       tags: 
         - auth
         - external
+        - experimental
       operationId: listExternalPrincipals
       summary: list external principals
       parameters: 
@@ -2586,6 +2587,7 @@ paths:
       tags: 
         - auth
         - external
+        - experimental
       operationId: createExternalPrincipal
       summary: Create principal as external identity connected to lakeFS user
       requestBody: 
@@ -2616,6 +2618,7 @@ paths:
       tags: 
         - auth
         - external
+        - experimental
       operationId: getExternalPrincipal
       summary: Get principal information
       responses: 
@@ -2637,6 +2640,7 @@ paths:
       tags: 
         - auth
         - external
+        - experimental
       operationId: deleteExternalPrincipal
       summary: Delete principal and lakeFS attachments
       responses: 
