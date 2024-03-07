@@ -1,5 +1,11 @@
 # Changelog
 
+# Upcoming **MINOR** version
+
+:new: What's new:
+- Support "If-None-Match: <etag>" header in getObject request (#5967).
+  Kudos to our latest contributor @vishalsanfran!
+
 # v1.12.1
 
 :bug: Bugs fixed:
