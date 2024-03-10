@@ -1292,14 +1292,14 @@ func (g *Graveler) UpdateBranch(ctx context.Context, repository *RepositoryRecor
 // branchID of repository.  Parameter retries should be 0 if the operation
 // succeeded on the very first attempt.
 func (g *Graveler) monitorRetries(ctx context.Context, retries int, repositoryID RepositoryID, branchID BranchID, operation string) {
-	kvRetriesCounter.WithLabelValues(operation).Add(float64(tries))
+	kvRetriesCounter.WithLabelValues(operation).Add(float64(retries))
 	l := g.log(ctx).WithFields(logging.Fields{
-		"tries":      tries,
+		"tries":      retries,
 		"repository": repositoryID,
 		"branch":     branchID,
 		"operation":  operation,
 	})
-	if tries > 1 {
+	if retries > 1 {
 		l.Info("Operation retried")
 	} else {
 		l.Trace("No retries needed")
@@ -2125,7 +2125,9 @@ func (g *Graveler) CreateCommitRecord(ctx context.Context, repository *Repositor
 // between 1 and BranchUpdateMaxTries.
 func (g *Graveler) retryBranchUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, f BranchUpdateFunc, operation string) error {
 	tries := 0
-	defer g.monitorRetries(ctx, tries-1, repository.RepositoryID, branchID, operation)
+	defer func() {
+		g.monitorRetries(ctx, tries-1, repository.RepositoryID, branchID, operation)
+	}()
 	err := backoff.Retry(func() error {
 		// TODO(eden) issue 3586 - if the branch commit id hasn't changed, update the fields instead of fail
 		tries += 1
