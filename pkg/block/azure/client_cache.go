@@ -144,7 +144,7 @@ func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
 }
 
 func buildAccountEndpoint(storageAccount string, chinaCloud bool) string {
-	format := BlobEndpointGeneralFormat
+	format := BlobEndpointGlobalFormat
 	if chinaCloud {
 		format = BlobEndpointChinaCloudFormat
 	}

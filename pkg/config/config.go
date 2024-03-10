@@ -496,6 +496,9 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 	if c.Blockstore.Azure.AuthMethod != "" {
 		logging.ContextUnavailable().Warn("blockstore.azure.auth_method is deprecated. Value is no longer used.")
 	}
+	if c.Blockstore.Azure.ChinaCloud {
+		logging.ContextUnavailable().Warn("blockstore.azure.china_cloud is enabled. lakeFS will only function on Azure China Cloud")
+	}
 	return blockparams.Azure{
 		StorageAccount:     c.Blockstore.Azure.StorageAccount,
 		StorageAccessKey:   c.Blockstore.Azure.StorageAccessKey,

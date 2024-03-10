@@ -29,7 +29,7 @@ const (
 	// more the 5000 different accounts, which is highly unlikely
 	udcCacheSize = 5000
 
-	BlobEndpointGeneralFormat    = "https://%s.blob.core.windows.net/"
+	BlobEndpointGlobalFormat     = "https://%s.blob.core.windows.net/"
 	BlobEndpointChinaCloudFormat = "https://%s.blob.core.chinacloudapi.cn/"
 )
 
@@ -568,8 +568,14 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeAzure)
-	info.ImportValidityRegex = `^https?://[a-z0-9_-]+\.(blob|adls)\.core\.(windows\.net|chinacloudapi\.cn)` // added adls for import hint validation in UI
-	info.ValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.(windows\.net|chinacloudapi\.cn)`
+	info.ImportValidityRegex = `^https?://[a-z0-9_-]+\.(blob|adls)\.core\.windows\.net` // added adls for import hint validation in UI
+	info.ValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.windows\.net`
+
+	if a.chinaCloud {
+		info.ImportValidityRegex = `^https?://[a-z0-9_-]+\.(blob|adls)\.core\.chinacloudapi\.cn`
+		info.ValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.chinacloudapi\.cn`
+	}
+
 	info.Example = "https://mystorageaccount.blob.core.windows.net/mycontainer/"
 	if a.disablePreSigned {
 		info.PreSignSupport = false
