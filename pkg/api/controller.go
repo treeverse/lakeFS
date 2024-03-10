@@ -5235,7 +5235,8 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) ListExternalPrincipals(w http.ResponseWriter, r *http.Request, params apigen.ListExternalPrincipalsParams) {
-	if c.Config.IsAuthUISimplified() && c.Config.Auth.RemoteAuthenticator.Enabled {
+	ctx := r.Context()
+	if c.Config.IsAuthUISimplified() && c.Auth.IsExternalPrincipalsEnabled(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5247,9 +5248,28 @@ func (c *Controller) ListExternalPrincipals(w http.ResponseWriter, r *http.Reque
 	}) {
 		return
 	}
+	c.LogAction(ctx, "list_external_principals", r, "", "", "")
+	externalPrincipalIds, paginator, err := c.Auth.ListExternalPrincipals(ctx, &model.PaginationParams{
+		Prefix: paginationPrefix(params.Prefix),
+		Amount: paginationAmount(params.Amount),
+		After:  paginationAfter(params.After),
+	})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	response := apigen.ExternalPrincipalList{
+		Results: externalPrincipalIds,
+		Pagination: apigen.Pagination{
+			HasMore:    paginator.NextPageToken != "",
+			NextOffset: paginator.NextPageToken,
+			Results:    paginator.Amount,
+		},
+	}
+	writeResponse(w, r, http.StatusOK, response)
 }
 func (c *Controller) CreateExternalPrincipal(w http.ResponseWriter, r *http.Request, body apigen.CreateExternalPrincipalJSONRequestBody) {
-	if c.Config.IsAuthUISimplified() && c.Config.Auth.RemoteAuthenticator.Enabled {
+	ctx := r.Context()
+	if c.Config.IsAuthUISimplified() && c.Auth.IsExternalPrincipalsEnabled(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5261,10 +5281,18 @@ func (c *Controller) CreateExternalPrincipal(w http.ResponseWriter, r *http.Requ
 	}) {
 		return
 	}
+	c.LogAction(ctx, "create_external_principal", r, "", "", "")
+	// TODO(isan) Settings should be passed here as part of the request. i.e using session name or not
+	err := c.Auth.CreateExternalPrincipal(ctx, body.Id, body.UserId)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusCreated, nil)
 }
 
 func (c *Controller) DeleteExternalPrincipal(w http.ResponseWriter, r *http.Request, principalID string) {
-	if c.Config.IsAuthUISimplified() && c.Config.Auth.RemoteAuthenticator.Enabled {
+	ctx := r.Context()
+	if c.Config.IsAuthUISimplified() && c.Auth.IsExternalPrincipalsEnabled(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5276,10 +5304,17 @@ func (c *Controller) DeleteExternalPrincipal(w http.ResponseWriter, r *http.Requ
 	}) {
 		return
 	}
+	c.LogAction(ctx, "delete_external_principal", r, "", "", "")
+	err := c.Auth.DeleteExternalPrincipalFromUser(ctx, principalID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request, principalID string) {
-	if c.Config.IsAuthUISimplified() && c.Config.Auth.RemoteAuthenticator.Enabled {
+	ctx := r.Context()
+	if c.Config.IsAuthUISimplified() && c.Auth.IsExternalPrincipalsEnabled(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5291,10 +5326,22 @@ func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request
 	}) {
 		return
 	}
+	c.LogAction(ctx, "get_external_principal", r, "", "", "")
+	// TODO(isan) pass settings as well
+	principal, err := c.Auth.GetExternalPrincipal(ctx, principalID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	response := apigen.ExternalPrincipal{
+		Id:     principal.ID,
+		UserId: principal.Username,
+	}
+	writeResponse(w, r, http.StatusOK, response)
 }
 
 func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.Request, userID string, params apigen.ListUserExternalPrincipalsParams) {
-	if c.Config.IsAuthUISimplified() && c.Config.Auth.RemoteAuthenticator.Enabled {
+	ctx := r.Context()
+	if c.Config.IsAuthUISimplified() && c.Auth.IsExternalPrincipalsEnabled(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5306,4 +5353,25 @@ func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.R
 	}) {
 		return
 	}
+
+	c.LogAction(ctx, "list_user_external_principals", r, "", "", "")
+
+	principalIds, paginator, err := c.Auth.ListUserExternalPrincipals(ctx, userID, &model.PaginationParams{
+		Prefix: paginationPrefix(params.Prefix),
+		Amount: paginationAmount(params.Amount),
+		After:  paginationAfter(params.After),
+	})
+
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	response := apigen.ExternalPrincipalList{
+		Results: principalIds,
+		Pagination: apigen.Pagination{
+			HasMore:    paginator.NextPageToken != "",
+			NextOffset: paginator.NextPageToken,
+			Results:    paginator.Amount,
+		}}
+	writeResponse(w, r, http.StatusOK, response)
 }

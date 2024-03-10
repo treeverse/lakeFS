@@ -186,6 +186,8 @@ type Config struct {
 		RemoteAuthenticator struct {
 			// Enabled if set true will enable remote authentication
 			Enabled bool `mapstructure:"enabled"`
+			// ExternalPrincipalAuth configuration related external principals
+			ExternalPrincipalsEnabled bool `mapstructure:"external_principals_enabled"`
 			// Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth)
 			Endpoint string `mapstructure:"endpoint"`
 			// DefaultUserGroup is the default group for the users authenticated by the remote service

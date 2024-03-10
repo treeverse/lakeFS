@@ -77,6 +77,15 @@ type EmailInviter interface {
 	InviteUser(ctx context.Context, email string) error
 }
 
+type ExternalPrincipalsService interface {
+	IsExternalPrincipalsEnabled(ctx context.Context) bool
+	CreateExternalPrincipal(ctx context.Context, externalPrincipalID, username string) error
+	DeleteExternalPrincipalFromUser(ctx context.Context, externalPrincipalID string) error
+	GetExternalPrincipal(ctx context.Context, externalPrincipalID string) (*model.ExternalPrincipal, error)
+	ListExternalPrincipals(ctx context.Context, params *model.PaginationParams) ([]string, *model.Paginator, error)
+	ListUserExternalPrincipals(ctx context.Context, username string, params *model.PaginationParams) ([]string, *model.Paginator, error)
+}
+
 type Service interface {
 	SecretStore() crypt.SecretStore
 	Cache() Cache
@@ -89,6 +98,9 @@ type Service interface {
 	GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
+
+	// external principals
+	ExternalPrincipalsService
 
 	// groups
 	CreateGroup(ctx context.Context, group *model.Group) (*model.Group, error)
@@ -1102,6 +1114,25 @@ func claimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64, mark
 	return nil
 }
 
+func (s *AuthService) IsExternalPrincipalsEnabled(ctx context.Context) bool {
+	return false
+}
+func (s *AuthService) CreateExternalPrincipal(ctx context.Context, externalPrincipalID, username string) error {
+	return ErrNotImplemented
+}
+func (s *AuthService) DeleteExternalPrincipalFromUser(ctx context.Context, externalPrincipalID string) error {
+	return ErrNotImplemented
+}
+func (s *AuthService) GetExternalPrincipal(ctx context.Context, externalPrincipalID string) (*model.ExternalPrincipal, error) {
+	return nil, ErrNotImplemented
+}
+func (s *AuthService) ListExternalPrincipals(ctx context.Context, params *model.PaginationParams) ([]string, *model.Paginator, error) {
+	return nil, nil, ErrNotImplemented
+}
+func (s *AuthService) ListUserExternalPrincipals(ctx context.Context, username string, params *model.PaginationParams) ([]string, *model.Paginator, error) {
+	return nil, nil, ErrNotImplemented
+}
+
 // markTokenSingleUse returns true if token is valid for single use
 func (s *AuthService) markTokenSingleUse(ctx context.Context, tokenID string, tokenExpiresAt time.Time) (bool, error) {
 	tokenPath := model.ExpiredTokenPath(tokenID)
@@ -1159,10 +1190,11 @@ const (
 )
 
 type APIAuthService struct {
-	apiClient   ClientWithResponsesInterface
-	secretStore crypt.SecretStore
-	logger      logging.Logger
-	cache       Cache
+	apiClient                  ClientWithResponsesInterface
+	secretStore                crypt.SecretStore
+	logger                     logging.Logger
+	cache                      Cache
+	externalPrincipalseEnabled bool
 }
 
 func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
@@ -1933,7 +1965,92 @@ func (a *APIAuthService) CheckHealth(ctx context.Context, logger logging.Logger,
 	return nil
 }
 
-func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
+func (a *APIAuthService) IsExternalPrincipalsEnabled(ctx context.Context) bool {
+	return a.externalPrincipalseEnabled
+}
+func (a *APIAuthService) CreateExternalPrincipal(ctx context.Context, externalPrincipalID, username string) error {
+	if !a.IsExternalPrincipalsEnabled(ctx) {
+		return fmt.Errorf("not enabled: %w", ErrInvalidRequest)
+	}
+
+	resp, err := a.apiClient.CreateExternalPrincipalWithResponse(ctx, CreateExternalPrincipalJSONRequestBody{
+		Id:     externalPrincipalID,
+		UserId: username,
+	})
+
+	if err != nil {
+		return fmt.Errorf("create principal: %w", err)
+	}
+
+	return a.validateResponse(resp, http.StatusCreated)
+}
+
+func (a *APIAuthService) DeleteExternalPrincipalFromUser(ctx context.Context, externalPrincipalID string) error {
+	if !a.IsExternalPrincipalsEnabled(ctx) {
+		return fmt.Errorf("not enabled: %w", ErrInvalidRequest)
+	}
+	resp, err := a.apiClient.DeleteExternalPrincipalFromUserWithResponse(ctx, externalPrincipalID)
+	if err != nil {
+		return fmt.Errorf("delete external principal: %w", err)
+	}
+	return a.validateResponse(resp, http.StatusNoContent)
+}
+
+func (a *APIAuthService) GetExternalPrincipal(ctx context.Context, externalPrincipalID string) (*model.ExternalPrincipal, error) {
+	if !a.IsExternalPrincipalsEnabled(ctx) {
+		return nil, fmt.Errorf("not enabled: %w", ErrInvalidRequest)
+	}
+	resp, err := a.apiClient.GetExternalPrincipalWithResponse(ctx, externalPrincipalID)
+	if err != nil {
+		return nil, fmt.Errorf("get external principal: %w", err)
+	}
+	if err := a.validateResponse(resp, http.StatusOK); err != nil {
+		return nil, err
+	}
+	return &model.ExternalPrincipal{
+		ID:       resp.JSON200.Id,
+		Username: resp.JSON200.UserId,
+	}, nil
+}
+
+func (a *APIAuthService) ListExternalPrincipals(ctx context.Context, params *model.PaginationParams) ([]string, *model.Paginator, error) {
+	if !a.IsExternalPrincipalsEnabled(ctx) {
+		return nil, nil, fmt.Errorf("not enabled: %w", ErrInvalidRequest)
+	}
+	resp, err := a.apiClient.ListExternalPrincipalsWithResponse(ctx, &ListExternalPrincipalsParams{
+		Prefix: paginationPrefix(params.Prefix),
+		After:  paginationAfter(params.After),
+		Amount: paginationAmount(params.Amount),
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("list external principals: %w", err)
+	}
+	if err := a.validateResponse(resp, http.StatusOK); err != nil {
+		return nil, nil, err
+	}
+
+	return resp.JSON200.Results, toPagination(resp.JSON200.Pagination), nil
+}
+
+func (a *APIAuthService) ListUserExternalPrincipals(ctx context.Context, username string, params *model.PaginationParams) ([]string, *model.Paginator, error) {
+	if !a.IsExternalPrincipalsEnabled(ctx) {
+		return nil, nil, fmt.Errorf("not enabled: %w", ErrInvalidRequest)
+	}
+	resp, err := a.apiClient.ListUserExternalPrincipalsWithResponse(ctx, username, &ListUserExternalPrincipalsParams{
+		Prefix: paginationPrefix(params.Prefix),
+		After:  paginationAfter(params.After),
+		Amount: paginationAmount(params.Amount),
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("list user external principals: %w", err)
+	}
+	if err := a.validateResponse(resp, http.StatusOK); err != nil {
+		return nil, nil, err
+	}
+	return resp.JSON200.Results, toPagination(resp.JSON200.Pagination), nil
+}
+
+func NewAPIAuthService(apiEndpoint, token string, externalPrincipalseEnabled bool, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
 	if token == "" {
 		// when no token is provided, generate one.
 		// communicate with auth service always uses a token
@@ -1966,10 +2083,11 @@ func NewAPIAuthService(apiEndpoint, token string, secretStore crypt.SecretStore,
 		cache = &DummyCache{}
 	}
 	res := &APIAuthService{
-		apiClient:   client,
-		secretStore: secretStore,
-		logger:      logger,
-		cache:       cache,
+		apiClient:                  client,
+		secretStore:                secretStore,
+		logger:                     logger,
+		cache:                      cache,
+		externalPrincipalseEnabled: externalPrincipalseEnabled,
 	}
 	return res, nil
 }

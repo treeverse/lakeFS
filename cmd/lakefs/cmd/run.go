@@ -120,6 +120,7 @@ var runCmd = &cobra.Command{
 			apiService, err := auth.NewAPIAuthService(
 				cfg.Auth.API.Endpoint,
 				cfg.Auth.API.Token.SecureValue(),
+				cfg.Auth.RemoteAuthenticator.ExternalPrincipalsEnabled,
 				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
 				authparams.ServiceCache(cfg.Auth.Cache),
 				logger.WithField("service", "auth_api"),

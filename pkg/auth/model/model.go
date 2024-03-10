@@ -199,6 +199,11 @@ type CredentialKeys struct {
 	SecretAccessKey string `json:"secret_access_key"`
 }
 
+type ExternalPrincipal struct {
+	ID       string `db:"id"`
+	Username string `db:"username"`
+}
+
 func (u *User) UpdatePassword(password string) error {
 	pw, err := HashPassword(password)
 	if err != nil {
