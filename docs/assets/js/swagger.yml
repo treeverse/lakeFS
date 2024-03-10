@@ -1648,23 +1648,20 @@ components:
       type: object
       additionalProperties:
         type: string
-      description: Additional settings for the external principal.
+      description: Additional settings to be consumed by the remote authenticator
     ExternalPrincipal:
       type: object
       required:
-        - users
+        - user_id
         - id
       properties:
         id:
           type: string
           description: A unique identifier for the external principal
-        users:
-          type: array
-          items:
-            type: string
+        user_id:
+          type: string
           description: |
-            List of lakeFS user IDs that are associated with the external principal.
-            Currently, only 1 user is allowed.
+            lakeFS user ID to associate with an external principal.
         settings:
           type: object
           items:
@@ -2428,7 +2425,40 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-
+  /auth/users/{userId}/external/principals:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+        - external
+        - experimental
+      parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+          description: will return all external principals id attached to the user
+      operationId: listUserExternalPrincipals
+      summary: list user external policies
+      responses:
+        200:
+          description: external principals list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalPrincipalList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
   /auth/groups/{groupId}/policies:
     parameters:
       - in: path
@@ -2563,6 +2593,7 @@ paths:
       tags: 
         - auth
         - external
+        - experimental
       operationId: listExternalPrincipals
       summary: list external principals
       parameters: 
@@ -2586,6 +2617,7 @@ paths:
       tags: 
         - auth
         - external
+        - experimental
       operationId: createExternalPrincipal
       summary: Create principal as external identity connected to lakeFS user
       requestBody: 
@@ -2616,6 +2648,7 @@ paths:
       tags: 
         - auth
         - external
+        - experimental
       operationId: getExternalPrincipal
       summary: Get principal information
       responses: 
@@ -2637,6 +2670,7 @@ paths:
       tags: 
         - auth
         - external
+        - experimental
       operationId: deleteExternalPrincipal
       summary: Delete principal and lakeFS attachments
       responses: 

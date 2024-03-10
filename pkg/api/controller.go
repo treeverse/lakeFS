@@ -5247,3 +5247,7 @@ func (c *Controller) DeleteExternalPrincipal(w http.ResponseWriter, r *http.Requ
 func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request, principalID string) {
 
 }
+
+func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.Request, userID string, params apigen.ListUserExternalPrincipalsParams) {
+
+}

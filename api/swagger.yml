@@ -1652,16 +1652,16 @@ components:
     ExternalPrincipal:
       type: object
       required:
-        - userId
+        - user_id
         - id
       properties:
         id:
           type: string
           description: A unique identifier for the external principal
-        userId:
+        user_id:
           type: string
           description: |
-            lakeFS user IDs to associate with an external principal.
+            lakeFS user ID to associate with an external principal.
         settings:
           type: object
           items:
@@ -2425,7 +2425,40 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-
+  /auth/users/{userId}/external/principals:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+        - external
+        - experimental
+      parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+          description: will return all external principals id attached to the user
+      operationId: listUserExternalPrincipals
+      summary: list user external policies
+      responses:
+        200:
+          description: external principals list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalPrincipalList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
   /auth/groups/{groupId}/policies:
     parameters:
       - in: path
