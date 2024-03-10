@@ -16,11 +16,13 @@ const (
 
 type DeleteSensorCB func(repositoryID RepositoryID, branchID BranchID, stagingTokenID StagingToken, inGrace bool)
 
+// StagingTokenCounter holds a counter for a specific staging token.
 type StagingTokenCounter struct {
 	StagingTokenID StagingToken
 	Counter        int
 }
 
+// stagingTokenData holds data regarding a staging token.
 type stagingTokenData struct {
 	repositoryID   RepositoryID
 	branchID       BranchID
