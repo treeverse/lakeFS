@@ -5235,8 +5235,7 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) ListExternalPrincipals(w http.ResponseWriter, r *http.Request, params apigen.ListExternalPrincipalsParams) {
-	// TODO(isan) add a check to see if RemoteAuthenticator.Enabled is true
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthUISimplified() && c.Config.Auth.RemoteAuthenticator.Enabled {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5250,8 +5249,7 @@ func (c *Controller) ListExternalPrincipals(w http.ResponseWriter, r *http.Reque
 	}
 }
 func (c *Controller) CreateExternalPrincipal(w http.ResponseWriter, r *http.Request, body apigen.CreateExternalPrincipalJSONRequestBody) {
-	// TODO(isan) add a check to see if RemoteAuthenticator.Enabled is true
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthUISimplified() && c.Config.Auth.RemoteAuthenticator.Enabled {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5266,8 +5264,7 @@ func (c *Controller) CreateExternalPrincipal(w http.ResponseWriter, r *http.Requ
 }
 
 func (c *Controller) DeleteExternalPrincipal(w http.ResponseWriter, r *http.Request, principalID string) {
-	// TODO(isan) add a check to see if RemoteAuthenticator.Enabled is true
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthUISimplified() && c.Config.Auth.RemoteAuthenticator.Enabled {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5282,8 +5279,7 @@ func (c *Controller) DeleteExternalPrincipal(w http.ResponseWriter, r *http.Requ
 }
 
 func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request, principalID string) {
-	// TODO(isan) add a check to see if RemoteAuthenticator.Enabled is true
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthUISimplified() && c.Config.Auth.RemoteAuthenticator.Enabled {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5298,8 +5294,7 @@ func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request
 }
 
 func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.Request, userID string, params apigen.ListUserExternalPrincipalsParams) {
-	// TODO(isan) add a check to see if RemoteAuthenticator.Enabled is true
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.IsAuthUISimplified() && c.Config.Auth.RemoteAuthenticator.Enabled {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
