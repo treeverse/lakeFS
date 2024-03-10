@@ -2425,6 +2425,7 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
+
   /auth/users/{userId}/external/principals:
     parameters:
       - in: path
@@ -2588,6 +2589,7 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
+          
   /auth/external/principals:
     get: 
       tags: 
@@ -2637,6 +2639,7 @@ paths:
           description: too many requests
         default: 
           $ref: "#/components/responses/ServerError"
+
   /auth/external/principals/{principalId}:
     parameters: 
       - in: path
@@ -2684,6 +2687,7 @@ paths:
           description: too many requests
         default: 
           $ref: "#/components/responses/ServerError"
+
   /repositories:
     get:
       tags:
