@@ -83,7 +83,7 @@ func (s *DeleteSensor) triggerTombstone(ctx context.Context, st stagingTokenData
 		s.branchTombstoneCounter[st.repositoryID][st.branchID] = stCounter
 		return
 	}
-	// Reset the counter if the staging token has changed, under the assumption that staging tokens are updated only during sealing processes, which occur following a commit or compaction.
+	// Reset the counter if the staging token has changed, under the assumption that staging tokens are updated only during sealing processes, which occur during a commit or compaction.
 	if stCounter.StagingTokenID != st.stagingTokenID {
 		stCounter.StagingTokenID = st.stagingTokenID
 		stCounter.Counter = 1
