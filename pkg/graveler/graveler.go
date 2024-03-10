@@ -1291,7 +1291,7 @@ func (g *Graveler) UpdateBranch(ctx context.Context, repository *RepositoryRecor
 // monitorRetries reports the number of retries of operation while updating
 // branchID of repository.
 func (g *Graveler) monitorRetries(ctx context.Context, tries int, repositoryID RepositoryID, branchID BranchID, operation string) {
-	kvRetriesCounter.WithLabelValues(operation).Add(float64(tries))
+	kvRetriesCounter.WithLabelValues(operation).Add(float64(tries - 1))
 	l := g.log(ctx).WithFields(logging.Fields{
 		"tries":      tries,
 		"repository": repositoryID,
