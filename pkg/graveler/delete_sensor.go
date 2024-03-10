@@ -2,16 +2,12 @@ package graveler
 
 import (
 	"context"
-	"sync"
-	"sync/atomic"
-	"time"
-
 	"github.com/treeverse/lakefs/pkg/logging"
+	"sync"
 )
 
 const (
 	callbackChannelSize = 1000
-	graceDuration       = 30 * time.Second
 )
 
 type DeleteSensorCB func(repositoryID RepositoryID, branchID BranchID, stagingTokenID StagingToken, inGrace bool)
@@ -34,10 +30,9 @@ type DeleteSensor struct {
 	triggerAt int
 	callbacks chan stagingTokenData
 	wg        sync.WaitGroup
-	mutex     *sync.Mutex
+	mutex     sync.Mutex
 	// stopped used as flag that the sensor has stopped. stop processing CountDelete.
-	stopped                int32
-	graceDuration          time.Duration
+	stopped                bool
 	branchTombstoneCounter map[RepositoryID]map[BranchID]*StagingTokenCounter
 }
 
@@ -49,18 +44,12 @@ func WithCBBufferSize(bufferSize int) DeleteSensorOpts {
 	}
 }
 
-func WithGraceDuration(d time.Duration) DeleteSensorOpts {
-	return func(s *DeleteSensor) {
-		s.graceDuration = d
-	}
-}
 func NewDeleteSensor(triggerAt int, cb DeleteSensorCB, opts ...DeleteSensorOpts) *DeleteSensor {
 	ds := &DeleteSensor{
 		cb:                     cb,
 		triggerAt:              triggerAt,
-		stopped:                0,
-		graceDuration:          graceDuration,
-		mutex:                  &sync.Mutex{},
+		stopped:                false,
+		mutex:                  sync.Mutex{},
 		branchTombstoneCounter: make(map[RepositoryID]map[BranchID]*StagingTokenCounter),
 		callbacks:              make(chan stagingTokenData, callbackChannelSize),
 	}
@@ -72,13 +61,16 @@ func NewDeleteSensor(triggerAt int, cb DeleteSensorCB, opts ...DeleteSensorOpts)
 	return ds
 }
 
-func (s *DeleteSensor) isStopped() bool {
-	return atomic.LoadInt32(&s.stopped) == 1
-}
-
+// triggerTombstone triggers a tombstone event for a specific staging token. if stopped, the event is not triggered.
+// if the staging token has changed, the counter is reset. if the counter reaches the triggerAt value, the event is triggered.
+// in case the callback channel is full, the event is dropped and will be retried in the next call.
 func (s *DeleteSensor) triggerTombstone(ctx context.Context, st stagingTokenData) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+	if s.stopped {
+		return
+
+	}
 	if _, ok := s.branchTombstoneCounter[st.repositoryID]; !ok {
 		s.branchTombstoneCounter[st.repositoryID] = make(map[BranchID]*StagingTokenCounter)
 	}
@@ -112,16 +104,16 @@ func (s *DeleteSensor) triggerTombstone(ctx context.Context, st stagingTokenData
 }
 
 func (s *DeleteSensor) processCallbacks() {
+	s.mutex.Lock()
+	isStopped := s.stopped
+	s.mutex.Unlock()
 	defer s.wg.Done()
 	for cb := range s.callbacks {
-		s.cb(cb.repositoryID, cb.branchID, cb.stagingTokenID, s.isStopped())
+		s.cb(cb.repositoryID, cb.branchID, cb.stagingTokenID, isStopped)
 	}
 }
 
 func (s *DeleteSensor) CountDelete(ctx context.Context, repositoryID RepositoryID, branchID BranchID, stagingTokenID StagingToken) {
-	if s.isStopped() {
-		return
-	}
 	st := stagingTokenData{
 		repositoryID:   repositoryID,
 		branchID:       branchID,
@@ -130,26 +122,15 @@ func (s *DeleteSensor) CountDelete(ctx context.Context, repositoryID RepositoryI
 	s.triggerTombstone(ctx, st)
 }
 
-func (s *DeleteSensor) stop() {
-	done := make(chan struct{})
-	go func(wg *sync.WaitGroup, doneChan chan struct{}) {
-		close(s.callbacks)
-		wg.Wait()
-		close(doneChan)
-	}(&s.wg, done)
-	select {
-	case <-done:
-		return
-	case <-time.After(s.graceDuration):
-		logging.ContextUnavailable().Error("delete sensor grace period expired, stopping without waiting for callbacks to finish")
-		return
-	}
-}
-
 func (s *DeleteSensor) Close() {
-	// stop, return if already marked as stopped
-	if !atomic.CompareAndSwapInt32(&s.stopped, 0, 1) {
+	s.mutex.Lock()
+	if s.stopped {
+		s.mutex.Unlock()
 		return
 	}
-	s.stop()
+	s.stopped = true
+	s.mutex.Unlock()
+
+	close(s.callbacks)
+	s.wg.Wait()
 }
