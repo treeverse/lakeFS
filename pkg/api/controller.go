@@ -5235,19 +5235,55 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) ListExternalPrincipals(w http.ResponseWriter, r *http.Request, params apigen.ListExternalPrincipalsParams) {
-
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ListExternalPrincipalsAction,
+			Resource: permissions.All,
+		},
+	}) {
+		return
+	}
 }
 func (c *Controller) CreateExternalPrincipal(w http.ResponseWriter, r *http.Request, body apigen.CreateExternalPrincipalJSONRequestBody) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateExternalPrincipalAction,
+			Resource: permissions.UserArn(body.UserId),
+		},
+	}) {
+		return
+	}
 }
 
 func (c *Controller) DeleteExternalPrincipal(w http.ResponseWriter, r *http.Request, principalID string) {
-
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.DeleteExternalPrincipalAction,
+			Resource: permissions.ExternalPrincipalArn(principalID),
+		},
+	}) {
+		return
+	}
 }
 
 func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request, principalID string) {
-
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadExternalPrincipalAction,
+			Resource: permissions.ExternalPrincipalArn(principalID),
+		},
+	}) {
+		return
+	}
 }
 
 func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.Request, userID string, params apigen.ListUserExternalPrincipalsParams) {
-
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadUserAction,
+			Resource: permissions.UserArn(userID),
+		},
+	}) {
+		return
+	}
 }
