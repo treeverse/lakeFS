@@ -2,8 +2,9 @@ package graveler
 
 import (
 	"context"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"sync"
+
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const (
@@ -69,7 +70,6 @@ func (s *DeleteSensor) triggerTombstone(ctx context.Context, st stagingTokenData
 	defer s.mutex.Unlock()
 	if s.stopped {
 		return
-
 	}
 	if _, ok := s.branchTombstoneCounter[st.repositoryID]; !ok {
 		s.branchTombstoneCounter[st.repositoryID] = make(map[BranchID]*StagingTokenCounter)

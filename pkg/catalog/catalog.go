@@ -374,7 +374,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 				"branchID":       branchID,
 				"stagingTokenID": stagingTokenID,
 				"inGrace":        inGrace,
-			}).Info("delete sensor callback")
+			}).Info("Delete sensor callback")
 		}
 		deleteSensor = graveler.NewDeleteSensor(cfg.Config.Graveler.CompactionSensorThreshold, cb)
 		defer deleteSensor.Close()
