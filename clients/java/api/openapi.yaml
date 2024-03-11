@@ -4071,7 +4071,7 @@ paths:
                 type: string
               style: simple
         "304":
-          description: Content Not modified
+          description: Content not modified
         "401":
           content:
             application/json:
