@@ -45,10 +45,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-const (
-	DefaultUserID = "example_user"
-	DefaultETag   = `"3c4838fe975c762ee97cf39fbbe566f1"`
-)
+const DefaultUserID = "example_user"
 
 type Statuser interface {
 	StatusCode() int
@@ -2504,13 +2501,14 @@ func TestController_ObjectsHeadObjectHandler(t *testing.T) {
 		Expired:         true,
 	}
 	testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", expired))
+	expectedEtag := "\"" + blob.Checksum + "\""
 
 	t.Run("head object", func(t *testing.T) {
 		resp, err := clt.HeadObjectWithResponse(ctx, repo, "main", &apigen.HeadObjectParams{Path: "foo/bar"})
 		require.Nil(t, err)
 		require.Equal(t, http.StatusOK, resp.HTTPResponse.StatusCode)
 		require.Equal(t, int64(37), resp.HTTPResponse.ContentLength)
-		require.Equal(t, DefaultETag, resp.HTTPResponse.Header.Get("ETag"))
+		require.Equal(t, expectedEtag, resp.HTTPResponse.Header.Get("ETag"))
 		require.Empty(t, string(resp.Body))
 	})
 
@@ -2523,7 +2521,7 @@ func TestController_ObjectsHeadObjectHandler(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, http.StatusPartialContent, resp.HTTPResponse.StatusCode)
 		require.Equal(t, int64(10), resp.HTTPResponse.ContentLength)
-		require.Equal(t, DefaultETag, resp.HTTPResponse.Header.Get("ETag"))
+		require.Equal(t, expectedEtag, resp.HTTPResponse.Header.Get("ETag"))
 		require.Empty(t, string(resp.Body))
 	})
 
@@ -2570,15 +2568,16 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 	}
 	testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", entry))
 
-	expired := catalog.DBEntry{
-		Path:            "foo/expired",
-		PhysicalAddress: "an_expired_physical_address",
+	emptyEtag := catalog.DBEntry{
+		Path:            "foo/empty-etag",
+		PhysicalAddress: blob.PhysicalAddress,
 		CreationDate:    time.Now(),
-		Size:            99999,
-		Checksum:        "b10b",
+		Size:            blob.Size,
+		Checksum:        "",
 		Expired:         true,
 	}
-	testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", expired))
+	testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", emptyEtag))
+	expectedEtag := "\"" + blob.Checksum + "\""
 
 	t.Run("get object", func(t *testing.T) {
 		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{Path: "foo/bar"})
@@ -2593,9 +2592,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 			t.Errorf("expected 37 bytes in content length, got back %d", resp.HTTPResponse.ContentLength)
 		}
 		etag := resp.HTTPResponse.Header.Get("ETag")
-		if etag != DefaultETag {
-			t.Errorf("got unexpected etag: %s", etag)
-		}
+		require.Equal(t, etag, expectedEtag)
 
 		body := string(resp.Body)
 		if body != "this is file content made up of bytes" {
@@ -2621,9 +2618,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		}
 
 		etag := resp.HTTPResponse.Header.Get("ETag")
-		if etag != DefaultETag {
-			t.Errorf("got unexpected etag: %s", etag)
-		}
+		require.Equal(t, etag, expectedEtag)
 
 		body := string(resp.Body)
 		if body != "this is fi" {
@@ -2661,8 +2656,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 	})
 
 	t.Run("get object returns expected response with different etag", func(t *testing.T) {
-		newChecksum := `"11ee22ff33445566778899"`
-		eTagInput := "\"" + newChecksum + "\""
+		eTagInput := "\"11ee22ff33445566778899\""
 		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
 			Path:        "foo/bar",
 			IfNoneMatch: &eTagInput,
@@ -2670,13 +2664,33 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, http.StatusOK, resp.HTTPResponse.StatusCode)
 		require.Equal(t, int64(37), resp.HTTPResponse.ContentLength)
-		require.Equal(t, DefaultETag, resp.HTTPResponse.Header.Get("ETag"))
+		require.Equal(t, expectedEtag, resp.HTTPResponse.Header.Get("ETag"))
 	})
 
 	t.Run("get object returns not modified with same etag", func(t *testing.T) {
-		eTagInput := "\"" + blob.Checksum + "\""
 		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
 			Path:        "foo/bar",
+			IfNoneMatch: &expectedEtag,
+		})
+		require.Nil(t, err)
+		require.Equal(t, http.StatusNotModified, resp.HTTPResponse.StatusCode)
+		require.Equal(t, int64(0), resp.HTTPResponse.ContentLength)
+		require.Empty(t, resp.HTTPResponse.Header.Get("ETag"))
+	})
+
+	t.Run("get object returns expected response for empty etag", func(t *testing.T) {
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
+			Path: "foo/empty-etag",
+		})
+		require.Nil(t, err)
+		require.Equal(t, http.StatusOK, resp.HTTPResponse.StatusCode)
+		require.Equal(t, int64(37), resp.HTTPResponse.ContentLength)
+		require.Equal(t, "\"\"", resp.HTTPResponse.Header.Get("ETag"))
+	})
+	t.Run("get object with if-none-match returns expected response for empty etag", func(t *testing.T) {
+		eTagInput := "\"\""
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
+			Path:        "foo/empty-etag",
 			IfNoneMatch: &eTagInput,
 		})
 		require.Nil(t, err)
