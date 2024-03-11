@@ -411,7 +411,7 @@ Name | Type | Description  | Notes
 **200** | object content |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **206** | partial object content |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
-**304** | Content Not modified |  -  |
+**304** | Content not modified |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **410** | object expired |  -  |
