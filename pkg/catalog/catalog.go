@@ -222,6 +222,7 @@ type Catalog struct {
 	KVStore               kv.Store
 	KVStoreLimited        kv.Store
 	addressProvider       *ident.HexAddressProvider
+	deleteSensor          *graveler.DeleteSensor
 	UGCPrepareMaxFileSize int64
 	UGCPrepareInterval    time.Duration
 }
@@ -377,7 +378,6 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 			}).Info("Delete sensor callback")
 		}
 		deleteSensor = graveler.NewDeleteSensor(cfg.Config.Graveler.CompactionSensorThreshold, cb)
-		defer deleteSensor.Close()
 	}
 	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager, deleteSensor)
 
@@ -397,6 +397,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		managers:              []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
 		KVStoreLimited:        storeLimiter,
 		addressProvider:       addressProvider,
+		deleteSensor:          deleteSensor,
 	}, nil
 }
 
@@ -2776,6 +2777,9 @@ func (c *Catalog) Close() error {
 		}
 	}
 	c.workPool.StopAndWaitFor(workersMaxDrainDuration)
+	if c.deleteSensor != nil {
+		c.deleteSensor.Close()
+	}
 	return errs
 }
 
