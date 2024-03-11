@@ -1649,6 +1649,13 @@ components:
       additionalProperties:
         type: string
       description: Additional settings to be consumed by the remote authenticator
+    ExternalPrincipalCreation:
+      type: object
+      properties:
+        settings:
+          type: object
+          items:
+            $ref: "#/components/schemas/ExternalPrincipalSettings"
     ExternalPrincipal:
       type: object
       required:
@@ -2450,7 +2457,7 @@ paths:
         content: 
           application/json: 
             schema: 
-              $ref: "#/components/schemas/ExternalPrincipal"
+              $ref: "#/components/schemas/ExternalPrincipalCreation"
       responses:
         201:
           description: external principal attached successfully

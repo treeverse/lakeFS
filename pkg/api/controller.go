@@ -5234,7 +5234,7 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) ListExternalPrincipals(w http.ResponseWriter, r *http.Request, params apigen.ListExternalPrincipalsParams) {
+func (c *Controller) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.Request, body apigen.CreateUserExternalPrincipalJSONRequestBody, userID, principalID string) {
 	ctx := r.Context()
 	if c.Config.IsAuthUISimplified() && c.Auth.IsExternalPrincipalsEnabled(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
@@ -5242,55 +5242,22 @@ func (c *Controller) ListExternalPrincipals(w http.ResponseWriter, r *http.Reque
 	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.ListExternalPrincipalsAction,
-			Resource: permissions.All,
-		},
-	}) {
-		return
-	}
-	c.LogAction(ctx, "list_external_principals", r, "", "", "")
-	externalPrincipalIds, paginator, err := c.Auth.ListExternalPrincipals(ctx, &model.PaginationParams{
-		Prefix: paginationPrefix(params.Prefix),
-		Amount: paginationAmount(params.Amount),
-		After:  paginationAfter(params.After),
-	})
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	response := apigen.ExternalPrincipalList{
-		Results: externalPrincipalIds,
-		Pagination: apigen.Pagination{
-			HasMore:    paginator.NextPageToken != "",
-			NextOffset: paginator.NextPageToken,
-			Results:    paginator.Amount,
-		},
-	}
-	writeResponse(w, r, http.StatusOK, response)
-}
-func (c *Controller) CreateExternalPrincipal(w http.ResponseWriter, r *http.Request, body apigen.CreateExternalPrincipalJSONRequestBody) {
-	ctx := r.Context()
-	if c.Config.IsAuthUISimplified() && c.Auth.IsExternalPrincipalsEnabled(ctx) {
-		writeError(w, r, http.StatusNotImplemented, "Not implemented")
-		return
-	}
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.CreateExternalPrincipalAction,
-			Resource: permissions.UserArn(body.UserId),
+			Action:   permissions.CreateUserExternalPrincipalAction,
+			Resource: permissions.UserArn(userID),
 		},
 	}) {
 		return
 	}
 	c.LogAction(ctx, "create_external_principal", r, "", "", "")
 	// TODO(isan) Settings should be passed here as part of the request. i.e using session name or not
-	err := c.Auth.CreateExternalPrincipal(ctx, body.Id, body.UserId)
+	err := c.Auth.CreateExternalPrincipal(ctx, principalID, userID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 	writeResponse(w, r, http.StatusCreated, nil)
 }
 
-func (c *Controller) DeleteExternalPrincipal(w http.ResponseWriter, r *http.Request, principalID string) {
+func (c *Controller) DeleteUserExternalPrincipal(w http.ResponseWriter, r *http.Request, userID, principalID string) {
 	ctx := r.Context()
 	if c.Config.IsAuthUISimplified() && c.Auth.IsExternalPrincipalsEnabled(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
@@ -5298,8 +5265,8 @@ func (c *Controller) DeleteExternalPrincipal(w http.ResponseWriter, r *http.Requ
 	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.DeleteExternalPrincipalAction,
-			Resource: permissions.ExternalPrincipalArn(principalID),
+			Action:   permissions.DeleteUserExternalPrincipalAction,
+			Resource: permissions.UserArn(userID),
 		},
 	}) {
 		return
@@ -5312,7 +5279,7 @@ func (c *Controller) DeleteExternalPrincipal(w http.ResponseWriter, r *http.Requ
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request, principalID string) {
+func (c *Controller) GetUserExternalPrincipal(w http.ResponseWriter, r *http.Request, userID, principalID string) {
 	ctx := r.Context()
 	if c.Config.IsAuthUISimplified() && c.Auth.IsExternalPrincipalsEnabled(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
@@ -5320,8 +5287,8 @@ func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request
 	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.ReadExternalPrincipalAction,
-			Resource: permissions.ExternalPrincipalArn(principalID),
+			Action:   permissions.ReadUserExternalPrincipalAction,
+			Resource: permissions.UserArn(userID),
 		},
 	}) {
 		return

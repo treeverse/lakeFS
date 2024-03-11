@@ -57,6 +57,3 @@ func GroupArn(groupID string) string {
 func PolicyArn(policyID string) string {
 	return authArnPrefix + "policy/" + policyID
 }
-func ExternalPrincipalArn(principalID string) string {
-	return authArnPrefix + "external/principals/" + principalID
-}
