@@ -127,6 +127,7 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.azure.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
 * `blockstore.azure.disable_pre_signed` `(bool : false)` - Disable use of pre-signed URL.
 * `blockstore.azure.disable_pre_signed_ui` `(bool : true)` - Disable use of pre-signed URL in the UI.
+* `blockstore.azure.china_cloud` `(bool : false)` - Enable for using lakeFS on Azure China Cloud.
 * `blockstore.s3.region` `(string : "us-east-1")` - Default region for lakeFS to use when interacting with S3.
 * `blockstore.s3.profile` `(string : )` - If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles)
 * `blockstore.s3.credentials_file` `(string : )` - If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
