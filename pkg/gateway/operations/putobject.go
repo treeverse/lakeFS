@@ -2,6 +2,7 @@ package operations
 
 import (
 	"errors"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -308,6 +309,10 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	}
 	if errors.Is(err, graveler.ErrReadOnlyRepository) {
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrReadOnlyRepository))
+		return
+	}
+	if errors.Is(err, kv.ErrSlowDown) {
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrSlowDown))
 		return
 	}
 	if err != nil {

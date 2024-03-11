@@ -322,6 +322,11 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		if usePredicate && errors.As(err, &errConditionalCheckFailed) {
 			return kv.ErrPredicateFailed
 		}
+		var errRequestLimitExceeded *types.RequestLimitExceeded
+		var errProvisionedThroughputExceededException *types.ProvisionedThroughputExceededException
+		if errors.As(err, &errRequestLimitExceeded) || errors.As(err, &errProvisionedThroughputExceededException) {
+			return kv.ErrSlowDown
+		}
 		return fmt.Errorf("put item: %w", err)
 	}
 	if resp.ConsumedCapacity != nil {
