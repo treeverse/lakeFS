@@ -229,6 +229,26 @@ lakectl abuse list <source ref URI> [flags]
 
 
 
+### lakectl abuse random-delete
+
+Delete keys from a file and generate random delete from the source ref for those keys.
+
+```
+lakectl abuse random-delete <source ref URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int         amount of reads to do (default 1000000)
+      --from-file string   read keys from this file ("-" for stdin)
+  -h, --help               help for random-delete
+      --parallelism int    amount of reads to do in parallel (default 100)
+```
+
+
+
 ### lakectl abuse random-read
 
 Read keys from a file and generate random reads from the source ref for those keys.
