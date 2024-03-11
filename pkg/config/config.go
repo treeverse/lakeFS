@@ -248,6 +248,7 @@ type Config struct {
 			PreSignedExpiry    time.Duration `mapstructure:"pre_signed_expiry"`
 			DisablePreSigned   bool          `mapstructure:"disable_pre_signed"`
 			DisablePreSignedUI bool          `mapstructure:"disable_pre_signed_ui"`
+			ChinaCloud         bool          `mapstructure:"china_cloud"`
 			// TestEndpointURL for testing purposes
 			TestEndpointURL string `mapstructure:"test_endpoint_url"`
 		} `mapstructure:"azure"`
@@ -495,6 +496,9 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 	if c.Blockstore.Azure.AuthMethod != "" {
 		logging.ContextUnavailable().Warn("blockstore.azure.auth_method is deprecated. Value is no longer used.")
 	}
+	if c.Blockstore.Azure.ChinaCloud {
+		logging.ContextUnavailable().Warn("blockstore.azure.china_cloud is enabled. lakeFS will only function on Azure China Cloud")
+	}
 	return blockparams.Azure{
 		StorageAccount:     c.Blockstore.Azure.StorageAccount,
 		StorageAccessKey:   c.Blockstore.Azure.StorageAccessKey,
@@ -503,6 +507,7 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 		TestEndpointURL:    c.Blockstore.Azure.TestEndpointURL,
 		DisablePreSigned:   c.Blockstore.Azure.DisablePreSigned,
 		DisablePreSignedUI: c.Blockstore.Azure.DisablePreSignedUI,
+		ChinaCloud:         c.Blockstore.Azure.ChinaCloud,
 	}, nil
 }
 

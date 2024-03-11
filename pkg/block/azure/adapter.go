@@ -29,7 +29,8 @@ const (
 	// more the 5000 different accounts, which is highly unlikely
 	udcCacheSize = 5000
 
-	BlobEndpointFormat = "https://%s.blob.core.windows.net/"
+	BlobEndpointGlobalFormat     = "https://%s.blob.core.windows.net/"
+	BlobEndpointChinaCloudFormat = "https://%s.blob.core.chinacloudapi.cn/"
 )
 
 type Adapter struct {
@@ -37,6 +38,7 @@ type Adapter struct {
 	preSignedExpiry    time.Duration
 	disablePreSigned   bool
 	disablePreSignedUI bool
+	chinaCloud         bool
 }
 
 func NewAdapter(ctx context.Context, params params.Azure) (*Adapter, error) {
@@ -54,6 +56,7 @@ func NewAdapter(ctx context.Context, params params.Azure) (*Adapter, error) {
 		preSignedExpiry:    preSignedExpiry,
 		disablePreSigned:   params.DisablePreSigned,
 		disablePreSignedUI: params.DisablePreSignedUI,
+		chinaCloud:         params.ChinaCloud,
 	}, nil
 }
 
@@ -62,6 +65,7 @@ type BlobURLInfo struct {
 	ContainerURL       string
 	ContainerName      string
 	BlobURL            string
+	Host               string
 }
 
 type PrefixURLInfo struct {
@@ -106,6 +110,7 @@ func ResolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
 		ContainerURL:       fmt.Sprintf("%s://%s/%s", pathURL.Scheme, pathURL.Host, pathParts[0]),
 		ContainerName:      pathParts[0],
 		BlobURL:            strings.Join(pathParts[1:], "/"),
+		Host:               pathURL.Host,
 	}, nil
 }
 
@@ -131,6 +136,7 @@ func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 			ContainerURL:       qp.ContainerURL,
 			ContainerName:      qp.ContainerName,
 			BlobURL:            qp.BlobURL + "/" + key,
+			Host:               parsedNamespace.Host,
 		}
 		if qp.BlobURL == "" {
 			info.BlobURL = key
@@ -266,7 +272,7 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	}
 
 	// format blob URL with signed SAS query params
-	accountEndpoint := fmt.Sprintf(BlobEndpointFormat, qualifiedKey.StorageAccountName)
+	accountEndpoint := buildAccountEndpoint(qualifiedKey.StorageAccountName, a.chinaCloud)
 	u, err := url.JoinPath(accountEndpoint, qualifiedKey.ContainerName, qualifiedKey.BlobURL)
 	if err != nil {
 		return "", err
@@ -564,6 +570,12 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeAzure)
 	info.ImportValidityRegex = `^https?://[a-z0-9_-]+\.(blob|adls)\.core\.windows\.net` // added adls for import hint validation in UI
 	info.ValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.windows\.net`
+
+	if a.chinaCloud {
+		info.ImportValidityRegex = `^https?://[a-z0-9_-]+\.(blob|adls)\.core\.chinacloudapi\.cn`
+		info.ValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.chinacloudapi\.cn`
+	}
+
 	info.Example = "https://mystorageaccount.blob.core.windows.net/mycontainer/"
 	if a.disablePreSigned {
 		info.PreSignSupport = false
