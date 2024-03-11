@@ -5323,7 +5323,7 @@ func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.R
 
 	c.LogAction(ctx, "list_user_external_principals", r, "", "", "")
 
-	principalIds, paginator, err := c.Auth.ListUserExternalPrincipals(ctx, userID, &model.PaginationParams{
+	_, paginator, err := c.Auth.ListUserExternalPrincipals(ctx, userID, &model.PaginationParams{
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 		After:  paginationAfter(params.After),
@@ -5334,7 +5334,7 @@ func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.R
 	}
 
 	response := apigen.ExternalPrincipalList{
-		Results: principalIds,
+		Results: nil,
 		Pagination: apigen.Pagination{
 			HasMore:    paginator.NextPageToken != "",
 			NextOffset: paginator.NextPageToken,

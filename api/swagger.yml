@@ -1643,7 +1643,7 @@ components:
         results:
           type: array
           items:
-            type: string
+            $ref: "#/components/schemas/ExternalPrincipal"
     ExternalPrincipalSettings:
       type: object
       additionalProperties:
