@@ -1294,7 +1294,7 @@ func (g *Graveler) UpdateBranch(ctx context.Context, repository *RepositoryRecor
 func (g *Graveler) monitorRetries(ctx context.Context, retries int, repositoryID RepositoryID, branchID BranchID, operation string) {
 	kvRetriesCounter.WithLabelValues(operation).Add(float64(retries))
 	l := g.log(ctx).WithFields(logging.Fields{
-		"tries":      retries,
+		"retries":    retries,
 		"repository": repositoryID,
 		"branch":     branchID,
 		"operation":  operation,
