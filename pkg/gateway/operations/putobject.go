@@ -2,11 +2,12 @@ package operations
 
 import (
 	"errors"
-	"github.com/treeverse/lakefs/pkg/kv"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/treeverse/lakefs/pkg/kv"
 
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
