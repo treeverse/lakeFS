@@ -222,6 +222,7 @@ type Catalog struct {
 	KVStore               kv.Store
 	KVStoreLimited        kv.Store
 	addressProvider       *ident.HexAddressProvider
+	deleteSensor          *graveler.DeleteSensor
 	UGCPrepareMaxFileSize int64
 	UGCPrepareInterval    time.Duration
 }
@@ -366,7 +367,19 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
 	stagingManager := staging.NewManager(ctx, cfg.KVStore, storeLimiter, cfg.Config.Graveler.BatchDBIOTransactionMarkers, executor)
-	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager)
+	var deleteSensor *graveler.DeleteSensor
+	if cfg.Config.Graveler.CompactionSensorThreshold > 0 {
+		cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
+			logging.FromContext(ctx).WithFields(logging.Fields{
+				"repositoryID":   repositoryID,
+				"branchID":       branchID,
+				"stagingTokenID": stagingTokenID,
+				"inGrace":        inGrace,
+			}).Info("Delete sensor callback")
+		}
+		deleteSensor = graveler.NewDeleteSensor(cfg.Config.Graveler.CompactionSensorThreshold, cb)
+	}
+	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager, deleteSensor)
 
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
 	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
@@ -384,6 +397,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		managers:              []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
 		KVStoreLimited:        storeLimiter,
 		addressProvider:       addressProvider,
+		deleteSensor:          deleteSensor,
 	}, nil
 }
 
@@ -2763,6 +2777,9 @@ func (c *Catalog) Close() error {
 		}
 	}
 	c.workPool.StopAndWaitFor(workersMaxDrainDuration)
+	if c.deleteSensor != nil {
+		c.deleteSensor.Close()
+	}
 	return errs
 }
 
