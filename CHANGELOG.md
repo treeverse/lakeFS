@@ -1,5 +1,18 @@
 # Changelog
 
+# v1.13.0
+
+:new: What's new:
+- Delta Lake + Unity Catalog exporter: Delta Lake table metadata (#7527)
+- Handle Azure URLs for chinacloud (#7520)
+- ETag can be passed in the if-none-match in the header on getobject api (#7525)
+
+:bug: Bugs fixed:
+- Fix: Count KV retries (not tries) in Graveler (#7541)
+- Fix: CreateDirectoryMarkerIfNotExists (#7510)
+- Fix: Fixed bug in multipart upload s3 (#7512)
+- Fix: Gateway wrong error description for copy object (#7526)
+
 # v1.12.1
 
 :bug: Bugs fixed:
