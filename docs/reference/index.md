@@ -24,7 +24,7 @@ nav_order: 20
 
 - [Spark Metadata Client]({% link reference/spark-client.md %})
 - [lakeFS Hadoop FileSystem]({% link integrations/spark.md%}#lakefs-hadoop-filesystem)
-- [Python Client](https://pydocs.lakefs.io/)
+- [Python Client]({% link integrations/python.md %})
 
 ## Security
 
