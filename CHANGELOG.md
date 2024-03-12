@@ -5,7 +5,8 @@
 :new: What's new:
 - Delta Lake + Unity Catalog exporter: Delta Lake table metadata (#7527)
 - Handle Azure URLs for chinacloud (#7520)
-- ETag can be passed in the if-none-match in the header on getobject api (#7525)
+- Support "If-None-Match: <etag>" header in getObject request (#5967).
+  Kudos to our latest contributor @vishalsanfran!
 
 :bug: Bugs fixed:
 - Fix: Count KV retries (not tries) in Graveler (#7541)
