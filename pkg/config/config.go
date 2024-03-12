@@ -288,6 +288,7 @@ type Config struct {
 	Graveler struct {
 		EnsureReadableRootNamespace bool `mapstructure:"ensure_readable_root_namespace"`
 		BatchDBIOTransactionMarkers bool `mapstructure:"batch_dbio_transaction_markers"`
+		CompactionSensorThreshold   int  `mapstructure:"compaction_sensor_threshold"`
 		RepositoryCache             struct {
 			Size   int           `mapstructure:"size"`
 			Expiry time.Duration `mapstructure:"expiry"`
