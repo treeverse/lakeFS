@@ -3,7 +3,7 @@
 # v1.13.0
 
 :new: What's new:
-- Delta Lake +Unity Catalog exporter: Delta Lake table metadata (#7527)
+- Delta Lake + Unity Catalog exporter: Delta Lake table metadata (#7527)
 - Handle Azure URLs for chinacloud (#7520)
 - ETag can be passed in the if-none-match in the header on getobject api (#7525)
 
