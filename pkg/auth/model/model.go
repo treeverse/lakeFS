@@ -200,8 +200,8 @@ type CredentialKeys struct {
 }
 
 type ExternalPrincipal struct {
-	ID       string `db:"id"`
-	Username string `db:"username"`
+	ID     string `db:"id"`
+	UserID string `db:"user_id"`
 }
 
 func (u *User) UpdatePassword(password string) error {

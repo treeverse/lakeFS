@@ -9,6 +9,7 @@ from lakefs_client.api import branches_api
 from lakefs_client.api import commits_api
 from lakefs_client.api import config_api
 from lakefs_client.api import experimental_api
+from lakefs_client.api import external_api
 from lakefs_client.api import health_check_api
 from lakefs_client.api import import_api
 from lakefs_client.api import internal_api
@@ -49,6 +50,7 @@ class LakeFSClient:
         self.commits_api = commits_api.CommitsApi(self._api)
         self.config_api = config_api.ConfigApi(self._api)
         self.experimental_api = experimental_api.ExperimentalApi(self._api)
+        self.external_api = external_api.ExternalApi(self._api)
         self.health_check_api = health_check_api.HealthCheckApi(self._api)
         self.import_api = import_api.ImportApi(self._api)
         self.internal_api = internal_api.InternalApi(self._api)

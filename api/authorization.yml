@@ -350,7 +350,6 @@ components:
           type: string
         id:
           type: string
-
     ExternalPrincipalList:
       type: object
       required:
@@ -362,7 +361,7 @@ components:
         results:
           type: array
           items:
-            type: string
+            $ref: "#/components/schemas/ExternalPrincipal"
 
 paths:
   /auth/users:
@@ -1007,37 +1006,6 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /auth/users/{userId}/external/principals:
-    parameters:
-      - in: path
-        name: userId
-        required: true
-        schema:
-          type: string
-    get:
-      tags:
-        - auth
-        - experimental
-      parameters:
-        - $ref: "#/components/parameters/PaginationPrefix"
-        - $ref: "#/components/parameters/PaginationAfter"
-        - $ref: "#/components/parameters/PaginationAmount"
-      operationId: listUserExternalPrincipals
-      summary: list external principals for user
-      responses:
-        200:
-          description: external principals
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ExternalPrincipalList"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        default:
-          $ref: "#/components/responses/ServerError"
-
   /auth/groups/{groupId}/policies:
     parameters:
       - in: path
@@ -1134,42 +1102,55 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
-
-  /auth/external/principals:
-    get:
-      tags:
-        - auth
-        - experimental
-      operationId: listExternalPrincipals
-      summary: list external principals
+  /auth/users/{userId}/external/principals:
       parameters:
-        - $ref: "#/components/parameters/PaginationPrefix"
-        - $ref: "#/components/parameters/PaginationAfter"
-        - $ref: "#/components/parameters/PaginationAmount"
-      responses:
-        200:
-          description: external principal list
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ExternalPrincipalList"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        420:
-          description: too many requests
-        default:
-          $ref: "#/components/responses/ServerError"
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      get:
+        tags:
+          - auth
+          - experimental
+        parameters:
+          - $ref: "#/components/parameters/PaginationPrefix"
+          - $ref: "#/components/parameters/PaginationAfter"
+          - $ref: "#/components/parameters/PaginationAmount"
+        operationId: listUserExternalPrincipals
+        summary: list external principals for user
+        responses:
+          200:
+            description: external principals
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/ExternalPrincipalList"
+          401:
+            $ref: "#/components/responses/Unauthorized"
+          404:
+            $ref: "#/components/responses/NotFound"
+          default:
+            $ref: "#/components/responses/ServerError"
+
+  /auth/users/{userId}/external/principals/{principalId}:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: principalId
+        required: true
+        schema:
+          type: string
     post:
       tags:
         - auth
-      operationId: createExternalPrincipal
+        - experimental
+      operationId: createUserExternalPrincipal
       summary: Create principal as external identity connected to lakeFS user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ExternalPrincipal"
       responses:
         201:
           description: external principal created successfully
@@ -1181,19 +1162,26 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-
-  /auth/external/principals/{principalId}:
-    parameters:
-      - in: path
-        name: principalId
-        required: true
-        schema:
-          type: string
+    delete:
+        tags:
+            - auth
+            - experimental
+        operationId: deleteUserExternalPrincipal
+        summary: delete external principal from user's external principal list
+        responses:
+            204:
+              description: external principal deleted
+            401:
+              $ref: "#/components/responses/Unauthorized"
+            404:
+              $ref: "#/components/responses/NotFound"
+            default:
+              $ref: "#/components/responses/ServerError"
     get:
       tags:
         - auth
         - experimental
-      operationId: getExternalPrincipal
+      operationId: getUserExternalPrincipal
       summary: get external principal
       responses:
         200:
@@ -1208,22 +1196,7 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
-    delete:
-        tags:
-            - auth
-            - experimental
-        operationId: deleteExternalPrincipalFromUser
-        summary: delete external principal from user's external principal list
-        responses:
-            204:
-              description: external principal deleted
-            401:
-              $ref: "#/components/responses/Unauthorized"
-            404:
-              $ref: "#/components/responses/NotFound"
-            default:
-              $ref: "#/components/responses/ServerError"
-
+          
   /healthcheck:
     get:
       operationId: healthCheck

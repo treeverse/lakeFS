@@ -52,8 +52,6 @@ var Actions = []string{
 	"auth:ListCredentials",
 	"auth:CreateUserExternalPrincipal",
 	"auth:DeleteUserExternalPrincipal",
-	"auth:ListUserExternalPrincipals",
-	"auth:ReadUserExternalPrincipal",
 	"ci:ReadAction",
 	"retention:PrepareGarbageCollectionCommits",
 	"retention:GetGarbageCollectionRules",

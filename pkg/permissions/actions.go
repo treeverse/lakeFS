@@ -63,8 +63,6 @@ const (
 	ListCredentialsAction                     = "auth:ListCredentials"   //nolint:gosec
 	CreateUserExternalPrincipalAction         = "auth:CreateUserExternalPrincipal"
 	DeleteUserExternalPrincipalAction         = "auth:DeleteUserExternalPrincipal"
-	ListUserExternalPrincipalsAction          = "auth:ListUserExternalPrincipals"
-	ReadUserExternalPrincipalAction           = "auth:ReadUserExternalPrincipal"
 	ReadActionsAction                         = "ci:ReadAction"
 	PrepareGarbageCollectionCommitsAction     = "retention:PrepareGarbageCollectionCommits"
 	GetGarbageCollectionRulesAction           = "retention:GetGarbageCollectionRules"
