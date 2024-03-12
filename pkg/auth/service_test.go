@@ -2737,9 +2737,3 @@ func TestAPIAuthService_DeleteExternalPrincipalAttachedToUserDelete(t *testing.T
 	_, err = s.GetUserExternalPrincipal(ctx, userId, principalId)
 	require.Errorf(t, err, "principal should not exist if a user is deleted")
 }
-
-// func TestAPIAuthService_ListUserExternalPrincipals(t *testing.T) {
-// 	mockClient, s := NewTestApiService(t, false)
-// 	users := []string{"u1", "u2", "u3", "u4", "u5", "u6", "u7", "u8", "u9", "u10"}
-
-// }
