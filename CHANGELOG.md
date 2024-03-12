@@ -8,7 +8,7 @@
 - ETag can be passed in the if-none-match in the header on getobject api (#7525)
 
 :bug: Bugs fixed:
-- Fix: Count KV retries not tries in Graveler (#7541)
+- Fix: Count KV retries (not tries) in Graveler (#7541)
 - Fix: CreateDirectoryMarkerIfNotExists (#7510)
 - Fix: Fixed bug in multipart upload s3 (#7512)
 - Fix: Gateway wrong error description for copy object (#7526)
