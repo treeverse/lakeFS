@@ -2723,16 +2723,16 @@ func TestAPIAuthService_DeleteExternalPrincipalAttachedToUserDelete(t *testing.T
 		HTTPResponse: &http.Response{
 			StatusCode: http.StatusNoContent,
 		},
-	})
+	}, nil)
 	err = s.DeleteUser(ctx, userId)
 	require.NoError(t, err)
-
 	// get principalA and expect error
-	mockClient.EXPECT().GetUserExternalPrincipalWithResponse(gomock.Any(), userId, gomock.Any()).Return(&auth.GetUserExternalPrincipalResponse{
-		HTTPResponse: &http.Response{
-			StatusCode: http.StatusNotFound,
-		},
-	}, &auth.ErrNotFound)
+	mockClient.EXPECT().GetUserExternalPrincipalWithResponse(gomock.Any(), userId, gomock.Any()).Return(
+		&auth.GetUserExternalPrincipalResponse{
+			HTTPResponse: &http.Response{
+				StatusCode: http.StatusNotFound,
+			},
+		}, auth.ErrNotFound)
 
 	_, err = s.GetUserExternalPrincipal(ctx, userId, principalId)
 	require.Errorf(t, err, "principal should not exist if a user is deleted")
