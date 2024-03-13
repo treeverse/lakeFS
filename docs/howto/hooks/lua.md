@@ -233,6 +233,11 @@ Sets the object at the given bucket and key to the value of the supplied value s
 Deletes the object at the given key  
 `path_uri` - A valid Azure blob storage uri in the form of `https://myaccount.blob.core.windows.net/mycontainer/myblob`
 
+### `azure/transformPathToAbfss(path)`
+
+Transform an HTTPS Azure URL to a ABFSS scheme. Used by the delta_exporter function to support Azure Unity catalog use cases    
+`path` - A valid Azure blob storage URL in the form of `https://myaccount.blob.core.windows.net/mycontainer/myblob`
+
 ### `crypto`
 
 ### `crypto/aes/encryptCBC(key, plaintext)`
