@@ -629,7 +629,6 @@ func TestDeltaCatalogExportAbfss(t *testing.T) {
 		AzureStorageAccount:   viper.GetString("azure_storage_account"),
 		AzureAccessKey:        viper.GetString("azure_storage_access_key"),
 	}
-	//blockstore := setupCatalogExportTestByStorageType(t, testData)
 
 	tmplDir, err := fs.Sub(exportHooksFiles, "export_hooks_files/delta")
 	require.NoError(t, err)
