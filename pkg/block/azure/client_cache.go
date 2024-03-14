@@ -124,7 +124,7 @@ func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
 	if params.TestEndpointURL != "" { // For testing purposes - override default url template
 		url = params.TestEndpointURL
 	} else {
-		url = fmt.Sprintf(BlobEndpointFormat, params.StorageAccount)
+		url = buildAccountEndpoint(params.StorageAccount, params.ChinaCloud)
 	}
 
 	options := service.ClientOptions{ClientOptions: azcore.ClientOptions{Retry: policy.RetryOptions{TryTimeout: params.TryTimeout}}}
@@ -141,4 +141,12 @@ func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
 		return nil, fmt.Errorf("missing credentials: %w", err)
 	}
 	return service.NewClient(url, defaultCreds, &options)
+}
+
+func buildAccountEndpoint(storageAccount string, chinaCloud bool) string {
+	format := BlobEndpointGlobalFormat
+	if chinaCloud {
+		format = BlobEndpointChinaCloudFormat
+	}
+	return fmt.Sprintf(format, storageAccount)
 }

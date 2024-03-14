@@ -33,7 +33,7 @@ func InitGravelerTest(t *testing.T) *GravelerTest {
 		KVStore:                  kvmock.NewMockStore(ctrl),
 	}
 
-	test.Sut = graveler.NewGraveler(test.CommittedManager, test.StagingManager, test.RefManager, test.GarbageCollectionManager, test.ProtectedBranchesManager)
+	test.Sut = graveler.NewGraveler(test.CommittedManager, test.StagingManager, test.RefManager, test.GarbageCollectionManager, test.ProtectedBranchesManager, nil)
 
 	return test
 }

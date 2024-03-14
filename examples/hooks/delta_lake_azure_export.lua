@@ -16,7 +16,7 @@ local function write_object(_, key, buf)
     return sc.put_object(key,buf)
 end
 local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key)
-local delta_table_details = delta_exporter.export_delta_log(action, args.table_names, write_object, delta_client, table_descriptors_path)
+local delta_table_details = delta_exporter.export_delta_log(action, args.table_defs, write_object, delta_client, table_descriptors_path)
 
 for t, details in pairs(delta_table_details) do
     print("Delta Lake exported table \"" .. t .. "\"'s location: " .. details["path"] .. "\n")
