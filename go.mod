@@ -92,7 +92,7 @@ require (
 	github.com/gorilla/sessions v1.2.1
 	github.com/hashicorp/go-retryablehttp v0.7.4
 	github.com/hashicorp/go-version v1.6.0
-	github.com/jackc/pgx/v5 v5.4.3
+	github.com/jackc/pgx/v5 v5.5.4
 	github.com/puzpuzpuz/xsync v1.5.2
 	go.uber.org/ratelimit v0.3.0
 )
