@@ -613,3 +613,100 @@ func getStorageNamespace(t *testing.T, ctx context.Context, repo string) string 
 	require.NotNil(t, resp.JSON200)
 	return resp.JSON200.StorageNamespace
 }
+
+func TestDeltaCatalogExportAbfss(t *testing.T) {
+	requireBlockstoreType(t, block.BlockstoreTypeAzure)
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	accessKeyID := viper.GetString("access_key_id")
+	secretAccessKey := viper.GetString("secret_access_key")
+	testData := &exportHooksTestData{
+		Repository:            repo,
+		Branch:                mainBranch,
+		LakeFSAccessKeyID:     accessKeyID,
+		LakeFSSecretAccessKey: secretAccessKey,
+		AzureStorageAccount:   viper.GetString("azure_storage_account"),
+		AzureAccessKey:        viper.GetString("azure_storage_access_key"),
+	}
+
+	tmplDir, err := fs.Sub(exportHooksFiles, "export_hooks_files/delta")
+	require.NoError(t, err)
+	err = fs.WalkDir(tmplDir, "data", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() {
+			buf, err := fs.ReadFile(tmplDir, path)
+			if err != nil {
+				return err
+			}
+			uploadResp, err := uploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf))
+			if err != nil {
+				return err
+			}
+			require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
+		}
+		return nil
+	})
+	require.NoError(t, err)
+
+	headCommit := uploadAndCommitObjects(t, ctx, repo, mainBranch, map[string]string{
+		"_lakefs_actions/delta_export.yaml": renderTplFileAsStr(t, testData, tmplDir, "azure_adls/_lakefs_actions/delta_export.yaml"),
+	})
+
+	runs := waitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
+	run := runs.Results[0]
+	require.Equal(t, "completed", run.Status)
+
+	amount := apigen.PaginationAmount(1)
+	tasks, err := client.ListRunHooksWithResponse(ctx, repo, run.RunId, &apigen.ListRunHooksParams{
+		Amount: &amount,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, tasks.JSON200)
+	require.Equal(t, 1, len(tasks.JSON200.Results))
+	require.Equal(t, "delta_exporter", tasks.JSON200.Results[0].HookId)
+	validateExportAbfss(t, ctx, headCommit.Id, testData)
+}
+
+func validateExportAbfss(t *testing.T, ctx context.Context, commit string, testData *exportHooksTestData) {
+	resp, err := client.GetRepositoryWithResponse(ctx, testData.Repository)
+	require.NoError(t, err)
+	require.NotNil(t, resp.JSON200)
+	namespaceURL, err := url.Parse(resp.JSON200.StorageNamespace)
+	require.NoError(t, err)
+	keyTempl := "%s/_lakefs/exported/%s/%s/test_table/_delta_log/00000000000000000000.json"
+	tableStat, err := client.StatObjectWithResponse(ctx, testData.Repository, mainBranch, &apigen.StatObjectParams{
+		Path: "tables/test-table/test partition/0-845b8a42-579e-47ee-9935-921dd8d2ba7d-0.parquet",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, tableStat.JSON200)
+	u, err := url.Parse(tableStat.JSON200.PhysicalAddress)
+	require.NoError(t, err)
+	storageAccount, _, found := strings.Cut(u.Host, ".")
+	require.True(t, found)
+	container, path, found := strings.Cut(strings.TrimPrefix(u.Path, "/"), "/")
+	require.True(t, found)
+	expectedPath := fmt.Sprintf("abfss://%s@%s.dfs.core.windows.net/%s", container, storageAccount, path)
+	var reader io.ReadCloser
+	azClient, err := azure.BuildAzureServiceClient(params.Azure{
+		StorageAccount:   testData.AzureStorageAccount,
+		StorageAccessKey: testData.AzureAccessKey,
+	})
+	require.NoError(t, err)
+
+	containerName, prefix, _ := strings.Cut(namespaceURL.Path, uri.PathSeparator)
+	key := fmt.Sprintf(keyTempl, strings.TrimPrefix(prefix, "/"), mainBranch, commit[:6])
+	readResp, err := azClient.NewContainerClient(containerName).NewBlockBlobClient(key).DownloadStream(ctx, nil)
+	require.NoError(t, err)
+	reader = readResp.Body
+
+	defer func() {
+		err := reader.Close()
+		require.NoError(t, err)
+	}()
+	contents, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	require.Contains(t, string(contents), expectedPath)
+}
