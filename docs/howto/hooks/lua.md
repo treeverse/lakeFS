@@ -747,7 +747,7 @@ The return value is a table with mapping of table names to registration request 
 
 **Note: (Azure users)** Databricks catalog external locations is supported only for ADLS Gen2 storage accounts.  
 When exporting Delta tables using the `lakefs/catalogexport/delta_exporter.export_delta_log` function, the `path_transformer` must be  
-used to convert the paths scheme to `abfss`. the built-in `azure` lua library provides this functionality in `transformPathToAbfss`.
+used to convert the paths scheme to `abfss`. The built-in `azure` lua library provides this functionality with `transformPathToAbfss`.
 
 Parameters:
 
