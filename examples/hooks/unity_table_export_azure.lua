@@ -15,7 +15,7 @@ local function write_object(_, key, buf)
     return sc.put_object(key,buf)
 end
 local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key)
-local delta_table_details = delta_exporter.export_delta_log(action, args.table_defs, write_object, delta_client, table_descriptors_path, azure.transformPathToAbfss)
+local delta_table_details = delta_exporter.export_delta_log(action, args.table_defs, write_object, delta_client, table_descriptors_path, azure.abfss_transform_path)
 
 -- Register the exported table in Unity Catalog:
 local databricks_client = databricks.client(args.databricks_host, args.databricks_token)
