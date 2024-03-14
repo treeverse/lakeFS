@@ -77,7 +77,7 @@ public class ExternalPrincipal {
   }
 
    /**
-   * A unique identifier for the external principal
+   * A unique identifier for the external principal i.e aws:sts::123:assumed-role/role-name
    * @return id
   **/
   @javax.annotation.Nonnull

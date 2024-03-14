@@ -32,7 +32,7 @@ Method | HTTP request | Description
 [**list_groups**](AuthApi.md#list_groups) | **GET** /auth/groups | list groups
 [**list_policies**](AuthApi.md#list_policies) | **GET** /auth/policies | list policies
 [**list_user_credentials**](AuthApi.md#list_user_credentials) | **GET** /auth/users/{userId}/credentials | list user credentials
-[**list_user_external_principals**](AuthApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals | list user external policies
+[**list_user_external_principals**](AuthApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user
 [**list_user_groups**](AuthApi.md#list_user_groups) | **GET** /auth/users/{userId}/groups | list user groups
 [**list_user_policies**](AuthApi.md#list_user_policies) | **GET** /auth/users/{userId}/policies | list user policies
 [**list_users**](AuthApi.md#list_users) | **GET** /auth/users | list users
@@ -932,6 +932,7 @@ void (empty response body)
 **201** | external principal attached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**409** | Resource Conflicts With Target |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
@@ -3142,7 +3143,7 @@ Name | Type | Description  | Notes
 # **list_user_external_principals**
 > ExternalPrincipalList list_user_external_principals(user_id)
 
-list user external policies
+list user external policies attached to a user
 
 ### Example
 
@@ -3210,7 +3211,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        # list user external policies
+        # list user external policies attached to a user
         api_response = api_instance.list_user_external_principals(user_id)
         pprint(api_response)
     except lakefs_client.ApiException as e:
@@ -3219,7 +3220,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        # list user external policies
+        # list user external policies attached to a user
         api_response = api_instance.list_user_external_principals(user_id, prefix=prefix, after=after, amount=amount)
         pprint(api_response)
     except lakefs_client.ApiException as e:

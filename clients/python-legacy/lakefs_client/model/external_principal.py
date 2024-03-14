@@ -115,7 +115,7 @@ class ExternalPrincipal(ModelNormal):
         """ExternalPrincipal - a model defined in OpenAPI
 
         Args:
-            id (str): A unique identifier for the external principal
+            id (str): A unique identifier for the external principal i.e aws:sts::123:assumed-role/role-name
             user_id (str): lakeFS user ID to associate with an external principal. 
 
         Keyword Args:
@@ -203,7 +203,7 @@ class ExternalPrincipal(ModelNormal):
         """ExternalPrincipal - a model defined in OpenAPI
 
         Args:
-            id (str): A unique identifier for the external principal
+            id (str): A unique identifier for the external principal i.e aws:sts::123:assumed-role/role-name
             user_id (str): lakeFS user ID to associate with an external principal. 
 
         Keyword Args:

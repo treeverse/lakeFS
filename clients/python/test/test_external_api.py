@@ -53,7 +53,7 @@ class TestExternalApi(unittest.TestCase):
     def test_list_user_external_principals(self):
         """Test case for list_user_external_principals
 
-        list user external policies  # noqa: E501
+        list user external policies attached to a user  # noqa: E501
         """
         pass
 

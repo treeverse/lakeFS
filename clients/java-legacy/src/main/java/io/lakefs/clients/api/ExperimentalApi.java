@@ -577,6 +577,7 @@ public class ExperimentalApi {
         <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -650,6 +651,7 @@ public class ExperimentalApi {
         <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -672,6 +674,7 @@ public class ExperimentalApi {
         <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -696,6 +699,7 @@ public class ExperimentalApi {
         <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
@@ -1218,7 +1222,7 @@ public class ExperimentalApi {
     }
 
     /**
-     * list user external policies
+     * list user external policies attached to a user
      * 
      * @param userId  (required)
      * @param prefix return items prefixed with this value (optional)
@@ -1242,7 +1246,7 @@ public class ExperimentalApi {
     }
 
     /**
-     * list user external policies
+     * list user external policies attached to a user
      * 
      * @param userId  (required)
      * @param prefix return items prefixed with this value (optional)
@@ -1267,7 +1271,7 @@ public class ExperimentalApi {
     }
 
     /**
-     * list user external policies (asynchronously)
+     * list user external policies attached to a user (asynchronously)
      * 
      * @param userId  (required)
      * @param prefix return items prefixed with this value (optional)

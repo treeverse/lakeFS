@@ -199,9 +199,12 @@ type CredentialKeys struct {
 	SecretAccessKey string `json:"secret_access_key"`
 }
 
+// ExternalPrincipal represents an attachment of a user to an external identity such as an IAM Role ARN
 type ExternalPrincipal struct {
-	ID     string `db:"id"`
-	UserID string `db:"user_id"`
+	// External Principal ID (i.e ARN)
+	ID string `json:"id"`
+	// The attached lakeFS user ID
+	UserID string `json:"user_id"`
 }
 
 func (u *User) UpdatePassword(password string) error {

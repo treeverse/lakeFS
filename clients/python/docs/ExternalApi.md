@@ -7,7 +7,7 @@ Method | HTTP request | Description
 [**create_user_external_principal**](ExternalApi.md#create_user_external_principal) | **POST** /auth/users/{userId}/external/principal/{principalId} | attach external principal to user
 [**delete_user_external_principal**](ExternalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principal/{principalId} | delete external principal from user
 [**get_user_external_principal**](ExternalApi.md#get_user_external_principal) | **GET** /auth/users/{userId}/external/principal/{principalId} | get external principal of a user
-[**list_user_external_principals**](ExternalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals | list user external policies
+[**list_user_external_principals**](ExternalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user
 
 
 # **create_user_external_principal**
@@ -117,6 +117,7 @@ void (empty response body)
 **201** | external principal attached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**409** | Resource Conflicts With Target |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
@@ -346,7 +347,7 @@ Name | Type | Description  | Notes
 # **list_user_external_principals**
 > ExternalPrincipalList list_user_external_principals(user_id, prefix=prefix, after=after, amount=amount)
 
-list user external policies
+list user external policies attached to a user
 
 ### Example
 
@@ -414,7 +415,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     amount = 100 # int | how many items to return (optional) (default to 100)
 
     try:
-        # list user external policies
+        # list user external policies attached to a user
         api_response = api_instance.list_user_external_principals(user_id, prefix=prefix, after=after, amount=amount)
         print("The response of ExternalApi->list_user_external_principals:\n")
         pprint(api_response)

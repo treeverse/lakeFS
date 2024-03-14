@@ -11,7 +11,7 @@ Method | HTTP request | Description
 [**deleteUserExternalPrincipal**](ExperimentalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principal/{principalId} | delete external principal from user
 [**getUserExternalPrincipal**](ExperimentalApi.md#getUserExternalPrincipal) | **GET** /auth/users/{userId}/external/principal/{principalId} | get external principal of a user
 [**hardResetBranch**](ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
-[**listUserExternalPrincipals**](ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals | list user external policies
+[**listUserExternalPrincipals**](ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user
 
 
 <a name="abortPresignMultipartUpload"></a>
@@ -413,6 +413,7 @@ null (empty response body)
 **201** | external principal attached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**409** | Resource Conflicts With Target |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
@@ -708,7 +709,7 @@ null (empty response body)
 # **listUserExternalPrincipals**
 > ExternalPrincipalList listUserExternalPrincipals(userId, prefix, after, amount)
 
-list user external policies
+list user external policies attached to a user
 
 ### Example
 ```java

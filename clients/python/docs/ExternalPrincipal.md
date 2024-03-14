@@ -5,7 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**id** | **str** | A unique identifier for the external principal | 
+**id** | **str** | A unique identifier for the external principal i.e aws:sts::123:assumed-role/role-name | 
 **user_id** | **str** | lakeFS user ID to associate with an external principal.  | 
 **settings** | **List[Dict[str, str]]** |  | [optional] 
 

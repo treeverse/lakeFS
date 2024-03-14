@@ -77,6 +77,8 @@ type EmailInviter interface {
 	InviteUser(ctx context.Context, email string) error
 }
 
+// ExternalPrincipalsService is an interface for managing external principals (e.g. IAM users, groups, etc.)
+// It's part of the AuthService api's and is used as an administrative API to that service.
 type ExternalPrincipalsService interface {
 	IsExternalPrincipalsEnabled(ctx context.Context) bool
 	CreateUserExternalPrincipal(ctx context.Context, userID, principalID string) error
@@ -98,7 +100,6 @@ type Service interface {
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
-	// external principals
 	ExternalPrincipalsService
 
 	// groups
@@ -1116,6 +1117,7 @@ func claimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64, mark
 func (s *AuthService) IsExternalPrincipalsEnabled(ctx context.Context) bool {
 	return false
 }
+
 func (s *AuthService) CreateUserExternalPrincipal(ctx context.Context, userID, principalID string) error {
 	return ErrNotImplemented
 }
@@ -1123,9 +1125,11 @@ func (s *AuthService) CreateUserExternalPrincipal(ctx context.Context, userID, p
 func (s *AuthService) DeleteUserExternalPrincipal(ctx context.Context, userID, principalID string) error {
 	return ErrNotImplemented
 }
+
 func (s *AuthService) GetUserExternalPrincipal(ctx context.Context, userID, principalID string) (*model.ExternalPrincipal, error) {
 	return nil, ErrNotImplemented
 }
+
 func (s *AuthService) ListUserExternalPrincipals(ctx context.Context, userID string, params *model.PaginationParams) ([]*model.ExternalPrincipal, *model.Paginator, error) {
 	return nil, nil, ErrNotImplemented
 }
@@ -1965,13 +1969,13 @@ func (a *APIAuthService) CheckHealth(ctx context.Context, logger logging.Logger,
 func (a *APIAuthService) IsExternalPrincipalsEnabled(ctx context.Context) bool {
 	return a.externalPrincipalseEnabled
 }
+
 func (a *APIAuthService) CreateUserExternalPrincipal(ctx context.Context, userID, principalID string) error {
 	if !a.IsExternalPrincipalsEnabled(ctx) {
-		return fmt.Errorf("not enabled: %w", ErrInvalidRequest)
+		return fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
 
 	resp, err := a.apiClient.CreateUserExternalPrincipalWithResponse(ctx, userID, principalID)
-
 	if err != nil {
 		return fmt.Errorf("create principal: %w", err)
 	}
@@ -1981,7 +1985,7 @@ func (a *APIAuthService) CreateUserExternalPrincipal(ctx context.Context, userID
 
 func (a *APIAuthService) DeleteUserExternalPrincipal(ctx context.Context, userID, principalID string) error {
 	if !a.IsExternalPrincipalsEnabled(ctx) {
-		return fmt.Errorf("not enabled: %w", ErrInvalidRequest)
+		return fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
 	resp, err := a.apiClient.DeleteUserExternalPrincipalWithResponse(ctx, userID, principalID)
 	if err != nil {
@@ -1992,7 +1996,7 @@ func (a *APIAuthService) DeleteUserExternalPrincipal(ctx context.Context, userID
 
 func (a *APIAuthService) GetUserExternalPrincipal(ctx context.Context, userID, principalID string) (*model.ExternalPrincipal, error) {
 	if !a.IsExternalPrincipalsEnabled(ctx) {
-		return nil, fmt.Errorf("not enabled: %w", ErrInvalidRequest)
+		return nil, fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
 	resp, err := a.apiClient.GetUserExternalPrincipalWithResponse(ctx, userID, principalID)
 	if err != nil {
@@ -2009,7 +2013,7 @@ func (a *APIAuthService) GetUserExternalPrincipal(ctx context.Context, userID, p
 
 func (a *APIAuthService) ListUserExternalPrincipals(ctx context.Context, userID string, params *model.PaginationParams) ([]*model.ExternalPrincipal, *model.Paginator, error) {
 	if !a.IsExternalPrincipalsEnabled(ctx) {
-		return nil, nil, fmt.Errorf("not enabled: %w", ErrInvalidRequest)
+		return nil, nil, fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
 	resp, err := a.apiClient.ListUserExternalPrincipalsWithResponse(ctx, userID, &ListUserExternalPrincipalsParams{
 		Prefix: paginationPrefix(params.Prefix),

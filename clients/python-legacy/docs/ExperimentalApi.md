@@ -11,7 +11,7 @@ Method | HTTP request | Description
 [**delete_user_external_principal**](ExperimentalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principal/{principalId} | delete external principal from user
 [**get_user_external_principal**](ExperimentalApi.md#get_user_external_principal) | **GET** /auth/users/{userId}/external/principal/{principalId} | get external principal of a user
 [**hard_reset_branch**](ExperimentalApi.md#hard_reset_branch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
-[**list_user_external_principals**](ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals | list user external policies
+[**list_user_external_principals**](ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user
 
 
 # **abort_presign_multipart_upload**
@@ -523,6 +523,7 @@ void (empty response body)
 **201** | external principal attached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**409** | Resource Conflicts With Target |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
@@ -873,7 +874,7 @@ void (empty response body)
 # **list_user_external_principals**
 > ExternalPrincipalList list_user_external_principals(user_id)
 
-list user external policies
+list user external policies attached to a user
 
 ### Example
 
@@ -941,7 +942,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        # list user external policies
+        # list user external policies attached to a user
         api_response = api_instance.list_user_external_principals(user_id)
         pprint(api_response)
     except lakefs_client.ApiException as e:
@@ -950,7 +951,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        # list user external policies
+        # list user external policies attached to a user
         api_response = api_instance.list_user_external_principals(user_id, prefix=prefix, after=after, amount=amount)
         pprint(api_response)
     except lakefs_client.ApiException as e:

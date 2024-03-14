@@ -499,7 +499,7 @@ class ExternalApi(object):
 
     @validate_arguments
     def list_user_external_principals(self, user_id : StrictStr, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, **kwargs) -> ExternalPrincipalList:  # noqa: E501
-        """list user external policies  # noqa: E501
+        """list user external policies attached to a user  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
@@ -533,7 +533,7 @@ class ExternalApi(object):
 
     @validate_arguments
     def list_user_external_principals_with_http_info(self, user_id : StrictStr, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, **kwargs) -> ApiResponse:  # noqa: E501
-        """list user external policies  # noqa: E501
+        """list user external policies attached to a user  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True

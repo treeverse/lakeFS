@@ -7,7 +7,7 @@ Method | HTTP request | Description
 [**createUserExternalPrincipal**](ExternalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principal/{principalId} | attach external principal to user
 [**deleteUserExternalPrincipal**](ExternalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principal/{principalId} | delete external principal from user
 [**getUserExternalPrincipal**](ExternalApi.md#getUserExternalPrincipal) | **GET** /auth/users/{userId}/external/principal/{principalId} | get external principal of a user
-[**listUserExternalPrincipals**](ExternalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals | list user external policies
+[**listUserExternalPrincipals**](ExternalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user
 
 
 <a name="createUserExternalPrincipal"></a>
@@ -102,6 +102,7 @@ null (empty response body)
 **201** | external principal attached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**409** | Resource Conflicts With Target |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
@@ -296,7 +297,7 @@ Name | Type | Description  | Notes
 # **listUserExternalPrincipals**
 > ExternalPrincipalList listUserExternalPrincipals(userId, prefix, after, amount)
 
-list user external policies
+list user external policies attached to a user
 
 ### Example
 ```java

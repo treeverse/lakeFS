@@ -78,7 +78,7 @@ public class ExternalApiTest {
     }
 
     /**
-     * list user external policies
+     * list user external policies attached to a user
      *
      * @throws ApiException if the Api call fails
      */

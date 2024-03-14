@@ -52,11 +52,11 @@ public class ExternalPrincipal {
   }
 
    /**
-   * A unique identifier for the external principal
+   * A unique identifier for the external principal i.e aws:sts::123:assumed-role/role-name
    * @return id
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A unique identifier for the external principal")
+  @ApiModelProperty(required = true, value = "A unique identifier for the external principal i.e aws:sts::123:assumed-role/role-name")
 
   public String getId() {
     return id;

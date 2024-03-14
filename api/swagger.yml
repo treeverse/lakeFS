@@ -1632,6 +1632,7 @@ components:
       required:
         - installation_id
         - reports
+
     ExternalPrincipalList: 
       type: object
       required:
@@ -1664,7 +1665,7 @@ components:
       properties:
         id:
           type: string
-          description: A unique identifier for the external principal
+          description: A unique identifier for the external principal i.e aws:sts::123:assumed-role/role-name
         user_id:
           type: string
           description: |
@@ -2465,6 +2466,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
         420:
           description: too many requests
         default:
@@ -2526,9 +2529,8 @@ paths:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
-          description: will return all external principals id attached to the user
       operationId: listUserExternalPrincipals
-      summary: list user external policies
+      summary: list user external policies attached to a user
       responses:
         200:
           description: external principals list

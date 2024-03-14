@@ -4091,7 +4091,7 @@ class AuthApi(object):
         user_id,
         **kwargs
     ):
-        """list user external policies  # noqa: E501
+        """list user external policies attached to a user  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True

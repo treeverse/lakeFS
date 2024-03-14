@@ -26,7 +26,7 @@ class ExternalPrincipal(BaseModel):
     """
     ExternalPrincipal
     """
-    id: StrictStr = Field(..., description="A unique identifier for the external principal")
+    id: StrictStr = Field(..., description="A unique identifier for the external principal i.e aws:sts::123:assumed-role/role-name")
     user_id: StrictStr = Field(..., description="lakeFS user ID to associate with an external principal. ")
     settings: Optional[conlist(Dict[str, StrictStr])] = None
     __properties = ["id", "user_id", "settings"]

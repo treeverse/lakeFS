@@ -32,7 +32,7 @@ Method | HTTP request | Description
 [**listGroups**](AuthApi.md#listGroups) | **GET** /auth/groups | list groups
 [**listPolicies**](AuthApi.md#listPolicies) | **GET** /auth/policies | list policies
 [**listUserCredentials**](AuthApi.md#listUserCredentials) | **GET** /auth/users/{userId}/credentials | list user credentials
-[**listUserExternalPrincipals**](AuthApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals | list user external policies
+[**listUserExternalPrincipals**](AuthApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user
 [**listUserGroups**](AuthApi.md#listUserGroups) | **GET** /auth/users/{userId}/groups | list user groups
 [**listUserPolicies**](AuthApi.md#listUserPolicies) | **GET** /auth/users/{userId}/policies | list user policies
 [**listUsers**](AuthApi.md#listUsers) | **GET** /auth/users | list users
@@ -782,6 +782,7 @@ null (empty response body)
 **201** | external principal attached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**409** | Resource Conflicts With Target |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
@@ -2650,7 +2651,7 @@ Name | Type | Description  | Notes
 # **listUserExternalPrincipals**
 > ExternalPrincipalList listUserExternalPrincipals(userId, prefix, after, amount)
 
-list user external policies
+list user external policies attached to a user
 
 ### Example
 ```java

@@ -148,7 +148,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**list_groups**](docs/AuthApi.md#list_groups) | **GET** /auth/groups | list groups
 *AuthApi* | [**list_policies**](docs/AuthApi.md#list_policies) | **GET** /auth/policies | list policies
 *AuthApi* | [**list_user_credentials**](docs/AuthApi.md#list_user_credentials) | **GET** /auth/users/{userId}/credentials | list user credentials
-*AuthApi* | [**list_user_external_principals**](docs/AuthApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals | list user external policies
+*AuthApi* | [**list_user_external_principals**](docs/AuthApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user
 *AuthApi* | [**list_user_groups**](docs/AuthApi.md#list_user_groups) | **GET** /auth/users/{userId}/groups | list user groups
 *AuthApi* | [**list_user_policies**](docs/AuthApi.md#list_user_policies) | **GET** /auth/users/{userId}/policies | list user policies
 *AuthApi* | [**list_users**](docs/AuthApi.md#list_users) | **GET** /auth/users | list users
@@ -173,11 +173,11 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**delete_user_external_principal**](docs/ExperimentalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principal/{principalId} | delete external principal from user
 *ExperimentalApi* | [**get_user_external_principal**](docs/ExperimentalApi.md#get_user_external_principal) | **GET** /auth/users/{userId}/external/principal/{principalId} | get external principal of a user
 *ExperimentalApi* | [**hard_reset_branch**](docs/ExperimentalApi.md#hard_reset_branch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
-*ExperimentalApi* | [**list_user_external_principals**](docs/ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals | list user external policies
+*ExperimentalApi* | [**list_user_external_principals**](docs/ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user
 *ExternalApi* | [**create_user_external_principal**](docs/ExternalApi.md#create_user_external_principal) | **POST** /auth/users/{userId}/external/principal/{principalId} | attach external principal to user
 *ExternalApi* | [**delete_user_external_principal**](docs/ExternalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principal/{principalId} | delete external principal from user
 *ExternalApi* | [**get_user_external_principal**](docs/ExternalApi.md#get_user_external_principal) | **GET** /auth/users/{userId}/external/principal/{principalId} | get external principal of a user
-*ExternalApi* | [**list_user_external_principals**](docs/ExternalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals | list user external policies
+*ExternalApi* | [**list_user_external_principals**](docs/ExternalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user
 *HealthCheckApi* | [**health_check**](docs/HealthCheckApi.md#health_check) | **GET** /healthcheck | 
 *ImportApi* | [**import_cancel**](docs/ImportApi.md#import_cancel) | **DELETE** /repositories/{repository}/branches/{branch}/import | cancel ongoing import
 *ImportApi* | [**import_start**](docs/ImportApi.md#import_start) | **POST** /repositories/{repository}/branches/{branch}/import | import data from object store
