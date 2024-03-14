@@ -2,7 +2,9 @@ package azure
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"regexp"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -120,4 +122,18 @@ func parsePath(l *lua.State, path string) (string, string) {
 		panic("unreachable")
 	}
 	return containerName, key
+}
+
+func transformPathToAbfss(l *lua.State) int {
+	path := lua.CheckString(l, 1)
+	const numOfParts = 3
+	r := regexp.MustCompile(`^https://(\w+)\.blob\.core\.windows\.net/([^/]*)/(.+)$`)
+	parts := r.FindStringSubmatch(path)
+	if len(parts) != numOfParts+1 {
+		lua.Errorf(l, "expected valid Azure https URL: %s", path)
+		panic("unreachable")
+	}
+	transformed := fmt.Sprintf("abfss://%s@%s.dfs.core.windows.net/%s", parts[2], parts[1], parts[3])
+	l.PushString(transformed)
+	return 1
 }

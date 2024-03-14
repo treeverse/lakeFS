@@ -18,7 +18,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
-func found(ctx context.Context, repo, ref, path string) (bool, error) {
+func objectFound(ctx context.Context, repo, ref, path string) (bool, error) {
 	res, err := client.GetObjectWithResponse(ctx, repo, ref, &apigen.GetObjectParams{Path: path})
 	if err == nil && res.HTTPResponse.StatusCode == http.StatusOK {
 		return true, nil
@@ -37,7 +37,7 @@ func TestDeleteStaging(t *testing.T) {
 
 	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
 
-	f, err := found(ctx, repo, mainBranch, objPath)
+	f, err := objectFound(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
 	assert.True(t, f, "uploaded object found")
 
@@ -45,7 +45,7 @@ func TestDeleteStaging(t *testing.T) {
 	require.NoError(t, err, "failed to delete object")
 	require.Equal(t, http.StatusNoContent, resp.StatusCode())
 
-	f, err = found(ctx, repo, mainBranch, objPath)
+	f, err = objectFound(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
 	assert.False(t, f, "deleted object found")
 }
@@ -57,7 +57,7 @@ func TestDeleteCommitted(t *testing.T) {
 
 	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
 
-	f, err := found(ctx, repo, mainBranch, objPath)
+	f, err := objectFound(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
 	assert.True(t, f, "uploaded object found")
 
@@ -69,7 +69,7 @@ func TestDeleteCommitted(t *testing.T) {
 	require.NoError(t, err, "failed to delete object")
 	require.Equal(t, http.StatusNoContent, getResp.StatusCode())
 
-	f, err = found(ctx, repo, mainBranch, objPath)
+	f, err = objectFound(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
 	assert.False(t, f, "deleted object found")
 }
@@ -118,7 +118,7 @@ func TestDeleteObjectsReadOnlyRepository(t *testing.T) {
 	require.NoError(t, err, "failed to delete object")
 	require.Equal(t, http.StatusNoContent, deleteResp.StatusCode())
 
-	f, err := found(ctx, repoName, mainBranch, objPath)
+	f, err := objectFound(ctx, repoName, mainBranch, objPath)
 	assert.NoError(t, err)
 	assert.False(t, f, "deleted object found")
 }
@@ -130,7 +130,7 @@ func TestCommitDeleteCommitted(t *testing.T) {
 
 	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
 
-	f, err := found(ctx, repo, mainBranch, objPath)
+	f, err := objectFound(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
 	assert.True(t, f, "uploaded object found")
 
@@ -150,7 +150,7 @@ func TestCommitDeleteCommitted(t *testing.T) {
 	require.NoError(t, err, "commit delete file")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
-	f, err = found(ctx, repo, mainBranch, objPath)
+	f, err = objectFound(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
 	assert.False(t, f, "deleted object found")
 }

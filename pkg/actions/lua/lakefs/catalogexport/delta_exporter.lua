@@ -40,9 +40,11 @@ end
 
     delta_client:
         - get_table: function(repo, ref, prefix)
+    
+    path_transformer: function(path) used for transforming path scheme (ex: Azure https to abfss)
 
 ]]
-local function export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path)
+local function export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path, path_transformer)
     local repo = action.repository_id
     local commit_id = action.commit_id
     if not commit_id then
@@ -118,6 +120,9 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                         ]]
                         local u = url.parse(obj_stat["physical_address"])
                         local physical_path = url.build_url(u["scheme"], u["host"], u["path"])
+                        if path_transformer ~= nil then
+                            physical_path = path_transformer(physical_path)
+                        end
                         if entry.add ~= nil then
                             entry.add.path = physical_path
                         elseif entry.remove ~= nil then
@@ -157,6 +162,10 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
             end
             local version_key = storage_props.key .. "/" .. entry_version
             write_object(storage_props.bucket, version_key, table_entry_string)
+        end
+        -- Save physical path using the path_transformer if exists
+        if path_transformer ~= nil then
+            table_physical_path = path_transformer(table_physical_path)
         end
         local table_val = {
             path=table_physical_path,

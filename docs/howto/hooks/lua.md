@@ -233,6 +233,11 @@ Sets the object at the given bucket and key to the value of the supplied value s
 Deletes the object at the given key  
 `path_uri` - A valid Azure blob storage uri in the form of `https://myaccount.blob.core.windows.net/mycontainer/myblob`
 
+### `azure/abfss_transform_path(path)`
+
+Transform an HTTPS Azure URL to a ABFSS scheme. Used by the delta_exporter function to support Azure Unity catalog use cases    
+`path` - A valid Azure blob storage URL in the form of `https://myaccount.blob.core.windows.net/mycontainer/myblob`
+
 ### `crypto`
 
 ### `crypto/aes/encryptCBC(key, plaintext)`
@@ -476,7 +481,7 @@ Parameters:
 
 A package used to export Delta Lake tables from lakeFS to an external cloud storage.
 
-### `lakefs/catalogexport/delta_exporter.export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path)`
+### `lakefs/catalogexport/delta_exporter.export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path, path_transformer)`
 
 The function used to export Delta Lake tables.
 The return value is a table with mapping of table names to external table location (from which it is possible to query the data) and latest Delta table version's metadata.  
@@ -490,6 +495,7 @@ Parameters:
 - `write_object`: A writer function with `function(bucket, key, data)` signature, used to write the exported Delta Log (e.g. `aws/s3_client.put_object` or `azure/blob_client.put_object`)
 - `delta_client`: A Delta Lake client that implements `get_table: function(repo, ref, prefix)`
 - `table_descriptors_path`: The path under which the table descriptors of the provided `table_def_names` reside
+- `path_transformer`: (Optional) A function(path) used for transforming the path of the saved delta logs path fields as well as the saved table physical path (used to support Azure Unity catalog use cases)
 
 Delta export example for AWS S3:
 
@@ -738,6 +744,10 @@ The function used to register exported Delta Lake tables in Databricks' Unity Ca
 The registration will use the following paths to register the table:
 `<catalog>.<branch name>.<table_name>` where the branch name will be used as the schema name.
 The return value is a table with mapping of table names to registration request status.
+
+**Note: (Azure users)** Databricks catalog external locations is supported only for ADLS Gen2 storage accounts.  
+When exporting Delta tables using the `lakefs/catalogexport/delta_exporter.export_delta_log` function, the `path_transformer` must be  
+used to convert the paths scheme to `abfss`. The built-in `azure` lua library provides this functionality with `transformPathToAbfss`.
 
 Parameters:
 
