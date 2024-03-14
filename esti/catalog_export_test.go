@@ -671,6 +671,7 @@ func TestDeltaCatalogExportAbfss(t *testing.T) {
 }
 
 func validateExportAbfss(t *testing.T, ctx context.Context, commit string, testData *exportHooksTestData) {
+	requireBlockstoreType(t, block.BlockstoreTypeAzure)
 	resp, err := client.GetRepositoryWithResponse(ctx, testData.Repository)
 	require.NoError(t, err)
 	require.NotNil(t, resp.JSON200)
