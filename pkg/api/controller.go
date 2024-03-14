@@ -5237,7 +5237,7 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 
 func (c *Controller) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.Request, body apigen.CreateUserExternalPrincipalJSONRequestBody, userID, principalID string) {
 	ctx := r.Context()
-	if c.Config.IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx) {
+	if c.isExternalPrincipalNotSupported(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5261,7 +5261,7 @@ func (c *Controller) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.
 
 func (c *Controller) DeleteUserExternalPrincipal(w http.ResponseWriter, r *http.Request, userID, principalID string) {
 	ctx := r.Context()
-	if c.Config.IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx) {
+	if c.isExternalPrincipalNotSupported(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5283,7 +5283,7 @@ func (c *Controller) DeleteUserExternalPrincipal(w http.ResponseWriter, r *http.
 
 func (c *Controller) GetUserExternalPrincipal(w http.ResponseWriter, r *http.Request, userID, principalID string) {
 	ctx := r.Context()
-	if c.Config.IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx) {
+	if c.isExternalPrincipalNotSupported(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5310,7 +5310,7 @@ func (c *Controller) GetUserExternalPrincipal(w http.ResponseWriter, r *http.Req
 
 func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.Request, userID string, params apigen.ListUserExternalPrincipalsParams) {
 	ctx := r.Context()
-	if c.Config.IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx) {
+	if c.isExternalPrincipalNotSupported(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5351,4 +5351,9 @@ func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.R
 		}
 	}
 	writeResponse(w, r, http.StatusOK, response)
+}
+
+func (c *Controller) isExternalPrincipalNotSupported(ctx context.Context) bool {
+	// if IsAuthUISimplified true then it means the user not using RBAC model
+	return c.Config.IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx)
 }
