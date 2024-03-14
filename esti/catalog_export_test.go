@@ -615,6 +615,7 @@ func getStorageNamespace(t *testing.T, ctx context.Context, repo string) string 
 }
 
 func TestDeltaCatalogExportAbfss(t *testing.T) {
+	requireBlockstoreType(t, block.BlockstoreTypeAzure)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
@@ -671,7 +672,6 @@ func TestDeltaCatalogExportAbfss(t *testing.T) {
 }
 
 func validateExportAbfss(t *testing.T, ctx context.Context, commit string, testData *exportHooksTestData) {
-	requireBlockstoreType(t, block.BlockstoreTypeAzure)
 	resp, err := client.GetRepositoryWithResponse(ctx, testData.Repository)
 	require.NoError(t, err)
 	require.NotNil(t, resp.JSON200)
