@@ -3,12 +3,13 @@ package dynamodb_test
 import (
 	"context"
 	"errors"
-	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/kv/dynamodb"
-	"github.com/treeverse/lakefs/pkg/testutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/dynamodb"
+	"github.com/treeverse/lakefs/pkg/testutil"
 
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
