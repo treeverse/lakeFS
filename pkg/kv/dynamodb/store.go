@@ -240,6 +240,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	if err != nil {
 		if s.isSlowDownErr(err) {
 			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("get item: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues(operation).Inc()
 		}
 		return nil, fmt.Errorf("get item: %w", err)
 	}
@@ -327,6 +328,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		}
 		if s.isSlowDownErr(err) {
 			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("put item: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues(operation).Inc()
 		}
 		return fmt.Errorf("put item: %w", err)
 	}
@@ -353,6 +355,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	if err != nil {
 		if s.isSlowDownErr(err) {
 			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("delete item: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues(operation).Inc()
 		}
 		return fmt.Errorf("delete item: %w", err)
 	}
@@ -383,6 +386,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	if it.err != nil {
 		if s.isSlowDownErr(it.err) {
 			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("scan: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues("Scan").Inc()
 		}
 		return nil, it.err
 	}
@@ -401,6 +405,7 @@ func (s *Store) DropTable() error {
 	})
 	if s.isSlowDownErr(err) {
 		s.logger.WithField("table", s.params.TableName).WithContext(ctx).Error("drop table: %w", kv.ErrSlowDown)
+		dynamoSlowdown.WithLabelValues("DeleteTable").Inc()
 	}
 	return err
 }
