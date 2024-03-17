@@ -1,5 +1,17 @@
 # Changelog
 
+# v1.14.0
+
+:new: What's new:
+
+- Delta exporter: support export of delta log files with abfss scheme to support unity catalog external tables (#7553)
+- Auth Service: External Principals Management endpoints only (#7539)
+
+:bug: Bugs fixed:
+
+- Support Azure Unity Catalog export (#7554)
+- Groups Pagination is broken in the WebUI (#7556)
+ 
 # v1.13.0
 
 :new: What's new:
