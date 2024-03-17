@@ -388,6 +388,7 @@ func TestLakectlLocal_commit(t *testing.T) {
 		prefix + "/subdir/1.png",
 		prefix + "/subdir/2.png",
 		prefix + "/subdir/3.png",
+		prefix + "/subdir-a/1.png",
 	}
 
 	tests := []struct {
