@@ -17,6 +17,9 @@ import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.clients.sdk.model.AbortPresignMultipartUpload;
 import io.lakefs.clients.sdk.model.CompletePresignMultipartUpload;
 import io.lakefs.clients.sdk.model.Error;
+import io.lakefs.clients.sdk.model.ExternalPrincipal;
+import io.lakefs.clients.sdk.model.ExternalPrincipalCreation;
+import io.lakefs.clients.sdk.model.ExternalPrincipalList;
 import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.PresignMultipartUpload;
 import io.lakefs.clients.sdk.model.StagingLocation;
@@ -96,6 +99,49 @@ public class ExperimentalApiTest {
     }
 
     /**
+     * attach external principal to user
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void createUserExternalPrincipalTest() throws ApiException {
+        String userId = null;
+        String principalId = null;
+        ExternalPrincipalCreation externalPrincipalCreation = null;
+        api.createUserExternalPrincipal(userId, principalId, externalPrincipalCreation)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * delete external principal from user
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void deleteUserExternalPrincipalTest() throws ApiException {
+        String userId = null;
+        String principalId = null;
+        api.deleteUserExternalPrincipal(userId, principalId)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * get external principal of a user
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getUserExternalPrincipalTest() throws ApiException {
+        String userId = null;
+        String principalId = null;
+        ExternalPrincipal response = api.getUserExternalPrincipal(userId, principalId)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
      * hard reset branch
      *
      * Relocate branch to refer to ref.  Branch must not contain uncommitted data.
@@ -110,6 +156,25 @@ public class ExperimentalApiTest {
         Boolean force = null;
         api.hardResetBranch(repository, branch, ref)
                 .force(force)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * list user external policies attached to a user
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void listUserExternalPrincipalsTest() throws ApiException {
+        String userId = null;
+        String prefix = null;
+        String after = null;
+        Integer amount = null;
+        ExternalPrincipalList response = api.listUserExternalPrincipals(userId)
+                .prefix(prefix)
+                .after(after)
+                .amount(amount)
                 .execute();
         // TODO: test validations
     }

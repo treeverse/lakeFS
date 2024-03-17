@@ -36,6 +36,10 @@ docs/DiffList.md
 docs/Error.md
 docs/ErrorNoACL.md
 docs/ExperimentalApi.md
+docs/ExternalApi.md
+docs/ExternalPrincipal.md
+docs/ExternalPrincipalCreation.md
+docs/ExternalPrincipalList.md
 docs/FindMergeBaseResult.md
 docs/GarbageCollectionConfig.md
 docs/GarbageCollectionPrepareResponse.md
@@ -134,6 +138,7 @@ src/main/java/io/lakefs/clients/api/CommitsApi.java
 src/main/java/io/lakefs/clients/api/ConfigApi.java
 src/main/java/io/lakefs/clients/api/Configuration.java
 src/main/java/io/lakefs/clients/api/ExperimentalApi.java
+src/main/java/io/lakefs/clients/api/ExternalApi.java
 src/main/java/io/lakefs/clients/api/GzipRequestInterceptor.java
 src/main/java/io/lakefs/clients/api/HealthCheckApi.java
 src/main/java/io/lakefs/clients/api/ImportApi.java
@@ -180,6 +185,9 @@ src/main/java/io/lakefs/clients/api/model/Diff.java
 src/main/java/io/lakefs/clients/api/model/DiffList.java
 src/main/java/io/lakefs/clients/api/model/Error.java
 src/main/java/io/lakefs/clients/api/model/ErrorNoACL.java
+src/main/java/io/lakefs/clients/api/model/ExternalPrincipal.java
+src/main/java/io/lakefs/clients/api/model/ExternalPrincipalCreation.java
+src/main/java/io/lakefs/clients/api/model/ExternalPrincipalList.java
 src/main/java/io/lakefs/clients/api/model/FindMergeBaseResult.java
 src/main/java/io/lakefs/clients/api/model/GarbageCollectionConfig.java
 src/main/java/io/lakefs/clients/api/model/GarbageCollectionPrepareResponse.java
@@ -255,6 +263,7 @@ src/test/java/io/lakefs/clients/api/BranchesApiTest.java
 src/test/java/io/lakefs/clients/api/CommitsApiTest.java
 src/test/java/io/lakefs/clients/api/ConfigApiTest.java
 src/test/java/io/lakefs/clients/api/ExperimentalApiTest.java
+src/test/java/io/lakefs/clients/api/ExternalApiTest.java
 src/test/java/io/lakefs/clients/api/HealthCheckApiTest.java
 src/test/java/io/lakefs/clients/api/ImportApiTest.java
 src/test/java/io/lakefs/clients/api/InternalApiTest.java
@@ -289,6 +298,9 @@ src/test/java/io/lakefs/clients/api/model/DiffListTest.java
 src/test/java/io/lakefs/clients/api/model/DiffTest.java
 src/test/java/io/lakefs/clients/api/model/ErrorNoACLTest.java
 src/test/java/io/lakefs/clients/api/model/ErrorTest.java
+src/test/java/io/lakefs/clients/api/model/ExternalPrincipalCreationTest.java
+src/test/java/io/lakefs/clients/api/model/ExternalPrincipalListTest.java
+src/test/java/io/lakefs/clients/api/model/ExternalPrincipalTest.java
 src/test/java/io/lakefs/clients/api/model/FindMergeBaseResultTest.java
 src/test/java/io/lakefs/clients/api/model/GarbageCollectionConfigTest.java
 src/test/java/io/lakefs/clients/api/model/GarbageCollectionPrepareResponseTest.java

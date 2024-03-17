@@ -20,6 +20,7 @@ from lakefs_client.api.branches_api import BranchesApi
 from lakefs_client.api.commits_api import CommitsApi
 from lakefs_client.api.config_api import ConfigApi
 from lakefs_client.api.experimental_api import ExperimentalApi
+from lakefs_client.api.external_api import ExternalApi
 from lakefs_client.api.health_check_api import HealthCheckApi
 from lakefs_client.api.import_api import ImportApi
 from lakefs_client.api.internal_api import InternalApi

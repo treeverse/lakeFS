@@ -33,6 +33,11 @@ docs/DiffList.md
 docs/Error.md
 docs/ErrorNoACL.md
 docs/ExperimentalApi.md
+docs/ExternalApi.md
+docs/ExternalPrincipal.md
+docs/ExternalPrincipalCreation.md
+docs/ExternalPrincipalList.md
+docs/ExternalPrincipalSettings.md
 docs/FindMergeBaseResult.md
 docs/GarbageCollectionConfig.md
 docs/GarbageCollectionPrepareResponse.md
@@ -122,6 +127,7 @@ lakefs_client/api/branches_api.py
 lakefs_client/api/commits_api.py
 lakefs_client/api/config_api.py
 lakefs_client/api/experimental_api.py
+lakefs_client/api/external_api.py
 lakefs_client/api/health_check_api.py
 lakefs_client/api/import_api.py
 lakefs_client/api/internal_api.py
@@ -162,6 +168,10 @@ lakefs_client/model/diff.py
 lakefs_client/model/diff_list.py
 lakefs_client/model/error.py
 lakefs_client/model/error_no_acl.py
+lakefs_client/model/external_principal.py
+lakefs_client/model/external_principal_creation.py
+lakefs_client/model/external_principal_list.py
+lakefs_client/model/external_principal_settings.py
 lakefs_client/model/find_merge_base_result.py
 lakefs_client/model/garbage_collection_config.py
 lakefs_client/model/garbage_collection_prepare_response.py
@@ -272,6 +282,11 @@ test/test_diff_list.py
 test/test_error.py
 test/test_error_no_acl.py
 test/test_experimental_api.py
+test/test_external_api.py
+test/test_external_principal.py
+test/test_external_principal_creation.py
+test/test_external_principal_list.py
+test/test_external_principal_settings.py
 test/test_find_merge_base_result.py
 test/test_garbage_collection_config.py
 test/test_garbage_collection_prepare_response.py
