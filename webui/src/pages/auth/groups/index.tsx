@@ -106,7 +106,7 @@ const GroupsContainer = () => {
     const lc = useLoginConfigContext();
     const simplified = lc.RBAC === 'simplified';
     const { results, loading, error, nextPage } =  useAPIWithPagination(async () => {
-        const groups = await auth.listGroups(after);
+        const groups = await auth.listGroups("", after);
         const enrichedResults = await Promise.all(groups?.results.map(async group => ({...group, acl: simplified && await getACLMaybe(group.id)})));
         return {...groups, results: enrichedResults};
     }, [after, refresh, lc.RBAC]);
