@@ -19,7 +19,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/params"
 )
 
-const cacheDirName = "_lakefs_cache"
+const CacheDirName = "_lakefs_cache"
 
 type Walker struct {
 	mark            block.Mark
@@ -33,7 +33,7 @@ func NewLocalWalker(params params.Local) *Walker {
 	// without Path, we do not keep cache - will make walker very slow
 	var cacheLocation string
 	if params.Path != "" {
-		cacheLocation = filepath.Join(params.Path, cacheDirName)
+		cacheLocation = filepath.Join(params.Path, CacheDirName)
 	}
 	return &Walker{
 		mark:            block.Mark{HasMore: true},

@@ -3,8 +3,11 @@ package local
 import (
 	"context"
 	"fmt"
-	"io/fs"
+	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/local"
 	"net/http"
+	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -194,14 +197,19 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Change
 		currentRemoteFile apigen.ObjectStats
 		hasMore           bool
 	)
-	err := filepath.Walk(rightPath, func(path string, info fs.FileInfo, err error) error {
+	adapter, err := local.NewAdapter(rightPath, local.WithRemoveEmptyDir(false))
+	uri, err := url.Parse("local://" + rightPath)
+	reader, err := adapter.GetWalker(uri)
+	err = reader.Walk(context.Background(), uri, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
+		info, err := os.Stat(e.FullKey)
 		if err != nil {
 			return err
 		}
-		if info.IsDir() || diffShouldIgnore(info.Name()) {
+		if info.IsDir() || diffShouldIgnore(info.Name()) || strings.HasPrefix(e.RelativeKey, local.CacheDirName) {
 			return nil
 		}
-		localPath := strings.TrimPrefix(path, rightPath)
+		filePath := e.RelativeKey
+		localPath := strings.TrimPrefix(filePath, rightPath)
 		localPath = strings.TrimPrefix(localPath, string(filepath.Separator))
 		localPath = filepath.ToSlash(localPath) // normalize to use "/" always
 
