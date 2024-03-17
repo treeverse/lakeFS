@@ -11,7 +11,7 @@ import (
 )
 
 func TestMemKV(t *testing.T) {
-	kvtest.DriverTest(t, func(t testing.TB, ctx context.Context) kv.Store {
+	kvtest.RunDriverTests(t, func(t testing.TB, ctx context.Context) kv.Store {
 		t.Helper()
 		store, err := kv.Open(ctx, kvparams.Config{
 			Type: mem.DriverName,

@@ -18,7 +18,7 @@ func TestPostgresKV(t *testing.T) {
 	databaseURI, cleanup := runDBInstance(pool, testutil.UniqueKVTableName())
 	t.Cleanup(cleanup)
 
-	kvtest.DriverTest(t, func(t testing.TB, ctx context.Context) kv.Store {
+	kvtest.RunDriverTests(t, func(t testing.TB, ctx context.Context) kv.Store {
 		t.Helper()
 
 		conn, err := pgx.Connect(ctx, databaseURI)
