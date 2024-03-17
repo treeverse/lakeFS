@@ -3,8 +3,6 @@ package local
 import (
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/local"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,6 +11,8 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -198,8 +198,17 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Change
 		hasMore           bool
 	)
 	adapter, err := local.NewAdapter(rightPath, local.WithRemoveEmptyDir(false))
+	if err != nil {
+		return nil, err
+	}
 	uri, err := url.Parse("local://" + rightPath)
+	if err != nil {
+		return nil, err
+	}
 	reader, err := adapter.GetWalker(uri)
+	if err != nil {
+		return nil, err
+	}
 	err = reader.Walk(context.Background(), uri, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
 		info, err := os.Stat(e.FullKey)
 		if err != nil {

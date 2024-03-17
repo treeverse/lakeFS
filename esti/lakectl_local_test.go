@@ -382,7 +382,6 @@ func TestLakectlLocal_commit(t *testing.T) {
 		"ro_1k.1",
 		"ro_1k.2",
 		"ro_1k.3",
-		prefix + "-a/1.png",
 		prefix + "/1.png",
 		prefix + "/2.png",
 		prefix + "/3.png",
@@ -438,12 +437,15 @@ func TestLakectlLocal_commit(t *testing.T) {
 			presign := fmt.Sprintf(" --pre-sign=%v ", tt.presign)
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+presign+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
-			//relPath, err := filepath.Rel(tmpDir, dataDir)
-			//require.NoError(t, err)
-
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
 
 			// Modify local folder - add and remove files
+			os.MkdirAll(filepath.Join(dataDir, "subdir"), os.ModePerm)
+			os.MkdirAll(filepath.Join(dataDir, "subdir-a"), os.ModePerm)
+			fd, err = os.Create(filepath.Join(dataDir, "subdir", "test.txt"))
+			require.NoError(t, err)
+			fd, err = os.Create(filepath.Join(dataDir, "subdir-a", "test.txt"))
+			require.NoError(t, err)
 			fd, err = os.Create(filepath.Join(dataDir, "test.txt"))
 			require.NoError(t, err)
 			require.NoError(t, fd.Close())
