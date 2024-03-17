@@ -22,6 +22,9 @@ import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.CurrentUser;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.ErrorNoACL;
+import io.lakefs.clients.api.model.ExternalPrincipal;
+import io.lakefs.clients.api.model.ExternalPrincipalCreation;
+import io.lakefs.clients.api.model.ExternalPrincipalList;
 import io.lakefs.clients.api.model.Group;
 import io.lakefs.clients.api.model.GroupCreation;
 import io.lakefs.clients.api.model.GroupList;
@@ -157,6 +160,23 @@ public class AuthApiTest {
     }
     
     /**
+     * attach external principal to user
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void createUserExternalPrincipalTest() throws ApiException {
+        String userId = null;
+        String principalId = null;
+        ExternalPrincipalCreation externalPrincipalCreation = null;
+                api.createUserExternalPrincipal(userId, principalId, externalPrincipalCreation);
+        // TODO: test validations
+    }
+    
+    /**
      * delete credentials
      *
      * 
@@ -230,6 +250,22 @@ public class AuthApiTest {
     public void deleteUserTest() throws ApiException {
         String userId = null;
                 api.deleteUser(userId);
+        // TODO: test validations
+    }
+    
+    /**
+     * delete external principal from user
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void deleteUserExternalPrincipalTest() throws ApiException {
+        String userId = null;
+        String principalId = null;
+                api.deleteUserExternalPrincipal(userId, principalId);
         // TODO: test validations
     }
     
@@ -356,6 +392,22 @@ public class AuthApiTest {
     }
     
     /**
+     * get external principal of a user
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void getUserExternalPrincipalTest() throws ApiException {
+        String userId = null;
+        String principalId = null;
+                ExternalPrincipal response = api.getUserExternalPrincipal(userId, principalId);
+        // TODO: test validations
+    }
+    
+    /**
      * list group members
      *
      * 
@@ -440,6 +492,24 @@ public class AuthApiTest {
         String after = null;
         Integer amount = null;
                 CredentialsList response = api.listUserCredentials(userId, prefix, after, amount);
+        // TODO: test validations
+    }
+    
+    /**
+     * list user external policies attached to a user
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void listUserExternalPrincipalsTest() throws ApiException {
+        String userId = null;
+        String prefix = null;
+        String after = null;
+        Integer amount = null;
+                ExternalPrincipalList response = api.listUserExternalPrincipals(userId, prefix, after, amount);
         // TODO: test validations
     }
     

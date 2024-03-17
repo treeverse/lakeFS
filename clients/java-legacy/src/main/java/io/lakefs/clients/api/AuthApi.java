@@ -35,6 +35,9 @@ import io.lakefs.clients.api.model.CredentialsWithSecret;
 import io.lakefs.clients.api.model.CurrentUser;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.ErrorNoACL;
+import io.lakefs.clients.api.model.ExternalPrincipal;
+import io.lakefs.clients.api.model.ExternalPrincipalCreation;
+import io.lakefs.clients.api.model.ExternalPrincipalList;
 import io.lakefs.clients.api.model.Group;
 import io.lakefs.clients.api.model.GroupCreation;
 import io.lakefs.clients.api.model.GroupList;
@@ -980,6 +983,153 @@ public class AuthApi {
         return localVarCall;
     }
     /**
+     * Build call for createUserExternalPrincipal
+     * @param userId  (required)
+     * @param principalId  (required)
+     * @param externalPrincipalCreation  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call createUserExternalPrincipalCall(String userId, String principalId, ExternalPrincipalCreation externalPrincipalCreation, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = externalPrincipalCreation;
+
+        // create path and map variables
+        String localVarPath = "/auth/users/{userId}/external/principal/{principalId}"
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()))
+            .replaceAll("\\{" + "principalId" + "\\}", localVarApiClient.escapeString(principalId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call createUserExternalPrincipalValidateBeforeCall(String userId, String principalId, ExternalPrincipalCreation externalPrincipalCreation, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'userId' is set
+        if (userId == null) {
+            throw new ApiException("Missing the required parameter 'userId' when calling createUserExternalPrincipal(Async)");
+        }
+        
+        // verify the required parameter 'principalId' is set
+        if (principalId == null) {
+            throw new ApiException("Missing the required parameter 'principalId' when calling createUserExternalPrincipal(Async)");
+        }
+        
+        // verify the required parameter 'externalPrincipalCreation' is set
+        if (externalPrincipalCreation == null) {
+            throw new ApiException("Missing the required parameter 'externalPrincipalCreation' when calling createUserExternalPrincipal(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = createUserExternalPrincipalCall(userId, principalId, externalPrincipalCreation, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * attach external principal to user
+     * 
+     * @param userId  (required)
+     * @param principalId  (required)
+     * @param externalPrincipalCreation  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public void createUserExternalPrincipal(String userId, String principalId, ExternalPrincipalCreation externalPrincipalCreation) throws ApiException {
+        createUserExternalPrincipalWithHttpInfo(userId, principalId, externalPrincipalCreation);
+    }
+
+    /**
+     * attach external principal to user
+     * 
+     * @param userId  (required)
+     * @param principalId  (required)
+     * @param externalPrincipalCreation  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> createUserExternalPrincipalWithHttpInfo(String userId, String principalId, ExternalPrincipalCreation externalPrincipalCreation) throws ApiException {
+        okhttp3.Call localVarCall = createUserExternalPrincipalValidateBeforeCall(userId, principalId, externalPrincipalCreation, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     * attach external principal to user (asynchronously)
+     * 
+     * @param userId  (required)
+     * @param principalId  (required)
+     * @param externalPrincipalCreation  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> external principal attached successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call createUserExternalPrincipalAsync(String userId, String principalId, ExternalPrincipalCreation externalPrincipalCreation, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = createUserExternalPrincipalValidateBeforeCall(userId, principalId, externalPrincipalCreation, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+    /**
      * Build call for deleteCredentials
      * @param userId  (required)
      * @param accessKeyId  (required)
@@ -1616,6 +1766,140 @@ public class AuthApi {
     public okhttp3.Call deleteUserAsync(String userId, final ApiCallback<Void> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = deleteUserValidateBeforeCall(userId, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for deleteUserExternalPrincipal
+     * @param userId  (required)
+     * @param principalId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call deleteUserExternalPrincipalCall(String userId, String principalId, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/auth/users/{userId}/external/principal/{principalId}"
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()))
+            .replaceAll("\\{" + "principalId" + "\\}", localVarApiClient.escapeString(principalId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call deleteUserExternalPrincipalValidateBeforeCall(String userId, String principalId, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'userId' is set
+        if (userId == null) {
+            throw new ApiException("Missing the required parameter 'userId' when calling deleteUserExternalPrincipal(Async)");
+        }
+        
+        // verify the required parameter 'principalId' is set
+        if (principalId == null) {
+            throw new ApiException("Missing the required parameter 'principalId' when calling deleteUserExternalPrincipal(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = deleteUserExternalPrincipalCall(userId, principalId, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * delete external principal from user
+     * 
+     * @param userId  (required)
+     * @param principalId  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public void deleteUserExternalPrincipal(String userId, String principalId) throws ApiException {
+        deleteUserExternalPrincipalWithHttpInfo(userId, principalId);
+    }
+
+    /**
+     * delete external principal from user
+     * 
+     * @param userId  (required)
+     * @param principalId  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> deleteUserExternalPrincipalWithHttpInfo(String userId, String principalId) throws ApiException {
+        okhttp3.Call localVarCall = deleteUserExternalPrincipalValidateBeforeCall(userId, principalId, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     * delete external principal from user (asynchronously)
+     * 
+     * @param userId  (required)
+     * @param principalId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call deleteUserExternalPrincipalAsync(String userId, String principalId, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = deleteUserExternalPrincipalValidateBeforeCall(userId, principalId, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
@@ -2640,6 +2924,144 @@ public class AuthApi {
         return localVarCall;
     }
     /**
+     * Build call for getUserExternalPrincipal
+     * @param userId  (required)
+     * @param principalId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call getUserExternalPrincipalCall(String userId, String principalId, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/auth/users/{userId}/external/principal/{principalId}"
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()))
+            .replaceAll("\\{" + "principalId" + "\\}", localVarApiClient.escapeString(principalId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call getUserExternalPrincipalValidateBeforeCall(String userId, String principalId, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'userId' is set
+        if (userId == null) {
+            throw new ApiException("Missing the required parameter 'userId' when calling getUserExternalPrincipal(Async)");
+        }
+        
+        // verify the required parameter 'principalId' is set
+        if (principalId == null) {
+            throw new ApiException("Missing the required parameter 'principalId' when calling getUserExternalPrincipal(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = getUserExternalPrincipalCall(userId, principalId, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * get external principal of a user
+     * 
+     * @param userId  (required)
+     * @param principalId  (required)
+     * @return ExternalPrincipal
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ExternalPrincipal getUserExternalPrincipal(String userId, String principalId) throws ApiException {
+        ApiResponse<ExternalPrincipal> localVarResp = getUserExternalPrincipalWithHttpInfo(userId, principalId);
+        return localVarResp.getData();
+    }
+
+    /**
+     * get external principal of a user
+     * 
+     * @param userId  (required)
+     * @param principalId  (required)
+     * @return ApiResponse&lt;ExternalPrincipal&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<ExternalPrincipal> getUserExternalPrincipalWithHttpInfo(String userId, String principalId) throws ApiException {
+        okhttp3.Call localVarCall = getUserExternalPrincipalValidateBeforeCall(userId, principalId, null);
+        Type localVarReturnType = new TypeToken<ExternalPrincipal>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * get external principal of a user (asynchronously)
+     * 
+     * @param userId  (required)
+     * @param principalId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call getUserExternalPrincipalAsync(String userId, String principalId, final ApiCallback<ExternalPrincipal> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = getUserExternalPrincipalValidateBeforeCall(userId, principalId, _callback);
+        Type localVarReturnType = new TypeToken<ExternalPrincipal>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
      * Build call for listGroupMembers
      * @param groupId  (required)
      * @param prefix return items prefixed with this value (optional)
@@ -3364,6 +3786,158 @@ public class AuthApi {
 
         okhttp3.Call localVarCall = listUserCredentialsValidateBeforeCall(userId, prefix, after, amount, _callback);
         Type localVarReturnType = new TypeToken<CredentialsList>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for listUserExternalPrincipals
+     * @param userId  (required)
+     * @param prefix return items prefixed with this value (optional)
+     * @param after return items after this value (optional)
+     * @param amount how many items to return (optional, default to 100)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call listUserExternalPrincipalsCall(String userId, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/auth/users/{userId}/external/principals"
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (prefix != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("prefix", prefix));
+        }
+
+        if (after != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("after", after));
+        }
+
+        if (amount != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("amount", amount));
+        }
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call listUserExternalPrincipalsValidateBeforeCall(String userId, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'userId' is set
+        if (userId == null) {
+            throw new ApiException("Missing the required parameter 'userId' when calling listUserExternalPrincipals(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = listUserExternalPrincipalsCall(userId, prefix, after, amount, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * list user external policies attached to a user
+     * 
+     * @param userId  (required)
+     * @param prefix return items prefixed with this value (optional)
+     * @param after return items after this value (optional)
+     * @param amount how many items to return (optional, default to 100)
+     * @return ExternalPrincipalList
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ExternalPrincipalList listUserExternalPrincipals(String userId, String prefix, String after, Integer amount) throws ApiException {
+        ApiResponse<ExternalPrincipalList> localVarResp = listUserExternalPrincipalsWithHttpInfo(userId, prefix, after, amount);
+        return localVarResp.getData();
+    }
+
+    /**
+     * list user external policies attached to a user
+     * 
+     * @param userId  (required)
+     * @param prefix return items prefixed with this value (optional)
+     * @param after return items after this value (optional)
+     * @param amount how many items to return (optional, default to 100)
+     * @return ApiResponse&lt;ExternalPrincipalList&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<ExternalPrincipalList> listUserExternalPrincipalsWithHttpInfo(String userId, String prefix, String after, Integer amount) throws ApiException {
+        okhttp3.Call localVarCall = listUserExternalPrincipalsValidateBeforeCall(userId, prefix, after, amount, null);
+        Type localVarReturnType = new TypeToken<ExternalPrincipalList>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * list user external policies attached to a user (asynchronously)
+     * 
+     * @param userId  (required)
+     * @param prefix return items prefixed with this value (optional)
+     * @param after return items after this value (optional)
+     * @param amount how many items to return (optional, default to 100)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call listUserExternalPrincipalsAsync(String userId, String prefix, String after, Integer amount, final ApiCallback<ExternalPrincipalList> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = listUserExternalPrincipalsValidateBeforeCall(userId, prefix, after, amount, _callback);
+        Type localVarReturnType = new TypeToken<ExternalPrincipalList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }

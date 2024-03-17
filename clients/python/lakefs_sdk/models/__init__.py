@@ -40,6 +40,9 @@ from lakefs_sdk.models.diff import Diff
 from lakefs_sdk.models.diff_list import DiffList
 from lakefs_sdk.models.error import Error
 from lakefs_sdk.models.error_no_acl import ErrorNoACL
+from lakefs_sdk.models.external_principal import ExternalPrincipal
+from lakefs_sdk.models.external_principal_creation import ExternalPrincipalCreation
+from lakefs_sdk.models.external_principal_list import ExternalPrincipalList
 from lakefs_sdk.models.find_merge_base_result import FindMergeBaseResult
 from lakefs_sdk.models.garbage_collection_config import GarbageCollectionConfig
 from lakefs_sdk.models.garbage_collection_prepare_response import GarbageCollectionPrepareResponse

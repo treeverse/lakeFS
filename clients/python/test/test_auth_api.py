@@ -78,6 +78,13 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_create_user_external_principal(self):
+        """Test case for create_user_external_principal
+
+        attach external principal to user  # noqa: E501
+        """
+        pass
+
     def test_delete_credentials(self):
         """Test case for delete_credentials
 
@@ -110,6 +117,13 @@ class TestAuthApi(unittest.TestCase):
         """Test case for delete_user
 
         delete user  # noqa: E501
+        """
+        pass
+
+    def test_delete_user_external_principal(self):
+        """Test case for delete_user_external_principal
+
+        delete external principal from user  # noqa: E501
         """
         pass
 
@@ -169,6 +183,13 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_get_user_external_principal(self):
+        """Test case for get_user_external_principal
+
+        get external principal of a user  # noqa: E501
+        """
+        pass
+
     def test_list_group_members(self):
         """Test case for list_group_members
 
@@ -201,6 +222,13 @@ class TestAuthApi(unittest.TestCase):
         """Test case for list_user_credentials
 
         list user credentials  # noqa: E501
+        """
+        pass
+
+    def test_list_user_external_principals(self):
+        """Test case for list_user_external_principals
+
+        list user external policies attached to a user  # noqa: E501
         """
         pass
 

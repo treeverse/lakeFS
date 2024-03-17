@@ -1378,6 +1378,233 @@ paths:
       tags:
       - auth
       x-accepts: application/json
+  /auth/users/{userId}/external/principal/{principalId}:
+    delete:
+      operationId: deleteUserExternalPrincipal
+      parameters:
+      - explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: principalId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: external principal detached successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: delete external principal from user
+      tags:
+      - auth
+      - external
+      - experimental
+      x-accepts: application/json
+    get:
+      operationId: getUserExternalPrincipal
+      parameters:
+      - explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: principalId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalPrincipal'
+          description: external principal
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get external principal of a user
+      tags:
+      - auth
+      - external
+      - experimental
+      x-accepts: application/json
+    post:
+      operationId: createUserExternalPrincipal
+      parameters:
+      - explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: principalId
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalPrincipalCreation'
+        required: true
+      responses:
+        "201":
+          description: external principal attached successfully
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Conflicts With Target
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: attach external principal to user
+      tags:
+      - auth
+      - external
+      - experimental
+      x-contentType: application/json
+      x-accepts: application/json
+  /auth/users/{userId}/external/principals:
+    get:
+      operationId: listUserExternalPrincipals
+      parameters:
+      - explode: false
+        in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: return items prefixed with this value
+        explode: true
+        in: query
+        name: prefix
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: return items after this value
+        explode: true
+        in: query
+        name: after
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: how many items to return
+        explode: true
+        in: query
+        name: amount
+        required: false
+        schema:
+          default: 100
+          maximum: 1000
+          minimum: -1
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalPrincipalList'
+          description: external principals list
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: list user external policies attached to a user
+      tags:
+      - auth
+      - external
+      - experimental
+      x-accepts: application/json
   /auth/groups/{groupId}/policies:
     get:
       operationId: listGroupPolicies
@@ -8735,6 +8962,74 @@ components:
       required:
       - installation_id
       - reports
+      type: object
+    ExternalPrincipalList:
+      example:
+        pagination:
+          max_per_page: 0
+          has_more: true
+          next_offset: next_offset
+          results: 0
+        results:
+        - settings:
+          - null
+          - null
+          user_id: user_id
+          id: id
+        - settings:
+          - null
+          - null
+          user_id: user_id
+          id: id
+      properties:
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        results:
+          items:
+            $ref: '#/components/schemas/ExternalPrincipal'
+          type: array
+      required:
+      - pagination
+      - results
+      type: object
+    ExternalPrincipalSettings:
+      additionalProperties:
+        type: string
+      description: Additional settings to be consumed by the remote authenticator
+      type: object
+    ExternalPrincipalCreation:
+      example:
+        settings:
+        - null
+        - null
+      properties:
+        settings:
+          items:
+            $ref: '#/components/schemas/ExternalPrincipalSettings'
+          type: array
+      type: object
+    ExternalPrincipal:
+      example:
+        settings:
+        - null
+        - null
+        user_id: user_id
+        id: id
+      properties:
+        id:
+          description: A unique identifier for the external principal i.e aws:sts::123:assumed-role/role-name
+          type: string
+        user_id:
+          description: |
+            lakeFS user ID to associate with an external principal.
+          type: string
+        settings:
+          items:
+            $ref: '#/components/schemas/ExternalPrincipalSettings'
+          type: array
+      required:
+      - id
+      - user_id
       type: object
     inline_object:
       properties:

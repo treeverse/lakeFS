@@ -1633,7 +1633,47 @@ components:
         - installation_id
         - reports
 
-
+    ExternalPrincipalList: 
+      type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalPrincipal"
+    ExternalPrincipalSettings:
+      type: object
+      additionalProperties:
+        type: string
+      description: Additional settings to be consumed by the remote authenticator
+    ExternalPrincipalCreation:
+      type: object
+      properties:
+        settings:
+          type: object
+          items:
+            $ref: "#/components/schemas/ExternalPrincipalSettings"
+    ExternalPrincipal:
+      type: object
+      required:
+        - user_id
+        - id
+      properties:
+        id:
+          type: string
+          description: A unique identifier for the external principal i.e aws:sts::123:assumed-role/role-name
+        user_id:
+          type: string
+          description: |
+            lakeFS user ID to associate with an external principal.
+        settings:
+          type: object
+          items:
+            $ref: "#/components/schemas/ExternalPrincipalSettings"
 paths:
   /setup_comm_prefs:
     post:
@@ -2394,6 +2434,118 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /auth/users/{userId}/external/principal/{principalId}:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: principalId
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - auth
+        - external
+        - experimental
+      operationId: createUserExternalPrincipal
+      summary: attach external principal to user
+      requestBody: 
+        required: true
+        content: 
+          application/json: 
+            schema: 
+              $ref: "#/components/schemas/ExternalPrincipalCreation"
+      responses:
+        201:
+          description: external principal attached successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - auth
+        - external
+        - experimental
+      operationId: deleteUserExternalPrincipal
+      summary: delete external principal from user
+      responses:
+        204:
+          description: external principal detached successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+    get:
+      tags:
+        - auth
+        - external
+        - experimental
+      operationId: getUserExternalPrincipal
+      summary: get external principal of a user
+      responses:
+        200:
+          description: external principal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalPrincipal"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /auth/users/{userId}/external/principals:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+        - external
+        - experimental
+      parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+      operationId: listUserExternalPrincipals
+      summary: list user external policies attached to a user
+      responses:
+        200:
+          description: external principals list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalPrincipalList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
   /auth/groups/{groupId}/policies:
     parameters:
       - in: path
@@ -2523,7 +2675,7 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-
+        
   /repositories:
     get:
       tags:

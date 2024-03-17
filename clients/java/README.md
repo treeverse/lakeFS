@@ -154,11 +154,13 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**createGroup**](docs/AuthApi.md#createGroup) | **POST** /auth/groups | create group
 *AuthApi* | [**createPolicy**](docs/AuthApi.md#createPolicy) | **POST** /auth/policies | create policy
 *AuthApi* | [**createUser**](docs/AuthApi.md#createUser) | **POST** /auth/users | create user
+*AuthApi* | [**createUserExternalPrincipal**](docs/AuthApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principal/{principalId} | attach external principal to user
 *AuthApi* | [**deleteCredentials**](docs/AuthApi.md#deleteCredentials) | **DELETE** /auth/users/{userId}/credentials/{accessKeyId} | delete credentials
 *AuthApi* | [**deleteGroup**](docs/AuthApi.md#deleteGroup) | **DELETE** /auth/groups/{groupId} | delete group
 *AuthApi* | [**deleteGroupMembership**](docs/AuthApi.md#deleteGroupMembership) | **DELETE** /auth/groups/{groupId}/members/{userId} | delete group membership
 *AuthApi* | [**deletePolicy**](docs/AuthApi.md#deletePolicy) | **DELETE** /auth/policies/{policyId} | delete policy
 *AuthApi* | [**deleteUser**](docs/AuthApi.md#deleteUser) | **DELETE** /auth/users/{userId} | delete user
+*AuthApi* | [**deleteUserExternalPrincipal**](docs/AuthApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principal/{principalId} | delete external principal from user
 *AuthApi* | [**detachPolicyFromGroup**](docs/AuthApi.md#detachPolicyFromGroup) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 *AuthApi* | [**detachPolicyFromUser**](docs/AuthApi.md#detachPolicyFromUser) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
 *AuthApi* | [**getCredentials**](docs/AuthApi.md#getCredentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
@@ -167,11 +169,13 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**getGroupACL**](docs/AuthApi.md#getGroupACL) | **GET** /auth/groups/{groupId}/acl | get ACL of group
 *AuthApi* | [**getPolicy**](docs/AuthApi.md#getPolicy) | **GET** /auth/policies/{policyId} | get policy
 *AuthApi* | [**getUser**](docs/AuthApi.md#getUser) | **GET** /auth/users/{userId} | get user
+*AuthApi* | [**getUserExternalPrincipal**](docs/AuthApi.md#getUserExternalPrincipal) | **GET** /auth/users/{userId}/external/principal/{principalId} | get external principal of a user
 *AuthApi* | [**listGroupMembers**](docs/AuthApi.md#listGroupMembers) | **GET** /auth/groups/{groupId}/members | list group members
 *AuthApi* | [**listGroupPolicies**](docs/AuthApi.md#listGroupPolicies) | **GET** /auth/groups/{groupId}/policies | list group policies
 *AuthApi* | [**listGroups**](docs/AuthApi.md#listGroups) | **GET** /auth/groups | list groups
 *AuthApi* | [**listPolicies**](docs/AuthApi.md#listPolicies) | **GET** /auth/policies | list policies
 *AuthApi* | [**listUserCredentials**](docs/AuthApi.md#listUserCredentials) | **GET** /auth/users/{userId}/credentials | list user credentials
+*AuthApi* | [**listUserExternalPrincipals**](docs/AuthApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user
 *AuthApi* | [**listUserGroups**](docs/AuthApi.md#listUserGroups) | **GET** /auth/users/{userId}/groups | list user groups
 *AuthApi* | [**listUserPolicies**](docs/AuthApi.md#listUserPolicies) | **GET** /auth/users/{userId}/policies | list user policies
 *AuthApi* | [**listUsers**](docs/AuthApi.md#listUsers) | **GET** /auth/users | list users
@@ -192,7 +196,15 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**abortPresignMultipartUpload**](docs/ExperimentalApi.md#abortPresignMultipartUpload) | **DELETE** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Abort a presign multipart upload
 *ExperimentalApi* | [**completePresignMultipartUpload**](docs/ExperimentalApi.md#completePresignMultipartUpload) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Complete a presign multipart upload request
 *ExperimentalApi* | [**createPresignMultipartUpload**](docs/ExperimentalApi.md#createPresignMultipartUpload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
+*ExperimentalApi* | [**createUserExternalPrincipal**](docs/ExperimentalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principal/{principalId} | attach external principal to user
+*ExperimentalApi* | [**deleteUserExternalPrincipal**](docs/ExperimentalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principal/{principalId} | delete external principal from user
+*ExperimentalApi* | [**getUserExternalPrincipal**](docs/ExperimentalApi.md#getUserExternalPrincipal) | **GET** /auth/users/{userId}/external/principal/{principalId} | get external principal of a user
 *ExperimentalApi* | [**hardResetBranch**](docs/ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
+*ExperimentalApi* | [**listUserExternalPrincipals**](docs/ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user
+*ExternalApi* | [**createUserExternalPrincipal**](docs/ExternalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principal/{principalId} | attach external principal to user
+*ExternalApi* | [**deleteUserExternalPrincipal**](docs/ExternalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principal/{principalId} | delete external principal from user
+*ExternalApi* | [**getUserExternalPrincipal**](docs/ExternalApi.md#getUserExternalPrincipal) | **GET** /auth/users/{userId}/external/principal/{principalId} | get external principal of a user
+*ExternalApi* | [**listUserExternalPrincipals**](docs/ExternalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user
 *HealthCheckApi* | [**healthCheck**](docs/HealthCheckApi.md#healthCheck) | **GET** /healthcheck | 
 *ImportApi* | [**importCancel**](docs/ImportApi.md#importCancel) | **DELETE** /repositories/{repository}/branches/{branch}/import | cancel ongoing import
 *ImportApi* | [**importStart**](docs/ImportApi.md#importStart) | **POST** /repositories/{repository}/branches/{branch}/import | import data from object store
@@ -288,6 +300,9 @@ Class | Method | HTTP request | Description
  - [DiffList](docs/DiffList.md)
  - [Error](docs/Error.md)
  - [ErrorNoACL](docs/ErrorNoACL.md)
+ - [ExternalPrincipal](docs/ExternalPrincipal.md)
+ - [ExternalPrincipalCreation](docs/ExternalPrincipalCreation.md)
+ - [ExternalPrincipalList](docs/ExternalPrincipalList.md)
  - [FindMergeBaseResult](docs/FindMergeBaseResult.md)
  - [GarbageCollectionConfig](docs/GarbageCollectionConfig.md)
  - [GarbageCollectionPrepareResponse](docs/GarbageCollectionPrepareResponse.md)

@@ -34,6 +34,10 @@ from lakefs_client.model.diff import Diff
 from lakefs_client.model.diff_list import DiffList
 from lakefs_client.model.error import Error
 from lakefs_client.model.error_no_acl import ErrorNoACL
+from lakefs_client.model.external_principal import ExternalPrincipal
+from lakefs_client.model.external_principal_creation import ExternalPrincipalCreation
+from lakefs_client.model.external_principal_list import ExternalPrincipalList
+from lakefs_client.model.external_principal_settings import ExternalPrincipalSettings
 from lakefs_client.model.find_merge_base_result import FindMergeBaseResult
 from lakefs_client.model.garbage_collection_config import GarbageCollectionConfig
 from lakefs_client.model.garbage_collection_prepare_response import GarbageCollectionPrepareResponse

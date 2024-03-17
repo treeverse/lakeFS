@@ -5234,3 +5234,126 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
+
+func (c *Controller) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.Request, body apigen.CreateUserExternalPrincipalJSONRequestBody, userID, principalID string) {
+	ctx := r.Context()
+	if c.isExternalPrincipalNotSupported(ctx) {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreateUserExternalPrincipalAction,
+			Resource: permissions.UserArn(userID),
+		},
+	}) {
+		return
+	}
+
+	c.LogAction(ctx, "create_user_external_principal", r, "", "", "")
+
+	err := c.Auth.CreateUserExternalPrincipal(ctx, userID, principalID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusCreated, nil)
+}
+
+func (c *Controller) DeleteUserExternalPrincipal(w http.ResponseWriter, r *http.Request, userID, principalID string) {
+	ctx := r.Context()
+	if c.isExternalPrincipalNotSupported(ctx) {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.DeleteUserExternalPrincipalAction,
+			Resource: permissions.UserArn(userID),
+		},
+	}) {
+		return
+	}
+	c.LogAction(ctx, "delete_user_external_principal", r, "", "", "")
+	err := c.Auth.DeleteUserExternalPrincipal(ctx, userID, principalID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+func (c *Controller) GetUserExternalPrincipal(w http.ResponseWriter, r *http.Request, userID, principalID string) {
+	ctx := r.Context()
+	if c.isExternalPrincipalNotSupported(ctx) {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadUserAction,
+			Resource: permissions.UserArn(userID),
+		},
+	}) {
+		return
+	}
+	c.LogAction(ctx, "get_user_external_principal", r, "", "", "")
+
+	principal, err := c.Auth.GetUserExternalPrincipal(ctx, userID, principalID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	response := apigen.ExternalPrincipal{
+		Id:     principal.ID,
+		UserId: principal.UserID,
+	}
+	writeResponse(w, r, http.StatusOK, response)
+}
+
+func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.Request, userID string, params apigen.ListUserExternalPrincipalsParams) {
+	ctx := r.Context()
+	if c.isExternalPrincipalNotSupported(ctx) {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadUserAction,
+			Resource: permissions.UserArn(userID),
+		},
+	}) {
+		return
+	}
+
+	c.LogAction(ctx, "list_user_external_principals", r, "", "", "")
+
+	principals, paginator, err := c.Auth.ListUserExternalPrincipals(ctx, userID, &model.PaginationParams{
+		Prefix: paginationPrefix(params.Prefix),
+		Amount: paginationAmount(params.Amount),
+		After:  paginationAfter(params.After),
+	})
+
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	response := apigen.ExternalPrincipalList{
+		Results: make([]apigen.ExternalPrincipal, len(principals)),
+		Pagination: apigen.Pagination{
+			HasMore:    paginator.NextPageToken != "",
+			NextOffset: paginator.NextPageToken,
+			Results:    paginator.Amount,
+		},
+	}
+
+	for i, p := range principals {
+		response.Results[i] = apigen.ExternalPrincipal{
+			Id:     p.ID,
+			UserId: p.UserID,
+		}
+	}
+	writeResponse(w, r, http.StatusOK, response)
+}
+
+func (c *Controller) isExternalPrincipalNotSupported(ctx context.Context) bool {
+	// if IsAuthUISimplified true then it means the user not using RBAC model
+	return c.Config.IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx)
+}
