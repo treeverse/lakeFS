@@ -2434,7 +2434,7 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /auth/users/{userId}/external/principal/{principalId}:
+  /auth/users/{userId}/external/principals/{principalId}:
     parameters:
       - in: path
         name: userId
