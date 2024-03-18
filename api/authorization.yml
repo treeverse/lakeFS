@@ -1206,36 +1206,6 @@ paths:
         420:
           description: too many requests
         default:
-          $ref: "#/components/responses/ServerError"
-
-  /auth/external/principals:
-    parameters:
-      - in: query
-        name: principalId
-        required: true
-        schema:
-          type: string
-    get:
-      tags:
-        - auth
-        - external
-        - experimental
-      operationId: getExternalPrincipal
-      summary: describe external principal by id 
-      responses:
-        200:
-          description: external principal
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ExternalPrincipal"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        420:
-          description: too many requests
-        default:
           $ref: "#/components/responses/ServerError"          
 
   /healthcheck:
