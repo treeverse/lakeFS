@@ -329,7 +329,6 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		if s.isSlowDownErr(err) {
 			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("put item: %w", kv.ErrSlowDown)
 			dynamoSlowdown.WithLabelValues(operation).Inc()
-
 		}
 		return fmt.Errorf("put item: %w", err)
 	}
