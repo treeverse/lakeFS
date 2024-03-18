@@ -556,6 +556,20 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	writeResponse(w, r, http.StatusOK, response)
 }
 
+func (c *Controller) STSLogin(w http.ResponseWriter, r *http.Request, body apigen.STSLoginJSONRequestBody) {
+	ctx := r.Context()
+	tokenData, err := c.Authentication.GetTokenDataBySTS(ctx, body.Code, body.RedirectUri, body.State)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	token, err := GenerateJWTLogin(c.Auth.SecretStore().SharedSecret(), tokenData.Subject, time.Now().Unix(), tokenData.ExpiresAtUnixTime)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusOK, token)
+}
+
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -2618,6 +2632,10 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, graveler.ErrPreconditionFailed):
 		log.Debug("Precondition failed")
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
+	case errors.Is(err, authentication.ErrNotImplemented):
+		cb(w, r, http.StatusNotImplemented, "Not implemented")
+	case errors.Is(err, authentication.ErrInvalidSTS):
+		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
 		cb(w, r, http.StatusInternalServerError, err)
