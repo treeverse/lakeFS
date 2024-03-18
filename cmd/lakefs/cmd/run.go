@@ -143,7 +143,7 @@ var runCmd = &cobra.Command{
 				logger.WithField("service", "auth_service"),
 			)
 		}
-		// initialize authenticaion service
+		// initialize authentication service
 		var authenticationService authentication.Service
 		if cfg.IsAuthenticationTypeAPI() {
 			authenticationService, err = authentication.NewAPIService(cfg.Auth.AuthenticationAPI.Endpoint, cfg.Auth.CookieAuthVerification.ValidateIDTokenClaims, logger.WithField("service", "authentication_api"))

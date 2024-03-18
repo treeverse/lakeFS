@@ -21,7 +21,6 @@ type DummyService struct{}
 
 func NewDummyService() *DummyService {
 	return &DummyService{}
-
 }
 func (d DummyService) GetTokenDataBySTS(ctx context.Context, code, redirectURI, state string) (*JWTTokenData, error) {
 	return nil, ErrNotImplemented
