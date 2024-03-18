@@ -197,7 +197,7 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Change
 		currentRemoteFile apigen.ObjectStats
 		hasMore           bool
 	)
-	adapter, err := local.NewAdapter(rightPath, local.WithRemoveEmptyDir(false))
+	adapter, err := local.NewAdapter(rightPath, local.WithRemoveEmptyDir(false), local.WithAllowedExternalPrefixes([]string{"/"}))
 	if err != nil {
 		return nil, err
 	}
