@@ -329,6 +329,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		if s.isSlowDownErr(err) {
 			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("put item: %w", kv.ErrSlowDown)
 			dynamoSlowdown.WithLabelValues(operation).Inc()
+
 		}
 		return fmt.Errorf("put item: %w", err)
 	}
@@ -583,8 +584,10 @@ func (s *Store) StopPeriodicCheck() {
 }
 
 func (s *Store) isSlowDownErr(err error) bool {
-	var errRequestLimitExceeded *types.RequestLimitExceeded
-	var errProvisionedThroughputExceededException *types.ProvisionedThroughputExceededException
-	var errThrottlingException *types.LimitExceededException
-	return errors.As(err, &errRequestLimitExceeded) || errors.As(err, &errProvisionedThroughputExceededException) || errors.As(err, &errThrottlingException)
+	for _, te := range retry.DefaultThrottles {
+		if te.IsErrorThrottle(err).Bool() {
+			return true
+		}
+	}
+	return false
 }
