@@ -150,6 +150,13 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_get_external_principal(self):
+        """Test case for get_external_principal
+
+        describe external principal by id  # noqa: E501
+        """
+        pass
+
     def test_get_group(self):
         """Test case for get_group
 
@@ -175,13 +182,6 @@ class TestAuthApi(unittest.TestCase):
         """Test case for get_user
 
         get user  # noqa: E501
-        """
-        pass
-
-    def test_get_user_external_principal(self):
-        """Test case for get_user_external_principal
-
-        get external principal of a user  # noqa: E501
         """
         pass
 

@@ -5235,7 +5235,7 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.Request, body apigen.CreateUserExternalPrincipalJSONRequestBody, userID, principalID string) {
+func (c *Controller) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.Request, body apigen.CreateUserExternalPrincipalJSONRequestBody, userID string, params apigen.CreateUserExternalPrincipalParams) {
 	ctx := r.Context()
 	if c.isExternalPrincipalNotSupported(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
@@ -5252,14 +5252,14 @@ func (c *Controller) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.
 
 	c.LogAction(ctx, "create_user_external_principal", r, "", "", "")
 
-	err := c.Auth.CreateUserExternalPrincipal(ctx, userID, principalID)
+	err := c.Auth.CreateUserExternalPrincipal(ctx, userID, params.PrincipalId)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 	writeResponse(w, r, http.StatusCreated, nil)
 }
 
-func (c *Controller) DeleteUserExternalPrincipal(w http.ResponseWriter, r *http.Request, userID, principalID string) {
+func (c *Controller) DeleteUserExternalPrincipal(w http.ResponseWriter, r *http.Request, userID string, params apigen.DeleteUserExternalPrincipalParams) {
 	ctx := r.Context()
 	if c.isExternalPrincipalNotSupported(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
@@ -5274,14 +5274,14 @@ func (c *Controller) DeleteUserExternalPrincipal(w http.ResponseWriter, r *http.
 		return
 	}
 	c.LogAction(ctx, "delete_user_external_principal", r, "", "", "")
-	err := c.Auth.DeleteUserExternalPrincipal(ctx, userID, principalID)
+	err := c.Auth.DeleteUserExternalPrincipal(ctx, userID, params.PrincipalId)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) GetUserExternalPrincipal(w http.ResponseWriter, r *http.Request, userID, principalID string) {
+func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request, params apigen.GetExternalPrincipalParams) {
 	ctx := r.Context()
 	if c.isExternalPrincipalNotSupported(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
@@ -5289,15 +5289,15 @@ func (c *Controller) GetUserExternalPrincipal(w http.ResponseWriter, r *http.Req
 	}
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.ReadUserAction,
-			Resource: permissions.UserArn(userID),
+			Action:   permissions.ReadExternalPrincipalAction,
+			Resource: permissions.ExternalPrincipalArn(params.PrincipalId),
 		},
 	}) {
 		return
 	}
-	c.LogAction(ctx, "get_user_external_principal", r, "", "", "")
+	c.LogAction(ctx, "get_external_principal", r, "", "", "")
 
-	principal, err := c.Auth.GetUserExternalPrincipal(ctx, userID, principalID)
+	principal, err := c.Auth.GetExternalPrincipal(ctx, params.PrincipalId)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

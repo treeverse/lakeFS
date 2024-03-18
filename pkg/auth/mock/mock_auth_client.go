@@ -237,7 +237,7 @@ func (mr *MockClientWithResponsesInterfaceMockRecorder) CreatePolicyWithResponse
 }
 
 // CreateUserExternalPrincipalWithResponse mocks base method.
-func (m *MockClientWithResponsesInterface) CreateUserExternalPrincipalWithResponse(arg0 context.Context, arg1, arg2 string, arg3 ...auth.RequestEditorFn) (*auth.CreateUserExternalPrincipalResponse, error) {
+func (m *MockClientWithResponsesInterface) CreateUserExternalPrincipalWithResponse(arg0 context.Context, arg1 string, arg2 *auth.CreateUserExternalPrincipalParams, arg3 ...auth.RequestEditorFn) (*auth.CreateUserExternalPrincipalResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
@@ -377,7 +377,7 @@ func (mr *MockClientWithResponsesInterfaceMockRecorder) DeletePolicyWithResponse
 }
 
 // DeleteUserExternalPrincipalWithResponse mocks base method.
-func (m *MockClientWithResponsesInterface) DeleteUserExternalPrincipalWithResponse(arg0 context.Context, arg1, arg2 string, arg3 ...auth.RequestEditorFn) (*auth.DeleteUserExternalPrincipalResponse, error) {
+func (m *MockClientWithResponsesInterface) DeleteUserExternalPrincipalWithResponse(arg0 context.Context, arg1 string, arg2 *auth.DeleteUserExternalPrincipalParams, arg3 ...auth.RequestEditorFn) (*auth.DeleteUserExternalPrincipalResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
@@ -496,6 +496,26 @@ func (mr *MockClientWithResponsesInterfaceMockRecorder) GetCredentialsWithRespon
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCredentialsWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).GetCredentialsWithResponse), varargs...)
 }
 
+// GetExternalPrincipalWithResponse mocks base method.
+func (m *MockClientWithResponsesInterface) GetExternalPrincipalWithResponse(arg0 context.Context, arg1 *auth.GetExternalPrincipalParams, arg2 ...auth.RequestEditorFn) (*auth.GetExternalPrincipalResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetExternalPrincipalWithResponse", varargs...)
+	ret0, _ := ret[0].(*auth.GetExternalPrincipalResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetExternalPrincipalWithResponse indicates an expected call of GetExternalPrincipalWithResponse.
+func (mr *MockClientWithResponsesInterfaceMockRecorder) GetExternalPrincipalWithResponse(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExternalPrincipalWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).GetExternalPrincipalWithResponse), varargs...)
+}
+
 // GetGroupWithResponse mocks base method.
 func (m *MockClientWithResponsesInterface) GetGroupWithResponse(arg0 context.Context, arg1 string, arg2 ...auth.RequestEditorFn) (*auth.GetGroupResponse, error) {
 	m.ctrl.T.Helper()
@@ -534,26 +554,6 @@ func (mr *MockClientWithResponsesInterfaceMockRecorder) GetPolicyWithResponse(ar
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPolicyWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).GetPolicyWithResponse), varargs...)
-}
-
-// GetUserExternalPrincipalWithResponse mocks base method.
-func (m *MockClientWithResponsesInterface) GetUserExternalPrincipalWithResponse(arg0 context.Context, arg1, arg2 string, arg3 ...auth.RequestEditorFn) (*auth.GetUserExternalPrincipalResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1, arg2}
-	for _, a := range arg3 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetUserExternalPrincipalWithResponse", varargs...)
-	ret0, _ := ret[0].(*auth.GetUserExternalPrincipalResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUserExternalPrincipalWithResponse indicates an expected call of GetUserExternalPrincipalWithResponse.
-func (mr *MockClientWithResponsesInterfaceMockRecorder) GetUserExternalPrincipalWithResponse(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserExternalPrincipalWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).GetUserExternalPrincipalWithResponse), varargs...)
 }
 
 // GetUserWithResponse mocks base method.

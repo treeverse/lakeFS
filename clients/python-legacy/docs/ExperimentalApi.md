@@ -7,11 +7,11 @@ Method | HTTP request | Description
 [**abort_presign_multipart_upload**](ExperimentalApi.md#abort_presign_multipart_upload) | **DELETE** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Abort a presign multipart upload
 [**complete_presign_multipart_upload**](ExperimentalApi.md#complete_presign_multipart_upload) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Complete a presign multipart upload request
 [**create_presign_multipart_upload**](ExperimentalApi.md#create_presign_multipart_upload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
-[**create_user_external_principal**](ExperimentalApi.md#create_user_external_principal) | **POST** /auth/users/{userId}/external/principal/{principalId} | attach external principal to user
-[**delete_user_external_principal**](ExperimentalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principal/{principalId} | delete external principal from user
-[**get_user_external_principal**](ExperimentalApi.md#get_user_external_principal) | **GET** /auth/users/{userId}/external/principal/{principalId} | get external principal of a user
+[**create_user_external_principal**](ExperimentalApi.md#create_user_external_principal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
+[**delete_user_external_principal**](ExperimentalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
+[**get_external_principal**](ExperimentalApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
 [**hard_reset_branch**](ExperimentalApi.md#hard_reset_branch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
-[**list_user_external_principals**](ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user
+[**list_user_external_principals**](ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 
 
 # **abort_presign_multipart_upload**
@@ -412,7 +412,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **create_user_external_principal**
-> create_user_external_principal(user_id, principal_id, external_principal_creation)
+> create_user_external_principal(user_id, principal_id)
 
 attach external principal to user
 
@@ -483,12 +483,20 @@ with lakefs_client.ApiClient(configuration) as api_client:
                 key="key_example",
             ),
         ],
-    ) # ExternalPrincipalCreation | 
+    ) # ExternalPrincipalCreation |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
         # attach external principal to user
-        api_instance.create_user_external_principal(user_id, principal_id, external_principal_creation)
+        api_instance.create_user_external_principal(user_id, principal_id)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling ExperimentalApi->create_user_external_principal: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # attach external principal to user
+        api_instance.create_user_external_principal(user_id, principal_id, external_principal_creation=external_principal_creation)
     except lakefs_client.ApiException as e:
         print("Exception when calling ExperimentalApi->create_user_external_principal: %s\n" % e)
 ```
@@ -500,7 +508,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **user_id** | **str**|  |
  **principal_id** | **str**|  |
- **external_principal_creation** | [**ExternalPrincipalCreation**](ExternalPrincipalCreation.md)|  |
+ **external_principal_creation** | [**ExternalPrincipalCreation**](ExternalPrincipalCreation.md)|  | [optional]
 
 ### Return type
 
@@ -637,10 +645,10 @@ void (empty response body)
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **get_user_external_principal**
-> ExternalPrincipal get_user_external_principal(user_id, principal_id)
+# **get_external_principal**
+> ExternalPrincipal get_external_principal(principal_id)
 
-get external principal of a user
+describe external principal by id
 
 ### Example
 
@@ -701,16 +709,15 @@ configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
 with lakefs_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = experimental_api.ExperimentalApi(api_client)
-    user_id = "userId_example" # str | 
     principal_id = "principalId_example" # str | 
 
     # example passing only required values which don't have defaults set
     try:
-        # get external principal of a user
-        api_response = api_instance.get_user_external_principal(user_id, principal_id)
+        # describe external principal by id
+        api_response = api_instance.get_external_principal(principal_id)
         pprint(api_response)
     except lakefs_client.ApiException as e:
-        print("Exception when calling ExperimentalApi->get_user_external_principal: %s\n" % e)
+        print("Exception when calling ExperimentalApi->get_external_principal: %s\n" % e)
 ```
 
 
@@ -718,7 +725,6 @@ with lakefs_client.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **user_id** | **str**|  |
  **principal_id** | **str**|  |
 
 ### Return type

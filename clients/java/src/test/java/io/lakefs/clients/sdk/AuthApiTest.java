@@ -156,7 +156,8 @@ public class AuthApiTest {
         String userId = null;
         String principalId = null;
         ExternalPrincipalCreation externalPrincipalCreation = null;
-        api.createUserExternalPrincipal(userId, principalId, externalPrincipalCreation)
+        api.createUserExternalPrincipal(userId, principalId)
+                .externalPrincipalCreation(externalPrincipalCreation)
                 .execute();
         // TODO: test validations
     }
@@ -297,6 +298,19 @@ public class AuthApiTest {
     }
 
     /**
+     * describe external principal by id
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getExternalPrincipalTest() throws ApiException {
+        String principalId = null;
+        ExternalPrincipal response = api.getExternalPrincipal(principalId)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
      * get group
      *
      * @throws ApiException if the Api call fails
@@ -344,20 +358,6 @@ public class AuthApiTest {
     public void getUserTest() throws ApiException {
         String userId = null;
         User response = api.getUser(userId)
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
-     * get external principal of a user
-     *
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void getUserExternalPrincipalTest() throws ApiException {
-        String userId = null;
-        String principalId = null;
-        ExternalPrincipal response = api.getUserExternalPrincipal(userId, principalId)
                 .execute();
         // TODO: test validations
     }

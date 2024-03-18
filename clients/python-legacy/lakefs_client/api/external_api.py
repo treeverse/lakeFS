@@ -49,7 +49,7 @@ class ExternalApi(object):
                     'oidc_auth',
                     'saml_auth'
                 ],
-                'endpoint_path': '/auth/users/{userId}/external/principal/{principalId}',
+                'endpoint_path': '/auth/users/{userId}/external/principals',
                 'operation_id': 'create_user_external_principal',
                 'http_method': 'POST',
                 'servers': None,
@@ -63,7 +63,6 @@ class ExternalApi(object):
                 'required': [
                     'user_id',
                     'principal_id',
-                    'external_principal_creation',
                 ],
                 'nullable': [
                 ],
@@ -91,7 +90,7 @@ class ExternalApi(object):
                 },
                 'location_map': {
                     'user_id': 'path',
-                    'principal_id': 'path',
+                    'principal_id': 'query',
                     'external_principal_creation': 'body',
                 },
                 'collection_format_map': {
@@ -117,7 +116,7 @@ class ExternalApi(object):
                     'oidc_auth',
                     'saml_auth'
                 ],
-                'endpoint_path': '/auth/users/{userId}/external/principal/{principalId}',
+                'endpoint_path': '/auth/users/{userId}/external/principals',
                 'operation_id': 'delete_user_external_principal',
                 'http_method': 'DELETE',
                 'servers': None,
@@ -155,7 +154,7 @@ class ExternalApi(object):
                 },
                 'location_map': {
                     'user_id': 'path',
-                    'principal_id': 'path',
+                    'principal_id': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -168,7 +167,7 @@ class ExternalApi(object):
             },
             api_client=api_client
         )
-        self.get_user_external_principal_endpoint = _Endpoint(
+        self.get_external_principal_endpoint = _Endpoint(
             settings={
                 'response_type': (ExternalPrincipal,),
                 'auth': [
@@ -178,18 +177,16 @@ class ExternalApi(object):
                     'oidc_auth',
                     'saml_auth'
                 ],
-                'endpoint_path': '/auth/users/{userId}/external/principal/{principalId}',
-                'operation_id': 'get_user_external_principal',
+                'endpoint_path': '/auth/external/principals',
+                'operation_id': 'get_external_principal',
                 'http_method': 'GET',
                 'servers': None,
             },
             params_map={
                 'all': [
-                    'user_id',
                     'principal_id',
                 ],
                 'required': [
-                    'user_id',
                     'principal_id',
                 ],
                 'nullable': [
@@ -205,18 +202,14 @@ class ExternalApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
-                    'user_id':
-                        (str,),
                     'principal_id':
                         (str,),
                 },
                 'attribute_map': {
-                    'user_id': 'userId',
                     'principal_id': 'principalId',
                 },
                 'location_map': {
-                    'user_id': 'path',
-                    'principal_id': 'path',
+                    'principal_id': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -239,7 +232,7 @@ class ExternalApi(object):
                     'oidc_auth',
                     'saml_auth'
                 ],
-                'endpoint_path': '/auth/users/{userId}/external/principals',
+                'endpoint_path': '/auth/users/{userId}/external/principals/ls',
                 'operation_id': 'list_user_external_principals',
                 'http_method': 'GET',
                 'servers': None,
@@ -310,7 +303,6 @@ class ExternalApi(object):
         self,
         user_id,
         principal_id,
-        external_principal_creation,
         **kwargs
     ):
         """attach external principal to user  # noqa: E501
@@ -318,15 +310,15 @@ class ExternalApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.create_user_external_principal(user_id, principal_id, external_principal_creation, async_req=True)
+        >>> thread = api.create_user_external_principal(user_id, principal_id, async_req=True)
         >>> result = thread.get()
 
         Args:
             user_id (str):
             principal_id (str):
-            external_principal_creation (ExternalPrincipalCreation):
 
         Keyword Args:
+            external_principal_creation (ExternalPrincipalCreation): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -375,8 +367,6 @@ class ExternalApi(object):
             user_id
         kwargs['principal_id'] = \
             principal_id
-        kwargs['external_principal_creation'] = \
-            external_principal_creation
         return self.create_user_external_principal_endpoint.call_with_http_info(**kwargs)
 
     def delete_user_external_principal(
@@ -448,22 +438,20 @@ class ExternalApi(object):
             principal_id
         return self.delete_user_external_principal_endpoint.call_with_http_info(**kwargs)
 
-    def get_user_external_principal(
+    def get_external_principal(
         self,
-        user_id,
         principal_id,
         **kwargs
     ):
-        """get external principal of a user  # noqa: E501
+        """describe external principal by id  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.get_user_external_principal(user_id, principal_id, async_req=True)
+        >>> thread = api.get_external_principal(principal_id, async_req=True)
         >>> result = thread.get()
 
         Args:
-            user_id (str):
             principal_id (str):
 
         Keyword Args:
@@ -511,11 +499,9 @@ class ExternalApi(object):
             '_check_return_type', True
         )
         kwargs['_host_index'] = kwargs.get('_host_index')
-        kwargs['user_id'] = \
-            user_id
         kwargs['principal_id'] = \
             principal_id
-        return self.get_user_external_principal_endpoint.call_with_http_info(**kwargs)
+        return self.get_external_principal_endpoint.call_with_http_info(**kwargs)
 
     def list_user_external_principals(
         self,

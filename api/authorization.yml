@@ -1102,7 +1102,7 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
-  /auth/users/{userId}/external/principals:
+  /auth/users/{userId}/external/principals/ls:
       parameters:
         - in: path
           name: userId
@@ -1133,14 +1133,14 @@ paths:
           default:
             $ref: "#/components/responses/ServerError"
 
-  /auth/users/{userId}/external/principals/{principalId}:
+  /auth/users/{userId}/external/principals:
     parameters:
       - in: path
         name: userId
         required: true
         schema:
           type: string
-      - in: path
+      - in: query
         name: principalId
         required: true
         schema:
@@ -1177,12 +1177,21 @@ paths:
               $ref: "#/components/responses/NotFound"
             default:
               $ref: "#/components/responses/ServerError"
+
+  /auth/external/principals:
+    parameters:
+      - in: query
+        name: principalId
+        required: true
+        schema:
+          type: string
     get:
       tags:
         - auth
+        - external
         - experimental
-      operationId: getUserExternalPrincipal
-      summary: get external principal
+      operationId: getExternalPrincipal
+      summary: describe external principal by id 
       responses:
         200:
           description: external principal
@@ -1194,9 +1203,11 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
         default:
-          $ref: "#/components/responses/ServerError"
-          
+          $ref: "#/components/responses/ServerError"          
+
   /healthcheck:
     get:
       operationId: healthCheck

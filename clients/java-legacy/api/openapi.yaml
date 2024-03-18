@@ -1378,7 +1378,7 @@ paths:
       tags:
       - auth
       x-accepts: application/json
-  /auth/users/{userId}/external/principal/{principalId}:
+  /auth/users/{userId}/external/principals:
     delete:
       operationId: deleteUserExternalPrincipal
       parameters:
@@ -1389,13 +1389,13 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: false
-        in: path
+      - explode: true
+        in: query
         name: principalId
         required: true
         schema:
           type: string
-        style: simple
+        style: form
       responses:
         "204":
           description: external principal detached successfully
@@ -1425,56 +1425,6 @@ paths:
       - external
       - experimental
       x-accepts: application/json
-    get:
-      operationId: getUserExternalPrincipal
-      parameters:
-      - explode: false
-        in: path
-        name: userId
-        required: true
-        schema:
-          type: string
-        style: simple
-      - explode: false
-        in: path
-        name: principalId
-        required: true
-        schema:
-          type: string
-        style: simple
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ExternalPrincipal'
-          description: external principal
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        "420":
-          description: too many requests
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      summary: get external principal of a user
-      tags:
-      - auth
-      - external
-      - experimental
-      x-accepts: application/json
     post:
       operationId: createUserExternalPrincipal
       parameters:
@@ -1485,19 +1435,19 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: false
-        in: path
+      - explode: true
+        in: query
         name: principalId
         required: true
         schema:
           type: string
-        style: simple
+        style: form
       requestBody:
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ExternalPrincipalCreation'
-        required: true
+        required: false
       responses:
         "201":
           description: external principal attached successfully
@@ -1534,7 +1484,7 @@ paths:
       - experimental
       x-contentType: application/json
       x-accepts: application/json
-  /auth/users/{userId}/external/principals:
+  /auth/users/{userId}/external/principals/ls:
     get:
       operationId: listUserExternalPrincipals
       parameters:
@@ -1600,6 +1550,50 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
       summary: list user external policies attached to a user
+      tags:
+      - auth
+      - external
+      - experimental
+      x-accepts: application/json
+  /auth/external/principals:
+    get:
+      operationId: getExternalPrincipal
+      parameters:
+      - explode: true
+        in: query
+        name: principalId
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalPrincipal'
+          description: external principal
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: describe external principal by id
       tags:
       - auth
       - external
