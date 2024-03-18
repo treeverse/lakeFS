@@ -197,19 +197,20 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Change
 		currentRemoteFile apigen.ObjectStats
 		hasMore           bool
 	)
-	adapter, err := local.NewAdapter(rightPath, local.WithRemoveEmptyDir(false), local.WithAllowedExternalPrefixes([]string{"/"}))
+	absPath, err := filepath.Abs(rightPath)
 	if err != nil {
 		return nil, err
 	}
-	uri, err := url.Parse("local://" + rightPath)
+	uri := url.URL{Scheme: "local", Path: absPath}
+	adapter, err := local.NewAdapter(absPath, local.WithRemoveEmptyDir(false), local.WithAllowedExternalPrefixes([]string{"/"}))
 	if err != nil {
 		return nil, err
 	}
-	reader, err := adapter.GetWalker(uri)
+	reader, err := adapter.GetWalker(&uri)
 	if err != nil {
 		return nil, err
 	}
-	err = reader.Walk(context.Background(), uri, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
+	err = reader.Walk(context.Background(), &uri, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
 		info, err := os.Stat(e.FullKey)
 		if err != nil {
 			return err
