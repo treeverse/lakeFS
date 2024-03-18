@@ -536,7 +536,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	expires := loginTime.Add(duration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
-	tokenString, err := GenerateJWTLogin(secret, user.Username, loginTime, expires)
+	tokenString, err := GenerateJWTLogin(secret, user.Username, loginTime.Unix(), expires.Unix())
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
