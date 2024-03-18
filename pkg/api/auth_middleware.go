@@ -46,6 +46,7 @@ type OIDCConfig struct {
 	DefaultInitialGroups   []string
 	InitialGroupsClaimName string
 	FriendlyNameClaimName  string
+	PersistFriendlyName    bool
 }
 
 type CookieAuthConfig struct {
@@ -55,6 +56,7 @@ type CookieAuthConfig struct {
 	FriendlyNameClaimName   string
 	ExternalUserIDClaimName string
 	AuthSource              string
+	PersistFriendlyName     bool
 }
 
 func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig) (func(next http.Handler) http.Handler, error) {
@@ -259,7 +261,9 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 		Username:   externalID,
 		ExternalID: &externalID,
 	}
-
+	if cookieAuthConfig.PersistFriendlyName {
+		u.FriendlyName = &friendlyName
+	}
 	_, err = authService.CreateUser(ctx, &u)
 	if err != nil {
 		if !errors.Is(err, auth.ErrAlreadyExists) {
@@ -332,6 +336,9 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		Source:     "oidc",
 		Username:   externalID,
 		ExternalID: &externalID,
+	}
+	if oidcConfig.PersistFriendlyName {
+		u.FriendlyName = &friendlyName
 	}
 	_, err = authService.CreateUser(ctx, &u)
 	if err != nil {
