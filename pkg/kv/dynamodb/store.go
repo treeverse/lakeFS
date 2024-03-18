@@ -238,6 +238,10 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 	})
 	const operation = "GetItem"
 	if err != nil {
+		if s.isSlowDownErr(err) {
+			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("get item: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues(operation).Inc()
+		}
 		return nil, fmt.Errorf("get item: %w", err)
 	}
 	if result.ConsumedCapacity != nil {
@@ -322,6 +326,10 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		if usePredicate && errors.As(err, &errConditionalCheckFailed) {
 			return kv.ErrPredicateFailed
 		}
+		if s.isSlowDownErr(err) {
+			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("put item: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues(operation).Inc()
+		}
 		return fmt.Errorf("put item: %w", err)
 	}
 	if resp.ConsumedCapacity != nil {
@@ -345,6 +353,10 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 	})
 	const operation = "DeleteItem"
 	if err != nil {
+		if s.isSlowDownErr(err) {
+			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("delete item: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues(operation).Inc()
+		}
 		return fmt.Errorf("delete item: %w", err)
 	}
 	if resp.ConsumedCapacity != nil {
@@ -372,6 +384,10 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	}
 	it.runQuery()
 	if it.err != nil {
+		if s.isSlowDownErr(it.err) {
+			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("scan: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues("Scan").Inc()
+		}
 		return nil, it.err
 	}
 	return it, nil
@@ -387,6 +403,10 @@ func (s *Store) DropTable() error {
 	_, err := s.svc.DeleteTable(ctx, &dynamodb.DeleteTableInput{
 		TableName: &s.params.TableName,
 	})
+	if s.isSlowDownErr(err) {
+		s.logger.WithField("table", s.params.TableName).WithContext(ctx).Error("drop table: %w", kv.ErrSlowDown)
+		dynamoSlowdown.WithLabelValues("DeleteTable").Inc()
+	}
 	return err
 }
 
@@ -560,4 +580,13 @@ func (s *Store) StopPeriodicCheck() {
 		s.wg.Wait()
 		s.cancel = nil
 	}
+}
+
+func (s *Store) isSlowDownErr(err error) bool {
+	for _, te := range retry.DefaultThrottles {
+		if te.IsErrorThrottle(err).Bool() {
+			return true
+		}
+	}
+	return false
 }
