@@ -51,7 +51,7 @@ jobs:
       uses: ruby/setup-ruby@v1
       with:
         working-directory: clients/python
-        ruby-version: '2.7'
+        ruby-version: '3.2'
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
     - name: Build release as latest
@@ -114,7 +114,7 @@ jobs:
       uses: ruby/setup-ruby@v1
       with:
         working-directory: clients/python-legacy
-        ruby-version: '2.7'
+        ruby-version: '3.2'
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
     - name: Build legacy release as latest
