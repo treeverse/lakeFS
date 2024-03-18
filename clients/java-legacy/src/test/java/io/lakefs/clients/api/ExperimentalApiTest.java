@@ -15,6 +15,7 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.AbortPresignMultipartUpload;
+import io.lakefs.clients.api.model.AuthenticationToken;
 import io.lakefs.clients.api.model.CompletePresignMultipartUpload;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.ExternalPrincipal;
@@ -23,6 +24,7 @@ import io.lakefs.clients.api.model.ExternalPrincipalList;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.PresignMultipartUpload;
 import io.lakefs.clients.api.model.StagingLocation;
+import io.lakefs.clients.api.model.StsAuthRequest;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -177,6 +179,21 @@ public class ExperimentalApiTest {
         String after = null;
         Integer amount = null;
                 ExternalPrincipalList response = api.listUserExternalPrincipals(userId, prefix, after, amount);
+        // TODO: test validations
+    }
+    
+    /**
+     * perform a login with STS
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void sTSLoginTest() throws ApiException {
+        StsAuthRequest stsAuthRequest = null;
+                AuthenticationToken response = api.sTSLogin(stsAuthRequest);
         // TODO: test validations
     }
     

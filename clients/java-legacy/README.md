@@ -193,6 +193,7 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**getExternalPrincipal**](docs/ExperimentalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
 *ExperimentalApi* | [**hardResetBranch**](docs/ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 *ExperimentalApi* | [**listUserExternalPrincipals**](docs/ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
+*ExperimentalApi* | [**sTSLogin**](docs/ExperimentalApi.md#sTSLogin) | **POST** /sts/login | perform a login with STS
 *ExternalApi* | [**createUserExternalPrincipal**](docs/ExternalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 *ExternalApi* | [**deleteUserExternalPrincipal**](docs/ExternalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 *ExternalApi* | [**getExternalPrincipal**](docs/ExternalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
@@ -354,6 +355,7 @@ Class | Method | HTTP request | Description
  - [StatsEventsList](docs/StatsEventsList.md)
  - [StorageConfig](docs/StorageConfig.md)
  - [StorageURI](docs/StorageURI.md)
+ - [StsAuthRequest](docs/StsAuthRequest.md)
  - [TagCreation](docs/TagCreation.md)
  - [TaskInfo](docs/TaskInfo.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)

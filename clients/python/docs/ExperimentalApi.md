@@ -12,6 +12,7 @@ Method | HTTP request | Description
 [**get_external_principal**](ExperimentalApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
 [**hard_reset_branch**](ExperimentalApi.md#hard_reset_branch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 [**list_user_external_principals**](ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
+[**s_ts_login**](ExperimentalApi.md#s_ts_login) | **POST** /sts/login | perform a login with STS
 
 
 # **abort_presign_multipart_upload**
@@ -936,6 +937,77 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **s_ts_login**
+> AuthenticationToken s_ts_login(sts_auth_request)
+
+perform a login with STS
+
+### Example
+
+
+```python
+import time
+import os
+import lakefs_sdk
+from lakefs_sdk.models.authentication_token import AuthenticationToken
+from lakefs_sdk.models.sts_auth_request import StsAuthRequest
+from lakefs_sdk.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.ExperimentalApi(api_client)
+    sts_auth_request = lakefs_sdk.StsAuthRequest() # StsAuthRequest | 
+
+    try:
+        # perform a login with STS
+        api_response = api_instance.s_ts_login(sts_auth_request)
+        print("The response of ExperimentalApi->s_ts_login:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ExperimentalApi->s_ts_login: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **sts_auth_request** | [**StsAuthRequest**](StsAuthRequest.md)|  | 
+
+### Return type
+
+[**AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | successful STS login |  -  |
+**401** | Unauthorized |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
