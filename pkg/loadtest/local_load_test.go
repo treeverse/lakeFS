@@ -83,7 +83,8 @@ func TestLocalLoad(t *testing.T) {
 		_ = c.Close()
 	})
 	auditChecker := version.NewDefaultAuditChecker(conf.Security.AuditCheckURL, "", nil)
-	handler := api.Serve(conf, c, authenticator, authService, blockAdapter, meta, migrator, &stats.NullCollector{}, nil, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter)
+	authenticationService := auth.NewMockAuthenticationService()
+	handler := api.Serve(conf, c, authenticator, authService, authenticationService, blockAdapter, meta, migrator, &stats.NullCollector{}, nil, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter)
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()

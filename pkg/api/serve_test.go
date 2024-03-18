@@ -22,6 +22,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
+	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -187,7 +188,8 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 
 	auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, "", nil)
 
-	handler := api.Serve(cfg, c, authenticator, authService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter)
+	authenticationService := authentication.NewDummyService()
+	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,

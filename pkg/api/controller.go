@@ -30,6 +30,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
+	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
@@ -86,6 +87,7 @@ type Controller struct {
 	Catalog               *catalog.Catalog
 	Authenticator         auth.Authenticator
 	Auth                  auth.Service
+	Authentication        authentication.Service
 	BlockAdapter          block.Adapter
 	MetadataManager       auth.MetadataManager
 	Migrator              Migrator
@@ -5032,12 +5034,13 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 	return pathRecords
 }
 
-func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
+func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
 		Authenticator:         authenticator,
 		Auth:                  authService,
+		Authentication:        authenticationService,
 		BlockAdapter:          blockAdapter,
 		MetadataManager:       metadataManager,
 		Migrator:              migrator,
