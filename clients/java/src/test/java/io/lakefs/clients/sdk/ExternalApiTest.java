@@ -44,7 +44,8 @@ public class ExternalApiTest {
         String userId = null;
         String principalId = null;
         ExternalPrincipalCreation externalPrincipalCreation = null;
-        api.createUserExternalPrincipal(userId, principalId, externalPrincipalCreation)
+        api.createUserExternalPrincipal(userId, principalId)
+                .externalPrincipalCreation(externalPrincipalCreation)
                 .execute();
         // TODO: test validations
     }
@@ -64,15 +65,14 @@ public class ExternalApiTest {
     }
 
     /**
-     * get external principal of a user
+     * describe external principal by id
      *
      * @throws ApiException if the Api call fails
      */
     @Test
-    public void getUserExternalPrincipalTest() throws ApiException {
-        String userId = null;
+    public void getExternalPrincipalTest() throws ApiException {
         String principalId = null;
-        ExternalPrincipal response = api.getUserExternalPrincipal(userId, principalId)
+        ExternalPrincipal response = api.getExternalPrincipal(principalId)
                 .execute();
         // TODO: test validations
     }

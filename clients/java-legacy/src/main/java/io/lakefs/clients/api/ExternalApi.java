@@ -61,7 +61,7 @@ public class ExternalApi {
      * Build call for createUserExternalPrincipal
      * @param userId  (required)
      * @param principalId  (required)
-     * @param externalPrincipalCreation  (required)
+     * @param externalPrincipalCreation  (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -80,15 +80,18 @@ public class ExternalApi {
         Object localVarPostBody = externalPrincipalCreation;
 
         // create path and map variables
-        String localVarPath = "/auth/users/{userId}/external/principal/{principalId}"
-            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()))
-            .replaceAll("\\{" + "principalId" + "\\}", localVarApiClient.escapeString(principalId.toString()));
+        String localVarPath = "/auth/users/{userId}/external/principals"
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (principalId != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("principalId", principalId));
+        }
 
         final String[] localVarAccepts = {
             "application/json"
@@ -121,11 +124,6 @@ public class ExternalApi {
             throw new ApiException("Missing the required parameter 'principalId' when calling createUserExternalPrincipal(Async)");
         }
         
-        // verify the required parameter 'externalPrincipalCreation' is set
-        if (externalPrincipalCreation == null) {
-            throw new ApiException("Missing the required parameter 'externalPrincipalCreation' when calling createUserExternalPrincipal(Async)");
-        }
-        
 
         okhttp3.Call localVarCall = createUserExternalPrincipalCall(userId, principalId, externalPrincipalCreation, _callback);
         return localVarCall;
@@ -137,7 +135,7 @@ public class ExternalApi {
      * 
      * @param userId  (required)
      * @param principalId  (required)
-     * @param externalPrincipalCreation  (required)
+     * @param externalPrincipalCreation  (optional)
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -159,7 +157,7 @@ public class ExternalApi {
      * 
      * @param userId  (required)
      * @param principalId  (required)
-     * @param externalPrincipalCreation  (required)
+     * @param externalPrincipalCreation  (optional)
      * @return ApiResponse&lt;Void&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -183,7 +181,7 @@ public class ExternalApi {
      * 
      * @param userId  (required)
      * @param principalId  (required)
-     * @param externalPrincipalCreation  (required)
+     * @param externalPrincipalCreation  (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -225,15 +223,18 @@ public class ExternalApi {
         Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/auth/users/{userId}/external/principal/{principalId}"
-            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()))
-            .replaceAll("\\{" + "principalId" + "\\}", localVarApiClient.escapeString(principalId.toString()));
+        String localVarPath = "/auth/users/{userId}/external/principals"
+            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (principalId != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("principalId", principalId));
+        }
 
         final String[] localVarAccepts = {
             "application/json"
@@ -339,8 +340,7 @@ public class ExternalApi {
         return localVarCall;
     }
     /**
-     * Build call for getUserExternalPrincipal
-     * @param userId  (required)
+     * Build call for getExternalPrincipal
      * @param principalId  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
@@ -355,19 +355,21 @@ public class ExternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getUserExternalPrincipalCall(String userId, String principalId, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call getExternalPrincipalCall(String principalId, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/auth/users/{userId}/external/principal/{principalId}"
-            .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()))
-            .replaceAll("\\{" + "principalId" + "\\}", localVarApiClient.escapeString(principalId.toString()));
+        String localVarPath = "/auth/external/principals";
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();
         List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
         Map<String, String> localVarHeaderParams = new HashMap<String, String>();
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (principalId != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("principalId", principalId));
+        }
 
         final String[] localVarAccepts = {
             "application/json"
@@ -388,28 +390,22 @@ public class ExternalApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call getUserExternalPrincipalValidateBeforeCall(String userId, String principalId, final ApiCallback _callback) throws ApiException {
-        
-        // verify the required parameter 'userId' is set
-        if (userId == null) {
-            throw new ApiException("Missing the required parameter 'userId' when calling getUserExternalPrincipal(Async)");
-        }
+    private okhttp3.Call getExternalPrincipalValidateBeforeCall(String principalId, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'principalId' is set
         if (principalId == null) {
-            throw new ApiException("Missing the required parameter 'principalId' when calling getUserExternalPrincipal(Async)");
+            throw new ApiException("Missing the required parameter 'principalId' when calling getExternalPrincipal(Async)");
         }
         
 
-        okhttp3.Call localVarCall = getUserExternalPrincipalCall(userId, principalId, _callback);
+        okhttp3.Call localVarCall = getExternalPrincipalCall(principalId, _callback);
         return localVarCall;
 
     }
 
     /**
-     * get external principal of a user
+     * describe external principal by id
      * 
-     * @param userId  (required)
      * @param principalId  (required)
      * @return ExternalPrincipal
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -423,15 +419,14 @@ public class ExternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ExternalPrincipal getUserExternalPrincipal(String userId, String principalId) throws ApiException {
-        ApiResponse<ExternalPrincipal> localVarResp = getUserExternalPrincipalWithHttpInfo(userId, principalId);
+    public ExternalPrincipal getExternalPrincipal(String principalId) throws ApiException {
+        ApiResponse<ExternalPrincipal> localVarResp = getExternalPrincipalWithHttpInfo(principalId);
         return localVarResp.getData();
     }
 
     /**
-     * get external principal of a user
+     * describe external principal by id
      * 
-     * @param userId  (required)
      * @param principalId  (required)
      * @return ApiResponse&lt;ExternalPrincipal&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
@@ -445,16 +440,15 @@ public class ExternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<ExternalPrincipal> getUserExternalPrincipalWithHttpInfo(String userId, String principalId) throws ApiException {
-        okhttp3.Call localVarCall = getUserExternalPrincipalValidateBeforeCall(userId, principalId, null);
+    public ApiResponse<ExternalPrincipal> getExternalPrincipalWithHttpInfo(String principalId) throws ApiException {
+        okhttp3.Call localVarCall = getExternalPrincipalValidateBeforeCall(principalId, null);
         Type localVarReturnType = new TypeToken<ExternalPrincipal>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
     /**
-     * get external principal of a user (asynchronously)
+     * describe external principal by id (asynchronously)
      * 
-     * @param userId  (required)
      * @param principalId  (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
@@ -469,9 +463,9 @@ public class ExternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call getUserExternalPrincipalAsync(String userId, String principalId, final ApiCallback<ExternalPrincipal> _callback) throws ApiException {
+    public okhttp3.Call getExternalPrincipalAsync(String principalId, final ApiCallback<ExternalPrincipal> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = getUserExternalPrincipalValidateBeforeCall(userId, principalId, _callback);
+        okhttp3.Call localVarCall = getExternalPrincipalValidateBeforeCall(principalId, _callback);
         Type localVarReturnType = new TypeToken<ExternalPrincipal>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -499,7 +493,7 @@ public class ExternalApi {
         Object localVarPostBody = null;
 
         // create path and map variables
-        String localVarPath = "/auth/users/{userId}/external/principals"
+        String localVarPath = "/auth/users/{userId}/external/principals/ls"
             .replaceAll("\\{" + "userId" + "\\}", localVarApiClient.escapeString(userId.toString()));
 
         List<Pair> localVarQueryParams = new ArrayList<Pair>();

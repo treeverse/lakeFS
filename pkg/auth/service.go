@@ -83,7 +83,7 @@ type ExternalPrincipalsService interface {
 	IsExternalPrincipalsEnabled(ctx context.Context) bool
 	CreateUserExternalPrincipal(ctx context.Context, userID, principalID string) error
 	DeleteUserExternalPrincipal(ctx context.Context, userID, principalID string) error
-	GetUserExternalPrincipal(ctx context.Context, userID, principalID string) (*model.ExternalPrincipal, error)
+	GetExternalPrincipal(ctx context.Context, principalID string) (*model.ExternalPrincipal, error)
 	ListUserExternalPrincipals(ctx context.Context, userID string, params *model.PaginationParams) ([]*model.ExternalPrincipal, *model.Paginator, error)
 }
 
@@ -1126,7 +1126,7 @@ func (s *AuthService) DeleteUserExternalPrincipal(ctx context.Context, userID, p
 	return ErrNotImplemented
 }
 
-func (s *AuthService) GetUserExternalPrincipal(ctx context.Context, userID, principalID string) (*model.ExternalPrincipal, error) {
+func (s *AuthService) GetExternalPrincipal(ctx context.Context, principalID string) (*model.ExternalPrincipal, error) {
 	return nil, ErrNotImplemented
 }
 
@@ -1975,7 +1975,9 @@ func (a *APIAuthService) CreateUserExternalPrincipal(ctx context.Context, userID
 		return fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
 
-	resp, err := a.apiClient.CreateUserExternalPrincipalWithResponse(ctx, userID, principalID)
+	resp, err := a.apiClient.CreateUserExternalPrincipalWithResponse(ctx, userID, &CreateUserExternalPrincipalParams{
+		PrincipalId: principalID,
+	})
 	if err != nil {
 		return fmt.Errorf("create principal: %w", err)
 	}
@@ -1987,18 +1989,22 @@ func (a *APIAuthService) DeleteUserExternalPrincipal(ctx context.Context, userID
 	if !a.IsExternalPrincipalsEnabled(ctx) {
 		return fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
-	resp, err := a.apiClient.DeleteUserExternalPrincipalWithResponse(ctx, userID, principalID)
+	resp, err := a.apiClient.DeleteUserExternalPrincipalWithResponse(ctx, userID, &DeleteUserExternalPrincipalParams{
+		principalID,
+	})
 	if err != nil {
 		return fmt.Errorf("delete external principal: %w", err)
 	}
 	return a.validateResponse(resp, http.StatusNoContent)
 }
 
-func (a *APIAuthService) GetUserExternalPrincipal(ctx context.Context, userID, principalID string) (*model.ExternalPrincipal, error) {
+func (a *APIAuthService) GetExternalPrincipal(ctx context.Context, principalID string) (*model.ExternalPrincipal, error) {
 	if !a.IsExternalPrincipalsEnabled(ctx) {
 		return nil, fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
-	resp, err := a.apiClient.GetUserExternalPrincipalWithResponse(ctx, userID, principalID)
+	resp, err := a.apiClient.GetExternalPrincipalWithResponse(ctx, &GetExternalPrincipalParams{
+		PrincipalId: principalID,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("get external principal: %w", err)
 	}

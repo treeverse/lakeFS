@@ -467,7 +467,7 @@ class AuthApi(object):
                     'oidc_auth',
                     'saml_auth'
                 ],
-                'endpoint_path': '/auth/users/{userId}/external/principal/{principalId}',
+                'endpoint_path': '/auth/users/{userId}/external/principals',
                 'operation_id': 'create_user_external_principal',
                 'http_method': 'POST',
                 'servers': None,
@@ -481,7 +481,6 @@ class AuthApi(object):
                 'required': [
                     'user_id',
                     'principal_id',
-                    'external_principal_creation',
                 ],
                 'nullable': [
                 ],
@@ -509,7 +508,7 @@ class AuthApi(object):
                 },
                 'location_map': {
                     'user_id': 'path',
-                    'principal_id': 'path',
+                    'principal_id': 'query',
                     'external_principal_creation': 'body',
                 },
                 'collection_format_map': {
@@ -822,7 +821,7 @@ class AuthApi(object):
                     'oidc_auth',
                     'saml_auth'
                 ],
-                'endpoint_path': '/auth/users/{userId}/external/principal/{principalId}',
+                'endpoint_path': '/auth/users/{userId}/external/principals',
                 'operation_id': 'delete_user_external_principal',
                 'http_method': 'DELETE',
                 'servers': None,
@@ -860,7 +859,7 @@ class AuthApi(object):
                 },
                 'location_map': {
                     'user_id': 'path',
-                    'principal_id': 'path',
+                    'principal_id': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -1104,6 +1103,61 @@ class AuthApi(object):
             },
             api_client=api_client
         )
+        self.get_external_principal_endpoint = _Endpoint(
+            settings={
+                'response_type': (ExternalPrincipal,),
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth',
+                    'saml_auth'
+                ],
+                'endpoint_path': '/auth/external/principals',
+                'operation_id': 'get_external_principal',
+                'http_method': 'GET',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'principal_id',
+                ],
+                'required': [
+                    'principal_id',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'principal_id':
+                        (str,),
+                },
+                'attribute_map': {
+                    'principal_id': 'principalId',
+                },
+                'location_map': {
+                    'principal_id': 'query',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client
+        )
         self.get_group_endpoint = _Endpoint(
             settings={
                 'response_type': (Group,),
@@ -1312,67 +1366,6 @@ class AuthApi(object):
                 },
                 'location_map': {
                     'user_id': 'path',
-                },
-                'collection_format_map': {
-                }
-            },
-            headers_map={
-                'accept': [
-                    'application/json'
-                ],
-                'content_type': [],
-            },
-            api_client=api_client
-        )
-        self.get_user_external_principal_endpoint = _Endpoint(
-            settings={
-                'response_type': (ExternalPrincipal,),
-                'auth': [
-                    'basic_auth',
-                    'cookie_auth',
-                    'jwt_token',
-                    'oidc_auth',
-                    'saml_auth'
-                ],
-                'endpoint_path': '/auth/users/{userId}/external/principal/{principalId}',
-                'operation_id': 'get_user_external_principal',
-                'http_method': 'GET',
-                'servers': None,
-            },
-            params_map={
-                'all': [
-                    'user_id',
-                    'principal_id',
-                ],
-                'required': [
-                    'user_id',
-                    'principal_id',
-                ],
-                'nullable': [
-                ],
-                'enum': [
-                ],
-                'validation': [
-                ]
-            },
-            root_map={
-                'validations': {
-                },
-                'allowed_values': {
-                },
-                'openapi_types': {
-                    'user_id':
-                        (str,),
-                    'principal_id':
-                        (str,),
-                },
-                'attribute_map': {
-                    'user_id': 'userId',
-                    'principal_id': 'principalId',
-                },
-                'location_map': {
-                    'user_id': 'path',
-                    'principal_id': 'path',
                 },
                 'collection_format_map': {
                 }
@@ -1761,7 +1754,7 @@ class AuthApi(object):
                     'oidc_auth',
                     'saml_auth'
                 ],
-                'endpoint_path': '/auth/users/{userId}/external/principals',
+                'endpoint_path': '/auth/users/{userId}/external/principals/ls',
                 'operation_id': 'list_user_external_principals',
                 'http_method': 'GET',
                 'servers': None,
@@ -2689,7 +2682,6 @@ class AuthApi(object):
         self,
         user_id,
         principal_id,
-        external_principal_creation,
         **kwargs
     ):
         """attach external principal to user  # noqa: E501
@@ -2697,15 +2689,15 @@ class AuthApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.create_user_external_principal(user_id, principal_id, external_principal_creation, async_req=True)
+        >>> thread = api.create_user_external_principal(user_id, principal_id, async_req=True)
         >>> result = thread.get()
 
         Args:
             user_id (str):
             principal_id (str):
-            external_principal_creation (ExternalPrincipalCreation):
 
         Keyword Args:
+            external_principal_creation (ExternalPrincipalCreation): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -2754,8 +2746,6 @@ class AuthApi(object):
             user_id
         kwargs['principal_id'] = \
             principal_id
-        kwargs['external_principal_creation'] = \
-            external_principal_creation
         return self.create_user_external_principal_endpoint.call_with_http_info(**kwargs)
 
     def delete_credentials(
@@ -3427,6 +3417,71 @@ class AuthApi(object):
         kwargs['_host_index'] = kwargs.get('_host_index')
         return self.get_current_user_endpoint.call_with_http_info(**kwargs)
 
+    def get_external_principal(
+        self,
+        principal_id,
+        **kwargs
+    ):
+        """describe external principal by id  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.get_external_principal(principal_id, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            principal_id (str):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            ExternalPrincipal
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['principal_id'] = \
+            principal_id
+        return self.get_external_principal_endpoint.call_with_http_info(**kwargs)
+
     def get_group(
         self,
         group_id,
@@ -3686,75 +3741,6 @@ class AuthApi(object):
         kwargs['user_id'] = \
             user_id
         return self.get_user_endpoint.call_with_http_info(**kwargs)
-
-    def get_user_external_principal(
-        self,
-        user_id,
-        principal_id,
-        **kwargs
-    ):
-        """get external principal of a user  # noqa: E501
-
-        This method makes a synchronous HTTP request by default. To make an
-        asynchronous HTTP request, please pass async_req=True
-
-        >>> thread = api.get_user_external_principal(user_id, principal_id, async_req=True)
-        >>> result = thread.get()
-
-        Args:
-            user_id (str):
-            principal_id (str):
-
-        Keyword Args:
-            _return_http_data_only (bool): response data without head status
-                code and headers. Default is True.
-            _preload_content (bool): if False, the urllib3.HTTPResponse object
-                will be returned without reading/decoding response data.
-                Default is True.
-            _request_timeout (int/float/tuple): timeout setting for this request. If
-                one number provided, it will be total request timeout. It can also
-                be a pair (tuple) of (connection, read) timeouts.
-                Default is None.
-            _check_input_type (bool): specifies if type checking
-                should be done one the data sent to the server.
-                Default is True.
-            _check_return_type (bool): specifies if type checking
-                should be done one the data received from the server.
-                Default is True.
-            _host_index (int/None): specifies the index of the server
-                that we want to use.
-                Default is read from the configuration.
-            async_req (bool): execute request asynchronously
-
-        Returns:
-            ExternalPrincipal
-                If the method is called asynchronously, returns the request
-                thread.
-        """
-        kwargs['async_req'] = kwargs.get(
-            'async_req', False
-        )
-        kwargs['_return_http_data_only'] = kwargs.get(
-            '_return_http_data_only', True
-        )
-        kwargs['_preload_content'] = kwargs.get(
-            '_preload_content', True
-        )
-        kwargs['_request_timeout'] = kwargs.get(
-            '_request_timeout', None
-        )
-        kwargs['_check_input_type'] = kwargs.get(
-            '_check_input_type', True
-        )
-        kwargs['_check_return_type'] = kwargs.get(
-            '_check_return_type', True
-        )
-        kwargs['_host_index'] = kwargs.get('_host_index')
-        kwargs['user_id'] = \
-            user_id
-        kwargs['principal_id'] = \
-            principal_id
-        return self.get_user_external_principal_endpoint.call_with_http_info(**kwargs)
 
     def list_group_members(
         self,
