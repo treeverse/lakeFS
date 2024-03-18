@@ -78,7 +78,8 @@ auth:
     callback_base_url: https://lakefs.example.com       # The scheme, domain (and port) of your lakeFS installation
     url: https://my-account.oidc-provider-example.com
     default_initial_groups: ["Developers"]
-    friendly_name_claim_name: name                      #  Optional: use the value from this claim as the user's display name 
+    friendly_name_claim_name: name                      #  Optional: use the value from this claim as the user's display name
+    persist_friendly_name: true                         #  Optional: persist friendly name to KV store so it can be displayed in the user list
 ```
 
 Your login page will now include a link to sign in using the 
