@@ -557,7 +557,7 @@ func TestLakectlFsUpload(t *testing.T) {
 	})
 	t.Run("single_file_with_recursive", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/ro_1k.0"
-		RunCmdAndVerifyFailure(t, Lakectl()+" fs upload --recursive -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "\ndiff 'local://files/ro_1k/' <--> 'lakefs://${REPO}/${BRANCH}/${FILE_PATH}'...\nmkdir /lakefs/esti/files/ro_1k: not a directory\nError executing command.\n", vars)
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs upload --recursive -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "\ndiff 'local://files/ro_1k/' <--> 'lakefs://${REPO}/${BRANCH}/${FILE_PATH}'...\nlstat files/ro_1k/: not a directory\nError executing command.\n", vars)
 	})
 	t.Run("dir", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/"

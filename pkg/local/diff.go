@@ -202,7 +202,7 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Change
 		return nil, err
 	}
 	uri := url.URL{Scheme: "local", Path: absPath}
-	adapter, err := local.NewAdapter(absPath, local.WithRemoveEmptyDir(false), local.WithAllowedExternalPrefixes([]string{"/"}))
+	adapter, err := local.NewAdapter("", local.WithRemoveEmptyDir(false), local.WithAllowedExternalPrefixes([]string{absPath}))
 	if err != nil {
 		return nil, err
 	}
@@ -215,11 +215,10 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Change
 		if err != nil {
 			return err
 		}
-		if info.IsDir() || diffShouldIgnore(info.Name()) || strings.HasPrefix(e.RelativeKey, local.CacheDirName) {
+		if info.IsDir() || diffShouldIgnore(info.Name()) {
 			return nil
 		}
-		filePath := e.RelativeKey
-		localPath := strings.TrimPrefix(filePath, rightPath)
+		localPath := e.RelativeKey
 		localPath = strings.TrimPrefix(localPath, string(filepath.Separator))
 		localPath = filepath.ToSlash(localPath) // normalize to use "/" always
 
