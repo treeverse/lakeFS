@@ -4,10 +4,10 @@ All URIs are relative to *http://localhost/api/v1*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**createUserExternalPrincipal**](ExternalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principal/{principalId} | attach external principal to user
-[**deleteUserExternalPrincipal**](ExternalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principal/{principalId} | delete external principal from user
-[**getUserExternalPrincipal**](ExternalApi.md#getUserExternalPrincipal) | **GET** /auth/users/{userId}/external/principal/{principalId} | get external principal of a user
-[**listUserExternalPrincipals**](ExternalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user
+[**createUserExternalPrincipal**](ExternalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
+[**deleteUserExternalPrincipal**](ExternalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
+[**getExternalPrincipal**](ExternalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
+[**listUserExternalPrincipals**](ExternalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 
 
 <a name="createUserExternalPrincipal"></a>
@@ -81,7 +81,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **userId** | **String**|  |
  **principalId** | **String**|  |
- **externalPrincipalCreation** | [**ExternalPrincipalCreation**](ExternalPrincipalCreation.md)|  |
+ **externalPrincipalCreation** | [**ExternalPrincipalCreation**](ExternalPrincipalCreation.md)|  | [optional]
 
 ### Return type
 
@@ -199,11 +199,11 @@ null (empty response body)
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
-<a name="getUserExternalPrincipal"></a>
-# **getUserExternalPrincipal**
-> ExternalPrincipal getUserExternalPrincipal(userId, principalId)
+<a name="getExternalPrincipal"></a>
+# **getExternalPrincipal**
+> ExternalPrincipal getExternalPrincipal(principalId)
 
-get external principal of a user
+describe external principal by id
 
 ### Example
 ```java
@@ -248,13 +248,12 @@ public class Example {
     //saml_auth.setApiKeyPrefix("Token");
 
     ExternalApi apiInstance = new ExternalApi(defaultClient);
-    String userId = "userId_example"; // String | 
     String principalId = "principalId_example"; // String | 
     try {
-      ExternalPrincipal result = apiInstance.getUserExternalPrincipal(userId, principalId);
+      ExternalPrincipal result = apiInstance.getExternalPrincipal(principalId);
       System.out.println(result);
     } catch (ApiException e) {
-      System.err.println("Exception when calling ExternalApi#getUserExternalPrincipal");
+      System.err.println("Exception when calling ExternalApi#getExternalPrincipal");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
@@ -268,7 +267,6 @@ public class Example {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **userId** | **String**|  |
  **principalId** | **String**|  |
 
 ### Return type

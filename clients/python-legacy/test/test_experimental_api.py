@@ -59,10 +59,10 @@ class TestExperimentalApi(unittest.TestCase):
         """
         pass
 
-    def test_get_user_external_principal(self):
-        """Test case for get_user_external_principal
+    def test_get_external_principal(self):
+        """Test case for get_external_principal
 
-        get external principal of a user  # noqa: E501
+        describe external principal by id  # noqa: E501
         """
         pass
 

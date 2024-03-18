@@ -130,7 +130,7 @@ public class ExperimentalApiTest {
     }
     
     /**
-     * get external principal of a user
+     * describe external principal by id
      *
      * 
      *
@@ -138,10 +138,9 @@ public class ExperimentalApiTest {
      *          if the Api call fails
      */
     @Test
-    public void getUserExternalPrincipalTest() throws ApiException {
-        String userId = null;
+    public void getExternalPrincipalTest() throws ApiException {
         String principalId = null;
-                ExternalPrincipal response = api.getUserExternalPrincipal(userId, principalId);
+                ExternalPrincipal response = api.getExternalPrincipal(principalId);
         // TODO: test validations
     }
     

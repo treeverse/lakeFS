@@ -2434,14 +2434,15 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /auth/users/{userId}/external/principal/{principalId}:
+
+  /auth/users/{userId}/external/principals:
     parameters:
       - in: path
         name: userId
         required: true
         schema:
           type: string
-      - in: path
+      - in: query
         name: principalId
         required: true
         schema:
@@ -2454,7 +2455,7 @@ paths:
       operationId: createUserExternalPrincipal
       summary: attach external principal to user
       requestBody: 
-        required: true
+        required: false
         content: 
           application/json: 
             schema: 
@@ -2490,30 +2491,8 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-    get:
-      tags:
-        - auth
-        - external
-        - experimental
-      operationId: getUserExternalPrincipal
-      summary: get external principal of a user
-      responses:
-        200:
-          description: external principal
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ExternalPrincipal"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        420:
-          description: too many requests
-        default:
-          $ref: "#/components/responses/ServerError"
 
-  /auth/users/{userId}/external/principals:
+  /auth/users/{userId}/external/principals/ls:
     parameters:
       - in: path
         name: userId
@@ -2546,6 +2525,37 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
+
+  /auth/external/principals:
+    parameters:
+      - in: query
+        name: principalId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+        - external
+        - experimental
+      operationId: getExternalPrincipal
+      summary: describe external principal by id 
+      responses:
+        200:
+          description: external principal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalPrincipal"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /auth/groups/{groupId}/policies:
     parameters:
       - in: path

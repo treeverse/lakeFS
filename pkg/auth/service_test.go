@@ -2657,7 +2657,8 @@ func TestAPIAuthService_CreateUserExternalPrincipal(t *testing.T) {
 					StatusCode: tt.responseStatusCode,
 				},
 			}
-			mockClient.EXPECT().CreateUserExternalPrincipalWithResponse(gomock.Any(), tt.userID, tt.principalID).Return(response, nil)
+			reqParams := gomock.Eq(&auth.CreateUserExternalPrincipalParams{PrincipalId: tt.principalID})
+			mockClient.EXPECT().CreateUserExternalPrincipalWithResponse(gomock.Any(), tt.userID, reqParams).Return(response, nil)
 			err := s.CreateUserExternalPrincipal(ctx, tt.userID, tt.principalID)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("CreateUserExternalPrincipal: expected err: %v got: %v", tt.expectedErr, err)
@@ -2676,7 +2677,8 @@ func TestAPIAuthService_ReusePrincipalAfterDelete(t *testing.T) {
 	ctx := context.Background()
 
 	// create principal A for user1
-	mockClient.EXPECT().CreateUserExternalPrincipalWithResponse(gomock.Any(), userA, principalId).Return(&auth.CreateUserExternalPrincipalResponse{
+	reqParams := gomock.Eq(&auth.CreateUserExternalPrincipalParams{PrincipalId: principalId})
+	mockClient.EXPECT().CreateUserExternalPrincipalWithResponse(gomock.Any(), userA, reqParams).Return(&auth.CreateUserExternalPrincipalResponse{
 		HTTPResponse: &http.Response{
 			StatusCode: http.StatusCreated,
 		},
@@ -2685,7 +2687,8 @@ func TestAPIAuthService_ReusePrincipalAfterDelete(t *testing.T) {
 	require.NoErrorf(t, err, "creating initial principal for user %s", userA)
 
 	// delete principal A for user1
-	mockClient.EXPECT().DeleteUserExternalPrincipalWithResponse(gomock.Any(), userA, principalId).Return(&auth.DeleteUserExternalPrincipalResponse{
+	reqDelParams := gomock.Eq(&auth.DeleteUserExternalPrincipalParams{PrincipalId: principalId})
+	mockClient.EXPECT().DeleteUserExternalPrincipalWithResponse(gomock.Any(), userA, reqDelParams).Return(&auth.DeleteUserExternalPrincipalResponse{
 		HTTPResponse: &http.Response{
 			StatusCode: http.StatusNoContent,
 		},
@@ -2694,7 +2697,7 @@ func TestAPIAuthService_ReusePrincipalAfterDelete(t *testing.T) {
 	require.NoErrorf(t, err, "deleting principal for user %s", userA)
 
 	// re-use principal A again for user2
-	mockClient.EXPECT().CreateUserExternalPrincipalWithResponse(gomock.Any(), userB, principalId).Return(&auth.CreateUserExternalPrincipalResponse{
+	mockClient.EXPECT().CreateUserExternalPrincipalWithResponse(gomock.Any(), userB, reqParams).Return(&auth.CreateUserExternalPrincipalResponse{
 		HTTPResponse: &http.Response{
 			StatusCode: http.StatusCreated,
 		},
@@ -2710,7 +2713,8 @@ func TestAPIAuthService_DeleteExternalPrincipalAttachedToUserDelete(t *testing.T
 	ctx := context.Background()
 
 	// create userA and principalA
-	mockClient.EXPECT().CreateUserExternalPrincipalWithResponse(gomock.Any(), userId, principalId).Return(&auth.CreateUserExternalPrincipalResponse{
+	reqParams := gomock.Eq(&auth.CreateUserExternalPrincipalParams{PrincipalId: principalId})
+	mockClient.EXPECT().CreateUserExternalPrincipalWithResponse(gomock.Any(), userId, reqParams).Return(&auth.CreateUserExternalPrincipalResponse{
 		HTTPResponse: &http.Response{
 			StatusCode: http.StatusCreated,
 		},
@@ -2727,13 +2731,16 @@ func TestAPIAuthService_DeleteExternalPrincipalAttachedToUserDelete(t *testing.T
 	err = s.DeleteUser(ctx, userId)
 	require.NoError(t, err)
 	// get principalA and expect error
-	mockClient.EXPECT().GetUserExternalPrincipalWithResponse(gomock.Any(), userId, gomock.Any()).Return(
-		&auth.GetUserExternalPrincipalResponse{
+
+	mockClient.EXPECT().GetExternalPrincipalWithResponse(gomock.Any(), gomock.Eq(&auth.GetExternalPrincipalParams{
+		PrincipalId: principalId,
+	})).Return(
+		&auth.GetExternalPrincipalResponse{
 			HTTPResponse: &http.Response{
 				StatusCode: http.StatusNotFound,
 			},
 		}, auth.ErrNotFound)
 
-	_, err = s.GetUserExternalPrincipal(ctx, userId, principalId)
+	_, err = s.GetExternalPrincipal(ctx, principalId)
 	require.Errorf(t, err, "principal should not exist if a user is deleted")
 }

@@ -7,11 +7,11 @@ All URIs are relative to */api/v1*
 | [**abortPresignMultipartUpload**](ExperimentalApi.md#abortPresignMultipartUpload) | **DELETE** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Abort a presign multipart upload |
 | [**completePresignMultipartUpload**](ExperimentalApi.md#completePresignMultipartUpload) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId} | Complete a presign multipart upload request |
 | [**createPresignMultipartUpload**](ExperimentalApi.md#createPresignMultipartUpload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload |
-| [**createUserExternalPrincipal**](ExperimentalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principal/{principalId} | attach external principal to user |
-| [**deleteUserExternalPrincipal**](ExperimentalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principal/{principalId} | delete external principal from user |
-| [**getUserExternalPrincipal**](ExperimentalApi.md#getUserExternalPrincipal) | **GET** /auth/users/{userId}/external/principal/{principalId} | get external principal of a user |
+| [**createUserExternalPrincipal**](ExperimentalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user |
+| [**deleteUserExternalPrincipal**](ExperimentalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user |
+| [**getExternalPrincipal**](ExperimentalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id |
 | [**hardResetBranch**](ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch |
-| [**listUserExternalPrincipals**](ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals | list user external policies attached to a user |
+| [**listUserExternalPrincipals**](ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user |
 
 
 <a id="abortPresignMultipartUpload"></a>
@@ -329,7 +329,7 @@ public class Example {
 
 <a id="createUserExternalPrincipal"></a>
 # **createUserExternalPrincipal**
-> createUserExternalPrincipal(userId, principalId, externalPrincipalCreation).execute();
+> createUserExternalPrincipal(userId, principalId).externalPrincipalCreation(externalPrincipalCreation).execute();
 
 attach external principal to user
 
@@ -380,7 +380,8 @@ public class Example {
     String principalId = "principalId_example"; // String | 
     ExternalPrincipalCreation externalPrincipalCreation = new ExternalPrincipalCreation(); // ExternalPrincipalCreation | 
     try {
-      apiInstance.createUserExternalPrincipal(userId, principalId, externalPrincipalCreation)
+      apiInstance.createUserExternalPrincipal(userId, principalId)
+            .externalPrincipalCreation(externalPrincipalCreation)
             .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling ExperimentalApi#createUserExternalPrincipal");
@@ -399,7 +400,7 @@ public class Example {
 |------------- | ------------- | ------------- | -------------|
 | **userId** | **String**|  | |
 | **principalId** | **String**|  | |
-| **externalPrincipalCreation** | [**ExternalPrincipalCreation**](ExternalPrincipalCreation.md)|  | |
+| **externalPrincipalCreation** | [**ExternalPrincipalCreation**](ExternalPrincipalCreation.md)|  | [optional] |
 
 ### Return type
 
@@ -518,11 +519,11 @@ null (empty response body)
 | **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a id="getUserExternalPrincipal"></a>
-# **getUserExternalPrincipal**
-> ExternalPrincipal getUserExternalPrincipal(userId, principalId).execute();
+<a id="getExternalPrincipal"></a>
+# **getExternalPrincipal**
+> ExternalPrincipal getExternalPrincipal(principalId).execute();
 
-get external principal of a user
+describe external principal by id
 
 ### Example
 ```java
@@ -567,14 +568,13 @@ public class Example {
     jwt_token.setBearerToken("BEARER TOKEN");
 
     ExperimentalApi apiInstance = new ExperimentalApi(defaultClient);
-    String userId = "userId_example"; // String | 
     String principalId = "principalId_example"; // String | 
     try {
-      ExternalPrincipal result = apiInstance.getUserExternalPrincipal(userId, principalId)
+      ExternalPrincipal result = apiInstance.getExternalPrincipal(principalId)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
-      System.err.println("Exception when calling ExperimentalApi#getUserExternalPrincipal");
+      System.err.println("Exception when calling ExperimentalApi#getExternalPrincipal");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
@@ -588,7 +588,6 @@ public class Example {
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **userId** | **String**|  | |
 | **principalId** | **String**|  | |
 
 ### Return type
