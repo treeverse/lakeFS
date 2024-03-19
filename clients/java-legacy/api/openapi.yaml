@@ -15,6 +15,7 @@ security:
 - cookie_auth: []
 - oidc_auth: []
 - saml_auth: []
+- external_auth: []
 paths:
   /setup_comm_prefs:
     post:
@@ -170,6 +171,47 @@ paths:
           description: Internal Server Error
       security: []
       summary: perform a login
+      tags:
+      - auth
+      x-contentType: application/json
+      x-accepts: application/json
+  /auth/external/login:
+    post:
+      operationId: externalLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalLoginInformation'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationToken'
+          description: successful login
+          headers:
+            Set-Cookie:
+              explode: false
+              schema:
+                type: string
+              style: simple
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      summary: perform a login using an external authenticator
       tags:
       - auth
       x-contentType: application/json
@@ -8140,6 +8182,15 @@ components:
       - access_key_id
       - secret_access_key
       type: object
+    ExternalLoginInformation:
+      example:
+        presigned_url: presigned_url
+      properties:
+        presigned_url:
+          type: string
+      required:
+      - presigned_url
+      type: object
     AuthenticationToken:
       example:
         token_expiration: 0
@@ -9059,4 +9110,7 @@ components:
       in: cookie
       name: saml_auth_session
       type: apiKey
+    external_auth:
+      scheme: basic
+      type: http
 

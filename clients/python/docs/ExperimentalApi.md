@@ -25,6 +25,7 @@ Aborts a presign multipart upload.
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
+* Basic Authentication (external_auth):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
@@ -59,6 +60,12 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure HTTP basic authorization: external_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
 
 # Configure API key authorization: oidc_auth
 configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
@@ -113,7 +120,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -144,6 +151,7 @@ Completes a presign multipart upload by assembling the uploaded parts.
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
+* Basic Authentication (external_auth):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
@@ -179,6 +187,12 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure HTTP basic authorization: external_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
 
 # Configure API key authorization: oidc_auth
 configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
@@ -235,7 +249,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -267,6 +281,7 @@ Initiates a multipart upload and returns an upload ID with presigned URLs for ea
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
+* Basic Authentication (external_auth):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
@@ -301,6 +316,12 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure HTTP basic authorization: external_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
 
 # Configure API key authorization: oidc_auth
 configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
@@ -355,7 +376,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -384,6 +405,7 @@ attach external principal to user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
+* Basic Authentication (external_auth):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
@@ -418,6 +440,12 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure HTTP basic authorization: external_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
 
 # Configure API key authorization: oidc_auth
 configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
@@ -468,7 +496,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -497,6 +525,7 @@ delete external principal from user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
+* Basic Authentication (external_auth):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
@@ -530,6 +559,12 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure HTTP basic authorization: external_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
 
 # Configure API key authorization: oidc_auth
 configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
@@ -578,7 +613,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -606,6 +641,7 @@ describe external principal by id
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
+* Basic Authentication (external_auth):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
@@ -640,6 +676,12 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure HTTP basic authorization: external_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
 
 # Configure API key authorization: oidc_auth
 configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
@@ -688,7 +730,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -718,6 +760,7 @@ Relocate branch to refer to ref.  Branch must not contain uncommitted data.
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
+* Basic Authentication (external_auth):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
@@ -751,6 +794,12 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure HTTP basic authorization: external_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
 
 # Configure API key authorization: oidc_auth
 configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
@@ -803,7 +852,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -833,6 +882,7 @@ list user external policies attached to a user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
+* Basic Authentication (external_auth):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
@@ -867,6 +917,12 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure HTTP basic authorization: external_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
 
 # Configure API key authorization: oidc_auth
 configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
@@ -921,7 +977,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 

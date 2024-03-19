@@ -20,6 +20,7 @@ Method | HTTP request | Description
 [**deleteUserExternalPrincipal**](AuthApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 [**detachPolicyFromGroup**](AuthApi.md#detachPolicyFromGroup) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 [**detachPolicyFromUser**](AuthApi.md#detachPolicyFromUser) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
+[**externalLogin**](AuthApi.md#externalLogin) | **POST** /auth/external/login | perform a login using an external authenticator
 [**getCredentials**](AuthApi.md#getCredentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 [**getCurrentUser**](AuthApi.md#getCurrentUser) | **GET** /user | get current user
 [**getExternalPrincipal**](AuthApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
@@ -73,6 +74,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -118,7 +124,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -166,6 +172,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -211,7 +222,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -259,6 +270,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -304,7 +320,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -352,6 +368,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -396,7 +417,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -444,6 +465,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -488,7 +514,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -536,6 +562,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -580,7 +611,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -629,6 +660,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -673,7 +709,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -722,6 +758,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -769,7 +810,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -818,6 +859,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -863,7 +909,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -911,6 +957,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -954,7 +1005,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1002,6 +1053,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -1047,7 +1103,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1095,6 +1151,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -1138,7 +1199,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1186,6 +1247,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -1229,7 +1295,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1277,6 +1343,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -1322,7 +1393,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1370,6 +1441,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -1415,7 +1491,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1463,6 +1539,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -1508,7 +1589,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1521,6 +1602,69 @@ null (empty response body)
 **204** | policy detached successfully |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="externalLogin"></a>
+# **externalLogin**
+> AuthenticationToken externalLogin(externalLoginInformation)
+
+perform a login using an external authenticator
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+
+    AuthApi apiInstance = new AuthApi(defaultClient);
+    ExternalLoginInformation externalLoginInformation = new ExternalLoginInformation(); // ExternalLoginInformation | 
+    try {
+      AuthenticationToken result = apiInstance.externalLogin(externalLoginInformation);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling AuthApi#externalLogin");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **externalLoginInformation** | [**ExternalLoginInformation**](ExternalLoginInformation.md)|  | [optional]
+
+### Return type
+
+[**AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | successful login |  * Set-Cookie -  <br>  |
+**401** | Unauthorized |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
@@ -1555,6 +1699,11 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
@@ -1602,7 +1751,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1650,6 +1799,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -1690,7 +1844,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1733,6 +1887,11 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
@@ -1778,7 +1937,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1826,6 +1985,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -1870,7 +2034,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1918,6 +2082,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -1962,7 +2131,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2010,6 +2179,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -2054,7 +2228,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2102,6 +2276,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -2146,7 +2325,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2193,6 +2372,11 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
@@ -2244,7 +2428,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2290,6 +2474,11 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
@@ -2341,7 +2530,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2388,6 +2577,11 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
@@ -2437,7 +2631,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2483,6 +2677,11 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
@@ -2532,7 +2731,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2578,6 +2777,11 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
@@ -2629,7 +2833,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2676,6 +2880,11 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
@@ -2727,7 +2936,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2774,6 +2983,11 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
@@ -2825,7 +3039,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2872,6 +3086,11 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
@@ -2925,7 +3144,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2972,6 +3191,11 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
@@ -3021,7 +3245,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -3131,6 +3355,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -3176,7 +3405,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -3224,6 +3453,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -3270,7 +3504,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 

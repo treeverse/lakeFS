@@ -34,6 +34,7 @@ from lakefs_client.model.diff import Diff
 from lakefs_client.model.diff_list import DiffList
 from lakefs_client.model.error import Error
 from lakefs_client.model.error_no_acl import ErrorNoACL
+from lakefs_client.model.external_login_information import ExternalLoginInformation
 from lakefs_client.model.external_principal import ExternalPrincipal
 from lakefs_client.model.external_principal_creation import ExternalPrincipalCreation
 from lakefs_client.model.external_principal_list import ExternalPrincipalList

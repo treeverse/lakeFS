@@ -554,6 +554,48 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	writeResponse(w, r, http.StatusOK, response)
 }
 
+func (c *Controller) ExternalLogin(w http.ResponseWriter, r *http.Request, body apigen.ExternalLoginJSONRequestBody) {
+	ctx := r.Context()
+	if c.isExternalPrincipalNotSupported(ctx) {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
+
+	c.LogAction(ctx, "external_login", r, "", "", "")
+
+	userID, err := c.Auth.ExternalLogin(ctx, body.PresignedUrl)
+	if c.handleAPIError(ctx, w, r, err) {
+		if errors.Is(err, ErrAuthenticatingRequest) {
+			writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+			return
+		}
+
+		loginTime := time.Now()
+		duration := c.Config.Auth.LoginDuration
+		expires := loginTime.Add(duration)
+		secret := c.Auth.SecretStore().SharedSecret()
+
+		tokenString, err := GenerateJWTLogin(secret, userID, loginTime, expires)
+		if err != nil {
+			writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+			return
+		}
+		internalAuthSession, _ := c.sessionStore.Get(r, InternalAuthSessionName)
+		internalAuthSession.Values[TokenSessionKeyName] = tokenString
+		err = c.sessionStore.Save(r, w, internalAuthSession)
+		if err != nil {
+			c.Logger.WithError(err).Error("Failed to save internal auth session")
+			writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+			return
+		}
+		response := apigen.AuthenticationToken{
+			Token:           tokenString,
+			TokenExpiration: swag.Int64(expires.Unix()),
+		}
+		writeResponse(w, r, http.StatusOK, response)
+	}
+}
+
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{

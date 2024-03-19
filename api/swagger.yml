@@ -17,6 +17,7 @@ security:
   - cookie_auth: []
   - oidc_auth: []
   - saml_auth: []
+  - external_auth: []
 components:
   securitySchemes:
     basic_auth:
@@ -38,6 +39,9 @@ components:
       type: apiKey
       in: cookie
       name: saml_auth_session
+    external_auth:
+      type: http
+      scheme: basic
   parameters:
     PaginationPrefix:
       in: query
@@ -1050,6 +1054,14 @@ components:
         secret_access_key:
           type: string
 
+    ExternalLoginInformation:
+      type: object
+      required:
+        - presigned_url
+      properties:
+        presigned_url:
+          type: string
+
     AuthenticationToken:
       type: object
       required:
@@ -1803,7 +1815,35 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-
+  /auth/external/login:
+    post:
+      tags:
+        - auth
+      operationId: externalLogin
+      summary: perform a login using an external authenticator
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalLoginInformation"
+      responses:
+        200:
+          description: successful login
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticationToken"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
 
   /auth/capabilities:
     get:

@@ -35,6 +35,7 @@ import io.lakefs.clients.sdk.model.CredentialsWithSecret;
 import io.lakefs.clients.sdk.model.CurrentUser;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.ErrorNoACL;
+import io.lakefs.clients.sdk.model.ExternalLoginInformation;
 import io.lakefs.clients.sdk.model.ExternalPrincipal;
 import io.lakefs.clients.sdk.model.ExternalPrincipalCreation;
 import io.lakefs.clients.sdk.model.ExternalPrincipalList;
@@ -133,7 +134,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -310,7 +311,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -487,7 +488,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -663,7 +664,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -835,7 +836,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -1010,7 +1011,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -1187,7 +1188,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -1372,7 +1373,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -1565,7 +1566,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -1741,7 +1742,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -1910,7 +1911,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -2086,7 +2087,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -2254,7 +2255,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -2426,7 +2427,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -2603,7 +2604,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -2780,7 +2781,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -2915,6 +2916,176 @@ public class AuthApi {
     public APIdetachPolicyFromUserRequest detachPolicyFromUser(String userId, String policyId) {
         return new APIdetachPolicyFromUserRequest(userId, policyId);
     }
+    private okhttp3.Call externalLoginCall(ExternalLoginInformation externalLoginInformation, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = externalLoginInformation;
+
+        // create path and map variables
+        String localVarPath = "/auth/external/login";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] {  };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call externalLoginValidateBeforeCall(ExternalLoginInformation externalLoginInformation, final ApiCallback _callback) throws ApiException {
+        return externalLoginCall(externalLoginInformation, _callback);
+
+    }
+
+
+    private ApiResponse<AuthenticationToken> externalLoginWithHttpInfo(ExternalLoginInformation externalLoginInformation) throws ApiException {
+        okhttp3.Call localVarCall = externalLoginValidateBeforeCall(externalLoginInformation, null);
+        Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call externalLoginAsync(ExternalLoginInformation externalLoginInformation, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = externalLoginValidateBeforeCall(externalLoginInformation, _callback);
+        Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIexternalLoginRequest {
+        private ExternalLoginInformation externalLoginInformation;
+
+        private APIexternalLoginRequest() {
+        }
+
+        /**
+         * Set externalLoginInformation
+         * @param externalLoginInformation  (optional)
+         * @return APIexternalLoginRequest
+         */
+        public APIexternalLoginRequest externalLoginInformation(ExternalLoginInformation externalLoginInformation) {
+            this.externalLoginInformation = externalLoginInformation;
+            return this;
+        }
+
+        /**
+         * Build call for externalLogin
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> successful login </td><td>  * Set-Cookie -  <br>  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return externalLoginCall(externalLoginInformation, _callback);
+        }
+
+        /**
+         * Execute externalLogin request
+         * @return AuthenticationToken
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> successful login </td><td>  * Set-Cookie -  <br>  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public AuthenticationToken execute() throws ApiException {
+            ApiResponse<AuthenticationToken> localVarResp = externalLoginWithHttpInfo(externalLoginInformation);
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute externalLogin request with HTTP info returned
+         * @return ApiResponse&lt;AuthenticationToken&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> successful login </td><td>  * Set-Cookie -  <br>  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<AuthenticationToken> executeWithHttpInfo() throws ApiException {
+            return externalLoginWithHttpInfo(externalLoginInformation);
+        }
+
+        /**
+         * Execute externalLogin request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> successful login </td><td>  * Set-Cookie -  <br>  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+            return externalLoginAsync(externalLoginInformation, _callback);
+        }
+    }
+
+    /**
+     * perform a login using an external authenticator
+     * 
+     * @return APIexternalLoginRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> successful login </td><td>  * Set-Cookie -  <br>  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIexternalLoginRequest externalLogin() {
+        return new APIexternalLoginRequest();
+    }
     private okhttp3.Call getCredentialsCall(String userId, String accessKeyId, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
@@ -2957,7 +3128,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -3136,7 +3307,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -3283,7 +3454,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -3455,7 +3626,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -3627,7 +3798,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -3799,7 +3970,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -3971,7 +4142,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -4155,7 +4326,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -4367,7 +4538,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -4583,7 +4754,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -4786,7 +4957,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -4990,7 +5161,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -5207,7 +5378,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -5424,7 +5595,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -5645,7 +5816,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -5872,7 +6043,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -6235,7 +6406,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -6412,7 +6583,7 @@ public class AuthApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 

@@ -102,6 +102,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -163,6 +168,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**deleteUserExternalPrincipal**](docs/AuthApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 *AuthApi* | [**detachPolicyFromGroup**](docs/AuthApi.md#detachPolicyFromGroup) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 *AuthApi* | [**detachPolicyFromUser**](docs/AuthApi.md#detachPolicyFromUser) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
+*AuthApi* | [**externalLogin**](docs/AuthApi.md#externalLogin) | **POST** /auth/external/login | perform a login using an external authenticator
 *AuthApi* | [**getCredentials**](docs/AuthApi.md#getCredentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 *AuthApi* | [**getCurrentUser**](docs/AuthApi.md#getCurrentUser) | **GET** /user | get current user
 *AuthApi* | [**getExternalPrincipal**](docs/AuthApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
@@ -300,6 +306,7 @@ Class | Method | HTTP request | Description
  - [DiffList](docs/DiffList.md)
  - [Error](docs/Error.md)
  - [ErrorNoACL](docs/ErrorNoACL.md)
+ - [ExternalLoginInformation](docs/ExternalLoginInformation.md)
  - [ExternalPrincipal](docs/ExternalPrincipal.md)
  - [ExternalPrincipalCreation](docs/ExternalPrincipalCreation.md)
  - [ExternalPrincipalList](docs/ExternalPrincipalList.md)
@@ -408,6 +415,11 @@ Authentication schemes defined for the API:
 - **Type**: API key
 - **API key parameter name**: saml_auth_session
 - **Location**: 
+
+<a id="external_auth"></a>
+### external_auth
+
+- **Type**: HTTP basic authentication
 
 
 ## Recommendation

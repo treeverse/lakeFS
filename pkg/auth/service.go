@@ -85,6 +85,7 @@ type ExternalPrincipalsService interface {
 	DeleteUserExternalPrincipal(ctx context.Context, userID, principalID string) error
 	GetExternalPrincipal(ctx context.Context, principalID string) (*model.ExternalPrincipal, error)
 	ListUserExternalPrincipals(ctx context.Context, userID string, params *model.PaginationParams) ([]*model.ExternalPrincipal, *model.Paginator, error)
+	ExternalLogin(ctx context.Context, presignedUrl string) (string, error)
 }
 
 type Service interface {
@@ -1130,6 +1131,10 @@ func (s *AuthService) GetExternalPrincipal(ctx context.Context, principalID stri
 	return nil, ErrNotImplemented
 }
 
+func (s *AuthService) ExternalLogin(ctx context.Context, presignedUrl string) (string, error) {
+	return "", ErrNotImplemented
+}
+
 func (s *AuthService) ListUserExternalPrincipals(ctx context.Context, userID string, params *model.PaginationParams) ([]*model.ExternalPrincipal, *model.Paginator, error) {
 	return nil, nil, ErrNotImplemented
 }
@@ -2041,6 +2046,22 @@ func (a *APIAuthService) ListUserExternalPrincipals(ctx context.Context, userID 
 		}
 	}
 	return principals, toPagination(resp.JSON200.Pagination), nil
+}
+
+func (a *APIAuthService) ExternalLogin(ctx context.Context, principalID string) (string, error) {
+	if !a.IsExternalPrincipalsEnabled(ctx) {
+		return "", fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
+	}
+	resp, err := a.apiClient.GetExternalPrincipalWithResponse(ctx, &GetExternalPrincipalParams{
+		PrincipalId: principalID,
+	})
+	if err != nil {
+		return "", fmt.Errorf("get external principal: %w", err)
+	}
+	if err := a.validateResponse(resp, http.StatusOK); err != nil {
+		return "", err
+	}
+	return resp.JSON200.UserId, nil
 }
 
 func NewAPIAuthService(apiEndpoint, token string, externalPrincipalseEnabled bool, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
