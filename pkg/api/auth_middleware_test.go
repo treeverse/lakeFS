@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	"github.com/deepmap/oapi-codegen/v2/pkg/securityprovider"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/api"

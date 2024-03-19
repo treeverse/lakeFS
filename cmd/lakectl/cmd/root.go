@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	"github.com/deepmap/oapi-codegen/v2/pkg/securityprovider"
 	"github.com/go-openapi/swag"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
