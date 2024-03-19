@@ -554,6 +554,9 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	writeResponse(w, r, http.StatusOK, response)
 }
 
+func (c *Controller) stam() {
+}
+
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
