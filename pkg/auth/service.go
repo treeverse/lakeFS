@@ -85,7 +85,7 @@ type ExternalPrincipalsService interface {
 	DeleteUserExternalPrincipal(ctx context.Context, userID, principalID string) error
 	GetExternalPrincipal(ctx context.Context, principalID string) (*model.ExternalPrincipal, error)
 	ListUserExternalPrincipals(ctx context.Context, userID string, params *model.PaginationParams) ([]*model.ExternalPrincipal, *model.Paginator, error)
-	ExternalLogin(ctx context.Context, presignedUrl string) (string, error)
+	ExternalLogin(ctx context.Context, principalID string) (string, error)
 }
 
 type Service interface {
@@ -1131,7 +1131,7 @@ func (s *AuthService) GetExternalPrincipal(ctx context.Context, principalID stri
 	return nil, ErrNotImplemented
 }
 
-func (s *AuthService) ExternalLogin(ctx context.Context, presignedUrl string) (string, error) {
+func (s *AuthService) ExternalLogin(ctx context.Context, principalID string) (string, error) {
 	return "", ErrNotImplemented
 }
 
