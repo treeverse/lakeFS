@@ -558,7 +558,7 @@ func (l *Adapter) RuntimeStats() map[string]string {
 
 func VerifyAbsPath(absPath, adapterPath string, allowedPrefixes []string) error {
 	// check we have a valid abs path
-	if !path.IsAbs(absPath) || path.Clean(absPath) != absPath {
+	if !filepath.IsAbs(absPath) || filepath.Clean(absPath) != absPath {
 		return ErrBadPath
 	}
 	// point to storage namespace

@@ -557,7 +557,13 @@ func TestLakectlFsUpload(t *testing.T) {
 	})
 	t.Run("single_file_with_recursive", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/ro_1k.0"
-		RunCmdAndVerifyFailure(t, Lakectl()+" fs upload --recursive -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "\ndiff 'local://files/ro_1k/' <--> 'lakefs://${REPO}/${BRANCH}/${FILE_PATH}'...\nlstat files/ro_1k/: not a directory\nError executing command.\n", vars)
+		sanitizedResult := runCmd(t, Lakectl()+" fs upload --recursive -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
+		require.Contains(t, sanitizedResult, "diff 'local://files/ro_1k/' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
+		require.Contains(t, sanitizedResult, "upload .")
+		require.Contains(t, sanitizedResult, "Upload Summary:")
+		require.Contains(t, sanitizedResult, "Downloaded: 0")
+		require.Contains(t, sanitizedResult, "Uploaded: 1")
+		require.Contains(t, sanitizedResult, "Removed: 0")
 	})
 	t.Run("dir", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/"

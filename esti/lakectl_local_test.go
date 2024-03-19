@@ -437,18 +437,23 @@ func TestLakectlLocal_commit(t *testing.T) {
 			presign := fmt.Sprintf(" --pre-sign=%v ", tt.presign)
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+presign+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
-			//relPath, err := filepath.Rel(tmpDir, dataDir)
-			//require.NoError(t, err)
-
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
 
 			// Modify local folder - add and remove files
+			os.MkdirAll(filepath.Join(dataDir, "subdir"), os.ModePerm)
+			os.MkdirAll(filepath.Join(dataDir, "subdir-a"), os.ModePerm)
+			fd, err = os.Create(filepath.Join(dataDir, "subdir", "test.txt"))
+			require.NoError(t, err)
+			fd, err = os.Create(filepath.Join(dataDir, "subdir-a", "test.txt"))
+			require.NoError(t, err)
 			fd, err = os.Create(filepath.Join(dataDir, "test.txt"))
 			require.NoError(t, err)
 			require.NoError(t, fd.Close())
 			require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
 
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ subdir/test.txt", vars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ subdir-a/test.txt", vars)
 
 			// Commit changes to branch
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test"+presign+dataDir, false, "Commit for branch \"${BRANCH}\" completed", vars)
