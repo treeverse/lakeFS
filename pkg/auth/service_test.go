@@ -2744,3 +2744,37 @@ func TestAPIAuthService_DeleteExternalPrincipalAttachedToUserDelete(t *testing.T
 	_, err = s.GetExternalPrincipal(ctx, principalId)
 	require.Errorf(t, err, "principal should not exist if a user is deleted")
 }
+
+func TestAPIAuthService_ExternalLogin(t *testing.T) {
+	mockClient, s := NewTestApiService(t, false)
+	userId := "user"
+	principalId := "arn:aws:sts::123:assumed-role/MyRole/SessionName"
+	ctx := context.Background()
+
+	// create userA and principalA
+	reqParams := gomock.Eq(&auth.CreateUserExternalPrincipalParams{PrincipalId: principalId})
+	mockClient.EXPECT().CreateUserExternalPrincipalWithResponse(gomock.Any(), userId, reqParams).Return(&auth.CreateUserExternalPrincipalResponse{
+		HTTPResponse: &http.Response{
+			StatusCode: http.StatusCreated,
+		},
+	}, nil)
+
+	mockClient.EXPECT().GetExternalPrincipalWithResponse(gomock.Any(), gomock.Eq(&auth.GetExternalPrincipalParams{
+		PrincipalId: principalId,
+	})).Return(
+		&auth.GetExternalPrincipalResponse{
+			HTTPResponse: &http.Response{
+				StatusCode: http.StatusOK,
+			},
+			JSON200: &auth.ExternalPrincipal{
+				Id:     principalId,
+				UserId: userId,
+			},
+		}, nil)
+
+	err := s.CreateUserExternalPrincipal(ctx, userId, principalId)
+	require.NoError(t, err)
+	resp, err := s.ExternalLogin(ctx, principalId)
+	require.NoError(t, err)
+	require.Equal(t, userId, resp)
+}
