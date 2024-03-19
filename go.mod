@@ -49,7 +49,7 @@ require (
 	golang.org/x/oauth2 v0.15.0
 	golang.org/x/term v0.16.0
 	google.golang.org/api v0.152.0
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.33.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1
 )
