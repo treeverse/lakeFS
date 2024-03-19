@@ -14,7 +14,7 @@ import (
 //go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package apiclient -generate "types,client" -o apiclient/client.gen.go  ../../api/authentication.yml
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=apiclient -destination=apiclient/mock_authentication_client.go github.com/treeverse/lakefs/pkg/authentication/apiclient ClientWithResponsesInterface
 type Service interface {
-	GetTokenDataBySTS(ctx context.Context, code, redirectURI, state string) (*JWTTokenData, error)
+	ValidateSTS(ctx context.Context, code, redirectURI, state string) (*STSResponseData, error)
 }
 
 type DummyService struct{}
@@ -22,7 +22,7 @@ type DummyService struct{}
 func NewDummyService() *DummyService {
 	return &DummyService{}
 }
-func (d DummyService) GetTokenDataBySTS(ctx context.Context, code, redirectURI, state string) (*JWTTokenData, error) {
+func (d DummyService) ValidateSTS(ctx context.Context, code, redirectURI, state string) (*STSResponseData, error) {
 	return nil, ErrNotImplemented
 }
 
@@ -72,12 +72,14 @@ func (s *APIService) validateResponse(resp openapi3filter.StatusCoder, expectedS
 	}
 }
 
-type JWTTokenData struct {
-	Subject           string
+type STSResponseData struct {
+	ExternalUserID    string
 	ExpiresAtUnixTime int64
 }
 
-func (s *APIService) GetTokenDataBySTS(ctx context.Context, code, redirectURI, state string) (*JWTTokenData, error) {
+// ValidateSTS calls the external authentication service to validate the STS parameters
+// validates the required claims and returns the external user id and expiration time
+func (s *APIService) ValidateSTS(ctx context.Context, code, redirectURI, state string) (*STSResponseData, error) {
 	res, err := s.apiClient.STSLoginWithResponse(ctx, apiclient.STSLoginJSONRequestBody{
 		Code:        code,
 		RedirectUri: redirectURI,
@@ -111,8 +113,8 @@ func (s *APIService) GetTokenDataBySTS(ctx context.Context, code, redirectURI, s
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse expiration time: %w", err)
 	}
-	return &JWTTokenData{
-		Subject:           subject,
+	return &STSResponseData{
+		ExternalUserID:    subject,
 		ExpiresAtUnixTime: int64(expiresAtInt),
 	}, nil
 }

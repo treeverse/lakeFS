@@ -558,12 +558,16 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 
 func (c *Controller) STSLogin(w http.ResponseWriter, r *http.Request, body apigen.STSLoginJSONRequestBody) {
 	ctx := r.Context()
-	tokenData, err := c.Authentication.GetTokenDataBySTS(ctx, body.Code, body.RedirectUri, body.State)
+	responseData, err := c.Authentication.ValidateSTS(ctx, body.Code, body.RedirectUri, body.State)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-
-	token, err := GenerateJWTLogin(c.Auth.SecretStore().SharedSecret(), tokenData.Subject, time.Now().Unix(), tokenData.ExpiresAtUnixTime)
+	// validate a user exists with the external user id
+	_, err = c.Auth.GetUserByExternalID(ctx, responseData.ExternalUserID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	token, err := GenerateJWTLogin(c.Auth.SecretStore().SharedSecret(), responseData.ExternalUserID, time.Now().Unix(), responseData.ExpiresAtUnixTime)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

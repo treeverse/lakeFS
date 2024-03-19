@@ -120,9 +120,9 @@ func TestAPIAuthService_STSLogin(t *testing.T) {
 				}
 			}
 			mockClient.EXPECT().STSLoginWithResponse(gomock.Any(), requestEq).Return(loginResponse, tt.error)
-			res, err := s.GetTokenDataBySTS(ctx, code, redirectURI, state)
+			res, err := s.ValidateSTS(ctx, code, redirectURI, state)
 			if !errors.Is(err, tt.expectedErr) {
-				t.Fatalf("GetTokenDataBySTS: expected err: %v got: %v", tt.expectedErr, err)
+				t.Fatalf("ValidateSTS: expected err: %v got: %v", tt.expectedErr, err)
 			}
 			if err != nil {
 				return
@@ -130,8 +130,8 @@ func TestAPIAuthService_STSLogin(t *testing.T) {
 			if res == nil {
 				t.Fatal("expected token data, got nil")
 			}
-			if res.Subject != tt.returnedSubject {
-				t.Fatalf("expected subject to be 'external_user_id', got %s", res.Subject)
+			if res.ExternalUserID != tt.returnedSubject {
+				t.Fatalf("expected subject to be 'external_user_id', got %s", res.ExternalUserID)
 			}
 			expires := time.Unix(tt.returnedExpiresUnix, 0)
 			if res.ExpiresAtUnixTime != expires.Unix() {
