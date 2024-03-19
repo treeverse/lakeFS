@@ -1,5 +1,15 @@
 # Changelog
 
+# v1.14.1
+
+:new: What's new:
+
+- Integration: update experimental external principals API with auth service (#7566)
+
+:bug: Bugs fixed:
+
+- Fix lakectl local diff (#7563)
+
 # v1.14.0
 
 :new: What's new:
