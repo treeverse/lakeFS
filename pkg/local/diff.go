@@ -3,13 +3,16 @@ package local
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"net/http"
+	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/block/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -194,14 +197,28 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Change
 		currentRemoteFile apigen.ObjectStats
 		hasMore           bool
 	)
-	err := filepath.Walk(rightPath, func(path string, info fs.FileInfo, err error) error {
+	absPath, err := filepath.Abs(rightPath)
+	if err != nil {
+		return nil, err
+	}
+	uri := url.URL{Scheme: "local", Path: absPath}
+	adapter, err := local.NewAdapter("", local.WithRemoveEmptyDir(false), local.WithAllowedExternalPrefixes([]string{absPath}))
+	if err != nil {
+		return nil, err
+	}
+	reader, err := adapter.GetWalker(&uri)
+	if err != nil {
+		return nil, err
+	}
+	err = reader.Walk(context.Background(), &uri, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
+		info, err := os.Stat(e.FullKey)
 		if err != nil {
 			return err
 		}
 		if info.IsDir() || diffShouldIgnore(info.Name()) {
 			return nil
 		}
-		localPath := strings.TrimPrefix(path, rightPath)
+		localPath := e.RelativeKey
 		localPath = strings.TrimPrefix(localPath, string(filepath.Separator))
 		localPath = filepath.ToSlash(localPath) // normalize to use "/" always
 
