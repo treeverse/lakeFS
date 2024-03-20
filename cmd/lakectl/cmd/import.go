@@ -163,8 +163,8 @@ func newImportProgressBar(visible bool) *progressbar.ProgressBar {
 func verifySourceMatchConfiguredStorage(ctx context.Context, client *apigen.ClientWithResponses, source string) {
 	// Adds backwards compatibility for ADLS Gen2 storage import `hint`
 	if strings.Contains(source, "adls.core.windows.net") {
-		Warning("'adls' hint is deprecated, please use the original source url for import")
 		source = strings.Replace(source, "adls.core.windows.net", "blob.core.windows.net", 1)
+		Warning(fmt.Sprintf("'adls' hint is deprecated\n Using %s", source))
 	}
 
 	confResp, err := client.GetConfigWithResponse(ctx)
