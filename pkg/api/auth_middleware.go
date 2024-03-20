@@ -130,7 +130,7 @@ func checkSecurityRequirements(r *http.Request,
 	for _, securityRequirement := range securityRequirements {
 		for provider := range securityRequirement {
 			switch provider {
-			case "jwt_token":
+			case "jwt_token", "external_auth":
 				// validate jwt token from header
 				authHeaderValue := r.Header.Get("Authorization")
 				if authHeaderValue == "" {
@@ -174,6 +174,7 @@ func checkSecurityRequirements(r *http.Request,
 					return nil, err
 				}
 				user, err = userFromSAML(ctx, logger, authService, samlSession, cookieAuthConfig)
+
 			default:
 				// unknown security requirement to check
 				logger.WithField("provider", provider).Error("Authentication middleware unknown security requirement provider")

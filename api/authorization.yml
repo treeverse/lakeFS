@@ -18,6 +18,9 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    external_auth:
+      type: http
+      scheme: basic
       
   parameters:
     PaginationPrefix:
