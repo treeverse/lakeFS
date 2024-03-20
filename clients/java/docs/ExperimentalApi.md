@@ -9,7 +9,7 @@ All URIs are relative to */api/v1*
 | [**createPresignMultipartUpload**](ExperimentalApi.md#createPresignMultipartUpload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload |
 | [**createUserExternalPrincipal**](ExperimentalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user |
 | [**deleteUserExternalPrincipal**](ExperimentalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user |
-| [**externalLogin**](ExperimentalApi.md#externalLogin) | **POST** /auth/external/login | perform a login using an external authenticator |
+| [**externalPrincipalLogin**](ExperimentalApi.md#externalPrincipalLogin) | **POST** /auth/external/login | perform a login using an external authenticator |
 | [**getExternalPrincipal**](ExperimentalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id |
 | [**hardResetBranch**](ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch |
 | [**listUserExternalPrincipals**](ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user |
@@ -520,9 +520,9 @@ null (empty response body)
 | **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a id="externalLogin"></a>
-# **externalLogin**
-> AuthenticationToken externalLogin().body(body).execute();
+<a id="externalPrincipalLogin"></a>
+# **externalPrincipalLogin**
+> AuthenticationToken externalPrincipalLogin().body(body).execute();
 
 perform a login using an external authenticator
 
@@ -543,12 +543,12 @@ public class Example {
     ExperimentalApi apiInstance = new ExperimentalApi(defaultClient);
     Object body = null; // Object | 
     try {
-      AuthenticationToken result = apiInstance.externalLogin()
+      AuthenticationToken result = apiInstance.externalPrincipalLogin()
             .body(body)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
-      System.err.println("Exception when calling ExperimentalApi#externalLogin");
+      System.err.println("Exception when calling ExperimentalApi#externalPrincipalLogin");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());

@@ -351,13 +351,13 @@ class ExternalApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def external_login(self, body : Optional[Dict[str, Any]] = None, **kwargs) -> AuthenticationToken:  # noqa: E501
+    def external_principal_login(self, body : Optional[Dict[str, Any]] = None, **kwargs) -> AuthenticationToken:  # noqa: E501
         """perform a login using an external authenticator  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.external_login(body, async_req=True)
+        >>> thread = api.external_principal_login(body, async_req=True)
         >>> result = thread.get()
 
         :param body:
@@ -375,17 +375,17 @@ class ExternalApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
-            raise ValueError("Error! Please call the external_login_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.external_login_with_http_info(body, **kwargs)  # noqa: E501
+            raise ValueError("Error! Please call the external_principal_login_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
+        return self.external_principal_login_with_http_info(body, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def external_login_with_http_info(self, body : Optional[Dict[str, Any]] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def external_principal_login_with_http_info(self, body : Optional[Dict[str, Any]] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """perform a login using an external authenticator  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.external_login_with_http_info(body, async_req=True)
+        >>> thread = api.external_principal_login_with_http_info(body, async_req=True)
         >>> result = thread.get()
 
         :param body:
@@ -437,7 +437,7 @@ class ExternalApi(object):
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method external_login" % _key
+                    " to method external_principal_login" % _key
                 )
             _params[_key] = _val
         del _params['kwargs']

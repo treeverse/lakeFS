@@ -1221,7 +1221,7 @@ paths:
         - auth
         - external
         - experimental
-      operationId: externalLogin
+      operationId: externalPrincipalLogin
       summary: perform a login using an external authenticator
       security: []
       requestBody:

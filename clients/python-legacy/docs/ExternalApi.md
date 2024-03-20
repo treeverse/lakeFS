@@ -6,7 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**create_user_external_principal**](ExternalApi.md#create_user_external_principal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 [**delete_user_external_principal**](ExternalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
-[**external_login**](ExternalApi.md#external_login) | **POST** /auth/external/login | perform a login using an external authenticator
+[**external_principal_login**](ExternalApi.md#external_principal_login) | **POST** /auth/external/login | perform a login using an external authenticator
 [**get_external_principal**](ExternalApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
 [**list_user_external_principals**](ExternalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 
@@ -245,8 +245,8 @@ void (empty response body)
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **external_login**
-> AuthenticationToken external_login()
+# **external_principal_login**
+> AuthenticationToken external_principal_login()
 
 perform a login using an external authenticator
 
@@ -277,10 +277,10 @@ with lakefs_client.ApiClient() as api_client:
     # and optional values
     try:
         # perform a login using an external authenticator
-        api_response = api_instance.external_login(body=body)
+        api_response = api_instance.external_principal_login(body=body)
         pprint(api_response)
     except lakefs_client.ApiException as e:
-        print("Exception when calling ExternalApi->external_login: %s\n" % e)
+        print("Exception when calling ExternalApi->external_principal_login: %s\n" % e)
 ```
 
 

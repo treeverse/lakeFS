@@ -20,7 +20,7 @@ Method | HTTP request | Description
 [**delete_user_external_principal**](AuthApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 [**detach_policy_from_group**](AuthApi.md#detach_policy_from_group) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 [**detach_policy_from_user**](AuthApi.md#detach_policy_from_user) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
-[**external_login**](AuthApi.md#external_login) | **POST** /auth/external/login | perform a login using an external authenticator
+[**external_principal_login**](AuthApi.md#external_principal_login) | **POST** /auth/external/login | perform a login using an external authenticator
 [**get_credentials**](AuthApi.md#get_credentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 [**get_current_user**](AuthApi.md#get_current_user) | **GET** /user | get current user
 [**get_external_principal**](AuthApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
@@ -1805,8 +1805,8 @@ void (empty response body)
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **external_login**
-> AuthenticationToken external_login()
+# **external_principal_login**
+> AuthenticationToken external_principal_login()
 
 perform a login using an external authenticator
 
@@ -1837,10 +1837,10 @@ with lakefs_client.ApiClient() as api_client:
     # and optional values
     try:
         # perform a login using an external authenticator
-        api_response = api_instance.external_login(body=body)
+        api_response = api_instance.external_principal_login(body=body)
         pprint(api_response)
     except lakefs_client.ApiException as e:
-        print("Exception when calling AuthApi->external_login: %s\n" % e)
+        print("Exception when calling AuthApi->external_principal_login: %s\n" % e)
 ```
 
 

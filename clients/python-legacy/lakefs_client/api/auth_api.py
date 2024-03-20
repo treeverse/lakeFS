@@ -994,12 +994,12 @@ class AuthApi(object):
             },
             api_client=api_client
         )
-        self.external_login_endpoint = _Endpoint(
+        self.external_principal_login_endpoint = _Endpoint(
             settings={
                 'response_type': (AuthenticationToken,),
                 'auth': [],
                 'endpoint_path': '/auth/external/login',
-                'operation_id': 'external_login',
+                'operation_id': 'external_principal_login',
                 'http_method': 'POST',
                 'servers': None,
             },
@@ -3336,7 +3336,7 @@ class AuthApi(object):
             policy_id
         return self.detach_policy_from_user_endpoint.call_with_http_info(**kwargs)
 
-    def external_login(
+    def external_principal_login(
         self,
         **kwargs
     ):
@@ -3345,7 +3345,7 @@ class AuthApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.external_login(async_req=True)
+        >>> thread = api.external_principal_login(async_req=True)
         >>> result = thread.get()
 
 
@@ -3395,7 +3395,7 @@ class AuthApi(object):
             '_check_return_type', True
         )
         kwargs['_host_index'] = kwargs.get('_host_index')
-        return self.external_login_endpoint.call_with_http_info(**kwargs)
+        return self.external_principal_login_endpoint.call_with_http_info(**kwargs)
 
     def get_credentials(
         self,

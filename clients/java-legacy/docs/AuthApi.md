@@ -20,7 +20,7 @@ Method | HTTP request | Description
 [**deleteUserExternalPrincipal**](AuthApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 [**detachPolicyFromGroup**](AuthApi.md#detachPolicyFromGroup) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 [**detachPolicyFromUser**](AuthApi.md#detachPolicyFromUser) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
-[**externalLogin**](AuthApi.md#externalLogin) | **POST** /auth/external/login | perform a login using an external authenticator
+[**externalPrincipalLogin**](AuthApi.md#externalPrincipalLogin) | **POST** /auth/external/login | perform a login using an external authenticator
 [**getCredentials**](AuthApi.md#getCredentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 [**getCurrentUser**](AuthApi.md#getCurrentUser) | **GET** /user | get current user
 [**getExternalPrincipal**](AuthApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
@@ -1525,9 +1525,9 @@ null (empty response body)
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
-<a name="externalLogin"></a>
-# **externalLogin**
-> AuthenticationToken externalLogin(body)
+<a name="externalPrincipalLogin"></a>
+# **externalPrincipalLogin**
+> AuthenticationToken externalPrincipalLogin(body)
 
 perform a login using an external authenticator
 
@@ -1548,10 +1548,10 @@ public class Example {
     AuthApi apiInstance = new AuthApi(defaultClient);
     Object body = null; // Object | 
     try {
-      AuthenticationToken result = apiInstance.externalLogin(body);
+      AuthenticationToken result = apiInstance.externalPrincipalLogin(body);
       System.out.println(result);
     } catch (ApiException e) {
-      System.err.println("Exception when calling AuthApi#externalLogin");
+      System.err.println("Exception when calling AuthApi#externalPrincipalLogin");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());

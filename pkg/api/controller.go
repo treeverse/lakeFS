@@ -554,16 +554,16 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) ExternalLogin(w http.ResponseWriter, r *http.Request, body apigen.ExternalLoginJSONRequestBody) {
+func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Request, body apigen.ExternalPrincipalLoginJSONRequestBody) {
 	ctx := r.Context()
 	if c.isExternalPrincipalNotSupported(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
 
-	c.LogAction(ctx, "external_login", r, "", "", "")
+	c.LogAction(ctx, "external_principal_login", r, "", "", "")
 
-	userID, err := c.Auth.ExternalLogin(ctx, body)
+	userID, err := c.Auth.ExternalPrincipalLogin(ctx, body)
 	if c.handleAPIError(ctx, w, r, err) {
 		if errors.Is(err, ErrAuthenticatingRequest) {
 			writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))

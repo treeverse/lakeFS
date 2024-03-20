@@ -453,7 +453,7 @@ public class ExternalApi {
     public APIdeleteUserExternalPrincipalRequest deleteUserExternalPrincipal(String userId, String principalId) {
         return new APIdeleteUserExternalPrincipalRequest(userId, principalId);
     }
-    private okhttp3.Call externalLoginCall(Object body, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call externalPrincipalLoginCall(Object body, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -499,44 +499,44 @@ public class ExternalApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call externalLoginValidateBeforeCall(Object body, final ApiCallback _callback) throws ApiException {
-        return externalLoginCall(body, _callback);
+    private okhttp3.Call externalPrincipalLoginValidateBeforeCall(Object body, final ApiCallback _callback) throws ApiException {
+        return externalPrincipalLoginCall(body, _callback);
 
     }
 
 
-    private ApiResponse<AuthenticationToken> externalLoginWithHttpInfo(Object body) throws ApiException {
-        okhttp3.Call localVarCall = externalLoginValidateBeforeCall(body, null);
+    private ApiResponse<AuthenticationToken> externalPrincipalLoginWithHttpInfo(Object body) throws ApiException {
+        okhttp3.Call localVarCall = externalPrincipalLoginValidateBeforeCall(body, null);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call externalLoginAsync(Object body, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+    private okhttp3.Call externalPrincipalLoginAsync(Object body, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = externalLoginValidateBeforeCall(body, _callback);
+        okhttp3.Call localVarCall = externalPrincipalLoginValidateBeforeCall(body, _callback);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
 
-    public class APIexternalLoginRequest {
+    public class APIexternalPrincipalLoginRequest {
         private Object body;
 
-        private APIexternalLoginRequest() {
+        private APIexternalPrincipalLoginRequest() {
         }
 
         /**
          * Set body
          * @param body  (optional)
-         * @return APIexternalLoginRequest
+         * @return APIexternalPrincipalLoginRequest
          */
-        public APIexternalLoginRequest body(Object body) {
+        public APIexternalPrincipalLoginRequest body(Object body) {
             this.body = body;
             return this;
         }
 
         /**
-         * Build call for externalLogin
+         * Build call for externalPrincipalLogin
          * @param _callback ApiCallback API callback
          * @return Call to execute
          * @throws ApiException If fail to serialize the request body object
@@ -550,11 +550,11 @@ public class ExternalApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return externalLoginCall(body, _callback);
+            return externalPrincipalLoginCall(body, _callback);
         }
 
         /**
-         * Execute externalLogin request
+         * Execute externalPrincipalLogin request
          * @return AuthenticationToken
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
@@ -567,12 +567,12 @@ public class ExternalApi {
          </table>
          */
         public AuthenticationToken execute() throws ApiException {
-            ApiResponse<AuthenticationToken> localVarResp = externalLoginWithHttpInfo(body);
+            ApiResponse<AuthenticationToken> localVarResp = externalPrincipalLoginWithHttpInfo(body);
             return localVarResp.getData();
         }
 
         /**
-         * Execute externalLogin request with HTTP info returned
+         * Execute externalPrincipalLogin request with HTTP info returned
          * @return ApiResponse&lt;AuthenticationToken&gt;
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
@@ -585,11 +585,11 @@ public class ExternalApi {
          </table>
          */
         public ApiResponse<AuthenticationToken> executeWithHttpInfo() throws ApiException {
-            return externalLoginWithHttpInfo(body);
+            return externalPrincipalLoginWithHttpInfo(body);
         }
 
         /**
-         * Execute externalLogin request (asynchronously)
+         * Execute externalPrincipalLogin request (asynchronously)
          * @param _callback The callback to be executed when the API call finishes
          * @return The request call
          * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -603,14 +603,14 @@ public class ExternalApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<AuthenticationToken> _callback) throws ApiException {
-            return externalLoginAsync(body, _callback);
+            return externalPrincipalLoginAsync(body, _callback);
         }
     }
 
     /**
      * perform a login using an external authenticator
      * 
-     * @return APIexternalLoginRequest
+     * @return APIexternalPrincipalLoginRequest
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
@@ -620,8 +620,8 @@ public class ExternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public APIexternalLoginRequest externalLogin() {
-        return new APIexternalLoginRequest();
+    public APIexternalPrincipalLoginRequest externalPrincipalLogin() {
+        return new APIexternalPrincipalLoginRequest();
     }
     private okhttp3.Call getExternalPrincipalCall(String principalId, final ApiCallback _callback) throws ApiException {
         String basePath = null;

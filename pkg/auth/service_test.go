@@ -2752,15 +2752,15 @@ func TestAPIAuthService_ExternalLogin(t *testing.T) {
 	presignedURL := "PresignedUrl"
 	externalLoginInfo := map[string]interface{}{"IdentityToken": presignedURL}
 
-	mockClient.EXPECT().ExternalLoginWithResponse(gomock.Any(), gomock.Eq(externalLoginInfo)).Return(
-		&auth.ExternalLoginResponse{
+	mockClient.EXPECT().ExternalPrincipalLoginWithResponse(gomock.Any(), gomock.Eq(externalLoginInfo)).Return(
+		&auth.ExternalPrincipalLoginResponse{
 			HTTPResponse: &http.Response{
 				StatusCode: http.StatusOK,
 			},
 			JSON200: &auth.User{Username: userId},
 		}, nil)
 
-	resp, err := s.ExternalLogin(ctx, externalLoginInfo)
+	resp, err := s.ExternalPrincipalLogin(ctx, externalLoginInfo)
 	require.NoError(t, err)
 	require.Equal(t, userId, resp)
 }

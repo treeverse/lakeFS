@@ -139,9 +139,9 @@ public class ExperimentalApiTest {
      *          if the Api call fails
      */
     @Test
-    public void externalLoginTest() throws ApiException {
+    public void externalPrincipalLoginTest() throws ApiException {
         Object body = null;
-                AuthenticationToken response = api.externalLogin(body);
+                AuthenticationToken response = api.externalPrincipalLogin(body);
         // TODO: test validations
     }
     

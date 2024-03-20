@@ -456,44 +456,44 @@ func (mr *MockClientWithResponsesInterfaceMockRecorder) DetachPolicyFromUserWith
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetachPolicyFromUserWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).DetachPolicyFromUserWithResponse), varargs...)
 }
 
-// ExternalLoginWithBodyWithResponse mocks base method.
-func (m *MockClientWithResponsesInterface) ExternalLoginWithBodyWithResponse(arg0 context.Context, arg1 string, arg2 io.Reader, arg3 ...auth.RequestEditorFn) (*auth.ExternalLoginResponse, error) {
+// ExternalPrincipalLoginWithBodyWithResponse mocks base method.
+func (m *MockClientWithResponsesInterface) ExternalPrincipalLoginWithBodyWithResponse(arg0 context.Context, arg1 string, arg2 io.Reader, arg3 ...auth.RequestEditorFn) (*auth.ExternalPrincipalLoginResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "ExternalLoginWithBodyWithResponse", varargs...)
-	ret0, _ := ret[0].(*auth.ExternalLoginResponse)
+	ret := m.ctrl.Call(m, "ExternalPrincipalLoginWithBodyWithResponse", varargs...)
+	ret0, _ := ret[0].(*auth.ExternalPrincipalLoginResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ExternalLoginWithBodyWithResponse indicates an expected call of ExternalLoginWithBodyWithResponse.
-func (mr *MockClientWithResponsesInterfaceMockRecorder) ExternalLoginWithBodyWithResponse(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
+// ExternalPrincipalLoginWithBodyWithResponse indicates an expected call of ExternalPrincipalLoginWithBodyWithResponse.
+func (mr *MockClientWithResponsesInterfaceMockRecorder) ExternalPrincipalLoginWithBodyWithResponse(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExternalLoginWithBodyWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).ExternalLoginWithBodyWithResponse), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExternalPrincipalLoginWithBodyWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).ExternalPrincipalLoginWithBodyWithResponse), varargs...)
 }
 
-// ExternalLoginWithResponse mocks base method.
-func (m *MockClientWithResponsesInterface) ExternalLoginWithResponse(arg0 context.Context, arg1 auth.ExternalLoginJSONRequestBody, arg2 ...auth.RequestEditorFn) (*auth.ExternalLoginResponse, error) {
+// ExternalPrincipalLoginWithResponse mocks base method.
+func (m *MockClientWithResponsesInterface) ExternalPrincipalLoginWithResponse(arg0 context.Context, arg1 auth.ExternalPrincipalLoginJSONRequestBody, arg2 ...auth.RequestEditorFn) (*auth.ExternalPrincipalLoginResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "ExternalLoginWithResponse", varargs...)
-	ret0, _ := ret[0].(*auth.ExternalLoginResponse)
+	ret := m.ctrl.Call(m, "ExternalPrincipalLoginWithResponse", varargs...)
+	ret0, _ := ret[0].(*auth.ExternalPrincipalLoginResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ExternalLoginWithResponse indicates an expected call of ExternalLoginWithResponse.
-func (mr *MockClientWithResponsesInterfaceMockRecorder) ExternalLoginWithResponse(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+// ExternalPrincipalLoginWithResponse indicates an expected call of ExternalPrincipalLoginWithResponse.
+func (mr *MockClientWithResponsesInterfaceMockRecorder) ExternalPrincipalLoginWithResponse(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExternalLoginWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).ExternalLoginWithResponse), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExternalPrincipalLoginWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).ExternalPrincipalLoginWithResponse), varargs...)
 }
 
 // GetCredentialsForUserWithResponse mocks base method.

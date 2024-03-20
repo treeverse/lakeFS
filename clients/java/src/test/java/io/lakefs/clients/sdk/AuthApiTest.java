@@ -277,9 +277,9 @@ public class AuthApiTest {
      * @throws ApiException if the Api call fails
      */
     @Test
-    public void externalLoginTest() throws ApiException {
+    public void externalPrincipalLoginTest() throws ApiException {
         Object body = null;
-        AuthenticationToken response = api.externalLogin()
+        AuthenticationToken response = api.externalPrincipalLogin()
                 .body(body)
                 .execute();
         // TODO: test validations

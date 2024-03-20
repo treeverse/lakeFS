@@ -176,7 +176,7 @@ paths:
       x-accepts: application/json
   /auth/external/login:
     post:
-      operationId: externalLogin
+      operationId: externalPrincipalLogin
       requestBody:
         content:
           application/json:

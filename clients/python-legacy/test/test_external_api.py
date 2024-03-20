@@ -38,8 +38,8 @@ class TestExternalApi(unittest.TestCase):
         """
         pass
 
-    def test_external_login(self):
-        """Test case for external_login
+    def test_external_principal_login(self):
+        """Test case for external_principal_login
 
         perform a login using an external authenticator  # noqa: E501
         """

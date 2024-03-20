@@ -9,7 +9,7 @@ Method | HTTP request | Description
 [**create_presign_multipart_upload**](ExperimentalApi.md#create_presign_multipart_upload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
 [**create_user_external_principal**](ExperimentalApi.md#create_user_external_principal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 [**delete_user_external_principal**](ExperimentalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
-[**external_login**](ExperimentalApi.md#external_login) | **POST** /auth/external/login | perform a login using an external authenticator
+[**external_principal_login**](ExperimentalApi.md#external_principal_login) | **POST** /auth/external/login | perform a login using an external authenticator
 [**get_external_principal**](ExperimentalApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
 [**hard_reset_branch**](ExperimentalApi.md#hard_reset_branch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 [**list_user_external_principals**](ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
@@ -598,8 +598,8 @@ void (empty response body)
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **external_login**
-> AuthenticationToken external_login(body=body)
+# **external_principal_login**
+> AuthenticationToken external_principal_login(body=body)
 
 perform a login using an external authenticator
 
@@ -629,11 +629,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
     try:
         # perform a login using an external authenticator
-        api_response = api_instance.external_login(body=body)
-        print("The response of ExperimentalApi->external_login:\n")
+        api_response = api_instance.external_principal_login(body=body)
+        print("The response of ExperimentalApi->external_principal_login:\n")
         pprint(api_response)
     except Exception as e:
-        print("Exception when calling ExperimentalApi->external_login: %s\n" % e)
+        print("Exception when calling ExperimentalApi->external_principal_login: %s\n" % e)
 ```
 
 
