@@ -11,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/authentication/apiclient"
+	"github.com/treeverse/lakefs/pkg/authentication/mock"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -141,10 +142,10 @@ func TestAPIAuthService_STSLogin(t *testing.T) {
 	}
 }
 
-func NewTestApiService(t *testing.T, validateIDTokenClaims map[string]string) (*apiclient.MockClientWithResponsesInterface, *authentication.APIService) {
+func NewTestApiService(t *testing.T, validateIDTokenClaims map[string]string) (*mock.MockClientWithResponsesInterface, *authentication.APIService) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
-	mockClient := apiclient.NewMockClientWithResponsesInterface(ctrl)
+	mockClient := mock.NewMockClientWithResponsesInterface(ctrl)
 	s, err := authentication.NewAPIServiceWithClients(mockClient, logging.ContextUnavailable(), validateIDTokenClaims)
 	if err != nil {
 		t.Fatalf("failed initiating API service with mock")
