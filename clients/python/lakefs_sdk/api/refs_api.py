@@ -222,7 +222,7 @@ class RefsApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "DiffList",
@@ -378,7 +378,7 @@ class RefsApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "FindMergeBaseResult",
@@ -596,7 +596,7 @@ class RefsApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "CommitList",
@@ -767,7 +767,7 @@ class RefsApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "MergeResult",

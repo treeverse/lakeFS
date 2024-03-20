@@ -78,12 +78,6 @@ configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_sdk.Configuration(
-    username = os.environ["USERNAME"],
-    password = os.environ["PASSWORD"]
-)
-
 # Configure API key authorization: oidc_auth
 configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
 
@@ -285,7 +279,6 @@ Class | Method | HTTP request | Description
  - [DiffList](docs/DiffList.md)
  - [Error](docs/Error.md)
  - [ErrorNoACL](docs/ErrorNoACL.md)
- - [ExternalLoginInformation](docs/ExternalLoginInformation.md)
  - [ExternalPrincipal](docs/ExternalPrincipal.md)
  - [ExternalPrincipalCreation](docs/ExternalPrincipalCreation.md)
  - [ExternalPrincipalList](docs/ExternalPrincipalList.md)
@@ -394,11 +387,6 @@ Authentication schemes defined for the API:
 - **Type**: API key
 - **API key parameter name**: saml_auth_session
 - **Location**: 
-
-<a id="external_auth"></a>
-### external_auth
-
-- **Type**: HTTP basic authentication
 
 
 ## Author

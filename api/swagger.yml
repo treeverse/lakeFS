@@ -17,7 +17,6 @@ security:
   - cookie_auth: []
   - oidc_auth: []
   - saml_auth: []
-  - external_auth: []
 components:
   securitySchemes:
     basic_auth:
@@ -39,9 +38,6 @@ components:
       type: apiKey
       in: cookie
       name: saml_auth_session
-    external_auth:
-      type: http
-      scheme: basic
 
   parameters:
     PaginationPrefix:
@@ -1057,11 +1053,6 @@ components:
 
     ExternalLoginInformation:
       type: object
-      required:
-        - presigned_url
-      properties:
-        presigned_url:
-          type: string
 
     AuthenticationToken:
       type: object

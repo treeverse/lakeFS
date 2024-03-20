@@ -22,10 +22,9 @@ from typing_extensions import Annotated
 
 from pydantic import Field, StrictStr, conint
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from lakefs_sdk.models.authentication_token import AuthenticationToken
-from lakefs_sdk.models.external_login_information import ExternalLoginInformation
 from lakefs_sdk.models.external_principal import ExternalPrincipal
 from lakefs_sdk.models.external_principal_creation import ExternalPrincipalCreation
 from lakefs_sdk.models.external_principal_list import ExternalPrincipalList
@@ -187,7 +186,7 @@ class ExternalApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -330,7 +329,7 @@ class ExternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -352,17 +351,17 @@ class ExternalApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def external_login(self, external_login_information : Optional[ExternalLoginInformation] = None, **kwargs) -> AuthenticationToken:  # noqa: E501
+    def external_login(self, body : Optional[Dict[str, Any]] = None, **kwargs) -> AuthenticationToken:  # noqa: E501
         """perform a login using an external authenticator  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.external_login(external_login_information, async_req=True)
+        >>> thread = api.external_login(body, async_req=True)
         >>> result = thread.get()
 
-        :param external_login_information:
-        :type external_login_information: ExternalLoginInformation
+        :param body:
+        :type body: object
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request. If one
@@ -377,20 +376,20 @@ class ExternalApi(object):
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
             raise ValueError("Error! Please call the external_login_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.external_login_with_http_info(external_login_information, **kwargs)  # noqa: E501
+        return self.external_login_with_http_info(body, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def external_login_with_http_info(self, external_login_information : Optional[ExternalLoginInformation] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def external_login_with_http_info(self, body : Optional[Dict[str, Any]] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """perform a login using an external authenticator  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.external_login_with_http_info(external_login_information, async_req=True)
+        >>> thread = api.external_login_with_http_info(body, async_req=True)
         >>> result = thread.get()
 
-        :param external_login_information:
-        :type external_login_information: ExternalLoginInformation
+        :param body:
+        :type body: object
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -419,7 +418,7 @@ class ExternalApi(object):
         _params = locals()
 
         _all_params = [
-            'external_login_information'
+            'body'
         ]
         _all_params.extend(
             [
@@ -457,8 +456,8 @@ class ExternalApi(object):
         _files = {}
         # process the body parameter
         _body_params = None
-        if _params['external_login_information'] is not None:
-            _body_params = _params['external_login_information']
+        if _params['body'] is not None:
+            _body_params = _params['body']
 
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
@@ -611,7 +610,7 @@ class ExternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "ExternalPrincipal",
@@ -775,7 +774,7 @@ class ExternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "ExternalPrincipalList",

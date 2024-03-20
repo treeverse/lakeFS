@@ -29,7 +29,6 @@ import java.io.IOException;
 
 import io.lakefs.clients.api.model.AuthenticationToken;
 import io.lakefs.clients.api.model.Error;
-import io.lakefs.clients.api.model.ExternalLoginInformation;
 import io.lakefs.clients.api.model.ExternalPrincipal;
 import io.lakefs.clients.api.model.ExternalPrincipalCreation;
 import io.lakefs.clients.api.model.ExternalPrincipalList;
@@ -109,7 +108,7 @@ public class ExternalApi {
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
         return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -252,7 +251,7 @@ public class ExternalApi {
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
         return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -343,7 +342,7 @@ public class ExternalApi {
     }
     /**
      * Build call for externalLogin
-     * @param externalLoginInformation  (optional)
+     * @param body  (optional)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -356,8 +355,8 @@ public class ExternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call externalLoginCall(ExternalLoginInformation externalLoginInformation, final ApiCallback _callback) throws ApiException {
-        Object localVarPostBody = externalLoginInformation;
+    public okhttp3.Call externalLoginCall(Object body, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = body;
 
         // create path and map variables
         String localVarPath = "/auth/external/login";
@@ -387,10 +386,10 @@ public class ExternalApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call externalLoginValidateBeforeCall(ExternalLoginInformation externalLoginInformation, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call externalLoginValidateBeforeCall(Object body, final ApiCallback _callback) throws ApiException {
         
 
-        okhttp3.Call localVarCall = externalLoginCall(externalLoginInformation, _callback);
+        okhttp3.Call localVarCall = externalLoginCall(body, _callback);
         return localVarCall;
 
     }
@@ -398,7 +397,7 @@ public class ExternalApi {
     /**
      * perform a login using an external authenticator
      * 
-     * @param externalLoginInformation  (optional)
+     * @param body  (optional)
      * @return AuthenticationToken
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -410,15 +409,15 @@ public class ExternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public AuthenticationToken externalLogin(ExternalLoginInformation externalLoginInformation) throws ApiException {
-        ApiResponse<AuthenticationToken> localVarResp = externalLoginWithHttpInfo(externalLoginInformation);
+    public AuthenticationToken externalLogin(Object body) throws ApiException {
+        ApiResponse<AuthenticationToken> localVarResp = externalLoginWithHttpInfo(body);
         return localVarResp.getData();
     }
 
     /**
      * perform a login using an external authenticator
      * 
-     * @param externalLoginInformation  (optional)
+     * @param body  (optional)
      * @return ApiResponse&lt;AuthenticationToken&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -430,8 +429,8 @@ public class ExternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<AuthenticationToken> externalLoginWithHttpInfo(ExternalLoginInformation externalLoginInformation) throws ApiException {
-        okhttp3.Call localVarCall = externalLoginValidateBeforeCall(externalLoginInformation, null);
+    public ApiResponse<AuthenticationToken> externalLoginWithHttpInfo(Object body) throws ApiException {
+        okhttp3.Call localVarCall = externalLoginValidateBeforeCall(body, null);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -439,7 +438,7 @@ public class ExternalApi {
     /**
      * perform a login using an external authenticator (asynchronously)
      * 
-     * @param externalLoginInformation  (optional)
+     * @param body  (optional)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -452,9 +451,9 @@ public class ExternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call externalLoginAsync(ExternalLoginInformation externalLoginInformation, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+    public okhttp3.Call externalLoginAsync(Object body, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = externalLoginValidateBeforeCall(externalLoginInformation, _callback);
+        okhttp3.Call localVarCall = externalLoginValidateBeforeCall(body, _callback);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -505,7 +504,7 @@ public class ExternalApi {
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
         return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -648,7 +647,7 @@ public class ExternalApi {
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
         return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 

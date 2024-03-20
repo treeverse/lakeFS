@@ -85,7 +85,7 @@ type ExternalPrincipalsService interface {
 	DeleteUserExternalPrincipal(ctx context.Context, userID, principalID string) error
 	GetExternalPrincipal(ctx context.Context, principalID string) (*model.ExternalPrincipal, error)
 	ListUserExternalPrincipals(ctx context.Context, userID string, params *model.PaginationParams) ([]*model.ExternalPrincipal, *model.Paginator, error)
-	ExternalLogin(ctx context.Context, presignedURL string) (string, error)
+	ExternalLogin(ctx context.Context, externalLoginInfo map[string]interface{}) (string, error)
 }
 
 type Service interface {
@@ -1131,7 +1131,7 @@ func (s *AuthService) GetExternalPrincipal(ctx context.Context, principalID stri
 	return nil, ErrNotImplemented
 }
 
-func (s *AuthService) ExternalLogin(ctx context.Context, presignedURL string) (string, error) {
+func (s *AuthService) ExternalLogin(ctx context.Context, externalLoginInfo map[string]interface{}) (string, error) {
 	return "", ErrNotImplemented
 }
 
@@ -2048,11 +2048,11 @@ func (a *APIAuthService) ListUserExternalPrincipals(ctx context.Context, userID 
 	return principals, toPagination(resp.JSON200.Pagination), nil
 }
 
-func (a *APIAuthService) ExternalLogin(ctx context.Context, presignedURL string) (string, error) {
+func (a *APIAuthService) ExternalLogin(ctx context.Context, externalLoginInfo map[string]interface{}) (string, error) {
 	if !a.IsExternalPrincipalsEnabled(ctx) {
 		return "", fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
-	resp, err := a.apiClient.ExternalLoginWithResponse(ctx, ExternalLoginJSONRequestBody{PresignedUrl: presignedURL})
+	resp, err := a.apiClient.ExternalLoginWithResponse(ctx, externalLoginInfo)
 	if err != nil {
 		return "", fmt.Errorf("get external principal: %w", err)
 	}

@@ -183,7 +183,7 @@ class InternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -333,7 +333,7 @@ class InternalApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -484,7 +484,7 @@ class InternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '201': "StorageURI",
@@ -641,7 +641,7 @@ class InternalApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -776,7 +776,7 @@ class InternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '201': "RefsDump",
@@ -1041,7 +1041,7 @@ class InternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "GarbageCollectionConfig",
@@ -1175,7 +1175,7 @@ class InternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "VersionConfig",
@@ -1439,7 +1439,7 @@ class InternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "StorageConfig",
@@ -1569,7 +1569,7 @@ class InternalApi(object):
             ['application/json', 'application/text'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "InstallationUsageReport",
@@ -1727,7 +1727,7 @@ class InternalApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -1879,7 +1879,7 @@ class InternalApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -2016,7 +2016,7 @@ class InternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -2153,7 +2153,7 @@ class InternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "List[BranchProtectionRule]",
@@ -2295,7 +2295,7 @@ class InternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "GarbageCollectionRules",
@@ -2452,7 +2452,7 @@ class InternalApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -2594,7 +2594,7 @@ class InternalApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -2729,7 +2729,7 @@ class InternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '201': "GarbageCollectionPrepareResponse",
@@ -2885,7 +2885,7 @@ class InternalApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '201': "PrepareGCUncommittedResponse",
@@ -3042,7 +3042,7 @@ class InternalApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -3177,7 +3177,7 @@ class InternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -3329,7 +3329,7 @@ class InternalApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -3786,7 +3786,7 @@ class InternalApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '201': "ObjectStats",
@@ -3944,7 +3944,7 @@ class InternalApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 

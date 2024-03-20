@@ -30,7 +30,6 @@ from lakefs_client.model.credentials_with_secret import CredentialsWithSecret
 from lakefs_client.model.current_user import CurrentUser
 from lakefs_client.model.error import Error
 from lakefs_client.model.error_no_acl import ErrorNoACL
-from lakefs_client.model.external_login_information import ExternalLoginInformation
 from lakefs_client.model.external_principal import ExternalPrincipal
 from lakefs_client.model.external_principal_creation import ExternalPrincipalCreation
 from lakefs_client.model.external_principal_list import ExternalPrincipalList
@@ -62,7 +61,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -124,7 +122,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -186,7 +183,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -248,7 +244,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -304,7 +299,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -359,7 +353,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -416,7 +409,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -471,7 +463,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -539,7 +530,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -601,7 +591,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -657,7 +646,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -719,7 +707,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -775,7 +762,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -831,7 +817,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -893,7 +878,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -955,7 +939,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1022,7 +1005,7 @@ class AuthApi(object):
             },
             params_map={
                 'all': [
-                    'external_login_information',
+                    'body',
                 ],
                 'required': [],
                 'nullable': [
@@ -1038,13 +1021,13 @@ class AuthApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
-                    'external_login_information':
-                        (ExternalLoginInformation,),
+                    'body':
+                        ({str: (bool, date, datetime, dict, float, int, list, str, none_type)},),
                 },
                 'attribute_map': {
                 },
                 'location_map': {
-                    'external_login_information': 'body',
+                    'body': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -1065,7 +1048,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1127,7 +1109,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1176,7 +1157,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1232,7 +1212,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1288,7 +1267,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1344,7 +1322,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1400,7 +1377,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1456,7 +1432,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1533,7 +1508,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1610,7 +1584,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1680,7 +1653,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1750,7 +1722,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1827,7 +1798,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1904,7 +1874,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -1981,7 +1950,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -2063,7 +2031,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -2181,7 +2148,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -2244,7 +2210,6 @@ class AuthApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -3385,7 +3350,7 @@ class AuthApi(object):
 
 
         Keyword Args:
-            external_login_information (ExternalLoginInformation): [optional]
+            body ({str: (bool, date, datetime, dict, float, int, list, str, none_type)}): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

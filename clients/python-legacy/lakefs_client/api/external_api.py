@@ -24,7 +24,6 @@ from lakefs_client.model_utils import (  # noqa: F401
 )
 from lakefs_client.model.authentication_token import AuthenticationToken
 from lakefs_client.model.error import Error
-from lakefs_client.model.external_login_information import ExternalLoginInformation
 from lakefs_client.model.external_principal import ExternalPrincipal
 from lakefs_client.model.external_principal_creation import ExternalPrincipalCreation
 from lakefs_client.model.external_principal_list import ExternalPrincipalList
@@ -47,7 +46,6 @@ class ExternalApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -115,7 +113,6 @@ class ExternalApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -182,7 +179,7 @@ class ExternalApi(object):
             },
             params_map={
                 'all': [
-                    'external_login_information',
+                    'body',
                 ],
                 'required': [],
                 'nullable': [
@@ -198,13 +195,13 @@ class ExternalApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
-                    'external_login_information':
-                        (ExternalLoginInformation,),
+                    'body':
+                        ({str: (bool, date, datetime, dict, float, int, list, str, none_type)},),
                 },
                 'attribute_map': {
                 },
                 'location_map': {
-                    'external_login_information': 'body',
+                    'body': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -225,7 +222,6 @@ class ExternalApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -281,7 +277,6 @@ class ExternalApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -506,7 +501,7 @@ class ExternalApi(object):
 
 
         Keyword Args:
-            external_login_information (ExternalLoginInformation): [optional]
+            body ({str: (bool, date, datetime, dict, float, int, list, str, none_type)}): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

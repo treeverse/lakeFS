@@ -51,7 +51,6 @@ add group membership
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -84,12 +83,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -137,7 +130,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -166,7 +159,6 @@ attach policy to group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -199,12 +191,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -252,7 +238,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -281,7 +267,6 @@ attach policy to user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -314,12 +299,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -367,7 +346,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -396,7 +375,6 @@ create credentials
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -430,12 +408,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -482,7 +454,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -511,7 +483,6 @@ create group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -546,12 +517,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -601,7 +566,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -630,7 +595,6 @@ create policy
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -664,12 +628,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -728,7 +686,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -758,7 +716,6 @@ create user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -793,12 +750,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -849,7 +800,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -879,7 +830,6 @@ attach external principal to user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -913,12 +863,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -982,7 +926,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1012,7 +956,6 @@ delete credentials
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -1045,12 +988,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -1098,7 +1035,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1127,7 +1064,6 @@ delete group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -1160,12 +1096,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -1211,7 +1141,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1240,7 +1170,6 @@ delete group membership
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -1273,12 +1202,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -1326,7 +1249,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1355,7 +1278,6 @@ delete policy
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -1388,12 +1310,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -1439,7 +1355,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1468,7 +1384,6 @@ delete user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -1501,12 +1416,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -1552,7 +1461,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1581,7 +1490,6 @@ delete external principal from user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -1614,12 +1522,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -1667,7 +1569,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1696,7 +1598,6 @@ detach policy from group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -1729,12 +1630,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -1782,7 +1677,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1811,7 +1706,6 @@ detach policy from user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -1844,12 +1738,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -1897,7 +1785,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -1930,7 +1818,6 @@ import time
 import lakefs_client
 from lakefs_client.api import auth_api
 from lakefs_client.model.authentication_token import AuthenticationToken
-from lakefs_client.model.external_login_information import ExternalLoginInformation
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -1944,15 +1831,13 @@ configuration = lakefs_client.Configuration(
 with lakefs_client.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = auth_api.AuthApi(api_client)
-    external_login_information = ExternalLoginInformation(
-        presigned_url="presigned_url_example",
-    ) # ExternalLoginInformation |  (optional)
+    body = {} # {str: (bool, date, datetime, dict, float, int, list, str, none_type)} |  (optional)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
         # perform a login using an external authenticator
-        api_response = api_instance.external_login(external_login_information=external_login_information)
+        api_response = api_instance.external_login(body=body)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling AuthApi->external_login: %s\n" % e)
@@ -1963,7 +1848,7 @@ with lakefs_client.ApiClient() as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **external_login_information** | [**ExternalLoginInformation**](ExternalLoginInformation.md)|  | [optional]
+ **body** | **{str: (bool, date, datetime, dict, float, int, list, str, none_type)}**|  | [optional]
 
 ### Return type
 
@@ -1999,7 +1884,6 @@ get credentials
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -2033,12 +1917,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -2087,7 +1965,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2116,7 +1994,6 @@ get current user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -2149,12 +2026,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -2197,7 +2068,7 @@ This endpoint does not need any parameter.
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2222,7 +2093,6 @@ describe external principal by id
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -2256,12 +2126,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -2308,7 +2172,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2337,7 +2201,6 @@ get group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -2371,12 +2234,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -2423,7 +2280,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2452,7 +2309,6 @@ get ACL of group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -2487,12 +2343,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -2539,7 +2389,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2568,7 +2418,6 @@ get policy
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -2602,12 +2451,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -2654,7 +2497,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2683,7 +2526,6 @@ get user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -2717,12 +2559,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -2769,7 +2605,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2798,7 +2634,6 @@ list group members
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -2832,12 +2667,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -2899,7 +2728,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -2927,7 +2756,6 @@ list group policies
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -2961,12 +2789,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -3028,7 +2850,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -3057,7 +2879,6 @@ list groups
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -3091,12 +2912,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -3148,7 +2963,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -3176,7 +2991,6 @@ list policies
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -3210,12 +3024,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -3267,7 +3075,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -3295,7 +3103,6 @@ list user credentials
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -3329,12 +3136,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -3396,7 +3197,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -3425,7 +3226,6 @@ list user external policies attached to a user
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -3459,12 +3259,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -3526,7 +3320,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -3555,7 +3349,6 @@ list user groups
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -3589,12 +3382,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -3656,7 +3443,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -3685,7 +3472,6 @@ list user policies
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -3719,12 +3505,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -3788,7 +3568,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -3817,7 +3597,6 @@ list users
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -3851,12 +3630,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -3908,7 +3681,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -4010,7 +3783,6 @@ set ACL of group
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -4044,12 +3816,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -4099,7 +3865,7 @@ void (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 
@@ -4128,7 +3894,6 @@ update policy
 
 * Basic Authentication (basic_auth):
 * Api Key Authentication (cookie_auth):
-* Basic Authentication (external_auth):
 * Bearer (JWT) Authentication (jwt_token):
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
@@ -4162,12 +3927,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
 
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
@@ -4228,7 +3987,7 @@ Name | Type | Description  | Notes
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
 
 ### HTTP request headers
 

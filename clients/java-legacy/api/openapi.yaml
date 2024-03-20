@@ -15,7 +15,6 @@ security:
 - cookie_auth: []
 - oidc_auth: []
 - saml_auth: []
-- external_auth: []
 paths:
   /setup_comm_prefs:
     post:
@@ -8185,13 +8184,6 @@ components:
       - secret_access_key
       type: object
     ExternalLoginInformation:
-      example:
-        presigned_url: presigned_url
-      properties:
-        presigned_url:
-          type: string
-      required:
-      - presigned_url
       type: object
     AuthenticationToken:
       example:
@@ -9112,7 +9104,4 @@ components:
       in: cookie
       name: saml_auth_session
       type: apiKey
-    external_auth:
-      scheme: basic
-      type: http
 

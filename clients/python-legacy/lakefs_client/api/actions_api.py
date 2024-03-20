@@ -45,7 +45,6 @@ class ActionsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -107,7 +106,6 @@ class ActionsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -176,7 +174,6 @@ class ActionsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'
@@ -258,7 +255,6 @@ class ActionsApi(object):
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
-                    'external_auth',
                     'jwt_token',
                     'oidc_auth',
                     'saml_auth'

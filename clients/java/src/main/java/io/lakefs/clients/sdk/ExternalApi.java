@@ -29,7 +29,6 @@ import java.io.IOException;
 
 import io.lakefs.clients.sdk.model.AuthenticationToken;
 import io.lakefs.clients.sdk.model.Error;
-import io.lakefs.clients.sdk.model.ExternalLoginInformation;
 import io.lakefs.clients.sdk.model.ExternalPrincipal;
 import io.lakefs.clients.sdk.model.ExternalPrincipalCreation;
 import io.lakefs.clients.sdk.model.ExternalPrincipalList;
@@ -123,7 +122,7 @@ public class ExternalApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -319,7 +318,7 @@ public class ExternalApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -454,7 +453,7 @@ public class ExternalApi {
     public APIdeleteUserExternalPrincipalRequest deleteUserExternalPrincipal(String userId, String principalId) {
         return new APIdeleteUserExternalPrincipalRequest(userId, principalId);
     }
-    private okhttp3.Call externalLoginCall(ExternalLoginInformation externalLoginInformation, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call externalLoginCall(Object body, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -468,7 +467,7 @@ public class ExternalApi {
             basePath = null;
         }
 
-        Object localVarPostBody = externalLoginInformation;
+        Object localVarPostBody = body;
 
         // create path and map variables
         String localVarPath = "/auth/external/login";
@@ -500,39 +499,39 @@ public class ExternalApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call externalLoginValidateBeforeCall(ExternalLoginInformation externalLoginInformation, final ApiCallback _callback) throws ApiException {
-        return externalLoginCall(externalLoginInformation, _callback);
+    private okhttp3.Call externalLoginValidateBeforeCall(Object body, final ApiCallback _callback) throws ApiException {
+        return externalLoginCall(body, _callback);
 
     }
 
 
-    private ApiResponse<AuthenticationToken> externalLoginWithHttpInfo(ExternalLoginInformation externalLoginInformation) throws ApiException {
-        okhttp3.Call localVarCall = externalLoginValidateBeforeCall(externalLoginInformation, null);
+    private ApiResponse<AuthenticationToken> externalLoginWithHttpInfo(Object body) throws ApiException {
+        okhttp3.Call localVarCall = externalLoginValidateBeforeCall(body, null);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call externalLoginAsync(ExternalLoginInformation externalLoginInformation, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+    private okhttp3.Call externalLoginAsync(Object body, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = externalLoginValidateBeforeCall(externalLoginInformation, _callback);
+        okhttp3.Call localVarCall = externalLoginValidateBeforeCall(body, _callback);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
 
     public class APIexternalLoginRequest {
-        private ExternalLoginInformation externalLoginInformation;
+        private Object body;
 
         private APIexternalLoginRequest() {
         }
 
         /**
-         * Set externalLoginInformation
-         * @param externalLoginInformation  (optional)
+         * Set body
+         * @param body  (optional)
          * @return APIexternalLoginRequest
          */
-        public APIexternalLoginRequest externalLoginInformation(ExternalLoginInformation externalLoginInformation) {
-            this.externalLoginInformation = externalLoginInformation;
+        public APIexternalLoginRequest body(Object body) {
+            this.body = body;
             return this;
         }
 
@@ -551,7 +550,7 @@ public class ExternalApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return externalLoginCall(externalLoginInformation, _callback);
+            return externalLoginCall(body, _callback);
         }
 
         /**
@@ -568,7 +567,7 @@ public class ExternalApi {
          </table>
          */
         public AuthenticationToken execute() throws ApiException {
-            ApiResponse<AuthenticationToken> localVarResp = externalLoginWithHttpInfo(externalLoginInformation);
+            ApiResponse<AuthenticationToken> localVarResp = externalLoginWithHttpInfo(body);
             return localVarResp.getData();
         }
 
@@ -586,7 +585,7 @@ public class ExternalApi {
          </table>
          */
         public ApiResponse<AuthenticationToken> executeWithHttpInfo() throws ApiException {
-            return externalLoginWithHttpInfo(externalLoginInformation);
+            return externalLoginWithHttpInfo(body);
         }
 
         /**
@@ -604,7 +603,7 @@ public class ExternalApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<AuthenticationToken> _callback) throws ApiException {
-            return externalLoginAsync(externalLoginInformation, _callback);
+            return externalLoginAsync(body, _callback);
         }
     }
 
@@ -668,7 +667,7 @@ public class ExternalApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -852,7 +851,7 @@ public class ExternalApi {
             localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
         return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 

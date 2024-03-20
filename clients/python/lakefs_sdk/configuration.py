@@ -436,13 +436,6 @@ conf = lakefs_sdk.Configuration(
                     'saml_auth',
                 ),
             }
-        if self.username is not None and self.password is not None:
-            auth['external_auth'] = {
-                'type': 'basic',
-                'in': 'header',
-                'key': 'Authorization',
-                'value': self.get_basic_auth_token()
-            }
         return auth
 
     def to_debug_report(self):

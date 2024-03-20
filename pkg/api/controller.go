@@ -563,7 +563,7 @@ func (c *Controller) ExternalLogin(w http.ResponseWriter, r *http.Request, body 
 
 	c.LogAction(ctx, "external_login", r, "", "", "")
 
-	userID, err := c.Auth.ExternalLogin(ctx, body.PresignedUrl)
+	userID, err := c.Auth.ExternalLogin(ctx, body)
 	if c.handleAPIError(ctx, w, r, err) {
 		if errors.Is(err, ErrAuthenticatingRequest) {
 			writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
@@ -577,14 +577,6 @@ func (c *Controller) ExternalLogin(w http.ResponseWriter, r *http.Request, body 
 
 		tokenString, err := GenerateJWTLogin(secret, userID, loginTime, expires)
 		if err != nil {
-			writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-			return
-		}
-		internalAuthSession, _ := c.sessionStore.Get(r, InternalAuthSessionName)
-		internalAuthSession.Values[TokenSessionKeyName] = tokenString
-		err = c.sessionStore.Save(r, w, internalAuthSession)
-		if err != nil {
-			c.Logger.WithError(err).Error("Failed to save internal auth session")
 			writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 			return
 		}

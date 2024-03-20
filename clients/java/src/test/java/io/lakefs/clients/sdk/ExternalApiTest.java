@@ -16,7 +16,6 @@ package io.lakefs.clients.sdk;
 import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.clients.sdk.model.AuthenticationToken;
 import io.lakefs.clients.sdk.model.Error;
-import io.lakefs.clients.sdk.model.ExternalLoginInformation;
 import io.lakefs.clients.sdk.model.ExternalPrincipal;
 import io.lakefs.clients.sdk.model.ExternalPrincipalCreation;
 import io.lakefs.clients.sdk.model.ExternalPrincipalList;
@@ -73,9 +72,9 @@ public class ExternalApiTest {
      */
     @Test
     public void externalLoginTest() throws ApiException {
-        ExternalLoginInformation externalLoginInformation = null;
+        Object body = null;
         AuthenticationToken response = api.externalLogin()
-                .externalLoginInformation(externalLoginInformation)
+                .body(body)
                 .execute();
         // TODO: test validations
     }

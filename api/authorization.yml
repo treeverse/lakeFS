@@ -18,9 +18,6 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-    external_auth:
-      type: http
-      scheme: basic
       
   parameters:
     PaginationPrefix:
@@ -368,12 +365,6 @@ components:
 
     ExternalLoginInformation:
       type: object
-      required:
-        - presigned_url
-      properties:
-        presigned_url:
-          type: string
-
 
 paths:
   /auth/users:

@@ -130,7 +130,7 @@ func checkSecurityRequirements(r *http.Request,
 	for _, securityRequirement := range securityRequirements {
 		for provider := range securityRequirement {
 			switch provider {
-			case "jwt_token", "external_auth":
+			case "jwt_token":
 				// validate jwt token from header
 				authHeaderValue := r.Header.Get("Authorization")
 				if authHeaderValue == "" {

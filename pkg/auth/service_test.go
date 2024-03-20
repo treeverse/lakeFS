@@ -2747,13 +2747,12 @@ func TestAPIAuthService_DeleteExternalPrincipalAttachedToUserDelete(t *testing.T
 
 func TestAPIAuthService_ExternalLogin(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
+	ctx := context.Background()
 	userId := "user"
 	presignedURL := "PresignedUrl"
-	ctx := context.Background()
+	externalLoginInfo := map[string]interface{}{"IdentityToken": presignedURL}
 
-	mockClient.EXPECT().ExternalLoginWithResponse(gomock.Any(), gomock.Eq(auth.ExternalLoginJSONRequestBody{
-		PresignedUrl: presignedURL,
-	})).Return(
+	mockClient.EXPECT().ExternalLoginWithResponse(gomock.Any(), gomock.Eq(externalLoginInfo)).Return(
 		&auth.ExternalLoginResponse{
 			HTTPResponse: &http.Response{
 				StatusCode: http.StatusOK,
@@ -2761,7 +2760,7 @@ func TestAPIAuthService_ExternalLogin(t *testing.T) {
 			JSON200: &auth.User{Username: userId},
 		}, nil)
 
-	resp, err := s.ExternalLogin(ctx, presignedURL)
+	resp, err := s.ExternalLogin(ctx, externalLoginInfo)
 	require.NoError(t, err)
 	require.Equal(t, userId, resp)
 }
