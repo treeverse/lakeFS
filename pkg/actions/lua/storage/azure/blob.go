@@ -127,7 +127,8 @@ func parsePath(l *lua.State, path string) (string, string) {
 func transformPathToAbfss(l *lua.State) int {
 	path := lua.CheckString(l, 1)
 	const numOfParts = 3
-	r := regexp.MustCompile(`^https://(\w+)\.blob\.core\.windows\.net/([^/]*)/(.+)$`)
+	// Added adls for backwards compatibility in imports created pre fix of bug: https://github.com/treeverse/lakeFS/issues/7580
+	r := regexp.MustCompile(`^https://(\w+)\.(?:blob|adls)\.core\.windows\.net/([^/]*)/(.+)$`)
 	parts := r.FindStringSubmatch(path)
 	if len(parts) != numOfParts+1 {
 		lua.Errorf(l, "expected valid Azure https URL: %s", path)
