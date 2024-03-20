@@ -1830,6 +1830,10 @@ paths:
       responses:
         200:
           description: successful login
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
           content:
             application/json:
               schema:
