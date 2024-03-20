@@ -49,11 +49,6 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure HTTP basic authorization: external_auth
-    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
-    external_auth.setUsername("YOUR USERNAME");
-    external_auth.setPassword("YOUR PASSWORD");
-
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -107,7 +102,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -157,11 +152,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP basic authorization: external_auth
-    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
-    external_auth.setUsername("YOUR USERNAME");
-    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -217,7 +207,7 @@ public class Example {
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -268,11 +258,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP basic authorization: external_auth
-    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
-    external_auth.setUsername("YOUR USERNAME");
-    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -326,7 +311,7 @@ public class Example {
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -374,11 +359,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP basic authorization: external_auth
-    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
-    external_auth.setUsername("YOUR USERNAME");
-    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -429,7 +409,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -478,11 +458,6 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
-    // Configure HTTP basic authorization: external_auth
-    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
-    external_auth.setUsername("YOUR USERNAME");
-    external_auth.setPassword("YOUR PASSWORD");
-
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
     oidc_auth.setApiKey("YOUR API KEY");
@@ -529,7 +504,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -605,7 +580,7 @@ No authorization required
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | successful login |  * Set-Cookie -  <br>  |
+| **200** | successful login |  -  |
 | **401** | Unauthorized |  -  |
 | **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
@@ -641,11 +616,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP basic authorization: external_auth
-    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
-    external_auth.setUsername("YOUR USERNAME");
-    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -692,7 +662,7 @@ public class Example {
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -741,11 +711,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP basic authorization: external_auth
-    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
-    external_auth.setUsername("YOUR USERNAME");
-    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -798,7 +763,7 @@ null (empty response body)
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 
@@ -847,11 +812,6 @@ public class Example {
     cookie_auth.setApiKey("YOUR API KEY");
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
-
-    // Configure HTTP basic authorization: external_auth
-    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
-    external_auth.setUsername("YOUR USERNAME");
-    external_auth.setPassword("YOUR PASSWORD");
 
     // Configure API key authorization: oidc_auth
     ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
@@ -907,7 +867,7 @@ public class Example {
 
 ### Authorization
 
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [external_auth](../README.md#external_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 

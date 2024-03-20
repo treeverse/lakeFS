@@ -104,7 +104,7 @@ public class TagsApi {
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
         return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -257,7 +257,7 @@ public class TagsApi {
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
         return localVarApiClient.buildCall(localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -397,7 +397,7 @@ public class TagsApi {
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
         return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
@@ -548,7 +548,7 @@ public class TagsApi {
         final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
         localVarHeaderParams.put("Content-Type", localVarContentType);
 
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "external_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
         return localVarApiClient.buildCall(localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 

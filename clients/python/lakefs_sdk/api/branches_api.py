@@ -190,7 +190,7 @@ class BranchesApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '201': "Commit",
@@ -348,7 +348,7 @@ class BranchesApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '201': "str",
@@ -507,7 +507,7 @@ class BranchesApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -682,7 +682,7 @@ class BranchesApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "DiffList",
@@ -830,7 +830,7 @@ class BranchesApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "Ref",
@@ -994,7 +994,7 @@ class BranchesApi(object):
             ['application/json'])  # noqa: E501
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
             '200': "RefList",
@@ -1157,7 +1157,7 @@ class BranchesApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 
@@ -1315,7 +1315,7 @@ class BranchesApi(object):
                 _header_params['Content-Type'] = _content_types_list
 
         # authentication setting
-        _auth_settings = ['basic_auth', 'cookie_auth', 'external_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {}
 

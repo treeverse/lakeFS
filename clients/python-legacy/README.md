@@ -77,12 +77,6 @@ configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['cookie_auth'] = 'Bearer'
 
-# Configure HTTP basic authorization: external_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
-
 # Configure Bearer authorization (JWT): jwt_token
 configuration = lakefs_client.Configuration(
     access_token = 'YOUR_BEARER_TOKEN'
@@ -373,11 +367,6 @@ Class | Method | HTTP request | Description
 - **Type**: API key
 - **API key parameter name**: internal_auth_session
 - **Location**: 
-
-
-## external_auth
-
-- **Type**: HTTP basic authentication
 
 
 ## jwt_token
