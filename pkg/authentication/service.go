@@ -1,5 +1,8 @@
 package authentication
 
+//go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package apiclient -generate "types,client" -o apiclient/client.gen.go  ../../api/authentication.yml
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=apiclient -destination=apiclient/mock_authentication_client.go github.com/treeverse/lakefs/pkg/authentication/apiclient ClientWithResponsesInterface
+
 import (
 	"context"
 	"fmt"
@@ -11,8 +14,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-//go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package apiclient -generate "types,client" -o apiclient/client.gen.go  ../../api/authentication.yml
-//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=apiclient -destination=apiclient/mock_authentication_client.go github.com/treeverse/lakefs/pkg/authentication/apiclient ClientWithResponsesInterface
 type Service interface {
 	ValidateSTS(ctx context.Context, code, redirectURI, state string) (*STSResponseData, error)
 }

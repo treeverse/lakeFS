@@ -185,7 +185,7 @@ package: package-python
 
 .PHONY: gen-api
 gen-api: docs/assets/js/swagger.yml ## Run the swagger code generator
-	$(GOGENERATE) ./pkg/api/apigen ./pkg/auth
+	$(GOGENERATE) ./pkg/api/apigen ./pkg/auth ./pkg/authentication
 
 .PHONY: gen-code
 gen-code: gen-api ## Run the generator for inline commands
