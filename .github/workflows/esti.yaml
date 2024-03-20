@@ -70,7 +70,7 @@ jobs:
         if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
           make -j3 gen-api gen-ui VERSION=${{ steps.version.outputs.tag }}
-          tar -cf /tmp/generated.tar.gz ./webui/dist ./pkg/auth/client.gen.go ./pkg/permissions/actions.gen.go ./pkg/api/apigen/lakefs.gen.go
+          tar -cf /tmp/generated.tar.gz ./webui/dist ./pkg/auth/client.gen.go ./pkg/authentication/apiclient/client.gen.go ./pkg/permissions/actions.gen.go ./pkg/api/apigen/lakefs.gen.go
 
         # must upload artifact in order to download generated later
       - name: Store generated code
