@@ -2748,33 +2748,20 @@ func TestAPIAuthService_DeleteExternalPrincipalAttachedToUserDelete(t *testing.T
 func TestAPIAuthService_ExternalLogin(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	userId := "user"
-	principalId := "arn:aws:sts::123:assumed-role/MyRole/SessionName"
+	presignedURL := "PresignedUrl"
 	ctx := context.Background()
 
-	// create userA and principalA
-	reqParams := gomock.Eq(&auth.CreateUserExternalPrincipalParams{PrincipalId: principalId})
-	mockClient.EXPECT().CreateUserExternalPrincipalWithResponse(gomock.Any(), userId, reqParams).Return(&auth.CreateUserExternalPrincipalResponse{
-		HTTPResponse: &http.Response{
-			StatusCode: http.StatusCreated,
-		},
-	}, nil)
-
-	mockClient.EXPECT().GetExternalPrincipalWithResponse(gomock.Any(), gomock.Eq(&auth.GetExternalPrincipalParams{
-		PrincipalId: principalId,
+	mockClient.EXPECT().ExternalLoginWithResponse(gomock.Any(), gomock.Eq(auth.ExternalLoginJSONRequestBody{
+		PresignedUrl: presignedURL,
 	})).Return(
-		&auth.GetExternalPrincipalResponse{
+		&auth.ExternalLoginResponse{
 			HTTPResponse: &http.Response{
 				StatusCode: http.StatusOK,
 			},
-			JSON200: &auth.ExternalPrincipal{
-				Id:     principalId,
-				UserId: userId,
-			},
+			JSON200: &auth.User{Username: userId},
 		}, nil)
 
-	err := s.CreateUserExternalPrincipal(ctx, userId, principalId)
-	require.NoError(t, err)
-	resp, err := s.ExternalLogin(ctx, principalId)
+	resp, err := s.ExternalLogin(ctx, presignedURL)
 	require.NoError(t, err)
 	require.Equal(t, userId, resp)
 }
