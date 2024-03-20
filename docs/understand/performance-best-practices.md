@@ -23,7 +23,7 @@ In cases where you are only interested in reading committed data:
 * Add `@` before the path  `lakefs://repo/main@/path`.
 
 When accessing data using the branch name (e.g. `lakefs://repo/main/path`) lakeFS will also try to fetch uncommitted data, which may result in reduced performance.
-For more infor36/4mation, see [how uncommitted data is managed in lakeFS][representing-refs-and-uncommitted-metadata].
+For more information, see [how uncommitted data is managed in lakeFS][representing-refs-and-uncommitted-metadata].
 
 ## Operate directly on the storage
 Storage operations can become a bottleneck when operating on large datasets.
