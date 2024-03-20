@@ -15,6 +15,7 @@ security:
 - cookie_auth: []
 - oidc_auth: []
 - saml_auth: []
+- external_auth: []
 paths:
   /setup_comm_prefs:
     post:
@@ -189,6 +190,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthenticationToken'
           description: successful login
+          headers:
+            Set-Cookie:
+              explode: false
+              schema:
+                type: string
+              style: simple
         "401":
           content:
             application/json:
@@ -9080,4 +9087,7 @@ components:
       in: cookie
       name: saml_auth_session
       type: apiKey
+    external_auth:
+      scheme: basic
+      type: http
 

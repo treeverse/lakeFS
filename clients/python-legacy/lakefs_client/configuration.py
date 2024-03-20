@@ -419,6 +419,13 @@ conf = lakefs_client.Configuration(
                     'cookie_auth',
                 ),
             }
+        if self.username is not None and self.password is not None:
+            auth['external_auth'] = {
+                'type': 'basic',
+                'in': 'header',
+                'key': 'Authorization',
+                'value': self.get_basic_auth_token()
+            }
         if self.access_token is not None:
             auth['jwt_token'] = {
                 'type': 'bearer',

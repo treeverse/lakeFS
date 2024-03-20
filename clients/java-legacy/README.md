@@ -95,6 +95,11 @@ public class Example {
     // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
     //cookie_auth.setApiKeyPrefix("Token");
 
+    // Configure HTTP basic authorization: external_auth
+    HttpBasicAuth external_auth = (HttpBasicAuth) defaultClient.getAuthentication("external_auth");
+    external_auth.setUsername("YOUR USERNAME");
+    external_auth.setPassword("YOUR PASSWORD");
+
     // Configure HTTP bearer authorization: jwt_token
     HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
     jwt_token.setBearerToken("BEARER TOKEN");
@@ -382,6 +387,10 @@ Authentication schemes defined for the API:
 - **Type**: API key
 - **API key parameter name**: internal_auth_session
 - **Location**: 
+
+### external_auth
+
+- **Type**: HTTP basic authentication
 
 ### jwt_token
 
