@@ -209,7 +209,7 @@ func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
 		return nil, err
 	}
 
-	return NewAzureBlobWalker(client)
+	return NewAzureDataLakeWalker(client, false)
 }
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, time.Time, error) {
@@ -568,11 +568,11 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeAzure)
-	info.ImportValidityRegex = `^https?://[a-z0-9_-]+\.(blob|adls)\.core\.windows\.net` // added adls for import hint validation in UI
+	info.ImportValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.windows\.net`
 	info.ValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.windows\.net`
 
 	if a.chinaCloud {
-		info.ImportValidityRegex = `^https?://[a-z0-9_-]+\.(blob|adls)\.core\.chinacloudapi\.cn`
+		info.ImportValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.chinacloudapi\.cn`
 		info.ValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.chinacloudapi\.cn`
 	}
 
@@ -598,6 +598,6 @@ func (a *Adapter) newPreSignedTime() time.Time {
 	return time.Now().UTC().Add(a.preSignedExpiry)
 }
 
-func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectPointer, uploadID string, partNumber int) (string, error) {
+func (a *Adapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPointer, _ string, _ int) (string, error) {
 	return "", block.ErrOperationNotSupported
 }

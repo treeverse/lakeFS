@@ -59,7 +59,6 @@ services:
       - ESTI_GOTEST_FLAGS
       - ESTI_FLAGS
       - ESTI_FORCE_PATH_STYLE
-      - ESTI_ADLS_IMPORT_BASE_URL
       - ESTI_AZURE_STORAGE_ACCOUNT
       - ESTI_AZURE_STORAGE_ACCESS_KEY
     working_dir: /lakefs
