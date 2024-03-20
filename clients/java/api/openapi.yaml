@@ -214,6 +214,8 @@ paths:
       summary: perform a login using an external authenticator
       tags:
       - auth
+      - external
+      - experimental
       x-content-type: application/json
       x-accepts: application/json
   /auth/capabilities:

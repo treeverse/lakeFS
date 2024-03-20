@@ -1819,6 +1819,8 @@ paths:
     post:
       tags:
         - auth
+        - external
+        - experimental
       operationId: externalLogin
       summary: perform a login using an external authenticator
       security: []
