@@ -14,6 +14,7 @@ jobs:
       with:
         stale-pr-message: 'This PR is now marked as stale after 30 days of inactivity, and will be closed soon. To keep it, mark it with the "no stale" label.'
         close-pr-message: 'Closing this PR because it has been stale for 7 days with no activity.'
+        days-before-issue-stale: -1
         days-before-pr-stale: 30
         days-before-close: 7
         stale-pr-label: stale
