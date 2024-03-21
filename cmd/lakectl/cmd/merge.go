@@ -51,7 +51,7 @@ var mergeCmd = &cobra.Command{
 
 		body := apigen.MergeIntoBranchJSONRequestBody{
 			Message:  &message,
-			Metadata: &apigen.Merge_Metadata{AdditionalProperties: kvPairs},
+			Metadata: &kvPairs,
 			Strategy: &strategy,
 		}
 		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, body)
