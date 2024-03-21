@@ -41,6 +41,7 @@ In addition, lakeFS exposes the following metrics to help monitor your deploymen
 | s3_operation_duration_seconds    | Outgoing S3 operations (histogram)                          | <br/>**operation**: operation name<br/>**error**: "true" if error, "false" otherwise
 | gs_operation_duration_seconds    | Outgoing Google Storage operations (histogram)              | <br/>**operation**: operation name<br/>**error**: "true" if error, "false" otherwise
 | azure_operation_duration_seconds | Outgoing Azure storage operations (histogram)               | <br/>**operation**: operation name<br/>**error**: "true" if error, "false" otherwise
+| kv_request_duration_seconds      | Durations of KV requests(histogram)                         | <br/>**operation**: name of KV operation<br/>**type**: KV type(dynamodb, postgres, etc)
 | dynamo_request_duration_seconds  | Time spent doing DynamoDB requests                          | **operation**: DynamoDB operation name
 | dynamo_consumed_capacity_total   | The capacity units consumed by operation                    | **operation**: DynamoDB operation name
 | dynamo_failures_total            | The total number of errors while working for kv store       | **operation**: DynamoDB operation name
