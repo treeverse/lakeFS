@@ -565,27 +565,24 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 
 	userID, err := c.Auth.ExternalPrincipalLogin(ctx, body)
 	if c.handleAPIError(ctx, w, r, err) {
-		if errors.Is(err, ErrAuthenticatingRequest) {
-			writeResponse(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
-			return
-		}
-
-		loginTime := time.Now()
-		duration := c.Config.Auth.LoginDuration
-		expires := loginTime.Add(duration)
-		secret := c.Auth.SecretStore().SharedSecret()
-
-		tokenString, err := GenerateJWTLogin(secret, userID, loginTime, expires)
-		if err != nil {
-			writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-			return
-		}
-		response := apigen.AuthenticationToken{
-			Token:           tokenString,
-			TokenExpiration: swag.Int64(expires.Unix()),
-		}
-		writeResponse(w, r, http.StatusOK, response)
+		return
 	}
+
+	loginTime := time.Now()
+	duration := c.Config.Auth.LoginDuration
+	expires := loginTime.Add(duration)
+	secret := c.Auth.SecretStore().SharedSecret()
+
+	tokenString, err := GenerateJWTLogin(secret, userID, loginTime, expires)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		return
+	}
+	response := apigen.AuthenticationToken{
+		Token:           tokenString,
+		TokenExpiration: swag.Int64(expires.Unix()),
+	}
+	writeResponse(w, r, http.StatusOK, response)
 }
 
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {
