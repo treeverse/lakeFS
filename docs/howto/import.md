@@ -149,7 +149,7 @@ the following policy needs to be attached to the lakeFS S3 service-account to al
 </div>
 <div markdown="1" id="azure-storage">
 
-**Note:** The use of the `alds` hint for ADLS Gen2 storage accounts is deprecated, please use the original source url for import.
+**Note:** The use of the `adls` hint for ADLS Gen2 storage accounts is deprecated, please use the original source url for import.
 {: .note}
 
 See [Azure deployment][deploy-azure-storage-account-creds] on limitations when using account credentials.
