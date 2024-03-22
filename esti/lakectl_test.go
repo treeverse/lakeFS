@@ -811,3 +811,17 @@ func TestLakectlUsage(t *testing.T) {
 	runCmd(t, r.Replace("{lakectl} repo list"), false, false, nil)
 	RunCmdAndVerifyFailureWithFile(t, r.Replace("{lakectl} usage summary"), false, "lakectl_usage_summary", vars)
 }
+
+func TestLakectlBranchProtection(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	r := strings.NewReplacer("{lakectl}", Lakectl(), "{repo}", repoName, "{storage}", storage, "{branch}", "main")
+	runCmd(t, r.Replace("{lakectl} repo create lakefs://{repo} {storage}"), false, false, nil)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch-protect add lakefs://"+repoName+" "+mainBranch, false, "lakectl_empty", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch-protect list lakefs://"+repoName, false, "lakectl_branch_protection_list.term", vars)
+}
