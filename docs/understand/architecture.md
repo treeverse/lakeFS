@@ -23,6 +23,7 @@ lakeFS stores data in object stores. Those supported include:
 - Google Cloud Storage
 - Azure Blob Storage
 - MinIO
+- NetApp StorageGRID
 - Ceph
 
 ### Metadata Storage
