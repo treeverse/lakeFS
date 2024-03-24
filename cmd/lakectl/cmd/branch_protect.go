@@ -62,9 +62,12 @@ var branchProtectAddCmd = &cobra.Command{
 		rules = append(rules, apigen.BranchProtectionRule{
 			Pattern: args[1],
 		})
-		setResp, err := client.SetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository, &apigen.SetBranchProtectionRulesParams{
-			IfMatch: swag.String(resp.HTTPResponse.Header.Get("ETag")),
-		}, rules)
+		params := &apigen.SetBranchProtectionRulesParams{}
+		etag := swag.String(resp.HTTPResponse.Header.Get("ETag"))
+		if etag != nil && *etag != "" {
+			params.IfMatch = etag
+		}
+		setResp, err := client.SetBranchProtectionRulesWithResponse(cmd.Context(), u.Repository, params, rules)
 		DieOnErrorOrUnexpectedStatusCode(setResp, err, http.StatusNoContent)
 	},
 }
