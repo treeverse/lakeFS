@@ -177,7 +177,7 @@ type Config struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
 		} `mapstructure:"encrypt"`
 		API struct {
-			// Endpoint is the endpoint to used for authorization operations
+			// Endpoint for authorization operations
 			Endpoint           string        `mapstructure:"endpoint"`
 			Token              SecureString  `mapstructure:"token"`
 			SupportsInvites    bool          `mapstructure:"supports_invites"`
@@ -185,6 +185,7 @@ type Config struct {
 			SkipHealthCheck    bool          `mapstructure:"skip_health_check"`
 		} `mapstructure:"api"`
 		AuthenticationAPI struct {
+			// Endpoint for authentication operations
 			Endpoint string `mapstructure:"endpoint"`
 		} `mapstructure:"authentication_api"`
 		RemoteAuthenticator struct {

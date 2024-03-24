@@ -109,7 +109,6 @@ func (s *APIService) ValidateSTS(ctx context.Context, code, redirectURI, state s
 	if !found {
 		return nil, fmt.Errorf("missing expiration in claims: %w", ErrInvalidSTS)
 	}
-	// TODO(Guys): this should be handled better
 	expiresAtInt, err := strconv.ParseFloat(expiresAt, 64)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse expiration time: %w", err)

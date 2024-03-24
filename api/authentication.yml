@@ -1,8 +1,8 @@
 openapi: "3.0.0"
 
 info:
-  description: fluffy HTTP API
-  title: fluffy API
+  description: lakeFS authentication HTTP API
+  title: lakeFS authentication API
   license:
     name: "Apache 2.0"
     url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -11,7 +11,7 @@ info:
 
 servers:
   - url: "/api/v1"
-    description: fluffy server endpoint
+    description: lakeFS authentication server endpoint
 security:
   - jwt_token: []
   - basic_auth: []
