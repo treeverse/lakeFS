@@ -1,5 +1,20 @@
 # Changelog
 
+# v1.15.0
+
+**Deprecation notice:**
+Azure users no longer need to use the import `hint` when importing from an ADLS Gen2 account.
+We've added a backwards compatibility support in lakectl, but support for the ADLS `hint` will be removed completely in future releases.
+
+:new: What's new:
+
+- Integrate support for Short-Lived Tokens (STS) in Remote Authentication (#7571)
+
+:bug: Bugs fixed:
+
+- Fix lakectl branch protection set 400 response (#7590)
+- Remove ADLS hint from import (#7581)
+
 # v1.14.1
 
 :new: What's new:
