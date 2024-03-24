@@ -28,6 +28,7 @@ import java.io.IOException;
 
 
 import io.lakefs.clients.api.model.AbortPresignMultipartUpload;
+import io.lakefs.clients.api.model.AuthenticationToken;
 import io.lakefs.clients.api.model.CompletePresignMultipartUpload;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.ExternalPrincipal;
@@ -36,6 +37,7 @@ import io.lakefs.clients.api.model.ExternalPrincipalList;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.PresignMultipartUpload;
 import io.lakefs.clients.api.model.StagingLocation;
+import io.lakefs.clients.api.model.StsAuthRequest;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -1288,6 +1290,125 @@ public class ExperimentalApi {
 
         okhttp3.Call localVarCall = listUserExternalPrincipalsValidateBeforeCall(userId, prefix, after, amount, _callback);
         Type localVarReturnType = new TypeToken<ExternalPrincipalList>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for sTSLogin
+     * @param stsAuthRequest  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> successful STS login </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call sTSLoginCall(StsAuthRequest stsAuthRequest, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = stsAuthRequest;
+
+        // create path and map variables
+        String localVarPath = "/sts/login";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] {  };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call sTSLoginValidateBeforeCall(StsAuthRequest stsAuthRequest, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'stsAuthRequest' is set
+        if (stsAuthRequest == null) {
+            throw new ApiException("Missing the required parameter 'stsAuthRequest' when calling sTSLogin(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = sTSLoginCall(stsAuthRequest, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * perform a login with STS
+     * 
+     * @param stsAuthRequest  (required)
+     * @return AuthenticationToken
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> successful STS login </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public AuthenticationToken sTSLogin(StsAuthRequest stsAuthRequest) throws ApiException {
+        ApiResponse<AuthenticationToken> localVarResp = sTSLoginWithHttpInfo(stsAuthRequest);
+        return localVarResp.getData();
+    }
+
+    /**
+     * perform a login with STS
+     * 
+     * @param stsAuthRequest  (required)
+     * @return ApiResponse&lt;AuthenticationToken&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> successful STS login </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<AuthenticationToken> sTSLoginWithHttpInfo(StsAuthRequest stsAuthRequest) throws ApiException {
+        okhttp3.Call localVarCall = sTSLoginValidateBeforeCall(stsAuthRequest, null);
+        Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * perform a login with STS (asynchronously)
+     * 
+     * @param stsAuthRequest  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> successful STS login </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call sTSLoginAsync(StsAuthRequest stsAuthRequest, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = sTSLoginValidateBeforeCall(stsAuthRequest, _callback);
+        Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }

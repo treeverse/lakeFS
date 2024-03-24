@@ -3731,6 +3731,20 @@ func TestLogin(t *testing.T) {
 	}
 }
 
+func TestController_STSLogin(t *testing.T) {
+	handler, _ := setupHandler(t)
+	server := setupServer(t, handler)
+	clt := setupClientByEndpoint(t, server.URL, "", "")
+
+	res, err := clt.STSLoginWithResponse(context.Background(), apigen.STSLoginJSONRequestBody{})
+	if err != nil {
+		t.Fatalf("Error login with response %v", err)
+	}
+	if res.StatusCode() != http.StatusNotImplemented {
+		t.Errorf("sts login response should return %v but returned %v", http.StatusNotImplemented, res.StatusCode())
+	}
+}
+
 var listRepositoryRunsActionTemplate = template.Must(template.New("").Parse(`---
 name: CommitAction
 on:
