@@ -99,6 +99,7 @@ from lakefs_client.model.stats_event import StatsEvent
 from lakefs_client.model.stats_events_list import StatsEventsList
 from lakefs_client.model.storage_config import StorageConfig
 from lakefs_client.model.storage_uri import StorageURI
+from lakefs_client.model.sts_auth_request import StsAuthRequest
 from lakefs_client.model.tag_creation import TagCreation
 from lakefs_client.model.task_info import TaskInfo
 from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties

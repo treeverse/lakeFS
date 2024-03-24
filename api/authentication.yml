@@ -1,0 +1,379 @@
+openapi: "3.0.0"
+
+info:
+  description: lakeFS authentication HTTP API
+  title: lakeFS authentication API
+  license:
+    name: "Apache 2.0"
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 0.1.0
+
+
+servers:
+  - url: "/api/v1"
+    description: lakeFS authentication server endpoint
+security:
+  - jwt_token: []
+  - basic_auth: []
+  - cookie_auth: []
+  - oidc_auth: []
+  - saml_auth: []
+components:
+  securitySchemes:
+    basic_auth:
+      type: http
+      scheme: basic
+    jwt_token:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    cookie_auth:
+      type: apiKey
+      in: cookie
+      name: internal_auth_session
+    oidc_auth:
+      type: apiKey
+      in: cookie
+      name: oidc_auth_session
+    saml_auth:
+      type: apiKey
+      in: cookie
+      name: saml_auth_session
+  parameters:
+    PaginationPrefix:
+      in: query
+      name: prefix
+      description: return items prefixed with this value
+      schema:
+        type: string
+
+    PaginationAfter:
+      in: query
+      name: after
+      description: return items after this value
+      schema:
+        type: string
+
+    PaginationAmount:
+      in: query
+      name: amount
+      description: how many items to return
+      schema:
+        type: integer
+        minimum: -1
+        maximum: 1000
+        default: 100
+
+    PaginationDelimiter:
+      in: query
+      name: delimiter
+      description: delimiter used to group common prefixes by
+      schema:
+        type: string
+
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Resource Conflicts With Target
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    PreconditionFailed:
+      description: Precondition Failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ValidationError:
+      description: Validation Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Pagination:
+      type: object
+      required:
+        - has_more
+        - max_per_page
+        - results
+        - next_offset
+      properties:
+        has_more:
+          type: boolean
+          description: Next page is available
+        next_offset:
+          type: string
+          description: Token used to retrieve the next page
+        results:
+          type: integer
+          minimum: 0
+          description: Number of values found in the results
+        max_per_page:
+          type: integer
+          minimum: 0
+          description: Maximal number of entries per page
+
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          description: short message explaining the error
+          type: string
+
+    ObjectError:
+      type: object
+      required:
+        - status_code
+        - message
+      properties:
+        status_code:
+          type: integer
+          description: HTTP status code associated for operation on path
+        message:
+          type: string
+          description: short message explaining status_code
+        path:
+          type: string
+          description: affected path
+
+    ObjectErrorList:
+      type: object
+      required:
+        - errors
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectError"
+
+    User:
+      type: object
+      required:
+        - id
+        - creation_date
+      properties:
+        id:
+          type: string
+          description: a unique identifier for the user. In password-based authentication, this is the email.
+        creation_date:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
+        friendly_name:
+          type: string
+        email:
+          type: string
+
+    CurrentUser:
+      type: object
+      required:
+        - user
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+
+    UserCreation:
+      type: object
+      properties:
+        id:
+          type: string
+          description: a unique identifier for the user. In password-based authentication, this is the email.
+        invite_user:
+          type: boolean
+      required:
+        - id
+
+    AccessKeyCredentials:
+      type: object
+      properties:
+        # Example values as seen on
+        # https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
+        access_key_id:
+          description: access key ID to set for user for use in integration testing.
+          example: AKIAIOSFODNN7EXAMPLE
+          type: string
+          minLength: 1
+        secret_access_key:
+          description: secret access key to set for user for use in integration testing.
+          example: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          type: string
+          minLength: 1
+      required:
+        - access_key_id
+        - secret_access_key
+    AuthenticationToken:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          description: a JWT token that could be used to authenticate requests
+          type: string
+        token_expiration:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
+
+    StatsEvent:
+      type: object
+      properties:
+        class:
+          description: stats event class (e.g. "s3_gateway", "openapi_request", "experimental-feature", "ui-event")
+          type: string
+        name:
+          description: stats event name (e.g. "put_object", "create_repository", "<experimental-feature-name>")
+          type: string
+        count:
+          description: number of events of the class and name
+          type: integer
+      required:
+        - class
+        - name
+        - count
+
+    StatsEventsList:
+      type: object
+      required:
+        - events
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatsEvent"
+    LdapAuthRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    LdapAuthResponse:
+      type: object
+      required:
+        - external_user_identifier
+      properties:
+        external_user_identifier:
+          type: string
+          description: external_user_identifier is the user DN in LDAP set if user exists with that username and has this password.
+    StsAuthRequest:
+      type: object
+      required:
+        - code
+        - state
+        - redirect_uri
+      properties:
+        code:
+          type: string
+        state:
+          type: string
+        redirect_uri:
+          type: string
+    oidc_token_data:
+      type: object
+      required:
+        - claims
+      properties:
+        claims:
+          type: object
+          additionalProperties:
+            type: string
+          description: the claims of the token returned from the provider
+paths:
+  /ldap/login:
+    post:
+      tags:
+        - auth
+      operationId: LDAPLogin
+      summary: perform a login with LDAP
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LdapAuthRequest"
+      responses:
+        200:
+          description: successful LDAP login
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LdapAuthResponse"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+  /sts/login:
+    post:
+      tags:
+        - auth
+      operationId: STSLogin
+      summary: perform a login with STS
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StsAuthRequest"
+      responses:
+        200:
+          description: successful STS login
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/oidc_token_data"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+  /oidc/callback:
+    get:
+      tags:
+        - auth
+      operationId: oauthCallback
+      security: []
+      responses:
+        302:
+          description: successfully got token
+        401:
+          description: failed to exchange authorization code for token
+        default:
+          $ref: "#/components/responses/ServerError"
+  /healthcheck:
+    get:
+      operationId: healthCheck
+      security: []
+      tags:
+        - healthCheck
+      description: check that the API server is up and running
+      responses:
+        204:
+          description: NoContent
+        default:
+          $ref: "#/components/responses/ServerError"

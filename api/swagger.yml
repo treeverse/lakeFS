@@ -1049,7 +1049,19 @@ components:
           type: string
         secret_access_key:
           type: string
-
+    StsAuthRequest:
+      type: object
+      required:
+        - code
+        - state
+        - redirect_uri
+      properties:
+        code:
+          type: string
+        state:
+          type: string
+        redirect_uri:
+          type: string
     AuthenticationToken:
       type: object
       required:
@@ -1802,7 +1814,30 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-
+  /sts/login:
+    post:
+      tags:
+        - experimental
+      operationId: STSLogin
+      summary: perform a login with STS
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StsAuthRequest"
+      responses:
+        200:
+          description: successful STS login
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticationToken"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
 
 
   /auth/capabilities:

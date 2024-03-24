@@ -23,6 +23,7 @@ from lakefs_client.model_utils import (  # noqa: F401
     validate_and_convert_types
 )
 from lakefs_client.model.abort_presign_multipart_upload import AbortPresignMultipartUpload
+from lakefs_client.model.authentication_token import AuthenticationToken
 from lakefs_client.model.complete_presign_multipart_upload import CompletePresignMultipartUpload
 from lakefs_client.model.error import Error
 from lakefs_client.model.external_principal import ExternalPrincipal
@@ -31,6 +32,7 @@ from lakefs_client.model.external_principal_list import ExternalPrincipalList
 from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.presign_multipart_upload import PresignMultipartUpload
 from lakefs_client.model.staging_location import StagingLocation
+from lakefs_client.model.sts_auth_request import StsAuthRequest
 
 
 class ExperimentalApi(object):
@@ -602,6 +604,56 @@ class ExperimentalApi(object):
                     'application/json'
                 ],
                 'content_type': [],
+            },
+            api_client=api_client
+        )
+        self.s_ts_login_endpoint = _Endpoint(
+            settings={
+                'response_type': (AuthenticationToken,),
+                'auth': [],
+                'endpoint_path': '/sts/login',
+                'operation_id': 's_ts_login',
+                'http_method': 'POST',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'sts_auth_request',
+                ],
+                'required': [
+                    'sts_auth_request',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'sts_auth_request':
+                        (StsAuthRequest,),
+                },
+                'attribute_map': {
+                },
+                'location_map': {
+                    'sts_auth_request': 'body',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [
+                    'application/json'
+                ]
             },
             api_client=api_client
         )
@@ -1185,4 +1237,69 @@ class ExperimentalApi(object):
         kwargs['user_id'] = \
             user_id
         return self.list_user_external_principals_endpoint.call_with_http_info(**kwargs)
+
+    def s_ts_login(
+        self,
+        sts_auth_request,
+        **kwargs
+    ):
+        """perform a login with STS  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.s_ts_login(sts_auth_request, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            sts_auth_request (StsAuthRequest):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            AuthenticationToken
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['sts_auth_request'] = \
+            sts_auth_request
+        return self.s_ts_login_endpoint.call_with_http_info(**kwargs)
 

@@ -185,12 +185,14 @@ package: package-python
 
 .PHONY: gen-api
 gen-api: docs/assets/js/swagger.yml ## Run the swagger code generator
-	$(GOGENERATE) ./pkg/api/apigen ./pkg/auth
+	$(GOGENERATE) ./pkg/api/apigen ./pkg/auth ./pkg/authentication
 
 .PHONY: gen-code
 gen-code: gen-api ## Run the generator for inline commands
 	$(GOGENERATE) \
 		./pkg/actions \
+		./pkg/auth/ \
+		./pkg/authentication \
 		./pkg/graveler \
 		./pkg/graveler/committed \
 		./pkg/graveler/sstable \
@@ -264,6 +266,7 @@ validate-proto: gen-proto  ## build proto and check if diff found
 validate-mockgen: gen-code
 	git diff --quiet -- pkg/actions/mock/mock_actions.go || (echo "Modification verification failed! pkg/actions/mock/mock_actions.go"; false)
 	git diff --quiet -- pkg/auth/mock/mock_auth_client.go || (echo "Modification verification failed! pkg/auth/mock/mock_auth_client.go"; false)
+	git diff --quiet -- pkg/authentication/api/mock_authentication_client.go || (echo "Modification verification failed! pkg/authentication/api/mock_authentication_client.go"; false)
 	git diff --quiet -- pkg/graveler/committed/mock/batch_write_closer.go || (echo "Modification verification failed! pkg/graveler/committed/mock/batch_write_closer.go"; false)
 	git diff --quiet -- pkg/graveler/committed/mock/meta_range.go || (echo "Modification verification failed! pkg/graveler/committed/mock/meta_range.go"; false)
 	git diff --quiet -- pkg/graveler/committed/mock/range_manager.go || (echo "Modification verification failed! pkg/graveler/committed/mock/range_manager.go"; false)

@@ -24,6 +24,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
+	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -110,7 +111,7 @@ var runCmd = &cobra.Command{
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
-		// initialize auth service
+		// initialize authorization service
 		var authService auth.Service
 
 		if err := checkAuthModeSupport(cfg); err != nil {
@@ -141,6 +142,16 @@ var runCmd = &cobra.Command{
 				authparams.ServiceCache(cfg.Auth.Cache),
 				logger.WithField("service", "auth_service"),
 			)
+		}
+		// initialize authentication service
+		var authenticationService authentication.Service
+		if cfg.IsAuthenticationTypeAPI() {
+			authenticationService, err = authentication.NewAPIService(cfg.Auth.AuthenticationAPI.Endpoint, cfg.Auth.CookieAuthVerification.ValidateIDTokenClaims, logger.WithField("service", "authentication_api"))
+			if err != nil {
+				logger.WithError(err).Fatal("failed to create authentication service")
+			}
+		} else {
+			authenticationService = authentication.NewDummyService()
 		}
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
@@ -255,6 +266,7 @@ var runCmd = &cobra.Command{
 			c,
 			middlewareAuthenticator,
 			authService,
+			authenticationService,
 			blockStore,
 			authMetadataManager,
 			migrator,

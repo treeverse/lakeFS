@@ -107,6 +107,7 @@ docs/StatsEvent.md
 docs/StatsEventsList.md
 docs/StorageConfig.md
 docs/StorageURI.md
+docs/StsAuthRequest.md
 docs/TagCreation.md
 docs/TagsApi.md
 docs/TaskInfo.md
@@ -247,6 +248,7 @@ src/main/java/io/lakefs/clients/api/model/StatsEvent.java
 src/main/java/io/lakefs/clients/api/model/StatsEventsList.java
 src/main/java/io/lakefs/clients/api/model/StorageConfig.java
 src/main/java/io/lakefs/clients/api/model/StorageURI.java
+src/main/java/io/lakefs/clients/api/model/StsAuthRequest.java
 src/main/java/io/lakefs/clients/api/model/TagCreation.java
 src/main/java/io/lakefs/clients/api/model/TaskInfo.java
 src/main/java/io/lakefs/clients/api/model/UnderlyingObjectProperties.java
@@ -360,6 +362,7 @@ src/test/java/io/lakefs/clients/api/model/StatsEventTest.java
 src/test/java/io/lakefs/clients/api/model/StatsEventsListTest.java
 src/test/java/io/lakefs/clients/api/model/StorageConfigTest.java
 src/test/java/io/lakefs/clients/api/model/StorageURITest.java
+src/test/java/io/lakefs/clients/api/model/StsAuthRequestTest.java
 src/test/java/io/lakefs/clients/api/model/TagCreationTest.java
 src/test/java/io/lakefs/clients/api/model/TaskInfoTest.java
 src/test/java/io/lakefs/clients/api/model/UnderlyingObjectPropertiesTest.java

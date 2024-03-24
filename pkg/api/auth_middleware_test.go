@@ -171,7 +171,7 @@ func testGenerateBadAPIToken(t testing.TB, authService auth.Service) string {
 	expires := now.Add(time.Hour)
 	userID := "2906"
 	// Generate a JWT for a nonexistent user.  It will fail authentication.
-	tokenString, err := api.GenerateJWTLogin(secret, userID, now, expires)
+	tokenString, err := api.GenerateJWTLogin(secret, userID, now.Unix(), expires.Unix())
 	if err != nil {
 		t.Fatal("Generate (bad) JWT token:", err)
 	}

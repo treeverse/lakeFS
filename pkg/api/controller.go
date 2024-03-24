@@ -30,6 +30,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
+	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/cloud"
@@ -86,6 +87,7 @@ type Controller struct {
 	Catalog               *catalog.Catalog
 	Authenticator         auth.Authenticator
 	Auth                  auth.Service
+	Authentication        authentication.Service
 	BlockAdapter          block.Adapter
 	MetadataManager       auth.MetadataManager
 	Migrator              Migrator
@@ -534,7 +536,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	expires := loginTime.Add(duration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
-	tokenString, err := GenerateJWTLogin(secret, user.Username, loginTime, expires)
+	tokenString, err := GenerateJWTLogin(secret, user.Username, loginTime.Unix(), expires.Unix())
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
@@ -552,6 +554,24 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 		TokenExpiration: swag.Int64(expires.Unix()),
 	}
 	writeResponse(w, r, http.StatusOK, response)
+}
+
+func (c *Controller) STSLogin(w http.ResponseWriter, r *http.Request, body apigen.STSLoginJSONRequestBody) {
+	ctx := r.Context()
+	responseData, err := c.Authentication.ValidateSTS(ctx, body.Code, body.RedirectUri, body.State)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	// validate a user exists with the external user id
+	_, err = c.Auth.GetUserByExternalID(ctx, responseData.ExternalUserID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	token, err := GenerateJWTLogin(c.Auth.SecretStore().SharedSecret(), responseData.ExternalUserID, time.Now().Unix(), responseData.ExpiresAtUnixTime)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusOK, token)
 }
 
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {
@@ -2616,6 +2636,10 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, graveler.ErrPreconditionFailed):
 		log.Debug("Precondition failed")
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
+	case errors.Is(err, authentication.ErrNotImplemented):
+		cb(w, r, http.StatusNotImplemented, "Not implemented")
+	case errors.Is(err, authentication.ErrInvalidSTS):
+		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
 		cb(w, r, http.StatusInternalServerError, err)
@@ -5032,12 +5056,13 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 	return pathRecords
 }
 
-func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
+func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
 		Authenticator:         authenticator,
 		Auth:                  authService,
+		Authentication:        authenticationService,
 		BlockAdapter:          blockAdapter,
 		MetadataManager:       metadataManager,
 		Migrator:              migrator,

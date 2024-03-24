@@ -107,6 +107,7 @@ docs/StatsEvent.md
 docs/StatsEventsList.md
 docs/StorageConfig.md
 docs/StorageURI.md
+docs/StsAuthRequest.md
 docs/TagCreation.md
 docs/TagsApi.md
 docs/TaskInfo.md
@@ -233,6 +234,7 @@ lakefs_client/model/stats_event.py
 lakefs_client/model/stats_events_list.py
 lakefs_client/model/storage_config.py
 lakefs_client/model/storage_uri.py
+lakefs_client/model/sts_auth_request.py
 lakefs_client/model/tag_creation.py
 lakefs_client/model/task_info.py
 lakefs_client/model/underlying_object_properties.py
@@ -356,6 +358,7 @@ test/test_stats_event.py
 test/test_stats_events_list.py
 test/test_storage_config.py
 test/test_storage_uri.py
+test/test_sts_auth_request.py
 test/test_tag_creation.py
 test/test_tags_api.py
 test/test_task_info.py
