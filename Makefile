@@ -64,8 +64,7 @@ clean:
 		$(UI_BUILD_DIR) \
 		$(UI_DIR)/node_modules \
 		pkg/api/apigen/lakefs.gen.go \
-		pkg/auth/client.gen.go \
-		pkg/authentication/apiclient/client.gen.go
+		pkg/auth/client.gen.go
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
