@@ -155,7 +155,7 @@ func NewTestApiService(t *testing.T, validateIDTokenClaims map[string]string, ex
 }
 
 func TestAPIAuthService_ExternalLogin(t *testing.T) {
-	mockClient, s := NewTestApiService(t, map[string]string{}, false)
+	mockClient, s := NewTestApiService(t, map[string]string{}, true)
 	ctx := context.Background()
 	userId := "user"
 	presignedURL := "PresignedUrl"
