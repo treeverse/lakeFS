@@ -155,7 +155,6 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**deleteUserExternalPrincipal**](docs/AuthApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 *AuthApi* | [**detachPolicyFromGroup**](docs/AuthApi.md#detachPolicyFromGroup) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 *AuthApi* | [**detachPolicyFromUser**](docs/AuthApi.md#detachPolicyFromUser) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
-*AuthApi* | [**externalPrincipalLogin**](docs/AuthApi.md#externalPrincipalLogin) | **POST** /auth/external/login | perform a login using an external authenticator
 *AuthApi* | [**getCredentials**](docs/AuthApi.md#getCredentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 *AuthApi* | [**getCurrentUser**](docs/AuthApi.md#getCurrentUser) | **GET** /user | get current user
 *AuthApi* | [**getExternalPrincipal**](docs/AuthApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
@@ -195,6 +194,7 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**getExternalPrincipal**](docs/ExperimentalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
 *ExperimentalApi* | [**hardResetBranch**](docs/ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 *ExperimentalApi* | [**listUserExternalPrincipals**](docs/ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
+*ExperimentalApi* | [**sTSLogin**](docs/ExperimentalApi.md#sTSLogin) | **POST** /sts/login | perform a login with STS
 *ExternalApi* | [**createUserExternalPrincipal**](docs/ExternalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 *ExternalApi* | [**deleteUserExternalPrincipal**](docs/ExternalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 *ExternalApi* | [**externalPrincipalLogin**](docs/ExternalApi.md#externalPrincipalLogin) | **POST** /auth/external/login | perform a login using an external authenticator
@@ -357,6 +357,7 @@ Class | Method | HTTP request | Description
  - [StatsEventsList](docs/StatsEventsList.md)
  - [StorageConfig](docs/StorageConfig.md)
  - [StorageURI](docs/StorageURI.md)
+ - [StsAuthRequest](docs/StsAuthRequest.md)
  - [TagCreation](docs/TagCreation.md)
  - [TaskInfo](docs/TaskInfo.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)

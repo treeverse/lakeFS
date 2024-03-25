@@ -24,6 +24,7 @@ import io.lakefs.clients.sdk.model.ExternalPrincipalList;
 import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.PresignMultipartUpload;
 import io.lakefs.clients.sdk.model.StagingLocation;
+import io.lakefs.clients.sdk.model.StsAuthRequest;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -190,6 +191,19 @@ public class ExperimentalApiTest {
                 .prefix(prefix)
                 .after(after)
                 .amount(amount)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * perform a login with STS
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void sTSLoginTest() throws ApiException {
+        StsAuthRequest stsAuthRequest = null;
+        AuthenticationToken response = api.sTSLogin(stsAuthRequest)
                 .execute();
         // TODO: test validations
     }

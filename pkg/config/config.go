@@ -177,12 +177,17 @@ type Config struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
 		} `mapstructure:"encrypt"`
 		API struct {
+			// Endpoint for authorization operations
 			Endpoint           string        `mapstructure:"endpoint"`
 			Token              SecureString  `mapstructure:"token"`
 			SupportsInvites    bool          `mapstructure:"supports_invites"`
 			HealthCheckTimeout time.Duration `mapstructure:"health_check_timeout"`
 			SkipHealthCheck    bool          `mapstructure:"skip_health_check"`
 		} `mapstructure:"api"`
+		AuthenticationAPI struct {
+			// Endpoint for authentication operations
+			Endpoint string `mapstructure:"endpoint"`
+		} `mapstructure:"authentication_api"`
 		RemoteAuthenticator struct {
 			// Enabled if set true will enable remote authentication
 			Enabled bool `mapstructure:"enabled"`
@@ -524,6 +529,9 @@ func (c *Config) IsAuthUISimplified() bool {
 	return c.Auth.UIConfig.RBAC == AuthRBACSimplified
 }
 
+func (c *Config) IsAuthenticationTypeAPI() bool {
+	return c.Auth.AuthenticationAPI.Endpoint != ""
+}
 func (c *Config) IsAuthTypeAPI() bool {
 	return c.Auth.API.Endpoint != ""
 }

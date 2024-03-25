@@ -188,13 +188,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthenticationToken'
-          description: successful login
-          headers:
-            Set-Cookie:
-              explode: false
-              schema:
-                type: string
-              style: simple
+          description: successful external login
         "401":
           content:
             application/json:
@@ -212,8 +206,43 @@ paths:
       security: []
       summary: perform a login using an external authenticator
       tags:
-      - auth
       - external
+      - experimental
+      x-content-type: application/json
+      x-accepts: application/json
+  /sts/login:
+    post:
+      operationId: STSLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StsAuthRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationToken'
+          description: successful STS login
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      summary: perform a login with STS
+      tags:
       - experimental
       x-content-type: application/json
       x-accepts: application/json
@@ -8158,6 +8187,23 @@ components:
       - secret_access_key
       type: object
     ExternalLoginInformation:
+      type: object
+    StsAuthRequest:
+      example:
+        code: code
+        state: state
+        redirect_uri: redirect_uri
+      properties:
+        code:
+          type: string
+        state:
+          type: string
+        redirect_uri:
+          type: string
+      required:
+      - code
+      - redirect_uri
+      - state
       type: object
     AuthenticationToken:
       example:

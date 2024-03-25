@@ -13,6 +13,7 @@ Method | HTTP request | Description
 [**getExternalPrincipal**](ExperimentalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
 [**hardResetBranch**](ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 [**listUserExternalPrincipals**](ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
+[**sTSLogin**](ExperimentalApi.md#sTSLogin) | **POST** /sts/login | perform a login with STS
 
 
 <a name="abortPresignMultipartUpload"></a>
@@ -569,7 +570,7 @@ No authorization required
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | successful login |  * Set-Cookie -  <br>  |
+**200** | successful external login |  -  |
 **401** | Unauthorized |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
@@ -862,6 +863,69 @@ Name | Type | Description  | Notes
 **200** | external principals list |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="sTSLogin"></a>
+# **sTSLogin**
+> AuthenticationToken sTSLogin(stsAuthRequest)
+
+perform a login with STS
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.ExperimentalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+
+    ExperimentalApi apiInstance = new ExperimentalApi(defaultClient);
+    StsAuthRequest stsAuthRequest = new StsAuthRequest(); // StsAuthRequest | 
+    try {
+      AuthenticationToken result = apiInstance.sTSLogin(stsAuthRequest);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ExperimentalApi#sTSLogin");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **stsAuthRequest** | [**StsAuthRequest**](StsAuthRequest.md)|  |
+
+### Return type
+
+[**AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | successful STS login |  -  |
+**401** | Unauthorized |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 

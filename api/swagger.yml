@@ -1054,6 +1054,20 @@ components:
     ExternalLoginInformation:
       type: object
 
+    StsAuthRequest:
+      type: object
+      required:
+        - code
+        - state
+        - redirect_uri
+      properties:
+        code:
+          type: string
+        state:
+          type: string
+        redirect_uri:
+          type: string
+
     AuthenticationToken:
       type: object
       required:
@@ -1810,7 +1824,6 @@ paths:
   /auth/external/login:
     post:
       tags:
-        - auth
         - external
         - experimental
       operationId: externalPrincipalLogin
@@ -1823,11 +1836,34 @@ paths:
               $ref: "#/components/schemas/ExternalLoginInformation"
       responses:
         200:
-          description: successful login
-          headers:
-            Set-Cookie:
+          description: successful external login
+          content:
+            application/json:
               schema:
-                type: string
+                $ref: "#/components/schemas/AuthenticationToken"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /sts/login:
+    post:
+      tags:
+        - experimental
+      operationId: STSLogin
+      summary: perform a login with STS
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StsAuthRequest"
+      responses:
+        200:
+          description: successful STS login
           content:
             application/json:
               schema:

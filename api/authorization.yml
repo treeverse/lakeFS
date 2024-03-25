@@ -363,9 +363,6 @@ components:
           items:
             $ref: "#/components/schemas/ExternalPrincipal"
 
-    ExternalLoginInformation:
-      type: object
-
 paths:
   /auth/users:
     get:
@@ -1105,7 +1102,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
-
   /auth/users/{userId}/external/principals/ls:
       parameters:
         - in: path
@@ -1116,7 +1112,6 @@ paths:
       get:
         tags:
           - auth
-          - external
           - experimental
         parameters:
           - $ref: "#/components/parameters/PaginationPrefix"
@@ -1153,7 +1148,6 @@ paths:
     post:
       tags:
         - auth
-        - external
         - experimental
       operationId: createUserExternalPrincipal
       summary: Create principal as external identity connected to lakeFS user
@@ -1170,9 +1164,8 @@ paths:
           $ref: "#/components/responses/ServerError"
     delete:
         tags:
-          - auth
-          - external
-          - experimental
+            - auth
+            - experimental
         operationId: deleteUserExternalPrincipal
         summary: delete external principal from user's external principal list
         responses:
@@ -1214,38 +1207,6 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"          
-
-  /auth/external/login:
-    post:
-      tags:
-        - auth
-        - external
-        - experimental
-      operationId: externalPrincipalLogin
-      summary: perform a login using an external authenticator
-      security: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ExternalLoginInformation"
-      responses:
-        200:
-          description: successful login
-          headers:
-            Set-Cookie:
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        420:
-          description: too many requests
-        default:
-          $ref: "#/components/responses/ServerError"
 
   /healthcheck:
     get:

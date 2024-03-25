@@ -70,7 +70,7 @@ jobs:
         if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
           make -j3 gen-api gen-ui VERSION=${{ steps.version.outputs.tag }}
-          tar -cf /tmp/generated.tar.gz ./webui/dist ./pkg/auth/client.gen.go ./pkg/permissions/actions.gen.go ./pkg/api/apigen/lakefs.gen.go
+          tar -cf /tmp/generated.tar.gz ./webui/dist ./pkg/auth/client.gen.go ./pkg/authentication/apiclient/client.gen.go ./pkg/permissions/actions.gen.go ./pkg/api/apigen/lakefs.gen.go
 
         # must upload artifact in order to download generated later
       - name: Store generated code
@@ -956,7 +956,6 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: azure
           ESTI_BLOCKSTORE_TYPE: azure
           ESTI_STORAGE_NAMESPACE: https://esti4hns.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
-          ESTI_ADLS_IMPORT_BASE_URL: https://esti4hns.adls.core.windows.net/esti-system-testing-data/
           ESTI_AZURE_STORAGE_ACCOUNT: esti4hns
           ESTI_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_GEN2_ACCESS_KEY }}
 

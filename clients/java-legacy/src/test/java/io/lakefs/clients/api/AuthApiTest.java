@@ -302,21 +302,6 @@ public class AuthApiTest {
     }
     
     /**
-     * perform a login using an external authenticator
-     *
-     * 
-     *
-     * @throws ApiException
-     *          if the Api call fails
-     */
-    @Test
-    public void externalPrincipalLoginTest() throws ApiException {
-        Object body = null;
-                AuthenticationToken response = api.externalPrincipalLogin(body);
-        // TODO: test validations
-    }
-    
-    /**
      * get credentials
      *
      * 

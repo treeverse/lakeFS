@@ -308,7 +308,7 @@ No authorization required
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | successful login |  * Set-Cookie -  <br>  |
+**200** | successful external login |  -  |
 **401** | Unauthorized |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |

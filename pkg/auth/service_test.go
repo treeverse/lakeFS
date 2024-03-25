@@ -2744,23 +2744,3 @@ func TestAPIAuthService_DeleteExternalPrincipalAttachedToUserDelete(t *testing.T
 	_, err = s.GetExternalPrincipal(ctx, principalId)
 	require.Errorf(t, err, "principal should not exist if a user is deleted")
 }
-
-func TestAPIAuthService_ExternalLogin(t *testing.T) {
-	mockClient, s := NewTestApiService(t, false)
-	ctx := context.Background()
-	userId := "user"
-	presignedURL := "PresignedUrl"
-	externalLoginInfo := map[string]interface{}{"IdentityToken": presignedURL}
-
-	mockClient.EXPECT().ExternalPrincipalLoginWithResponse(gomock.Any(), gomock.Eq(externalLoginInfo)).Return(
-		&auth.ExternalPrincipalLoginResponse{
-			HTTPResponse: &http.Response{
-				StatusCode: http.StatusOK,
-			},
-			JSON200: &auth.User{Username: userId},
-		}, nil)
-
-	resp, err := s.ExternalPrincipalLogin(ctx, externalLoginInfo)
-	require.NoError(t, err)
-	require.Equal(t, userId, resp)
-}
