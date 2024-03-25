@@ -515,6 +515,8 @@ paths:
         content:
           application/json:
             schema:
+              required:
+                - friendly_name
               type: object
               properties:
                 friendly_name:
