@@ -1374,7 +1374,7 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 
 func (a *APIAuthService) UpdateUserFriendlyName(ctx context.Context, userID string, friendlyName string) error {
 	resp, err := a.apiClient.UpdateFriendlyNameWithResponse(ctx, userID, UpdateFriendlyNameJSONRequestBody{
-		FriendlyName: swag.String(friendlyName),
+		FriendlyName: friendlyName,
 	})
 	if err != nil {
 		a.logger.WithError(err).WithField("userID", userID).Error("update user friendly name")
