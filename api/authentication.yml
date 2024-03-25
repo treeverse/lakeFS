@@ -305,6 +305,14 @@ components:
           additionalProperties:
             type: string
           description: the claims of the token returned from the provider
+
+    ExternalPrincipal:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
 paths:
   /ldap/login:
     post:
@@ -350,7 +358,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                $ref: "#/components/schemas/ExternalPrincipal"
         401:
           $ref: "#/components/responses/Unauthorized"
         420:

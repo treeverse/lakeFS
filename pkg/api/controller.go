@@ -564,8 +564,11 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 	}
 
 	c.LogAction(ctx, "external_principal_login", r, "", "", "")
-
-	userID, err := c.Authentication.ExternalPrincipalLogin(ctx, body)
+	principalID, err := c.Authentication.ExternalPrincipalLogin(ctx, body)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	user, err := c.Auth.GetUserByExternalID(ctx, principalID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -575,7 +578,7 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 	expires := loginTime.Add(duration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
-	tokenString, err := GenerateJWTLogin(secret, userID, loginTime.Unix(), expires.Unix())
+	tokenString, err := GenerateJWTLogin(secret, *user.FriendlyName, loginTime.Unix(), expires.Unix())
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return

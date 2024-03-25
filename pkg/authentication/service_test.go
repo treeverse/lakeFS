@@ -157,7 +157,7 @@ func NewTestApiService(t *testing.T, validateIDTokenClaims map[string]string, ex
 func TestAPIAuthService_ExternalLogin(t *testing.T) {
 	mockClient, s := NewTestApiService(t, map[string]string{}, true)
 	ctx := context.Background()
-	userId := "user"
+	principalId := "arn:aws:sts::123:assumed-role/MyRole/SessionName"
 	presignedURL := "PresignedUrl"
 	externalLoginInfo := map[string]interface{}{"IdentityToken": presignedURL}
 
@@ -166,10 +166,10 @@ func TestAPIAuthService_ExternalLogin(t *testing.T) {
 			HTTPResponse: &http.Response{
 				StatusCode: http.StatusOK,
 			},
-			JSON200: &apiclient.User{Id: userId},
+			JSON200: &apiclient.ExternalPrincipal{Id: principalId},
 		}, nil)
 
 	resp, err := s.ExternalPrincipalLogin(ctx, externalLoginInfo)
 	require.NoError(t, err)
-	require.Equal(t, userId, resp)
+	require.Equal(t, principalId, resp)
 }
