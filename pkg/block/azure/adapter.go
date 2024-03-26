@@ -601,3 +601,7 @@ func (a *Adapter) newPreSignedTime() time.Time {
 func (a *Adapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPointer, _ string, _ int) (string, error) {
 	return "", block.ErrOperationNotSupported
 }
+
+func (a *Adapter) ListParts(_ context.Context, _ block.ObjectPointer, _ string, _ block.ListPartsOpts) (*block.ListPartsResponse, error) {
+	return nil, block.ErrOperationNotSupported
+}
