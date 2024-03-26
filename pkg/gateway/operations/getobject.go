@@ -5,15 +5,23 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
+	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
+)
+
+const (
+	QueryParamMaxParts         = "max-parts"
+	QueryParamPartNumberMarker = "part-number-marker"
 )
 
 type GetObject struct{}
@@ -41,6 +49,12 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 
 	if _, exists := query["tagging"]; exists {
 		o.EncodeResponse(w, req, serde.Tagging{}, http.StatusOK)
+		return
+	}
+
+	// check if this is a list parts call
+	if query.Has(QueryParamUploadID) {
+		handleListParts(w, req, o)
 		return
 	}
 
@@ -132,4 +146,82 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write response body for object")
 	}
+}
+
+func handleListParts(w http.ResponseWriter, req *http.Request, o *PathOperation) {
+	o.Incr("list_mpu_parts", o.Principal, o.Repository.Name, o.Reference)
+	query := req.URL.Query()
+	uploadID := query.Get(QueryParamUploadID)
+	maxPartsStr := query.Get(QueryParamMaxParts)
+	partNumberMarker := query.Get(QueryParamPartNumberMarker)
+	resp := &serde.ListPartsOutput{
+		Bucket: o.Repository.Name,
+		Key:    path.WithRef(o.Path, o.Reference),
+	}
+	opts := block.ListPartsOpts{}
+	var maxParts32 int32
+	if maxPartsStr != "" {
+		maxParts, err := strconv.ParseInt(maxPartsStr, 10, 32)
+		if err != nil {
+			o.Log(req).WithField("uploadId", uploadID).
+				WithField("MaxParts", maxPartsStr).
+				WithError(err).Error("malformed query parameter 'MaxParts'")
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			return
+		}
+		maxParts32 = int32(maxParts)
+		resp.MaxParts = maxParts32
+		opts.MaxParts = &maxParts32
+	}
+	if partNumberMarker != "" {
+		opts.PartNumberMarker = &partNumberMarker
+	}
+
+	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{
+		logging.UploadIDFieldKey: uploadID,
+	}))
+
+	// handle the upload/copy itself
+	multiPart, err := o.MultipartTracker.Get(req.Context(), uploadID)
+	if err != nil {
+		o.Log(req).WithError(err).Error("could not read multipart record")
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		return
+	}
+
+	partsResp, err := o.BlockStore.ListParts(req.Context(), block.ObjectPointer{
+		StorageNamespace: o.Repository.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       multiPart.PhysicalAddress,
+	}, uploadID, opts)
+	if err != nil {
+		o.Log(req).WithField("uploadId", uploadID).
+			WithError(err).Error("list parts failed")
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		return
+	}
+	parts := make([]serde.MultipartUploadPart, len(partsResp.Parts))
+	for i, part := range partsResp.Parts {
+		parts[i] = serde.MultipartUploadPart{
+			PartNumber:   int32(part.PartNumber),
+			ETag:         part.ETag,
+			LastModified: serde.Timestamp(part.LastModified),
+			Size:         part.Size,
+		}
+	}
+	resp.IsTruncated = partsResp.IsTruncated
+	resp.Parts = parts
+	if partsResp.NextPartNumberMarker != nil {
+		marker, err := strconv.ParseInt(*partsResp.NextPartNumberMarker, 10, 32)
+		if err != nil {
+			o.Log(req).WithField("uploadId", uploadID).
+				WithField("NextPartNumberMarker", partsResp.NextPartNumberMarker).
+				WithError(err).Error("invalid response 'NextPartNumberMarker'")
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			return
+		}
+		resp.NextPartNumberMarker = int32(marker)
+	}
+
+	o.EncodeResponse(w, req, resp, http.StatusOK)
 }
