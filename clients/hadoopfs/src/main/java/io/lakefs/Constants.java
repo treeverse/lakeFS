@@ -10,6 +10,15 @@ public class Constants {
     public static final String ENDPOINT_KEY_SUFFIX = "endpoint";
     public static final String LIST_AMOUNT_KEY_SUFFIX = "list.amount";
     public static final String ACCESS_MODE_KEY_SUFFIX = "access.mode";
+    // TemporaryAWSCredentialsLakeFSTokenProvider, InstanceProfileAWSCredentialsLakeFSTokenProvider
+    public static final String TOKEN_PROVIDER_KEY_SUFFIX = "token.provider";
+    public static final String TOKEN_AWS_CREDENTIALS_PROVIDER_ACCESS_KEY_SUFFIX = "token.aws.access.key";
+    public static final String TOKEN_AWS_CREDENTIALS_PROVIDER_SECRET_KEY_SUFFIX = "token.aws.secret.key";
+    public static final String TOKEN_AWS_CREDENTIALS_PROVIDER_SESSION_TOKEN_KEY_SUFFIX = "token.aws.session.token";
+    public static final String TOKEN_AWS_CREDENTIALS_PROVIDER_TOKEN_DURATION = "token.aws.sts.duration";
+    public static final String TOKEN_AWS_STS_ENDPOINT = "token.aws.sts.endpoint";
+
+    //
     public static final String SESSION_ID = "session_id";
 
     public static enum AccessMode {
