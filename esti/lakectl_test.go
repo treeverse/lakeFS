@@ -623,7 +623,7 @@ func TestLakectlFsPresign(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 	}
 
-	goldenFile := "lakectl_stat_pre_sign"
+	goldenFile := "lakectl_fs_presign"
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs presign lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, goldenFile, map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
