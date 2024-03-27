@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"reflect"
@@ -260,12 +261,14 @@ type Config struct {
 			TestEndpointURL string `mapstructure:"test_endpoint_url"`
 		} `mapstructure:"azure"`
 		GS *struct {
-			S3Endpoint         string        `mapstructure:"s3_endpoint"`
-			CredentialsFile    string        `mapstructure:"credentials_file"`
-			CredentialsJSON    string        `mapstructure:"credentials_json"`
-			PreSignedExpiry    time.Duration `mapstructure:"pre_signed_expiry"`
-			DisablePreSigned   bool          `mapstructure:"disable_pre_signed"`
-			DisablePreSignedUI bool          `mapstructure:"disable_pre_signed_ui"`
+			S3Endpoint                           string        `mapstructure:"s3_endpoint"`
+			CredentialsFile                      string        `mapstructure:"credentials_file"`
+			CredentialsJSON                      string        `mapstructure:"credentials_json"`
+			PreSignedExpiry                      time.Duration `mapstructure:"pre_signed_expiry"`
+			DisablePreSigned                     bool          `mapstructure:"disable_pre_signed"`
+			DisablePreSignedUI                   bool          `mapstructure:"disable_pre_signed_ui"`
+			ServerSideEncryptionCustomerSupplied string        `mapstructure:"server_side_encryption_customer_supplied"`
+			ServerSideEncryptionKmsKeyID         string        `mapstructure:"server_side_encryption_kms_key_id"`
 		} `mapstructure:"gs"`
 	} `mapstructure:"blockstore"`
 	Committed struct {
@@ -486,17 +489,35 @@ func (c *Config) BlockstoreLocalParams() (blockparams.Local, error) {
 	return params, nil
 }
 
+const (
+	GcpAESKeyLength = 32
+)
+
 func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
+	var customerSuppliedKey = make([]byte, 0)
+	if c.Blockstore.GS.ServerSideEncryptionCustomerSupplied != "" {
+		v, err := hex.DecodeString(c.Blockstore.GS.ServerSideEncryptionCustomerSupplied)
+		if err != nil || len(v) != GcpAESKeyLength {
+			logging.ContextUnavailable().WithError(err).Fatalf("Value of customer-supplied server side encryption is not a valid %d bytes AES key", GcpAESKeyLength)
+		}
+		customerSuppliedKey = v
+		if c.Blockstore.GS.ServerSideEncryptionKmsKeyID != "" {
+			logging.ContextUnavailable().Fatal("Setting both kms and customer supplied encryption will result failure when reading/writing object")
+		}
+	}
+
 	credPath, err := homedir.Expand(c.Blockstore.GS.CredentialsFile)
 	if err != nil {
 		return blockparams.GS{}, fmt.Errorf("parse GS credentials path '%s': %w", c.Blockstore.GS.CredentialsFile, err)
 	}
 	return blockparams.GS{
-		CredentialsFile:    credPath,
-		CredentialsJSON:    c.Blockstore.GS.CredentialsJSON,
-		PreSignedExpiry:    c.Blockstore.GS.PreSignedExpiry,
-		DisablePreSigned:   c.Blockstore.GS.DisablePreSigned,
-		DisablePreSignedUI: c.Blockstore.GS.DisablePreSignedUI,
+		CredentialsFile:                      credPath,
+		CredentialsJSON:                      c.Blockstore.GS.CredentialsJSON,
+		PreSignedExpiry:                      c.Blockstore.GS.PreSignedExpiry,
+		DisablePreSigned:                     c.Blockstore.GS.DisablePreSigned,
+		DisablePreSignedUI:                   c.Blockstore.GS.DisablePreSignedUI,
+		ServerSideEncryptionCustomerSupplied: customerSuppliedKey,
+		ServerSideEncryptionKmsKeyID:         c.Blockstore.GS.ServerSideEncryptionKmsKeyID,
 	}, nil
 }
 
