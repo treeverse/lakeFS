@@ -63,11 +63,13 @@ type S3 struct {
 }
 
 type GS struct {
-	CredentialsFile    string
-	CredentialsJSON    string
-	PreSignedExpiry    time.Duration
-	DisablePreSigned   bool
-	DisablePreSignedUI bool
+	CredentialsFile                      string
+	CredentialsJSON                      string
+	PreSignedExpiry                      time.Duration
+	DisablePreSigned                     bool
+	DisablePreSignedUI                   bool
+	ServerSideEncryptionCustomerSupplied []byte
+	ServerSideEncryptionKmsKeyID         string
 }
 
 type Azure struct {
