@@ -195,12 +195,11 @@ func checkSecurityRequirements(r *http.Request,
 }
 
 func enhanceWithFriendlyName(ctx context.Context, user *model.User, friendlyName string, persistFriendlyName bool, authService auth.Service, logger logging.Logger) *model.User {
-	if friendlyName != "" {
-		user.FriendlyName = &friendlyName
-		if persistFriendlyName && swag.StringValue(user.FriendlyName) != friendlyName {
-			err := authService.UpdateUserFriendlyName(ctx, user.Username, friendlyName)
-			if err != nil {
-				logger.WithError(err).Error("update user friendly name")
+	if swag.StringValue(user.FriendlyName) != friendlyName {
+		user.FriendlyName = swag.String(friendlyName)
+		if persistFriendlyName {
+			if err := authService.UpdateUserFriendlyName(ctx, user.Username, friendlyName); err != nil {
+				logger.WithError(err).Error("failed to update user friendly name")
 			}
 		}
 	}

@@ -1373,7 +1373,7 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 }
 
 func (a *APIAuthService) UpdateUserFriendlyName(ctx context.Context, userID string, friendlyName string) error {
-	resp, err := a.apiClient.UpdateFriendlyNameWithResponse(ctx, userID, UpdateFriendlyNameJSONRequestBody{
+	resp, err := a.apiClient.UpdateUserFriendlyNameWithResponse(ctx, userID, UpdateUserFriendlyNameJSONRequestBody{
 		FriendlyName: friendlyName,
 	})
 	if err != nil {

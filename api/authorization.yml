@@ -508,7 +508,7 @@ paths:
     put:
       tags:
         - auth
-      operationId: updateFriendlyName
+      operationId: updateUserFriendlyName
       summary: update users friendly name
       requestBody:
         required: true
