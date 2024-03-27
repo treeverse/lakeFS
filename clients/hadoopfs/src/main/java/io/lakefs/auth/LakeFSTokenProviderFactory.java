@@ -2,13 +2,13 @@ package io.lakefs.auth;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.AWSSessionCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
 import org.apache.hadoop.conf.Configuration;
 import io.lakefs.Constants;
 import io.lakefs.FSConfiguration;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +18,7 @@ public class LakeFSTokenProviderFactory {
     LakeFSTokenProviderFactory() {
     }
     public static LakeFSTokenProvider newLakeFSTokenProvider(String scheme, Configuration conf) throws IOException {
-        String tokenProvider = FSConfiguration.get(conf, scheme, Constants.TOKEN_PROVIDER_KEY_SUFFIX);
+        String tokenProvider = FSConfiguration.get(conf, scheme, Constants.LAKEFS_AUTH_PROVIDER_KEY_SUFFIX);
 
         switch (tokenProvider) {
             case "TemporaryAWSCredentialsLakeFSTokenProvider":
@@ -47,19 +47,11 @@ public class LakeFSTokenProviderFactory {
                     public void refresh() {}
                 };
                 // parse additional headers to sign into a dict
+                // set the default headers if not (host)
                 Map<String, String> additionalHeaders = new HashMap<>();
-                String headersStr = FSConfiguration.get(conf, scheme, "fs.lakefs.sts.additional_headers");
-                if (headersStr == null) {
-                    additionalHeaders = new HashMap<>();
-                } else {
-                    // parse headers into map each item is key:value with comma separator
-                    additionalHeaders = Arrays.stream(headersStr.split(","))
-                            .map(entry -> entry.split(":"))
-                            .collect(Collectors.toMap(
-                                    entry -> entry[0],
-                                    entry -> entry[1]
-                            ));
-                }
+                String endpoint = FSConfiguration.get(conf, scheme, Constants.ENDPOINT_KEY_SUFFIX, Constants.DEFAULT_CLIENT_ENDPOINT);
+                additionalHeaders.put(Constants.DEFAULT_AUTH_SERVER_ID_HEADER, new URL(endpoint).getHost());
+                additionalHeaders = FSConfiguration.getMap(conf, scheme, Constants.TOKEN_AWS_CREDENTIALS_PROVIDER_ADDITIONAL_HEADERS, additionalHeaders);
                 long expirationInSeconds = Long.parseLong(FSConfiguration.get(conf, scheme, Constants.TOKEN_AWS_CREDENTIALS_PROVIDER_TOKEN_DURATION));
                 String stsEndpoint = FSConfiguration.get(conf, scheme, Constants.TOKEN_AWS_STS_ENDPOINT);
                 return new AWSLakeFSTokenProvider(awsProvider, new GetCallerIdentityV4Presigner(),stsEndpoint, additionalHeaders, expirationInSeconds);
