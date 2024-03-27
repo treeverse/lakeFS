@@ -573,11 +573,17 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	duration, ok := body["login_expire"].(time.Duration)
+	if !ok {
+		duration = c.Config.Auth.LoginDuration
+	}
+	if duration > c.Config.Auth.LoginMaxDuration {
+		c.Logger.WithFields(logging.Fields{"duration": duration, "max_duration": c.Config.Auth.LoginMaxDuration}).Warn("Login duration exceeds maximum allowed, using maximum allowed")
+		duration = c.Config.Auth.LoginMaxDuration
+	}
 	loginTime := time.Now()
-	duration := c.Config.Auth.LoginDuration
 	expires := loginTime.Add(duration)
 	secret := c.Auth.SecretStore().SharedSecret()
-
 	tokenString, err := GenerateJWTLogin(secret, *user.FriendlyName, loginTime.Unix(), expires.Unix())
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))

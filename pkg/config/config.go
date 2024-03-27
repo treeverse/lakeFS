@@ -206,6 +206,7 @@ type Config struct {
 		// server-side logout.
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
 		LoginDuration     time.Duration `mapstructure:"login_duration"`
+		LoginMaxDuration  time.Duration `mapstructure:"login_max_duration"`
 		UIConfig          struct {
 			RBAC               string   `mapstructure:"rbac"`
 			LoginURL           string   `mapstructure:"login_url"`
