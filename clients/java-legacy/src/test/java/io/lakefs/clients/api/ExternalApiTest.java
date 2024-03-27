@@ -14,6 +14,7 @@
 package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.model.AuthenticationToken;
 import io.lakefs.clients.api.model.Error;
 import io.lakefs.clients.api.model.ExternalPrincipal;
 import io.lakefs.clients.api.model.ExternalPrincipalCreation;
@@ -65,6 +66,21 @@ public class ExternalApiTest {
         String userId = null;
         String principalId = null;
                 api.deleteUserExternalPrincipal(userId, principalId);
+        // TODO: test validations
+    }
+    
+    /**
+     * perform a login using an external authenticator
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void externalPrincipalLoginTest() throws ApiException {
+        Object body = null;
+                AuthenticationToken response = api.externalPrincipalLogin(body);
         // TODO: test validations
     }
     

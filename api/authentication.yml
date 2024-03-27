@@ -280,6 +280,8 @@ components:
         external_user_identifier:
           type: string
           description: external_user_identifier is the user DN in LDAP set if user exists with that username and has this password.
+    ExternalLoginInformation:
+      type: object
     StsAuthRequest:
       type: object
       required:
@@ -303,6 +305,14 @@ components:
           additionalProperties:
             type: string
           description: the claims of the token returned from the provider
+          
+    ExternalPrincipal:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
 paths:
   /ldap/login:
     post:
@@ -328,6 +338,34 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
+
+  /auth/external/principal/login:
+    post:
+      tags:
+        - auth
+        - external
+      operationId: externalPrincipalLogin
+      summary: perform a login using an external authenticator
+      security: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalLoginInformation"
+      responses:
+        200:
+          description: successful external login
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalPrincipal"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /sts/login:
     post:
       tags:

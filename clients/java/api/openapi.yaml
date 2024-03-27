@@ -174,6 +174,42 @@ paths:
       - auth
       x-content-type: application/json
       x-accepts: application/json
+  /auth/external/principal/login:
+    post:
+      operationId: externalPrincipalLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalLoginInformation'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationToken'
+          description: successful external login
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      summary: perform a login using an external authenticator
+      tags:
+      - external
+      - experimental
+      x-content-type: application/json
+      x-accepts: application/json
   /sts/login:
     post:
       operationId: STSLogin
@@ -196,6 +232,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "420":
+          description: too many requests
         default:
           content:
             application/json:
@@ -8147,6 +8185,8 @@ components:
       required:
       - access_key_id
       - secret_access_key
+      type: object
+    ExternalLoginInformation:
       type: object
     StsAuthRequest:
       example:

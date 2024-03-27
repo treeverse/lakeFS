@@ -36,6 +36,46 @@ func (m *MockClientWithResponsesInterface) EXPECT() *MockClientWithResponsesInte
 	return m.recorder
 }
 
+// ExternalPrincipalLoginWithBodyWithResponse mocks base method.
+func (m *MockClientWithResponsesInterface) ExternalPrincipalLoginWithBodyWithResponse(arg0 context.Context, arg1 string, arg2 io.Reader, arg3 ...apiclient.RequestEditorFn) (*apiclient.ExternalPrincipalLoginResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1, arg2}
+	for _, a := range arg3 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ExternalPrincipalLoginWithBodyWithResponse", varargs...)
+	ret0, _ := ret[0].(*apiclient.ExternalPrincipalLoginResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExternalPrincipalLoginWithBodyWithResponse indicates an expected call of ExternalPrincipalLoginWithBodyWithResponse.
+func (mr *MockClientWithResponsesInterfaceMockRecorder) ExternalPrincipalLoginWithBodyWithResponse(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExternalPrincipalLoginWithBodyWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).ExternalPrincipalLoginWithBodyWithResponse), varargs...)
+}
+
+// ExternalPrincipalLoginWithResponse mocks base method.
+func (m *MockClientWithResponsesInterface) ExternalPrincipalLoginWithResponse(arg0 context.Context, arg1 apiclient.ExternalPrincipalLoginJSONRequestBody, arg2 ...apiclient.RequestEditorFn) (*apiclient.ExternalPrincipalLoginResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ExternalPrincipalLoginWithResponse", varargs...)
+	ret0, _ := ret[0].(*apiclient.ExternalPrincipalLoginResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExternalPrincipalLoginWithResponse indicates an expected call of ExternalPrincipalLoginWithResponse.
+func (mr *MockClientWithResponsesInterfaceMockRecorder) ExternalPrincipalLoginWithResponse(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExternalPrincipalLoginWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).ExternalPrincipalLoginWithResponse), varargs...)
+}
+
 // HealthCheckWithResponse mocks base method.
 func (m *MockClientWithResponsesInterface) HealthCheckWithResponse(arg0 context.Context, arg1 ...apiclient.RequestEditorFn) (*apiclient.HealthCheckResponse, error) {
 	m.ctrl.T.Helper()

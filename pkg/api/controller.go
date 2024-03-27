@@ -556,6 +556,46 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	writeResponse(w, r, http.StatusOK, response)
 }
 
+func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Request, body apigen.ExternalPrincipalLoginJSONRequestBody) {
+	ctx := r.Context()
+	if c.isExternalPrincipalNotSupported(ctx) {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
+
+	c.LogAction(ctx, "external_principal_login", r, "", "", "")
+	principalID, err := c.Authentication.ExternalPrincipalLogin(ctx, body)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	user, err := c.Auth.GetUserByExternalID(ctx, principalID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	duration, ok := body["login_expire"].(time.Duration)
+	if !ok {
+		duration = c.Config.Auth.LoginDuration
+	}
+	if duration > c.Config.Auth.LoginMaxDuration {
+		c.Logger.WithFields(logging.Fields{"duration": duration, "max_duration": c.Config.Auth.LoginMaxDuration}).Warn("Login duration exceeds maximum allowed, using maximum allowed")
+		duration = c.Config.Auth.LoginMaxDuration
+	}
+	loginTime := time.Now()
+	expires := loginTime.Add(duration)
+	secret := c.Auth.SecretStore().SharedSecret()
+	tokenString, err := GenerateJWTLogin(secret, *user.FriendlyName, loginTime.Unix(), expires.Unix())
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		return
+	}
+	response := apigen.AuthenticationToken{
+		Token:           tokenString,
+		TokenExpiration: swag.Int64(expires.Unix()),
+	}
+	writeResponse(w, r, http.StatusOK, response)
+}
+
 func (c *Controller) STSLogin(w http.ResponseWriter, r *http.Request, body apigen.STSLoginJSONRequestBody) {
 	ctx := r.Context()
 	responseData, err := c.Authentication.ValidateSTS(ctx, body.Code, body.RedirectUri, body.State)
@@ -2589,7 +2629,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	case errors.Is(err, block.ErrForbidden),
 		errors.Is(err, graveler.ErrProtectedBranch),
-		errors.Is(err, graveler.ErrReadOnlyRepository):
+		errors.Is(err, graveler.ErrReadOnlyRepository),
+		errors.Is(err, authentication.ErrSessionExpired):
 		cb(w, r, http.StatusForbidden, err)
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
@@ -2638,7 +2679,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
 	case errors.Is(err, authentication.ErrNotImplemented):
 		cb(w, r, http.StatusNotImplemented, "Not implemented")
-	case errors.Is(err, authentication.ErrInvalidSTS):
+	case errors.Is(err, authentication.ErrInvalidSTS),
+		errors.Is(err, authentication.ErrInvalidTokenFormat):
 		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")

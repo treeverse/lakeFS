@@ -174,6 +174,7 @@ func checkSecurityRequirements(r *http.Request,
 					return nil, err
 				}
 				user, err = userFromSAML(ctx, logger, authService, samlSession, cookieAuthConfig)
+
 			default:
 				// unknown security requirement to check
 				logger.WithField("provider", provider).Error("Authentication middleware unknown security requirement provider")

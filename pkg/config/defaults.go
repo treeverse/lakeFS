@@ -55,6 +55,7 @@ func setDefaults(cfgType string) {
 
 	viper.SetDefault("auth.logout_redirect_url", "/auth/login")
 	viper.SetDefault("auth.login_duration", 7*24*time.Hour)
+	viper.SetDefault("auth.login_max_duration", 14*24*time.Hour)
 
 	viper.SetDefault("auth.ui_config.rbac", "simplified")
 	viper.SetDefault("auth.ui_config.login_failed_message", "The credentials don't match.")
