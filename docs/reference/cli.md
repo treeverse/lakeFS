@@ -2203,7 +2203,7 @@ lakectl fs ls <path URI> [flags]
 
 ### lakectl fs presign
 
-return a pre-signed URL for the specified object
+return a pre-signed URL for reading the specified object
 
 ```
 lakectl fs presign <path URI> [flags]
