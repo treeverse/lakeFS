@@ -174,14 +174,14 @@ paths:
       - auth
       x-content-type: application/json
       x-accepts: application/json
-  /auth/external/login:
+  /auth/external/principal/login:
     post:
       operationId: externalPrincipalLogin
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IdentityToken'
+              $ref: '#/components/schemas/ExternalLoginInformation'
       responses:
         "200":
           content:
@@ -8186,8 +8186,8 @@ components:
       - access_key_id
       - secret_access_key
       type: object
-    IdentityToken:
-      type: string
+    ExternalLoginInformation:
+      type: object
     StsAuthRequest:
       example:
         code: code

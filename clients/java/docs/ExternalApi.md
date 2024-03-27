@@ -6,7 +6,7 @@ All URIs are relative to */api/v1*
 |------------- | ------------- | -------------|
 | [**createUserExternalPrincipal**](ExternalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user |
 | [**deleteUserExternalPrincipal**](ExternalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user |
-| [**externalPrincipalLogin**](ExternalApi.md#externalPrincipalLogin) | **POST** /auth/external/login | perform a login using an external authenticator |
+| [**externalPrincipalLogin**](ExternalApi.md#externalPrincipalLogin) | **POST** /auth/external/principal/login | perform a login using an external authenticator |
 | [**getExternalPrincipal**](ExternalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id |
 | [**listUserExternalPrincipals**](ExternalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user |
 
@@ -224,7 +224,7 @@ public class Example {
     defaultClient.setBasePath("/api/v1");
 
     ExternalApi apiInstance = new ExternalApi(defaultClient);
-    String body = "body_example"; // String | 
+    Object body = null; // Object | 
     try {
       AuthenticationToken result = apiInstance.externalPrincipalLogin()
             .body(body)
@@ -245,7 +245,7 @@ public class Example {
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **body** | **String**|  | [optional] |
+| **body** | **Object**|  | [optional] |
 
 ### Return type
 

@@ -408,7 +408,7 @@ class ExperimentalApi(object):
             settings={
                 'response_type': (AuthenticationToken,),
                 'auth': [],
-                'endpoint_path': '/auth/external/login',
+                'endpoint_path': '/auth/external/principal/login',
                 'operation_id': 'external_principal_login',
                 'http_method': 'POST',
                 'servers': None,
@@ -432,7 +432,7 @@ class ExperimentalApi(object):
                 },
                 'openapi_types': {
                     'body':
-                        (str,),
+                        ({str: (bool, date, datetime, dict, float, int, list, str, none_type)},),
                 },
                 'attribute_map': {
                 },
@@ -1092,7 +1092,7 @@ class ExperimentalApi(object):
 
 
         Keyword Args:
-            body (str): [optional]
+            body ({str: (bool, date, datetime, dict, float, int, list, str, none_type)}): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

@@ -6,7 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**create_user_external_principal**](ExternalApi.md#create_user_external_principal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 [**delete_user_external_principal**](ExternalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
-[**external_principal_login**](ExternalApi.md#external_principal_login) | **POST** /auth/external/login | perform a login using an external authenticator
+[**external_principal_login**](ExternalApi.md#external_principal_login) | **POST** /auth/external/principal/login | perform a login using an external authenticator
 [**get_external_principal**](ExternalApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
 [**list_user_external_principals**](ExternalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 
@@ -271,7 +271,7 @@ configuration = lakefs_client.Configuration(
 with lakefs_client.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = external_api.ExternalApi(api_client)
-    body = "body_example" # str |  (optional)
+    body = {} # {str: (bool, date, datetime, dict, float, int, list, str, none_type)} |  (optional)
 
     # example passing only required values which don't have defaults set
     # and optional values
@@ -288,7 +288,7 @@ with lakefs_client.ApiClient() as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | **str**|  | [optional]
+ **body** | **{str: (bool, date, datetime, dict, float, int, list, str, none_type)}**|  | [optional]
 
 ### Return type
 

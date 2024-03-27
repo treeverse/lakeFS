@@ -157,10 +157,10 @@ func NewTestApiService(t *testing.T, validateIDTokenClaims map[string]string, ex
 func TestAPIAuthService_ExternalLogin(t *testing.T) {
 	mockClient, s := NewTestApiService(t, map[string]string{}, true)
 	ctx := context.Background()
-	principalId := "arn:aws:sts::123:assumed-role/MyRole/SessionName"
-	IdentityToken := "IdentityToken"
+	principalId := "user"
+	externalLoginInfo := map[string]interface{}{"IdentityToken": "Token"}
 
-	mockClient.EXPECT().ExternalPrincipalLoginWithResponse(gomock.Any(), gomock.Eq(apiclient.ExternalPrincipalLoginJSONRequestBody(IdentityToken))).Return(
+	mockClient.EXPECT().ExternalPrincipalLoginWithResponse(gomock.Any(), gomock.Eq(externalLoginInfo)).Return(
 		&apiclient.ExternalPrincipalLoginResponse{
 			HTTPResponse: &http.Response{
 				StatusCode: http.StatusOK,
@@ -168,7 +168,7 @@ func TestAPIAuthService_ExternalLogin(t *testing.T) {
 			JSON200: &apiclient.ExternalPrincipal{Id: principalId},
 		}, nil)
 
-	resp, err := s.ExternalPrincipalLogin(ctx, IdentityToken)
+	resp, err := s.ExternalPrincipalLogin(ctx, externalLoginInfo)
 	require.NoError(t, err)
 	require.Equal(t, principalId, resp)
 }

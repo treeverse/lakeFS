@@ -9,7 +9,7 @@ Method | HTTP request | Description
 [**create_presign_multipart_upload**](ExperimentalApi.md#create_presign_multipart_upload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
 [**create_user_external_principal**](ExperimentalApi.md#create_user_external_principal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 [**delete_user_external_principal**](ExperimentalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
-[**external_principal_login**](ExperimentalApi.md#external_principal_login) | **POST** /auth/external/login | perform a login using an external authenticator
+[**external_principal_login**](ExperimentalApi.md#external_principal_login) | **POST** /auth/external/principal/login | perform a login using an external authenticator
 [**get_external_principal**](ExperimentalApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
 [**hard_reset_branch**](ExperimentalApi.md#hard_reset_branch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 [**list_user_external_principals**](ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
@@ -673,7 +673,7 @@ configuration = lakefs_client.Configuration(
 with lakefs_client.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = experimental_api.ExperimentalApi(api_client)
-    body = "body_example" # str |  (optional)
+    body = {} # {str: (bool, date, datetime, dict, float, int, list, str, none_type)} |  (optional)
 
     # example passing only required values which don't have defaults set
     # and optional values
@@ -690,7 +690,7 @@ with lakefs_client.ApiClient() as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | **str**|  | [optional]
+ **body** | **{str: (bool, date, datetime, dict, float, int, list, str, none_type)}**|  | [optional]
 
 ### Return type
 

@@ -79,7 +79,7 @@ public class ExternalApiTest {
      */
     @Test
     public void externalPrincipalLoginTest() throws ApiException {
-        String body = null;
+        Object body = null;
                 AuthenticationToken response = api.externalPrincipalLogin(body);
         // TODO: test validations
     }

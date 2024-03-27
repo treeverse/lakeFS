@@ -9,7 +9,7 @@ Method | HTTP request | Description
 [**createPresignMultipartUpload**](ExperimentalApi.md#createPresignMultipartUpload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
 [**createUserExternalPrincipal**](ExperimentalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 [**deleteUserExternalPrincipal**](ExperimentalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
-[**externalPrincipalLogin**](ExperimentalApi.md#externalPrincipalLogin) | **POST** /auth/external/login | perform a login using an external authenticator
+[**externalPrincipalLogin**](ExperimentalApi.md#externalPrincipalLogin) | **POST** /auth/external/principal/login | perform a login using an external authenticator
 [**getExternalPrincipal**](ExperimentalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
 [**hardResetBranch**](ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 [**listUserExternalPrincipals**](ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
@@ -533,7 +533,7 @@ public class Example {
     defaultClient.setBasePath("http://localhost/api/v1");
 
     ExperimentalApi apiInstance = new ExperimentalApi(defaultClient);
-    String body = "body_example"; // String | 
+    Object body = null; // Object | 
     try {
       AuthenticationToken result = apiInstance.externalPrincipalLogin(body);
       System.out.println(result);
@@ -552,7 +552,7 @@ public class Example {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | **String**|  | [optional]
+ **body** | **Object**|  | [optional]
 
 ### Return type
 

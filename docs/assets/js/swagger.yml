@@ -1051,8 +1051,8 @@ components:
         secret_access_key:
           type: string
 
-    IdentityToken:
-      type: string
+    ExternalLoginInformation:
+      type: object
 
     StsAuthRequest:
       type: object
@@ -1821,7 +1821,7 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-  /auth/external/login:
+  /auth/external/principal/login:
     post:
       tags:
         - external
@@ -1833,7 +1833,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/IdentityToken"
+              $ref: "#/components/schemas/ExternalLoginInformation"
       responses:
         200:
           description: successful external login
