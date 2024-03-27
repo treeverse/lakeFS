@@ -11,7 +11,7 @@ import (
 
 var fsPresignCmd = &cobra.Command{
 	Use:               "presign <path URI>",
-	Short:             "return a pre-signed URL for the specified object",
+	Short:             "return a pre-signed URL for reading the specified object",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -31,7 +31,6 @@ var fsPresignCmd = &cobra.Command{
 		if resp.JSON200 == nil {
 			Die("Bad response from server", 1)
 		}
-
 		fmt.Printf("%s\n", resp.JSON200.PhysicalAddress)
 	},
 }
