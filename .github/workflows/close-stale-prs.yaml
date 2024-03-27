@@ -18,6 +18,7 @@ jobs:
         days-before-pr-stale: 30
         days-before-close: 7
         stale-pr-label: stale
+        exempt-issue-labels: 'no stale'
         exempt-pr-labels: 'no stale'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         operations-per-run: 300
