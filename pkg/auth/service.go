@@ -99,6 +99,7 @@ type Service interface {
 	GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
+	UpdateUserFriendlyName(ctx context.Context, userID string, friendlyName string) error
 
 	ExternalPrincipalsService
 
@@ -358,6 +359,10 @@ func (s *AuthService) ListUsers(ctx context.Context, params *model.PaginationPar
 		return nil, paginator, err
 	}
 	return model.ConvertUsersDataList(msgs), paginator, err
+}
+
+func (s *AuthService) UpdateUserFriendlyName(ctx context.Context, userID string, friendlyName string) error {
+	return ErrNotImplemented
 }
 
 func (s *AuthService) ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
@@ -1365,6 +1370,17 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 		}
 	}
 	return users, toPagination(pagination), nil
+}
+
+func (a *APIAuthService) UpdateUserFriendlyName(ctx context.Context, userID string, friendlyName string) error {
+	resp, err := a.apiClient.UpdateUserFriendlyNameWithResponse(ctx, userID, UpdateUserFriendlyNameJSONRequestBody{
+		FriendlyName: friendlyName,
+	})
+	if err != nil {
+		a.logger.WithError(err).WithField("userID", userID).Error("update user friendly name")
+		return err
+	}
+	return a.validateResponse(resp, http.StatusNoContent)
 }
 
 func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) (*model.Group, error) {

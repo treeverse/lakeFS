@@ -875,3 +875,43 @@ func (mr *MockClientWithResponsesInterfaceMockRecorder) UpdatePolicyWithResponse
 	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePolicyWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).UpdatePolicyWithResponse), varargs...)
 }
+
+// UpdateUserFriendlyNameWithBodyWithResponse mocks base method.
+func (m *MockClientWithResponsesInterface) UpdateUserFriendlyNameWithBodyWithResponse(arg0 context.Context, arg1, arg2 string, arg3 io.Reader, arg4 ...auth.RequestEditorFn) (*auth.UpdateUserFriendlyNameResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1, arg2, arg3}
+	for _, a := range arg4 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateUserFriendlyNameWithBodyWithResponse", varargs...)
+	ret0, _ := ret[0].(*auth.UpdateUserFriendlyNameResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateUserFriendlyNameWithBodyWithResponse indicates an expected call of UpdateUserFriendlyNameWithBodyWithResponse.
+func (mr *MockClientWithResponsesInterfaceMockRecorder) UpdateUserFriendlyNameWithBodyWithResponse(arg0, arg1, arg2, arg3 interface{}, arg4 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1, arg2, arg3}, arg4...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserFriendlyNameWithBodyWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).UpdateUserFriendlyNameWithBodyWithResponse), varargs...)
+}
+
+// UpdateUserFriendlyNameWithResponse mocks base method.
+func (m *MockClientWithResponsesInterface) UpdateUserFriendlyNameWithResponse(arg0 context.Context, arg1 string, arg2 auth.UpdateUserFriendlyNameJSONRequestBody, arg3 ...auth.RequestEditorFn) (*auth.UpdateUserFriendlyNameResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1, arg2}
+	for _, a := range arg3 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateUserFriendlyNameWithResponse", varargs...)
+	ret0, _ := ret[0].(*auth.UpdateUserFriendlyNameResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateUserFriendlyNameWithResponse indicates an expected call of UpdateUserFriendlyNameWithResponse.
+func (mr *MockClientWithResponsesInterfaceMockRecorder) UpdateUserFriendlyNameWithResponse(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserFriendlyNameWithResponse", reflect.TypeOf((*MockClientWithResponsesInterface)(nil).UpdateUserFriendlyNameWithResponse), varargs...)
+}

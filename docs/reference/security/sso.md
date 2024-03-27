@@ -179,6 +179,7 @@ auth:
   cookie_auth_verification:
     auth_source: saml
     friendly_name_claim_name: displayName
+    persist_friendly_name: true
     external_user_id_claim_name: samName
     default_initial_groups:
       - "Developers"
@@ -243,6 +244,7 @@ auth:
     secret_key: shared-secrey-key
   oidc:
     friendly_name_claim_name: "name"
+    persist_friendly_name: true
     default_initial_groups: ["Developers"]
   ui_config:
     login_url: /oidc/login

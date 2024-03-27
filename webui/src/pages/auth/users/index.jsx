@@ -24,6 +24,7 @@ import {
 } from "../../../lib/components/controls";
 import validator from "validator/es";
 import { disallowPercentSign, INVALID_USER_NAME_ERROR_MESSAGE } from "../validation";
+import { resolveDisplayName } from "../../../lib/utils";
 
 const USER_NOT_FOUND = "unknown";
 export const GetUserEmailByIdContext = createContext();
@@ -118,7 +119,7 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
                         onRemove={() => setSelected(selected.filter(u => u !== user))}
                     />,
                     <Link href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>
-                        {user.email || user.id}
+                        { resolveDisplayName(user) }
                     </Link>,
                     <FormattedDate dateValue={user.creation_date}/>
                 ]}/>

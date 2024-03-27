@@ -78,11 +78,17 @@ auth:
     callback_base_url: https://lakefs.example.com       # The scheme, domain (and port) of your lakeFS installation
     url: https://my-account.oidc-provider-example.com
     default_initial_groups: ["Developers"]
-    friendly_name_claim_name: name                      #  Optional: use the value from this claim as the user's display name 
+    friendly_name_claim_name: name                      #  Optional: use the value from this claim as the user's display name
+    persist_friendly_name: true                         #  Optional: persist friendly name to KV store so it can be displayed in the user list
 ```
 
 Your login page will now include a link to sign in using the 
 OIDC provider. When a user first logs in through the provider, a corresponding user is created in lakeFS.
+
+#### Friendly Name Persistence
+
+When the `persist_friendly_name` configuration property is set to `true` **and** `friendly_name_claim_name` is set to a valid claim name, which exists in the incoming `id_token`, the friendly name will be persisted to the KV store. This will allow users with access to the lakeFS administration section to see friendly names in the users list, when listing group members, and when adding/removing group members.  
+The friendly name stored in KV is updated with each successful login, if the incoming value is different than the stored value. This means it will be kept up-to-date with changes to the user's profile or if `friendly_name_claim_name` is re-configured.
 
 #### Notes
 {: .no_toc}

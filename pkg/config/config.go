@@ -35,6 +35,7 @@ type OIDC struct {
 	DefaultInitialGroups   []string          `mapstructure:"default_initial_groups"`
 	InitialGroupsClaimName string            `mapstructure:"initial_groups_claim_name"`
 	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
+	PersistFriendlyName    bool              `mapstructure:"persist_friendly_name"`
 }
 
 // CookieAuthVerification is related to auth based on a cookie set by an external service
@@ -52,6 +53,8 @@ type CookieAuthVerification struct {
 	ExternalUserIDClaimName string `mapstructure:"external_user_id_claim_name"`
 	// AuthSource tag each user with label of the IDP
 	AuthSource string `mapstructure:"auth_source"`
+	// PersistFriendlyName should we persist the friendly name in the KV store
+	PersistFriendlyName bool `mapstructure:"persist_friendly_name"`
 }
 
 // S3AuthInfo holds S3-style authentication.
