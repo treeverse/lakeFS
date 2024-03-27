@@ -2201,6 +2201,23 @@ lakectl fs ls <path URI> [flags]
 
 
 
+### lakectl fs presign
+
+return a pre-signed URL for reading the specified object
+
+```
+lakectl fs presign <path URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for presign
+```
+
+
+
 ### lakectl fs rm
 
 Delete object

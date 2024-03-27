@@ -166,30 +166,31 @@ type PresignMode struct {
 	Multipart bool
 }
 
+func getServerPreSignMode(ctx context.Context, client *apigen.ClientWithResponses) PresignMode {
+	resp, err := client.GetConfigWithResponse(ctx)
+	DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+	if resp.JSON200 == nil {
+		Die("Bad response from server", 1)
+	}
+	storageConfig := resp.JSON200.StorageConfig
+	return PresignMode{
+		Enabled:   storageConfig.PreSignSupport,
+		Multipart: swag.BoolValue(storageConfig.PreSignMultipartUpload),
+	}
+}
+
 func getPresignMode(cmd *cobra.Command, client *apigen.ClientWithResponses) PresignMode {
 	// use flags if set
 	presignFlag := cmd.Flags().Lookup(presignFlagName)
-
 	var presignMode PresignMode
 	if presignFlag.Changed {
 		presignMode.Enabled = Must(cmd.Flags().GetBool(presignFlagName))
 	}
-
 	// fetch server config if needed
 	// if presign flag is not set, use server config
 	// if presign flag is set, check if server supports multipart upload
-	var storageConfig *apigen.StorageConfig
 	if !presignFlag.Changed || presignMode.Enabled {
-		resp, err := client.GetConfigWithResponse(cmd.Context())
-		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-		if resp.JSON200 == nil {
-			Die("Bad response from server", 1)
-		}
-		storageConfig = resp.JSON200.StorageConfig
-		if !presignFlag.Changed {
-			presignMode.Enabled = storageConfig.PreSignSupport
-		}
-		presignMode.Multipart = swag.BoolValue(storageConfig.PreSignMultipartUpload)
+		presignMode = getServerPreSignMode(cmd.Context(), client)
 	}
 	return presignMode
 }
