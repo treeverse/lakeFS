@@ -2629,7 +2629,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	case errors.Is(err, block.ErrForbidden),
 		errors.Is(err, graveler.ErrProtectedBranch),
-		errors.Is(err, graveler.ErrReadOnlyRepository):
+		errors.Is(err, graveler.ErrReadOnlyRepository),
+		errors.Is(err, authentication.ErrSessionExpired):
 		cb(w, r, http.StatusForbidden, err)
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
@@ -2678,7 +2679,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
 	case errors.Is(err, authentication.ErrNotImplemented):
 		cb(w, r, http.StatusNotImplemented, "Not implemented")
-	case errors.Is(err, authentication.ErrInvalidSTS):
+	case errors.Is(err, authentication.ErrInvalidSTS),
+		errors.Is(err, authentication.ErrInvalidTokenFormat):
 		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
