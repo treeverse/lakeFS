@@ -271,7 +271,7 @@ configuration = lakefs_client.Configuration(
 with lakefs_client.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = external_api.ExternalApi(api_client)
-    body = {} # {str: (bool, date, datetime, dict, float, int, list, str, none_type)} |  (optional)
+    body = "body_example" # str |  (optional)
 
     # example passing only required values which don't have defaults set
     # and optional values
@@ -288,7 +288,7 @@ with lakefs_client.ApiClient() as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | **{str: (bool, date, datetime, dict, float, int, list, str, none_type)}**|  | [optional]
+ **body** | **str**|  | [optional]
 
 ### Return type
 

@@ -626,7 +626,7 @@ configuration = lakefs_sdk.Configuration(
 with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = lakefs_sdk.ExperimentalApi(api_client)
-    body = None # object |  (optional)
+    body = 'body_example' # str |  (optional)
 
     try:
         # perform a login using an external authenticator
@@ -644,7 +644,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | **object**|  | [optional] 
+ **body** | **str**|  | [optional] 
 
 ### Return type
 

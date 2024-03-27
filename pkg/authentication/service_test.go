@@ -158,10 +158,9 @@ func TestAPIAuthService_ExternalLogin(t *testing.T) {
 	mockClient, s := NewTestApiService(t, map[string]string{}, true)
 	ctx := context.Background()
 	principalId := "arn:aws:sts::123:assumed-role/MyRole/SessionName"
-	presignedURL := "PresignedUrl"
-	externalLoginInfo := map[string]interface{}{"IdentityToken": presignedURL}
+	IdentityToken := "IdentityToken"
 
-	mockClient.EXPECT().ExternalPrincipalLoginWithResponse(gomock.Any(), gomock.Eq(externalLoginInfo)).Return(
+	mockClient.EXPECT().ExternalPrincipalLoginWithResponse(gomock.Any(), gomock.Eq(apiclient.ExternalPrincipalLoginJSONRequestBody(IdentityToken))).Return(
 		&apiclient.ExternalPrincipalLoginResponse{
 			HTTPResponse: &http.Response{
 				StatusCode: http.StatusOK,
@@ -169,7 +168,7 @@ func TestAPIAuthService_ExternalLogin(t *testing.T) {
 			JSON200: &apiclient.ExternalPrincipal{Id: principalId},
 		}, nil)
 
-	resp, err := s.ExternalPrincipalLogin(ctx, externalLoginInfo)
+	resp, err := s.ExternalPrincipalLogin(ctx, IdentityToken)
 	require.NoError(t, err)
 	require.Equal(t, principalId, resp)
 }

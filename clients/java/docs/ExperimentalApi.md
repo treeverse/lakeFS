@@ -542,7 +542,7 @@ public class Example {
     defaultClient.setBasePath("/api/v1");
 
     ExperimentalApi apiInstance = new ExperimentalApi(defaultClient);
-    Object body = null; // Object | 
+    String body = "body_example"; // String | 
     try {
       AuthenticationToken result = apiInstance.externalPrincipalLogin()
             .body(body)
@@ -563,7 +563,7 @@ public class Example {
 
 | Name | Type | Description  | Notes |
 |------------- | ------------- | ------------- | -------------|
-| **body** | **Object**|  | [optional] |
+| **body** | **String**|  | [optional] |
 
 ### Return type
 

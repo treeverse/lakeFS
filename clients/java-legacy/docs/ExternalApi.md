@@ -221,7 +221,7 @@ public class Example {
     defaultClient.setBasePath("http://localhost/api/v1");
 
     ExternalApi apiInstance = new ExternalApi(defaultClient);
-    Object body = null; // Object | 
+    String body = "body_example"; // String | 
     try {
       AuthenticationToken result = apiInstance.externalPrincipalLogin(body);
       System.out.println(result);
@@ -240,7 +240,7 @@ public class Example {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | **Object**|  | [optional]
+ **body** | **String**|  | [optional]
 
 ### Return type
 

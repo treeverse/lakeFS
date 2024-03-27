@@ -453,7 +453,7 @@ public class ExternalApi {
     public APIdeleteUserExternalPrincipalRequest deleteUserExternalPrincipal(String userId, String principalId) {
         return new APIdeleteUserExternalPrincipalRequest(userId, principalId);
     }
-    private okhttp3.Call externalPrincipalLoginCall(Object body, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call externalPrincipalLoginCall(String body, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -499,19 +499,19 @@ public class ExternalApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call externalPrincipalLoginValidateBeforeCall(Object body, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call externalPrincipalLoginValidateBeforeCall(String body, final ApiCallback _callback) throws ApiException {
         return externalPrincipalLoginCall(body, _callback);
 
     }
 
 
-    private ApiResponse<AuthenticationToken> externalPrincipalLoginWithHttpInfo(Object body) throws ApiException {
+    private ApiResponse<AuthenticationToken> externalPrincipalLoginWithHttpInfo(String body) throws ApiException {
         okhttp3.Call localVarCall = externalPrincipalLoginValidateBeforeCall(body, null);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call externalPrincipalLoginAsync(Object body, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+    private okhttp3.Call externalPrincipalLoginAsync(String body, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = externalPrincipalLoginValidateBeforeCall(body, _callback);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
@@ -520,7 +520,7 @@ public class ExternalApi {
     }
 
     public class APIexternalPrincipalLoginRequest {
-        private Object body;
+        private String body;
 
         private APIexternalPrincipalLoginRequest() {
         }
@@ -530,7 +530,7 @@ public class ExternalApi {
          * @param body  (optional)
          * @return APIexternalPrincipalLoginRequest
          */
-        public APIexternalPrincipalLoginRequest body(Object body) {
+        public APIexternalPrincipalLoginRequest body(String body) {
             this.body = body;
             return this;
         }

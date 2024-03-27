@@ -22,7 +22,7 @@ from typing_extensions import Annotated
 
 from pydantic import Field, StrictBool, StrictInt, StrictStr, conint
 
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from lakefs_sdk.models.abort_presign_multipart_upload import AbortPresignMultipartUpload
 from lakefs_sdk.models.authentication_token import AuthenticationToken
@@ -882,7 +882,7 @@ class ExperimentalApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def external_principal_login(self, body : Optional[Dict[str, Any]] = None, **kwargs) -> AuthenticationToken:  # noqa: E501
+    def external_principal_login(self, body : Optional[StrictStr] = None, **kwargs) -> AuthenticationToken:  # noqa: E501
         """perform a login using an external authenticator  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -892,7 +892,7 @@ class ExperimentalApi(object):
         >>> result = thread.get()
 
         :param body:
-        :type body: object
+        :type body: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request. If one
@@ -910,7 +910,7 @@ class ExperimentalApi(object):
         return self.external_principal_login_with_http_info(body, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def external_principal_login_with_http_info(self, body : Optional[Dict[str, Any]] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def external_principal_login_with_http_info(self, body : Optional[StrictStr] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """perform a login using an external authenticator  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -920,7 +920,7 @@ class ExperimentalApi(object):
         >>> result = thread.get()
 
         :param body:
-        :type body: object
+        :type body: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will

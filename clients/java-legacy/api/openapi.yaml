@@ -181,7 +181,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ExternalLoginInformation'
+              $ref: '#/components/schemas/IdentityToken'
       responses:
         "200":
           content:
@@ -8212,8 +8212,8 @@ components:
       - access_key_id
       - secret_access_key
       type: object
-    ExternalLoginInformation:
-      type: object
+    IdentityToken:
+      type: string
     StsAuthRequest:
       example:
         code: code

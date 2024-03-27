@@ -355,7 +355,7 @@ public class ExternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call externalPrincipalLoginCall(Object body, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call externalPrincipalLoginCall(String body, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = body;
 
         // create path and map variables
@@ -386,7 +386,7 @@ public class ExternalApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call externalPrincipalLoginValidateBeforeCall(Object body, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call externalPrincipalLoginValidateBeforeCall(String body, final ApiCallback _callback) throws ApiException {
         
 
         okhttp3.Call localVarCall = externalPrincipalLoginCall(body, _callback);
@@ -409,7 +409,7 @@ public class ExternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public AuthenticationToken externalPrincipalLogin(Object body) throws ApiException {
+    public AuthenticationToken externalPrincipalLogin(String body) throws ApiException {
         ApiResponse<AuthenticationToken> localVarResp = externalPrincipalLoginWithHttpInfo(body);
         return localVarResp.getData();
     }
@@ -429,7 +429,7 @@ public class ExternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<AuthenticationToken> externalPrincipalLoginWithHttpInfo(Object body) throws ApiException {
+    public ApiResponse<AuthenticationToken> externalPrincipalLoginWithHttpInfo(String body) throws ApiException {
         okhttp3.Call localVarCall = externalPrincipalLoginValidateBeforeCall(body, null);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
@@ -451,7 +451,7 @@ public class ExternalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call externalPrincipalLoginAsync(Object body, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+    public okhttp3.Call externalPrincipalLoginAsync(String body, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = externalPrincipalLoginValidateBeforeCall(body, _callback);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();

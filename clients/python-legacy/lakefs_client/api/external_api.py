@@ -196,7 +196,7 @@ class ExternalApi(object):
                 },
                 'openapi_types': {
                     'body':
-                        ({str: (bool, date, datetime, dict, float, int, list, str, none_type)},),
+                        (str,),
                 },
                 'attribute_map': {
                 },
@@ -501,7 +501,7 @@ class ExternalApi(object):
 
 
         Keyword Args:
-            body ({str: (bool, date, datetime, dict, float, int, list, str, none_type)}): [optional]
+            body (str): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
