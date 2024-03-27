@@ -85,6 +85,7 @@ class StsAuthRequest(ModelNormal):
             'code': (str,),  # noqa: E501
             'state': (str,),  # noqa: E501
             'redirect_uri': (str,),  # noqa: E501
+            'ttl_seconds': (int,),  # noqa: E501
         }
 
     @cached_property
@@ -96,6 +97,7 @@ class StsAuthRequest(ModelNormal):
         'code': 'code',  # noqa: E501
         'state': 'state',  # noqa: E501
         'redirect_uri': 'redirect_uri',  # noqa: E501
+        'ttl_seconds': 'ttl_seconds',  # noqa: E501
     }
 
     read_only_vars = {
@@ -144,6 +146,7 @@ class StsAuthRequest(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            ttl_seconds (int): The time-to-live for the generated token in seconds.  The maximum value is 3600 seconds (1 hour) max is 12 hours. . [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -233,6 +236,7 @@ class StsAuthRequest(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            ttl_seconds (int): The time-to-live for the generated token in seconds.  The maximum value is 3600 seconds (1 hour) max is 12 hours. . [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

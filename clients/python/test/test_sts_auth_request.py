@@ -41,7 +41,8 @@ class TestStsAuthRequest(unittest.TestCase):
             return StsAuthRequest(
                 code = '', 
                 state = '', 
-                redirect_uri = ''
+                redirect_uri = '', 
+                ttl_seconds = 56
             )
         else :
             return StsAuthRequest(

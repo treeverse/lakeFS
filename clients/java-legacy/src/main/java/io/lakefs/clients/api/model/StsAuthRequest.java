@@ -41,6 +41,10 @@ public class StsAuthRequest {
   @SerializedName(SERIALIZED_NAME_REDIRECT_URI)
   private String redirectUri;
 
+  public static final String SERIALIZED_NAME_TTL_SECONDS = "ttl_seconds";
+  @SerializedName(SERIALIZED_NAME_TTL_SECONDS)
+  private Long ttlSeconds;
+
 
   public StsAuthRequest code(String code) {
     
@@ -111,6 +115,29 @@ public class StsAuthRequest {
   }
 
 
+  public StsAuthRequest ttlSeconds(Long ttlSeconds) {
+    
+    this.ttlSeconds = ttlSeconds;
+    return this;
+  }
+
+   /**
+   * The time-to-live for the generated token in seconds.  The maximum value is 3600 seconds (1 hour) max is 12 hours. 
+   * @return ttlSeconds
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The time-to-live for the generated token in seconds.  The maximum value is 3600 seconds (1 hour) max is 12 hours. ")
+
+  public Long getTtlSeconds() {
+    return ttlSeconds;
+  }
+
+
+  public void setTtlSeconds(Long ttlSeconds) {
+    this.ttlSeconds = ttlSeconds;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -122,12 +149,13 @@ public class StsAuthRequest {
     StsAuthRequest stsAuthRequest = (StsAuthRequest) o;
     return Objects.equals(this.code, stsAuthRequest.code) &&
         Objects.equals(this.state, stsAuthRequest.state) &&
-        Objects.equals(this.redirectUri, stsAuthRequest.redirectUri);
+        Objects.equals(this.redirectUri, stsAuthRequest.redirectUri) &&
+        Objects.equals(this.ttlSeconds, stsAuthRequest.ttlSeconds);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(code, state, redirectUri);
+    return Objects.hash(code, state, redirectUri, ttlSeconds);
   }
 
   @Override
@@ -137,6 +165,7 @@ public class StsAuthRequest {
     sb.append("    code: ").append(toIndentedString(code)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    redirectUri: ").append(toIndentedString(redirectUri)).append("\n");
+    sb.append("    ttlSeconds: ").append(toIndentedString(ttlSeconds)).append("\n");
     sb.append("}");
     return sb.toString();
   }

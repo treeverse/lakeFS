@@ -1032,6 +1032,7 @@ with lakefs_client.ApiClient() as api_client:
         code="code_example",
         state="state_example",
         redirect_uri="redirect_uri_example",
+        ttl_seconds=1,
     ) # StsAuthRequest | 
 
     # example passing only required values which don't have defaults set

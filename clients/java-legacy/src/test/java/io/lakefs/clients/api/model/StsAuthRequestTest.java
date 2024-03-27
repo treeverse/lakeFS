@@ -64,4 +64,12 @@ public class StsAuthRequestTest {
         // TODO: test redirectUri
     }
 
+    /**
+     * Test the property 'ttlSeconds'
+     */
+    @Test
+    public void ttlSecondsTest() {
+        // TODO: test ttlSeconds
+    }
+
 }

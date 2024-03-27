@@ -54,6 +54,9 @@ const (
 	// DefaultPerPage is the default number of results returned for paginated queries to the API
 	DefaultPerPage int = 100
 
+	defaultSTSTTLSeconds = 3600
+	maxSTSTTLSeconds     = 3600 * 12
+
 	lakeFSPrefix = "symlinks"
 
 	actionStatusCompleted = "completed"
@@ -536,7 +539,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	expires := loginTime.Add(duration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
-	tokenString, err := GenerateJWTLogin(secret, user.Username, loginTime.Unix(), expires.Unix())
+	tokenString, err := GenerateJWTLogin(secret, user.Username, loginTime, expires)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
@@ -558,16 +561,23 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 
 func (c *Controller) STSLogin(w http.ResponseWriter, r *http.Request, body apigen.STSLoginJSONRequestBody) {
 	ctx := r.Context()
-	responseData, err := c.Authentication.ValidateSTS(ctx, body.Code, body.RedirectUri, body.State)
+	externalUserID, err := c.Authentication.ValidateSTS(ctx, body.Code, body.RedirectUri, body.State)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 	// validate a user exists with the external user id
-	_, err = c.Auth.GetUserByExternalID(ctx, responseData.ExternalUserID)
+	_, err = c.Auth.GetUserByExternalID(ctx, externalUserID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	token, err := GenerateJWTLogin(c.Auth.SecretStore().SharedSecret(), responseData.ExternalUserID, time.Now().Unix(), responseData.ExpiresAtUnixTime)
+	expiresInSec := defaultSTSTTLSeconds
+	if body.TtlSeconds != nil {
+		expiresInSec = min(maxSTSTTLSeconds, int(*body.TtlSeconds))
+
+	}
+	now := time.Now()
+	expiresAt := now.Add(time.Duration(expiresInSec) * time.Second)
+	token, err := GenerateJWTLogin(c.Auth.SecretStore().SharedSecret(), externalUserID, now, expiresAt)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
