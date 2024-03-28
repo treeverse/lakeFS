@@ -21,6 +21,12 @@ public class LakeFSClient {
     private final InternalApi internalApi;
 
     public LakeFSClient(String scheme, Configuration conf) throws IOException {
+        String authProvider = FSConfiguration.get(conf, scheme, Constants.LAKEFS_AUTH_PROVIDER_KEY_SUFFIX, LakeFSClient.BASIC_AUTH);
+        // TODO(isan) here we will add support for other auth providers
+        if (authProvider != BASIC_AUTH) {
+            throw new IOException("lakeFS auth provider not implemented");
+        }
+
         String accessKey = FSConfiguration.get(conf, scheme, Constants.ACCESS_KEY_KEY_SUFFIX);
         if (accessKey == null) {
             throw new IOException("Missing lakeFS access key");

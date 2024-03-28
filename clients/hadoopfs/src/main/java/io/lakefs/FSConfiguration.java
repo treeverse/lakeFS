@@ -2,6 +2,10 @@ package io.lakefs;
 
 import org.apache.hadoop.conf.Configuration;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 public final class FSConfiguration {
 
     private static String formatFSConfigurationKey(String scheme, String key) {
@@ -45,5 +49,27 @@ public final class FSConfiguration {
     public static int getInt(Configuration conf, String scheme, String keySuffix, int defaultValue) {
         String valueString = get(conf, scheme, keySuffix);
         return (valueString == null) ? defaultValue : Integer.parseInt(valueString);
+    }
+    /**
+     * lookup a string value in the format of a map from configuration based on scheme and key suffix, returns default in case of null value.
+     * The map is expected to be in the format of "key1:value1,key2:value2"
+     *
+     * @param conf         configuration object to get the value from
+     * @param scheme       used to format key for lookup
+     * @param keySuffix    key suffix to lookup
+     * @param defaultValue default value returned in case of null
+     * @return value found or default value
+     */
+    public static Map<String,String> getMap(Configuration conf, String scheme, String keySuffix, Map<String,String> defaultValue) {
+        String valueString = get(conf, scheme, keySuffix);
+        if (valueString == null) {
+            return defaultValue;
+        }
+        return Arrays.stream(valueString.split(","))
+                .map(entry -> entry.split(":"))
+                .collect(Collectors.toMap(
+                        entry -> entry[0],
+                        entry -> entry[1]
+                ));
     }
 }
