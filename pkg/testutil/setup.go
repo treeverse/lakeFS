@@ -59,6 +59,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	viper.SetDefault("lakectl_dir", filepath.Join(currDir, ".."))
 	viper.SetDefault("azure_storage_account", "")
 	viper.SetDefault("azure_storage_access_key", "")
+	viper.SetDefault("large_object_path", "")
 	err = viper.ReadInConfig()
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
 		logger.WithError(err).Fatal("Failed to read configuration")
