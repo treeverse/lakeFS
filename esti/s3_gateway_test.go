@@ -2,6 +2,8 @@ package esti
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
@@ -28,7 +30,8 @@ type GetCredentials = func(id, secret, token string) *credentials.Credentials
 const (
 	numUploads           = 100
 	randomDataPathLength = 1020
-	gatewayTestPrefix    = "main/data/"
+	branch               = "main"
+	gatewayTestPrefix    = branch + "/data/"
 )
 
 func newMinioClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
@@ -329,6 +332,40 @@ func TestS3HeadBucket(t *testing.T) {
 	})
 }
 
+// getOrCreatePathToLargeObject returns a configured existing large
+// (largeDataContentLength, 6MiB) object, or creates a new one under
+// testPrefix.
+func getOrCreatePathToLargeObject(t *testing.T, ctx context.Context, s3lakefsClient *minio.Client, repo, branch string) (string, int64) {
+	t.Helper()
+
+	path := "source-file"
+	s3Path := fmt.Sprintf("%s/source-file", branch)
+
+	if physicalAddress := viper.GetString("large_object_path"); physicalAddress != "" {
+		res, err := client.LinkPhysicalAddressWithResponse(ctx, repo, branch, &apigen.LinkPhysicalAddressParams{Path: path}, apigen.LinkPhysicalAddressJSONRequestBody{
+			Checksum: "dont-care",
+			// TODO(ariels): Check actual length of object!
+			SizeBytes: largeDataContentLength,
+			Staging: apigen.StagingLocation{
+				PhysicalAddress: &physicalAddress,
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, res.JSON200)
+		return s3Path, largeDataContentLength
+	}
+
+	// content
+	r := rand.New(rand.NewSource(17))
+	objContent := testutil.NewRandomReader(r, largeDataContentLength)
+
+	// upload data
+	_, err := s3lakefsClient.PutObject(ctx, repo, s3Path, objContent, largeDataContentLength,
+		minio.PutObjectOptions{})
+	require.NoError(t, err)
+	return s3Path, largeDataContentLength
+}
+
 func TestS3CopyObjectMultipart(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
@@ -338,17 +375,10 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 	destRepo := createRepositoryByName(ctx, t, destRepoName)
 	defer deleteRepositoryIfAskedTo(ctx, destRepoName)
 
-	// content
-	r := rand.New(rand.NewSource(17))
-	objContent := testutil.NewRandomReader(r, largeDataContentLength)
-	srcPath := gatewayTestPrefix + "source-file"
-	destPath := gatewayTestPrefix + "dest-file"
-
-	// upload data
 	s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
-	_, err := s3lakefsClient.PutObject(ctx, repo, srcPath, objContent, largeDataContentLength,
-		minio.PutObjectOptions{})
-	require.NoError(t, err)
+
+	srcPath, objectLength := getOrCreatePathToLargeObject(t, ctx, s3lakefsClient, repo, branch)
+	destPath := gatewayTestPrefix + "dest-file"
 
 	dest := minio.CopyDestOptions{
 		Bucket: destRepo,
@@ -367,7 +397,7 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 			Object:     srcPath,
 			MatchRange: true,
 			Start:      minDataContentLengthForMultipart,
-			End:        largeDataContentLength - 1,
+			End:        objectLength - 1,
 		},
 	}
 
@@ -376,8 +406,8 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 		t.Fatalf("minio.Client.ComposeObject from(%+v) to(%+v): %s", srcs, dest, err)
 	}
 
-	if ui.Size != largeDataContentLength {
-		t.Errorf("Copied %d bytes when expecting %d", ui.Size, largeDataContentLength)
+	if ui.Size != objectLength {
+		t.Errorf("Copied %d bytes when expecting %d", ui.Size, objectLength)
 	}
 
 	// Comparing 2 readers is too much work.  Instead just hash them.
