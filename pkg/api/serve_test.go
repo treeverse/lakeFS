@@ -33,11 +33,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
 	"github.com/treeverse/lakefs/util/cache"
 	"github.com/treeverse/lakefs/util/logging"
+	"github.com/treeverse/lakefs/util/testutil"
 )
 
 const (

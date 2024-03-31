@@ -10,7 +10,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/block/s3"
-	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/util/testutil"
 )
 
 var errRegion = errors.New("failed to get region")

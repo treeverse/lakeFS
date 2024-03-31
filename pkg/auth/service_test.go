@@ -25,8 +25,8 @@ import (
 	authtestutil "github.com/treeverse/lakefs/pkg/auth/testutil"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/permissions"
-	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/util/logging"
+	"github.com/treeverse/lakefs/util/testutil"
 )
 
 const creationDate = 12345678

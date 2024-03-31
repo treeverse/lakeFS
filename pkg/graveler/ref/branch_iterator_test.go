@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
-	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/util/testutil"
 )
 
 func TestBranchSimpleIterator(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/staging"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/util/testutil"
 	"go.uber.org/ratelimit"
 )
 

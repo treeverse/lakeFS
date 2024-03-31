@@ -10,7 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/metastore"
 	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
 	"github.com/treeverse/lakefs/pkg/metastore/mock"
-	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/util/testutil"
 )
 
 func getCols() []*metastore.FieldSchema {

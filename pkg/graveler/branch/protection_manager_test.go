@@ -15,7 +15,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/util/testutil"
 )
 
 var repository = &graveler.RepositoryRecord{

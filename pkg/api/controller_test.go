@@ -40,8 +40,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"github.com/treeverse/lakefs/util/testutil"
 	"golang.org/x/exp/slices"
 )
 

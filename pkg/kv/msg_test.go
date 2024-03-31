@@ -14,6 +14,7 @@ import (
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/kv/postgres"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	basetestutil "github.com/treeverse/lakefs/util/testutil"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -131,7 +132,7 @@ func testSetIfMsg(t testing.TB, ctx context.Context, store kv.Store) {
 	}
 
 	// Cleanup
-	testutil.MustDo(t, "cleanup", store.Delete(ctx, []byte(modelPartitionKey), setModel.Name))
+	basetestutil.MustDo(t, "cleanup", store.Delete(ctx, []byte(modelPartitionKey), setModel.Name))
 }
 
 func BenchmarkDrivers(b *testing.B) {

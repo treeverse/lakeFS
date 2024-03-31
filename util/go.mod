@@ -4,6 +4,7 @@ go 1.21.3
 
 require (
 	github.com/aws/smithy-go v1.20.2
+	github.com/hnlq715/golang-lru v0.4.0
 	github.com/sirupsen/logrus v1.9.3
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )

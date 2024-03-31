@@ -29,6 +29,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
 	"github.com/treeverse/lakefs/util/logging"
+	basetestutil "github.com/treeverse/lakefs/util/testutil"
 )
 
 func TestLocalLoad(t *testing.T) {
@@ -41,7 +42,7 @@ func TestLocalLoad(t *testing.T) {
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
 
 	conf, err := config.NewConfig("")
-	testutil.MustDo(t, "config", err)
+	basetestutil.MustDo(t, "config", err)
 
 	superuser := &authmodel.SuperuserConfiguration{
 		User: authmodel.User{
@@ -65,7 +66,7 @@ func TestLocalLoad(t *testing.T) {
 		KVStore:      kvStore,
 		PathProvider: upload.DefaultPathProvider,
 	})
-	testutil.MustDo(t, "build catalog", err)
+	basetestutil.MustDo(t, "build catalog", err)
 
 	source := catalog.NewActionsSource(c)
 	outputWriter := catalog.NewActionsOutputWriter(c.BlockAdapter)
@@ -75,11 +76,11 @@ func TestLocalLoad(t *testing.T) {
 	c.SetHooksHandler(actionsService)
 
 	credentials, err := setup.CreateAdminUser(ctx, authService, conf, superuser)
-	testutil.Must(t, err)
+	basetestutil.Must(t, err)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
 	kvParams, err := kvparams.NewConfig(conf)
-	testutil.Must(t, err)
+	basetestutil.Must(t, err)
 	migrator := kv.NewDatabaseMigrator(kvParams)
 	t.Cleanup(func() {
 		_ = c.Close()

@@ -19,9 +19,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/testutil"
+	testutil "github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/util/logging"
+	basetestutil "github.com/treeverse/lakefs/util/testutil"
 )
 
 type Dependencies struct {
@@ -35,7 +36,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 
 	store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
-	testutil.MustDo(t, "open kv store", err)
+	basetestutil.MustDo(t, "open kv store", err)
 	defer store.Close()
 	multipartTracker := multipart.NewTracker(store)
 
@@ -43,14 +44,14 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
 
 	conf, err := config.NewConfig("")
-	testutil.MustDo(t, "config", err)
+	basetestutil.MustDo(t, "config", err)
 
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:       conf,
 		KVStore:      store,
 		PathProvider: upload.DefaultPathProvider,
 	})
-	testutil.MustDo(t, "build catalog", err)
+	basetestutil.MustDo(t, "build catalog", err)
 	t.Cleanup(func() {
 		_ = c.Close()
 	})
@@ -61,7 +62,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	}
 
 	_, err = c.CreateRepository(ctx, repoName, storageNamespace, "main", false)
-	testutil.Must(t, err)
+	basetestutil.Must(t, err)
 
 	handler := gateway.NewHandler(authService.Region, c, multipartTracker, blockAdapter, authService, []string{authService.BareDomain}, &stats.NullCollector{}, upload.DefaultPathProvider, nil, config.DefaultLoggingAuditLogLevel, true, false)
 

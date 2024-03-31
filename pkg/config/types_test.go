@@ -8,7 +8,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/mitchellh/mapstructure"
 	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/util/testutil"
 )
 
 type StringsStruct struct {

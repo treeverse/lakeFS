@@ -138,20 +138,6 @@ type GetDBOptions struct {
 
 type GetDBOption func(options *GetDBOptions)
 
-func Must(t testing.TB, err error) {
-	t.Helper()
-	if err != nil {
-		t.Fatalf("error returned for operation: %v", err)
-	}
-}
-
-func MustDo(t testing.TB, what string, err error) {
-	t.Helper()
-	if err != nil {
-		t.Fatalf("%s, expected no error, got err=%s", what, err)
-	}
-}
-
 func NewBlockAdapterByType(t testing.TB, blockstoreType string) block.Adapter {
 	ctx := context.Background()
 	switch blockstoreType {

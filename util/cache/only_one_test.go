@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/util/cache"
+	"github.com/treeverse/lakefs/util/testutil"
 )
 
 func TestOnlyOne_ComputeInSequence(t *testing.T) {

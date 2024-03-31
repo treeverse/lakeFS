@@ -10,7 +10,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
-	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/util/testutil"
 )
 
 const RepoName = "repo1"
