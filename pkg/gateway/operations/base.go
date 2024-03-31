@@ -17,9 +17,9 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 const StorageClassHeader = "x-amz-storage-class"

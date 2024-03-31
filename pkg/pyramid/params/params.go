@@ -7,7 +7,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 // RelativePath is the path of the file under TierFS, used in the Eviction interface.

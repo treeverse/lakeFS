@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 var refsDumpCmd = &cobra.Command{

@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 const (

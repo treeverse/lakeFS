@@ -24,9 +24,9 @@ import (
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	authtestutil "github.com/treeverse/lakefs/pkg/auth/testutil"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 const creationDate = 12345678

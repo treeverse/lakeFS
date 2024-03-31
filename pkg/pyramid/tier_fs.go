@@ -13,8 +13,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/cache"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 // TierFS is a filesystem where written files are never edited.

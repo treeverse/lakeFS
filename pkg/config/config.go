@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 	apiparams "github.com/treeverse/lakefs/pkg/api/params"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 var (

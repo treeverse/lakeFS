@@ -10,8 +10,8 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 const (

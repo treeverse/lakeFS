@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/cloud"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 const azureMetadataIP = "169.254.169.254"

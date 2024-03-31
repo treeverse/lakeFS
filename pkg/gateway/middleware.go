@@ -17,9 +17,9 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 func AuthenticationHandler(authService auth.GatewayService, next http.Handler) http.Handler {

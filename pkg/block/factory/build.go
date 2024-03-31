@@ -14,8 +14,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/params"
 	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/block/transient"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
+	"github.com/treeverse/lakefs/util/logging"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 )

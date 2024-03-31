@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/batch"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 type trackableExecuter struct {

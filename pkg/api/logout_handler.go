@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 // NewLogoutHandler returns a handler to clear the user sessions and redirect the user to the login page.

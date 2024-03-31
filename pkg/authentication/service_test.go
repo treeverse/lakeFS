@@ -12,7 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/authentication/apiclient"
 	"github.com/treeverse/lakefs/pkg/authentication/mock"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 func TestAPIAuthService_STSLogin(t *testing.T) {

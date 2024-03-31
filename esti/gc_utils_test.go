@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 func getSparkSubmitArgs(entryPoint string) []string {

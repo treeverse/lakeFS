@@ -16,8 +16,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/wildcard"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 const (

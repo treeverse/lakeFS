@@ -17,8 +17,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/version"
+	"github.com/treeverse/lakefs/util/logging"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 

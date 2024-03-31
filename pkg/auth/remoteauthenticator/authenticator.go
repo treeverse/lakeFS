@@ -13,7 +13,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 const remoteAuthSource = "remote_authenticator"

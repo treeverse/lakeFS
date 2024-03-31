@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 type CommitOptions struct {

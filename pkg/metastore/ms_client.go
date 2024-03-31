@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/logging"
 	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 const dbfsPrefix = "dbfs:/"

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 func TestMain(m *testing.M) {

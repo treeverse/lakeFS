@@ -13,7 +13,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 	"google.golang.org/api/iterator"
 )
 

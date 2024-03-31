@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/sirupsen/logrus"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 type LogLine struct {

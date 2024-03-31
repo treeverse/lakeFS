@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 const (

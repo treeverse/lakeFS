@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 type Migrator interface {

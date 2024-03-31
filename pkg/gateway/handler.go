@@ -16,10 +16,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/operations"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
 	"github.com/treeverse/lakefs/pkg/httputil"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"github.com/treeverse/lakefs/util/logging"
 	"golang.org/x/exp/slices"
 )
 

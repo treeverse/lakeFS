@@ -6,7 +6,7 @@ import (
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/treeverse/lakefs/pkg/cloud"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 type MetadataProvider struct {

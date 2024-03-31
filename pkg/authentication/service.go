@@ -11,7 +11,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/treeverse/lakefs/pkg/authentication/apiclient"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 type Service interface {

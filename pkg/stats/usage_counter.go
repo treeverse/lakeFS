@@ -13,7 +13,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 // UsageCounter is a counter that can be used to track usage of a resource api/gtw

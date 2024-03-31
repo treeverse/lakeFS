@@ -13,7 +13,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/cloud"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 type MetadataProvider struct {

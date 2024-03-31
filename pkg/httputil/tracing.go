@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 const (

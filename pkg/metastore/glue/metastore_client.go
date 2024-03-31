@@ -10,9 +10,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/glue"
 	"github.com/aws/aws-sdk-go-v2/service/glue/types"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/metastore"
 	mserrors "github.com/treeverse/lakefs/pkg/metastore/errors"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 const MaxParts = 1000 // max possible 1000

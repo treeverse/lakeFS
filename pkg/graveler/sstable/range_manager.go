@@ -10,8 +10,8 @@ import (
 	"github.com/cockroachdb/pebble/sstable"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/pyramid"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 type NewSSTableReaderFn func(ctx context.Context, ns committed.Namespace, id committed.ID) (*sstable.Reader, error)

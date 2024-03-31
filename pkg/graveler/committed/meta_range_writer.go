@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/util/logging"
 )
 
 type GeneralMetaRangeWriter struct {
