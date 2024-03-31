@@ -11,10 +11,10 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/batch"
-	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/util/cache"
 	"github.com/treeverse/lakefs/util/logging"
 )
 

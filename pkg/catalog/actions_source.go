@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/util/cache"
 )
 
 const repositoryLocation = "_lakefs_actions/"

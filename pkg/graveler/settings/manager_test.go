@@ -8,12 +8,12 @@ import (
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"github.com/treeverse/lakefs/util/cache"
 )
 
 type mockCache struct {

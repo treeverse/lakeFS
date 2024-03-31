@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/gobwas/glob"
-	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
+	"github.com/treeverse/lakefs/util/cache"
 )
 
 const ProtectionSettingKey = "protected_branches"

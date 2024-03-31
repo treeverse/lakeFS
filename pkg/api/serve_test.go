@@ -24,7 +24,6 @@ import (
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
@@ -37,6 +36,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
+	"github.com/treeverse/lakefs/util/cache"
 	"github.com/treeverse/lakefs/util/logging"
 )
 

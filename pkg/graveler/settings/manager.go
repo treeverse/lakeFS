@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/go-openapi/swag"
-	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/util/cache"
 	"github.com/treeverse/lakefs/util/logging"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
