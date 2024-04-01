@@ -2626,6 +2626,23 @@ lakectl local init <path URI> [directory] [flags]
 
 
 
+### lakectl local install-git-plugin
+
+set up `git data` (directory must exist and be in $PATH)
+
+```
+lakectl local install-git-plugin <directory> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for install-git-plugin
+```
+
+
+
 ### lakectl local list
 
 find and list directories that are synced with lakeFS.
