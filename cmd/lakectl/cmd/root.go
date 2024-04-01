@@ -284,7 +284,7 @@ func getKV(cmd *cobra.Command, name string) (map[string]string, error) { //nolin
 	return kv, nil
 }
 
-func preRun(cmd *cobra.Command) {
+func rootPreRun(cmd *cobra.Command, _ []string) {
 	logging.SetLevel(logLevel)
 	logging.SetOutputFormat(logFormat)
 	err := logging.SetOutputs(logOutputs, 0, 0)
@@ -484,9 +484,11 @@ func Execute() {
 		cmd = rootCmd
 		cmd.SetContext(context.WithValue(ctx, lakectlLocalCommandNameKey, "lakectl local"))
 	}
+	// make sure config is properly initialize
 	setupRootCommand(cmd)
-	initConfig()
-	preRun(cmd)
+	cobra.OnInitialize(initConfig)
+	cmd.PersistentPreRun = rootPreRun
+	// run!
 	err := cmd.Execute()
 	if err != nil {
 		DieErr(err)
