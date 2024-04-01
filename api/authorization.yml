@@ -498,6 +498,39 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /auth/users/{userId}/friendly_name:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - auth
+      operationId: updateUserFriendlyName
+      summary: update users friendly name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required:
+                - friendly_name
+              type: object
+              properties:
+                friendly_name:
+                  type: string
+      responses:
+        204:
+          description: friendly name updated succesfully
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /auth/groups:
     get:
       tags:
