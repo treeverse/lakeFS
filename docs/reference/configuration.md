@@ -101,11 +101,13 @@ This reference uses `.` to denote the nesting of values.
 * `auth.cookie_auth_verification.default_initial_groups` (string[] : [])` - By default, users will be assigned to these groups
 * `auth.cookie_auth_verification.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.cookie_auth_verification.default_initial_groups` is also set.
 * `auth.cookie_auth_verification.friendly_name_claim_name` `(string[] : )` - If specified, the value from the claim with this name will be used as the user's display name.
+* `auth.cookie_auth_verification.persist_friendly_name` `(string : false)` - If set to `true`, the friendly name is persisted to the KV store and can be displayed in the user list. This is meant to be used in conjunction with `auth.cookie_auth_verification.friendly_name_claim_name`.
 * `auth.cookie_auth_verification.external_user_id_claim_name` - `(string : )` - If specified, the value from the claim with this name will be used as the user's id name.
 * `auth.cookie_auth_verification.auth_source` - `(string : )` - If specified, user will be labeled with this auth source.
 * `auth.oidc.default_initial_groups` `(string[] : [])` - By default, OIDC users will be assigned to these groups
 * `auth.oidc.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.oidc.default_initial_groups` is also set.
 * `auth.oidc.friendly_name_claim_name` `(string[] : )` - If specified, the value from the claim with this name will be used as the user's display name.
+* `auth.oidc.persist_friendly_name` `(string : false)` - If set to `true`, the friendly name is persisted to the KV store and can be displayed in the user list. This is meant to be used in conjunction with `auth.oidc.friendly_name_claim_name`.
 * `auth.oidc.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
 * `auth.ui_config.rbac` `(string: "simplified")` - "simplified", "external" or "internal" (enterprise feature).  In simplified mode, do not display policy in GUI.
   If you have configured an external auth server you can set this to "external" to support the policy editor.
