@@ -27,6 +27,8 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+type lakectlLocalContextKey string
+
 const (
 	DefaultMaxIdleConnsPerHost = 100
 	// version templates
@@ -49,8 +51,7 @@ lakeFS version: {{.LakeFSVersion}}
 Get the latest release {{ .UpgradeURL|blue }}
 {{- end }}
 `
-
-	lakectlLocalCommandNameKey = "lakectl-local-command-name"
+	lakectlLocalCommandNameKey lakectlLocalContextKey = "lakectl-local-command-name"
 )
 
 // Configuration is the user-visible configuration structure in Golang form.
@@ -298,18 +299,17 @@ func rootPreRun(cmd *cobra.Command, _ []string) {
 		return
 	}
 
-	if cfgErr == nil {
+	switch {
+	case cfgErr == nil:
 		logging.ContextUnavailable().
 			WithField("file", viper.ConfigFileUsed()).
 			Debug("loaded configuration from file")
-	} else if errors.As(cfgErr, &viper.ConfigFileNotFoundError{}) {
+	case errors.As(cfgErr, &viper.ConfigFileNotFoundError{}):
 		if cfgFile != "" {
 			// specific message in case the file isn't found
 			DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgErr)
 		}
-		// if the config file wasn't provided, try to run using the default values + env vars
-	} else if cfgErr != nil {
-		// other errors while reading the config file
+	case cfgErr != nil:
 		DieFmt("error reading configuration file: %v", cfgErr)
 	}
 
