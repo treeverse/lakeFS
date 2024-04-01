@@ -37,7 +37,7 @@ var localStatusCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		dieOnInterruptedOperation(LocalOperation(idx.ActiveOperation), false)
+		dieOnInterruptedOperation(cmd.Context(), LocalOperation(idx.ActiveOperation), false)
 
 		remoteBase := remote.WithRef(idx.AtHead)
 		client := getClient()
