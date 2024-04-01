@@ -11,6 +11,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
+	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -46,6 +47,7 @@ type OIDCConfig struct {
 	DefaultInitialGroups   []string
 	InitialGroupsClaimName string
 	FriendlyNameClaimName  string
+	PersistFriendlyName    bool
 }
 
 type CookieAuthConfig struct {
@@ -55,6 +57,7 @@ type CookieAuthConfig struct {
 	FriendlyNameClaimName   string
 	ExternalUserIDClaimName string
 	AuthSource              string
+	PersistFriendlyName     bool
 }
 
 func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticator, authService auth.Service, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig) (func(next http.Handler) http.Handler, error) {
@@ -191,9 +194,14 @@ func checkSecurityRequirements(r *http.Request,
 	return nil, nil
 }
 
-func enhanceWithFriendlyName(user *model.User, friendlyName string) *model.User {
-	if friendlyName != "" {
-		user.FriendlyName = &friendlyName
+func enhanceWithFriendlyName(ctx context.Context, user *model.User, friendlyName string, persistFriendlyName bool, authService auth.Service, logger logging.Logger) *model.User {
+	if swag.StringValue(user.FriendlyName) != friendlyName {
+		user.FriendlyName = swag.String(friendlyName)
+		if persistFriendlyName {
+			if err := authService.UpdateUserFriendlyName(ctx, user.Username, friendlyName); err != nil {
+				logger.WithError(err).Error("failed to update user friendly name")
+			}
+		}
 	}
 	return user
 }
@@ -245,7 +253,7 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 	user, err := authService.GetUserByExternalID(ctx, externalID)
 	if err == nil {
 		log.Info("Found user")
-		return enhanceWithFriendlyName(user, friendlyName), nil
+		return enhanceWithFriendlyName(ctx, user, friendlyName, cookieAuthConfig.PersistFriendlyName, authService, logger), nil
 	}
 	if !errors.Is(err, auth.ErrNotFound) {
 		log.WithError(err).Error("Failed while searching if user exists in database")
@@ -259,7 +267,9 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 		Username:   externalID,
 		ExternalID: &externalID,
 	}
-
+	if cookieAuthConfig.PersistFriendlyName {
+		u.FriendlyName = &friendlyName
+	}
 	_, err = authService.CreateUser(ctx, &u)
 	if err != nil {
 		if !errors.Is(err, auth.ErrAlreadyExists) {
@@ -272,7 +282,7 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 			log.WithError(err).Error("failed to get external user from database")
 			return nil, ErrAuthenticatingRequest
 		}
-		return enhanceWithFriendlyName(user, friendlyName), nil
+		return enhanceWithFriendlyName(ctx, user, friendlyName, cookieAuthConfig.PersistFriendlyName, authService, logger), nil
 	}
 	initialGroups := cookieAuthConfig.DefaultInitialGroups
 	if userInitialGroups, ok := idTokenClaims[cookieAuthConfig.InitialGroupsClaimName].(string); ok {
@@ -284,7 +294,9 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 			log.WithError(err).Error("Failed to add external user to group")
 		}
 	}
-	return enhanceWithFriendlyName(&u, friendlyName), nil
+	// The user was just created.
+	// Regardless of the value of PersistFriendlyName, we don't need to update their friendly name if we got here.
+	return enhanceWithFriendlyName(ctx, user, friendlyName, false, authService, logger), nil
 }
 
 // userFromOIDC returns a user from an existing OIDC session.
@@ -295,7 +307,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 	if idTokenClaims == nil {
 		return nil, nil
 	}
-	if !ok || idTokenClaims == nil {
+	if !ok {
 		return nil, ErrAuthenticatingRequest
 	}
 	externalID, ok := idTokenClaims["sub"].(string)
@@ -321,7 +333,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 	}
 	user, err := authService.GetUserByExternalID(ctx, externalID)
 	if err == nil {
-		return enhanceWithFriendlyName(user, friendlyName), nil
+		return enhanceWithFriendlyName(ctx, user, friendlyName, oidcConfig.PersistFriendlyName, authService, logger), nil
 	}
 	if !errors.Is(err, auth.ErrNotFound) {
 		logger.WithError(err).Error("Failed to get external user from database")
@@ -332,6 +344,9 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		Source:     "oidc",
 		Username:   externalID,
 		ExternalID: &externalID,
+	}
+	if oidcConfig.PersistFriendlyName {
+		u.FriendlyName = &friendlyName
 	}
 	_, err = authService.CreateUser(ctx, &u)
 	if err != nil {
@@ -345,7 +360,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 			logger.WithError(err).Error("Failed to get external user from database")
 			return nil, ErrAuthenticatingRequest
 		}
-		return enhanceWithFriendlyName(user, friendlyName), nil
+		return enhanceWithFriendlyName(ctx, user, friendlyName, oidcConfig.PersistFriendlyName, authService, logger), nil
 	}
 	initialGroups := oidcConfig.DefaultInitialGroups
 	if userInitialGroups, ok := idTokenClaims[oidcConfig.InitialGroupsClaimName].(string); ok {
@@ -357,7 +372,9 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 			logger.WithError(err).Error("Failed to add external user to group")
 		}
 	}
-	return enhanceWithFriendlyName(&u, friendlyName), nil
+	// The user was just created.
+	// Regardless of the value of PersistFriendlyName, we don't need to update their friendly name if we got here.
+	return enhanceWithFriendlyName(ctx, user, friendlyName, false, authService, logger), nil
 }
 
 func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {

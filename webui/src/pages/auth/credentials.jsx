@@ -12,12 +12,7 @@ import {auth} from "../../lib/api";
 import {useState} from "react";
 import {CredentialsShowModal, CredentialsTable} from "../../lib/components/auth/credentials";
 import {useRouter} from "../../lib/hooks/router";
-
-const resolveDisplayName = (user) => {
-    if (!user) return "";
-    if (user?.email?.length) return user.email;
-    return user.id;
-}
+import {resolveDisplayName} from "../../lib/utils";
 
 const CredentialsContainer = () => {
     const router = useRouter();
