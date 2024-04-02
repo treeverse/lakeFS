@@ -279,6 +279,7 @@ Class | Method | HTTP request | Description
  - [DiffList](docs/DiffList.md)
  - [Error](docs/Error.md)
  - [ErrorNoACL](docs/ErrorNoACL.md)
+ - [ExternalLoginInformation](docs/ExternalLoginInformation.md)
  - [ExternalPrincipal](docs/ExternalPrincipal.md)
  - [ExternalPrincipalCreation](docs/ExternalPrincipalCreation.md)
  - [ExternalPrincipalList](docs/ExternalPrincipalList.md)

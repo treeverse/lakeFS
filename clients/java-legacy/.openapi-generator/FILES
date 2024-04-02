@@ -37,6 +37,7 @@ docs/Error.md
 docs/ErrorNoACL.md
 docs/ExperimentalApi.md
 docs/ExternalApi.md
+docs/ExternalLoginInformation.md
 docs/ExternalPrincipal.md
 docs/ExternalPrincipalCreation.md
 docs/ExternalPrincipalList.md
@@ -186,6 +187,7 @@ src/main/java/io/lakefs/clients/api/model/Diff.java
 src/main/java/io/lakefs/clients/api/model/DiffList.java
 src/main/java/io/lakefs/clients/api/model/Error.java
 src/main/java/io/lakefs/clients/api/model/ErrorNoACL.java
+src/main/java/io/lakefs/clients/api/model/ExternalLoginInformation.java
 src/main/java/io/lakefs/clients/api/model/ExternalPrincipal.java
 src/main/java/io/lakefs/clients/api/model/ExternalPrincipalCreation.java
 src/main/java/io/lakefs/clients/api/model/ExternalPrincipalList.java
@@ -300,6 +302,7 @@ src/test/java/io/lakefs/clients/api/model/DiffListTest.java
 src/test/java/io/lakefs/clients/api/model/DiffTest.java
 src/test/java/io/lakefs/clients/api/model/ErrorNoACLTest.java
 src/test/java/io/lakefs/clients/api/model/ErrorTest.java
+src/test/java/io/lakefs/clients/api/model/ExternalLoginInformationTest.java
 src/test/java/io/lakefs/clients/api/model/ExternalPrincipalCreationTest.java
 src/test/java/io/lakefs/clients/api/model/ExternalPrincipalListTest.java
 src/test/java/io/lakefs/clients/api/model/ExternalPrincipalTest.java

@@ -258,6 +258,7 @@ import time
 import lakefs_client
 from lakefs_client.api import external_api
 from lakefs_client.model.authentication_token import AuthenticationToken
+from lakefs_client.model.external_login_information import ExternalLoginInformation
 from lakefs_client.model.error import Error
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost/api/v1
@@ -271,13 +272,16 @@ configuration = lakefs_client.Configuration(
 with lakefs_client.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = external_api.ExternalApi(api_client)
-    body = {} # {str: (bool, date, datetime, dict, float, int, list, str, none_type)} |  (optional)
+    external_login_information = ExternalLoginInformation(
+        token_expiration_duration=1,
+        identity_request={},
+    ) # ExternalLoginInformation |  (optional)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
         # perform a login using an external authenticator
-        api_response = api_instance.external_principal_login(body=body)
+        api_response = api_instance.external_principal_login(external_login_information=external_login_information)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ExternalApi->external_principal_login: %s\n" % e)
@@ -288,7 +292,7 @@ with lakefs_client.ApiClient() as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | **{str: (bool, date, datetime, dict, float, int, list, str, none_type)}**|  | [optional]
+ **external_login_information** | [**ExternalLoginInformation**](ExternalLoginInformation.md)|  | [optional]
 
 ### Return type
 

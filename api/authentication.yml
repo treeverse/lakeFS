@@ -291,9 +291,10 @@ components:
       properties:
         external_user_identifier:
           type: string
-          description: external_user_identifier is the user DN in LDAP set if user exists with that username and has this password.
-    ExternalLoginInformation:
+          description: external_user_identifier is the user DN in LDAP set if user exists with that username and has this password
+    IdentityRequest:
       type: object
+
     StsAuthRequest:
       type: object
       required:
@@ -364,7 +365,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ExternalLoginInformation"
+              $ref: "#/components/schemas/IdentityRequest"
       responses:
         200:
           description: successful external login

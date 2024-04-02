@@ -31,6 +31,7 @@ import io.lakefs.clients.sdk.model.AbortPresignMultipartUpload;
 import io.lakefs.clients.sdk.model.AuthenticationToken;
 import io.lakefs.clients.sdk.model.CompletePresignMultipartUpload;
 import io.lakefs.clients.sdk.model.Error;
+import io.lakefs.clients.sdk.model.ExternalLoginInformation;
 import io.lakefs.clients.sdk.model.ExternalPrincipal;
 import io.lakefs.clients.sdk.model.ExternalPrincipalCreation;
 import io.lakefs.clients.sdk.model.ExternalPrincipalList;
@@ -1111,7 +1112,7 @@ public class ExperimentalApi {
     public APIdeleteUserExternalPrincipalRequest deleteUserExternalPrincipal(String userId, String principalId) {
         return new APIdeleteUserExternalPrincipalRequest(userId, principalId);
     }
-    private okhttp3.Call externalPrincipalLoginCall(Object body, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call externalPrincipalLoginCall(ExternalLoginInformation externalLoginInformation, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -1125,7 +1126,7 @@ public class ExperimentalApi {
             basePath = null;
         }
 
-        Object localVarPostBody = body;
+        Object localVarPostBody = externalLoginInformation;
 
         // create path and map variables
         String localVarPath = "/auth/external/principal/login";
@@ -1157,39 +1158,39 @@ public class ExperimentalApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call externalPrincipalLoginValidateBeforeCall(Object body, final ApiCallback _callback) throws ApiException {
-        return externalPrincipalLoginCall(body, _callback);
+    private okhttp3.Call externalPrincipalLoginValidateBeforeCall(ExternalLoginInformation externalLoginInformation, final ApiCallback _callback) throws ApiException {
+        return externalPrincipalLoginCall(externalLoginInformation, _callback);
 
     }
 
 
-    private ApiResponse<AuthenticationToken> externalPrincipalLoginWithHttpInfo(Object body) throws ApiException {
-        okhttp3.Call localVarCall = externalPrincipalLoginValidateBeforeCall(body, null);
+    private ApiResponse<AuthenticationToken> externalPrincipalLoginWithHttpInfo(ExternalLoginInformation externalLoginInformation) throws ApiException {
+        okhttp3.Call localVarCall = externalPrincipalLoginValidateBeforeCall(externalLoginInformation, null);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call externalPrincipalLoginAsync(Object body, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+    private okhttp3.Call externalPrincipalLoginAsync(ExternalLoginInformation externalLoginInformation, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = externalPrincipalLoginValidateBeforeCall(body, _callback);
+        okhttp3.Call localVarCall = externalPrincipalLoginValidateBeforeCall(externalLoginInformation, _callback);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
 
     public class APIexternalPrincipalLoginRequest {
-        private Object body;
+        private ExternalLoginInformation externalLoginInformation;
 
         private APIexternalPrincipalLoginRequest() {
         }
 
         /**
-         * Set body
-         * @param body  (optional)
+         * Set externalLoginInformation
+         * @param externalLoginInformation  (optional)
          * @return APIexternalPrincipalLoginRequest
          */
-        public APIexternalPrincipalLoginRequest body(Object body) {
-            this.body = body;
+        public APIexternalPrincipalLoginRequest externalLoginInformation(ExternalLoginInformation externalLoginInformation) {
+            this.externalLoginInformation = externalLoginInformation;
             return this;
         }
 
@@ -1211,7 +1212,7 @@ public class ExperimentalApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return externalPrincipalLoginCall(body, _callback);
+            return externalPrincipalLoginCall(externalLoginInformation, _callback);
         }
 
         /**
@@ -1231,7 +1232,7 @@ public class ExperimentalApi {
          </table>
          */
         public AuthenticationToken execute() throws ApiException {
-            ApiResponse<AuthenticationToken> localVarResp = externalPrincipalLoginWithHttpInfo(body);
+            ApiResponse<AuthenticationToken> localVarResp = externalPrincipalLoginWithHttpInfo(externalLoginInformation);
             return localVarResp.getData();
         }
 
@@ -1252,7 +1253,7 @@ public class ExperimentalApi {
          </table>
          */
         public ApiResponse<AuthenticationToken> executeWithHttpInfo() throws ApiException {
-            return externalPrincipalLoginWithHttpInfo(body);
+            return externalPrincipalLoginWithHttpInfo(externalLoginInformation);
         }
 
         /**
@@ -1273,7 +1274,7 @@ public class ExperimentalApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<AuthenticationToken> _callback) throws ApiException {
-            return externalPrincipalLoginAsync(body, _callback);
+            return externalPrincipalLoginAsync(externalLoginInformation, _callback);
         }
     }
 

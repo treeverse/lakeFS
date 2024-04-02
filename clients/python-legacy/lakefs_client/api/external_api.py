@@ -24,6 +24,7 @@ from lakefs_client.model_utils import (  # noqa: F401
 )
 from lakefs_client.model.authentication_token import AuthenticationToken
 from lakefs_client.model.error import Error
+from lakefs_client.model.external_login_information import ExternalLoginInformation
 from lakefs_client.model.external_principal import ExternalPrincipal
 from lakefs_client.model.external_principal_creation import ExternalPrincipalCreation
 from lakefs_client.model.external_principal_list import ExternalPrincipalList
@@ -179,7 +180,7 @@ class ExternalApi(object):
             },
             params_map={
                 'all': [
-                    'body',
+                    'external_login_information',
                 ],
                 'required': [],
                 'nullable': [
@@ -195,13 +196,13 @@ class ExternalApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
-                    'body':
-                        ({str: (bool, date, datetime, dict, float, int, list, str, none_type)},),
+                    'external_login_information':
+                        (ExternalLoginInformation,),
                 },
                 'attribute_map': {
                 },
                 'location_map': {
-                    'body': 'body',
+                    'external_login_information': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -501,7 +502,7 @@ class ExternalApi(object):
 
 
         Keyword Args:
-            body ({str: (bool, date, datetime, dict, float, int, list, str, none_type)}): [optional]
+            external_login_information (ExternalLoginInformation): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

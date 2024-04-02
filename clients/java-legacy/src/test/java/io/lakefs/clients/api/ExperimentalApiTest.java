@@ -18,6 +18,7 @@ import io.lakefs.clients.api.model.AbortPresignMultipartUpload;
 import io.lakefs.clients.api.model.AuthenticationToken;
 import io.lakefs.clients.api.model.CompletePresignMultipartUpload;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.ExternalLoginInformation;
 import io.lakefs.clients.api.model.ExternalPrincipal;
 import io.lakefs.clients.api.model.ExternalPrincipalCreation;
 import io.lakefs.clients.api.model.ExternalPrincipalList;
@@ -141,8 +142,8 @@ public class ExperimentalApiTest {
      */
     @Test
     public void externalPrincipalLoginTest() throws ApiException {
-        Object body = null;
-                AuthenticationToken response = api.externalPrincipalLogin(body);
+        ExternalLoginInformation externalLoginInformation = null;
+                AuthenticationToken response = api.externalPrincipalLogin(externalLoginInformation);
         // TODO: test validations
     }
     

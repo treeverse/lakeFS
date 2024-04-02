@@ -514,7 +514,7 @@ null (empty response body)
 
 <a name="externalPrincipalLogin"></a>
 # **externalPrincipalLogin**
-> AuthenticationToken externalPrincipalLogin(body)
+> AuthenticationToken externalPrincipalLogin(externalLoginInformation)
 
 perform a login using an external authenticator
 
@@ -533,9 +533,9 @@ public class Example {
     defaultClient.setBasePath("http://localhost/api/v1");
 
     ExperimentalApi apiInstance = new ExperimentalApi(defaultClient);
-    Object body = null; // Object | 
+    ExternalLoginInformation externalLoginInformation = new ExternalLoginInformation(); // ExternalLoginInformation | 
     try {
-      AuthenticationToken result = apiInstance.externalPrincipalLogin(body);
+      AuthenticationToken result = apiInstance.externalPrincipalLogin(externalLoginInformation);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ExperimentalApi#externalPrincipalLogin");
@@ -552,7 +552,7 @@ public class Example {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | **Object**|  | [optional]
+ **externalLoginInformation** | [**ExternalLoginInformation**](ExternalLoginInformation.md)|  | [optional]
 
 ### Return type
 

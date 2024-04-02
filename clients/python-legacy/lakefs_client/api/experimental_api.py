@@ -26,6 +26,7 @@ from lakefs_client.model.abort_presign_multipart_upload import AbortPresignMulti
 from lakefs_client.model.authentication_token import AuthenticationToken
 from lakefs_client.model.complete_presign_multipart_upload import CompletePresignMultipartUpload
 from lakefs_client.model.error import Error
+from lakefs_client.model.external_login_information import ExternalLoginInformation
 from lakefs_client.model.external_principal import ExternalPrincipal
 from lakefs_client.model.external_principal_creation import ExternalPrincipalCreation
 from lakefs_client.model.external_principal_list import ExternalPrincipalList
@@ -415,7 +416,7 @@ class ExperimentalApi(object):
             },
             params_map={
                 'all': [
-                    'body',
+                    'external_login_information',
                 ],
                 'required': [],
                 'nullable': [
@@ -431,13 +432,13 @@ class ExperimentalApi(object):
                 'allowed_values': {
                 },
                 'openapi_types': {
-                    'body':
-                        ({str: (bool, date, datetime, dict, float, int, list, str, none_type)},),
+                    'external_login_information':
+                        (ExternalLoginInformation,),
                 },
                 'attribute_map': {
                 },
                 'location_map': {
-                    'body': 'body',
+                    'external_login_information': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -1092,7 +1093,7 @@ class ExperimentalApi(object):
 
 
         Keyword Args:
-            body ({str: (bool, date, datetime, dict, float, int, list, str, none_type)}): [optional]
+            external_login_information (ExternalLoginInformation): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

@@ -1053,6 +1053,13 @@ components:
 
     ExternalLoginInformation:
       type: object
+      required:
+        - identityRequest
+      properties:
+        token_expiration_duration:
+          type: integer
+        identityRequest:
+          type: object
 
     StsAuthRequest:
       type: object

@@ -234,7 +234,7 @@ void (empty response body)
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **external_principal_login**
-> AuthenticationToken external_principal_login(body=body)
+> AuthenticationToken external_principal_login(external_login_information=external_login_information)
 
 perform a login using an external authenticator
 
@@ -246,6 +246,7 @@ import time
 import os
 import lakefs_sdk
 from lakefs_sdk.models.authentication_token import AuthenticationToken
+from lakefs_sdk.models.external_login_information import ExternalLoginInformation
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
 
@@ -260,11 +261,11 @@ configuration = lakefs_sdk.Configuration(
 with lakefs_sdk.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = lakefs_sdk.ExternalApi(api_client)
-    body = None # object |  (optional)
+    external_login_information = lakefs_sdk.ExternalLoginInformation() # ExternalLoginInformation |  (optional)
 
     try:
         # perform a login using an external authenticator
-        api_response = api_instance.external_principal_login(body=body)
+        api_response = api_instance.external_principal_login(external_login_information=external_login_information)
         print("The response of ExternalApi->external_principal_login:\n")
         pprint(api_response)
     except Exception as e:
@@ -278,7 +279,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **body** | **object**|  | [optional] 
+ **external_login_information** | [**ExternalLoginInformation**](ExternalLoginInformation.md)|  | [optional] 
 
 ### Return type
 
