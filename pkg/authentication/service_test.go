@@ -158,7 +158,6 @@ func TestAPIAuthService_ExternalLogin(t *testing.T) {
 	mockClient, s := NewTestApiService(t, map[string]string{}, true)
 	ctx := context.Background()
 	principalId := "arn"
-	userId := "userId"
 	externalLoginInfo := map[string]interface{}{"IdentityToken": "Token"}
 
 	mockClient.EXPECT().ExternalPrincipalLoginWithResponse(gomock.Any(), gomock.Eq(externalLoginInfo)).Return(
@@ -166,11 +165,10 @@ func TestAPIAuthService_ExternalLogin(t *testing.T) {
 			HTTPResponse: &http.Response{
 				StatusCode: http.StatusOK,
 			},
-			JSON200: &apiclient.ExternalPrincipal{Id: principalId, UserId: userId},
+			JSON200: &apiclient.ExternalPrincipal{Id: principalId},
 		}, nil)
 
 	resp, err := s.ExternalPrincipalLogin(ctx, externalLoginInfo)
 	require.NoError(t, err)
 	require.Equal(t, principalId, resp.Id)
-	require.Equal(t, userId, resp.UserId)
 }
