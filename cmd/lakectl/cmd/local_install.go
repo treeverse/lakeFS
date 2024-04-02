@@ -5,7 +5,8 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"strings"
+
+	"github.com/mitchellh/go-homedir"
 
 	"github.com/spf13/cobra"
 )
@@ -25,12 +26,14 @@ func currentExecutable() string {
 var localInstallGitPluginCmd = &cobra.Command{
 	Use:   "install-git-plugin <directory>",
 	Short: "set up `git data` (directory must exist and be in $PATH)",
-	Args:  cobra.ExactArgs(1),
+	Long: "Add a symlink to lakectl named `git-data`.\n" +
+		"This allows calling `git data` and having it act as the `lakectl local` command\n" +
+		"(as long as the symlink is within the executing users' $PATH environment variable",
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		installDir := args[0]
-		if strings.HasPrefix(installDir, "~/") {
-			dirname, _ := os.UserHomeDir()
-			installDir = filepath.Join(dirname, installDir[2:])
+		installDir, err := homedir.Expand(args[0])
+		if err != nil {
+			DieFmt("could not get directory path %s: %s\n", args[0], err.Error())
 		}
 		info, err := os.Stat(installDir)
 		if err != nil {
