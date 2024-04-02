@@ -86,19 +86,19 @@ func (s *APIService) ValidateSTS(ctx context.Context, code, redirectURI, state s
 	}
 
 	if err := s.validateResponse(res, http.StatusOK); err != nil {
-		return "", fmt.Errorf("failed to authenticate user: %w", err)
+		return "", fmt.Errorf("invalid authentication response: %w", err)
 	}
 
 	// validate claims
 	claims := res.JSON200.Claims
 	for claim, expectedValue := range s.validateIDTokenClaims {
 		if claimValue, found := claims.Get(claim); !found || claimValue != expectedValue {
-			return "", fmt.Errorf("claim %s has unexpected value %s: %w", claim, claimValue, ErrInvalidSTS)
+			return "", fmt.Errorf("claim %s has unexpected value %s: %w", claim, claimValue, ErrInsufficientPermissions)
 		}
 	}
 	subject, found := claims.Get("sub")
 	if !found {
-		return "", fmt.Errorf("missing subject in claims: %w", ErrInvalidSTS)
+		return "", fmt.Errorf("missing subject in claims: %w", ErrInsufficientPermissions)
 	}
 	return subject, nil
 }

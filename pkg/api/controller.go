@@ -559,7 +559,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) STSLogin(w http.ResponseWriter, r *http.Request, body apigen.STSLoginJSONRequestBody) {
+func (c *Controller) StsLogin(w http.ResponseWriter, r *http.Request, body apigen.StsLoginJSONRequestBody) {
 	ctx := r.Context()
 	externalUserID, err := c.Authentication.ValidateSTS(ctx, body.Code, body.RedirectUri, body.State)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -573,7 +573,6 @@ func (c *Controller) STSLogin(w http.ResponseWriter, r *http.Request, body apige
 	expiresInSec := defaultSTSTTLSeconds
 	if body.TtlSeconds != nil {
 		expiresInSec = min(maxSTSTTLSeconds, int(*body.TtlSeconds))
-
 	}
 	now := time.Now()
 	expiresAt := now.Add(time.Duration(expiresInSec) * time.Second)
@@ -581,7 +580,11 @@ func (c *Controller) STSLogin(w http.ResponseWriter, r *http.Request, body apige
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	writeResponse(w, r, http.StatusOK, token)
+	responseToken := apigen.AuthenticationToken{
+		Token:           token,
+		TokenExpiration: swag.Int64(expiresAt.Unix()),
+	}
+	writeResponse(w, r, http.StatusOK, responseToken)
 }
 
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {
@@ -2648,7 +2651,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
 	case errors.Is(err, authentication.ErrNotImplemented):
 		cb(w, r, http.StatusNotImplemented, "Not implemented")
-	case errors.Is(err, authentication.ErrInvalidSTS):
+	case errors.Is(err, authentication.ErrInsufficientPermissions):
+		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
 		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")

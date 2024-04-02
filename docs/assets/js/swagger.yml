@@ -1824,7 +1824,7 @@ paths:
     post:
       tags:
         - experimental
-      operationId: STSLogin
+      operationId: stsLogin # change to stsLogin
       summary: perform a login with STS
       security: []
       requestBody:
