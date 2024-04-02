@@ -45,7 +45,7 @@ func TestAPIAuthService_STSLogin(t *testing.T) {
 		{
 			name:                 "Non matching additional claim",
 			responseStatusCode:   http.StatusOK,
-			expectedErr:          authentication.ErrInvalidSTS,
+			expectedErr:          authentication.ErrInsufficientPermissions,
 			additionalClaim:      "additional_claim",
 			additionalClaimValue: "additional_claim_value",
 			validateClaim:        "additional_claim",
@@ -55,7 +55,7 @@ func TestAPIAuthService_STSLogin(t *testing.T) {
 		{
 			name:               "Missing subject",
 			responseStatusCode: http.StatusOK,
-			expectedErr:        authentication.ErrInvalidSTS,
+			expectedErr:        authentication.ErrInsufficientPermissions,
 		},
 		{
 			name:               "Not authorized",
