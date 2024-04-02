@@ -191,9 +191,9 @@ public class ExperimentalApiTest {
      *          if the Api call fails
      */
     @Test
-    public void sTSLoginTest() throws ApiException {
+    public void stsLoginTest() throws ApiException {
         StsAuthRequest stsAuthRequest = null;
-                AuthenticationToken response = api.sTSLogin(stsAuthRequest);
+                AuthenticationToken response = api.stsLogin(stsAuthRequest);
         // TODO: test validations
     }
     

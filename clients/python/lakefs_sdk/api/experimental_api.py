@@ -1347,13 +1347,13 @@ class ExperimentalApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def s_ts_login(self, sts_auth_request : StsAuthRequest, **kwargs) -> AuthenticationToken:  # noqa: E501
+    def sts_login(self, sts_auth_request : StsAuthRequest, **kwargs) -> AuthenticationToken:  # noqa: E501
         """perform a login with STS  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.s_ts_login(sts_auth_request, async_req=True)
+        >>> thread = api.sts_login(sts_auth_request, async_req=True)
         >>> result = thread.get()
 
         :param sts_auth_request: (required)
@@ -1371,17 +1371,17 @@ class ExperimentalApi(object):
         """
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
-            raise ValueError("Error! Please call the s_ts_login_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.s_ts_login_with_http_info(sts_auth_request, **kwargs)  # noqa: E501
+            raise ValueError("Error! Please call the sts_login_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
+        return self.sts_login_with_http_info(sts_auth_request, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def s_ts_login_with_http_info(self, sts_auth_request : StsAuthRequest, **kwargs) -> ApiResponse:  # noqa: E501
+    def sts_login_with_http_info(self, sts_auth_request : StsAuthRequest, **kwargs) -> ApiResponse:  # noqa: E501
         """perform a login with STS  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.s_ts_login_with_http_info(sts_auth_request, async_req=True)
+        >>> thread = api.sts_login_with_http_info(sts_auth_request, async_req=True)
         >>> result = thread.get()
 
         :param sts_auth_request: (required)
@@ -1433,7 +1433,7 @@ class ExperimentalApi(object):
             if _key not in _all_params:
                 raise ApiTypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method s_ts_login" % _key
+                    " to method sts_login" % _key
                 )
             _params[_key] = _val
         del _params['kwargs']

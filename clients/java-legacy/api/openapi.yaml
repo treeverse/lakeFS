@@ -176,7 +176,7 @@ paths:
       x-accepts: application/json
   /sts/login:
     post:
-      operationId: STSLogin
+      operationId: stsLogin
       requestBody:
         content:
           application/json:

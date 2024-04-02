@@ -12,7 +12,7 @@ All URIs are relative to */api/v1*
 | [**getExternalPrincipal**](ExperimentalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id |
 | [**hardResetBranch**](ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch |
 | [**listUserExternalPrincipals**](ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user |
-| [**sTSLogin**](ExperimentalApi.md#sTSLogin) | **POST** /sts/login | perform a login with STS |
+| [**stsLogin**](ExperimentalApi.md#stsLogin) | **POST** /sts/login | perform a login with STS |
 
 
 <a id="abortPresignMultipartUpload"></a>
@@ -818,9 +818,9 @@ public class Example {
 | **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
-<a id="sTSLogin"></a>
-# **sTSLogin**
-> AuthenticationToken sTSLogin(stsAuthRequest).execute();
+<a id="stsLogin"></a>
+# **stsLogin**
+> AuthenticationToken stsLogin(stsAuthRequest).execute();
 
 perform a login with STS
 
@@ -841,11 +841,11 @@ public class Example {
     ExperimentalApi apiInstance = new ExperimentalApi(defaultClient);
     StsAuthRequest stsAuthRequest = new StsAuthRequest(); // StsAuthRequest | 
     try {
-      AuthenticationToken result = apiInstance.sTSLogin(stsAuthRequest)
+      AuthenticationToken result = apiInstance.stsLogin(stsAuthRequest)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
-      System.err.println("Exception when calling ExperimentalApi#sTSLogin");
+      System.err.println("Exception when calling ExperimentalApi#stsLogin");
       System.err.println("Status code: " + e.getCode());
       System.err.println("Reason: " + e.getResponseBody());
       System.err.println("Response headers: " + e.getResponseHeaders());
