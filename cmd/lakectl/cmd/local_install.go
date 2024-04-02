@@ -4,6 +4,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -38,7 +39,11 @@ var localInstallGitPluginCmd = &cobra.Command{
 		if !info.IsDir() {
 			DieFmt("%s: not a directory.\n", installDir)
 		}
+
 		fullPath := path.Join(installDir, "git-data")
+		if runtime.GOOS == "windows" {
+			fullPath += ".exe"
+		}
 		err = os.Symlink(currentExecutable(), fullPath)
 		if err != nil {
 			DieFmt("could not create link %s: %s\n", fullPath, err.Error())
