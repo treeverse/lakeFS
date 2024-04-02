@@ -563,11 +563,11 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	c.LogAction(ctx, "external_principal_login", r, "", "", "")
-	principalID, err := c.Authentication.ExternalPrincipalLogin(ctx, body)
+	externalPrincipal, err := c.Authentication.ExternalPrincipalLogin(ctx, body)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	user, err := c.Auth.GetUserByExternalID(ctx, principalID)
+	user, err := c.Auth.GetUserByExternalID(ctx, externalPrincipal.Id)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

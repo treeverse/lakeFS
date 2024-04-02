@@ -325,6 +325,7 @@ components:
       properties:
         id:
           type: string
+
 paths:
   /ldap/login:
     post:

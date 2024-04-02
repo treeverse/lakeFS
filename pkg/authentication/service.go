@@ -17,7 +17,7 @@ import (
 type Service interface {
 	IsExternalPrincipalsEnabled() bool
 	ValidateSTS(ctx context.Context, code, redirectURI, state string) (*STSResponseData, error)
-	ExternalPrincipalLogin(ctx context.Context, externalLoginInfo map[string]interface{}) (string, error)
+	ExternalPrincipalLogin(ctx context.Context, externalLoginInfo map[string]interface{}) (*apiclient.ExternalPrincipal, error)
 }
 
 type DummyService struct{}
@@ -30,8 +30,8 @@ func (d DummyService) ValidateSTS(ctx context.Context, code, redirectURI, state 
 	return nil, ErrNotImplemented
 }
 
-func (d DummyService) ExternalPrincipalLogin(_ context.Context, _ map[string]interface{}) (string, error) {
-	return "", ErrNotImplemented
+func (d DummyService) ExternalPrincipalLogin(_ context.Context, _ map[string]interface{}) (*apiclient.ExternalPrincipal, error) {
+	return nil, ErrNotImplemented
 }
 
 func (d DummyService) IsExternalPrincipalsEnabled() bool {
@@ -133,20 +133,20 @@ func (s *APIService) ValidateSTS(ctx context.Context, code, redirectURI, state s
 	}, nil
 }
 
-func (s *APIService) ExternalPrincipalLogin(ctx context.Context, externalLoginInfo map[string]interface{}) (string, error) {
+func (s *APIService) ExternalPrincipalLogin(ctx context.Context, externalLoginInfo map[string]interface{}) (*apiclient.ExternalPrincipal, error) {
 	if !s.IsExternalPrincipalsEnabled() {
-		return "", fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
+		return nil, fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
 	resp, err := s.apiClient.ExternalPrincipalLoginWithResponse(ctx, externalLoginInfo)
 	if err != nil {
-		return "", fmt.Errorf("failed to authenticate user: %w", err)
+		return nil, fmt.Errorf("failed to authenticate user: %w", err)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		return "", fmt.Errorf("failed to authenticate user: %w", ErrInvalidRequest)
+		return nil, fmt.Errorf("failed to authenticate user: %w", ErrInvalidRequest)
 	}
 
-	return resp.JSON200.Id, nil
+	return resp.JSON200, nil
 }
 
 func (s *APIService) IsExternalPrincipalsEnabled() bool {

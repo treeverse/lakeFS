@@ -344,6 +344,7 @@ func (s *AuthService) GetUserByEmail(ctx context.Context, email string) (*model.
 }
 
 func (s *AuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
+	print("GetUserByExternalID", externalID)
 	return s.getUserByPredicate(ctx, userKey{externalID: externalID}, func(value *model.UserData) bool {
 		return value.ExternalId == externalID
 	})
