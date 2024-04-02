@@ -45,6 +45,12 @@ See below for detailed instructions for using different technologies with lakeFS
         <td width="25%" align=center><a href="./r.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/r.png" alt="r logo"/><br/>R</a></td>
         <td width="25%" align=center><a href="./vertex_ai.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/vertex_ai.png" alt="Vertex AI Logo"/><br/>Vertex AI</a></td>
     </tr>
+    <tr>
+        <td width="25%" align=center><a href="./huggingface_datasets.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/huggingface.png" alt="Hugging Face Logo"/><br/>HuggingFace Datasets</a></td>
+        <td width="25%" align=center></td>
+        <td width="25%" align=center></td>
+        <td width="25%" align=center></td>
+    </tr>
 </table>
 
 {: .tip}
