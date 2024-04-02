@@ -562,7 +562,6 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
-
 	c.LogAction(ctx, "external_principal_login", r, "", "", "")
 	principalID, err := c.Authentication.ExternalPrincipalLogin(ctx, body)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -2649,7 +2648,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, graveler.ErrCherryPickMergeNoParent),
 		errors.Is(err, graveler.ErrInvalidMergeStrategy),
 		errors.Is(err, block.ErrInvalidAddress),
-		errors.Is(err, block.ErrOperationNotSupported):
+		errors.Is(err, block.ErrOperationNotSupported),
+		errors.Is(err, authentication.ErrInvalidTokenFormat):
 		log.Debug("Bad request")
 		cb(w, r, http.StatusBadRequest, err)
 
@@ -2679,8 +2679,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
 	case errors.Is(err, authentication.ErrNotImplemented):
 		cb(w, r, http.StatusNotImplemented, "Not implemented")
-	case errors.Is(err, authentication.ErrInvalidSTS),
-		errors.Is(err, authentication.ErrInvalidTokenFormat):
+	case errors.Is(err, authentication.ErrInvalidSTS):
 		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 	case err != nil:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")

@@ -142,8 +142,8 @@ func (s *APIService) ExternalPrincipalLogin(ctx context.Context, externalLoginIn
 		return "", fmt.Errorf("failed to authenticate user: %w", err)
 	}
 
-	if err = s.validateResponse(resp, http.StatusOK); err != nil {
-		return "", fmt.Errorf("failed to authenticate user: %w", err)
+	if resp.StatusCode() != http.StatusOK {
+		return "", fmt.Errorf("failed to authenticate user: %w", ErrInvalidRequest)
 	}
 
 	return resp.JSON200.Id, nil

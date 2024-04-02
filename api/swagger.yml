@@ -1841,8 +1841,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthenticationToken"
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
         default:
