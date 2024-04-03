@@ -116,6 +116,7 @@ def from_web_identity(code: str, state: str, redirect_uri: str, ttl_seconds: int
     :param ttl_seconds: The token's time-to-live in seconds
     :param kwargs: Remaining arguments for the Client object
     :return: The authenticated Client object
+    :raise NotAuthorizedException: if user is not authorized to perform this operation
     """
     client = Client(**kwargs)
     sts_requests = lakefs_sdk.StsAuthRequest(code=code, state=state, redirect_uri=redirect_uri, ttl_seconds=ttl_seconds)
