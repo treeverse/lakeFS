@@ -8,7 +8,7 @@ docker compose exec -T lakefs lakectl fs upload lakefs://${REPOSITORY}/main/a/fi
 echo "res $?"
 
 echo "export no previous commit"
-docker compose run --rm lakefs-export ${REPOSITORY} ${EXPORT_LOCATION} --branch="main"
+docker compose --project-directory ${WORKING_DIRECTORY} run --rm lakefs-export ${REPOSITORY} ${EXPORT_LOCATION} --branch="main"
 echo "res $?"
 
 # Validate export
@@ -47,7 +47,7 @@ echo "res $?"
 docker compose exec -T lakefs lakectl commit lakefs://${REPOSITORY}/main --message="removed file_one and added file_two"
 echo "res $?"
 
-docker compose run --rm lakefs-export ${REPOSITORY} ${EXPORT_LOCATION} --branch="main" --prev_commit_id="some_commit"
+docker compose --project-directory ${WORKING_DIRECTORY} run --rm lakefs-export ${REPOSITORY} ${EXPORT_LOCATION} --branch="main" --prev_commit_id="some_commit"
 echo "res $?"
 
 # Validate sync
@@ -73,7 +73,7 @@ docker compose exec -T lakefs lakectl fs upload lakefs://${REPOSITORY}/main/a/fi
 echo "res $?"
 commit_id=$(docker compose exec -T lakefs lakectl commit lakefs://${REPOSITORY}/main --message="added file_three" | sed -n 4p | awk '{print $2}')
 
-docker compose run --rm lakefs-export ${REPOSITORY} ${EXPORT_LOCATION} --commit_id="$commit_id"
+docker compose --project-directory ${WORKING_DIRECTORY} run --rm lakefs-export ${REPOSITORY} ${EXPORT_LOCATION} --commit_id="$commit_id"
 echo "res $?"
 
 echo "commit_id $commit_id"
