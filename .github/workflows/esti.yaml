@@ -19,7 +19,7 @@ jobs:
     name: Check if secrets are available.
     outputs:
       secretsavailable: ${{ steps.enablejobs.outputs.secretsavailable }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - id: enablejobs
         env:
@@ -31,7 +31,7 @@ jobs:
 
   gen-code:
     name: Generate code from latest lakeFS app
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
@@ -244,7 +244,7 @@ jobs:
     name: Build and push rclone export Docker image
     needs: check-secrets
     if: needs.check-secrets.outputs.secretsavailable == 'true'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       tag: ${{ steps.version.outputs.tag }}
     steps:
@@ -279,7 +279,7 @@ jobs:
   hadoopfs-tests:
     name: Test lakeFS Hadoop FileSystem
     needs: [deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -326,7 +326,7 @@ jobs:
   hadoopfs-s3a-mpu:
     name: Test lakeFS multipart upload with Hadoop S3A
     needs: [deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -384,7 +384,7 @@ jobs:
 
   build-lakefs-hadoopfs:
     name: Build lakeFS HadoopFS
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -406,7 +406,7 @@ jobs:
 
   spark-prep:
     name: Prepare Spark Apps
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -429,7 +429,7 @@ jobs:
   spark:
     name: Test lakeFS with Spark ${{ matrix.spark.tag }}.X
     needs: [spark-prep, build-lakefs-hadoopfs, deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         spark:
@@ -526,7 +526,7 @@ jobs:
   export:
     name: Test lakeFS rclone export functionality
     needs: [deploy-image, deploy-rclone-export-image, login-to-amazon-ecr]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       LAKEFS_TAG: ${{ needs.deploy-image.outputs.tag }}
       EXPORT_TAG: ${{ needs.deploy-rclone-export-image.outputs.tag }}
@@ -575,7 +575,7 @@ jobs:
   metastore-client-with-trino:
     name: Test metastore client commands using trino
     needs: [gen-code, deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -673,7 +673,7 @@ jobs:
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x
     needs: [deploy-image, build-spark3-metadata-client, login-to-amazon-ecr]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       SPARK_TAG: 3.2.1
       REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -732,7 +732,7 @@ jobs:
   run-system-aws-s3-kv-dynamodb:
     name: Run latest lakeFS app on AWS S3 DynamoDB KV
     needs: [gen-code, deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -787,7 +787,7 @@ jobs:
   run-system-aws-s3:
     name: Run latest lakeFS app on AWS S3
     needs: [gen-code, deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -839,7 +839,7 @@ jobs:
   run-system-gcp-gs:
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
     needs: [gen-code, deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -874,7 +874,7 @@ jobs:
   run-system-azure-abfs:
     name: Run latest lakeFS app on Azure with Azure blobstore
     needs: [gen-code, deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -916,7 +916,7 @@ jobs:
   run-system-azure-adls-gen2:
     name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2 and CosmosDB
     needs: [gen-code, deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
