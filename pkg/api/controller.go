@@ -571,7 +571,9 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	externalPrincipalIDInfo, err := c.Auth.GetExternalPrincipal(ctx, externalPrincipal.Id)
-
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
 	duration := c.Config.Auth.LoginDuration
 	if swag.IntValue(body.TokenExpirationDuration) > 0 {
 		duration = time.Second * time.Duration(*body.TokenExpirationDuration)
