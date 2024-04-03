@@ -17,6 +17,6 @@ var requestHistograms = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
 		Name:    "api_request_duration_seconds",
 		Help:    "request durations for lakeFS API",
-		Buckets: []float64{0.01, 0.05, 0.1, 0.2, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60},
+		Buckets: []float64{0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 30, 60},
 	},
 	[]string{"operation", "code"})
