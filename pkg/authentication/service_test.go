@@ -3,10 +3,8 @@ package authentication_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/authentication"
@@ -27,14 +25,12 @@ func TestAPIAuthService_STSLogin(t *testing.T) {
 		validateClaim        string
 		validateClaimValue   string
 		returnedSubject      string
-		returnedExpiresUnix  int64
 	}{
 		{
-			name:                "ok",
-			responseStatusCode:  http.StatusOK,
-			expectedErr:         nil,
-			returnedSubject:     "external_user_id",
-			returnedExpiresUnix: 12345678,
+			name:               "ok",
+			responseStatusCode: http.StatusOK,
+			expectedErr:        nil,
+			returnedSubject:    "external_user_id",
 		},
 		{
 			name:                 "With additional claim",
@@ -45,12 +41,11 @@ func TestAPIAuthService_STSLogin(t *testing.T) {
 			validateClaim:        "additional_claim",
 			validateClaimValue:   "additional_claim_value",
 			returnedSubject:      "external_user_id",
-			returnedExpiresUnix:  12345678,
 		},
 		{
 			name:                 "Non matching additional claim",
 			responseStatusCode:   http.StatusOK,
-			expectedErr:          authentication.ErrInvalidSTS,
+			expectedErr:          authentication.ErrInsufficientPermissions,
 			additionalClaim:      "additional_claim",
 			additionalClaimValue: "additional_claim_value",
 			validateClaim:        "additional_claim",
@@ -58,16 +53,9 @@ func TestAPIAuthService_STSLogin(t *testing.T) {
 			returnedSubject:      "external_user_id",
 		},
 		{
-			name:                "Missing subject",
-			responseStatusCode:  http.StatusOK,
-			expectedErr:         authentication.ErrInvalidSTS,
-			returnedExpiresUnix: 12345678,
-		},
-		{
-			name:               "Missing expires",
+			name:               "Missing subject",
 			responseStatusCode: http.StatusOK,
-			expectedErr:        authentication.ErrInvalidSTS,
-			returnedSubject:    "external_user_id",
+			expectedErr:        authentication.ErrInsufficientPermissions,
 		},
 		{
 			name:               "Not authorized",
@@ -115,28 +103,18 @@ func TestAPIAuthService_STSLogin(t *testing.T) {
 				if tt.returnedSubject != "" {
 					loginResponse.JSON200.Claims.AdditionalProperties["sub"] = tt.returnedSubject
 				}
-				if tt.returnedExpiresUnix != 0 {
-					floatExpires := float64(tt.returnedExpiresUnix)
-					loginResponse.JSON200.Claims.AdditionalProperties["exp"] = fmt.Sprint(floatExpires)
-				}
+
 			}
 			mockClient.EXPECT().STSLoginWithResponse(gomock.Any(), requestEq).Return(loginResponse, tt.error)
-			res, err := s.ValidateSTS(ctx, code, redirectURI, state)
+			externalUserID, err := s.ValidateSTS(ctx, code, redirectURI, state)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("ValidateSTS: expected err: %v got: %v", tt.expectedErr, err)
 			}
 			if err != nil {
 				return
 			}
-			if res == nil {
-				t.Fatal("expected token data, got nil")
-			}
-			if res.ExternalUserID != tt.returnedSubject {
-				t.Fatalf("expected subject to be 'external_user_id', got %s", res.ExternalUserID)
-			}
-			expires := time.Unix(tt.returnedExpiresUnix, 0)
-			if res.ExpiresAtUnixTime != expires.Unix() {
-				t.Fatalf("expected expires at to be %d, got %d", expires.Unix(), res.ExpiresAtUnixTime)
+			if externalUserID != tt.returnedSubject {
+				t.Fatalf("expected subject to be 'external_user_id', got %s", externalUserID)
 			}
 		})
 	}
