@@ -2507,6 +2507,30 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
 
 
 
+### lakectl install-git-plugin
+
+set up `git data` (directory must exist and be in $PATH)
+
+#### Synopsis
+{:.no_toc}
+
+Add a symlink to lakectl named `git-data`.
+This allows calling `git data` and having it act as the `lakectl local` command
+(as long as the symlink is within the executing users' $PATH environment variable
+
+```
+lakectl install-git-plugin <directory> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for install-git-plugin
+```
+
+
+
 ### lakectl local
 
 Sync local directories with lakeFS paths
@@ -2622,23 +2646,6 @@ lakectl local init <path URI> [directory] [flags]
       --force       Overwrites if directory already linked to a lakeFS path
       --gitignore   Update .gitignore file when working in a git repository context (default true)
   -h, --help        help for init
-```
-
-
-
-### lakectl local install-git-plugin
-
-set up `git data` (directory must exist and be in $PATH)
-
-```
-lakectl local install-git-plugin <directory> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for install-git-plugin
 ```
 
 

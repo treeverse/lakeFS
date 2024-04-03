@@ -23,7 +23,7 @@ func currentExecutable() string {
 	return absolute
 }
 
-var localInstallGitPluginCmd = &cobra.Command{
+var installGitPluginCmd = &cobra.Command{
 	Use:   "install-git-plugin <directory>",
 	Short: "set up `git data` (directory must exist and be in $PATH)",
 	Long: "Add a symlink to lakectl named `git-data`.\n" +
@@ -52,4 +52,9 @@ var localInstallGitPluginCmd = &cobra.Command{
 			DieFmt("could not create link %s: %s\n", fullPath, err.Error())
 		}
 	},
+}
+
+//nolint:gochecknoinits
+func init() {
+	rootCmd.AddCommand(installGitPluginCmd)
 }

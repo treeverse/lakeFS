@@ -480,7 +480,6 @@ func Execute() {
 		cmd.SetContext(context.WithValue(ctx, lakectlLocalCommandNameKey, baseName))
 	default:
 		rootCmd.AddCommand(localCmd)
-		localCmd.AddCommand(localInstallGitPluginCmd)
 		cmd = rootCmd
 		cmd.SetContext(context.WithValue(ctx, lakectlLocalCommandNameKey, "lakectl local"))
 	}

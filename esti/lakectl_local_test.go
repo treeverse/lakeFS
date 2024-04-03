@@ -361,7 +361,7 @@ func TestLakectlLocalInstallGitPlugin(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, fd.Close())
 	vars := make(map[string]string)
-	RunCmdAndVerifySuccess(t, Lakectl()+" local install-git-plugin "+tmpDir, false, "", vars)
+	RunCmdAndVerifySuccess(t, Lakectl()+" install-git-plugin "+tmpDir, false, "", vars)
 	pluginPath := path.Join(tmpDir, "git-data")
 	// check it exists
 	if _, err = os.Stat(pluginPath); err != nil {
@@ -369,7 +369,8 @@ func TestLakectlLocalInstallGitPlugin(t *testing.T) {
 		return
 	}
 	// try to run it
-	RunCmdAndVerifySuccess(t, LakectlWithPath(pluginPath),
+	RunCmdAndVerifyContainsText(t,
+		LakectlWithPath(pluginPath),
 		false, "Sync local directories with lakeFS paths", vars)
 }
 
