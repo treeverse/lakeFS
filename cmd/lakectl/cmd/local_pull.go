@@ -31,7 +31,7 @@ var localPullCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		dieOnInterruptedOperation(LocalOperation(idx.ActiveOperation), force)
+		dieOnInterruptedOperation(cmd.Context(), LocalOperation(idx.ActiveOperation), force)
 
 		currentBase := remote.WithRef(idx.AtHead)
 		// make sure no local changes
