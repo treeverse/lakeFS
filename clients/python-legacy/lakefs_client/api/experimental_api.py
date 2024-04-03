@@ -607,12 +607,12 @@ class ExperimentalApi(object):
             },
             api_client=api_client
         )
-        self.s_ts_login_endpoint = _Endpoint(
+        self.sts_login_endpoint = _Endpoint(
             settings={
                 'response_type': (AuthenticationToken,),
                 'auth': [],
                 'endpoint_path': '/sts/login',
-                'operation_id': 's_ts_login',
+                'operation_id': 'sts_login',
                 'http_method': 'POST',
                 'servers': None,
             },
@@ -1238,7 +1238,7 @@ class ExperimentalApi(object):
             user_id
         return self.list_user_external_principals_endpoint.call_with_http_info(**kwargs)
 
-    def s_ts_login(
+    def sts_login(
         self,
         sts_auth_request,
         **kwargs
@@ -1248,7 +1248,7 @@ class ExperimentalApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.s_ts_login(sts_auth_request, async_req=True)
+        >>> thread = api.sts_login(sts_auth_request, async_req=True)
         >>> result = thread.get()
 
         Args:
@@ -1301,5 +1301,5 @@ class ExperimentalApi(object):
         kwargs['_host_index'] = kwargs.get('_host_index')
         kwargs['sts_auth_request'] = \
             sts_auth_request
-        return self.s_ts_login_endpoint.call_with_http_info(**kwargs)
+        return self.sts_login_endpoint.call_with_http_info(**kwargs)
 

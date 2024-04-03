@@ -1294,7 +1294,7 @@ public class ExperimentalApi {
         return localVarCall;
     }
     /**
-     * Build call for sTSLogin
+     * Build call for stsLogin
      * @param stsAuthRequest  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
@@ -1307,7 +1307,7 @@ public class ExperimentalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call sTSLoginCall(StsAuthRequest stsAuthRequest, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call stsLoginCall(StsAuthRequest stsAuthRequest, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = stsAuthRequest;
 
         // create path and map variables
@@ -1338,15 +1338,15 @@ public class ExperimentalApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call sTSLoginValidateBeforeCall(StsAuthRequest stsAuthRequest, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call stsLoginValidateBeforeCall(StsAuthRequest stsAuthRequest, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'stsAuthRequest' is set
         if (stsAuthRequest == null) {
-            throw new ApiException("Missing the required parameter 'stsAuthRequest' when calling sTSLogin(Async)");
+            throw new ApiException("Missing the required parameter 'stsAuthRequest' when calling stsLogin(Async)");
         }
         
 
-        okhttp3.Call localVarCall = sTSLoginCall(stsAuthRequest, _callback);
+        okhttp3.Call localVarCall = stsLoginCall(stsAuthRequest, _callback);
         return localVarCall;
 
     }
@@ -1365,8 +1365,8 @@ public class ExperimentalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public AuthenticationToken sTSLogin(StsAuthRequest stsAuthRequest) throws ApiException {
-        ApiResponse<AuthenticationToken> localVarResp = sTSLoginWithHttpInfo(stsAuthRequest);
+    public AuthenticationToken stsLogin(StsAuthRequest stsAuthRequest) throws ApiException {
+        ApiResponse<AuthenticationToken> localVarResp = stsLoginWithHttpInfo(stsAuthRequest);
         return localVarResp.getData();
     }
 
@@ -1384,8 +1384,8 @@ public class ExperimentalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<AuthenticationToken> sTSLoginWithHttpInfo(StsAuthRequest stsAuthRequest) throws ApiException {
-        okhttp3.Call localVarCall = sTSLoginValidateBeforeCall(stsAuthRequest, null);
+    public ApiResponse<AuthenticationToken> stsLoginWithHttpInfo(StsAuthRequest stsAuthRequest) throws ApiException {
+        okhttp3.Call localVarCall = stsLoginValidateBeforeCall(stsAuthRequest, null);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -1405,9 +1405,9 @@ public class ExperimentalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call sTSLoginAsync(StsAuthRequest stsAuthRequest, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+    public okhttp3.Call stsLoginAsync(StsAuthRequest stsAuthRequest, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = sTSLoginValidateBeforeCall(stsAuthRequest, _callback);
+        okhttp3.Call localVarCall = stsLoginValidateBeforeCall(stsAuthRequest, _callback);
         Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

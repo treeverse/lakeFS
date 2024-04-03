@@ -3736,7 +3736,7 @@ func TestController_STSLogin(t *testing.T) {
 	server := setupServer(t, handler)
 	clt := setupClientByEndpoint(t, server.URL, "", "")
 
-	res, err := clt.STSLoginWithResponse(context.Background(), apigen.STSLoginJSONRequestBody{})
+	res, err := clt.StsLoginWithResponse(context.Background(), apigen.StsLoginJSONRequestBody{})
 	if err != nil {
 		t.Fatalf("Error login with response %v", err)
 	}

@@ -5,7 +5,6 @@ import (
 )
 
 var (
-	ErrInvalidSTS              = errors.New("invalid sts")
 	ErrNotImplemented          = errors.New("not implemented")
 	ErrAlreadyExists           = errors.New("already exists")
 	ErrInsufficientPermissions = errors.New("insufficient permissions")
