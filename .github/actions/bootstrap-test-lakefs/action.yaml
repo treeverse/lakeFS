@@ -37,7 +37,6 @@ runs:
         LAKEFS_STATS_ENABLED: "false"
         LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
       shell: bash
-      working-directory: ${{ inputs.compose-directory }}
       run: |
         [[ -z "${{ inputs.compose-file }}" ]] && flags="" || flags="-f ${{ inputs.compose-file }}"
-        docker compose ${flags} up ${{ inputs.compose-flags }}
+        docker compose --project-directory ${{ inputs.compose-directory }} ${flags} up ${{ inputs.compose-flags }}
