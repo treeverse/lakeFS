@@ -321,7 +321,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/lakefsfs_contract
-        run: docker-compose logs --tail=1000
+        run: docker compose logs --tail=1000
 
   hadoopfs-s3a-mpu:
     name: Test lakeFS multipart upload with Hadoop S3A
@@ -370,17 +370,17 @@ jobs:
         working-directory: test/spark/s3a-multipart
         run: |
           docker wait $(docker compose ps -a lakefs-setup -q)
-          docker-compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" "${STORAGE_NAMESPACE}" -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
+          docker compose exec -T lakefs lakectl repo create "lakefs://${REPOSITORY}" "${STORAGE_NAMESPACE}" -d main && sbt "run s3a://${REPOSITORY}/main/multipart.out"
 
       - name: lakeFS logs on failure
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=2500 lakefs
+        run: docker compose logs --tail=2500 lakefs
 
       - name: Verify lakeFS performed a multipart upload
         working-directory: test/spark
-        run: set -o pipefail && docker-compose logs --tail=5000 -- lakefs 2>&1 | fgrep CompleteMultiPartUpload
+        run: set -o pipefail && docker compose logs --tail=5000 -- lakefs 2>&1 | fgrep CompleteMultiPartUpload
 
   build-lakefs-hadoopfs:
     name: Build lakeFS HadoopFS
@@ -491,7 +491,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=2500 lakefs
+        run: docker compose logs --tail=2500 lakefs
 
       - name: Spark${{ matrix.spark.tag }} + lakeFS HadoopFS
         timeout-minutes: 8
@@ -508,7 +508,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=2500 lakefs
+        run: docker compose logs --tail=2500 lakefs
       - name: Spark${{ matrix.spark.tag }} + lakeFS HadoopFS presigned
         timeout-minutes: 8
         working-directory: test/spark
@@ -522,7 +522,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=2500 lakefs
+        run: docker compose logs --tail=2500 lakefs
   export:
     name: Test lakeFS rclone export functionality
     needs: [deploy-image, deploy-rclone-export-image, login-to-amazon-ecr]
@@ -570,7 +570,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/rclone_export
-        run: docker-compose logs --tail=1000
+        run: docker compose logs --tail=1000
 
   metastore-client-with-trino:
     name: Test metastore client commands using trino
@@ -628,7 +628,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/lakectl_metastore
-        run: docker-compose logs --tail=2500 lakefs
+        run: docker compose logs --tail=2500 lakefs
 
   build-spark3-metadata-client:
     name: Build metadata client for Spark 3.x
@@ -727,7 +727,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=2500 lakefs
+        run: docker compose logs --tail=2500 lakefs
 
   run-system-aws-s3-kv-dynamodb:
     name: Run latest lakeFS app on AWS S3 DynamoDB KV
@@ -774,14 +774,14 @@ jobs:
       - name: lakeFS Logs on s3 failure KV
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker-compose -f esti/ops/docker-compose-dynamodb.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose-dynamodb.yaml logs --tail=1000 lakefs
 
       - name: Export DB KV
         if: ${{ always() }}
         working-directory: esti/ops
         run: |
-          if docker-compose ps -q postgres; then
-            docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
+          if docker compose ps -q postgres; then
+            docker compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
           fi
 
   run-system-aws-s3:
@@ -826,14 +826,14 @@ jobs:
       - name: lakeFS Logs on s3 failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
 
       - name: Export DB
         if: ${{ always() }}
         working-directory: esti/ops
         run: |
-          if docker-compose ps -q postgres; then
-            docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
+          if docker compose ps -q postgres; then
+            docker compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
           fi
 
   run-system-gcp-gs:
@@ -869,7 +869,7 @@ jobs:
       - name: lakeFS Logs on GS failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
 
   run-system-azure-abfs:
     name: Run latest lakeFS app on Azure with Azure blobstore
@@ -908,7 +908,7 @@ jobs:
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
 
       - name: See the env when we would have tried to publish coverage
         run: env
@@ -970,7 +970,7 @@ jobs:
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker-compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
 
   python-wrapper:
     name: Test lakeFS against the python wrapper client
