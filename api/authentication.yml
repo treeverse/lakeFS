@@ -291,7 +291,7 @@ components:
       properties:
         external_user_identifier:
           type: string
-          description: external_user_identifier is the user DN in LDAP set if user exists with that username and has this password
+          description: external_user_identifier is the user DN in LDAP set if user exists with that username and has this password.
     IdentityRequest:
       type: object
 

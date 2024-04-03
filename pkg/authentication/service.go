@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/treeverse/lakefs/pkg/authentication/apiclient"
@@ -16,8 +15,9 @@ import (
 
 type Service interface {
 	IsExternalPrincipalsEnabled() bool
-	ValidateSTS(ctx context.Context, code, redirectURI, state string) (*STSResponseData, error)
 	ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipal, error)
+	// ValidateSTS validates the STS parameters and returns the external user ID
+	ValidateSTS(ctx context.Context, code, redirectURI, state string) (string, error)
 }
 
 type DummyService struct{}
@@ -26,8 +26,8 @@ func NewDummyService() *DummyService {
 	return &DummyService{}
 }
 
-func (d DummyService) ValidateSTS(ctx context.Context, code, redirectURI, state string) (*STSResponseData, error) {
-	return nil, ErrNotImplemented
+func (d DummyService) ValidateSTS(ctx context.Context, code, redirectURI, state string) (string, error) {
+	return "", ErrNotImplemented
 }
 
 func (d DummyService) ExternalPrincipalLogin(_ context.Context, _ map[string]interface{}) (*apiclient.ExternalPrincipal, error) {
@@ -87,50 +87,34 @@ func (s *APIService) validateResponse(resp openapi3filter.StatusCoder, expectedS
 	}
 }
 
-type STSResponseData struct {
-	ExternalUserID    string
-	ExpiresAtUnixTime int64
-}
-
 // ValidateSTS calls the external authentication service to validate the STS parameters
 // validates the required claims and returns the external user id and expiration time
-func (s *APIService) ValidateSTS(ctx context.Context, code, redirectURI, state string) (*STSResponseData, error) {
+func (s *APIService) ValidateSTS(ctx context.Context, code, redirectURI, state string) (string, error) {
 	res, err := s.apiClient.STSLoginWithResponse(ctx, apiclient.STSLoginJSONRequestBody{
 		Code:        code,
 		RedirectUri: redirectURI,
 		State:       state,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to authenticate user: %w", err)
+		return "", fmt.Errorf("failed to authenticate user: %w", err)
 	}
 
 	if err := s.validateResponse(res, http.StatusOK); err != nil {
-		return nil, fmt.Errorf("failed to authenticate user: %w", err)
+		return "", fmt.Errorf("invalid authentication response: %w", err)
 	}
 
 	// validate claims
 	claims := res.JSON200.Claims
 	for claim, expectedValue := range s.validateIDTokenClaims {
 		if claimValue, found := claims.Get(claim); !found || claimValue != expectedValue {
-			return nil, fmt.Errorf("claim %s has unexpected value %s: %w", claim, claimValue, ErrInvalidSTS)
+			return "", fmt.Errorf("claim %s has unexpected value %s: %w", claim, claimValue, ErrInsufficientPermissions)
 		}
 	}
 	subject, found := claims.Get("sub")
 	if !found {
-		return nil, fmt.Errorf("missing subject in claims: %w", ErrInvalidSTS)
+		return "", fmt.Errorf("missing subject in claims: %w", ErrInsufficientPermissions)
 	}
-	expiresAt, found := claims.Get("exp")
-	if !found {
-		return nil, fmt.Errorf("missing expiration in claims: %w", ErrInvalidSTS)
-	}
-	expiresAtInt, err := strconv.ParseFloat(expiresAt, 64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse expiration time: %w", err)
-	}
-	return &STSResponseData{
-		ExternalUserID:    subject,
-		ExpiresAtUnixTime: int64(expiresAtInt),
-	}, nil
+	return subject, nil
 }
 
 func (s *APIService) ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipal, error) {
