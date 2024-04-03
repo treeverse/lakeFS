@@ -19,8 +19,8 @@ import re  # noqa: F401
 import json
 
 
-
-from pydantic import BaseModel, Field, StrictStr
+from typing import Optional
+from pydantic import BaseModel, Field, StrictInt, StrictStr
 
 class StsAuthRequest(BaseModel):
     """
@@ -29,7 +29,8 @@ class StsAuthRequest(BaseModel):
     code: StrictStr = Field(...)
     state: StrictStr = Field(...)
     redirect_uri: StrictStr = Field(...)
-    __properties = ["code", "state", "redirect_uri"]
+    ttl_seconds: Optional[StrictInt] = Field(None, description="The time-to-live for the generated token in seconds.  The maximum value is 3600 seconds (1 hour) max is 12 hours. ")
+    __properties = ["code", "state", "redirect_uri", "ttl_seconds"]
 
     class Config:
         """Pydantic configuration"""
@@ -69,7 +70,8 @@ class StsAuthRequest(BaseModel):
         _obj = StsAuthRequest.parse_obj({
             "code": obj.get("code"),
             "state": obj.get("state"),
-            "redirect_uri": obj.get("redirect_uri")
+            "redirect_uri": obj.get("redirect_uri"),
+            "ttl_seconds": obj.get("ttl_seconds")
         })
         return _obj
 

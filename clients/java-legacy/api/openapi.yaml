@@ -176,7 +176,7 @@ paths:
       x-accepts: application/json
   /sts/login:
     post:
-      operationId: STSLogin
+      operationId: stsLogin
       requestBody:
         content:
           application/json:
@@ -8177,6 +8177,7 @@ components:
     StsAuthRequest:
       example:
         code: code
+        ttl_seconds: 0
         state: state
         redirect_uri: redirect_uri
       properties:
@@ -8186,6 +8187,12 @@ components:
           type: string
         redirect_uri:
           type: string
+        ttl_seconds:
+          description: |
+            The time-to-live for the generated token in seconds.  The maximum
+            value is 3600 seconds (1 hour) max is 12 hours.
+          format: int64
+          type: integer
       required:
       - code
       - redirect_uri
