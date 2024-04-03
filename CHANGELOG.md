@@ -1,5 +1,17 @@
 # Changelog
 
+# v1.16.0
+
+:new: What's new:
+
+- lakectl: get presigned url for object (#7603)
+- Align S3 Gateway Prometheus Histogram Buckets with lakeFS API Buckets (#7622)
+
+:bug: Bugs fixed:
+
+- Allow storing of friendly_name in KV when integrating with external auth API (#7572)
+- Add TTL to STS (#7605)
+
 # v1.15.0
 
 **Deprecation notice:**
