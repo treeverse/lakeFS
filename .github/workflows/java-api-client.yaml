@@ -10,7 +10,7 @@ on:
 
 jobs:
   deploy-legacy:                # TODO(1.0): Remove this job after releasing 1.0
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     environment: Treeverse signing
     steps:
       - name: Checkout
@@ -52,7 +52,7 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
 
   deploy:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     environment: Treeverse signing
     steps:
       - name: Checkout
