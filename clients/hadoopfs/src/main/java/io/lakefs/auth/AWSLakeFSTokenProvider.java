@@ -1,146 +1,89 @@
 package io.lakefs.auth;
 
-import com.amazonaws.AmazonWebServiceRequest;
-import com.amazonaws.DefaultRequest;
 import com.amazonaws.Request;
 import com.amazonaws.auth.*;
-import com.amazonaws.http.HttpMethodName;
-import com.amazonaws.util.BinaryUtils;
+import io.lakefs.Constants;
+import io.lakefs.FSConfiguration;
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.AuthApi;
+import io.lakefs.clients.sdk.model.AuthenticationToken;
 import org.apache.commons.codec.binary.Base64;
+
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
+
 import com.amazonaws.util.json.JSONObject;
+import org.apache.hadoop.conf.Configuration;
 
-class GeneratePresignGetCallerIdentityRequest extends AmazonWebServiceRequest {
-    private final Map<String, String> additionalHeaders;
-    private final Long expirationInSeconds;
-    private final URI stsEndpoint;
-
-    private AWSCredentials credentials;
-
-    public GeneratePresignGetCallerIdentityRequest(URI stsEndpoint, AWSCredentials credentials, Map<String, String> additionalHeaders, Long expirationInSeconds) {
-        this.credentials = credentials;
-        this.stsEndpoint = stsEndpoint;
-        this.additionalHeaders = additionalHeaders;
-        this.expirationInSeconds = expirationInSeconds;
-    }
-
-    public Map<String, String> getAdditionalHeaders() {
-        return additionalHeaders;
-    }
-
-    public Long getExpirationInSeconds() {
-        return expirationInSeconds;
-    }
-
-    public URI getStsEndpoint() {
-        return stsEndpoint;
-    }
-
-    public AWSCredentials getCredentials() {
-        return credentials;
-    }
-}
-
-interface STSGetCallerIdentitPresigner {
-    Request<GeneratePresignGetCallerIdentityRequest> presignRequest(GeneratePresignGetCallerIdentityRequest r) throws IOException;
-}
-
-class GetCallerIdentityV4Presigner extends AWS4Signer implements  STSGetCallerIdentitPresigner{
-    /**
-     * Seconds in a week, which is the max expiration time Sig-v4 accepts
-     */
-    private final static long MAX_EXPIRATION_TIME_IN_SECONDS = 60 * 60 * 24 * 7;
-
-    GetCallerIdentityV4Presigner() {
-        super(false);
-    }
-
-    public Request<GeneratePresignGetCallerIdentityRequest> presignRequest(GeneratePresignGetCallerIdentityRequest input) throws IOException {
-        Request request = new DefaultRequest(input, "sts");
-        request.setEndpoint(input.getStsEndpoint());
-        request.addParameter("Action", "GetCallerIdentity");
-        request.addParameter("Version", "2011-06-15");
-        // we want to support generating only POST requests, adding an empty stream is a hack
-        // to make it use query params when Signer calls this.usePayloadForQueryParameters returns false for an empty POST request.
-        request.setContent(new InputStream() {
-            @Override
-            public int read() throws IOException {
-                return -1;
-            }
-        });
-
-        request.setHttpMethod(HttpMethodName.POST);
-        addHostHeader(request);
-
-        AWSCredentials sanitizedCredentials = sanitizeCredentials(input.getCredentials());
-
-        if (sanitizedCredentials instanceof AWSSessionCredentials) {
-            // For SigV4 presigning URL, we need to add "x-amz-security-token"
-            // as a query string parameter, before constructing the canonical request.
-            request.addParameter("X-Amz-Security-Token", ((AWSSessionCredentials) sanitizedCredentials).getSessionToken());
-        }
-
-        // add additional headers to sign (i.e X-lakeFS-Server-ID)
-        for (Map.Entry<String, String> entry : input.getAdditionalHeaders().entrySet()) {
-            request.addHeader(entry.getKey(), entry.getValue());
-        }
-
-        // Add required parameters for v4 signing
-        long now = System.currentTimeMillis();
-        final String timeStamp = getTimeStamp(now);
-        request.addParameter("X-Amz-Algorithm", ALGORITHM);
-        request.addParameter("X-Amz-Date", timeStamp);
-        request.addParameter("X-Amz-SignedHeaders", getSignedHeadersString(request));
-
-        if (input.getExpirationInSeconds() > MAX_EXPIRATION_TIME_IN_SECONDS) {
-            throw new IOException("Requests that are pre-signed by SigV4 algorithm are valid for at most 7 days. " +
-                    "The expiration [" + input.getExpirationInSeconds() + "] has exceeded this limit.");
-        }
-
-        request.addParameter("X-Amz-Expires", input.getExpirationInSeconds().toString());
-
-        // add X-Amz-Credential header (e.g <AccessKeyId>/<date>/<region>>/sts/aws4_request)
-        long dateMilli = getDateFromRequest(request);
-        final String dateStamp = getDateStamp(dateMilli);
-        String scope = getScope(request, dateStamp);
-        String signingCredentials = sanitizedCredentials.getAWSAccessKeyId() + "/" + scope;
-
-        request.addParameter("X-Amz-Credential", signingCredentials);
-
-        // contentSha256 is HashedPayload Hex(SHA256Hash("")) see https://docs.aws.amazon.com/IAM/latest/UserGuide/create-signed-request.html#create-string-to-sign
-        byte[] contentDigest = this.hash(request.getContent());
-        String contentSha256 = BinaryUtils.toHex(contentDigest);
-
-        HeaderSigningResult headerSigningResult = computeSignature(
-                request,
-                dateStamp,
-                timeStamp,
-                ALGORITHM,
-                contentSha256,
-                sanitizedCredentials);
-
-        request.addParameter("X-Amz-Signature", BinaryUtils.toHex(headerSigningResult.getSignature()));
-
-        return request;
-    }
-}
+import io.lakefs.clients.sdk.model.LoginInformation;
 
 public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
-    STSGetCallerIdentitPresigner stsPresigner;
+    STSGetCallerIdentityPresigner stsPresigner;
     AWSCredentialsProvider awsProvider;
-    String lakeFSAuthToken = null;
+    AuthenticationToken lakeFSAuthToken = null;
     String stsEndpoint;
-    Map<String,String> stsAdditionalHeaders;
-    Long stsExpirationInSeconds;
-    AWSLakeFSTokenProvider(AWSCredentialsProvider awsProvider, STSGetCallerIdentitPresigner stsPresigner, String stsEndpoint, Map<String,String> stsAdditionalHeaders, Long stsExpirationInSeconds) {
-        this.stsPresigner = stsPresigner;
+    Map<String, String> stsAdditionalHeaders;
+    int stsExpirationInSeconds;
+    ApiClient lakeFSApi;
+
+    AWSLakeFSTokenProvider() {
+    }
+
+    public AWSLakeFSTokenProvider(AWSCredentialsProvider awsProvider, ApiClient lakeFSClient, STSGetCallerIdentityPresigner stsPresigner, String stsEndpoint, Map<String, String> stsAdditionalHeaders, int stsExpirationInSeconds) {
         this.awsProvider = awsProvider;
+        this.stsPresigner = stsPresigner;
+        this.lakeFSApi = lakeFSClient;
         this.stsEndpoint = stsEndpoint;
         this.stsAdditionalHeaders = stsAdditionalHeaders;
         this.stsExpirationInSeconds = stsExpirationInSeconds;
+    }
+
+    protected void initialize(AWSCredentialsProvider awsProvider, String scheme, Configuration conf) throws IOException {
+        // aws credentials provider
+        this.awsProvider = awsProvider;
+
+        // sts endpoint to call STS
+        this.stsEndpoint = FSConfiguration.get(conf, scheme, Constants.TOKEN_AWS_STS_ENDPOINT);
+
+        if (this.stsEndpoint == null) {
+            throw new IOException("Missing sts endpoint");
+        }
+
+        // Expiration for each identity token generated (they are very short-lived and only used for exchange, the value is part of the signature)
+        this.stsExpirationInSeconds = FSConfiguration.getInt(conf, scheme, Constants.TOKEN_AWS_CREDENTIALS_PROVIDER_TOKEN_DURATION_SECONDS, 60);
+
+        // initialize the presigner
+        this.stsPresigner = new GetCallerIdentityV4Presigner();
+
+        // initialize a lakeFS api client
+
+        this.lakeFSApi = io.lakefs.clients.sdk.Configuration.getDefaultApiClient();
+        this.lakeFSApi.addDefaultHeader("X-Lakefs-Client", "lakefs-hadoopfs/" + getClass().getPackage().getImplementationVersion());
+        String endpoint = FSConfiguration.get(conf, scheme, Constants.ENDPOINT_KEY_SUFFIX, Constants.DEFAULT_CLIENT_ENDPOINT);
+        if (endpoint.endsWith(Constants.SEPARATOR)) {
+            endpoint = endpoint.substring(0, endpoint.length() - 1);
+        }
+        String sessionId = FSConfiguration.get(conf, scheme, Constants.SESSION_ID);
+        if (sessionId != null) {
+            this.lakeFSApi.addDefaultCookie("sessionId", sessionId);
+        }
+        this.lakeFSApi.setBasePath(endpoint);
+
+        // set additional headers (non-canonical) to sign with each request to STS
+        // non-canonical headers are signed by the presigner and sent to STS for verification in the requests by lakeFS to exchange the token
+        Map<String, String> additionalHeaders = FSConfiguration.getMap(conf, scheme, Constants.TOKEN_AWS_CREDENTIALS_PROVIDER_ADDITIONAL_HEADERS);
+        if (additionalHeaders == null) {
+            additionalHeaders = new HashMap<String, String>() {{
+                put(Constants.DEFAULT_AUTH_PROVIDER_SERVER_ID_HEADER, new URL(lakeFSApi.getBasePath()).getHost());
+            }};
+            // default header to sign is the lakeFS server host name
+            additionalHeaders.put(Constants.DEFAULT_AUTH_PROVIDER_SERVER_ID_HEADER, new URL(endpoint).getHost());
+        }
+        this.stsAdditionalHeaders = additionalHeaders;
     }
 
     @Override
@@ -148,38 +91,51 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
         if (needsNewToken()) {
             refresh();
         }
-        return this.lakeFSAuthToken;
+        return this.lakeFSAuthToken.getToken();
     }
 
     private boolean needsNewToken() {
-        return this.lakeFSAuthToken == null;
+        return this.lakeFSAuthToken == null || this.lakeFSAuthToken.getTokenExpiration() < System.currentTimeMillis();
     }
 
-    public String newPresignedGetCallerIdentityToken() throws Exception {
+    public Request<GeneratePresignGetCallerIdentityRequest> newPresignedRequest() throws Exception {
         GeneratePresignGetCallerIdentityRequest stsReq = new GeneratePresignGetCallerIdentityRequest(
                 new URI(this.stsEndpoint),
                 this.awsProvider.getCredentials(),
                 this.stsAdditionalHeaders,
                 this.stsExpirationInSeconds
         );
-        Request<GeneratePresignGetCallerIdentityRequest> signedRequest = this.stsPresigner.presignRequest(stsReq);
+        return this.stsPresigner.presignRequest(stsReq);
+    }
 
-        // generate anonymous class that will be seriallized to json string
+    public String newPresignedGetCallerIdentityToken() throws Exception {
+        Request<GeneratePresignGetCallerIdentityRequest> signedRequest = this.newPresignedRequest();
+        // generate token parameters object
         JSONObject identityTokenParams = new JSONObject();
         identityTokenParams.put("method", signedRequest.getHttpMethod().name());
         identityTokenParams.put("endpoint", signedRequest.getEndpoint().toString());
         identityTokenParams.put("signedHeaders", signedRequest.getHeaders().keySet().toArray());
         identityTokenParams.put("expiration", this.stsExpirationInSeconds);
         identityTokenParams.put("signedParams", signedRequest.getParameters());
-
         // base64 encode
-        return "lakefs.iam.v1."+Base64.encodeBase64String(identityTokenParams.toString().getBytes());
+        return Base64.encodeBase64String(identityTokenParams.toString().getBytes());
     }
 
     private void newToken() throws Exception {
-        String token = this.newPresignedGetCallerIdentityToken();
-        // call lakeFS to exchange the token for a lakeFS token
-        this.lakeFSAuthToken = "lakefs jwt 123";
+        String identityToken = this.newPresignedGetCallerIdentityToken();
+        /*
+        TODO(isan)
+         depends on missing functionality PR https://github.com/treeverse/lakeFS/pull/7578 being merged.
+         before merging this code - implement the call to lakeFS.
+         it will introduce the functionality in the generated client of actually doing the login.
+         call lakeFS to exchange the token for a lakeFS token
+         The flow will be:
+         1. use this.lakeFSApi Client with ExternalPrincipal API class (no auth required)
+         2. this.lakeFSAuthToken = call api.ExternalPrincipalLogin(identityToken, <lakeFS Token optional TTL>)
+        */
+        // dummy initiation
+        this.lakeFSAuthToken = new AuthenticationToken();
+        this.lakeFSAuthToken.setTokenExpiration(System.currentTimeMillis() + 60);
     }
 
     @Override
