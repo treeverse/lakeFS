@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"strconv"
 	"time"
 
@@ -23,6 +24,8 @@ const (
 	QueryParamMaxParts = "max-parts"
 	// QueryParamPartNumberMarker Specifies the part after which listing should begin. Only parts with higher part numbers will be listed.
 	QueryParamPartNumberMarker = "part-number-marker"
+	s3RedirectionSupportUserAgent = "s3RedirectionSupport"
+
 )
 
 type GetObject struct{}
@@ -106,6 +109,16 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   entry.AddressType.ToIdentifierType(),
 		Identifier:       entry.PhysicalAddress,
+	}
+
+	userAgent := req.Header.Get("User-Agent")
+	if strings.Contains(userAgent, s3RedirectionSupportUserAgent) {
+		preSignedURL, _, err := o.BlockStore.GetPreSignedURL(ctx, objectPointer, block.PreSignModeRead)
+		if err == nil {
+			o.SetHeader(w, "Location", preSignedURL)
+			w.WriteHeader(http.StatusTemporaryRedirect)
+			return
+		}
 	}
 
 	if rangeSpec == "" || err != nil {

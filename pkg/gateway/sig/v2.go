@@ -111,9 +111,10 @@ func (a *V2SigAuthenticator) Parse() (SigContext, error) {
 			return sigCtx, ErrHeaderMalformed
 		}
 		sigCtx.signature = sig
+		a.sigCtx = sigCtx
+		return sigCtx, nil
 	}
-	a.sigCtx = sigCtx
-	return sigCtx, nil
+	return nil, ErrHeaderMalformed
 }
 
 func headerValueToString(val []string) string {
