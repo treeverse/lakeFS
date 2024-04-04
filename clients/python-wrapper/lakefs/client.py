@@ -13,7 +13,7 @@ import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
 
 from lakefs.config import ClientConfig
-from lakefs.exceptions import NotAuthorizedException, ServerException
+from lakefs.exceptions import NotAuthorizedException, ServerException, api_exception_handler
 from lakefs.models import ServerStorageConfiguration
 
 
@@ -104,6 +104,26 @@ class Client:
         if self._server_conf is None:
             self._server_conf = ServerConfiguration(self)
         return self._server_conf.version
+
+
+def from_web_identity(code: str, state: str, redirect_uri: str, ttl_seconds: int = 3600, **kwargs) -> Client:
+    """
+    Authenticate against lakeFS using a code received from an identity provider
+
+    :param code: The code received from the identity provider
+    :param state: The state received from the identity provider
+    :param redirect_uri: The redirect URI used in the authentication process
+    :param ttl_seconds: The token's time-to-live in seconds
+    :param kwargs: Remaining arguments for the Client object
+    :return: The authenticated Client object
+    :raise NotAuthorizedException: if user is not authorized to perform this operation
+    """
+    client = Client(**kwargs)
+    sts_requests = lakefs_sdk.StsAuthRequest(code=code, state=state, redirect_uri=redirect_uri, ttl_seconds=ttl_seconds)
+    with api_exception_handler():
+        auth_token = client.sdk_client.experimental_api.sts_login(sts_requests)
+    client.config.access_token = auth_token.token
+    return client
 
 
 class _BaseLakeFSObject:
