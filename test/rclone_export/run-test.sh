@@ -3,8 +3,7 @@
 REPOSITORY=${REPOSITORY:-example}
 
 # Run Export without previous commit
-echo "#####${WORKING_DIRECTORY}#####"
-echo "#####$(ls -l)#####"
+echo "Current working directory: ${WORKING_DIRECTORY}"
 echo "upload file_one"
 docker compose exec -T lakefs lakectl fs upload lakefs://${REPOSITORY}/main/a/file_one.txt --source /local/file_one.txt
 echo "res $?"
