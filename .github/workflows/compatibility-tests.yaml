@@ -14,7 +14,7 @@ permissions:
 jobs:
   gen-code:
     name: Generate code from latest lakeFS app
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -62,7 +62,7 @@ jobs:
   deploy-image:
     name: Build and cache Docker image
     needs: [gen-code]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       tag: ${{ steps.version.outputs.tag }}
       image_id: ${{ steps.build_export.outputs.ImageID }}
@@ -122,7 +122,7 @@ jobs:
         # Removing a version from this list means the published client is no longer compatible with
         # that lakeFS version.
         lakefs_version: [ 0.108.0, 0.109.0, 0.110.0, 0.111.0, 0.111.1, 0.112.1, 0.113.0, 1.0.0, 1.1.0, 1.2.0, 1.3.0, 1.3.1, 1.4.0, 1.5.0, 1.6.0, 1.7.0, 1.8.0, 1.9.0, 1.9.1, 1.10.0, 1.11.0, 1.11.1, 1.12.0, 1.12.1, 1.13.0, 1.14.0, 1.14.1, 1.15.0 ]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       TAG: ${{ matrix.lakefs_version }}
       REPO: treeverse
@@ -187,7 +187,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=15000 lakefs
+        run: docker compose logs --tail=15000 lakefs
 
   compatibility-checks-server:
     name: Test lakeFS server FileSystem compatibility
@@ -198,7 +198,7 @@ jobs:
         # Removing a version from this list means the current lakeFS is no longer compatible with
         # that Hadoop lakeFS client version.
         client_version: [ 0.1.10, 0.1.11, 0.1.12, 0.1.13, 0.1.14, 0.1.15, 0.2.1 ]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       CLIENT_VERSION: ${{ matrix.client_version }}
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -272,12 +272,12 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=15000 lakefs
+        run: docker compose logs --tail=15000 lakefs
 
   notify-slack:
     name: Notify slack on workflow failures
     needs: [compatibility-checks-client, compatibility-checks-server]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: ${{ always() && contains(needs.*.result, 'failure') }}
     steps:
     - name: slack-send
