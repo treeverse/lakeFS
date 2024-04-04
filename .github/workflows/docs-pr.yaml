@@ -13,7 +13,7 @@ jobs:
   # This job name kept short because it's used in the preview URL
   preview:
     name: Docs PR - Publish preview and check links
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check-out
         uses: actions/checkout@v4
