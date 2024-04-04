@@ -122,6 +122,7 @@ class ImportManager(_BaseLakeFSObject):
 
     async def _wait_for_completion(self, poll_interval: timedelta) -> lakefs_sdk.ImportStatus:
         while True:
+            await asyncio.sleep(poll_interval.total_seconds())
             with api_exception_handler():
                 resp = self._client.sdk_client.import_api.import_status(repository=self._repo_id,
                                                                         branch=self._branch_id,
@@ -130,8 +131,6 @@ class ImportManager(_BaseLakeFSObject):
                 return resp
             if resp.error is not None:
                 raise ImportManagerException(f"Import Error: {resp.error.message}")
-
-            await asyncio.sleep(poll_interval.total_seconds())
 
     def wait(self, poll_interval: Optional[timedelta] = timedelta(seconds=2)) -> ImportStatus:
         """

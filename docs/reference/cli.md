@@ -2201,6 +2201,23 @@ lakectl fs ls <path URI> [flags]
 
 
 
+### lakectl fs presign
+
+return a pre-signed URL for reading the specified object
+
+```
+lakectl fs presign <path URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for presign
+```
+
+
+
 ### lakectl fs rm
 
 Delete object
@@ -2486,6 +2503,30 @@ lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [fla
       --s3-endpoint-url string   URL to access S3 storage API (by default, use regular AWS S3 endpoint
       --to string                lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
   -v, --verbose                  print stats for each individual object staged
+```
+
+
+
+### lakectl install-git-plugin
+
+set up `git data` (directory must exist and be in $PATH)
+
+#### Synopsis
+{:.no_toc}
+
+Add a symlink to lakectl named `git-data`.
+This allows calling `git data` and having it act as the `lakectl local` command
+(as long as the symlink is within the executing users' $PATH environment variable
+
+```
+lakectl install-git-plugin <directory> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for install-git-plugin
 ```
 
 

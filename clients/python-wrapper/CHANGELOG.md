@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## v0.5.0
+
+:new: What's new:
+
+- Short-lived Token Authentication: Initiate lakeFS Python client sessions securely using external IdPs with the new federated "Assume Role with Web Identity" feature. (#7620)
+
+:bug: Bugs fixed:
+
+- Fix import manager run race #7607
+
 ## v0.4.1
 
 :new: What's new:

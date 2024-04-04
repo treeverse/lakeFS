@@ -64,6 +64,10 @@ public class StsAuthRequest {
   @SerializedName(SERIALIZED_NAME_REDIRECT_URI)
   private String redirectUri;
 
+  public static final String SERIALIZED_NAME_TTL_SECONDS = "ttl_seconds";
+  @SerializedName(SERIALIZED_NAME_TTL_SECONDS)
+  private Long ttlSeconds;
+
   public StsAuthRequest() {
   }
 
@@ -129,6 +133,27 @@ public class StsAuthRequest {
     this.redirectUri = redirectUri;
   }
 
+
+  public StsAuthRequest ttlSeconds(Long ttlSeconds) {
+    
+    this.ttlSeconds = ttlSeconds;
+    return this;
+  }
+
+   /**
+   * The time-to-live for the generated token in seconds.  The maximum value is 3600 seconds (1 hour) max is 12 hours. 
+   * @return ttlSeconds
+  **/
+  @javax.annotation.Nullable
+  public Long getTtlSeconds() {
+    return ttlSeconds;
+  }
+
+
+  public void setTtlSeconds(Long ttlSeconds) {
+    this.ttlSeconds = ttlSeconds;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -186,13 +211,14 @@ public class StsAuthRequest {
     StsAuthRequest stsAuthRequest = (StsAuthRequest) o;
     return Objects.equals(this.code, stsAuthRequest.code) &&
         Objects.equals(this.state, stsAuthRequest.state) &&
-        Objects.equals(this.redirectUri, stsAuthRequest.redirectUri)&&
+        Objects.equals(this.redirectUri, stsAuthRequest.redirectUri) &&
+        Objects.equals(this.ttlSeconds, stsAuthRequest.ttlSeconds)&&
         Objects.equals(this.additionalProperties, stsAuthRequest.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(code, state, redirectUri, additionalProperties);
+    return Objects.hash(code, state, redirectUri, ttlSeconds, additionalProperties);
   }
 
   @Override
@@ -202,6 +228,7 @@ public class StsAuthRequest {
     sb.append("    code: ").append(toIndentedString(code)).append("\n");
     sb.append("    state: ").append(toIndentedString(state)).append("\n");
     sb.append("    redirectUri: ").append(toIndentedString(redirectUri)).append("\n");
+    sb.append("    ttlSeconds: ").append(toIndentedString(ttlSeconds)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -228,6 +255,7 @@ public class StsAuthRequest {
     openapiFields.add("code");
     openapiFields.add("state");
     openapiFields.add("redirect_uri");
+    openapiFields.add("ttl_seconds");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

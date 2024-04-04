@@ -602,6 +602,37 @@ func getStorageConfig(t *testing.T) *apigen.StorageConfig {
 	return storageResp.JSON200
 }
 
+func TestLakectlFsPresign(t *testing.T) {
+	config := getStorageConfig(t)
+	if !config.PreSignSupport {
+		t.Skip()
+	}
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	// upload some data
+	const totalObjects = 2
+	for i := 0; i < totalObjects; i++ {
+		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
+	}
+
+	goldenFile := "lakectl_fs_presign"
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs presign lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, goldenFile, map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"PATH":    "data/ro",
+		"FILE":    "ro_1k.0",
+	})
+}
+
 func TestLakectlFsStat(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)

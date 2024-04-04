@@ -85,8 +85,8 @@ class TestExperimentalApi(unittest.TestCase):
         """
         pass
 
-    def test_s_ts_login(self):
-        """Test case for s_ts_login
+    def test_sts_login(self):
+        """Test case for sts_login
 
         perform a login with STS  # noqa: E501
         """
