@@ -147,11 +147,9 @@ public class GetCallerIdentityV4Presigner extends AWS4Signer implements STSGetCa
         return formattedDateTime;
     }
     protected final String compatibleGetDateStamp(long dateMilli) {
-        //return compatibleDateFormatter.print(dateMilli);
-        long millis = System.currentTimeMillis();
 
         // Convert milliseconds to Instant
-        Instant instant = Instant.ofEpochMilli(millis);
+        Instant instant = Instant.ofEpochMilli(dateMilli);
 
         // Format Instant to String in UTC time zone
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
