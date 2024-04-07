@@ -45,11 +45,14 @@ public class LakeFSClient {
             basicAuth.setUsername(accessKey);
             basicAuth.setPassword(secretKey);
         } else {
-            LakeFSTokenProvider tokenProvider = newLakeFSTokenProvider(scheme, conf);
-            String jwt = tokenProvider.getToken();
-            apiClient = newApiClientNoAuth(scheme, conf);
-            HttpBearerAuth tokenAuth = (HttpBearerAuth)apiClient.getAuthentication(JWT_TOKEN_AUTH);
-            tokenAuth.setBearerToken(jwt);
+            // TODO(isan) depends on missing functionality PR https://github.com/treeverse/lakeFS/pull/7578 being merged.
+            //  once merged, we can use the following code to get the token
+            throw new IOException("Unsupported auth provider: " + authProvider + ". Only basic_auth is supported at the moment.");
+//            LakeFSTokenProvider tokenProvider = newLakeFSTokenProvider(scheme, conf);
+//            String jwt = tokenProvider.getToken();
+//            apiClient = newApiClientNoAuth(scheme, conf);
+//            HttpBearerAuth tokenAuth = (HttpBearerAuth)apiClient.getAuthentication(JWT_TOKEN_AUTH);
+//            tokenAuth.setBearerToken(jwt);
         }
 
         this.objectsApi = new ObjectsApi(apiClient);
