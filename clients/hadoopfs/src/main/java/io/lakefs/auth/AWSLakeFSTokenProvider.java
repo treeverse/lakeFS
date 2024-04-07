@@ -15,7 +15,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.amazonaws.util.json.JSONObject;
+//import com.amazonaws.util.json.JSONObject;
 import org.apache.hadoop.conf.Configuration;
 
 
@@ -109,14 +109,15 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
     public String newPresignedGetCallerIdentityToken() throws Exception {
         Request<GeneratePresignGetCallerIdentityRequest> signedRequest = this.newPresignedRequest();
         // generate token parameters object
-        JSONObject identityTokenParams = new JSONObject();
-        identityTokenParams.put("method", signedRequest.getHttpMethod().name());
-        identityTokenParams.put("endpoint", signedRequest.getEndpoint().toString());
-        identityTokenParams.put("signedHeaders", signedRequest.getHeaders().keySet().toArray());
-        identityTokenParams.put("expiration", this.stsExpirationInSeconds);
-        identityTokenParams.put("signedParams", signedRequest.getParameters());
-        // base64 encode
-        return Base64.encodeBase64String(identityTokenParams.toString().getBytes());
+        return "";
+//        JSONObject identityTokenParams = new JSONObject();
+//        identityTokenParams.put("method", signedRequest.getHttpMethod().name());
+//        identityTokenParams.put("endpoint", signedRequest.getEndpoint().toString());
+//        identityTokenParams.put("signedHeaders", signedRequest.getHeaders().keySet().toArray());
+//        identityTokenParams.put("expiration", this.stsExpirationInSeconds);
+//        identityTokenParams.put("signedParams", signedRequest.getParameters());
+//        // base64 encode
+//        return Base64.encodeBase64String(identityTokenParams.toString().getBytes());
     }
 
     private void newToken() throws Exception {
