@@ -1,5 +1,5 @@
 ---
-title: :seven: Work with lakeFS data on your local environment
+title: 7️⃣ Work with lakeFS data on your local environment
 description: lakeFS quickstart / Bring lakeFS data to a local environment to show how lakeFS can be used for ML experiments development. 
 parent: ⭐ Quickstart
 nav_order: 35
@@ -7,7 +7,7 @@ next: ["Resources for learning more about lakeFS", "./learning-more-lakefs.html"
 previous: ["Using Actions and Hooks in lakeFS", "./actions-and-hooks.html"]
 ---
 
-# Work with lakeFS data locally
+# Work with lakeFS Data Locally
 
 When working with lakeFS, there are scenarios where we need to access and manipulate data locally. An example use case for working 
 locally is machine learning model development. Machine learning model development is dynamic and iterative. To optimize this 
