@@ -141,7 +141,7 @@ public class StsAuthRequest {
   }
 
    /**
-   * The time-to-live for the generated token in seconds.  The maximum value is 3600 seconds (1 hour) max is 12 hours. 
+   * The time-to-live for the generated token in seconds.  The default value is 3600 seconds (1 hour) maximum time allowed is 12 hours. 
    * @return ttlSeconds
   **/
   @javax.annotation.Nullable

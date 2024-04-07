@@ -1,0 +1,32 @@
+security:
+  check_latest_version_cache: false
+# database:
+#     type: local
+database:
+  type: postgres
+  postgres:
+    connection_string: postgres://lakefs:lakefs@localhost:5433/postgres?sslmode=disable
+
+logging:
+  audit_log_level: "INFO"
+
+blockstore:
+  type: local
+  local:
+    path: /tmp/lakefs/iam_auth
+
+auth:
+  authentication_api:
+    endpoint: http://localhost:8080/api/v1
+  api:
+    #endpoint: https://auth.us-east-1.internal.lakefscloud.ninja/api/v1
+    endpoint: http://localhost:9006/api/v1
+    supports_invites: true
+  remote_authenticator:
+    enabled: true
+    external_principals_enabled: true
+    endpoint: http://localhost:9006/api/v1
+  encrypt:
+    secret_key: shared-secrey-key
+  ui_config:
+    rbac: internal

@@ -146,7 +146,7 @@ class StsAuthRequest(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            ttl_seconds (int): The time-to-live for the generated token in seconds.  The maximum value is 3600 seconds (1 hour) max is 12 hours. . [optional]  # noqa: E501
+            ttl_seconds (int): The time-to-live for the generated token in seconds.  The default value is 3600 seconds (1 hour) maximum time allowed is 12 hours. . [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -236,7 +236,7 @@ class StsAuthRequest(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
-            ttl_seconds (int): The time-to-live for the generated token in seconds.  The maximum value is 3600 seconds (1 hour) max is 12 hours. . [optional]  # noqa: E501
+            ttl_seconds (int): The time-to-live for the generated token in seconds.  The default value is 3600 seconds (1 hour) maximum time allowed is 12 hours. . [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
