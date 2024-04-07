@@ -1,5 +1,5 @@
 ---
-title: 7️⃣ Work with lakeFS data on your local environment
+title: 7️⃣ Work with lakeFS data locally
 description: lakeFS quickstart / Bring lakeFS data to a local environment to show how lakeFS can be used for ML experiments development. 
 parent: ⭐ Quickstart
 nav_order: 35
