@@ -16,6 +16,9 @@ import java.util.Date;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 /**
  * GetCallerIdentityV4Presigner is that knows how to generate a presigned URL for the GetCallerIdentity API.
@@ -133,11 +136,29 @@ public class GetCallerIdentityV4Presigner extends AWS4Signer implements STSGetCa
     }
     protected final String compatibleGetTimeStamp(long dateMilli) {
         //return compatibleTimeFormatter.print(dateMilli);
-        return ";";
+
+        // Convert milliseconds to Instant
+        Instant instant = Instant.ofEpochMilli(dateMilli);
+
+        // Format Instant to String in UTC time zone
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")
+                .withZone(ZoneId.of("UTC"));
+        String formattedDateTime = formatter.format(instant);
+        return formattedDateTime;
     }
     protected final String compatibleGetDateStamp(long dateMilli) {
         //return compatibleDateFormatter.print(dateMilli);
-        return ";";
+        long millis = System.currentTimeMillis();
+
+        // Convert milliseconds to Instant
+        Instant instant = Instant.ofEpochMilli(millis);
+
+        // Format Instant to String in UTC time zone
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+                .withZone(ZoneId.of("UTC"));
+        String formattedDate = formatter.format(instant);
+
+        return formattedDate;
     }
     protected final long compatibleGetDateFromRequest(Request<?> request) {
         int timeOffset = getTimeOffset(request);
