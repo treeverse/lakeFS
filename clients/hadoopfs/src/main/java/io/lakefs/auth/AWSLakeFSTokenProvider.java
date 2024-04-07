@@ -9,7 +9,6 @@ import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.clients.sdk.AuthApi;
 import io.lakefs.clients.sdk.model.AuthenticationToken;
 import org.apache.commons.codec.binary.Base64;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -19,7 +18,6 @@ import java.util.Map;
 import com.amazonaws.util.json.JSONObject;
 import org.apache.hadoop.conf.Configuration;
 
-import io.lakefs.clients.sdk.model.LoginInformation;
 
 public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
     STSGetCallerIdentityPresigner stsPresigner;
@@ -138,6 +136,7 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
         this.lakeFSAuthToken.setTokenExpiration(System.currentTimeMillis() + 60);
     }
 
+    // refresh can be called to create a new token regardless if the current token is expired or not or does not exist.
     @Override
     public void refresh() {
         synchronized (this) {

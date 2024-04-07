@@ -9,6 +9,7 @@ import org.junit.Test;
 import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,6 +34,22 @@ public class GetCallerIdentityV4PresignerTest {
         };
     }
 
+    public static Map<String, String> getQueryParams(String query) {
+        Map<String, String> params = new HashMap<>();
+        if (query != null) {
+            String[] pairs = query.split("&");
+            for (String pair : pairs) {
+                String[] keyValue = pair.split("=");
+                if (keyValue.length == 2) {
+                    String key = keyValue[0];
+                    String value = keyValue[1];
+                    params.put(key, value);
+                }
+            }
+        }
+        return params;
+    }
+
     @Test
     public void testPresignAsURL() throws Exception {
         AWSSessionCredentials awsCreds = GetCallerIdentityV4PresignerTest.newMockAWSCreds();
@@ -40,27 +57,37 @@ public class GetCallerIdentityV4PresignerTest {
         GeneratePresignGetCallerIdentityRequest stsReq = new GeneratePresignGetCallerIdentityRequest(
                 new URI("https://sts.amazonaws.com"),
                 awsCreds,
-                new HashMap<String,String>(){{
+                new HashMap<String, String>() {{
                     put(Constants.DEFAULT_AUTH_PROVIDER_SERVER_ID_HEADER, "lakefs-host");
                 }},
                 60
         );
         Request<GeneratePresignGetCallerIdentityRequest> req = stsPresigner.presignRequest(stsReq);
         URL url = STSGetCallerIdentityPresigner.convertRequestToUrl(req);
+        Assert.assertEquals("https", url.getProtocol());
+        Assert.assertEquals("sts.amazonaws.com", url.getHost());
+        Map<String, String> generatedQueryParams = GetCallerIdentityV4PresignerTest.getQueryParams(url.getQuery());
 
-        String pattern = "https://sts\\.amazonaws\\.com/\\?"+
-                "X-Amz-Date=\\d{8}T\\d{6}Z&"
-                +"Action=GetCallerIdentity&"
-                + "X-Amz-Algorithm=AWS4-HMAC-SHA256&"+
-                "X-Amz-Signature=[a-f0-9]{64}&"+
-                "Version=2011-06-15&"+
-                "X-Amz-SignedHeaders=host%3Bx-lakefs-server-id&"+
-                "X-Amz-Security-Token=[^&]+&"+
-                "X-Amz-Credential="+ awsCreds.getAWSAccessKeyId()+"%2F\\d{8}%2Fus-east-1%2Fsts%2Faws4_request&"+
-                "X-Amz-Expires=\\d+";
+        Map<String, String> paramsExpected = new HashMap() {{
+            put("X-Amz-Date", "\\d{8}T\\d{6}Z");
+            put("Action", "GetCallerIdentity");
+            put("X-Amz-Algorithm", "AWS4-HMAC-SHA256");
+            put("X-Amz-Signature", "[a-f0-9]{64}");
+            put("Version", "2011-06-15");
+            put("X-Amz-SignedHeaders", "host%3Bx-lakefs-server-id");
+            put("X-Amz-Security-Token", awsCreds.getSessionToken());
+            put("X-Amz-Credential", awsCreds.getAWSAccessKeyId() + "%2F\\d{8}%2Fus-east-1%2Fsts%2Faws4_request");
+            put("X-Amz-Expires", "60");
+        }};
 
-        Pattern compiledPattern = Pattern.compile(pattern);
-        Matcher matcher = compiledPattern.matcher(url.toString());
-        Assert.assertEquals(String.format("URL %s does not match \npattern: %s",url, pattern), true, matcher.matches());
+        // check that all expected params are present in the generated URL
+        for (Map.Entry<String, String> entry : paramsExpected.entrySet()) {
+            String expectedKey = entry.getKey();
+            String expectedValuePattern = entry.getValue();
+            Assert.assertEquals(String.format("URL %s does not contain param %s", url, expectedKey), true, generatedQueryParams.containsKey(expectedKey));
+            Pattern compiledPattern = Pattern.compile(expectedValuePattern);
+            Matcher matcher = compiledPattern.matcher(generatedQueryParams.get(expectedKey));
+            Assert.assertEquals(String.format("Query param %s does not match \npattern: %s", generatedQueryParams.get(expectedKey), expectedValuePattern), true, matcher.matches());
+        }
     }
 }

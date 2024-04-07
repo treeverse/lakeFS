@@ -44,7 +44,7 @@ public class LakeFSClient {
             HttpBasicAuth basicAuth = (HttpBasicAuth) apiClient.getAuthentication(BASIC_AUTH);
             basicAuth.setUsername(accessKey);
             basicAuth.setPassword(secretKey);
-        }else {
+        } else {
             LakeFSTokenProvider tokenProvider = newLakeFSTokenProvider(scheme, conf);
             String jwt = tokenProvider.getToken();
             apiClient = newApiClientNoAuth(scheme, conf);

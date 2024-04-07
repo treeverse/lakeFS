@@ -56,7 +56,6 @@ public class FSConfigurationTest {
         conf.set("fs.lakefs.map2", "k1:v1,k2:v2,k3:v3");
         conf.set("fs.lakefs.map3", "k1:v1,k2:v2,");
         conf.set("fs.lakefs.map4", "");
-//        conf.set("fs.lakefs.map5", null);
         Assert.assertEquals(new HashMap<String, String>() {{
             put("k1", "v1");
         }}, FSConfiguration.getMap(conf, "lakefs", "map1"));
