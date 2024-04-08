@@ -566,7 +566,7 @@ func (c *Controller) StsLogin(w http.ResponseWriter, r *http.Request, body apige
 		return
 	}
 	// validate a user exists with the external user id
-	_, err = c.Auth.GetUserByExternalID(ctx, externalUserID)
+	user, err := c.Auth.GetUserByExternalID(ctx, externalUserID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -576,7 +576,7 @@ func (c *Controller) StsLogin(w http.ResponseWriter, r *http.Request, body apige
 	}
 	now := time.Now()
 	expiresAt := now.Add(time.Duration(expiresInSec) * time.Second)
-	token, err := GenerateJWTLogin(c.Auth.SecretStore().SharedSecret(), externalUserID, now, expiresAt)
+	token, err := GenerateJWTLogin(c.Auth.SecretStore().SharedSecret(), user.Username, now, expiresAt)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
