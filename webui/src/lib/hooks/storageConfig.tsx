@@ -61,7 +61,10 @@ export const StorageConfigProvider: FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const fetchStorageConfigAndSetState = async () => {
       const storageConfig = await fetchStorageConfig();
-      setStorageConfig(storageConfig);
+      setStorageConfig({
+        ...storageConfig,
+        loading: false,
+      });
     };
     fetchStorageConfigAndSetState();
   }, []);
