@@ -103,7 +103,7 @@ container and edit an image dataset used for ML model development.
 ## Pushing Local Changes to lakeFS
 
 Once we are done with editing the image dataset in our local environment, we will push our changes to the lakeFS remote so that 
-the adjusted dataset is shared and versioned.
+the improved dataset is shared and versioned.
 
 1. Commit your local changes to lakeFS: 
 
