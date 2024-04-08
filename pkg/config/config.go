@@ -494,7 +494,7 @@ const (
 )
 
 func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
-	var customerSuppliedKey = make([]byte, 0)
+	var customerSuppliedKey []byte = nil
 	if c.Blockstore.GS.ServerSideEncryptionCustomerSupplied != "" {
 		v, err := hex.DecodeString(c.Blockstore.GS.ServerSideEncryptionCustomerSupplied)
 		if err != nil || len(v) != GcpAESKeyLength {
