@@ -1,61 +1,251 @@
 package io.lakefs.auth;
 
-import com.amazonaws.DefaultRequest;
-import com.amazonaws.Request;
-import com.amazonaws.auth.*;
-import com.amazonaws.http.HttpMethodName;
-import com.amazonaws.util.AwsHostNameUtils;
-import com.amazonaws.util.BinaryUtils;
+import static com.amazonaws.util.StringUtils.UTF8;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.util.Date;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.auth.*;
+import com.amazonaws.util.AwsHostNameUtils;
+import com.amazonaws.util.BinaryUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * GetCallerIdentityV4Presigner is that knows how to generate a presigned URL for the GetCallerIdentity API. The presigned URL is signed using SigV4.
  * This class is extending AWS4Signer of AWS SDK version 1.7.4 and copies some functions from https://github.com/aws/aws-sdk-java/blob/1.7.4/src/main/java/com/amazonaws/auth/AWS4Signer.java
  * The reason we copy some functions is that we need to support aws-hadoop-2 which depends on aws sdk 1.7.4 while aws-hadoop-3 depends on aws sdk 1.11.375.
- * Everything that is copied starts with "overridden" prefix, a reasonable alternative would be to use @Override but, AWS made those functions final.
  */
-public class GetCallerIdentityV4Presigner extends AWS4Signer implements STSGetCallerIdentityPresigner {
-    protected static final String OVERRIDDEN_ALGORITHM = "AWS4-HMAC-SHA256";
-    protected static final String OVERRIDDEN_TERMINATOR = "aws4_request";
+public class GetCallerIdentityV4Presigner implements STSGetCallerIdentityPresigner {
     private static final String DEFAULT_ENCODING = "UTF-8";
-
-
+    private static final String TERMINATOR = "aws4_request";
+    private static final String ALGORITHM = "AWS4-HMAC-SHA256";
+    private static final String SERVICE_NAME = "sts";
+    private static final Logger LOG = LoggerFactory.getLogger(GetCallerIdentityV4Presigner.class);
     // copy from https://github.com/aws/aws-sdk-java/blob/679abaebd371b09e887afaa5386dc182be4c6498/aws-java-sdk-core/src/main/java/com/amazonaws/util/SdkHttpUtils.java#L39
     /**
      * Regex which matches any of the sequences that we need to fix up after
      * URLEncoder.encode().
      */
-    private static final Pattern OVERRIDDEN_ENCODED_CHARACTERS_PATTERN;
+    private static final Pattern ENCODED_CHARACTERS_PATTERN;
 
     static {
         StringBuilder pattern = new StringBuilder();
 
-        pattern
-                .append(Pattern.quote("+"))
-                .append("|")
-                .append(Pattern.quote("*"))
-                .append("|")
-                .append(Pattern.quote("%7E"))
-                .append("|")
-                .append(Pattern.quote("%2F"));
+        pattern.append(Pattern.quote("+")).append("|").append(Pattern.quote("*")).append("|").append(Pattern.quote("%7E")).append("|").append(Pattern.quote("%2F"));
 
-        OVERRIDDEN_ENCODED_CHARACTERS_PATTERN = Pattern.compile(pattern.toString());
+        ENCODED_CHARACTERS_PATTERN = Pattern.compile(pattern.toString());
     }
 
-    GetCallerIdentityV4Presigner() {
-        super(false);
+    public GetCallerIdentityV4Presigner() {
+    }
+
+    public byte[] sign(String stringData, byte[] key, SigningAlgorithm algorithm) throws AmazonClientException {
+        try {
+            byte[] data = stringData.getBytes(UTF8);
+            return sign(data, key, algorithm);
+        } catch (Exception e) {
+            throw new AmazonClientException("Unable to calculate a request signature: " + e.getMessage(), e);
+        }
+    }
+
+    protected byte[] sign(byte[] data, byte[] key, SigningAlgorithm algorithm) throws AmazonClientException {
+        try {
+            Mac mac = Mac.getInstance(algorithm.toString());
+            mac.init(new SecretKeySpec(key, algorithm.toString()));
+            return mac.doFinal(data);
+        } catch (Exception e) {
+            throw new AmazonClientException("Unable to calculate a request signature: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Hashes the string contents (assumed to be UTF-8) using the SHA-256
+     * algorithm.
+     *
+     * @param text The string to hash.
+     * @return The hashed bytes from the specified string.
+     * @throws AmazonClientException If the hash cannot be computed.
+     */
+    public byte[] hash(String text) throws AmazonClientException {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(text.getBytes(UTF8));
+            return md.digest();
+        } catch (Exception e) {
+            throw new AmazonClientException("Unable to compute hash while signing request: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Examines the specified query string parameters and returns a
+     * canonicalized form.
+     * <p>
+     * The canonicalized query string is formed by first sorting all the query
+     * string parameters, then URI encoding both the key and value and then
+     * joining them, in order, separating key value pairs with an '&'.
+     *
+     * @param parameters The query string parameters to be canonicalized.
+     * @return A canonicalized form for the specified query string parameters.
+     */
+    protected String getCanonicalizedQueryString(Map<String, String> parameters) {
+
+        SortedMap<String, String> sorted = new TreeMap<String, String>();
+
+        Iterator<Map.Entry<String, String>> pairs = parameters.entrySet().iterator();
+        while (pairs.hasNext()) {
+            Map.Entry<String, String> pair = pairs.next();
+            String key = pair.getKey();
+            String value = pair.getValue();
+            String encodedKey = urlEncode(key, false);
+            String encodedValue = urlEncode(value, false);
+            sorted.put(encodedKey, encodedValue);
+
+        }
+
+        StringBuilder builder = new StringBuilder();
+        pairs = sorted.entrySet().iterator();
+        while (pairs.hasNext()) {
+            Map.Entry<String, String> pair = pairs.next();
+            builder.append(pair.getKey());
+            builder.append("=");
+            builder.append(pair.getValue());
+            if (pairs.hasNext()) {
+                builder.append("&");
+            }
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Loads the individual access key ID and secret key from the specified
+     * credentials, ensuring that access to the credentials is synchronized on
+     * the credentials object itself, and trimming any extra whitespace from the
+     * credentials.
+     * <p>
+     * Returns either a {@link BasicSessionCredentials} or a
+     * {@link BasicAWSCredentials} object, depending on the input type.
+     *
+     * @param credentials
+     * @return A new credentials object with the sanitized credentials.
+     */
+    protected AWSCredentials sanitizeCredentials(AWSCredentials credentials) {
+        String accessKeyId = null;
+        String secretKey = null;
+        String token = null;
+        synchronized (credentials) {
+            accessKeyId = credentials.getAWSAccessKeyId();
+            secretKey = credentials.getAWSSecretKey();
+            if (credentials instanceof AWSSessionCredentials) {
+                token = ((AWSSessionCredentials) credentials).getSessionToken();
+            }
+        }
+        if (secretKey != null) secretKey = secretKey.trim();
+        if (accessKeyId != null) accessKeyId = accessKeyId.trim();
+        if (token != null) token = token.trim();
+
+        if (credentials instanceof AWSSessionCredentials) {
+            return new BasicSessionCredentials(accessKeyId, secretKey, token);
+        }
+
+        return new BasicAWSCredentials(accessKeyId, secretKey);
+    }
+
+    protected Date getSignatureDate(int timeOffset) {
+        Date dateValue = new Date();
+        if (timeOffset != 0) {
+            long epochMillis = dateValue.getTime();
+            epochMillis -= timeOffset * 1000;
+            dateValue = new Date(epochMillis);
+        }
+        return dateValue;
+    }
+
+    public static String getDateStamp(long dateMilli) {
+
+        // Convert milliseconds to Instant
+        Instant instant = Instant.ofEpochMilli(dateMilli);
+
+        // Format Instant to String in UTC time zone
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd").withZone(ZoneId.of("UTC"));
+        String formattedDate = formatter.format(instant);
+
+        return formattedDate;
+    }
+
+    public static String getTimeStamp(long dateMilli) {
+        // Convert milliseconds to Instant
+        Instant instant = Instant.ofEpochMilli(dateMilli);
+
+        // Format Instant to String in UTC time zone
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneId.of("UTC"));
+        String formattedDateTime = formatter.format(instant);
+        return formattedDateTime;
+    }
+
+    // copy from v2
+    protected String getCanonicalizedHeaderString(Map<String, String> requestHeaders) {
+        List<String> sortedHeaders = new ArrayList<>();
+        sortedHeaders.addAll(requestHeaders.keySet());
+        Collections.sort(sortedHeaders, String.CASE_INSENSITIVE_ORDER);
+
+        StringBuilder buffer = new StringBuilder();
+        for (String header : sortedHeaders) {
+            String key = header.toLowerCase().replaceAll("\\s+", " ");
+            String value = requestHeaders.get(header);
+
+            buffer.append(key).append(":");
+            if (value != null) {
+                buffer.append(value.replaceAll("\\s+", " "));
+            }
+
+            buffer.append("\n");
+        }
+
+        return buffer.toString();
+    }
+
+    // copy from v2
+    protected String getSignedHeadersString(Map<String, String> headers) {
+        List<String> sortedHeaders = new ArrayList<>();
+        sortedHeaders.addAll(headers.keySet());
+        Collections.sort(sortedHeaders, String.CASE_INSENSITIVE_ORDER);
+
+        StringBuilder buffer = new StringBuilder();
+        for (String header : sortedHeaders) {
+            if (buffer.length() > 0) buffer.append(";");
+            buffer.append(header.toLowerCase());
+        }
+
+        return buffer.toString();
+    }
+    // copy from https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L241
+    protected String getCanonicalRequest(String httpMethod, Map<String, String> parameters, Map<String, String> headers, String contentSha256) {
+        final String path = "/";
+        String canonicalRequest = httpMethod + "\n" + path + "\n" + getCanonicalizedQueryString(parameters) + "\n" + getCanonicalizedHeaderString(headers) + "\n" + getSignedHeadersString(headers) + "\n" + contentSha256;
+
+        LOG.debug("AWS4 Canonical Request: '{}'", canonicalRequest);
+        return canonicalRequest;
+    }
+
+    // copy from https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L257C22-L257C37
+    protected String getStringToSign(String algorithm, String dateTime, String scope, String canonicalRequest) {
+        String stringToSign = algorithm + "\n" + dateTime + "\n" + scope + "\n" + BinaryUtils.toHex(hash(canonicalRequest));
+        LOG.debug("AWS4 String to Sign: '{}'", stringToSign);
+        return stringToSign;
     }
     // copy from https://github.com/aws/aws-sdk-java/blob/679abaebd371b09e887afaa5386dc182be4c6498/aws-java-sdk-core/src/main/java/com/amazonaws/util/SdkHttpUtils.java#L66
 
@@ -75,11 +265,10 @@ public class GetCallerIdentityV4Presigner extends AWS4Signer implements STSGetCa
         if (value == null) {
             return "";
         }
-
         try {
             String encoded = URLEncoder.encode(value, DEFAULT_ENCODING);
 
-            Matcher matcher = OVERRIDDEN_ENCODED_CHARACTERS_PATTERN.matcher(encoded);
+            Matcher matcher = ENCODED_CHARACTERS_PATTERN.matcher(encoded);
             StringBuffer buffer = new StringBuffer(encoded.length());
 
             while (matcher.find()) {
@@ -106,217 +295,93 @@ public class GetCallerIdentityV4Presigner extends AWS4Signer implements STSGetCa
         }
     }
 
-    // copy from https://github.com/aws/aws-sdk-java/blob/679abaebd371b09e887afaa5386dc182be4c6498/aws-java-sdk-core/src/main/java/com/amazonaws/util/SdkHttpUtils.java#L194
-
     /**
-     * Append the given path to the given baseUri.
+     * Returns true if the specified URI is using a non-standard port (i.e. any
+     * port other than 80 for HTTP URIs or any port other than 443 for HTTPS
+     * URIs).
      *
-     * <p>This method will encode the given path but not the given
-     * baseUri.</p>
-     *
-     * @param baseUri           The URI to append to (required, may be relative)
-     * @param path              The path to append (may be null or empty)
-     * @param escapeDoubleSlash Whether double-slash in the path should be escaped to "/%2F"
-     * @return The baseUri with the (encoded) path appended
+     * @param uri
+     * @return True if the specified URI is using a non-standard port, otherwise
+     * false.
      */
-    public static String appendUri(final String baseUri, String path, final boolean escapeDoubleSlash) {
-        String resultUri = baseUri;
-        if (path != null && path.length() > 0) {
-            if (path.startsWith("/")) {
-                // trim the trailing slash in baseUri, since the path already starts with a slash
-                if (resultUri.endsWith("/")) {
-                    resultUri = resultUri.substring(0, resultUri.length() - 1);
-                }
-            } else if (!resultUri.endsWith("/")) {
-                resultUri += "/";
-            }
-            String encodedPath = GetCallerIdentityV4Presigner.urlEncode(path, true);
-            if (escapeDoubleSlash) {
-                encodedPath = encodedPath.replace("//", "/%2F");
-            }
-            resultUri += encodedPath;
-        } else if (!resultUri.endsWith("/")) {
-            resultUri += "/";
+    public static boolean isUsingNonDefaultPort(URI uri) {
+        String scheme = uri.getScheme().toLowerCase();
+        int port = uri.getPort();
+
+        if (port <= 0) return false;
+        if (scheme.equals("http") && port == 80) return false;
+        if (scheme.equals("https") && port == 443) return false;
+
+        return true;
+    }
+
+    // cloned original addHostHeader in AWS4Signer
+    protected String getHostHeader(URI endpoint) {
+        StringBuilder hostHeaderBuilder = new StringBuilder(endpoint.getHost());
+        if (isUsingNonDefaultPort(endpoint)) {
+            hostHeaderBuilder.append(":").append(endpoint.getPort());
+        }
+        return hostHeaderBuilder.toString();
+    }
+
+    public GeneratePresignGetCallerIdentityResponse presignRequest(GeneratePresignGetCallerIdentityRequest input) {
+
+        AWSCredentials sanitizedCredentials = sanitizeCredentials(input.getCredentials());
+        String region = AwsHostNameUtils.parseRegionName(input.getStsEndpoint());
+        // TODO(isan) use global sdk commented out here
+        int timeOffset = 0;
+        Date date = getSignatureDate(timeOffset);
+        long dateMilli = date.getTime();
+        String dateStamp = getDateStamp(dateMilli);
+        String timeStamp = getTimeStamp(System.currentTimeMillis());
+        String scope = dateStamp + "/" + region + "/" + SERVICE_NAME + "/" + TERMINATOR;
+        String signingCredentials = sanitizedCredentials.getAWSAccessKeyId() + "/" + scope;
+
+        ///////////// compute signature  /////////////
+
+        Map<String, String> headersToSign = new HashMap<String, String>() {{
+            put("Host", getHostHeader(input.getStsEndpoint()));
+        }};
+        // add additional headers to sign (i.e X-lakeFS-Server-ID)
+        for (Map.Entry<String, String> entry : input.getAdditionalHeaders().entrySet()) {
+            headersToSign.put(entry.getKey(), entry.getValue());
         }
 
-        return resultUri;
+        Map<String, String> queryParamsToSign = new HashMap<String, String>() {{
+            put(STSGetCallerIdentityPresigner.AMZ_ACTION_PARAM_NAME, "GetCallerIdentity");
+            put(STSGetCallerIdentityPresigner.AMZ_VERSION_PARAM_NAME, "2011-06-15");
+            put(STSGetCallerIdentityPresigner.AMZ_SECURITY_TOKEN_PARAM_NAME, ((AWSSessionCredentials) sanitizedCredentials).getSessionToken());
+            put(STSGetCallerIdentityPresigner.AMZ_ALGORITHM_PARAM_NAME, ALGORITHM);
+            put(STSGetCallerIdentityPresigner.AMZ_DATE_PARAM_NAME, timeStamp);
+            put(STSGetCallerIdentityPresigner.AMZ_SIGNED_HEADERS_PARAM_NAME, getSignedHeadersString(headersToSign));
+            put(STSGetCallerIdentityPresigner.AMZ_EXPIRES_PARAM_NAME, String.valueOf(input.getExpirationInSeconds()));
+            put(STSGetCallerIdentityPresigner.AMZ_CREDENTIAL_PARAM_NAME, signingCredentials);
+        }};
+
+        // contentSha256 is HashedPayload Hex(SHA256Hash(""))
+        // see https://docs.aws.amazon.com/IAM/latest/UserGuide/create-signed-request.html#create-string-to-sign
+        byte[] contentDigest = hash("");
+        String contentSha256 = BinaryUtils.toHex(contentDigest);
+        String canonicalRequest = getCanonicalRequest("POST", queryParamsToSign, headersToSign, contentSha256);
+
+        String stringToSign = getStringToSign(ALGORITHM, timeStamp, scope, canonicalRequest);
+
+        byte[] signature = computeSignature(sanitizedCredentials, dateStamp, region, SERVICE_NAME, TERMINATOR, stringToSign);
+
+        GeneratePresignGetCallerIdentityResponse result = new GeneratePresignGetCallerIdentityResponse(input,region, queryParamsToSign, headersToSign, BinaryUtils.toHex(signature));
+        return result;
     }
 
-    // copy from https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L294
-    protected final String overriddenGetTimeStamp(long dateMilli) {
-        // Convert milliseconds to Instant
-        Instant instant = Instant.ofEpochMilli(dateMilli);
-
-        // Format Instant to String in UTC time zone
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'")
-                .withZone(ZoneId.of("UTC"));
-        String formattedDateTime = formatter.format(instant);
-        return formattedDateTime;
-    }
-
-    // copy from https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L298
-    protected final String overriddenGetDateStamp(long dateMilli) {
-
-        // Convert milliseconds to Instant
-        Instant instant = Instant.ofEpochMilli(dateMilli);
-
-        // Format Instant to String in UTC time zone
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd")
-                .withZone(ZoneId.of("UTC"));
-        String formattedDate = formatter.format(instant);
-
-        return formattedDate;
-    }
-
-    // copy from https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L302
-    protected final long overriddenGetDateFromRequest(Request<?> request) {
-        int timeOffset = getTimeOffset(request);
-        Date date = getSignatureDate(timeOffset);
-        if (overriddenDate != null) date = overriddenDate;
-        return date.getTime();
-    }
-
-    // copy from https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L183
-    protected String overriddenExtractRegionName(URI endpoint) {
-        if (regionName != null) return regionName;
-
-        return AwsHostNameUtils.parseRegionName(endpoint.getHost(),
-                serviceName);
-    }
-
-    public String getSignedRegion(Request<GeneratePresignGetCallerIdentityRequest> r) {
-        return overriddenExtractRegionName(r.getEndpoint());
-    }
-
-    // copy from https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L190
-    protected String overriddenExtractServiceName(URI endpoint) {
-        if (serviceName != null) return serviceName;
-
-        // This should never actually be called, as we should always be setting
-        // a service name on the signer; retain it for now in case anyone is
-        // using the AWS4Signer directly and not setting a service name
-        // explicitly.
-
-        return AwsHostNameUtils.parseServiceName(endpoint);
-    }
-
-    // copy from https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L320
-    protected String overriddenGetScope(Request<?> request, String dateStamp) {
-        String regionName = overriddenExtractRegionName(request.getEndpoint());
-        String serviceName = overriddenExtractServiceName(request.getEndpoint());
-        String scope = dateStamp + "/" + regionName + "/" + serviceName + "/" + OVERRIDDEN_TERMINATOR;
-        return scope;
-    }
-
-    // copy from https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L241
-    protected String overriddenGetCanonicalRequest(Request<?> request, String contentSha256) {
-        /* This would url-encode the resource path for the first time */
-        //String path = HttpUtils.appendUri(request.getEndpoint().getPath(), request.getResourcePath());
-        String path = GetCallerIdentityV4Presigner.appendUri(request.getEndpoint().getPath(), request.getResourcePath(), false);
-        String canonicalRequest =
-                request.getHttpMethod().toString() + "\n" +
-                        /* This would optionally double url-encode the resource path */
-                        getCanonicalizedResourcePath(path, doubleUrlEncode) + "\n" +
-                        getCanonicalizedQueryString(request) + "\n" +
-                        getCanonicalizedHeaderString(request) + "\n" +
-                        getSignedHeadersString(request) + "\n" +
-                        contentSha256;
-        log.debug("AWS4 Canonical Request: '\"" + canonicalRequest + "\"");
-        return canonicalRequest;
-    }
-
-    // copy from https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L257C22-L257C37
-    protected String overriddenGetStringToSign(String algorithm, String dateTime, String scope, String canonicalRequest) {
-        String stringToSign =
-                algorithm + "\n" +
-                        dateTime + "\n" +
-                        scope + "\n" +
-                        BinaryUtils.toHex(hash(canonicalRequest));
-        log.debug("AWS4 String to Sign: '\"" + stringToSign + "\"");
-        return stringToSign;
-    }
-
-    // copy from https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L268
-    protected final byte[] overriddenComputeSignature(
-            Request<?> request,
-            String dateStamp,
-            String timeStamp,
-            String algorithm,
-            String contentSha256,
-            AWSCredentials sanitizedCredentials) {
-        String regionName = overriddenExtractRegionName(request.getEndpoint());
-        String serviceName = overriddenExtractServiceName(request.getEndpoint());
-        String scope = dateStamp + "/" + regionName + "/" + serviceName + "/" + OVERRIDDEN_TERMINATOR;
-
-        String stringToSign = overriddenGetStringToSign(algorithm, timeStamp, scope, overriddenGetCanonicalRequest(request, contentSha256));
-
+    public byte[] computeSignature(AWSCredentials sanitizedCredentials, String dateStamp, String region, String SERVICE_NAME, String TERMINATOR, String stringToSign) {
         // AWS4 uses a series of derived keys, formed by hashing different
         // pieces of data
         byte[] kSecret = ("AWS4" + sanitizedCredentials.getAWSSecretKey()).getBytes();
         byte[] kDate = sign(dateStamp, kSecret, SigningAlgorithm.HmacSHA256);
-        byte[] kRegion = sign(regionName, kDate, SigningAlgorithm.HmacSHA256);
-        byte[] kService = sign(serviceName, kRegion, SigningAlgorithm.HmacSHA256);
-        byte[] kSigning = sign(OVERRIDDEN_TERMINATOR, kService, SigningAlgorithm.HmacSHA256);
+        byte[] kRegion = sign(region, kDate, SigningAlgorithm.HmacSHA256);
+        byte[] kService = sign(SERVICE_NAME, kRegion, SigningAlgorithm.HmacSHA256);
+        byte[] kSigning = sign(TERMINATOR, kService, SigningAlgorithm.HmacSHA256);
 
         byte[] signature = sign(stringToSign.getBytes(), kSigning, SigningAlgorithm.HmacSHA256);
         return signature;
-    }
-
-    public Request<GeneratePresignGetCallerIdentityRequest> presignRequest(GeneratePresignGetCallerIdentityRequest input) throws IOException {
-        Request request = new DefaultRequest("sts");
-        request.setEndpoint(input.getStsEndpoint());
-        request.addParameter(STSGetCallerIdentityPresigner.AMZ_ACTION_PARAM_NAME, "GetCallerIdentity");
-        request.addParameter(STSGetCallerIdentityPresigner.AMZ_VERSION_PARAM_NAME, "2011-06-15");
-        // we want to support generating only POST requests, adding an empty stream is a hack
-        // to make it use query params when Signer calls this.usePayloadForQueryParameters returns false for an empty POST request.
-        request.setContent(new InputStream() {
-            @Override
-            public int read() throws IOException {
-                return -1;
-            }
-        });
-        request.setHttpMethod(HttpMethodName.POST);
-        addHostHeader(request);
-
-        AWSCredentials sanitizedCredentials = sanitizeCredentials(input.getCredentials());
-
-        if (sanitizedCredentials instanceof AWSSessionCredentials) {
-            // For SigV4 presigning URL, we need to add "x-amz-security-token"
-            // as a query string parameter, before constructing the canonical request.
-            request.addParameter(STSGetCallerIdentityPresigner.AMZ_SECURITY_TOKEN_PARAM_NAME, ((AWSSessionCredentials) sanitizedCredentials).getSessionToken());
-        }
-
-        // add additional headers to sign (i.e X-lakeFS-Server-ID)
-        for (Map.Entry<String, String> entry : input.getAdditionalHeaders().entrySet()) {
-            request.addHeader(entry.getKey(), entry.getValue());
-        }
-
-        // Add required parameters for v4 signing
-        long now = System.currentTimeMillis();
-
-        final String timeStamp = overriddenGetTimeStamp(now);
-        request.addParameter(STSGetCallerIdentityPresigner.AMZ_ALGORITHM_PARAM_NAME, OVERRIDDEN_ALGORITHM);
-        request.addParameter(STSGetCallerIdentityPresigner.AMZ_DATE_PARAM_NAME, timeStamp);
-        request.addParameter(STSGetCallerIdentityPresigner.AMZ_SIGNED_HEADERS_PARAM_NAME, getSignedHeadersString(request));
-        request.addParameter(STSGetCallerIdentityPresigner.AMZ_EXPIRES_PARAM_NAME, String.valueOf(input.getExpirationInSeconds()));
-
-        // add X-Amz-Credential header (e.g <AccessKeyId>/<date>/<region>>/sts/aws4_request)
-
-        long dateMilli = overriddenGetDateFromRequest(request);
-        final String dateStamp = overriddenGetDateStamp(dateMilli);
-        String scope = overriddenGetScope(request, dateStamp);
-        String signingCredentials = sanitizedCredentials.getAWSAccessKeyId() + "/" + scope;
-
-        request.addParameter(STSGetCallerIdentityPresigner.AMZ_CREDENTIAL_PARAM_NAME, signingCredentials);
-
-        // contentSha256 is HashedPayload Hex(SHA256Hash("")) see https://docs.aws.amazon.com/IAM/latest/UserGuide/create-signed-request.html#create-string-to-sign
-        byte[] contentDigest = this.hash(request.getContent());
-        String contentSha256 = BinaryUtils.toHex(contentDigest);
-
-        byte[] signature = overriddenComputeSignature(request, dateStamp, timeStamp, OVERRIDDEN_ALGORITHM, contentSha256, sanitizedCredentials);
-
-        request.addParameter(STSGetCallerIdentityPresigner.AMZ_SIGNATURE_PARAM_NAME, BinaryUtils.toHex(signature));
-
-        return request;
     }
 }

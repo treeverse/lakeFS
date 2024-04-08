@@ -1,7 +1,5 @@
 package io.lakefs.auth;
-
-import com.amazonaws.Request;
-import com.amazonaws.auth.*;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import io.lakefs.Constants;
 import io.lakefs.FSConfiguration;
 import io.lakefs.clients.sdk.ApiClient;
@@ -95,7 +93,7 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
         return this.lakeFSAuthToken == null || this.lakeFSAuthToken.getTokenExpiration() < System.currentTimeMillis();
     }
 
-    public Request<GeneratePresignGetCallerIdentityRequest> newPresignedRequest() throws Exception {
+    public GeneratePresignGetCallerIdentityResponse newPresignedRequest() throws Exception {
         GeneratePresignGetCallerIdentityRequest stsReq = new GeneratePresignGetCallerIdentityRequest(
                 new URI(this.stsEndpoint),
                 this.awsProvider.getCredentials(),
@@ -106,36 +104,22 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
     }
 
     public String newPresignedGetCallerIdentityToken() throws Exception {
-        Request<GeneratePresignGetCallerIdentityRequest> signedRequest = this.newPresignedRequest();
-        Map<String, ?> rawQueryParams = signedRequest.getParameters();
-        Map<String, String> params = new HashMap<>();
-        // check if the value is an array and join it with commas depends on the AWS SDK version
-        for (Map.Entry<String, ?> entry : rawQueryParams.entrySet()) {
-            String key = entry.getKey();
-            Object value = entry.getValue();
-            if (value instanceof String[]) {
-                String[] arrayValue = (String[]) value;
-                String joinedValue = String.join(",", arrayValue);
-                params.put(key, joinedValue);
-            } else {
-                params.put(key, value.toString());
-            }
-        }
+        GeneratePresignGetCallerIdentityResponse signedRequest = this.newPresignedRequest();
 
         // generate token parameters object
         LakeFSExternalPrincipalIdentityRequest identityTokenParams = new LakeFSExternalPrincipalIdentityRequest(
-                signedRequest.getHttpMethod().name(),
-                signedRequest.getEndpoint().getHost(),
-                this.stsPresigner.getSignedRegion(signedRequest),
-                params.get(STSGetCallerIdentityPresigner.AMZ_ACTION_PARAM_NAME),
-                params.get(STSGetCallerIdentityPresigner.AMZ_DATE_PARAM_NAME),
-                params.get(STSGetCallerIdentityPresigner.AMZ_EXPIRES_PARAM_NAME),
-                this.awsProvider.getCredentials().getAWSAccessKeyId(),
-                params.get(STSGetCallerIdentityPresigner.AMZ_SIGNATURE_PARAM_NAME),
-                Arrays.asList(params.get(STSGetCallerIdentityPresigner.AMZ_SIGNED_HEADERS_PARAM_NAME).split(";")),
-                params.get(STSGetCallerIdentityPresigner.AMZ_VERSION_PARAM_NAME),
-                params.get(STSGetCallerIdentityPresigner.AMZ_ALGORITHM_PARAM_NAME),
-                params.get(STSGetCallerIdentityPresigner.AMZ_SECURITY_TOKEN_PARAM_NAME)
+                signedRequest.getHTTPMethod(),
+                signedRequest.getHost(),
+                signedRequest.getRegion(),
+                signedRequest.getAction(),
+                signedRequest.getDate(),
+                signedRequest.getExpires(),
+                signedRequest.getAccessKeyId(),
+                signedRequest.getSignature(),
+                Arrays.asList(signedRequest.getSignedHeadersParam().split(";")),
+                signedRequest.getVersion(),
+                signedRequest.getAlgorithm(),
+                signedRequest.getSecurityToken()
         );
 
         // base64 encode

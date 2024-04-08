@@ -1,6 +1,6 @@
 package io.lakefs.auth;
 
-import com.amazonaws.auth.*;
+import com.amazonaws.auth.AWSCredentials;
 
 import java.net.URI;
 import java.util.Map;
