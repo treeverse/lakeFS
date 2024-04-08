@@ -1,5 +1,4 @@
 package io.lakefs.auth;
-//import org.joda.time.format.DateTimeFormat;
 
 import com.amazonaws.DefaultRequest;
 import com.amazonaws.Request;
@@ -7,7 +6,7 @@ import com.amazonaws.auth.*;
 import com.amazonaws.http.HttpMethodName;
 import com.amazonaws.util.AwsHostNameUtils;
 import com.amazonaws.util.BinaryUtils;
-//import com.amazonaws.util.HttpUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -184,9 +183,11 @@ public class GetCallerIdentityV4Presigner extends AWS4Signer implements STSGetCa
         return AwsHostNameUtils.parseRegionName(endpoint.getHost(),
                 serviceName);
     }
-    public String getSignedRegion(Request<GeneratePresignGetCallerIdentityRequest> r){
+
+    public String getSignedRegion(Request<GeneratePresignGetCallerIdentityRequest> r) {
         return overriddenExtractRegionName(r.getEndpoint());
     }
+
     // copy from https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L190
     protected String overriddenExtractServiceName(URI endpoint) {
         if (serviceName != null) return serviceName;

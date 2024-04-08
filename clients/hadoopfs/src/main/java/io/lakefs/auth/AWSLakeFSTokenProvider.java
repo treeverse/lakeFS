@@ -5,19 +5,16 @@ import com.amazonaws.auth.*;
 import io.lakefs.Constants;
 import io.lakefs.FSConfiguration;
 import io.lakefs.clients.sdk.ApiClient;
-import io.lakefs.clients.sdk.ApiException;
-import io.lakefs.clients.sdk.AuthApi;
 import io.lakefs.clients.sdk.model.AuthenticationToken;
 import org.apache.commons.codec.binary.Base64;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-//import com.amazonaws.util.json.JSONObject;
 import org.apache.hadoop.conf.Configuration;
 
 
@@ -112,7 +109,7 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
         Request<GeneratePresignGetCallerIdentityRequest> signedRequest = this.newPresignedRequest();
         Map<String, String> params = signedRequest.getParameters();
         String securityToken = null;
-        if(this.awsProvider.getCredentials() instanceof AWSSessionCredentials) {
+        if (this.awsProvider.getCredentials() instanceof AWSSessionCredentials) {
             AWSSessionCredentials sessionCredentials = (AWSSessionCredentials) this.awsProvider.getCredentials();
 
         }

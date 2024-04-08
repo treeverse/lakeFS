@@ -1,6 +1,5 @@
 package io.lakefs.auth;
 
-//import com.amazonaws.util.json.JSONObject;
 import io.lakefs.Constants;
 import io.lakefs.FSConfiguration;
 import org.apache.commons.codec.binary.Base64;
@@ -22,7 +21,7 @@ public class AWSLakeFSTokenProviderTest {
         conf.set("fs.lakefs." + Constants.TOKEN_AWS_CREDENTIALS_PROVIDER_SESSION_TOKEN_KEY_SUFFIX, "sessionToken");
         conf.set("fs.lakefs." + Constants.TOKEN_AWS_STS_ENDPOINT, "https://sts.amazonaws.com");
 
-        AWSLakeFSTokenProvider provider = (AWSLakeFSTokenProvider)LakeFSTokenProviderFactory.newLakeFSTokenProvider(Constants.DEFAULT_SCHEME, conf);
+        AWSLakeFSTokenProvider provider = (AWSLakeFSTokenProvider) LakeFSTokenProviderFactory.newLakeFSTokenProvider(Constants.DEFAULT_SCHEME, conf);
         String identityToken = provider.newPresignedGetCallerIdentityToken();
         String decodedToken = new String(Base64.decodeBase64(identityToken.getBytes()));
         LakeFSExternalPrincipalIdentityRequest request = LakeFSExternalPrincipalIdentityRequest.fromJSON(decodedToken);
@@ -32,7 +31,7 @@ public class AWSLakeFSTokenProviderTest {
         Assert.assertEquals("GetCallerIdentity", request.getAction());
         Assert.assertTrue(request.getDate().matches("\\d{8}T\\d{6}Z"));
         Assert.assertEquals("60", request.getExpirationDuration());
-        Assert.assertEquals(FSConfiguration.get(conf, "lakefs",Constants.TOKEN_AWS_CREDENTIALS_PROVIDER_ACCESS_KEY_SUFFIX), request.getAccessKeyId());
+        Assert.assertEquals(FSConfiguration.get(conf, "lakefs", Constants.TOKEN_AWS_CREDENTIALS_PROVIDER_ACCESS_KEY_SUFFIX), request.getAccessKeyId());
         Assert.assertTrue(request.getSignature().matches("[0-9a-fA-F]{64}"));
         Assert.assertEquals("host", request.getSignedHeaders().get(0));
         Assert.assertEquals("x-lakefs-server-id", request.getSignedHeaders().get(1));
