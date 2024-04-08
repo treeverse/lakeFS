@@ -12,6 +12,8 @@ import org.apache.commons.codec.binary.Base64;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -108,16 +110,32 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
 
     public String newPresignedGetCallerIdentityToken() throws Exception {
         Request<GeneratePresignGetCallerIdentityRequest> signedRequest = this.newPresignedRequest();
+        Map<String, String> params = signedRequest.getParameters();
+        String securityToken = null;
+        if(this.awsProvider.getCredentials() instanceof AWSSessionCredentials) {
+            AWSSessionCredentials sessionCredentials = (AWSSessionCredentials) this.awsProvider.getCredentials();
+
+        }
+
+
         // generate token parameters object
-        return "";
-//        JSONObject identityTokenParams = new JSONObject();
-//        identityTokenParams.put("method", signedRequest.getHttpMethod().name());
-//        identityTokenParams.put("endpoint", signedRequest.getEndpoint().toString());
-//        identityTokenParams.put("signedHeaders", signedRequest.getHeaders().keySet().toArray());
-//        identityTokenParams.put("expiration", this.stsExpirationInSeconds);
-//        identityTokenParams.put("signedParams", signedRequest.getParameters());
-//        // base64 encode
-//        return Base64.encodeBase64String(identityTokenParams.toString().getBytes());
+        LakeFSExternalPrincipalIdentityRequest identityTokenParams = new LakeFSExternalPrincipalIdentityRequest(
+                signedRequest.getHttpMethod().name(),
+                signedRequest.getEndpoint().getHost(),
+                this.stsPresigner.getSignedRegion(signedRequest),
+                params.get(STSGetCallerIdentityPresigner.AMZ_ACTION_PARAM_NAME),
+                params.get(STSGetCallerIdentityPresigner.AMZ_DATE_PARAM_NAME),
+                params.get(STSGetCallerIdentityPresigner.AMZ_EXPIRES_PARAM_NAME),
+                this.awsProvider.getCredentials().getAWSAccessKeyId(),
+                params.get(STSGetCallerIdentityPresigner.AMZ_SIGNATURE_PARAM_NAME),
+                Arrays.asList(params.get(STSGetCallerIdentityPresigner.AMZ_SIGNED_HEADERS_PARAM_NAME).split(";")),
+                params.get(STSGetCallerIdentityPresigner.AMZ_VERSION_PARAM_NAME),
+                params.get(STSGetCallerIdentityPresigner.AMZ_ALGORITHM_PARAM_NAME),
+                params.get(STSGetCallerIdentityPresigner.AMZ_SECURITY_TOKEN_PARAM_NAME)
+        );
+
+        // base64 encode
+        return Base64.encodeBase64String(identityTokenParams.toJSON().getBytes());
     }
 
     private void newToken() throws Exception {
