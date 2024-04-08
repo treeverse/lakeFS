@@ -107,13 +107,20 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
 
     public String newPresignedGetCallerIdentityToken() throws Exception {
         Request<GeneratePresignGetCallerIdentityRequest> signedRequest = this.newPresignedRequest();
-        Map<String, String> params = signedRequest.getParameters();
-        String securityToken = null;
-        if (this.awsProvider.getCredentials() instanceof AWSSessionCredentials) {
-            AWSSessionCredentials sessionCredentials = (AWSSessionCredentials) this.awsProvider.getCredentials();
-
+        Map<String, ?> rawQueryParams = signedRequest.getParameters();
+        Map<String, String> params = new HashMap<>();
+        // check if the value is an array and join it with commas depends on the AWS SDK version
+        for (Map.Entry<String, ?> entry : rawQueryParams.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            if (value instanceof String[]) {
+                String[] arrayValue = (String[]) value;
+                String joinedValue = String.join(",", arrayValue);
+                params.put(key, joinedValue);
+            } else {
+                params.put(key, value.toString());
+            }
         }
-
 
         // generate token parameters object
         LakeFSExternalPrincipalIdentityRequest identityTokenParams = new LakeFSExternalPrincipalIdentityRequest(
