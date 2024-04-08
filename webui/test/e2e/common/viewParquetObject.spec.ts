@@ -21,6 +21,6 @@ test.describe("Object Viewer - Parquet File", () => {
         const repositoryPage = new RepositoryPage(page);
         await repositoryPage.clickObject(PARQUET_OBJECT_NAME);
         await expect(page.getByText("Loading...")).not.toBeVisible();
-    })
+    });
 })
 
