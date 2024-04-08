@@ -27,7 +27,7 @@ next:  ["Import data into your installation", "/howto/import.html"]
 
 ## Prerequisites
 
-To use lakeFS, you'll need to have access to an S3-compatible object store such as [MinIO](https://min.io)
+To use lakeFS on-premises, you can either use the [local blockstore](#local-blockstore) adapter or have access to an S3-compatible object store such as [MinIO](https://min.io).
 
 For more information on how to set up MinIO, see the [official deployment guide](https://min.io/docs/minio/container/operations/installation.html){: target="_blank" }
 
