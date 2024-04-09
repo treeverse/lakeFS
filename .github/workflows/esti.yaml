@@ -525,7 +525,6 @@ jobs:
         run: docker compose logs --tail=2500 lakefs
 
   export:
-    if: false  # TODO (niro): We need to enable this again!!!
     name: Test lakeFS rclone export functionality
     needs: [deploy-image, deploy-rclone-export-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
