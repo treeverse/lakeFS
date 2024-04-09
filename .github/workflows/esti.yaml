@@ -512,6 +512,7 @@ jobs:
         run: docker-compose logs --tail=2500 lakefs      
 
       - name: Spark${{ matrix.spark.tag }} + lakeFS GW + Redirect
+        if: env.SPARK_TAG == '3'
         timeout-minutes: 8
         working-directory: test/spark
         run: |

@@ -90,7 +90,6 @@ def main():
                          "spark.hadoop.fs.s3a.endpoint": "s3.docker.lakefs.io:8000",
                          "spark.hadoop.fs.s3a.connection.ssl.enabled": "false"}
         if args.redirect:
-            spark_configs["spark.hadoop.fs.s3a.path.style.access"] = "true"
             spark_configs[f"spark.hadoop.fs.s3a.signing-algorithm"] = "QueryStringSignerType"
             spark_configs[f"spark.hadoop.fs.s3a.user.agent.prefix"] = "s3RedirectionSupport"
 
