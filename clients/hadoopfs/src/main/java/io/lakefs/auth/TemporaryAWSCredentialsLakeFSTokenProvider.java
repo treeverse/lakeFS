@@ -28,7 +28,7 @@ public class TemporaryAWSCredentialsLakeFSTokenProvider extends AWSLakeFSTokenPr
         }
         AWSCredentialsProvider awsProvider = new AWSCredentialsProvider() {
             @Override
-            public AWSCredentials getCredentials() {    
+            public AWSCredentials getCredentials() {
                 return new BasicSessionCredentials(
                         accessKey,
                         secretKey,

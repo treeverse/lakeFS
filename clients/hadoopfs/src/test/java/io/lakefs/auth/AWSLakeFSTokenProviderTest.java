@@ -8,9 +8,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class AWSLakeFSTokenProviderTest {
-    @Test
-    public void name() {
-    }
 
     @Test
     public void testProviderIdentityTokenSerde() throws Exception {
