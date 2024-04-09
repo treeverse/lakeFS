@@ -13,6 +13,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/local"
+	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -202,14 +203,11 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Change
 		return nil, err
 	}
 	uri := url.URL{Scheme: "local", Path: absPath}
-	adapter, err := local.NewAdapter("", local.WithRemoveEmptyDir(false), local.WithAllowedExternalPrefixes([]string{absPath}))
-	if err != nil {
-		return nil, err
-	}
-	reader, err := adapter.GetWalker(&uri)
-	if err != nil {
-		return nil, err
-	}
+	reader := local.NewLocalWalker(params.Local{
+		ImportEnabled:           false,
+		ImportHidden:            true,
+		AllowedExternalPrefixes: []string{absPath},
+	})
 	err = reader.Walk(context.Background(), &uri, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
 		info, err := os.Stat(e.FullKey)
 		if err != nil {
