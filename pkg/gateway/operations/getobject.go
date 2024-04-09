@@ -21,6 +21,7 @@ import (
 
 const (
 	QueryParamMaxParts         = "max-parts"
+        // QueryParamPartNumberMarker Specifies the part after which listing should begin. Only parts with higher part numbers will be listed.
 	QueryParamPartNumberMarker = "part-number-marker"
 )
 
