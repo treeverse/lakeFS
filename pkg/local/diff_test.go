@@ -30,11 +30,14 @@ func TestDiffLocal(t *testing.T) {
 			LocalPath: "testdata/localdiff/t1",
 			RemoteList: []apigen.ObjectStats{
 				{
+					Path:      ".hidden-file",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				}, {
 					Path:      "sub/f.txt",
 					SizeBytes: swag.Int64(3),
 					Mtime:     diffTestCorrectTime,
-				},
-				{
+				}, {
 					Path:      "sub/folder/f.txt",
 					SizeBytes: swag.Int64(6),
 					Mtime:     diffTestCorrectTime,
@@ -47,11 +50,14 @@ func TestDiffLocal(t *testing.T) {
 			LocalPath: "testdata/localdiff/t1",
 			RemoteList: []apigen.ObjectStats{
 				{
+					Path:      ".hidden-file",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				}, {
 					Path:      "sub/f.txt",
 					SizeBytes: swag.Int64(3),
 					Mtime:     169095766,
-				},
-				{
+				}, {
 					Path:      "sub/folder/f.txt",
 					SizeBytes: swag.Int64(12),
 					Mtime:     1690957665,
@@ -61,8 +67,7 @@ func TestDiffLocal(t *testing.T) {
 				{
 					Path: "sub/f.txt",
 					Type: local.ChangeTypeModified,
-				},
-				{
+				}, {
 					Path: "sub/folder/f.txt",
 					Type: local.ChangeTypeModified,
 				},
@@ -73,6 +78,10 @@ func TestDiffLocal(t *testing.T) {
 			LocalPath: "testdata/localdiff/t1",
 			RemoteList: []apigen.ObjectStats{
 				{
+					Path:      ".hidden-file",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				}, {
 					Path:      "sub/folder/f.txt",
 					SizeBytes: swag.Int64(6),
 					Mtime:     diffTestCorrectTime,
@@ -88,12 +97,15 @@ func TestDiffLocal(t *testing.T) {
 		{
 			Name:      "t1_local_after",
 			LocalPath: "testdata/localdiff/t1",
-			RemoteList: []apigen.ObjectStats{
-				{
-					Path:      "tub/r.txt",
-					SizeBytes: swag.Int64(6),
-					Mtime:     1690957665,
-				},
+			RemoteList: []apigen.ObjectStats{{
+				Path:      ".hidden-file",
+				SizeBytes: swag.Int64(64),
+				Mtime:     diffTestCorrectTime,
+			}, {
+				Path:      "tub/r.txt",
+				SizeBytes: swag.Int64(6),
+				Mtime:     1690957665,
+			},
 			},
 			Expected: []*local.Change{
 				{
@@ -107,6 +119,31 @@ func TestDiffLocal(t *testing.T) {
 				{
 					Path: "tub/r.txt",
 					Type: local.ChangeTypeRemoved,
+				},
+			},
+		},
+		{
+			Name:      "t1_hidden_changed",
+			LocalPath: "testdata/localdiff/t1",
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      ".hidden-file",
+					SizeBytes: swag.Int64(17),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "sub/f.txt",
+					SizeBytes: swag.Int64(3),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "sub/folder/f.txt",
+					SizeBytes: swag.Int64(6),
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: ".hidden-file",
+					Type: local.ChangeTypeModified,
 				},
 			},
 		},
