@@ -1,4 +1,4 @@
-import {Locator, Page } from "@playwright/test";
+import {Locator, Page} from "@playwright/test";
 
 export class RepositoryPage {
     private page: Page;
@@ -12,5 +12,9 @@ export class RepositoryPage {
 
     async goto(repoName: string): Promise<void> {
         await this.page.goto(`/repositories/${repoName}`);
+    }
+
+    async clickObject(objectName: string): Promise<void> {
+        await this.page.getByRole('cell', { name: objectName }).getByRole('link').click();
     }
 }
