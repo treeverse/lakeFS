@@ -7,6 +7,7 @@ import React, {
 } from "react";
 
 import { config } from "../api";
+import useUser from "./user";
 
 type StorageConfigContextType = {
   error: Error | null;
@@ -54,6 +55,7 @@ export const useStorageConfig = () => {
 export const StorageConfigProvider: FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { user } = useUser();
   const [storageConfig, setStorageConfig] = useState<StorageConfigContextType>(
     storageConfigInitialState
   );
@@ -61,10 +63,13 @@ export const StorageConfigProvider: FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const fetchStorageConfigAndSetState = async () => {
       const storageConfig = await fetchStorageConfig();
-      setStorageConfig(storageConfig);
+      setStorageConfig({
+        ...storageConfig,
+        loading: false,
+      });
     };
     fetchStorageConfigAndSetState();
-  }, []);
+  }, [user]);
 
   return (
     <StorageConfigContext.Provider value={storageConfig}>

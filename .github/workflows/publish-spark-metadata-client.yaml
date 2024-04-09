@@ -4,7 +4,7 @@ on:
 jobs:
   publish-spark-metadata-client:
     name: Publish Spark metadata client
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     environment: Treeverse signing
     steps:
       - name: Check-out code

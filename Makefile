@@ -207,7 +207,7 @@ build: gen docs ## Download dependencies and build the default binary
 
 lint: ## Lint code
 	$(GOCMD) run github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run $(GOLANGCI_LINT_FLAGS)
-	npx eslint $(UI_DIR)/src --ext .js,.jsx,.ts,.tsx
+	npx eslint@8.57.0 $(UI_DIR)/src --ext .js,.jsx,.ts,.tsx
 
 esti: ## run esti (system testing)
 	$(GOTEST) -v ./esti --args --system-tests

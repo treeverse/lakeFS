@@ -3,7 +3,7 @@ title: 6️⃣ Using Actions and Hooks in lakeFS
 description: lakeFS quickstart / Use Actions and Hooks to enforce conditions when committing and merging changes
 parent: ⭐ Quickstart
 nav_order: 30
-next: ["Resources for learning more about lakeFS", "./learning-more-lakefs.html"]
+next: ["Work with lakeFS data on your local environment", "./work-with-data-locally.html"]
 previous: ["Rollback the changes", "./rollback.html"]
 ---
 
@@ -171,22 +171,3 @@ You can view the history of all action runs from the **Action** tab:
 
 <img width="75%" src="{{ site.baseurl }}/assets/img/quickstart/hooks-08.png" alt="Action run history in lakeFS" class="quickstart"/>
 
-
-## Bonus Challenge
-
-And so with that, this quickstart for lakeFS draws to a close. If you're simply having _too much fun_ to stop then here's an exercise for you. 
-
-Implement the requirement from the beginning of this quickstart *correctly*, such that you write `denmark-lakes.parquet` in the respective branch and successfully merge it back into main. Look up how to list the contents of the `main` branch and verify that it looks like this:
-
-```
-object          2023-03-21 17:33:51 +0000 UTC    20.9 kB         denmark-lakes.parquet
-object          2023-03-21 14:45:38 +0000 UTC    916.4 kB        lakes.parquet
-```
-
-# Finishing Up
-
-Once you've finished the quickstart, shut down your local environment with the following command: 
-
-```bash
-docker stop lakefs
-```
