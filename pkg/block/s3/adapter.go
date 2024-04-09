@@ -800,7 +800,7 @@ func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, upload
 	client := a.clients.Get(ctx, bucket)
 	resp, err := client.ListParts(ctx, input)
 	if err != nil {
-		lg.WithError(err).Error("CompleteMultipartUpload failed")
+		lg.WithError(err).Error("ListParts failed")
 		return nil, err
 	}
 
