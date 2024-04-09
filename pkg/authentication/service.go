@@ -123,11 +123,11 @@ func (s *APIService) ExternalPrincipalLogin(ctx context.Context, identityRequest
 	}
 	resp, err := s.apiClient.ExternalPrincipalLoginWithResponse(ctx, identityRequest)
 	if err != nil {
-		return nil, fmt.Errorf("failed to authenticate user: %w", err)
+		return nil, fmt.Errorf("calling authenticate user: %w", err)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("failed to authenticate user: %w", ErrInvalidRequest)
+		return nil, fmt.Errorf("calling authenticate user: %w, status code: %d", ErrInvalidRequest, resp.StatusCode())
 	}
 
 	return resp.JSON200, nil
