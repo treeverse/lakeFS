@@ -2578,6 +2578,7 @@ lakectl local clone <path URI> [directory] [flags]
 {:.no_toc}
 
 ```
+      --force             Force clone even on case-insensitive filesystem
       --gitignore         Update .gitignore file when working in a git repository context (default true)
   -h, --help              help for clone
   -p, --parallelism int   Max concurrent operations to perform (default 25)

@@ -39,6 +39,19 @@ var localCloneCmd = &cobra.Command{
 			DieFmt("directory '%s' exists and is not empty", localPath)
 		}
 
+		isCaseInsensitive, err := fileutil.IsCaseInsensitiveLocation(fileutil.OSFS{}, localPath)
+		if isCaseInsensitive {
+			force := Must(cmd.Flags().GetBool(localForceFlagName))
+			if !force {
+				DieFmt("Directory '%s' is case-insensitive, lakectl local will work incorrectly. Will only proceed with --force", localPath)
+			}
+			Warning(fmt.Sprintf("Directory '%s' is case-insensitive, proceeding because of --force", localPath))
+		}
+		if err != nil {
+			Warning(fmt.Sprintf("Check whether directory '%s' is case-insensitive: %s", localPath, err))
+			Warning("Continuing without this check")
+		}
+
 		ctx := cmd.Context()
 		head, err := localInit(ctx, localPath, remote, false, updateIgnore)
 		if err != nil {
@@ -107,5 +120,6 @@ var localCloneCmd = &cobra.Command{
 func init() {
 	withGitIgnoreFlag(localCloneCmd)
 	withSyncFlags(localCloneCmd)
+	withForceFlag(localCloneCmd, "Force clone even on case-insensitive filesystem")
 	localCmd.AddCommand(localCloneCmd)
 }
