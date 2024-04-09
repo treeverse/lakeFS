@@ -21,7 +21,7 @@ const (
 	cheapString     = "CHEAP"
 )
 
-func TestReadBlob(t *testing.T) {
+func TestWriteBlob(t *testing.T) {
 	tt := []struct {
 		name         string
 		size         int64

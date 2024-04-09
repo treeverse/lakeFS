@@ -43,6 +43,11 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	if o.HandleUnsupported(w, req, "torrent", "acl", "retention", "legal-hold", "lambdaArn") {
 		return
 	}
+	userAgent := req.Header.Get("User-Agent")
+	redirect := strings.Contains(userAgent, s3RedirectionSupportUserAgent)
+	if redirect {
+		req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"S3_redirect": true}))
+	}
 	o.Incr("get_object", o.Principal, o.Repository.Name, o.Reference)
 	ctx := req.Context()
 	query := req.URL.Query()
@@ -111,14 +116,17 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		Identifier:       entry.PhysicalAddress,
 	}
 
-	userAgent := req.Header.Get("User-Agent")
-	if strings.Contains(userAgent, s3RedirectionSupportUserAgent) {
+	if redirect {
 		preSignedURL, _, err := o.BlockStore.GetPreSignedURL(ctx, objectPointer, block.PreSignModeRead)
-		if err == nil {
-			o.SetHeader(w, "Location", preSignedURL)
-			w.WriteHeader(http.StatusTemporaryRedirect)
+		if err != nil {
+			code := gatewayerrors.ErrInternalError
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(code))
 			return
 		}
+
+		o.SetHeader(w, "Location", preSignedURL)
+		w.WriteHeader(http.StatusTemporaryRedirect)
+		return
 	}
 
 	if rangeSpec == "" || err != nil {
