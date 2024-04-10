@@ -35,7 +35,7 @@ public class GetCallerIdentityV4Presigner implements STSGetCallerIdentityPresign
     private static final String ALGORITHM = "AWS4-HMAC-SHA256";
     private static final String SERVICE_NAME = "sts";
     private static final Logger LOG = LoggerFactory.getLogger(GetCallerIdentityV4Presigner.class);
-    // copy from https://github.com/aws/aws-sdk-java/blob/679abaebd371b09e887afaa5386dc182be4c6498/aws-java-sdk-core/src/main/java/com/amazonaws/util/SdkHttpUtils.java#L39
+    // source at https://github.com/aws/aws-sdk-java/blob/679abaebd371b09e887afaa5386dc182be4c6498/aws-java-sdk-core/src/main/java/com/amazonaws/util/SdkHttpUtils.java#L39
     /**
      * Regex which matches any of the sequences that we need to fix up after
      * URLEncoder.encode().
@@ -197,7 +197,7 @@ public class GetCallerIdentityV4Presigner implements STSGetCallerIdentityPresign
         return formattedDateTime;
     }
 
-    // copy from v2
+    // source at https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java
     protected String getCanonicalizedHeaderString(Map<String, String> requestHeaders) {
         List<String> sortedHeaders = new ArrayList<>();
         sortedHeaders.addAll(requestHeaders.keySet());
@@ -219,7 +219,7 @@ public class GetCallerIdentityV4Presigner implements STSGetCallerIdentityPresign
         return buffer.toString();
     }
 
-    // copy from v2
+    // source at https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java
     protected String getSignedHeadersString(Map<String, String> headers) {
         List<String> sortedHeaders = new ArrayList<>();
         sortedHeaders.addAll(headers.keySet());
@@ -233,7 +233,7 @@ public class GetCallerIdentityV4Presigner implements STSGetCallerIdentityPresign
 
         return buffer.toString();
     }
-    // copy from https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L241
+    // source at https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L241
     protected String getCanonicalRequest(String httpMethod, Map<String, String> parameters, Map<String, String> headers, String contentSha256) {
         final String path = "/";
         String canonicalRequest = httpMethod + "\n" + path + "\n" + getCanonicalizedQueryString(parameters) + "\n" + getCanonicalizedHeaderString(headers) + "\n" + getSignedHeadersString(headers) + "\n" + contentSha256;
@@ -242,13 +242,13 @@ public class GetCallerIdentityV4Presigner implements STSGetCallerIdentityPresign
         return canonicalRequest;
     }
 
-    // copy from https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L257C22-L257C37
+    // source at https://github.com/aws/aws-sdk-java/blob/d1790c78af50488f38d758fd1f654d035b505150/src/main/java/com/amazonaws/auth/AWS4Signer.java#L257C22-L257C37
     protected String getStringToSign(String algorithm, String dateTime, String scope, String canonicalRequest) {
         String stringToSign = algorithm + "\n" + dateTime + "\n" + scope + "\n" + BinaryUtils.toHex(hash(canonicalRequest));
         LOG.debug("AWS4 String to Sign: '{}'", stringToSign);
         return stringToSign;
     }
-    // copy from https://github.com/aws/aws-sdk-java/blob/679abaebd371b09e887afaa5386dc182be4c6498/aws-java-sdk-core/src/main/java/com/amazonaws/util/SdkHttpUtils.java#L66
+    // source at https://github.com/aws/aws-sdk-java/blob/679abaebd371b09e887afaa5386dc182be4c6498/aws-java-sdk-core/src/main/java/com/amazonaws/util/SdkHttpUtils.java#L66
 
     /**
      * Encode a string for use in the path of a URL; uses URLEncoder.encode,
