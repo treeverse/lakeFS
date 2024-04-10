@@ -5,28 +5,27 @@ Usage:
   lakectl [command]
 
 Available Commands:
-  actions            Manage Actions commands
-  annotate           List entries under a given path, annotating each with the latest modifying commit
-  auth               Manage authentication and authorization
-  branch             Create and manage branches within a repository
-  branch-protect     Create and manage branch protection rules
-  cherry-pick        Apply the changes introduced by an existing commit
-  commit             Commit changes on a given branch
-  completion         Generate completion script
-  config             Create/update local lakeFS configuration
-  diff               Show changes between two commits, or the currently uncommitted changes
-  doctor             Run a basic diagnosis of the LakeFS configuration
-  fs                 View and manipulate objects
-  gc                 Manage the garbage collection policy
-  help               Help about any command
-  import             Import data from external source to a destination branch
-  install-git-plugin set up `git data` (directory must exist and be in $PATH)
-  local              Sync local directories with lakeFS paths
-  log                Show log of commits
-  merge              Merge & commit changes from source branch into destination branch
-  repo               Manage and explore repos
-  show               See detailed information about an entity
-  tag                Create and manage tags within a repository
+  actions         Manage Actions commands
+  annotate        List entries under a given path, annotating each with the latest modifying commit
+  auth            Manage authentication and authorization
+  branch          Create and manage branches within a repository
+  branch-protect  Create and manage branch protection rules
+  cherry-pick     Apply the changes introduced by an existing commit
+  commit          Commit changes on a given branch
+  completion      Generate completion script
+  config          Create/update local lakeFS configuration
+  diff            Show changes between two commits, or the currently uncommitted changes
+  doctor          Run a basic diagnosis of the LakeFS configuration
+  fs              View and manipulate objects
+  gc              Manage the garbage collection policy
+  help            Help about any command
+  import          Import data from external source to a destination branch
+  local           Sync local directories with lakeFS paths
+  log             Show log of commits
+  merge           Merge & commit changes from source branch into destination branch
+  repo            Manage and explore repos
+  show            See detailed information about an entity
+  tag             Create and manage tags within a repository
 
 Flags:
       --base-uri string      base URI used for lakeFS address parse
