@@ -23,35 +23,9 @@ redirect_from:
 Secure Token Service (STS) authentication in lakeFS enables users to authenticate to lakeFS using temporary credentials obtained from an Identity Provider (IdP) via the OpenID Connect (OIDC) Authentication workflow..
 This document outlines the process, from setting up the STS authentication flow to integrating with lakeFS through the [high-level Python SDK](../../integrations/python.md).
 
-## Architecture
-
-{: .note}
-> The architecture does include the steps to generate the code using the remote authenticator. this should be done prior to the STS login flow.
-> There is a sample implementation to generate the code, redirect_uri and state at the end of this document.
-
-The STS authentication flow involves several components that facilitate secure communication between the lakeFS client, lakeFS server, the remote authenticator, and the IdP.
-
-```mermaid
-sequenceDiagram
-    participant A as lakeFS Client
-    participant B as lakeFS Server
-    participant C as Remote Authenticator
-    participant D as IdP
-    A->>B: Call STS login endpoint
-    B->>C: POST idp code state and redirect uri
-    C->>D: IdP request
-    D->>C: IdP response
-    C->>B: Auth response
-    B->>A: auth JWT
-```
-- lakeFS Client: Initiates the authentication process by providing IdP credentials.
-- lakeFS Server: Facilitates the authentication request between the client and the remote authenticator.
-- Remote Authenticator: Acts as a bridge between lakeFS and the IdP, handling credential validation.
-- IdP (Identity Provider): Validates the provided credentials and returns the authentication status.
-
 ## Configuration
 
-To enable STS authentication, configure your lakeFS instance with the appropriate endpoint to the external Authentication Service.
+To enable STS authentication, configure your lakeFS instance with the endpoint of the external Authentication Service.
 
 
 ```yaml
@@ -74,11 +48,39 @@ The Python client simplifies initiating a client session with STS login. Use the
 
 ```python
 import lakefs
-myclient = lakefs.client.from_web_identity(code = '', redirect_uri = '', state = '' , ttl_seconds = 7200)
+myclient = lakefs.client.from_web_identity(code = '<CODE_FROM_IDP>', state = '<STATE_FROM_IDP>' , redirect_uri = '<URI_USED_FOR_REDIRECT_FROM_IDP>', ttl_seconds = 7200)
 ```
+
+## Architecture
+
+{: .note}
+> The architecture documentation begins at the stage following the generation of the code by the remote authenticator.
+> Please be aware that the preliminary steps, including the code generation process that takes place between the user and their identity provider, are not included in this documentation.
+> These initial steps must be completed before initiating the STS login flow. (Refer to the [Sample implementation](#sample-implementation-to-generate-the-code-redirect_uri-and-state) section for an example of generating the code
+
+The STS authentication flow involves several components that facilitate secure communication between the lakeFS client, lakeFS server, the remote authenticator, and the IdP.
+
+```mermaid
+sequenceDiagram
+    participant A as lakeFS Client
+    participant B as lakeFS Server
+    participant C as Remote Authenticator
+    participant D as IdP
+    A->>B: Call STS login endpoint
+    B->>C: POST idp code state and redirect uri
+    C->>D: IdP request
+    D->>C: IdP response
+    C->>B: Auth response
+    B->>A: auth JWT
+```
+- lakeFS Client: Initiates the authentication process by providing IdP credentials.
+- lakeFS Server: Facilitates the authentication request between the client and the remote authenticator.
+- Remote Authenticator: Acts as a bridge between lakeFS and the IdP, handling credential validation.
+- IdP (Identity Provider): Validates the provided credentials and returns the authentication status.
 
 
 ## Sample implementation to generate the code, redirect_uri and state
+
 The following code snippet demonstrates how to generate the code, redirect_uri and state values that are required to initiate a new client session using the STS login feature.
 replace `<Your-auth-client-id>` with your auth client id and `<path-to-your-idp-authorize>` with the path to your IdP authorize endpoint.
 e.g in case of Auth0, the authorize endpoint is `https://<your-auth0-domain>/authorize` in case of entra the authorize endpoint is `https://<your-entra-domain>/oauth2/v2.0/authorize`
