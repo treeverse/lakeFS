@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *  * GetCallerIdentityV4Presigner is generates a presigned URL for the GetCallerIdentity API, signed using SigV4.
+ *  * GetCallerIdentityV4Presigner generates a presigned URL for the GetCallerIdentity API, signed using SigV4.
  *  * This class extends AWS4Signer of AWS SDK version 1.7.4 and copies some functions from https://github.com/aws/aws-sdk-java/blob/1.7.4/src/main/java/com/amazonaws/auth/AWS4Signer.java
  *    * The copied functions exist in AWS SDK 1.7.4 but not AWS SDK 1.11.375, so they are
  *      not available on Hadoop AWS 3.
