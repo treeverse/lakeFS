@@ -46,6 +46,7 @@ components:
       description: return items prefixed with this value
       schema:
         type: string
+      allowEmptyValue: true
 
     PaginationAfter:
       in: query
@@ -53,6 +54,7 @@ components:
       description: return items after this value
       schema:
         type: string
+      allowEmptyValue: true
 
     PaginationAmount:
       in: query
@@ -70,7 +72,8 @@ components:
       description: delimiter used to group common prefixes by
       schema:
         type: string
-    
+      allowEmptyValue: true
+
     IfNoneMatch:
       in: header
       name: If-None-Match
