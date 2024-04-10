@@ -44,7 +44,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		return
 	}
 	userAgent := req.Header.Get("User-Agent")
-	redirect := strings.Contains(userAgent, s3RedirectionSupportUserAgent)
+	redirect := strings.Contains(userAgent, s3RedirectionSupportUserAgentTag)
 	if redirect {
 		req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"S3_redirect": true}))
 	}

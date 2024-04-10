@@ -434,8 +434,11 @@ spark.hadoop.fs.s3a.bucket.example-repo.secret.key wJalrXUtnFEMI/K7MDENG/bPxRfiC
 spark.hadoop.fs.s3a.path.style.access true
 spark.hadoop.fs.s3a.bucket.example-repo.signing-algorithm QueryStringSignerType
 spark.hadoop.fs.s3a.bucket.example-repo.user.agent.prefix s3RedirectionSupport
-
 ```
+
+`user.agent.prefix` should **contain** the string `s3RedirectionSupport` but does not have to match the string exactly.
+{: .note }
+
 
 Once configured, requests will include the string `s3RedirectionSupport` in the `User-Agent` HTTP header sent with GetObject requests, resulting in lakeFS responding with a pre-signed URL.
 Setting the `signing-algorithm` to `QueryStringSignerType` is required to stop S3A from signing a pre-signed URL, since the existence of more than one signature method will return an error from S3.

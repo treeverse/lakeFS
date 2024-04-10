@@ -637,7 +637,7 @@ func TestS3ReadObjectRedirect(t *testing.T) {
 	defer tearDownTest(repo)
 
 	// Upload an object
-	minioClient := newMinioClient(t, credentials.NewStaticV2)
+	minioClient := newMinioClient(t, credentials.NewStaticV4)
 
 	_, err := minioClient.PutObject(ctx, repo, goodPath, strings.NewReader(contents), int64(len(contents)), minio.PutObjectOptions{})
 	if err != nil {

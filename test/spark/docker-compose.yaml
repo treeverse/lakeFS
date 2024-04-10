@@ -1,4 +1,3 @@
-version: '3.9'
 x-lakefs-common:
   &lakefs-common
   image: "${REPO:-treeverse}/lakefs:${TAG:-latest}"
