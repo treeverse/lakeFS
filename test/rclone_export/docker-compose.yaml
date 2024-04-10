@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   postgres:
     image: "postgres:11"
@@ -34,9 +33,6 @@ services:
 
   lakefs-export:
     image: "${REPO:-treeverse}/lakefs-rclone-export:${EXPORT_TAG:-latest}"
-    depends_on:
-      - "lakefs"
-      - "postgres"
     profiles: ["client"]
     environment:
       - LAKEFS_ENDPOINT=http://lakefs:8000

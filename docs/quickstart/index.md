@@ -100,5 +100,17 @@ This quickstart will introduce you to some of the core ideas in lakeFS and show 
 </div>
 </div>
 
+<div class="row">
+<div class="col step-num">
+<img src="{{ site.baseurl }}/assets/img/quickstart/quickstart-step-07.png" alt="step 6"/>
+</div>
+<div class="col">
+<h3>
+<a href="work-with-data-locally.html">Work Locally</a>
+</h3>
+<p>Experiment with lakeFS data on a local environment</p>
+</div>
+</div>
+
 {: .note}
 You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register) if you want to try out lakeFS without installing anything. 
