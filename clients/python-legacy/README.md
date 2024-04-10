@@ -136,6 +136,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**delete_user_external_principal**](docs/AuthApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 *AuthApi* | [**detach_policy_from_group**](docs/AuthApi.md#detach_policy_from_group) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 *AuthApi* | [**detach_policy_from_user**](docs/AuthApi.md#detach_policy_from_user) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
+*AuthApi* | [**external_principal_login**](docs/AuthApi.md#external_principal_login) | **POST** /auth/external/principal/login | perform a login using an external authenticator
 *AuthApi* | [**get_credentials**](docs/AuthApi.md#get_credentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 *AuthApi* | [**get_current_user**](docs/AuthApi.md#get_current_user) | **GET** /user | get current user
 *AuthApi* | [**get_external_principal**](docs/AuthApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id

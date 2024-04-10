@@ -1838,6 +1838,7 @@ paths:
       tags:
         - external
         - experimental
+        - auth
       operationId: externalPrincipalLogin
       summary: perform a login using an external authenticator
       security: []
