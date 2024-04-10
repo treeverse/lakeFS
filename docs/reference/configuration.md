@@ -83,6 +83,9 @@ This reference uses `.` to denote the nesting of values.
 * `auth.cache.ttl` `(time duration : "20s")` - How long to store an item in the auth cache. Using a higher value reduces load on the database, but will cause changes longer to take effect for cached users.
 * `auth.cache.jitter` `(time duration : "3s")` - A random amount of time between 0 and this value is added to each item's TTL. This is done to avoid a large bulk of keys expiring at once and overwhelming the database.
 * `auth.encrypt.secret_key` `(string : required)` - A random (cryptographically safe) generated string that is used for encryption and HMAC signing
+  **Note:** It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
+  {: .note }
+
 * `auth.login_duration` `(time duration : "168h")` - The duration the login token is valid for
 * `auth.login_max_duration` `(time duration : "168h")` - The maximum duration user can ask for a login token
 * `auth.cookie_domain` `(string : "")` - [Domain attribute](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define_where_cookies_are_sent) to set the access_token cookie on (the default is an empty string which defaults to the same host that sets the cookie)
@@ -92,11 +95,7 @@ This reference uses `.` to denote the nesting of values.
 * `auth.api.skip_health_check` `(bool : false)` - Skip external auth API health check
 * `auth.authentication_api.endpoint` `(string : "")` - URL to external Authentication Service described at [authentication.yml](https://github.com/treeverse/lakeFS/blob/master/api/authentication.yml);
 * `auth.authentication_api.external_principals_enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
-
-   **Note:** It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
-   {: .note }
 * `auth.remote_authenticator.enabled` `(bool : false)` - If specified, also authenticate users via this Remote Authenticator server.
-* `auth.remote_authenticator.external_principals_enabled` `(bool : false)` - If true, external principals will be enabled, e.g auth service and login api's.
 * `auth.remote_authenticator.endpoint` `(string : required)` - Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth).
 * `auth.remote_authenticator.default_user_group` `(string : Viewers)` - Create users in this group (i.e `Viewers`, `Developers`, etc).
 * `auth.remote_authenticator.request_timeout` `(duration : 10s)` - If specified, timeout for remote authentication requests.
