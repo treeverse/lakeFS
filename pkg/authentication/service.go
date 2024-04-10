@@ -15,7 +15,7 @@ import (
 
 type Service interface {
 	IsExternalPrincipalsEnabled() bool
-	ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipal, error)
+	ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipalLoginResponse, error)
 	// ValidateSTS validates the STS parameters and returns the external user ID
 	ValidateSTS(ctx context.Context, code, redirectURI, state string) (string, error)
 }
@@ -30,7 +30,7 @@ func (d DummyService) ValidateSTS(ctx context.Context, code, redirectURI, state 
 	return "", ErrNotImplemented
 }
 
-func (d DummyService) ExternalPrincipalLogin(_ context.Context, _ map[string]interface{}) (*apiclient.ExternalPrincipal, error) {
+func (d DummyService) ExternalPrincipalLogin(_ context.Context, _ map[string]interface{}) (*apiclient.ExternalPrincipalLoginResponse, error) {
 	return nil, ErrNotImplemented
 }
 
@@ -117,20 +117,11 @@ func (s *APIService) ValidateSTS(ctx context.Context, code, redirectURI, state s
 	return subject, nil
 }
 
-func (s *APIService) ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipal, error) {
+func (s *APIService) ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipalLoginResponse, error) {
 	if !s.IsExternalPrincipalsEnabled() {
 		return nil, fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
-	resp, err := s.apiClient.ExternalPrincipalLoginWithResponse(ctx, identityRequest)
-	if err != nil {
-		return nil, fmt.Errorf("calling authenticate user: %w", err)
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("calling authenticate user: %w, status code: %d", ErrInvalidRequest, resp.StatusCode())
-	}
-
-	return resp.JSON200, nil
+	return s.apiClient.ExternalPrincipalLoginWithResponse(ctx, identityRequest)
 }
 
 func (s *APIService) IsExternalPrincipalsEnabled() bool {

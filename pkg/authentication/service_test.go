@@ -148,5 +148,5 @@ func TestAPIAuthService_ExternalLogin(t *testing.T) {
 
 	resp, err := s.ExternalPrincipalLogin(ctx, externalLoginInfo)
 	require.NoError(t, err)
-	require.Equal(t, principalId, resp.Id)
+	require.Equal(t, principalId, resp.JSON200.Id)
 }

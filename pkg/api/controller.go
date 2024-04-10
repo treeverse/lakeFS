@@ -567,11 +567,25 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 	}
 	c.LogAction(ctx, "external_principal_login", r, "", "", "")
 	c.Logger.Debug("external principal login")
-	externalPrincipal, err := c.Authentication.ExternalPrincipalLogin(ctx, body.IdentityRequest)
+	externalPrincipalLoginResponse, err := c.Authentication.ExternalPrincipalLogin(ctx, body.IdentityRequest)
 	if c.handleAPIError(ctx, w, r, err) {
 		c.Logger.WithError(err).Error("external principal login failed")
 		return
 	}
+	if externalPrincipalLoginResponse.StatusCode() != http.StatusOK || externalPrincipalLoginResponse.JSON200 == nil {
+		switch externalPrincipalLoginResponse.StatusCode() {
+		case http.StatusBadRequest:
+			writeError(w, r, http.StatusBadRequest, "Bad Request")
+		case http.StatusUnauthorized:
+			writeError(w, r, http.StatusUnauthorized, "Unauthorized")
+		case http.StatusForbidden:
+			writeError(w, r, http.StatusForbidden, "Forbidden")
+		default:
+			writeError(w, r, http.StatusInternalServerError, "Internal Server Error")
+		}
+		return
+	}
+	externalPrincipal := externalPrincipalLoginResponse.JSON200
 	c.Logger.WithField("external_principal_id", externalPrincipal.Id).Debug("external principal login success, trying to get external principal ID info")
 	externalPrincipalIDInfo, err := c.Auth.GetExternalPrincipal(ctx, externalPrincipal.Id)
 	if c.handleAPIError(ctx, w, r, err) {
