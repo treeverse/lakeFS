@@ -40,7 +40,7 @@ The lakeFS blog documents a number of patterns for importing data: [Import Data 
 
 An import essentially scans the supplied dataset (eg a path in a GCS or S3 bucket) and records various metadata about the files in lakeFS. This is purely a metadata operation, and does not require copying any data.
 
-From that point on, the source data should be considered frozen and immutable.
+From that point on, the source data should be considered frozen and immutable. Any changes to an imported object in the origin location will result in read failures when reading that object from lakeFS.
 
 You can re-import a dataset, and capture any changed or newly added files (this is use case 3 / option 2 in the blog). What that will not do is deal nicely with updated or overwritten files.
 
@@ -53,7 +53,7 @@ Unlike an import, in the case of an upload, lakeFS is in control of the actual l
 
 If we need to upload a lot of files, we likely want to avoid writing directly through the lakeFS service. lakeFS allows this, if we follow a particular pattern: we request a location from lakeFS to which a new file should go, and then use regular object store (S3, GCS, etc) client to upload the data directly.
 
-This is achieved by `lakectl fs upload --pre-sign` (Docs: [lakectl-upload][lakectl-upload]). The equivalent OpenAPI endpoint will return a URL to which the user can upload the file(s) in question.
+This is achieved by `lakectl fs upload --pre-sign` (Docs: [lakectl-upload][lakectl-upload]). The equivalent OpenAPI endpoint will return a URL to which the user can upload the file(s) in question; other clients, such as the Java client, Python SDK, etc, also expose presign functionality - consult relevant client documentation for details.
 
 ### Read directly from the object store
 lakeFS maintains versions by keeping track of each file; the commit and branch paths (`my-repo/commits/{commit_id}`, `my-repo/branches/main`) are virtual and resolved by the lakefs service to iterate through appropriate files. 
@@ -63,9 +63,10 @@ lakeFS does allow you do either read directly from the lakefs API (or S3 gateway
 To read data from lakeFS without it being transferred through lakeFS:
 * Read an object getObject (lakeFS OpenAPI) and add `--presign`. You'll get a link to download an object.
 * Use statObject (lakeFS OpenAPI) which will return `physical_address` that is the actual S3/GCS path that you can read with any S3/GCS client.
+* Use the `lakectl fs presign` ([docs][lakectl-fs-presign])
 
-### Reading directly from GCS when using GCS-Fuse
-GCP users commonly mount GCS buckets using `gcs-fuse`, particularly when using GCP's Vertex AI pipelines. lakeFS works with `gcs-fuse`, by using hooks to automatically create symlinks to reflect the virtual directory structure of branches and commits. See the [gcs-fuse integration][gcs-fuse] documentation for details. 
+#### Reading directly from GCS when using GCS-Fuse
+GCP users commonly mount GCS buckets using `gcs-fuse`, particularly when using GCP's Vertex AI pipelines. The lakeFS Fuse integration is written in a way that ensures reads are scaleable and work directly off GCS, without involving any lakeFS services in the read path. This is achieved by using hooks to automatically create symlinks to reflect the virtual directory structure of branches and commits. See the [gcs-fuse integration][gcs-fuse] documentation for details. 
 
 The end result is that you can read the branches or commits directly from the file system, and not involve lakeFS in the read path at all:
 
@@ -97,6 +98,7 @@ It will also lower the storage cost.
 [zero-copy-import]:  {% link howto/import.md %}#zero-copy-import
 [lakectl-upload]:  {% link reference/cli.md %}#lakectl-fs-upload
 [lakectl-download]:  {% link reference/cli.md %}#lakectl-fs-download
+[lakectl-fs-presign]: {% link reference/cli.html %}#lakectl-fs-presign
 [api-staging]:  {% link reference/api.md %}#operations-objects-stageObject
 [representing-refs-and-uncommitted-metadata]:  {% link understand/how/versioning-internals.md %}#representing-references-and-uncommitted-metadata
 [gcs-fuse]: {% link integrations/vertex_ai.md %}#using-lakefs-with-cloud-storage-fuse
