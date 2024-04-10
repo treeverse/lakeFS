@@ -234,9 +234,7 @@ func TestCompletePresignMultipartUpload(t *testing.T) {
 			ContentType:     swag.String("application/octet-stream"),
 			Parts:           parts,
 			PhysicalAddress: respCreate.JSON201.PhysicalAddress,
-			UserMetadata: &apigen.CompletePresignMultipartUpload_UserMetadata{
-				AdditionalProperties: map[string]string{"foo": "bar"},
-			},
+			UserMetadata:    &map[string]string{"foo": "bar"},
 		})
 		require.NoError(t, err, "CompletePresignMultipartUpload should succeed")
 		require.Equalf(t, http.StatusOK, resp.StatusCode(), "CompletePresignMultipartUpload status code mismatch: %s - %s", resp.Status(), resp.Body)

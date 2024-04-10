@@ -223,13 +223,11 @@ func uploadContentDirect(ctx context.Context, client apigen.ClientWithResponsesI
 		resp, err := client.LinkPhysicalAddressWithResponse(ctx, repoID, branchID, &apigen.LinkPhysicalAddressParams{
 			Path: objPath,
 		}, apigen.LinkPhysicalAddressJSONRequestBody{
-			Checksum:  stats.ETag,
-			SizeBytes: stats.Size,
-			Staging:   *stagingLocation,
-			UserMetadata: &apigen.StagingMetadata_UserMetadata{
-				AdditionalProperties: metadata,
-			},
-			ContentType: &contentType,
+			Checksum:     stats.ETag,
+			SizeBytes:    stats.Size,
+			Staging:      *stagingLocation,
+			UserMetadata: &metadata,
+			ContentType:  &contentType,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("link object to backing store: %w", err)

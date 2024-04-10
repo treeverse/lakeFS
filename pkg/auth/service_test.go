@@ -1907,7 +1907,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 				CreatedAt:   creationTime,
 				Statement: []model.Statement{{
 					Action:   tt.firstStatementAction,
-					Effect:   tt.firstStatementEffect,
+					Effect:   string(tt.firstStatementEffect),
 					Resource: tt.firstStatementResource,
 				}},
 			}, tt.overwrite)
@@ -1963,7 +1963,7 @@ func TestAPIAuthService_GetPolicy(t *testing.T) {
 					Statement: []auth.Statement{
 						{
 							Action:   tt.firstStatementAction,
-							Effect:   tt.firstStatementEffect,
+							Effect:   auth.StatementEffect(tt.firstStatementEffect),
 							Resource: tt.firstStatementResource,
 						},
 					},
@@ -2011,7 +2011,7 @@ func statementEquals(t *testing.T, authStatement []auth.Statement, modalStatemen
 		return
 	}
 	for i, authS := range authStatement {
-		if authS.Effect != modalStatement[i].Effect {
+		if string(authS.Effect) != modalStatement[i].Effect {
 			t.Errorf("Effect  (authStatement)%s != (modelStatement)%s", modalStatement[i].Effect, authS.Effect)
 		}
 		if authS.Resource != modalStatement[i].Resource {

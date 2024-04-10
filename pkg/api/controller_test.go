@@ -828,14 +828,13 @@ func TestController_GetCommitHandler(t *testing.T) {
 		if len(commit.Id) == 0 {
 			t.Errorf("GetCommit initial commit missing ID: %+v", commit)
 		}
-		metadata := apigen.Commit_Metadata{}
 		expectedCommit := &apigen.Commit{
 			Committer:    "",
 			CreationDate: commit.CreationDate,
 			Id:           commit.Id,
 			Message:      graveler.FirstCommitMsg,
 			MetaRangeId:  "",
-			Metadata:     &metadata,
+			Metadata:     nil,
 			Parents:      []string{},
 			Generation:   swag.Int64(1),
 			Version:      swag.Int(1),
@@ -1300,15 +1299,15 @@ func TestController_SetRepositoryMetadataHandler(t *testing.T) {
 				})
 				verifyResponseOK(t, createResp, err)
 
-				resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: tt1.properties}})
+				resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: tt1.properties})
 				verifyResponseOK(t, resp, err)
 
-				resp, err = clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: tt1.appendProps}})
+				resp, err = clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: tt1.appendProps})
 				verifyResponseOK(t, resp, err)
 
 				getResp, err := clt.GetRepositoryMetadataWithResponse(ctx, repoName)
 				verifyResponseOK(t, resp, err)
-				if diff := deep.Equal(getResp.JSON200.AdditionalProperties, tt1.expected); diff != nil {
+				if diff := deep.Equal(*getResp.JSON200, apigen.RepositoryMetadata(tt1.expected)); diff != nil {
 					t.Fatal("Get repository metadata results diff:", diff)
 				}
 			})
@@ -1328,13 +1327,13 @@ func TestController_SetRepositoryMetadataHandler(t *testing.T) {
 			})
 		verifyResponseOK(t, createResp, err)
 
-		resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: map[string]string{"foo": "bar"}}})
+		resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: map[string]string{"foo": "bar"}})
 		verifyResponseOK(t, resp, err)
 	})
 
 	t.Run("set repository metadata not exist", func(t *testing.T) {
 		repoName := testUniqueRepoName()
-		resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: map[string]string{"foo": "bar"}}})
+		resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: map[string]string{"foo": "bar"}})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON404)
 	})
@@ -1352,7 +1351,7 @@ func TestController_SetRepositoryMetadataHandler(t *testing.T) {
 		creds := createUserWithDefaultGroup(t, clt)
 		// create a client with the user
 		regClt := setupClientByEndpoint(t, deps.server.URL, creds.AccessKeyID, creds.SecretAccessKey)
-		resp, err := regClt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: map[string]string{"foo": "bar"}}})
+		resp, err := regClt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: map[string]string{"foo": "bar"}})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON401)
 	})
@@ -1404,7 +1403,7 @@ func TestController_DeleteRepositoryMetadataHandler(t *testing.T) {
 				})
 				verifyResponseOK(t, createResp, err)
 
-				resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: tt.properties}})
+				resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: tt.properties})
 				verifyResponseOK(t, resp, err)
 
 				deleteResp, err := clt.DeleteRepositoryMetadataWithResponse(ctx, repoName, apigen.DeleteRepositoryMetadataJSONRequestBody{Keys: tt.deleteProps})
@@ -1412,7 +1411,7 @@ func TestController_DeleteRepositoryMetadataHandler(t *testing.T) {
 
 				getResp, err := clt.GetRepositoryMetadataWithResponse(ctx, repoName)
 				verifyResponseOK(t, getResp, err)
-				if diff := deep.Equal(getResp.JSON200.AdditionalProperties, tt.expected); diff != nil {
+				if diff := deep.Equal(*getResp.JSON200, apigen.RepositoryMetadata(tt.expected)); diff != nil {
 					t.Fatal("Get repository metadata results diff:", diff)
 				}
 			})
@@ -1432,13 +1431,13 @@ func TestController_DeleteRepositoryMetadataHandler(t *testing.T) {
 			})
 		verifyResponseOK(t, createResp, err)
 
-		resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: map[string]string{"foo": "bar"}}})
+		resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: map[string]string{"foo": "bar"}})
 		verifyResponseOK(t, resp, err)
 	})
 
 	t.Run("delete repository metadata, repository not exist", func(t *testing.T) {
 		repoName := testUniqueRepoName()
-		resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: map[string]string{"foo": "bar"}}})
+		resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: map[string]string{"foo": "bar"}})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON404)
 	})
@@ -1477,8 +1476,7 @@ func TestController_GetRepositoryMetadataHandler(t *testing.T) {
 
 		resp, err := clt.GetRepositoryMetadataWithResponse(ctx, repoName)
 		verifyResponseOK(t, resp, err)
-		require.NotNil(t, resp.JSON200)
-		require.Nil(t, resp.JSON200.AdditionalProperties)
+		require.Empty(t, resp.JSON200, 0)
 	})
 
 	t.Run("get metadata bare repo", func(t *testing.T) {
@@ -1496,8 +1494,7 @@ func TestController_GetRepositoryMetadataHandler(t *testing.T) {
 
 		resp, err := clt.GetRepositoryMetadataWithResponse(ctx, repoName)
 		verifyResponseOK(t, resp, err)
-		require.NotNil(t, resp.JSON200)
-		require.Nil(t, resp.JSON200.AdditionalProperties)
+		require.Empty(t, resp.JSON200)
 	})
 
 	t.Run("get repository metadata not exist", func(t *testing.T) {
@@ -2328,7 +2325,7 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 		if objectStats.PhysicalAddress != onBlock(deps, "some-bucket/")+entry.PhysicalAddress {
 			t.Fatalf("expected correct PhysicalAddress, got %s", objectStats.PhysicalAddress)
 		}
-		if diff := deep.Equal(objectStats.Metadata.AdditionalProperties, map[string]string(entry.Metadata)); diff != nil {
+		if diff := deep.Equal(*objectStats.Metadata, apigen.ObjectUserMetadata(entry.Metadata)); diff != nil {
 			t.Fatalf("expected to get back user-defined metadata: %s", diff)
 		}
 		contentType := apiutil.Value(objectStats.ContentType)
@@ -2341,8 +2338,8 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 		resp, err = clt.StatObjectWithResponse(ctx, repo, "main", &apigen.StatObjectParams{Path: "foo/bar", UserMetadata: &getUserMetadata})
 		verifyResponseOK(t, resp, err)
 		objectStatsNoMetadata := resp.JSON200
-		if objectStatsNoMetadata.Metadata == nil || len(objectStatsNoMetadata.Metadata.AdditionalProperties) != 0 {
-			t.Fatalf("expected to not get back empty user-defined metadata, got %+v", objectStatsNoMetadata.Metadata.AdditionalProperties)
+		if objectStatsNoMetadata.Metadata == nil || len(*objectStatsNoMetadata.Metadata) != 0 {
+			t.Fatalf("expected to not get back empty user-defined metadata, got %+v", objectStatsNoMetadata.Metadata)
 		}
 	})
 
@@ -2439,7 +2436,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 		results := resp.JSON200.Results
 		for _, obj := range results {
 			if obj.Metadata != nil {
-				t.Fatalf("expected no user-defined metadata, got %+v", obj.Metadata.AdditionalProperties)
+				t.Fatalf("expected no user-defined metadata, got %+v", obj.Metadata)
 			}
 		}
 	})
@@ -5536,7 +5533,7 @@ func TestController_CreateCommitRecord(t *testing.T) {
 		CreationDate: 1e9,
 		Generation:   1,
 		Message:      "message",
-		Metadata:     &apigen.CommitRecordCreation_Metadata{AdditionalProperties: map[string]string{"key": "value"}},
+		Metadata:     &map[string]string{"key": "value"},
 		MetarangeId:  "metarangeId",
 		Parents:      []string{"parent1", "parent2"},
 		Version:      1,
@@ -5558,7 +5555,7 @@ func TestController_CreateCommitRecord(t *testing.T) {
 			Committer:    body.Committer,
 			Message:      body.Message,
 			CreationDate: time.Unix(body.CreationDate, 0).UTC(),
-			Metadata:     body.Metadata.AdditionalProperties,
+			Metadata:     *body.Metadata,
 			MetaRangeID:  body.MetarangeId,
 			Parents:      body.Parents,
 			Generation:   catalog.CommitGeneration(body.Generation),
