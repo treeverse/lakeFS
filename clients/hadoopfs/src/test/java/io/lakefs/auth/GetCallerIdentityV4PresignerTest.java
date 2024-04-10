@@ -62,8 +62,10 @@ public class GetCallerIdentityV4PresignerTest {
                 }},
                 60
         );
-        Request<GeneratePresignGetCallerIdentityRequest> req = stsPresigner.presignRequest(stsReq);
-        URL url = STSGetCallerIdentityPresigner.convertRequestToUrl(req);
+
+        GeneratePresignGetCallerIdentityResponse signedRequest = stsPresigner.presignRequest(stsReq);
+        URL url = new URL(signedRequest.convertToURL());
+
         Assert.assertEquals("https", url.getProtocol());
         Assert.assertEquals("sts.amazonaws.com", url.getHost());
         Map<String, String> generatedQueryParams = GetCallerIdentityV4PresignerTest.getQueryParams(url.getQuery());
@@ -75,7 +77,7 @@ public class GetCallerIdentityV4PresignerTest {
             put("X-Amz-Signature", "[a-f0-9]{64}");
             put("Version", "2011-06-15");
             put("X-Amz-SignedHeaders", "host%3Bx-lakefs-server-id");
-            put("X-Amz-Security-Token", awsCreds.getSessionToken());
+            put("X-Amz-Security-Token", GetCallerIdentityV4Presigner.urlEncode(awsCreds.getSessionToken(), false));
             put("X-Amz-Credential", awsCreds.getAWSAccessKeyId() + "%2F\\d{8}%2Fus-east-1%2Fsts%2Faws4_request");
             put("X-Amz-Expires", "60");
         }};
@@ -84,7 +86,7 @@ public class GetCallerIdentityV4PresignerTest {
         for (Map.Entry<String, String> entry : paramsExpected.entrySet()) {
             String expectedKey = entry.getKey();
             String expectedValuePattern = entry.getValue();
-            Assert.assertEquals(String.format("URL %s does not contain param %s", url, expectedKey), true, generatedQueryParams.containsKey(expectedKey));
+            Assert.assertEquals(String.format("missing param %s in URL %s", expectedKey, url), true, generatedQueryParams.containsKey(expectedKey));
             Pattern compiledPattern = Pattern.compile(expectedValuePattern);
             Matcher matcher = compiledPattern.matcher(generatedQueryParams.get(expectedKey));
             Assert.assertEquals(String.format("Query param %s does not match \npattern: %s", generatedQueryParams.get(expectedKey), expectedValuePattern), true, matcher.matches());

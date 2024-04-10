@@ -1,21 +1,18 @@
 package io.lakefs.auth;
-
-import com.amazonaws.Request;
-import com.amazonaws.auth.*;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import io.lakefs.Constants;
 import io.lakefs.FSConfiguration;
 import io.lakefs.clients.sdk.ApiClient;
-import io.lakefs.clients.sdk.ApiException;
-import io.lakefs.clients.sdk.AuthApi;
 import io.lakefs.clients.sdk.model.AuthenticationToken;
 import org.apache.commons.codec.binary.Base64;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.amazonaws.util.json.JSONObject;
 import org.apache.hadoop.conf.Configuration;
 
 
@@ -96,7 +93,7 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
         return this.lakeFSAuthToken == null || this.lakeFSAuthToken.getTokenExpiration() < System.currentTimeMillis();
     }
 
-    public Request<GeneratePresignGetCallerIdentityRequest> newPresignedRequest() throws Exception {
+    public GeneratePresignGetCallerIdentityResponse newPresignedRequest() throws Exception {
         GeneratePresignGetCallerIdentityRequest stsReq = new GeneratePresignGetCallerIdentityRequest(
                 new URI(this.stsEndpoint),
                 this.awsProvider.getCredentials(),
@@ -107,16 +104,26 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
     }
 
     public String newPresignedGetCallerIdentityToken() throws Exception {
-        Request<GeneratePresignGetCallerIdentityRequest> signedRequest = this.newPresignedRequest();
+        GeneratePresignGetCallerIdentityResponse signedRequest = this.newPresignedRequest();
+
         // generate token parameters object
-        JSONObject identityTokenParams = new JSONObject();
-        identityTokenParams.put("method", signedRequest.getHttpMethod().name());
-        identityTokenParams.put("endpoint", signedRequest.getEndpoint().toString());
-        identityTokenParams.put("signedHeaders", signedRequest.getHeaders().keySet().toArray());
-        identityTokenParams.put("expiration", this.stsExpirationInSeconds);
-        identityTokenParams.put("signedParams", signedRequest.getParameters());
+        LakeFSExternalPrincipalIdentityRequest identityTokenParams = new LakeFSExternalPrincipalIdentityRequest(
+                signedRequest.getHTTPMethod(),
+                signedRequest.getHost(),
+                signedRequest.getRegion(),
+                signedRequest.getAction(),
+                signedRequest.getDate(),
+                signedRequest.getExpires(),
+                signedRequest.getAccessKeyId(),
+                signedRequest.getSignature(),
+                Arrays.asList(signedRequest.getSignedHeadersParam().split(";")),
+                signedRequest.getVersion(),
+                signedRequest.getAlgorithm(),
+                signedRequest.getSecurityToken()
+        );
+
         // base64 encode
-        return Base64.encodeBase64String(identityTokenParams.toString().getBytes());
+        return Base64.encodeBase64String(identityTokenParams.toJSON().getBytes());
     }
 
     private void newToken() throws Exception {
