@@ -125,7 +125,7 @@ func (s *APIService) ExternalPrincipalLogin(ctx context.Context, identityRequest
 	if err != nil {
 		return nil, fmt.Errorf("calling authenticate user: %w", err)
 	}
-	if resp.StatusCode() != http.StatusOK || resp.JSON200 == nil {
+	if resp.StatusCode() != http.StatusOK {
 		switch resp.StatusCode() {
 		case http.StatusBadRequest:
 			return nil, ErrInvalidRequest
