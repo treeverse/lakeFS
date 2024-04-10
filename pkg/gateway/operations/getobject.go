@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	QueryParamMaxParts         = "max-parts"
-        // QueryParamPartNumberMarker Specifies the part after which listing should begin. Only parts with higher part numbers will be listed.
+	QueryParamMaxParts = "max-parts"
+	// QueryParamPartNumberMarker Specifies the part after which listing should begin. Only parts with higher part numbers will be listed.
 	QueryParamPartNumberMarker = "part-number-marker"
 )
 
@@ -160,7 +160,6 @@ func handleListParts(w http.ResponseWriter, req *http.Request, o *PathOperation)
 		Key:    path.WithRef(o.Path, o.Reference),
 	}
 	opts := block.ListPartsOpts{}
-	var maxParts32 int32
 	if maxPartsStr != "" {
 		maxParts, err := strconv.ParseInt(maxPartsStr, 10, 32)
 		if err != nil {
@@ -170,9 +169,8 @@ func handleListParts(w http.ResponseWriter, req *http.Request, o *PathOperation)
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
-		maxParts32 = int32(maxParts)
-		resp.MaxParts = maxParts32
-		opts.MaxParts = &maxParts32
+		resp.MaxParts = int32(maxParts)
+		opts.MaxParts = &resp.MaxParts
 	}
 	if partNumberMarker != "" {
 		opts.PartNumberMarker = &partNumberMarker
@@ -182,7 +180,6 @@ func handleListParts(w http.ResponseWriter, req *http.Request, o *PathOperation)
 		logging.UploadIDFieldKey: uploadID,
 	}))
 
-	// handle the upload/copy itself
 	multiPart, err := o.MultipartTracker.Get(req.Context(), uploadID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not read multipart record")

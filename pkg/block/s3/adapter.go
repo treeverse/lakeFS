@@ -792,10 +792,12 @@ func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, upload
 	}
 
 	lg := a.log(ctx).WithFields(logging.Fields{
-		"upload_id":     uploadID,
-		"qualified_ns":  qualifiedKey.GetStorageNamespace(),
-		"qualified_key": qualifiedKey.GetKey(),
-		"key":           obj.Identifier,
+		"upload_id":          uploadID,
+		"qualified_ns":       qualifiedKey.GetStorageNamespace(),
+		"qualified_key":      qualifiedKey.GetKey(),
+		"key":                obj.Identifier,
+		"max_parts":          opts.MaxParts,
+		"part_number_marker": opts.PartNumberMarker,
 	})
 	client := a.clients.Get(ctx, bucket)
 	resp, err := client.ListParts(ctx, input)
@@ -818,7 +820,7 @@ func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, upload
 		}
 	}
 
-	lg.Debug("list multipart upload parts")
+	lg.WithField("num_parts", len(resp.Parts)).Debug("list multipart upload parts")
 
 	return &partsResp, nil
 }

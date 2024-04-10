@@ -260,7 +260,8 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 			}
 
 			// List parts partial
-			maxParts := int32(2)
+			const maxPartsConst = 2
+			maxParts := int32(maxPartsConst)
 			listResp, err = adapter.ListParts(ctx, obj, resp.UploadID, block.ListPartsOpts{MaxParts: &maxParts})
 			if blockstoreType != block.BlockstoreTypeS3 {
 				require.ErrorIs(t, err, block.ErrOperationNotSupported)
