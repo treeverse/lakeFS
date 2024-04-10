@@ -646,7 +646,7 @@ func TestS3ReadObjectRedirect(t *testing.T) {
 
 	t.Run("get_exists", func(t *testing.T) {
 		opts := minio.GetObjectOptions{}
-		opts.Set("User-Agent", "s3RedirectionSupport")
+		opts.Set("User-Agent", "client with s3RedirectionSupport set")
 		res, err := minioClient.GetObject(ctx, repo, goodPath, opts)
 		require.NoError(t, err)
 
