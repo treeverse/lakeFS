@@ -8793,6 +8793,8 @@ components:
         - path: s3://my-bucket/production/collections/file1
           destination: collections/file1
           type: object
+        commit:
+          message: Commit message
       properties:
         paths:
           items:

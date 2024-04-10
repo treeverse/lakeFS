@@ -267,11 +267,11 @@ components:
           example: "main"
         sample_data:
           type: boolean
-          example: "true"
+          example: true
           default: false
         read_only:
           type: boolean
-          example: "true"
+          example: true
           default: false
 
     PathList:
@@ -1467,6 +1467,8 @@ components:
           - path: s3://my-bucket/production/collections/file1
             destination: collections/file1
             type: object
+        commit:
+          message: Commit message
 
     RangeMetadata:
       type: object
