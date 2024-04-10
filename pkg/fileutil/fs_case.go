@@ -58,7 +58,7 @@ func NewOSFS() FS {
 	return OSFS{}
 }
 
-func (_ OSFS) Touch(path string) error {
+func (OSFS) Touch(path string) error {
 	file, err := os.Create(path)
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func (_ OSFS) Touch(path string) error {
 	return file.Close()
 }
 
-func (_ OSFS) Exists(path string) (bool, error) {
+func (OSFS) Exists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return false, nil
@@ -77,6 +77,6 @@ func (_ OSFS) Exists(path string) (bool, error) {
 	return true, nil
 }
 
-func (_ OSFS) Remove(path string) error {
+func (OSFS) Remove(path string) error {
 	return os.Remove(path)
 }

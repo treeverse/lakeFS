@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
@@ -28,6 +29,9 @@ const (
 	pullOperation     LocalOperation = "pull"
 	checkoutOperation LocalOperation = "checkout"
 	cloneOperation    LocalOperation = "clone"
+
+	CaseInsensitiveFailureMessageFormat = `Directory '%s' is case-insensitive, versioning tools such as lakectl local and git will work incorrectly. Will only proceed with --force.`
+	CaseInsensitiveWarningMessageFormat = `Directory '%s' is case-insensitive, versioning tools such as lakectl local and git will work incorrectly. Proceeding because of --force.`
 )
 
 const localSummaryTemplate = `
@@ -113,6 +117,20 @@ Use "%s checkout..." to sync with the remote or run "lakectl local clone..." wit
 		default:
 			panic(fmt.Errorf("found an unknown interrupted operation in the index file: %s- %w", interruptedOperation, ErrUnknownOperation))
 		}
+	}
+}
+
+func dieOnCaseInsensitiveDirectory(path string, force bool) {
+	isCaseInsensitive, err := fileutil.IsCaseInsensitiveLocation(fileutil.OSFS{}, path)
+	if isCaseInsensitive {
+		if !force {
+			DieFmt(CaseInsensitiveFailureMessageFormat, path)
+		}
+		Warning(fmt.Sprintf(CaseInsensitiveWarningMessageFormat, path))
+	}
+	if err != nil {
+		Warning(fmt.Sprintf("Check whether directory '%s' is case-insensitive: %s", path, err))
+		Warning("Continuing without this check")
 	}
 }
 
