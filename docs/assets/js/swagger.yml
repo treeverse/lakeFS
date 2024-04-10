@@ -38,6 +38,7 @@ components:
       type: apiKey
       in: cookie
       name: saml_auth_session
+
   parameters:
     PaginationPrefix:
       in: query
@@ -1049,6 +1050,17 @@ components:
           type: string
         secret_access_key:
           type: string
+
+    ExternalLoginInformation:
+      type: object
+      required:
+        - identityRequest
+      properties:
+        token_expiration_duration:
+          type: integer
+        identityRequest:
+          type: object
+
     StsAuthRequest:
       type: object
       required:
@@ -1820,11 +1832,46 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
+
+  /auth/external/principal/login:
+    post:
+      tags:
+        - external
+        - experimental
+        - auth
+      operationId: externalPrincipalLogin
+      summary: perform a login using an external authenticator
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalLoginInformation"
+      responses:
+        200:
+          description: successful external login
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticationToken"
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /sts/login:
     post:
       tags:
         - experimental
-      operationId: stsLogin
+      operationId: stsLogin # change to stsLogin
       summary: perform a login with STS
       security: []
       requestBody:
@@ -1842,9 +1889,10 @@ paths:
                 $ref: "#/components/schemas/AuthenticationToken"
         401:
           $ref: "#/components/responses/Unauthorized"
+        420:
+          description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-
 
   /auth/capabilities:
     get:

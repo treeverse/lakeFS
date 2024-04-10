@@ -1,13 +1,11 @@
-# StsAuthRequest
+# ExternalLoginInformation
 
 
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**code** | **str** |  | 
-**state** | **str** |  | 
-**redirect_uri** | **str** |  | 
-**ttl_seconds** | **int** | The time-to-live for the generated token in seconds.  The default value is 3600 seconds (1 hour) maximum time allowed is 12 hours.  | [optional] 
+**identity_request** | **{str: (bool, date, datetime, dict, float, int, list, str, none_type)}** |  | 
+**token_expiration_duration** | **int** |  | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

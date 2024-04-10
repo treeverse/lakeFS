@@ -174,6 +174,61 @@ paths:
       - auth
       x-content-type: application/json
       x-accepts: application/json
+  /auth/external/principal/login:
+    post:
+      operationId: externalPrincipalLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalLoginInformation'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationToken'
+          description: successful external login
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      summary: perform a login using an external authenticator
+      tags:
+      - external
+      - experimental
+      - auth
+      x-content-type: application/json
+      x-accepts: application/json
   /sts/login:
     post:
       operationId: stsLogin
@@ -196,6 +251,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
+        "420":
+          description: too many requests
         default:
           content:
             application/json:
@@ -8148,6 +8205,18 @@ components:
       - access_key_id
       - secret_access_key
       type: object
+    ExternalLoginInformation:
+      example:
+        identityRequest: "{}"
+        token_expiration_duration: 0
+      properties:
+        token_expiration_duration:
+          type: integer
+        identityRequest:
+          type: object
+      required:
+      - identityRequest
+      type: object
     StsAuthRequest:
       example:
         code: code
@@ -8163,8 +8232,8 @@ components:
           type: string
         ttl_seconds:
           description: |
-            The time-to-live for the generated token in seconds.  The maximum
-            value is 3600 seconds (1 hour) max is 12 hours.
+            The time-to-live for the generated token in seconds.  The default
+            value is 3600 seconds (1 hour) maximum time allowed is 12 hours.
           format: int64
           type: integer
       required:

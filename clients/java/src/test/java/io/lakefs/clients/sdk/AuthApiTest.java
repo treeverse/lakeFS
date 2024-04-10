@@ -22,6 +22,7 @@ import io.lakefs.clients.sdk.model.CredentialsWithSecret;
 import io.lakefs.clients.sdk.model.CurrentUser;
 import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.ErrorNoACL;
+import io.lakefs.clients.sdk.model.ExternalLoginInformation;
 import io.lakefs.clients.sdk.model.ExternalPrincipal;
 import io.lakefs.clients.sdk.model.ExternalPrincipalCreation;
 import io.lakefs.clients.sdk.model.ExternalPrincipalList;
@@ -267,6 +268,20 @@ public class AuthApiTest {
         String userId = null;
         String policyId = null;
         api.detachPolicyFromUser(userId, policyId)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * perform a login using an external authenticator
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void externalPrincipalLoginTest() throws ApiException {
+        ExternalLoginInformation externalLoginInformation = null;
+        AuthenticationToken response = api.externalPrincipalLogin()
+                .externalLoginInformation(externalLoginInformation)
                 .execute();
         // TODO: test validations
     }

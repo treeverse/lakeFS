@@ -34,6 +34,7 @@ docs/Error.md
 docs/ErrorNoACL.md
 docs/ExperimentalApi.md
 docs/ExternalApi.md
+docs/ExternalLoginInformation.md
 docs/ExternalPrincipal.md
 docs/ExternalPrincipalCreation.md
 docs/ExternalPrincipalList.md
@@ -169,6 +170,7 @@ lakefs_client/model/diff.py
 lakefs_client/model/diff_list.py
 lakefs_client/model/error.py
 lakefs_client/model/error_no_acl.py
+lakefs_client/model/external_login_information.py
 lakefs_client/model/external_principal.py
 lakefs_client/model/external_principal_creation.py
 lakefs_client/model/external_principal_list.py
@@ -285,6 +287,7 @@ test/test_error.py
 test/test_error_no_acl.py
 test/test_experimental_api.py
 test/test_external_api.py
+test/test_external_login_information.py
 test/test_external_principal.py
 test/test_external_principal_creation.py
 test/test_external_principal_list.py

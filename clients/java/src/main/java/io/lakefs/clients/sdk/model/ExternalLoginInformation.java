@@ -48,110 +48,60 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * StsAuthRequest
+ * ExternalLoginInformation
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class StsAuthRequest {
-  public static final String SERIALIZED_NAME_CODE = "code";
-  @SerializedName(SERIALIZED_NAME_CODE)
-  private String code;
+public class ExternalLoginInformation {
+  public static final String SERIALIZED_NAME_TOKEN_EXPIRATION_DURATION = "token_expiration_duration";
+  @SerializedName(SERIALIZED_NAME_TOKEN_EXPIRATION_DURATION)
+  private Integer tokenExpirationDuration;
 
-  public static final String SERIALIZED_NAME_STATE = "state";
-  @SerializedName(SERIALIZED_NAME_STATE)
-  private String state;
+  public static final String SERIALIZED_NAME_IDENTITY_REQUEST = "identityRequest";
+  @SerializedName(SERIALIZED_NAME_IDENTITY_REQUEST)
+  private Object identityRequest;
 
-  public static final String SERIALIZED_NAME_REDIRECT_URI = "redirect_uri";
-  @SerializedName(SERIALIZED_NAME_REDIRECT_URI)
-  private String redirectUri;
-
-  public static final String SERIALIZED_NAME_TTL_SECONDS = "ttl_seconds";
-  @SerializedName(SERIALIZED_NAME_TTL_SECONDS)
-  private Long ttlSeconds;
-
-  public StsAuthRequest() {
+  public ExternalLoginInformation() {
   }
 
-  public StsAuthRequest code(String code) {
+  public ExternalLoginInformation tokenExpirationDuration(Integer tokenExpirationDuration) {
     
-    this.code = code;
+    this.tokenExpirationDuration = tokenExpirationDuration;
     return this;
   }
 
    /**
-   * Get code
-   * @return code
-  **/
-  @javax.annotation.Nonnull
-  public String getCode() {
-    return code;
-  }
-
-
-  public void setCode(String code) {
-    this.code = code;
-  }
-
-
-  public StsAuthRequest state(String state) {
-    
-    this.state = state;
-    return this;
-  }
-
-   /**
-   * Get state
-   * @return state
-  **/
-  @javax.annotation.Nonnull
-  public String getState() {
-    return state;
-  }
-
-
-  public void setState(String state) {
-    this.state = state;
-  }
-
-
-  public StsAuthRequest redirectUri(String redirectUri) {
-    
-    this.redirectUri = redirectUri;
-    return this;
-  }
-
-   /**
-   * Get redirectUri
-   * @return redirectUri
-  **/
-  @javax.annotation.Nonnull
-  public String getRedirectUri() {
-    return redirectUri;
-  }
-
-
-  public void setRedirectUri(String redirectUri) {
-    this.redirectUri = redirectUri;
-  }
-
-
-  public StsAuthRequest ttlSeconds(Long ttlSeconds) {
-    
-    this.ttlSeconds = ttlSeconds;
-    return this;
-  }
-
-   /**
-   * The time-to-live for the generated token in seconds.  The default value is 3600 seconds (1 hour) maximum time allowed is 12 hours. 
-   * @return ttlSeconds
+   * Get tokenExpirationDuration
+   * @return tokenExpirationDuration
   **/
   @javax.annotation.Nullable
-  public Long getTtlSeconds() {
-    return ttlSeconds;
+  public Integer getTokenExpirationDuration() {
+    return tokenExpirationDuration;
   }
 
 
-  public void setTtlSeconds(Long ttlSeconds) {
-    this.ttlSeconds = ttlSeconds;
+  public void setTokenExpirationDuration(Integer tokenExpirationDuration) {
+    this.tokenExpirationDuration = tokenExpirationDuration;
+  }
+
+
+  public ExternalLoginInformation identityRequest(Object identityRequest) {
+    
+    this.identityRequest = identityRequest;
+    return this;
+  }
+
+   /**
+   * Get identityRequest
+   * @return identityRequest
+  **/
+  @javax.annotation.Nonnull
+  public Object getIdentityRequest() {
+    return identityRequest;
+  }
+
+
+  public void setIdentityRequest(Object identityRequest) {
+    this.identityRequest = identityRequest;
   }
 
   /**
@@ -167,9 +117,9 @@ public class StsAuthRequest {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the StsAuthRequest instance itself
+   * @return the ExternalLoginInformation instance itself
    */
-  public StsAuthRequest putAdditionalProperty(String key, Object value) {
+  public ExternalLoginInformation putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -208,27 +158,23 @@ public class StsAuthRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StsAuthRequest stsAuthRequest = (StsAuthRequest) o;
-    return Objects.equals(this.code, stsAuthRequest.code) &&
-        Objects.equals(this.state, stsAuthRequest.state) &&
-        Objects.equals(this.redirectUri, stsAuthRequest.redirectUri) &&
-        Objects.equals(this.ttlSeconds, stsAuthRequest.ttlSeconds)&&
-        Objects.equals(this.additionalProperties, stsAuthRequest.additionalProperties);
+    ExternalLoginInformation externalLoginInformation = (ExternalLoginInformation) o;
+    return Objects.equals(this.tokenExpirationDuration, externalLoginInformation.tokenExpirationDuration) &&
+        Objects.equals(this.identityRequest, externalLoginInformation.identityRequest)&&
+        Objects.equals(this.additionalProperties, externalLoginInformation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(code, state, redirectUri, ttlSeconds, additionalProperties);
+    return Objects.hash(tokenExpirationDuration, identityRequest, additionalProperties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class StsAuthRequest {\n");
-    sb.append("    code: ").append(toIndentedString(code)).append("\n");
-    sb.append("    state: ").append(toIndentedString(state)).append("\n");
-    sb.append("    redirectUri: ").append(toIndentedString(redirectUri)).append("\n");
-    sb.append("    ttlSeconds: ").append(toIndentedString(ttlSeconds)).append("\n");
+    sb.append("class ExternalLoginInformation {\n");
+    sb.append("    tokenExpirationDuration: ").append(toIndentedString(tokenExpirationDuration)).append("\n");
+    sb.append("    identityRequest: ").append(toIndentedString(identityRequest)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -252,63 +198,50 @@ public class StsAuthRequest {
   static {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
-    openapiFields.add("code");
-    openapiFields.add("state");
-    openapiFields.add("redirect_uri");
-    openapiFields.add("ttl_seconds");
+    openapiFields.add("token_expiration_duration");
+    openapiFields.add("identityRequest");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("code");
-    openapiRequiredFields.add("state");
-    openapiRequiredFields.add("redirect_uri");
+    openapiRequiredFields.add("identityRequest");
   }
 
  /**
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to StsAuthRequest
+  * @throws IOException if the JSON Element is invalid with respect to ExternalLoginInformation
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!StsAuthRequest.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in StsAuthRequest is not found in the empty JSON string", StsAuthRequest.openapiRequiredFields.toString()));
+        if (!ExternalLoginInformation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in ExternalLoginInformation is not found in the empty JSON string", ExternalLoginInformation.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : StsAuthRequest.openapiRequiredFields) {
+      for (String requiredField : ExternalLoginInformation.openapiRequiredFields) {
         if (jsonElement.getAsJsonObject().get(requiredField) == null) {
           throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if (!jsonObj.get("code").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `code` to be a primitive type in the JSON string but got `%s`", jsonObj.get("code").toString()));
-      }
-      if (!jsonObj.get("state").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `state` to be a primitive type in the JSON string but got `%s`", jsonObj.get("state").toString()));
-      }
-      if (!jsonObj.get("redirect_uri").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `redirect_uri` to be a primitive type in the JSON string but got `%s`", jsonObj.get("redirect_uri").toString()));
-      }
   }
 
   public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!StsAuthRequest.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'StsAuthRequest' and its subtypes
+       if (!ExternalLoginInformation.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'ExternalLoginInformation' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<StsAuthRequest> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(StsAuthRequest.class));
+       final TypeAdapter<ExternalLoginInformation> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(ExternalLoginInformation.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<StsAuthRequest>() {
+       return (TypeAdapter<T>) new TypeAdapter<ExternalLoginInformation>() {
            @Override
-           public void write(JsonWriter out, StsAuthRequest value) throws IOException {
+           public void write(JsonWriter out, ExternalLoginInformation value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -331,12 +264,12 @@ public class StsAuthRequest {
            }
 
            @Override
-           public StsAuthRequest read(JsonReader in) throws IOException {
+           public ExternalLoginInformation read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             StsAuthRequest instance = thisAdapter.fromJsonTree(jsonObj);
+             ExternalLoginInformation instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -363,18 +296,18 @@ public class StsAuthRequest {
   }
 
  /**
-  * Create an instance of StsAuthRequest given an JSON string
+  * Create an instance of ExternalLoginInformation given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of StsAuthRequest
-  * @throws IOException if the JSON string is invalid with respect to StsAuthRequest
+  * @return An instance of ExternalLoginInformation
+  * @throws IOException if the JSON string is invalid with respect to ExternalLoginInformation
   */
-  public static StsAuthRequest fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, StsAuthRequest.class);
+  public static ExternalLoginInformation fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, ExternalLoginInformation.class);
   }
 
  /**
-  * Convert an instance of StsAuthRequest to an JSON string
+  * Convert an instance of ExternalLoginInformation to an JSON string
   *
   * @return JSON string
   */

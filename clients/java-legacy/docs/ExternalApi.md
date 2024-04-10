@@ -6,6 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**createUserExternalPrincipal**](ExternalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 [**deleteUserExternalPrincipal**](ExternalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
+[**externalPrincipalLogin**](ExternalApi.md#externalPrincipalLogin) | **POST** /auth/external/principal/login | perform a login using an external authenticator
 [**getExternalPrincipal**](ExternalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
 [**listUserExternalPrincipals**](ExternalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 
@@ -195,6 +196,72 @@ null (empty response body)
 |-------------|-------------|------------------|
 **204** | external principal detached successfully |  -  |
 **401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="externalPrincipalLogin"></a>
+# **externalPrincipalLogin**
+> AuthenticationToken externalPrincipalLogin(externalLoginInformation)
+
+perform a login using an external authenticator
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.ExternalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+
+    ExternalApi apiInstance = new ExternalApi(defaultClient);
+    ExternalLoginInformation externalLoginInformation = new ExternalLoginInformation(); // ExternalLoginInformation | 
+    try {
+      AuthenticationToken result = apiInstance.externalPrincipalLogin(externalLoginInformation);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ExternalApi#externalPrincipalLogin");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **externalLoginInformation** | [**ExternalLoginInformation**](ExternalLoginInformation.md)|  | [optional]
+
+### Return type
+
+[**AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | successful external login |  -  |
+**400** | Bad Request |  -  |
+**401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |

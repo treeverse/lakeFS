@@ -31,6 +31,7 @@ import io.lakefs.clients.api.model.AbortPresignMultipartUpload;
 import io.lakefs.clients.api.model.AuthenticationToken;
 import io.lakefs.clients.api.model.CompletePresignMultipartUpload;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.ExternalLoginInformation;
 import io.lakefs.clients.api.model.ExternalPrincipal;
 import io.lakefs.clients.api.model.ExternalPrincipalCreation;
 import io.lakefs.clients.api.model.ExternalPrincipalList;
@@ -848,6 +849,136 @@ public class ExperimentalApi {
         return localVarCall;
     }
     /**
+     * Build call for externalPrincipalLogin
+     * @param externalLoginInformation  (optional)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> successful external login </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call externalPrincipalLoginCall(ExternalLoginInformation externalLoginInformation, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = externalLoginInformation;
+
+        // create path and map variables
+        String localVarPath = "/auth/external/principal/login";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] {  };
+        return localVarApiClient.buildCall(localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call externalPrincipalLoginValidateBeforeCall(ExternalLoginInformation externalLoginInformation, final ApiCallback _callback) throws ApiException {
+        
+
+        okhttp3.Call localVarCall = externalPrincipalLoginCall(externalLoginInformation, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * perform a login using an external authenticator
+     * 
+     * @param externalLoginInformation  (optional)
+     * @return AuthenticationToken
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> successful external login </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public AuthenticationToken externalPrincipalLogin(ExternalLoginInformation externalLoginInformation) throws ApiException {
+        ApiResponse<AuthenticationToken> localVarResp = externalPrincipalLoginWithHttpInfo(externalLoginInformation);
+        return localVarResp.getData();
+    }
+
+    /**
+     * perform a login using an external authenticator
+     * 
+     * @param externalLoginInformation  (optional)
+     * @return ApiResponse&lt;AuthenticationToken&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> successful external login </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<AuthenticationToken> externalPrincipalLoginWithHttpInfo(ExternalLoginInformation externalLoginInformation) throws ApiException {
+        okhttp3.Call localVarCall = externalPrincipalLoginValidateBeforeCall(externalLoginInformation, null);
+        Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * perform a login using an external authenticator (asynchronously)
+     * 
+     * @param externalLoginInformation  (optional)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> successful external login </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call externalPrincipalLoginAsync(ExternalLoginInformation externalLoginInformation, final ApiCallback<AuthenticationToken> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = externalPrincipalLoginValidateBeforeCall(externalLoginInformation, _callback);
+        Type localVarReturnType = new TypeToken<AuthenticationToken>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
      * Build call for getExternalPrincipal
      * @param principalId  (required)
      * @param _callback Callback for upload/download progress
@@ -1304,6 +1435,7 @@ public class ExperimentalApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> successful STS login </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -1362,6 +1494,7 @@ public class ExperimentalApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> successful STS login </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -1381,6 +1514,7 @@ public class ExperimentalApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> successful STS login </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -1402,6 +1536,7 @@ public class ExperimentalApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> successful STS login </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */

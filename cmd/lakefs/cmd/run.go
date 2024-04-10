@@ -121,7 +121,7 @@ var runCmd = &cobra.Command{
 			apiService, err := auth.NewAPIAuthService(
 				cfg.Auth.API.Endpoint,
 				cfg.Auth.API.Token.SecureValue(),
-				cfg.Auth.RemoteAuthenticator.ExternalPrincipalsEnabled,
+				cfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled,
 				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
 				authparams.ServiceCache(cfg.Auth.Cache),
 				logger.WithField("service", "auth_api"),
@@ -146,7 +146,7 @@ var runCmd = &cobra.Command{
 		// initialize authentication service
 		var authenticationService authentication.Service
 		if cfg.IsAuthenticationTypeAPI() {
-			authenticationService, err = authentication.NewAPIService(cfg.Auth.AuthenticationAPI.Endpoint, cfg.Auth.CookieAuthVerification.ValidateIDTokenClaims, logger.WithField("service", "authentication_api"))
+			authenticationService, err = authentication.NewAPIService(cfg.Auth.AuthenticationAPI.Endpoint, cfg.Auth.CookieAuthVerification.ValidateIDTokenClaims, logger.WithField("service", "authentication_api"), cfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}
