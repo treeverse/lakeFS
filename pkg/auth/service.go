@@ -1196,11 +1196,11 @@ const (
 )
 
 type APIAuthService struct {
-	apiClient                  ClientWithResponsesInterface
-	secretStore                crypt.SecretStore
-	logger                     logging.Logger
-	cache                      Cache
-	externalPrincipalseEnabled bool
+	apiClient                 ClientWithResponsesInterface
+	secretStore               crypt.SecretStore
+	logger                    logging.Logger
+	cache                     Cache
+	externalPrincipalsEnabled bool
 }
 
 func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
@@ -1983,7 +1983,7 @@ func (a *APIAuthService) CheckHealth(ctx context.Context, logger logging.Logger,
 }
 
 func (a *APIAuthService) IsExternalPrincipalsEnabled(ctx context.Context) bool {
-	return a.externalPrincipalseEnabled
+	return a.externalPrincipalsEnabled
 }
 
 func (a *APIAuthService) CreateUserExternalPrincipal(ctx context.Context, userID, principalID string) error {
@@ -2092,11 +2092,11 @@ func NewAPIAuthService(apiEndpoint, token string, externalPrincipalseEnabled boo
 		cache = &DummyCache{}
 	}
 	res := &APIAuthService{
-		apiClient:                  client,
-		secretStore:                secretStore,
-		logger:                     logger,
-		cache:                      cache,
-		externalPrincipalseEnabled: externalPrincipalseEnabled,
+		apiClient:                 client,
+		secretStore:               secretStore,
+		logger:                    logger,
+		cache:                     cache,
+		externalPrincipalsEnabled: externalPrincipalseEnabled,
 	}
 	return res, nil
 }
@@ -2135,10 +2135,10 @@ func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, externalPr
 		cache = &DummyCache{}
 	}
 	return &APIAuthService{
-		apiClient:                  client,
-		secretStore:                secretStore,
-		cache:                      cache,
-		logger:                     logger,
-		externalPrincipalseEnabled: externalPrincipalseEnabled,
+		apiClient:                 client,
+		secretStore:               secretStore,
+		cache:                     cache,
+		logger:                    logger,
+		externalPrincipalsEnabled: externalPrincipalseEnabled,
 	}, nil
 }

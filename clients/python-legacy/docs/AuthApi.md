@@ -20,6 +20,7 @@ Method | HTTP request | Description
 [**delete_user_external_principal**](AuthApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 [**detach_policy_from_group**](AuthApi.md#detach_policy_from_group) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 [**detach_policy_from_user**](AuthApi.md#detach_policy_from_user) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
+[**external_principal_login**](AuthApi.md#external_principal_login) | **POST** /auth/external/principal/login | perform a login using an external authenticator
 [**get_credentials**](AuthApi.md#get_credentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 [**get_current_user**](AuthApi.md#get_current_user) | **GET** /user | get current user
 [**get_external_principal**](AuthApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
@@ -1798,6 +1799,83 @@ void (empty response body)
 |-------------|-------------|------------------|
 **204** | policy detached successfully |  -  |
 **401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **external_principal_login**
+> AuthenticationToken external_principal_login()
+
+perform a login using an external authenticator
+
+### Example
+
+
+```python
+import time
+import lakefs_client
+from lakefs_client.api import auth_api
+from lakefs_client.model.authentication_token import AuthenticationToken
+from lakefs_client.model.external_login_information import ExternalLoginInformation
+from lakefs_client.model.error import Error
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost/api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_client.Configuration(
+    host = "http://localhost/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_client.ApiClient() as api_client:
+    # Create an instance of the API class
+    api_instance = auth_api.AuthApi(api_client)
+    external_login_information = ExternalLoginInformation(
+        token_expiration_duration=1,
+        identity_request={},
+    ) # ExternalLoginInformation |  (optional)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # perform a login using an external authenticator
+        api_response = api_instance.external_principal_login(external_login_information=external_login_information)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling AuthApi->external_principal_login: %s\n" % e)
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **external_login_information** | [**ExternalLoginInformation**](ExternalLoginInformation.md)|  | [optional]
+
+### Return type
+
+[**AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | successful external login |  -  |
+**400** | Bad Request |  -  |
+**401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |

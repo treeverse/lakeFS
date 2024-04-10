@@ -9,6 +9,7 @@ Method | HTTP request | Description
 [**create_presign_multipart_upload**](ExperimentalApi.md#create_presign_multipart_upload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
 [**create_user_external_principal**](ExperimentalApi.md#create_user_external_principal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 [**delete_user_external_principal**](ExperimentalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
+[**external_principal_login**](ExperimentalApi.md#external_principal_login) | **POST** /auth/external/principal/login | perform a login using an external authenticator
 [**get_external_principal**](ExperimentalApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
 [**hard_reset_branch**](ExperimentalApi.md#hard_reset_branch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 [**list_user_external_principals**](ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
@@ -598,6 +599,81 @@ void (empty response body)
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **external_principal_login**
+> AuthenticationToken external_principal_login(external_login_information=external_login_information)
+
+perform a login using an external authenticator
+
+### Example
+
+
+```python
+import time
+import os
+import lakefs_sdk
+from lakefs_sdk.models.authentication_token import AuthenticationToken
+from lakefs_sdk.models.external_login_information import ExternalLoginInformation
+from lakefs_sdk.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.ExperimentalApi(api_client)
+    external_login_information = lakefs_sdk.ExternalLoginInformation() # ExternalLoginInformation |  (optional)
+
+    try:
+        # perform a login using an external authenticator
+        api_response = api_instance.external_principal_login(external_login_information=external_login_information)
+        print("The response of ExperimentalApi->external_principal_login:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ExperimentalApi->external_principal_login: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **external_login_information** | [**ExternalLoginInformation**](ExternalLoginInformation.md)|  | [optional] 
+
+### Return type
+
+[**AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | successful external login |  -  |
+**400** | Bad Request |  -  |
+**401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
+**404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **get_external_principal**
 > ExternalPrincipal get_external_principal(principal_id)
 
@@ -1008,6 +1084,7 @@ No authorization required
 |-------------|-------------|------------------|
 **200** | successful STS login |  -  |
 **401** | Unauthorized |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

@@ -559,6 +559,50 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	writeResponse(w, r, http.StatusOK, response)
 }
 
+func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Request, body apigen.ExternalPrincipalLoginJSONRequestBody) {
+	ctx := r.Context()
+	if c.isExternalPrincipalNotSupported(ctx) {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
+	c.LogAction(ctx, "external_principal_login", r, "", "", "")
+	c.Logger.Debug("external principal login")
+	externalPrincipal, err := c.Authentication.ExternalPrincipalLogin(ctx, body.IdentityRequest)
+	if c.handleAPIError(ctx, w, r, err) {
+		c.Logger.WithError(err).Error("external principal login failed")
+		return
+	}
+	c.Logger.WithField("external_principal_id", externalPrincipal.Id).Debug("external principal login success, trying to get external principal ID info")
+	externalPrincipalIDInfo, err := c.Auth.GetExternalPrincipal(ctx, externalPrincipal.Id)
+	if c.handleAPIError(ctx, w, r, err) {
+		c.Logger.WithField("external_principal_id", externalPrincipal.Id).WithError(err).Error("failed to get external principal ID info")
+		return
+	}
+	c.Logger.WithField("user_id", externalPrincipalIDInfo.UserID).Debug("got external principal ID info, generating a new JWT")
+	duration := c.Config.Auth.LoginDuration
+	if swag.IntValue(body.TokenExpirationDuration) > 0 {
+		duration = time.Second * time.Duration(*body.TokenExpirationDuration)
+	}
+	if duration > c.Config.Auth.LoginMaxDuration {
+		c.Logger.WithFields(logging.Fields{"duration": duration, "max_duration": c.Config.Auth.LoginMaxDuration}).Warn("Login duration exceeds maximum allowed, using maximum allowed")
+		duration = c.Config.Auth.LoginMaxDuration
+	}
+	loginTime := time.Now()
+	expires := loginTime.Add(duration)
+	secret := c.Auth.SecretStore().SharedSecret()
+	tokenString, err := GenerateJWTLogin(secret, externalPrincipalIDInfo.UserID, loginTime, expires)
+	if err != nil {
+		c.Logger.WithField("user_id", externalPrincipalIDInfo.UserID).WithError(err).Error("failed to generate JWT")
+		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		return
+	}
+	response := apigen.AuthenticationToken{
+		Token:           tokenString,
+		TokenExpiration: swag.Int64(expires.Unix()),
+	}
+	writeResponse(w, r, http.StatusOK, response)
+}
+
 func (c *Controller) StsLogin(w http.ResponseWriter, r *http.Request, body apigen.StsLoginJSONRequestBody) {
 	ctx := r.Context()
 	externalUserID, err := c.Authentication.ValidateSTS(ctx, body.Code, body.RedirectUri, body.State)
@@ -2605,6 +2649,12 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, graveler.ErrReadOnlyRepository):
 		cb(w, r, http.StatusForbidden, err)
 
+	case errors.Is(err, authentication.ErrSessionExpired):
+		cb(w, r, http.StatusForbidden, "session expired")
+
+	case errors.Is(err, authentication.ErrInvalidTokenFormat):
+		cb(w, r, http.StatusUnauthorized, "invalid token format")
+
 	case errors.Is(err, graveler.ErrDirtyBranch),
 		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
 		errors.Is(err, graveler.ErrInvalidValue),
@@ -2621,7 +2671,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, graveler.ErrCherryPickMergeNoParent),
 		errors.Is(err, graveler.ErrInvalidMergeStrategy),
 		errors.Is(err, block.ErrInvalidAddress),
-		errors.Is(err, block.ErrOperationNotSupported):
+		errors.Is(err, block.ErrOperationNotSupported),
+		errors.Is(err, authentication.ErrInvalidRequest):
 		log.Debug("Bad request")
 		cb(w, r, http.StatusBadRequest, err)
 

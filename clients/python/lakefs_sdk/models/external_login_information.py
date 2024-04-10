@@ -19,18 +19,16 @@ import re  # noqa: F401
 import json
 
 
-from typing import Optional
-from pydantic import BaseModel, Field, StrictInt, StrictStr
+from typing import Any, Dict, Optional
+from pydantic import BaseModel, Field, StrictInt
 
-class StsAuthRequest(BaseModel):
+class ExternalLoginInformation(BaseModel):
     """
-    StsAuthRequest
+    ExternalLoginInformation
     """
-    code: StrictStr = Field(...)
-    state: StrictStr = Field(...)
-    redirect_uri: StrictStr = Field(...)
-    ttl_seconds: Optional[StrictInt] = Field(None, description="The time-to-live for the generated token in seconds.  The default value is 3600 seconds (1 hour) maximum time allowed is 12 hours. ")
-    __properties = ["code", "state", "redirect_uri", "ttl_seconds"]
+    token_expiration_duration: Optional[StrictInt] = None
+    identity_request: Dict[str, Any] = Field(..., alias="identityRequest")
+    __properties = ["token_expiration_duration", "identityRequest"]
 
     class Config:
         """Pydantic configuration"""
@@ -46,8 +44,8 @@ class StsAuthRequest(BaseModel):
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> StsAuthRequest:
-        """Create an instance of StsAuthRequest from a JSON string"""
+    def from_json(cls, json_str: str) -> ExternalLoginInformation:
+        """Create an instance of ExternalLoginInformation from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self):
@@ -59,19 +57,17 @@ class StsAuthRequest(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> StsAuthRequest:
-        """Create an instance of StsAuthRequest from a dict"""
+    def from_dict(cls, obj: dict) -> ExternalLoginInformation:
+        """Create an instance of ExternalLoginInformation from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return StsAuthRequest.parse_obj(obj)
+            return ExternalLoginInformation.parse_obj(obj)
 
-        _obj = StsAuthRequest.parse_obj({
-            "code": obj.get("code"),
-            "state": obj.get("state"),
-            "redirect_uri": obj.get("redirect_uri"),
-            "ttl_seconds": obj.get("ttl_seconds")
+        _obj = ExternalLoginInformation.parse_obj({
+            "token_expiration_duration": obj.get("token_expiration_duration"),
+            "identity_request": obj.get("identityRequest")
         })
         return _obj
 

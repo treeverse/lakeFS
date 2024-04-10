@@ -20,6 +20,7 @@ Method | HTTP request | Description
 [**deleteUserExternalPrincipal**](AuthApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 [**detachPolicyFromGroup**](AuthApi.md#detachPolicyFromGroup) | **DELETE** /auth/groups/{groupId}/policies/{policyId} | detach policy from group
 [**detachPolicyFromUser**](AuthApi.md#detachPolicyFromUser) | **DELETE** /auth/users/{userId}/policies/{policyId} | detach policy from user
+[**externalPrincipalLogin**](AuthApi.md#externalPrincipalLogin) | **POST** /auth/external/principal/login | perform a login using an external authenticator
 [**getCredentials**](AuthApi.md#getCredentials) | **GET** /auth/users/{userId}/credentials/{accessKeyId} | get credentials
 [**getCurrentUser**](AuthApi.md#getCurrentUser) | **GET** /user | get current user
 [**getExternalPrincipal**](AuthApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
@@ -1520,6 +1521,72 @@ null (empty response body)
 |-------------|-------------|------------------|
 **204** | policy detached successfully |  -  |
 **401** | Unauthorized |  -  |
+**404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+<a name="externalPrincipalLogin"></a>
+# **externalPrincipalLogin**
+> AuthenticationToken externalPrincipalLogin(externalLoginInformation)
+
+perform a login using an external authenticator
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.api.ApiClient;
+import io.lakefs.clients.api.ApiException;
+import io.lakefs.clients.api.Configuration;
+import io.lakefs.clients.api.models.*;
+import io.lakefs.clients.api.AuthApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("http://localhost/api/v1");
+
+    AuthApi apiInstance = new AuthApi(defaultClient);
+    ExternalLoginInformation externalLoginInformation = new ExternalLoginInformation(); // ExternalLoginInformation | 
+    try {
+      AuthenticationToken result = apiInstance.externalPrincipalLogin(externalLoginInformation);
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling AuthApi#externalPrincipalLogin");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **externalLoginInformation** | [**ExternalLoginInformation**](ExternalLoginInformation.md)|  | [optional]
+
+### Return type
+
+[**AuthenticationToken**](AuthenticationToken.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | successful external login |  -  |
+**400** | Bad Request |  -  |
+**401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
