@@ -19,6 +19,9 @@ const (
 	localCloneMinArgs = 1
 	localCloneMaxArgs = 2
 	filesChanSize     = 1000
+
+	CaseInsensitiveFailureMessageFormat = `Directory '%s' is case-insensitive, versioning tools such as lakectl local and git will work incorrectly. Will only proceed with --force.`
+	CaseInsensitiveWarningMessageFormat = `Directory '%s' is case-insensitive, versioning tools such as lakectl local and git will work incorrectly. Proceeding because of --force.`
 )
 
 var localCloneCmd = &cobra.Command{
@@ -43,9 +46,9 @@ var localCloneCmd = &cobra.Command{
 		if isCaseInsensitive {
 			force := Must(cmd.Flags().GetBool(localForceFlagName))
 			if !force {
-				DieFmt("Directory '%s' is case-insensitive, lakectl local will work incorrectly. Will only proceed with --force", localPath)
+				DieFmt(CaseInsensitiveFailureMessageFormat, localPath)
 			}
-			Warning(fmt.Sprintf("Directory '%s' is case-insensitive, proceeding because of --force", localPath))
+			Warning(fmt.Sprintf(CaseInsensitiveWarningMessageFormat, localPath))
 		}
 		if err != nil {
 			Warning(fmt.Sprintf("Check whether directory '%s' is case-insensitive: %s", localPath, err))
