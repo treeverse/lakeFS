@@ -567,25 +567,11 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 	}
 	c.LogAction(ctx, "external_principal_login", r, "", "", "")
 	c.Logger.Debug("external principal login")
-	externalPrincipalLoginResponse, err := c.Authentication.ExternalPrincipalLogin(ctx, body.IdentityRequest)
+	externalPrincipal, err := c.Authentication.ExternalPrincipalLogin(ctx, body.IdentityRequest)
 	if c.handleAPIError(ctx, w, r, err) {
 		c.Logger.WithError(err).Error("external principal login failed")
 		return
 	}
-	if externalPrincipalLoginResponse.StatusCode() != http.StatusOK || externalPrincipalLoginResponse.JSON200 == nil {
-		switch externalPrincipalLoginResponse.StatusCode() {
-		case http.StatusBadRequest:
-			writeError(w, r, http.StatusBadRequest, "Bad Request")
-		case http.StatusUnauthorized:
-			writeError(w, r, http.StatusUnauthorized, "Unauthorized")
-		case http.StatusForbidden:
-			writeError(w, r, http.StatusForbidden, "Forbidden")
-		default:
-			writeError(w, r, http.StatusInternalServerError, "Internal Server Error")
-		}
-		return
-	}
-	externalPrincipal := externalPrincipalLoginResponse.JSON200
 	c.Logger.WithField("external_principal_id", externalPrincipal.Id).Debug("external principal login success, trying to get external principal ID info")
 	externalPrincipalIDInfo, err := c.Auth.GetExternalPrincipal(ctx, externalPrincipal.Id)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -2660,9 +2646,14 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	case errors.Is(err, block.ErrForbidden),
 		errors.Is(err, graveler.ErrProtectedBranch),
-		errors.Is(err, graveler.ErrReadOnlyRepository),
-		errors.Is(err, authentication.ErrSessionExpired):
+		errors.Is(err, graveler.ErrReadOnlyRepository):
 		cb(w, r, http.StatusForbidden, err)
+
+	case errors.Is(err, authentication.ErrSessionExpired):
+		cb(w, r, http.StatusForbidden, "session expired")
+
+	case errors.Is(err, authentication.ErrInvalidTokenFormat):
+		cb(w, r, http.StatusUnauthorized, "invalid token format")
 
 	case errors.Is(err, graveler.ErrDirtyBranch),
 		errors.Is(err, graveler.ErrCommitMetaRangeDirtyBranch),
@@ -2681,7 +2672,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, graveler.ErrInvalidMergeStrategy),
 		errors.Is(err, block.ErrInvalidAddress),
 		errors.Is(err, block.ErrOperationNotSupported),
-		errors.Is(err, authentication.ErrInvalidTokenFormat):
+		errors.Is(err, authentication.ErrInvalidRequest):
 		log.Debug("Bad request")
 		cb(w, r, http.StatusBadRequest, err)
 

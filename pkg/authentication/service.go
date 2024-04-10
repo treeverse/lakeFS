@@ -15,7 +15,7 @@ import (
 
 type Service interface {
 	IsExternalPrincipalsEnabled() bool
-	ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipalLoginResponse, error)
+	ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipal, error)
 	// ValidateSTS validates the STS parameters and returns the external user ID
 	ValidateSTS(ctx context.Context, code, redirectURI, state string) (string, error)
 }
@@ -30,7 +30,7 @@ func (d DummyService) ValidateSTS(ctx context.Context, code, redirectURI, state 
 	return "", ErrNotImplemented
 }
 
-func (d DummyService) ExternalPrincipalLogin(_ context.Context, _ map[string]interface{}) (*apiclient.ExternalPrincipalLoginResponse, error) {
+func (d DummyService) ExternalPrincipalLogin(_ context.Context, _ map[string]interface{}) (*apiclient.ExternalPrincipal, error) {
 	return nil, ErrNotImplemented
 }
 
@@ -117,11 +117,27 @@ func (s *APIService) ValidateSTS(ctx context.Context, code, redirectURI, state s
 	return subject, nil
 }
 
-func (s *APIService) ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipalLoginResponse, error) {
+func (s *APIService) ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipal, error) {
 	if !s.IsExternalPrincipalsEnabled() {
 		return nil, fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
-	return s.apiClient.ExternalPrincipalLoginWithResponse(ctx, identityRequest)
+	resp, err := s.apiClient.ExternalPrincipalLoginWithResponse(ctx, identityRequest)
+	if err != nil {
+		return nil, fmt.Errorf("calling authenticate user: %w", err)
+	}
+	if resp.StatusCode() != http.StatusOK || resp.JSON200 == nil {
+		switch resp.StatusCode() {
+		case http.StatusBadRequest:
+			return nil, ErrInvalidRequest
+		case http.StatusUnauthorized:
+			return nil, ErrInvalidTokenFormat
+		case http.StatusForbidden:
+			return nil, ErrSessionExpired
+		default:
+			return nil, fmt.Errorf("%w - got %d expected %d", ErrUnexpectedStatusCode, resp.StatusCode(), http.StatusOK)
+		}
+	}
+	return resp.JSON200, nil
 }
 
 func (s *APIService) IsExternalPrincipalsEnabled() bool {

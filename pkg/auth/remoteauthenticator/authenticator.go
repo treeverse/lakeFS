@@ -24,8 +24,6 @@ var ErrBadConfig = errors.New("invalid configuration")
 type AuthenticatorConfig struct {
 	// Enabled if set true will enable authenticator
 	Enabled bool
-	// ExternalPrincipalAuth support external principals
-	ExternalPrincipalsEnabled bool
 	// Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth)
 	Endpoint string
 	// DefaultUserGroup is the default group for the users authenticated by the remote service
