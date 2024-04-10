@@ -20,7 +20,7 @@ redirect_from:
 {: .note}
 > STS Login is available in lakeFS Cloud and lakeFS Enterprise. currently only tested on lakeFS Enterprise.
 
-Secure Token Service (STS) authentication in lakeFS allows users to authenticate via an Identity Provider (IdP), using OIDC Authentication workflow.
+Secure Token Service (STS) authentication in lakeFS enables users to authenticate to lakeFS using temporary credentials obtained from an Identity Provider (IdP) via the OpenID Connect (OIDC) Authentication workflow..
 This document outlines the process, from setting up the STS authentication flow to integrating with lakeFS through the [high-level Python SDK](../../integrations/python.md).
 
 ## Architecture
