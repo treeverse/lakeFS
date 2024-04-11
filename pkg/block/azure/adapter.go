@@ -63,11 +63,9 @@ func NewAdapter(ctx context.Context, params params.Azure) (*Adapter, error) {
 	if params.Domain == "" {
 		params.Domain = BlobEndpointDefaultDomain
 	} else {
-		domain := strings.TrimSuffix(params.Domain, "/")
-		if !slices.Contains(supportedEndpoints, domain) {
+		if !slices.Contains(supportedEndpoints, params.Domain) {
 			return nil, ErrInvalidDomain
 		}
-		params.Domain = domain
 	}
 	cache, err := NewCache(params)
 	if err != nil {
@@ -300,7 +298,7 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	if a.clientCache.params.TestEndpointURL != "" {
 		accountEndpoint = a.clientCache.params.TestEndpointURL
 	} else {
-		accountEndpoint = buildAccountEndpoint(a.clientCache.params.StorageAccount, a.clientCache.params.Domain)
+		accountEndpoint = buildAccountEndpoint(qualifiedKey.StorageAccountName, a.clientCache.params.Domain)
 	}
 
 	u, err := url.JoinPath(accountEndpoint, qualifiedKey.ContainerName, qualifiedKey.BlobURL)
@@ -632,7 +630,8 @@ func (a *Adapter) ListParts(_ context.Context, _ block.ObjectPointer, _ string, 
 	return nil, block.ErrOperationNotSupported
 }
 
-func ParseURL(raw string) (string, string, error) {
+// ParseURL - parses raw string and extracts account name and domain. If either are not found returns an error
+func ParseURL(raw string) (accountName string, domain string, err error) {
 	matches := endpointRegex.FindStringSubmatch(raw)
 	if matches == nil {
 		return "", "", ErrAzureInvalidURL

@@ -260,8 +260,8 @@ type Config struct {
 			DisablePreSigned   bool          `mapstructure:"disable_pre_signed"`
 			DisablePreSignedUI bool          `mapstructure:"disable_pre_signed_ui"`
 			// Deprecated: Value ignored
-			ChinaCloud      bool   `mapstructure:"china_cloud"`
-			TestEndpointURL string `mapstructure:"test_endpoint_url"`
+			ChinaCloudDeprecated bool   `mapstructure:"china_cloud"`
+			TestEndpointURL      string `mapstructure:"test_endpoint_url"`
 			// Domain by default points to Azure default domain blob.core.windows.net, can be set to other Azure domains (China/Gov)
 			Domain string `mapstructure:"domain"`
 		} `mapstructure:"azure"`
@@ -510,8 +510,9 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 	if c.Blockstore.Azure.AuthMethod != "" {
 		logging.ContextUnavailable().Warn("blockstore.azure.auth_method is deprecated. Value is no longer used.")
 	}
-	if c.Blockstore.Azure.ChinaCloud {
-		logging.ContextUnavailable().Warn("blockstore.azure.china_cloud is deprecated. Value is no longer used.")
+	if c.Blockstore.Azure.ChinaCloudDeprecated {
+		logging.ContextUnavailable().Warn("blockstore.azure.china_cloud is deprecated. Value is no longer used. Please pass Domain = 'blob.core.chinacloudapi.cn'")
+		c.Blockstore.Azure.Domain = "blob.core.chinacloudapi.cn"
 	}
 	return blockparams.Azure{
 		StorageAccount:     c.Blockstore.Azure.StorageAccount,
