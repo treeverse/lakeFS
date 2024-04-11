@@ -60,17 +60,18 @@ func NewAdapter(ctx context.Context, params params.Azure) (*Adapter, error) {
 	if preSignedExpiry == 0 {
 		preSignedExpiry = block.DefaultPreSignExpiryDuration
 	}
+
 	if params.Domain == "" {
 		params.Domain = BlobEndpointDefaultDomain
-	} else {
-		if !slices.Contains(supportedEndpoints, params.Domain) {
-			return nil, ErrInvalidDomain
-		}
+	} else if !slices.Contains(supportedEndpoints, params.Domain) {
+		return nil, ErrInvalidDomain
 	}
+
 	cache, err := NewCache(params)
 	if err != nil {
 		return nil, err
 	}
+
 	return &Adapter{
 		clientCache:        cache,
 		preSignedExpiry:    preSignedExpiry,
