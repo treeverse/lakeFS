@@ -135,20 +135,28 @@ type InitiateMultipartUploadResult struct {
 	UploadID string `xml:"UploadId"`
 }
 
-type CompleteMultipartUploadPart struct {
-	PartNumber int    `xml:"PartNumber"`
-	ETag       string `xml:"ETag"`
-}
-
-type CompleteMultipartUpload struct {
-	Part []CompleteMultipartUploadPart `xml:"Part"`
-}
-
 type CompleteMultipartUploadResult struct {
 	Location string `xml:"Location"`
 	Bucket   string `xml:"Bucket"`
 	Key      string `xml:"Key"`
 	ETag     string `xml:"ETag"`
+}
+
+type MultipartUploadPart struct {
+	PartNumber   int32  `xml:"PartNumber"`
+	ETag         string `xml:"ETag"`
+	LastModified string `xml:"LastModified"`
+	Size         int64  `xml:"Size"`
+}
+
+type ListPartsOutput struct {
+	XMLName              xml.Name              `xml:"ListPartsResult"`
+	Bucket               string                `xml:"Bucket"`
+	IsTruncated          bool                  `xml:"IsTruncated"`
+	Key                  string                `xml:"Key"`
+	MaxParts             int32                 `xml:"MaxParts"`
+	NextPartNumberMarker int32                 `xml:"NextPartNumberMarker"`
+	Parts                []MultipartUploadPart `xml:"Part"`
 }
 
 type VersioningConfiguration struct {

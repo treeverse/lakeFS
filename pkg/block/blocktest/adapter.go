@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -217,11 +218,20 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			blockstoreType := adapter.BlockstoreType()
 			obj := block.ObjectPointer{
 				StorageNamespace: storageNamespace,
 				Identifier:       c.path,
 				IdentifierType:   block.IdentifierTypeRelative,
 			}
+			// List parts on non-existing part
+			_, err := adapter.ListParts(ctx, obj, "invalidId", block.ListPartsOpts{})
+			if blockstoreType != block.BlockstoreTypeS3 {
+				require.ErrorIs(t, err, block.ErrOperationNotSupported)
+			} else {
+				require.NotNil(t, err)
+			}
+
 			resp, err := adapter.CreateMultiPartUpload(ctx, obj, nil, block.CreateMultiPartUploadOpts{})
 			require.NoError(t, err)
 
@@ -233,10 +243,47 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 				multiParts[i].PartNumber = partNumber
 				multiParts[i].ETag = partResp.ETag
 			}
+
+			// List parts after upload
+			listResp, err := adapter.ListParts(ctx, obj, resp.UploadID, block.ListPartsOpts{})
+			if blockstoreType != block.BlockstoreTypeS3 {
+				require.ErrorIs(t, err, block.ErrOperationNotSupported)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, len(parts), len(listResp.Parts))
+				for i, part := range listResp.Parts {
+					require.Equal(t, multiParts[i].PartNumber, part.PartNumber)
+					require.Equal(t, int64(len(parts[i])), part.Size)
+					require.Equal(t, multiParts[i].ETag, part.ETag)
+					require.False(t, listResp.IsTruncated)
+				}
+			}
+
+			// List parts partial
+			const maxPartsConst = 2
+			maxParts := int32(maxPartsConst)
+			listResp, err = adapter.ListParts(ctx, obj, resp.UploadID, block.ListPartsOpts{MaxParts: &maxParts})
+			if blockstoreType != block.BlockstoreTypeS3 {
+				require.ErrorIs(t, err, block.ErrOperationNotSupported)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, int(maxParts), len(listResp.Parts))
+				require.True(t, listResp.IsTruncated)
+				require.Equal(t, strconv.Itoa(int(maxParts)), *listResp.NextPartNumberMarker)
+			}
+
 			_, err = adapter.CompleteMultiPartUpload(ctx, obj, resp.UploadID, &block.MultipartUploadCompletion{
 				Part: multiParts,
 			})
 			require.NoError(t, err)
+
+			// List parts after complete should fail
+			_, err = adapter.ListParts(ctx, obj, resp.UploadID, block.ListPartsOpts{})
+			if blockstoreType != block.BlockstoreTypeS3 {
+				require.ErrorIs(t, err, block.ErrOperationNotSupported)
+			} else {
+				require.NotNil(t, err)
+			}
 
 			reader, err := adapter.Get(ctx, obj, 0)
 			require.NoError(t, err)
