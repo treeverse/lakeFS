@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/block"
@@ -22,7 +23,8 @@ import (
 const (
 	QueryParamMaxParts = "max-parts"
 	// QueryParamPartNumberMarker Specifies the part after which listing should begin. Only parts with higher part numbers will be listed.
-	QueryParamPartNumberMarker = "part-number-marker"
+	QueryParamPartNumberMarker       = "part-number-marker"
+	s3RedirectionSupportUserAgentTag = "s3RedirectionSupport"
 )
 
 type GetObject struct{}
@@ -39,6 +41,11 @@ func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, pat
 func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	if o.HandleUnsupported(w, req, "torrent", "acl", "retention", "legal-hold", "lambdaArn") {
 		return
+	}
+	userAgent := req.Header.Get("User-Agent")
+	redirect := strings.Contains(userAgent, s3RedirectionSupportUserAgentTag)
+	if redirect {
+		req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{"S3_redirect": true}))
 	}
 	o.Incr("get_object", o.Principal, o.Repository.Name, o.Reference)
 	ctx := req.Context()
@@ -106,6 +113,19 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   entry.AddressType.ToIdentifierType(),
 		Identifier:       entry.PhysicalAddress,
+	}
+
+	if redirect {
+		preSignedURL, _, err := o.BlockStore.GetPreSignedURL(ctx, objectPointer, block.PreSignModeRead)
+		if err != nil {
+			code := gatewayerrors.ErrInternalError
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(code))
+			return
+		}
+
+		o.SetHeader(w, "Location", preSignedURL)
+		w.WriteHeader(http.StatusTemporaryRedirect)
+		return
 	}
 
 	if rangeSpec == "" || err != nil {

@@ -36,6 +36,7 @@ func AuthenticationHandler(authService auth.GatewayService, next http.Handler) h
 		authenticator := sig.ChainedAuthenticator(
 			sig.NewV4Authenticator(req),
 			sig.NewV2SigAuthenticator(req, o.FQDN),
+			sig.NewJavaV2SigAuthenticator(req, o.FQDN),
 		)
 		authContext, err := authenticator.Parse()
 		if err != nil {

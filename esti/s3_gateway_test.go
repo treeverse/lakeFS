@@ -626,3 +626,32 @@ func TestS3CopyObjectErrors(t *testing.T) {
 		require.Contains(t, err.Error(), "NoSuchKey")
 	})
 }
+
+func TestS3ReadObjectRedirect(t *testing.T) {
+	const (
+		contents = "the quick brown fox jumps over the lazy dog"
+		goodPath = "main/exists.txt"
+	)
+
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	// Upload an object
+	minioClient := newMinioClient(t, credentials.NewStaticV4)
+
+	_, err := minioClient.PutObject(ctx, repo, goodPath, strings.NewReader(contents), int64(len(contents)), minio.PutObjectOptions{})
+	if err != nil {
+		t.Errorf("PutObject(%s, %s): %s", repo, goodPath, err)
+	}
+
+	t.Run("get_exists", func(t *testing.T) {
+		opts := minio.GetObjectOptions{}
+		opts.Set("User-Agent", "client with s3RedirectionSupport set")
+		res, err := minioClient.GetObject(ctx, repo, goodPath, opts)
+		require.NoError(t, err)
+
+		// Verify we got redirect
+		_, err = io.ReadAll(res)
+		require.Contains(t, err.Error(), "307 Temporary Redirect")
+	})
+}
