@@ -7104,7 +7104,7 @@ components:
         storage_namespace:
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
           example: s3://example-bucket/
-          pattern: ^(s3|gs|https?|mem|local|transient)://.*$
+          pattern: ^(s3|gs|https?|mem|local)://.*$
           type: string
         default_branch:
           example: main

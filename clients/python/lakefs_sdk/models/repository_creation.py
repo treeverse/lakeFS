@@ -43,8 +43,8 @@ class RepositoryCreation(BaseModel):
     @validator('storage_namespace')
     def storage_namespace_validate_regular_expression(cls, value):
         """Validates the regular expression"""
-        if not re.match(r"^(s3|gs|https?|mem|local|transient):\/\/.*$", value):
-            raise ValueError(r"must validate the regular expression /^(s3|gs|https?|mem|local|transient):\/\/.*$/")
+        if not re.match(r"^(s3|gs|https?|mem|local):\/\/.*$", value):
+            raise ValueError(r"must validate the regular expression /^(s3|gs|https?|mem|local):\/\/.*$/")
         return value
 
     class Config:

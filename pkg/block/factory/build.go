@@ -13,7 +13,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/mem"
 	"github.com/treeverse/lakefs/pkg/block/params"
 	s3a "github.com/treeverse/lakefs/pkg/block/s3"
-	"github.com/treeverse/lakefs/pkg/block/transient"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"golang.org/x/oauth2/google"
@@ -45,8 +44,6 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		return buildS3Adapter(ctx, statsCollector, p)
 	case block.BlockstoreTypeMem, "memory":
 		return mem.New(ctx), nil
-	case block.BlockstoreTypeTransient:
-		return transient.New(ctx), nil
 	case block.BlockstoreTypeGS:
 		p, err := c.BlockstoreGSParams()
 		if err != nil {
@@ -61,7 +58,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 		return azure.NewAdapter(ctx, p)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
-			block.ErrInvalidAddress, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
+			block.ErrInvalidAddress, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeGS})
 	}
 }
 

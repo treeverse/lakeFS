@@ -31,12 +31,11 @@ type IdentifierType int32
 type PreSignMode int32
 
 const (
-	BlockstoreTypeS3        = "s3"
-	BlockstoreTypeGS        = "gs"
-	BlockstoreTypeAzure     = "azure"
-	BlockstoreTypeLocal     = "local"
-	BlockstoreTypeMem       = "mem"
-	BlockstoreTypeTransient = "transient"
+	BlockstoreTypeS3    = "s3"
+	BlockstoreTypeGS    = "gs"
+	BlockstoreTypeAzure = "azure"
+	BlockstoreTypeLocal = "local"
+	BlockstoreTypeMem   = "mem"
 )
 
 const (
