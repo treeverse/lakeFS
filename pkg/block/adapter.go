@@ -10,8 +10,10 @@ import (
 
 // MultipartPart single multipart information
 type MultipartPart struct {
-	ETag       string
-	PartNumber int
+	ETag         string
+	PartNumber   int
+	LastModified time.Time
+	Size         int64
 }
 
 // MultipartUploadCompletion parts described as part of complete multipart upload. Each part holds the part number and ETag received while calling part upload.
@@ -110,6 +112,12 @@ type UploadPartResponse struct {
 	ServerSideHeader http.Header
 }
 
+type ListPartsResponse struct {
+	Parts                []MultipartPart
+	NextPartNumberMarker *string
+	IsTruncated          bool
+}
+
 // CreateMultiPartUploadOpts contains optional arguments for
 // CreateMultiPartUpload.  These should be analogous to options on
 // some underlying storage layer.  Missing arguments are mapped to the
@@ -120,6 +128,12 @@ type UploadPartResponse struct {
 // value is retained.
 type CreateMultiPartUploadOpts struct {
 	StorageClass *string // S3 storage class
+}
+
+// ListPartsOpts contains optional arguments for the ListParts request.
+type ListPartsOpts struct {
+	MaxParts         *int32
+	PartNumberMarker *string
 }
 
 // Properties of an object stored on the underlying block store.
@@ -147,6 +161,7 @@ type Adapter interface {
 	Copy(ctx context.Context, sourceObj, destinationObj ObjectPointer) error
 	CreateMultiPartUpload(ctx context.Context, obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (*CreateMultiPartUploadResponse, error)
 	UploadPart(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*UploadPartResponse, error)
+	ListParts(ctx context.Context, obj ObjectPointer, uploadID string, opts ListPartsOpts) (*ListPartsResponse, error)
 	UploadCopyPart(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int) (*UploadPartResponse, error)
 	UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*UploadPartResponse, error)
 	AbortMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string) error
