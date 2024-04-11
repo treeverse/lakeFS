@@ -56,6 +56,19 @@ clt = Client(
 )
 ```
 
+You can use TLS with a CA that is not trusted on the host by configuring the
+client with a CA cert bundle file.  It should contain concatenated CA
+certificates in PEM format:
+```python
+clt = Client(
+    host="http://localhost:8000",
+    username="AKIAIOSFODNN7EXAMPLE",
+    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    # Customize the CA certificates used to verify the peer.
+    ssl_ca_cert="path/to/concatenated_CA_certificates.PEM",
+)
+```
+
 For testing SSL endpoints you may wish to use a self-signed certificate.  If you do this and receive an `SSL: CERTIFICATE_VERIFY_FAILED` error message you might add the following configuration to your client:
 
 ```python
@@ -72,14 +85,14 @@ This setting allows well-known "man-in-the-middle",
 impersonation, and credential stealing attacks.  Never use this in any
 production setting.
 
-Optionally, to enable communication via proxies, simply set the proxy configuration:
+Optionally, to enable communication via proxies, add a proxy configuration:
 
 ```python
 clt = Client(
     host="http://localhost:8000",
     username="AKIAIOSFODNN7EXAMPLE",
     password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-    ssl_ca_cert="<path to a file of concatenated CA certificates in PEM format>",  # Set this to customize the certificate file to verify the peer
+    ssl_ca_cert="(if needed)",
     proxy="<proxy server URL>",
 )
 ```
