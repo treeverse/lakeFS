@@ -35,8 +35,9 @@ def main():
     parser.add_argument("--client_version")
     parser.add_argument("--aws_access_key")
     parser.add_argument("--aws_secret_key")
-    parser.add_argument("--region")
+    parser.add_argument("--redirect", action='store_true')
     parser.add_argument("--access_mode", choices=["s3_gateway", "hadoopfs", "hadoopfs_presigned"], default="s3_gateway")
+    parser.add_argument("--region",)
     lakefs_access_key = 'AKIAIOSFODNN7EXAMPLE'
     lakefs_secret_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
 
@@ -66,6 +67,7 @@ def main():
         "spark.hadoop.fs.lakefs.access.key": lakefs_access_key,
         "spark.hadoop.fs.lakefs.secret.key": lakefs_secret_key,
     }
+
     if args.access_mode == 'hadoopfs':
         scheme = "lakefs"
         spark_configs = {
@@ -74,6 +76,7 @@ def main():
             "spark.hadoop.fs.s3a.secret.key": args.aws_secret_key,
             "spark.hadoop.fs.s3a.region": args.region,
         }
+
     elif args.access_mode == 'hadoopfs_presigned':
         scheme = "lakefs"
         spark_configs = {
@@ -86,6 +89,10 @@ def main():
                          "spark.hadoop.fs.s3a.secret.key": lakefs_secret_key,
                          "spark.hadoop.fs.s3a.endpoint": "s3.docker.lakefs.io:8000",
                          "spark.hadoop.fs.s3a.connection.ssl.enabled": "false"}
+        if args.redirect:
+            spark_configs["spark.hadoop.fs.s3a.path.style.access"] = "true"
+            spark_configs[f"spark.hadoop.fs.s3a.signing-algorithm"] = "QueryStringSignerType"
+            spark_configs[f"spark.hadoop.fs.s3a.user.agent.prefix"] = "s3RedirectionSupport"
 
     generator = docker.compose.run("spark-submit",
                                    get_spark_submit_cmd(submit_flags, spark_configs, args.sonnet_jar,

@@ -89,13 +89,12 @@ func NewV2SigAuthenticator(r *http.Request, bareDomain string) *V2SigAuthenticat
 
 func (a *V2SigAuthenticator) Parse() (SigContext, error) {
 	ctx := a.req.Context()
-	var sigCtx v2Context
 	headerValue := a.req.Header.Get(v2authHeaderName)
 	if len(headerValue) > 0 {
 		match := V2AuthHeaderRegexp.FindStringSubmatch(headerValue)
 		if len(match) == 0 {
 			logging.FromContext(ctx).Error("log header does not match v2 structure")
-			return sigCtx, ErrHeaderMalformed
+			return nil, ErrHeaderMalformed
 		}
 		result := make(map[string]string)
 		for i, name := range V2AuthHeaderRegexp.SubexpNames() {
@@ -103,17 +102,20 @@ func (a *V2SigAuthenticator) Parse() (SigContext, error) {
 				result[name] = match[i]
 			}
 		}
-		sigCtx.accessKeyID = result["AccessKeyId"]
+		sigCtx := v2Context{
+			accessKeyID: result["AccessKeyId"],
+		}
 		// parse signature
 		sig, err := base64.StdEncoding.DecodeString(result["Signature"])
 		if err != nil {
 			logging.FromContext(ctx).Error("log header does not match v2 structure (isn't proper base64)")
-			return sigCtx, ErrHeaderMalformed
+			return nil, ErrHeaderMalformed
 		}
 		sigCtx.signature = sig
+		a.sigCtx = sigCtx
+		return sigCtx, nil
 	}
-	a.sigCtx = sigCtx
-	return sigCtx, nil
+	return nil, ErrHeaderMalformed
 }
 
 func headerValueToString(val []string) string {
