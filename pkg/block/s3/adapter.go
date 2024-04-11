@@ -775,6 +775,56 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	}, nil
 }
 
+func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, uploadID string, opts block.ListPartsOpts) (*block.ListPartsResponse, error) {
+	var err error
+	defer reportMetrics("ListParts", time.Now(), nil, &err)
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
+	if err != nil {
+		return nil, err
+	}
+
+	input := &s3.ListPartsInput{
+		Bucket:           aws.String(bucket),
+		Key:              aws.String(key),
+		UploadId:         aws.String(uploadID),
+		MaxParts:         opts.MaxParts,
+		PartNumberMarker: opts.PartNumberMarker,
+	}
+
+	lg := a.log(ctx).WithFields(logging.Fields{
+		"upload_id":          uploadID,
+		"qualified_ns":       qualifiedKey.GetStorageNamespace(),
+		"qualified_key":      qualifiedKey.GetKey(),
+		"key":                obj.Identifier,
+		"max_parts":          opts.MaxParts,
+		"part_number_marker": opts.PartNumberMarker,
+	})
+	client := a.clients.Get(ctx, bucket)
+	resp, err := client.ListParts(ctx, input)
+	if err != nil {
+		lg.WithError(err).Error("ListParts failed")
+		return nil, err
+	}
+
+	partsResp := block.ListPartsResponse{
+		NextPartNumberMarker: resp.NextPartNumberMarker,
+		IsTruncated:          aws.ToBool(resp.IsTruncated),
+		Parts:                make([]block.MultipartPart, len(resp.Parts)),
+	}
+	for i, part := range resp.Parts {
+		partsResp.Parts[i] = block.MultipartPart{
+			ETag:         strings.Trim(aws.ToString(part.ETag), `"`),
+			PartNumber:   int(aws.ToInt32(part.PartNumber)),
+			LastModified: aws.ToTime(part.LastModified),
+			Size:         aws.ToInt64(part.Size),
+		}
+	}
+
+	lg.WithField("num_parts", len(resp.Parts)).Debug("list multipart upload parts")
+
+	return &partsResp, nil
+}
+
 func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeS3
 }
