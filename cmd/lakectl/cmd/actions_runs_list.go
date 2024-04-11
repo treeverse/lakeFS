@@ -5,7 +5,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
-	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 const actionsRunsListTemplate = `{{.ActionsRunsTable | table -}}
@@ -43,8 +42,8 @@ var actionsRunsListCmd = &cobra.Command{
 		}
 
 		resp, err := client.ListRepositoryRunsWithResponse(ctx, u.Repository, &apigen.ListRepositoryRunsParams{
-			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
+			After:  &after,
+			Amount: &amount,
 			Branch: optionalBranch,
 			Commit: optionalCommit,
 		})

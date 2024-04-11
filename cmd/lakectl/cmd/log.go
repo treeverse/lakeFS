@@ -101,8 +101,8 @@ var logCmd = &cobra.Command{
 			amountForPagination = internalPageSize
 		}
 		logCommitsParams := &apigen.LogCommitsParams{
-			After:       apiutil.Ptr(apigen.PaginationAfter(after)),
-			Amount:      apiutil.Ptr(apigen.PaginationAmount(amountForPagination)),
+			After:       &after,
+			Amount:      &amountForPagination,
 			Limit:       &limit,
 			FirstParent: &firstParent,
 			StopAt:      &stopAt,
@@ -136,7 +136,7 @@ var logCmd = &cobra.Command{
 				Die("Bad response from server", 1)
 			}
 			pagination = resp.JSON200.Pagination
-			logCommitsParams.After = apiutil.Ptr(apigen.PaginationAfter(pagination.NextOffset))
+			logCommitsParams.After = &pagination.NextOffset
 			data := struct {
 				Commits         []apigen.Commit
 				Pagination      *Pagination

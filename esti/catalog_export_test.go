@@ -26,7 +26,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
-	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/block/params"
@@ -227,7 +226,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 	}
 
 	lakeFSObjs, err := client.ListObjectsWithResponse(ctx, repo, commit.Id, &apigen.ListObjectsParams{
-		Prefix: apiutil.Ptr(apigen.PaginationPrefix(testData.TableSpec.Path)),
+		Prefix: &testData.TableSpec.Path,
 	})
 
 	require.NoError(t, err, "failed listing lakefs objects")

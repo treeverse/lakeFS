@@ -122,7 +122,7 @@ func TestController_ListRepositoriesHandler(t *testing.T) {
 	t.Run("paginate repos", func(t *testing.T) {
 		// write some repos
 		resp, err := clt.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{
-			Amount: apiutil.Ptr(apigen.PaginationAmount(2)),
+			Amount: apiutil.Ptr(2),
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -508,10 +508,10 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 			}
 			if tt.limit {
 				params.Limit = &tt.limit
-				params.Amount = apiutil.Ptr(apigen.PaginationAmount(1))
+				params.Amount = apiutil.Ptr(1)
 			}
 			if tt.amount > 0 {
-				params.Amount = apiutil.Ptr(apigen.PaginationAmount(tt.amount))
+				params.Amount = &tt.amount
 			}
 			if tt.stopAt != "" {
 				params.StopAt = &tt.stopAt
@@ -1533,7 +1533,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		resp, err := clt.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{
-			Amount: apiutil.Ptr(apigen.PaginationAmount(-1)),
+			Amount: apiutil.Ptr(-1),
 		})
 		verifyResponseOK(t, resp, err)
 
@@ -1561,7 +1561,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 			testutil.MustDo(t, "create branch "+branchName, err)
 		}
 		resp, err := clt.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{
-			Amount: apiutil.Ptr(apigen.PaginationAmount(2)),
+			Amount: apiutil.Ptr(2),
 		})
 		verifyResponseOK(t, resp, err)
 		if len(resp.JSON200.Results) != 2 {
@@ -1586,7 +1586,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 
 	t.Run("list branches repo doesnt exist", func(t *testing.T) {
 		resp, err := clt.ListBranchesWithResponse(ctx, "repo666", &apigen.ListBranchesParams{
-			Amount: apiutil.Ptr(apigen.PaginationAmount(2)),
+			Amount: apiutil.Ptr(2),
 		})
 		testutil.Must(t, err)
 		if resp == nil {
@@ -1627,7 +1627,7 @@ func TestController_ListTagsHandler(t *testing.T) {
 
 	t.Run("default", func(t *testing.T) {
 		resp, err := clt.ListTagsWithResponse(ctx, repo, &apigen.ListTagsParams{
-			Amount: apiutil.Ptr(apigen.PaginationAmount(-1)),
+			Amount: apiutil.Ptr(-1),
 		})
 		verifyResponseOK(t, resp, err)
 		payload := resp.JSON200
@@ -1648,8 +1648,8 @@ func TestController_ListTagsHandler(t *testing.T) {
 		for {
 			calls++
 			resp, err := clt.ListTagsWithResponse(ctx, repo, &apigen.ListTagsParams{
-				After:  apiutil.Ptr(apigen.PaginationAfter(after)),
-				Amount: apiutil.Ptr(apigen.PaginationAmount(pageSize)),
+				After:  &after,
+				Amount: apiutil.Ptr(pageSize),
 			})
 			testutil.Must(t, err)
 			payload := resp.JSON200
@@ -2445,7 +2445,7 @@ func TestController_ObjectsListObjectsHandler(t *testing.T) {
 		prefix := apigen.PaginationPrefix("foo/")
 		resp, err := clt.ListObjectsWithResponse(ctx, repo, "main", &apigen.ListObjectsParams{
 			Prefix: &prefix,
-			Amount: apiutil.Ptr(apigen.PaginationAmount(2)),
+			Amount: apiutil.Ptr(2),
 		})
 		verifyResponseOK(t, resp, err)
 		if len(resp.JSON200.Results) != 2 {
@@ -3801,7 +3801,7 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 
 	t.Run("total", func(t *testing.T) {
 		respList, err := clt.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
-			Amount: apiutil.Ptr(apigen.PaginationAmount(100)),
+			Amount: apiutil.Ptr(100),
 		})
 		verifyResponseOK(t, respList, err)
 		runsCount := len(respList.JSON200.Results)
@@ -3813,7 +3813,7 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 	t.Run("on branch", func(t *testing.T) {
 		respList, err := clt.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
 			Branch: apiutil.Ptr("work"),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(100)),
+			Amount: apiutil.Ptr(100),
 		})
 		verifyResponseOK(t, respList, err)
 		runsCount := len(respList.JSON200.Results)
@@ -3826,7 +3826,7 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 		respList, err := clt.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
 			Branch: apiutil.Ptr("someBranch"),
 			Commit: apiutil.Ptr("someCommit"),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(100)),
+			Amount: apiutil.Ptr(100),
 		})
 		require.NoError(t, err)
 		require.NotNil(t, respList)
@@ -3840,7 +3840,7 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 
 		respList, err := clt.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
 			Branch: apiutil.Ptr("work"),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(100)),
+			Amount: apiutil.Ptr(100),
 		})
 		verifyResponseOK(t, respList, err)
 		runsCount := len(respList.JSON200.Results)

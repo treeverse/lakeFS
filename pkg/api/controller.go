@@ -719,7 +719,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 	ifAbsent := false
 	if params.IfNoneMatch != nil {
-		if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
+		if *params.IfNoneMatch != "*" {
 			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
 			return
 		}
@@ -2867,15 +2867,18 @@ func importStatusToResponse(status *graveler.ImportStatus) apigen.ImportStatus {
 	}
 
 	commitLog := catalog.CommitRecordToLog(status.Commit)
-	metadata := map[string]string(commitLog.Metadata)
 	if commitLog != nil {
+		stringMetadata := make(map[string]string, len(commitLog.Metadata))
+		for k, v := range commitLog.Metadata {
+			stringMetadata[k] = v
+		}
 		resp.Commit = &apigen.Commit{
 			Committer:    commitLog.Committer,
 			CreationDate: commitLog.CreationDate.Unix(),
 			Id:           commitLog.Reference,
 			Message:      commitLog.Message,
 			MetaRangeId:  commitLog.MetaRangeID,
-			Metadata:     &metadata,
+			Metadata:     &stringMetadata,
 			Parents:      commitLog.Parents,
 			Version:      apiutil.Ptr(int(commitLog.Version)),
 			Generation:   apiutil.Ptr(int64(commitLog.Generation)),
@@ -3105,7 +3108,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	//	and then graveler will check again when passed a SetOptions.
 	allowOverwrite := true
 	if params.IfNoneMatch != nil {
-		if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
+		if *params.IfNoneMatch != "*" {
 			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
 			return
 		}
@@ -3509,7 +3512,7 @@ func (c *Controller) SetGarbageCollectionRulesPreflight(w http.ResponseWriter, r
 }
 
 func (c *Controller) InternalSetGarbageCollectionRules(w http.ResponseWriter, r *http.Request, body apigen.InternalSetGarbageCollectionRulesJSONRequestBody, repository string) {
-	c.SetGCRules(w, r, apigen.SetGCRulesJSONRequestBody(body), repository)
+	c.SetGCRules(w, r, body, repository)
 }
 
 func (c *Controller) InternalDeleteGarbageCollectionRules(w http.ResponseWriter, r *http.Request, repository string) {
@@ -5065,28 +5068,28 @@ func paginationAfter(v *apigen.PaginationAfter) string {
 	if v == nil {
 		return ""
 	}
-	return string(*v)
+	return *v
 }
 
 func paginationPrefix(v *apigen.PaginationPrefix) string {
 	if v == nil {
 		return ""
 	}
-	return string(*v)
+	return *v
 }
 
 func paginationDelimiter(v *apigen.PaginationDelimiter) string {
 	if v == nil {
 		return ""
 	}
-	return string(*v)
+	return *v
 }
 
 func paginationAmount(v *apigen.PaginationAmount) int {
 	if v == nil {
 		return DefaultPerPage
 	}
-	i := int(*v)
+	i := *v
 	if i > DefaultMaxPerPage {
 		return DefaultMaxPerPage
 	}

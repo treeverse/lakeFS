@@ -278,8 +278,8 @@ func listRepositoryObjects(ctx context.Context, t *testing.T, repository string,
 	var after string
 	for {
 		resp, err := client.ListObjectsWithResponse(ctx, repository, ref, &apigen.ListObjectsParams{
-			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
+			After:  &after,
+			Amount: apiutil.Ptr(amount),
 		})
 		require.NoError(t, err, "listing objects")
 		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
@@ -309,8 +309,8 @@ func listRepositories(t *testing.T, ctx context.Context) []apigen.Repository {
 	var listedRepos []apigen.Repository
 	for {
 		resp, err := client.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{
-			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(repoPerPage)),
+			After:  &after,
+			Amount: apiutil.Ptr(repoPerPage),
 		})
 		require.NoError(t, err, "list repositories")
 		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),

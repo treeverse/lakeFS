@@ -8,7 +8,6 @@ import (
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
-	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 )
 
@@ -54,8 +53,8 @@ var actionsRunsDescribeCmd = &cobra.Command{
 			}
 			// iterator over hooks - print information and output
 			runHooksRes, err := client.ListRunHooksWithResponse(ctx, u.Repository, runID, &apigen.ListRunHooksParams{
-				After:  apiutil.Ptr(apigen.PaginationAfter(after)),
-				Amount: apiutil.Ptr(apigen.PaginationAmount(amountForPagination)),
+				After:  &after,
+				Amount: &amountForPagination,
 			})
 			DieOnErrorOrUnexpectedStatusCode(runHooksRes, err, http.StatusOK)
 			if runHooksRes.JSON200 == nil {

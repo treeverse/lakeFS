@@ -59,7 +59,7 @@ var branchResetCmd = &cobra.Command{
 			Die("Reset aborted", 1)
 			return
 		}
-		resp, err := clt.ResetBranchWithResponse(cmd.Context(), u.Repository, u.Ref, apigen.ResetBranchJSONRequestBody(reset))
+		resp, err := clt.ResetBranchWithResponse(cmd.Context(), u.Repository, u.Ref, reset)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)
 	},
 }

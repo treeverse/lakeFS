@@ -51,7 +51,7 @@ The object location must be outside the repository's storage namespace`,
 
 		resp, err := client.StageObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &apigen.StageObjectParams{
 			Path: *pathURI.Path,
-		}, apigen.StageObjectJSONRequestBody(obj))
+		}, obj)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
 			Die("Bad response from server", 1)

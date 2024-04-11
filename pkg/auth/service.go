@@ -1341,13 +1341,10 @@ func toPagination(paginator Pagination) *model.Paginator {
 }
 
 func (a *APIAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
-	paginationPrefix := PaginationPrefix(params.Prefix)
-	paginationAfter := PaginationAfter(params.After)
-	paginationAmount := PaginationAmount(params.Amount)
 	resp, err := a.apiClient.ListUsersWithResponse(ctx, &ListUsersParams{
-		Prefix: &paginationPrefix,
-		After:  &paginationAfter,
-		Amount: &paginationAmount,
+		Prefix: &params.Prefix,
+		After:  &params.After,
+		Amount: &params.Amount,
 	})
 	if err != nil {
 		a.logger.WithError(err).Error("failed to list users")
@@ -1423,18 +1420,15 @@ func (a *APIAuthService) validateResponse(resp openapi3filter.StatusCoder, expec
 }
 
 func paginationPrefix(prefix string) *PaginationPrefix {
-	p := PaginationPrefix(prefix)
-	return &p
+	return &prefix
 }
 
 func paginationAfter(after string) *PaginationAfter {
-	p := PaginationAfter(after)
-	return &p
+	return &after
 }
 
 func paginationAmount(amount int) *PaginationAmount {
-	p := PaginationAmount(amount)
-	return &p
+	return &amount
 }
 
 func (a *APIAuthService) DeleteGroup(ctx context.Context, groupID string) error {

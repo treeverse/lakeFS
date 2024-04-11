@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
-	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 var authUsersList = &cobra.Command{
@@ -19,8 +18,8 @@ var authUsersList = &cobra.Command{
 		clt := getClient()
 
 		resp, err := clt.ListUsersWithResponse(cmd.Context(), &apigen.ListUsersParams{
-			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
+			After:  &after,
+			Amount: &amount,
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {

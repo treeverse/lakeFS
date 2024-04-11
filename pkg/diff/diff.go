@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -29,8 +28,8 @@ func StreamRepositoryDiffs(ctx context.Context, client apigen.ClientWithResponse
 	var after string
 	for hasMore {
 		diffResp, err := client.DiffRefsWithResponse(ctx, left.Repository, left.Ref, right.Ref, &apigen.DiffRefsParams{
-			After:  (*apigen.PaginationAfter)(swag.String(after)),
-			Prefix: (*apigen.PaginationPrefix)(&prefix),
+			After:  &after,
+			Prefix: &prefix,
 			Type:   diffType,
 		})
 		if err != nil {

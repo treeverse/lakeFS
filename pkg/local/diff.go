@@ -276,8 +276,8 @@ func ListRemote(ctx context.Context, client apigen.ClientWithResponsesInterface,
 
 	for hasMore {
 		listResp, err := client.ListObjectsWithResponse(ctx, loc.Repository, loc.Ref, &apigen.ListObjectsParams{
-			After:        (*apigen.PaginationAfter)(swag.String(after)),
-			Prefix:       (*apigen.PaginationPrefix)(loc.Path),
+			After:        &after,
+			Prefix:       loc.Path,
 			UserMetadata: swag.Bool(true),
 		})
 		if err != nil {
