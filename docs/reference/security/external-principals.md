@@ -1,5 +1,5 @@
 ---
-title: Authentication with AWS IAM Roles
+title: Login with AWS IAM
 description: This section covers how to authenticate to lakeFS using AWS IAM.
 grand_parent: Reference
 parent: Security
@@ -21,6 +21,8 @@ redirect_from:
 ## Authenticate to lakeFS with AWS IAM Roles
 
 ## Using with Spark
+
+
 
 
 
