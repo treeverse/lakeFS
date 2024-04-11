@@ -1,5 +1,11 @@
 # Changelog
 
+# v1.18.0
+:new: What's new:
+
+- LakeFSFS - TokenProvider AWS (no login yet) (#7604)
+- Add AWS remote auth login (#7578)
+
 # v1.17.0
 :new:  What's new:
 

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/authentication/apiclient"
 	"github.com/treeverse/lakefs/pkg/authentication/mock"
@@ -79,7 +80,7 @@ func TestAPIAuthService_STSLogin(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			validateTokenClaims := map[string]string{tt.validateClaim: tt.validateClaimValue}
-			mockClient, s := NewTestApiService(t, validateTokenClaims)
+			mockClient, s := NewTestApiService(t, validateTokenClaims, false)
 			ctx := context.Background()
 			requestEq := gomock.Eq(apiclient.STSLoginJSONRequestBody{
 				RedirectUri: redirectURI,
@@ -120,13 +121,32 @@ func TestAPIAuthService_STSLogin(t *testing.T) {
 	}
 }
 
-func NewTestApiService(t *testing.T, validateIDTokenClaims map[string]string) (*mock.MockClientWithResponsesInterface, *authentication.APIService) {
+func NewTestApiService(t *testing.T, validateIDTokenClaims map[string]string, externalPrincipalsEnabled bool) (*mock.MockClientWithResponsesInterface, *authentication.APIService) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	mockClient := mock.NewMockClientWithResponsesInterface(ctrl)
-	s, err := authentication.NewAPIServiceWithClients(mockClient, logging.ContextUnavailable(), validateIDTokenClaims)
+	s, err := authentication.NewAPIServiceWithClients(mockClient, logging.ContextUnavailable(), validateIDTokenClaims, externalPrincipalsEnabled)
 	if err != nil {
 		t.Fatalf("failed initiating API service with mock")
 	}
 	return mockClient, s
+}
+
+func TestAPIAuthService_ExternalLogin(t *testing.T) {
+	mockClient, s := NewTestApiService(t, map[string]string{}, true)
+	ctx := context.Background()
+	principalId := "arn"
+	externalLoginInfo := map[string]interface{}{"IdentityToken": "Token"}
+
+	mockClient.EXPECT().ExternalPrincipalLoginWithResponse(gomock.Any(), gomock.Eq(externalLoginInfo)).Return(
+		&apiclient.ExternalPrincipalLoginResponse{
+			HTTPResponse: &http.Response{
+				StatusCode: http.StatusOK,
+			},
+			JSON200: &apiclient.ExternalPrincipal{Id: principalId},
+		}, nil)
+
+	resp, err := s.ExternalPrincipalLogin(ctx, externalLoginInfo)
+	require.NoError(t, err)
+	require.Equal(t, principalId, resp.Id)
 }

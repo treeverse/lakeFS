@@ -14,6 +14,8 @@ import (
 )
 
 type Service interface {
+	IsExternalPrincipalsEnabled() bool
+	ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipal, error)
 	// ValidateSTS validates the STS parameters and returns the external user ID
 	ValidateSTS(ctx context.Context, code, redirectURI, state string) (string, error)
 }
@@ -23,35 +25,47 @@ type DummyService struct{}
 func NewDummyService() *DummyService {
 	return &DummyService{}
 }
+
 func (d DummyService) ValidateSTS(ctx context.Context, code, redirectURI, state string) (string, error) {
 	return "", ErrNotImplemented
 }
 
-type APIService struct {
-	validateIDTokenClaims map[string]string
-	apiClient             apiclient.ClientWithResponsesInterface
-	logger                logging.Logger
+func (d DummyService) ExternalPrincipalLogin(_ context.Context, _ map[string]interface{}) (*apiclient.ExternalPrincipal, error) {
+	return nil, ErrNotImplemented
 }
 
-func NewAPIService(apiEndpoint string, validateIDTokenClaims map[string]string, logger logging.Logger) (*APIService, error) {
+func (d DummyService) IsExternalPrincipalsEnabled() bool {
+	return false
+}
+
+type APIService struct {
+	validateIDTokenClaims     map[string]string
+	apiClient                 apiclient.ClientWithResponsesInterface
+	logger                    logging.Logger
+	externalPrincipalsEnabled bool
+}
+
+func NewAPIService(apiEndpoint string, validateIDTokenClaims map[string]string, logger logging.Logger, externalPrincipalsEnabled bool) (*APIService, error) {
 	client, err := apiclient.NewClientWithResponses(apiEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create authentication api client: %w", err)
 	}
 
 	res := &APIService{
-		validateIDTokenClaims: validateIDTokenClaims,
-		apiClient:             client,
-		logger:                logger,
+		validateIDTokenClaims:     validateIDTokenClaims,
+		apiClient:                 client,
+		logger:                    logger,
+		externalPrincipalsEnabled: externalPrincipalsEnabled,
 	}
 	return res, nil
 }
 
-func NewAPIServiceWithClients(apiClient apiclient.ClientWithResponsesInterface, logger logging.Logger, validateIDTokenClaims map[string]string) (*APIService, error) {
+func NewAPIServiceWithClients(apiClient apiclient.ClientWithResponsesInterface, logger logging.Logger, validateIDTokenClaims map[string]string, externalPrincipalsEnabled bool) (*APIService, error) {
 	return &APIService{
-		apiClient:             apiClient,
-		logger:                logger,
-		validateIDTokenClaims: validateIDTokenClaims,
+		apiClient:                 apiClient,
+		logger:                    logger,
+		validateIDTokenClaims:     validateIDTokenClaims,
+		externalPrincipalsEnabled: externalPrincipalsEnabled,
 	}, nil
 }
 
@@ -101,4 +115,31 @@ func (s *APIService) ValidateSTS(ctx context.Context, code, redirectURI, state s
 		return "", fmt.Errorf("missing subject in claims: %w", ErrInsufficientPermissions)
 	}
 	return subject, nil
+}
+
+func (s *APIService) ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipal, error) {
+	if !s.IsExternalPrincipalsEnabled() {
+		return nil, fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
+	}
+	resp, err := s.apiClient.ExternalPrincipalLoginWithResponse(ctx, identityRequest)
+	if err != nil {
+		return nil, fmt.Errorf("calling authenticate user: %w", err)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		switch resp.StatusCode() {
+		case http.StatusBadRequest:
+			return nil, ErrInvalidRequest
+		case http.StatusUnauthorized:
+			return nil, ErrInvalidTokenFormat
+		case http.StatusForbidden:
+			return nil, ErrSessionExpired
+		default:
+			return nil, fmt.Errorf("%w - got %d expected %d", ErrUnexpectedStatusCode, resp.StatusCode(), http.StatusOK)
+		}
+	}
+	return resp.JSON200, nil
+}
+
+func (s *APIService) IsExternalPrincipalsEnabled() bool {
+	return s.externalPrincipalsEnabled
 }

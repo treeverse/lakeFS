@@ -190,12 +190,12 @@ type Config struct {
 		AuthenticationAPI struct {
 			// Endpoint for authentication operations
 			Endpoint string `mapstructure:"endpoint"`
+			// ExternalPrincipalAuth configuration related external principals
+			ExternalPrincipalsEnabled bool `mapstructure:"external_principals_enabled"`
 		} `mapstructure:"authentication_api"`
 		RemoteAuthenticator struct {
 			// Enabled if set true will enable remote authentication
 			Enabled bool `mapstructure:"enabled"`
-			// ExternalPrincipalAuth configuration related external principals
-			ExternalPrincipalsEnabled bool `mapstructure:"external_principals_enabled"`
 			// Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth)
 			Endpoint string `mapstructure:"endpoint"`
 			// DefaultUserGroup is the default group for the users authenticated by the remote service
@@ -209,6 +209,7 @@ type Config struct {
 		// server-side logout.
 		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
 		LoginDuration     time.Duration `mapstructure:"login_duration"`
+		LoginMaxDuration  time.Duration `mapstructure:"login_max_duration"`
 		UIConfig          struct {
 			RBAC               string   `mapstructure:"rbac"`
 			LoginURL           string   `mapstructure:"login_url"`
@@ -541,7 +542,7 @@ func (c *Config) IsAuthTypeAPI() bool {
 func (c *Config) IsExternalPrincipalsEnabled() bool {
 	// IsAuthTypeAPI must be true since the local auth service doesnt support external principals
 	// ExternalPrincipalsEnabled indicates that the remote auth service enables external principals support since its optional extension
-	return c.IsAuthTypeAPI() && c.Auth.RemoteAuthenticator.ExternalPrincipalsEnabled
+	return c.IsAuthTypeAPI() && c.Auth.AuthenticationAPI.ExternalPrincipalsEnabled
 }
 
 func (c *Config) UISnippets() []apiparams.CodeSnippet {
