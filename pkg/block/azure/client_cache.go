@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -15,6 +16,7 @@ import (
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/puzpuzpuz/xsync"
 	"github.com/treeverse/lakefs/pkg/block/params"
+	"golang.org/x/exp/slices"
 )
 
 const UDCCacheExpiry = time.Hour
@@ -121,6 +123,15 @@ func (c *ClientCache) NewUDC(ctx context.Context, storageAccount string, expiry 
 
 func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
 	var endpoint string
+	if params.Domain == "" {
+		params.Domain = BlobEndpointDefaultDomain
+	} else {
+		domain := strings.TrimSuffix(params.Domain, "/")
+		if !slices.Contains(supportedEndpoints, domain) {
+			return nil, ErrInvalidDomain
+		}
+		params.Domain = domain
+	}
 	if params.TestEndpointURL != "" { // For testing purposes - override default endpoint template
 		endpoint = params.TestEndpointURL
 	} else {
