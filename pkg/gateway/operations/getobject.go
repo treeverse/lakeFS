@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/block"
@@ -23,9 +23,8 @@ import (
 const (
 	QueryParamMaxParts = "max-parts"
 	// QueryParamPartNumberMarker Specifies the part after which listing should begin. Only parts with higher part numbers will be listed.
-	QueryParamPartNumberMarker = "part-number-marker"
-	s3RedirectionSupportUserAgent = "s3RedirectionSupport"
-
+	QueryParamPartNumberMarker       = "part-number-marker"
+	s3RedirectionSupportUserAgentTag = "s3RedirectionSupport"
 )
 
 type GetObject struct{}
