@@ -141,7 +141,8 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 		BranchID:      branch,
 		Committer:     commitRecord.Committer,
 		CommitMessage: commitRecord.Message,
-		Metadata:      *commitRecord.Metadata,
+
+		Metadata: apiutil.MapValue(*commitRecord.Metadata),
 	}, preCommitEvent)
 	require.NotNil(t, webhookData.queryParams)
 	require.Contains(t, webhookData.queryParams, "check_env_vars")

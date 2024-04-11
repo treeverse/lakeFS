@@ -163,7 +163,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 
 	// wait until actions finish running
 	runs := waitForListRepositoryRunsLen(ctx, t, repo, commit.Id, 1)
-	require.Equal(t, "completed", runs.Results[0].Status, "symlink action result not finished")
+	require.Equal(t, "completed", string(runs.Results[0].Status), "symlink action result not finished")
 
 	// list symlink.txt files from blockstore
 
@@ -327,7 +327,7 @@ func TestAWSCatalogExport(t *testing.T) {
 
 		// wait for action to finish
 		runs := waitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
-		require.Equal(t, "completed", runs.Results[0].Status, "glue action result not finished")
+		require.Equal(t, "completed", string(runs.Results[0].Status), "glue action result not finished")
 
 		// create glue client
 
@@ -514,7 +514,7 @@ func TestDeltaCatalogExport(t *testing.T) {
 
 	runs := waitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
 	run := runs.Results[0]
-	require.Equal(t, "completed", run.Status)
+	require.Equal(t, "completed", string(run.Status))
 
 	amount := apigen.PaginationAmount(1)
 	tasks, err := client.ListRunHooksWithResponse(ctx, repo, run.RunId, &apigen.ListRunHooksParams{
@@ -564,7 +564,7 @@ func TestDeltaCatalogImportExport(t *testing.T) {
 
 	runs := waitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
 	run := runs.Results[0]
-	require.Equal(t, "completed", run.Status)
+	require.Equal(t, "completed", string(run.Status))
 
 	amount := apigen.PaginationAmount(1)
 	tasks, err := client.ListRunHooksWithResponse(ctx, repo, run.RunId, &apigen.ListRunHooksParams{
@@ -656,7 +656,7 @@ func TestDeltaCatalogExportAbfss(t *testing.T) {
 
 	runs := waitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
 	run := runs.Results[0]
-	require.Equal(t, "completed", run.Status)
+	require.Equal(t, "completed", string(run.Status))
 
 	amount := apigen.PaginationAmount(1)
 	tasks, err := client.ListRunHooksWithResponse(ctx, repo, run.RunId, &apigen.ListRunHooksParams{

@@ -288,6 +288,7 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 		require.NotNil(t, statusResp.JSON200, "failed to get import status", err)
 		status := statusResp.JSON200
 		require.Nil(t, status.Error, "import failed", err)
+		t.Logf("Update time %s, got %s", updateTime, status.UpdateTime)
 		require.NotEqual(t, updateTime, status.UpdateTime)
 		updateTime = status.UpdateTime
 		t.Log("Import progress:", *status.IngestedObjects, importID)
