@@ -7,7 +7,7 @@ redirect_from:
   - /reference/remote-authenticator.html
 ---
 
-# Short lived-token (STS like)
+# Short-lived token (STS like)
 
 {: .d-inline-block }
 <a style="color: white;" href="#sso-for-lakefs-cloud">lakeFS Cloud</a>
