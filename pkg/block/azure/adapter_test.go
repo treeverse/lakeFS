@@ -24,6 +24,7 @@ func TestAzureAdapter(t *testing.T) {
 		StorageAccount:   accountName,
 		StorageAccessKey: accountKey,
 		TestEndpointURL:  blockURL,
+		Domain:           domain,
 	})
 	require.NoError(t, err, "create new adapter")
 	blocktest.AdapterTest(t, adapter, localPath, externalPath)
@@ -31,10 +32,11 @@ func TestAzureAdapter(t *testing.T) {
 
 func TestAdapterNamespace(t *testing.T) {
 	tests := []struct {
-		Name      string
-		Namespace string
-		Success   bool
-		China     bool
+		Name          string
+		Namespace     string
+		Success       bool
+		Domain        string
+		InvalidDomain bool
 	}{
 		{
 			Name:      "valid_https",
@@ -45,7 +47,7 @@ func TestAdapterNamespace(t *testing.T) {
 			Name:      "valid_https",
 			Namespace: "https://test.blob.core.windows.net/container1/repo1",
 			Success:   false,
-			China:     true,
+			Domain:    "blob.core.chinacloudapi.cn",
 		},
 		{
 			Name:      "valid_https_china",
@@ -56,7 +58,7 @@ func TestAdapterNamespace(t *testing.T) {
 			Name:      "valid_https_china",
 			Namespace: "https://test.blob.core.chinacloudapi.cn/container1/repo1",
 			Success:   true,
-			China:     true,
+			Domain:    "blob.core.chinacloudapi.cn",
 		},
 		{
 			Name:      "valid_http",
@@ -93,6 +95,24 @@ func TestAdapterNamespace(t *testing.T) {
 			Namespace: "https://test.blob.core.windows.cn/container1/repo1",
 			Success:   false,
 		},
+		{
+			Name:      "valid_gov_cloud",
+			Namespace: "https://test.blob.core.usgovcloudapi.net/container1/repo1",
+			Success:   true,
+			Domain:    "blob.core.usgovcloudapi.net",
+		},
+		{
+			Name:      "valid_gov_cloud_no_domain",
+			Namespace: "https://test.blob.core.usgovcloudapi.net/container1/repo1",
+			Success:   false,
+		},
+		{
+			Name:          "invalid_domain",
+			Namespace:     "https://test.blob.core.usgovcloudapi.net/container1/repo1",
+			Success:       false,
+			Domain:        "invalid_domain",
+			InvalidDomain: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
@@ -100,11 +120,16 @@ func TestAdapterNamespace(t *testing.T) {
 				StorageAccount:   accountName,
 				StorageAccessKey: accountKey,
 				TestEndpointURL:  blockURL,
-				ChinaCloud:       tt.China,
+				Domain:           tt.Domain,
 			})
+			if tt.InvalidDomain {
+				require.ErrorIs(t, err, azure.ErrInvalidDomain)
+				return
+			}
 			require.NoError(t, err, "create new adapter")
 
-			expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo().ValidityRegex)
+			namespaceInfo := adapter.GetStorageNamespaceInfo()
+			expr, err := regexp.Compile(namespaceInfo.ValidityRegex)
 			require.NoError(t, err)
 
 			require.Equal(t, tt.Success, expr.MatchString(tt.Namespace))
