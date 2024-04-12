@@ -2,8 +2,6 @@
 
 ## _Upcoming_
 
-## 0.2.4
-
 lakeFSFS: new Token Provider feature with IAM Role Support for lakeFS authentication (#7659 + #7604)
 
 ## 0.2.3
