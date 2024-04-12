@@ -117,17 +117,7 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
         LakeFSExternalPrincipalIdentityRequest identityTokenParams = new LakeFSExternalPrincipalIdentityRequest(signedRequest.getHTTPMethod(), signedRequest.getHost(), signedRequest.getRegion(), signedRequest.getAction(), signedRequest.getDate(), signedRequest.getExpires(), signedRequest.getAccessKeyId(), signedRequest.getSignature(), Arrays.asList(signedRequest.getSignedHeadersParam().split(";")), signedRequest.getVersion(), signedRequest.getAlgorithm(), signedRequest.getSecurityToken());
 
         // base64 encode
-        return Base64.encodeBase64URLSafeString(identityTokenParams.toJSON().getBytes());
-    }
-
-    public String newPresignedGetCallerIdentityTokenRequest() throws Exception {
-        GeneratePresignGetCallerIdentityResponse signedRequest = this.newPresignedRequest();
-
-        // generate token parameters object
-        LakeFSExternalPrincipalIdentityRequest identityTokenParams = new LakeFSExternalPrincipalIdentityRequest(signedRequest.getHTTPMethod(), signedRequest.getHost(), signedRequest.getRegion(), signedRequest.getAction(), signedRequest.getDate(), signedRequest.getExpires(), signedRequest.getAccessKeyId(), signedRequest.getSignature(), Arrays.asList(signedRequest.getSignedHeadersParam().split(";")), signedRequest.getVersion(), signedRequest.getAlgorithm(), signedRequest.getSecurityToken());
-
-        // base64 encode
-        return Base64.encodeBase64URLSafeString(identityTokenParams.toJSON().getBytes());
+        return Base64.encodeBase64String(identityTokenParams.toJSON().getBytes());
     }
 
     private void newToken() throws Exception {
