@@ -127,9 +127,8 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
         // build lakeFS login request
         ExternalLoginInformation req = new ExternalLoginInformation();
 
-        if (this.lakeFSTokenTTLSeconds.isPresent()) {
-            req.setTokenExpirationDuration(this.lakeFSTokenTTLSeconds.get());
-        }
+        // set lakeFS token expiration if provided by the configuration
+        this.lakeFSTokenTTLSeconds.ifPresent(req::setTokenExpirationDuration);
 
         // set identity request
         IdentityRequestRequestWrapper t = new IdentityRequestRequestWrapper(identityToken);
