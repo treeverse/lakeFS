@@ -19,6 +19,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"golang.org/x/sync/errgroup"
 )
@@ -422,8 +423,8 @@ func isAzureBlobURL(u string) bool {
 	if err != nil {
 		return false
 	}
-	// TODO (niro): Handle better
-	return strings.HasSuffix(parsedURL.Host, ".blob.core.")
+	_, _, err = azure.ParseURL(parsedURL.String())
+	return err == nil
 }
 
 // extractEtagFromResponseHeader extracts the ETag from the response header.

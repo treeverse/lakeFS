@@ -41,8 +41,8 @@ const (
 var (
 	ErrInvalidDomain = errors.New("invalid Azure Domain")
 
-	endpointRegex      = regexp.MustCompile(`https://(?P<account>[\w]+).(?P<domain>[\w.-]+)[/:][\w-/]*$`)
-	supportedEndpoints = []string{
+	endpointRegex    = regexp.MustCompile(`https://(?P<account>[\w]+).(?P<domain>[\w.-]+)[/:][\w-/]*$`)
+	supportedDomains = []string{
 		BlobEndpointDefaultDomain,
 		BlobEndpointChinaDomain,
 		BlobEndpointUSGovDomain,
@@ -66,7 +66,7 @@ func NewAdapter(ctx context.Context, params params.Azure) (*Adapter, error) {
 
 	if params.Domain == "" {
 		params.Domain = BlobEndpointDefaultDomain
-	} else if !slices.Contains(supportedEndpoints, params.Domain) {
+	} else if !slices.Contains(supportedDomains, params.Domain) {
 		return nil, ErrInvalidDomain
 	}
 

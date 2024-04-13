@@ -124,7 +124,7 @@ func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
 	var endpoint string
 	if params.Domain == "" {
 		params.Domain = BlobEndpointDefaultDomain
-	} else if !slices.Contains(supportedEndpoints, params.Domain) {
+	} else if !slices.Contains(supportedDomains, params.Domain) {
 		return nil, ErrInvalidDomain
 	}
 
