@@ -16,6 +16,8 @@ OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OP
 GOLANGCI_LINT_VERSION=v1.53.3
 BUF_CLI_VERSION=v1.28.1
 
+FUZZTIME=20s
+
 ifndef PACKAGE_VERSION
 	PACKAGE_VERSION=0.1.0-SNAPSHOT
 endif
@@ -216,6 +218,9 @@ test: test-go test-hadoopfs  ## Run tests for the project
 
 test-go: gen-api			# Run parallelism > num_cores: most of our slow tests are *not* CPU-bound.
 	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast -parallel="$(GOTEST_PARALLELISM)" ./...
+
+test-fuzz:
+	$(GOTEST) -fuzz 'FuzzWalkNestedSortedFiles' -fuzztime $(FUZZTIME) ./pkg/fileutil/...
 
 test-hadoopfs:
 	cd clients/hadoopfs && mvn test
