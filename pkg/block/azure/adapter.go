@@ -637,15 +637,21 @@ func (a *Adapter) ListParts(_ context.Context, _ block.ObjectPointer, _ string, 
 // ParseURL - parses url and extracts account name and domain. If either are not found returns an error
 func ParseURL(uri *url.URL) (accountName string, domain string, err error) {
 	u, err := uri.Parse("")
+	if err != nil {
+		return "", "", err
+	}
+
 	u.RawQuery = ""
 	matches := endpointRegex.FindStringSubmatch(u.String())
 	if matches == nil {
 		return "", "", ErrAzureInvalidURL
 	}
+
 	domainIdx := endpointRegex.SubexpIndex("domain")
 	if domainIdx < 0 {
 		return "", "", fmt.Errorf("invalid domain: %w", ErrInvalidDomain)
 	}
+
 	accountIdx := endpointRegex.SubexpIndex("account")
 	if accountIdx < 0 {
 		return "", "", fmt.Errorf("missing storage account: %w", ErrAzureInvalidURL)
