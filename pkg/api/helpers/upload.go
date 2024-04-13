@@ -12,7 +12,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
-	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -419,11 +418,7 @@ func ClientUploadPreSign(ctx context.Context, client apigen.ClientWithResponsesI
 }
 
 func isAzureBlobURL(u string) bool {
-	parsedURL, err := url.Parse(u)
-	if err != nil {
-		return false
-	}
-	_, _, err = azure.ParseURL(parsedURL.String())
+	_, _, err := azure.ParseURL(u)
 	return err == nil
 }
 
