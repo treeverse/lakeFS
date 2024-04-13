@@ -3,7 +3,6 @@ package azure
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -125,13 +124,10 @@ func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
 	var endpoint string
 	if params.Domain == "" {
 		params.Domain = BlobEndpointDefaultDomain
-	} else {
-		domain := strings.TrimSuffix(params.Domain, "/")
-		if !slices.Contains(supportedEndpoints, domain) {
-			return nil, ErrInvalidDomain
-		}
-		params.Domain = domain
+	} else if !slices.Contains(supportedEndpoints, params.Domain) {
+		return nil, ErrInvalidDomain
 	}
+
 	if params.TestEndpointURL != "" { // For testing purposes - override default endpoint template
 		endpoint = params.TestEndpointURL
 	} else {

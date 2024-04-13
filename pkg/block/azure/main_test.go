@@ -12,6 +12,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/benburkert/dns"
 	"github.com/ory/dockertest/v3"
+	"github.com/treeverse/lakefs/pkg/block/azure"
 )
 
 const (
@@ -19,7 +20,7 @@ const (
 	containerName                  = "container1"
 	accountName                    = "account1"
 	accountKey                     = "key1"
-	domain                         = "azurite.test" // TLD for test
+	domain                         = azure.BlobEndpointTestDomain // TLD for test
 )
 
 var (

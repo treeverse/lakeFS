@@ -33,6 +33,9 @@ const (
 	udcCacheSize = 5000
 
 	BlobEndpointDefaultDomain = "blob.core.windows.net"
+	BlobEndpointChinaDomain   = "blob.core.chinacloudapi.cn"
+	BlobEndpointUSGovDomain   = "blob.core.usgovcloudapi.net"
+	BlobEndpointTestDomain    = "azurite.test"
 )
 
 var (
@@ -40,10 +43,10 @@ var (
 
 	endpointRegex      = regexp.MustCompile(`https://(?P<account>[\w]+).(?P<domain>[\w.-]+)[/:][\w-/]*$`)
 	supportedEndpoints = []string{
-		"blob.core.windows.net",
-		"blob.core.chinacloudapi.cn",
-		"blob.core.usgovcloudapi.net",
-		"azurite.test",
+		BlobEndpointDefaultDomain,
+		BlobEndpointChinaDomain,
+		BlobEndpointUSGovDomain,
+		BlobEndpointTestDomain,
 	}
 )
 

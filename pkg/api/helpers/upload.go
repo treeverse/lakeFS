@@ -422,7 +422,7 @@ func isAzureBlobURL(u string) bool {
 	if err != nil {
 		return false
 	}
-	return strings.HasSuffix(parsedURL.Host, ".blob.core.windows.net")
+	return strings.HasSuffix(parsedURL.Host, ".blob.core.")
 }
 
 // extractEtagFromResponseHeader extracts the ETag from the response header.

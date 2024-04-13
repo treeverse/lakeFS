@@ -132,7 +132,7 @@ This reference uses `.` to denote the nesting of values.
 * ~~`blockstore.azure.china_cloud` `(bool : false)`~~ - Enable for using lakeFS on Azure China Cloud.  
   **Note:** Deprecated - In favor of `blockstore.azure.domain` 
   {: .note }
-* `blockstore.azure.domain` `(string : blob.core.windows.net)` - Enables support of different Azure cloud domains. Current supported domains: [`blob.core.chinacloudapi.cn`, `blob.core.usgovcloudapi.net`]
+* `blockstore.azure.domain` `(string : blob.core.windows.net)` - Enables support of different Azure cloud domains. Current supported domains (in Beta stage): [`blob.core.chinacloudapi.cn`, `blob.core.usgovcloudapi.net`]
 * `blockstore.s3.region` `(string : "us-east-1")` - Default region for lakeFS to use when interacting with S3.
 * `blockstore.s3.profile` `(string : )` - If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles)
 * `blockstore.s3.credentials_file` `(string : )` - If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
