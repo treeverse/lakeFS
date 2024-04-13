@@ -222,7 +222,7 @@ func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
 		return nil, err
 	}
 
-	storageAccount, domain, err := ParseURL(uri.String())
+	storageAccount, domain, err := ParseURL(uri)
 	if err != nil {
 		return nil, err
 	}
@@ -634,9 +634,11 @@ func (a *Adapter) ListParts(_ context.Context, _ block.ObjectPointer, _ string, 
 	return nil, block.ErrOperationNotSupported
 }
 
-// ParseURL - parses raw string and extracts account name and domain. If either are not found returns an error
-func ParseURL(raw string) (accountName string, domain string, err error) {
-	matches := endpointRegex.FindStringSubmatch(raw)
+// ParseURL - parses url and extracts account name and domain. If either are not found returns an error
+func ParseURL(uri *url.URL) (accountName string, domain string, err error) {
+	u, err := uri.Parse("")
+	u.RawQuery = ""
+	matches := endpointRegex.FindStringSubmatch(u.String())
 	if matches == nil {
 		return "", "", ErrAzureInvalidURL
 	}

@@ -12,6 +12,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
+	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -348,7 +349,7 @@ func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, 
 	if u.contentType != "" {
 		req.Header.Set("Content-Type", u.contentType)
 	}
-	if isAzureBlobURL(preSignURL) {
+	if isAzureBlobURL(req.URL) {
 		req.Header.Set("x-ms-blob-type", "BlockBlob")
 	}
 
@@ -417,7 +418,7 @@ func ClientUploadPreSign(ctx context.Context, client apigen.ClientWithResponsesI
 	}
 }
 
-func isAzureBlobURL(u string) bool {
+func isAzureBlobURL(u *url.URL) bool {
 	_, _, err := azure.ParseURL(u)
 	return err == nil
 }
