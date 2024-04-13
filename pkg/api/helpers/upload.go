@@ -422,6 +422,7 @@ func isAzureBlobURL(u string) bool {
 	if err != nil {
 		return false
 	}
+	// TODO (niro): Handle better
 	return strings.HasSuffix(parsedURL.Host, ".blob.core.")
 }
 
