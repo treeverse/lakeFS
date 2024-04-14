@@ -2,10 +2,13 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -29,8 +32,22 @@ const (
 	// more the 5000 different accounts, which is highly unlikely
 	udcCacheSize = 5000
 
-	BlobEndpointGlobalFormat     = "https://%s.blob.core.windows.net/"
-	BlobEndpointChinaCloudFormat = "https://%s.blob.core.chinacloudapi.cn/"
+	BlobEndpointDefaultDomain = "blob.core.windows.net"
+	BlobEndpointChinaDomain   = "blob.core.chinacloudapi.cn"
+	BlobEndpointUSGovDomain   = "blob.core.usgovcloudapi.net"
+	BlobEndpointTestDomain    = "azurite.test"
+)
+
+var (
+	ErrInvalidDomain = errors.New("invalid Azure Domain")
+
+	endpointRegex    = regexp.MustCompile(`https://(?P<account>[\w]+).(?P<domain>[\w.-]+)[/:][\w-/]*$`)
+	supportedDomains = []string{
+		BlobEndpointDefaultDomain,
+		BlobEndpointChinaDomain,
+		BlobEndpointUSGovDomain,
+		BlobEndpointTestDomain,
+	}
 )
 
 type Adapter struct {
@@ -38,7 +55,6 @@ type Adapter struct {
 	preSignedExpiry    time.Duration
 	disablePreSigned   bool
 	disablePreSignedUI bool
-	chinaCloud         bool
 }
 
 func NewAdapter(ctx context.Context, params params.Azure) (*Adapter, error) {
@@ -47,16 +63,23 @@ func NewAdapter(ctx context.Context, params params.Azure) (*Adapter, error) {
 	if preSignedExpiry == 0 {
 		preSignedExpiry = block.DefaultPreSignExpiryDuration
 	}
+
+	if params.Domain == "" {
+		params.Domain = BlobEndpointDefaultDomain
+	} else if !slices.Contains(supportedDomains, params.Domain) {
+		return nil, ErrInvalidDomain
+	}
+
 	cache, err := NewCache(params)
 	if err != nil {
 		return nil, err
 	}
+
 	return &Adapter{
 		clientCache:        cache,
 		preSignedExpiry:    preSignedExpiry,
 		disablePreSigned:   params.DisablePreSigned,
 		disablePreSignedUI: params.DisablePreSignedUI,
-		chinaCloud:         params.ChinaCloud,
 	}, nil
 }
 
@@ -199,9 +222,12 @@ func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
 		return nil, err
 	}
 
-	storageAccount, err := ExtractStorageAccount(uri)
+	storageAccount, domain, err := ParseURL(uri)
 	if err != nil {
 		return nil, err
+	}
+	if domain != a.clientCache.params.Domain {
+		return nil, fmt.Errorf("domain mismatch! expected: %s, got: %s. %w", a.clientCache.params.Domain, domain, ErrInvalidDomain)
 	}
 
 	client, err := a.clientCache.NewServiceClient(storageAccount)
@@ -271,8 +297,14 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		return "", err
 	}
 
+	var accountEndpoint string
 	// format blob URL with signed SAS query params
-	accountEndpoint := buildAccountEndpoint(qualifiedKey.StorageAccountName, a.chinaCloud)
+	if a.clientCache.params.TestEndpointURL != "" {
+		accountEndpoint = a.clientCache.params.TestEndpointURL
+	} else {
+		accountEndpoint = buildAccountEndpoint(qualifiedKey.StorageAccountName, a.clientCache.params.Domain)
+	}
+
 	u, err := url.JoinPath(accountEndpoint, qualifiedKey.ContainerName, qualifiedKey.BlobURL)
 	if err != nil {
 		return "", err
@@ -568,15 +600,11 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeAzure)
-	info.ImportValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.windows\.net`
-	info.ValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.windows\.net`
 
-	if a.chinaCloud {
-		info.ImportValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.chinacloudapi\.cn`
-		info.ValidityRegex = `^https?://[a-z0-9_-]+\.blob\.core\.chinacloudapi\.cn`
-	}
+	info.ImportValidityRegex = fmt.Sprintf(`^https?://[a-z0-9_-]+\.%s`, a.clientCache.params.Domain)
+	info.ValidityRegex = fmt.Sprintf(`^https?://[a-z0-9_-]+\.%s`, a.clientCache.params.Domain)
 
-	info.Example = "https://mystorageaccount.blob.core.windows.net/mycontainer/"
+	info.Example = fmt.Sprintf("https://mystorageaccount.%s/mycontainer/", a.clientCache.params.Domain)
 	if a.disablePreSigned {
 		info.PreSignSupport = false
 	}
@@ -604,4 +632,30 @@ func (a *Adapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPoint
 
 func (a *Adapter) ListParts(_ context.Context, _ block.ObjectPointer, _ string, _ block.ListPartsOpts) (*block.ListPartsResponse, error) {
 	return nil, block.ErrOperationNotSupported
+}
+
+// ParseURL - parses url and extracts account name and domain. If either are not found returns an error
+func ParseURL(uri *url.URL) (accountName string, domain string, err error) {
+	u, err := uri.Parse("")
+	if err != nil {
+		return "", "", err
+	}
+
+	u.RawQuery = ""
+	matches := endpointRegex.FindStringSubmatch(u.String())
+	if matches == nil {
+		return "", "", ErrAzureInvalidURL
+	}
+
+	domainIdx := endpointRegex.SubexpIndex("domain")
+	if domainIdx < 0 {
+		return "", "", fmt.Errorf("invalid domain: %w", ErrInvalidDomain)
+	}
+
+	accountIdx := endpointRegex.SubexpIndex("account")
+	if accountIdx < 0 {
+		return "", "", fmt.Errorf("missing storage account: %w", ErrAzureInvalidURL)
+	}
+
+	return matches[accountIdx], matches[domainIdx], nil
 }

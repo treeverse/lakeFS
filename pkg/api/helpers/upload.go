@@ -19,6 +19,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"golang.org/x/sync/errgroup"
 )
@@ -348,7 +349,7 @@ func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, 
 	if u.contentType != "" {
 		req.Header.Set("Content-Type", u.contentType)
 	}
-	if isAzureBlobURL(preSignURL) {
+	if isAzureBlobURL(req.URL) {
 		req.Header.Set("x-ms-blob-type", "BlockBlob")
 	}
 
@@ -417,12 +418,9 @@ func ClientUploadPreSign(ctx context.Context, client apigen.ClientWithResponsesI
 	}
 }
 
-func isAzureBlobURL(u string) bool {
-	parsedURL, err := url.Parse(u)
-	if err != nil {
-		return false
-	}
-	return strings.HasSuffix(parsedURL.Host, ".blob.core.windows.net")
+func isAzureBlobURL(u *url.URL) bool {
+	_, _, err := azure.ParseURL(u)
+	return err == nil
 }
 
 // extractEtagFromResponseHeader extracts the ETag from the response header.
