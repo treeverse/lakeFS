@@ -20,7 +20,10 @@ import json
 
 
 from typing import Dict, Optional
-from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr
+try:
+    from pydantic.v1 import BaseModel, Field, StrictBool, StrictInt, StrictStr
+except ImportError:
+    from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr
 
 class CommitCreation(BaseModel):
     """

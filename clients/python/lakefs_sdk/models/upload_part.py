@@ -20,7 +20,10 @@ import json
 
 
 
-from pydantic import BaseModel, Field, StrictInt, StrictStr
+try:
+    from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr
+except ImportError:
+    from pydantic import BaseModel, Field, StrictInt, StrictStr
 
 class UploadPart(BaseModel):
     """

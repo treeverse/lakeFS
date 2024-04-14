@@ -27,11 +27,11 @@ From the clients/python-wrapper directory:
 ```sh
 python3 -m venv <your_venv_path>
 source <your_venv_path>/bin/activate
-pip install -r requirements pylint
+pip install -r requirements
 ```
 
 ## Run Tests
 
 ```sh
-pylint tests
+pytest tests
 ```

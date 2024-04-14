@@ -20,7 +20,10 @@ import json
 
 
 from typing import Optional
-from pydantic import BaseModel
+try:
+    from pydantic.v1 import BaseModel
+except ImportError:
+    from pydantic import BaseModel
 from lakefs_sdk.models.storage_config import StorageConfig
 from lakefs_sdk.models.version_config import VersionConfig
 

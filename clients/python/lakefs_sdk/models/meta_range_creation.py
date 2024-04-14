@@ -20,7 +20,10 @@ import json
 
 
 from typing import List
-from pydantic import BaseModel, Field, conlist
+try:
+    from pydantic.v1 import BaseModel, Field, conlist
+except ImportError:
+    from pydantic import BaseModel, Field, conlist
 from lakefs_sdk.models.range_metadata import RangeMetadata
 
 class MetaRangeCreation(BaseModel):

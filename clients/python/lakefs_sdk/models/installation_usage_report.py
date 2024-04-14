@@ -20,7 +20,10 @@ import json
 
 
 from typing import List
-from pydantic import BaseModel, Field, StrictStr, conlist
+try:
+    from pydantic.v1 import BaseModel, Field, StrictStr, conlist
+except ImportError:
+    from pydantic import BaseModel, Field, StrictStr, conlist
 from lakefs_sdk.models.usage_report import UsageReport
 
 class InstallationUsageReport(BaseModel):

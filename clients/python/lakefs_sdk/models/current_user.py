@@ -20,7 +20,10 @@ import json
 
 
 
-from pydantic import BaseModel, Field
+try:
+    from pydantic.v1 import BaseModel, Field
+except ImportError:
+    from pydantic import BaseModel, Field
 from lakefs_sdk.models.user import User
 
 class CurrentUser(BaseModel):
