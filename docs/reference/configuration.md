@@ -35,9 +35,6 @@ This reference uses `.` to denote the nesting of values.
 * `actions.lua.net_http_enabled` `(bool : false)` - Setting this to true will load the `net/http` package.
 * `actions.env.enabled` `(bool : true)` - Environment variables accessible by hooks, disabled values evaluated to empty strings
 * `actions.env.prefix` `(string : "LAKEFSACTION_")` - Access to environment variables is restricted to those with the prefix. When environment access is enabled and no prefix is provided, all variables are accessible.
-
-  **Note:** Deprecated - See `database` section
-  {: .note }
 * `database` - Configuration section for the lakeFS key-value store database
   + `database.type` `(string ["postgres"|"dynamodb"|"cosmosdb"|"local"] : )` - 
     lakeFS database type
@@ -132,7 +129,10 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.azure.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
 * `blockstore.azure.disable_pre_signed` `(bool : false)` - Disable use of pre-signed URL.
 * `blockstore.azure.disable_pre_signed_ui` `(bool : true)` - Disable use of pre-signed URL in the UI.
-* `blockstore.azure.china_cloud` `(bool : false)` - Enable for using lakeFS on Azure China Cloud.
+* ~~`blockstore.azure.china_cloud` `(bool : false)`~~ - Enable for using lakeFS on Azure China Cloud.  
+  **Note:** Deprecated - In favor of `blockstore.azure.domain` 
+  {: .note }
+* `blockstore.azure.domain` `(string : blob.core.windows.net)` - Enables support of different Azure cloud domains. Current supported domains (in Beta stage): [`blob.core.chinacloudapi.cn`, `blob.core.usgovcloudapi.net`]
 * `blockstore.s3.region` `(string : "us-east-1")` - Default region for lakeFS to use when interacting with S3.
 * `blockstore.s3.profile` `(string : )` - If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles)
 * `blockstore.s3.credentials_file` `(string : )` - If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)

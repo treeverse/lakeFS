@@ -77,8 +77,8 @@ type Azure struct {
 	PreSignedExpiry    time.Duration
 	DisablePreSigned   bool
 	DisablePreSignedUI bool
-	// Azure China Cloud has different endpoints, different services and it's isolated from Azure Global Cloud
-	ChinaCloud bool
 	// TestEndpointURL - For testing purposes, provide a custom URL to override the default URL template
 	TestEndpointURL string
+	// Domain - Azure cloud domain
+	Domain string
 }

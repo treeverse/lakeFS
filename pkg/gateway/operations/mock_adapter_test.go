@@ -99,6 +99,10 @@ func (a *mockAdapter) UploadCopyPartRange(_ context.Context, _, _ block.ObjectPo
 	panic("try to upload copy part range in mock adapter")
 }
 
+func (a *mockAdapter) ListParts(_ context.Context, _ block.ObjectPointer, _ string, _ block.ListPartsOpts) (*block.ListPartsResponse, error) {
+	panic("try to list parts in mock adapter")
+}
+
 func (a *mockAdapter) BlockstoreType() string {
 	return "s3"
 }

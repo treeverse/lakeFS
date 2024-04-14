@@ -1,5 +1,18 @@
 # Changelog
 
+# v1.19.0
+
+:new:  What's new:
+
+- Experimental: Support pre-signed redirects for S3A (#7630)
+- lakeFSFS: IAM Role Support Login call (#7659)
+- Azure: Add support for Gov Cloud (#7664)
+- Revert "allow lakectl local to be 'git data' (#7618)" (#7654)
+
+:bug: Bugs fixed:
+
+- Fix: S3 GW ListParts (#7629)
+
 # v1.18.0
 :new: What's new:
 
@@ -12,8 +25,7 @@
 - Allow lakectl local to be "git data" (#7618)
 - Support STS in Python wrapper (#7620)
 
-:bug: Bugs fixed:
-- 
+:bug: Bugs fixed: 
 - Fix storage config loading state not updated (#7638)
 - Include hidden files in `lakectl local` (#7644)
 - Use username as token subject in STS login (#7637)

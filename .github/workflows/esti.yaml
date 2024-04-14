@@ -481,10 +481,11 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
       - name: Spark${{ matrix.spark.tag }} + S3 gateway
+        timeout-minutes: 8
         working-directory: test/spark
         run: |
           python ./run-test.py \
-            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}/${{ steps.unique.outputs.value }} \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-gw/${{ steps.unique.outputs.value }} \
             --repository gateway-test-spark${{ matrix.spark.tag }} \
             --sonnet_jar ${{ matrix.spark.sonnet_jar }}
       - name: lakeFS Logs on Spark with gateway failure
@@ -498,13 +499,29 @@ jobs:
         working-directory: test/spark
         run: |
           python ./run-test.py \
-            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-client/${{ steps.unique.outputs.value }} \
-            --repository thick-client-test \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-lakefsfs/${{ steps.unique.outputs.value }} \
+            --repository lakefsfs-test-spark \
             --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
             --access_mode hadoopfs \
             --aws_access_key ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }} \
             --aws_secret_key ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
       - name: lakeFS Logs on HadoopFS test failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        working-directory: test/spark
+        run: docker-compose logs --tail=2500 lakefs      
+
+      - name: Spark${{ matrix.spark.tag }} + lakeFS GW + Redirect
+        if: env.SPARK_TAG == '3'
+        timeout-minutes: 8
+        working-directory: test/spark
+        run: |
+          python ./run-test.py \
+            --storage_namespace s3://esti-system-testing/${{ github.run_number }}-spark${{ matrix.spark.tag }}-gw-redirect/${{ steps.unique.outputs.value }} \
+            --repository gateway-redirect-test-spark${{ matrix.spark.tag }} \
+            --sonnet_jar ${{ matrix.spark.sonnet_jar }} \
+            --redirect
+      - name: lakeFS Logs on Spark with gateway redirect failure
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
