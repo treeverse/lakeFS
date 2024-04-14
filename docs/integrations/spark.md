@@ -534,8 +534,8 @@ When using `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` as the au
 * `fs.lakefs.token.aws.session.token`: AWS assumed role temporary session token
 * `fs.lakefs.token.aws.sts.endpoint`: AWS STS regional endpoint for generated the presigned-url (i.e `https://sts.us-west-2.amazonaws.com`)
 * `fs.lakefs.token.aws.sts.duration_seconds`: Optional, the duration in seconds for the initial identity token (default is 60)
-* `fs.lakefs.token.duration_seconds`: Optional, the duration in seconds for the lakeFS JWT token (default is set in the lakeFS server configuration)
-* `fs.lakefs.token.sts.additional_headers`: Optional, comma separated list of `header:value` to attach when generating presigned sts request. default is `X-Lakefs-Server-ID` with `fs.lakefs.endpoint` config value.
+* `fs.lakefs.token.duration_seconds`: Optional, the duration in seconds for the lakeFS JWT token (default is set in the lakeFS configuration [auth.login_duration]({% link reference/configuration.md %}))
+* `fs.lakefs.token.sts.additional_headers`: Optional, comma separated list of `header:value` to attach when generating presigned sts request. Default is `X-Lakefs-Server-ID:fs.lakefs.endpoint`.
 
 Configure the S3A FileSystem to access your S3 storage, for example using the `fs.s3a.*` configurations (these are **not** your lakeFS credentials):
 
@@ -650,6 +650,9 @@ Amazon provides [S3 endpoints](https://docs.aws.amazon.com/general/latest/gr/s3.
 {: .note }
 
 ### Usage with TemporaryAWSCredentialsLakeFSTokenProvider
+
+An initial setup is required - you must have [AWS Auth configured]({% link reference/security/external-principals-aws.md %}) with lakeFS.
+The `TemporaryAWSCredentialsLakeFSTokenProvider` depends on the caller to provide AWS credentials (e.g Assumed Role Key,Secret and Token) as input to the lakeFS client.
 
 ⚠️ Configure `sts.endpoint` with a valid [sts regional service endpoint](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html) and it must be be equal to the region that is used for authentication first place. The only exception is `us-east-1` which is the default region for STS.
 {: .note }

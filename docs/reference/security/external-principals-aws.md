@@ -19,24 +19,25 @@ redirect_from:
 ## Overview 
 
 lakeFS supports authenticating users programmatically using AWS IAM roles instead of using static lakeFS access and secret keys.
-The method required you to specify bound IAM principal ARNs.
-Clients authenticating to lakeFS must have an ARN that matches one of the ARNs bound to the lakefs user they are attempting to login to.
-The bound ARN can be attached to a single lakeFS user with SessionName and withou it to another user, other then that the ARN must match exactly.
-For example, consider the following mapping: 
+The method enables you to bound IAM principal ARNs to lakeFS users.
+A single lakeFS user may have many AWS's principle ARNs attached to it. When a client is authenticating to a lakeFS server with an AWS's session, the actions performed by the client are on behalf of the user attached to the ARN.
 
+### Using Session Names
+
+The bound ARN can be attached to a single lakeFS user with or without SessionName, serving different users.
+For example, consider the following mapping: 
 | Principal ARN                                    | lakeFS User |
 |--------------------------------------------------|-------------|
-| arn:aws:sts::123:assumed-role/Dev                | foo         |
-| arn:aws:sts::123:assumed-role/Dev/john@acme.com  | john        |
-
-if the bound ARN were `arn:aws:sts::123:assumed-role/Dev/<SessionName>` it would allow any principal assuming `Dev` role in AWS account `123456` to login to it.
+| arn:aws:sts::123456:assumed-role/Dev                | foo         |
+| arn:aws:sts::123456:assumed-role/Dev/john@acme.com  | john        |
+if the bound ARN were `arn:aws:sts::123456:assumed-role/Dev/<SessionName>` it would allow any principal assuming `Dev` role in AWS account `123456` to login to it.
 If the `SessionName` is `john@acme.com` then lakeFS would return token for `john` user
 
 ### How AWS authentication works
 
 The AWS STS API includes a method, `sts:GetCallerIdentity`, which allows you to validate the identity of a client. The client signs a GetCallerIdentity query using the AWS Signature v4 algorithm and sends it to the lakeFS server. 
 
-The `GetCallerIdentity` query consists of four pieces of information: the request URL, the request body, the request headers, and the request method, as the AWS signature is computed over those fields. The lakeFS server reconstructs the query using this information and forwards it on to the AWS STS service. Depending on the response from the STS service, the server authenticates the client.
+The `GetCallerIdentity` query consists of four pieces of information: the request URL, the request body, the request headers and the request method. The AWS signature is computed over those fields. The lakeFS server reconstructs the query using this information and forwards it on to the AWS STS service. Depending on the response from the STS service, the server authenticates the client.
 
 Notably, clients don't need network-level access themselves to talk to the AWS STS API endpoint; they merely need access to the credentials to sign the request. However, it means that the lakeFS server does need network-level access to send requests to the STS endpoint.
 
@@ -72,7 +73,7 @@ Example using required headers configuration for `fluffy.yaml`:
 ```yaml
 # fluffy address for lakefs auth.authentication_api.endpoint
 # used by lakeFS to login and get the token
-listen_address: <fluff-sso>
+listen_address: <fluffy-sso>
 auth:
   # fluffy address for lakeFS auth.api.endpoint 
   # used by lakeFS to manage the lifecycle attach/detach of the external principals
@@ -112,8 +113,8 @@ for p in resp.results:
 
 ## Get lakeFS API Token
 
-the login to lakeFS is done by calling the [login API][login-api] with the `GetCallerIdentity` request signed by the client.
-Currently, the login operation is support out of the box in [lakeFS Hadoop FileSystem][lakefs-hadoopfs] version 0.2.4, see [Spark usage][lakefs-spark].
+The login to lakeFS is done by calling the [login API][login-api] with the `GetCallerIdentity` request signed by the client.
+Currently, the login operation is supported out of the box in [lakeFS Hadoop FileSystem][lakefs-hadoopfs] version 0.2.4, see [Spark usage][lakefs-spark].
 Other clients (i.e HTTP, Python etc) can use the login endpoint to authenticate to lakeFS but, you will have to build the request input.
 
 ## Using with Spark
