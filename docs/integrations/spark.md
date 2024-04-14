@@ -525,7 +525,7 @@ Set the `fs.lakefs.*` Hadoop configurations to point to your lakeFS installation
 
 Configure the lakeFS client to to use a temporary token instead of static credentials:
 
-* `fs.lakefs.auth.provider`: The default is `basic_auth` with `fs.lakefs.access.key` and `fs.lakefs.secret.key` for basic authentication, set to `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` for using temporary AWS credentials.
+* `fs.lakefs.auth.provider`: The default is `basic_auth` with `fs.lakefs.access.key` and `fs.lakefs.secret.key` for basic authentication, set to `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` for using temporary AWS credentials, you can read more about it [here]({% link security/external-principals-aws.md %}).
 
 When using `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` as the auth provider the following configuration are relevant:
 
@@ -538,6 +538,7 @@ When using `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` as the au
 * `fs.lakefs.token.sts.additional_headers`: Optional, comma separated list of `header:value` to attach when generating presigned sts request. default is `X-Lakefs-Server-ID` with `fs.lakefs.endpoint` config value.
 
 Configure the S3A FileSystem to access your S3 storage, for example using the `fs.s3a.*` configurations (these are **not** your lakeFS credentials):
+
 * `fs.s3a.access.key`: AWS S3 access key
 * `fs.s3a.secret.key`: AWS S3 secret key
 

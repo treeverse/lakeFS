@@ -7,7 +7,7 @@ redirect_from:
   - /reference/external-principals-aws.html
 ---
 
-# Authenticate to lakeFS with External Principals API
+# Authenticate to lakeFS with AWS IAM Roles
 
 {: .d-inline-block }
 <a style="color: white;" href="#sso-for-lakefs-enterprise">lakeFS Enterprise</a>
