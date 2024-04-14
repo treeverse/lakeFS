@@ -525,7 +525,7 @@ Set the `fs.lakefs.*` Hadoop configurations to point to your lakeFS installation
 
 Configure the lakeFS client to to use a temporary token instead of static credentials:
 
-* `fs.lakefs.auth.provider`: The default is `basic_auth` with `fs.lakefs.access.key` and `fs.lakefs.secret.key` for basic authentication, set to `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` for using temporary AWS credentials, you can read more about it [here]({% link security/external-principals-aws.md %}).
+* `fs.lakefs.auth.provider`: The default is `basic_auth` with `fs.lakefs.access.key` and `fs.lakefs.secret.key` for basic authentication, set to `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` for using temporary AWS credentials, you can read more about it [here]({% link reference/security/external-principals-aws.md %}).
 
 When using `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` as the auth provider the following configuration are relevant:
 
