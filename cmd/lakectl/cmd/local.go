@@ -120,10 +120,10 @@ Use "%s checkout..." to sync with the remote or run "lakectl local clone..." wit
 	}
 }
 
-func dieOnCaseInsensitiveDirectory(path string, force bool) {
+func dieOnCaseInsensitiveDirectory(path string, allowButWarn bool) {
 	isCaseInsensitive, err := fileutil.IsCaseInsensitiveLocation(fileutil.OSFS{}, path)
 	if isCaseInsensitive {
-		if !force {
+		if !allowButWarn {
 			DieFmt(CaseInsensitiveFailureMessageFormat, path)
 		}
 		Warning(fmt.Sprintf(CaseInsensitiveWarningMessageFormat, path))
