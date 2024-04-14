@@ -21,11 +21,18 @@ redirect_from:
 lakeFS supports authenticating users programmatically using AWS IAM roles instead of using static lakeFS access and secret keys.
 The method required you to specify bound IAM principal ARNs.
 Clients authenticating to lakeFS must have an ARN that matches one of the ARNs bound to the lakefs user they are attempting to login to.
-The bound ARN can be attached in 2 modes with SessionName or without it, other then that the ARN must match exactly.
-For example, if the bound ARN were `arn:aws:sts::123456:assumed-role/Developer` it would allow any principal assuming `Developer` role in AWS account `123456` to login to it. 
-Similarly, if it were `arn:aws:sts::123456:assumed-role/Developer/Foo` it would require the same as above but `Foo` session name. 
+The bound ARN can be attached to a single lakeFS user with SessionName and withou it to another user, other then that the ARN must match exactly.
+For example, consider the following mapping: 
 
-## How AWS authentication works
+| Principal ARN                                    | lakeFS User |
+|--------------------------------------------------|-------------|
+| arn:aws:sts::123:assumed-role/Dev                | foo         |
+| arn:aws:sts::123:assumed-role/Dev/john@acme.com  | john        |
+
+if the bound ARN were `arn:aws:sts::123:assumed-role/Dev/<SessionName>` it would allow any principal assuming `Dev` role in AWS account `123456` to login to it.
+If the `SessionName` is `john@acme.com` then lakeFS would return token for `jogn` user
+
+### How AWS authentication works
 
 The AWS STS API includes a method, `sts:GetCallerIdentity`, which allows you to validate the identity of a client. The client signs a GetCallerIdentity query using the AWS Signature v4 algorithm and sends it to the lakeFS server. 
 
@@ -37,12 +44,79 @@ Each signed AWS request includes the current timestamp to mitigate the risk of r
 
 It's also important to note that Amazon does NOT appear to include any sort of authorization around calls to GetCallerIdentity. For example, if you have an IAM policy on your credential that requires all access to be MFA authenticated, non-MFA authenticated credentials will still be able to authenticate to lakeFS using this method.
 
+
 ## Server Configuration
 
+{: .note}
+> Note: lakeFS Helm chart supports the configuration since version `1.2.9` - see usage [values.yaml example](https://github.com/treeverse/charts/blob/master/examples/lakefs/enterprise/values-external-aws.yaml).
 
+* in lakeFS `auth.authentication_api.external_principals_enabled` must be set to `true` in the configuration file, other configuration (`auth.authentication_api.*`) can be found at at [configuration reference]({% link reference/configuration.md %})
+fluffy server configuration reference:
 
-## Authenticate to lakeFS with AWS IAM Roles
+* `auth.external.aws_auth.enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
+* `auth.external.aws_auth.get_caller_identity_max_age` `(duration : 15m)` - The maximum age in seconds for the GetCallerIdentity request to be valid, the max is 15 minutes enforced by AWS, smaller TTL can be set.
+* `auth.authentication_api.external_principals_enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
+* `auth.external.aws_auth.valid_sts_hosts` `([]string)` - The default are all the valid AWS STS hosts (`sts.amazonaws.com`, `sts.us-east-2.amazonaws.com` etc).
+* `auth.external.aws_auth.required_headers` `(map[string]string : )` - Headers that must be present by the client when doing login request (e.g `X-LakeFS-Server-ID: <lakefs.ingress.domain>`).
+* `auth.external.aws_auth.optional_headers` `(map[string]string : )` - Optional headers that can be present by the client when doing login request.
+* `auth.external.aws_auth.http_client.timeout` `(duration : 10s)` - The timeout for the HTTP client used to communicate with AWS STS.
+* `auth.external.aws_auth.http_client.skip_verify` `(bool : false)` - Skip SSL verification with AWS STS.
+  
 
+{: .note}
+> By default lakeFS clients will add the parameter `X-LakeFS-Server-ID: <lakefs.ingress.domain>` to the initial [login request][login-api] for STS.
 
+Example using required headers configuration for `fluffy.yaml`:
+
+```yaml
+# fluffy address for lakefs auth.authentication_api.endpoint
+# used by lakeFS to login and get the token
+listen_address: <fluff-sso>
+auth:
+  # fluffy address for lakeFS auth.api.endpoint 
+  # used by lakeFS to manage the lifecycle attach/detach of the external principals
+  serve_listen_address: <fluffy-rbac>
+  external:
+    aws_auth:
+      enabled: true
+      # headers that must be present by the client when doing login request
+      required_headers:
+        # same host as the lakeFS server ingress
+        X-LakeFS-Server-ID: <lakefs.ingress.domain>
+```
+
+## Administration of IAM Roles in lakeFS
+
+Administration referes to the management of the IAM roles that are allowed to authenticate to lakeFS.
+Operations such as attaching and detaching IAM roles to a user, listing the roles attached to a user, and listing the users attached to a role. 
+Currently this is done through the lakeFS [External Principals API][external-principal-admin] and generated clients.
+
+Example of attaching a roles to a user:
+
+```python
+import lakefs_sdk as lakefs  
+
+configuration = lakefs.Configuration(host = "...",username="...",password="...")
+username = "<lakefs-user>"
+api = lakefs.ApiClient(configuration)
+auth_api = lakefs.AuthApi(api)
+# attach the role(s)to a lakeFS user
+auth_api.create_user_external_principal(user_id=username, principal_id='arn:aws:sts::<id>:assumed-role/<role A>/<optional session name>')
+auth_api.create_user_external_principal(user_id=username, principal_id='arn:aws:sts::<id>:assumed-role/<role B>')
+# list the roles attached to the user
+resp = auth_api.list_user_external_principals(user_id=args.user)
+for p in resp.results:
+    # do something
+```
+
+## Login to lakeFS 
+
+the login to lakeFS is done by calling the [login API][login-api] with the `GetCallerIdentity` request signed by the client.
+Currently, the login operation is support out of the box in [lakeFS Hadoop FileSystem][lakefs-hadoopfs] version 0.2.4 or above.
+Other clients (i.e HTTP, Python etc) can use the login endpoint to authenticate to lakeFS but, you will have to build the request input. 
 
 ## Using with Spark
+
+[external-principal-admin]:  {% link reference/cli.md %}#external
+[login-api]: {% link reference/api.md %}#auth/externalPrincipalLogin
+[lakefs-hadoopfs]:  {% link integrations/spark.md %}#lakefs-hadoop-filesystem

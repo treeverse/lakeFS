@@ -496,6 +496,19 @@ Set the `fs.lakefs.*` Hadoop configurations to point to your lakeFS installation
 * `fs.lakefs.secret.key`: lakeFS secret key
 * `fs.lakefs.endpoint`: lakeFS API URL (e.g. `https://example-org.us-east-1.lakefscloud.io/api/v1`)
 
+Configure the lakeFS client to to use a temporary token instead of static credentials:
+
+* `fs.lakefs.auth.provider`: The default is `basic_auth` with `fs.lakefs.access.key` and `fs.lakefs.secret.key` for basic authentication, set to `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` for using temporary AWS credentials.
+
+When using `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` as the auth provider the following configuration are relevant:
+
+* `fs.lakefs.token.aws.access.key`: AWS assumed role access key
+* `fs.lakefs.token.aws.secret.key`: AWS assumed role secret key
+* `fs.lakefs.token.aws.session.token`: AWS assumed role temporary session token
+* `fs.lakefs.token.aws.sts.endpoint`: AWS STS regional endpoint for generated the presigned-url (i.e `https://sts.us-west-2.amazonaws.com`).
+* `fs.lakefs.token.aws.sts.duration_seconds`: Optional, the duration in seconds for the initial identity token (default is 60)
+* `fs.lakefs.token.sts.additional_headers`: Optional, comma separated list of `header:value` to attach when generating presigned sts request. default is `X-Lakefs-Server-ID` with `fs.lakefs.endpoint` config value.
+
 Configure the S3A FileSystem to access your S3 storage, for example using the `fs.s3a.*` configurations (these are **not** your lakeFS credentials):
 * `fs.s3a.access.key`: AWS S3 access key
 * `fs.s3a.secret.key`: AWS S3 secret key
@@ -606,6 +619,36 @@ Alternatively, follow this [step by step Databricks integration tutorial, includ
 ⚠️ If your bucket is on a region other than us-east-1, you may also need to configure `fs.s3a.endpoint` with the correct region.
 Amazon provides [S3 endpoints](https://docs.aws.amazon.com/general/latest/gr/s3.html) you can use.
 {: .note }
+
+### Usage with TemporaryAWSCredentialsLakeFSTokenProvider
+
+⚠️ Configure `sts.endpoint` with a valid [sts regional service endpoint](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html) and it must be be equal to the region that is used for authentication first place. The only exception is `us-east-1` which is the default region for STS.
+{: .note }
+
+⚠️ the lakeFS token will expire 
+{: .note }
+
+PySpark example using `TemporaryAWSCredentialsLakeFSTokenProvider` with boto3 and AWS session credentials:
+
+```python
+import boto3 
+
+session = boto3.session.Session()
+
+# AWS credentials used s3a to access lakeFS bucket
+sc._jsc.hadoopConfiguration().set("fs.s3a.access.key", "AKIAIOSFODNN7EXAMPLE")
+sc._jsc.hadoopConfiguration().set("fs.s3a.secret.key", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+sc._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "https://s3.us-west-2.amazonaws.com")
+sc._jsc.hadoopConfiguration().set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem")
+sc._jsc.hadoopConfiguration().set("fs.lakefs.endpoint", "https://example-org.us-west-2.lakefscloud.io/api/v1")
+sc._jsc.hadoopConfiguration().set("spark.hadoop.fs.s3a.path.style.access", "true")
+sc._jsc.hadoopConfiguration().set("fs.lakefs.auth.provider", "io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider")
+# AWS tempporary session credentials to use with lakeFS
+sc._jsc.hadoopConfiguration().set("fs.lakefs.token.aws.access.key", session.get_credentials().access_key)
+sc._jsc.hadoopConfiguration().set("fs.lakefs.token.aws.secret.key", session.get_credentials().secret_key)
+sc._jsc.hadoopConfiguration().set("fs.lakefs.token.aws.session.token", session.get_credentials().token)
+sc._jsc.hadoopConfiguration().set("fs.lakefs.token.aws.sts.endpoint", "https://sts.us-west-2.amazonaws.com")
+```
 
 ### Usage
 
