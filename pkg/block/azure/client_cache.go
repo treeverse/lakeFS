@@ -15,6 +15,7 @@ import (
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/puzpuzpuz/xsync"
 	"github.com/treeverse/lakefs/pkg/block/params"
+	"golang.org/x/exp/slices"
 )
 
 const UDCCacheExpiry = time.Hour
@@ -120,11 +121,17 @@ func (c *ClientCache) NewUDC(ctx context.Context, storageAccount string, expiry 
 }
 
 func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
-	var url string
-	if params.TestEndpointURL != "" { // For testing purposes - override default url template
-		url = params.TestEndpointURL
+	var endpoint string
+	if params.Domain == "" {
+		params.Domain = BlobEndpointDefaultDomain
+	} else if !slices.Contains(supportedDomains, params.Domain) {
+		return nil, ErrInvalidDomain
+	}
+
+	if params.TestEndpointURL != "" { // For testing purposes - override default endpoint template
+		endpoint = params.TestEndpointURL
 	} else {
-		url = buildAccountEndpoint(params.StorageAccount, params.ChinaCloud)
+		endpoint = buildAccountEndpoint(params.StorageAccount, params.Domain)
 	}
 
 	options := service.ClientOptions{ClientOptions: azcore.ClientOptions{Retry: policy.RetryOptions{TryTimeout: params.TryTimeout}}}
@@ -133,20 +140,16 @@ func BuildAzureServiceClient(params params.Azure) (*service.Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid credentials: %w", err)
 		}
-		return service.NewClientWithSharedKeyCredential(url, cred, &options)
+		return service.NewClientWithSharedKeyCredential(endpoint, cred, &options)
 	}
 
 	defaultCreds, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return nil, fmt.Errorf("missing credentials: %w", err)
 	}
-	return service.NewClient(url, defaultCreds, &options)
+	return service.NewClient(endpoint, defaultCreds, &options)
 }
 
-func buildAccountEndpoint(storageAccount string, chinaCloud bool) string {
-	format := BlobEndpointGlobalFormat
-	if chinaCloud {
-		format = BlobEndpointChinaCloudFormat
-	}
-	return fmt.Sprintf(format, storageAccount)
+func buildAccountEndpoint(storageAccount, domain string) string {
+	return fmt.Sprintf("https://%s.%s", storageAccount, domain)
 }

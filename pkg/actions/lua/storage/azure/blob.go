@@ -27,7 +27,6 @@ func newBlobClient(ctx context.Context) lua.Function {
 	return func(l *lua.State) int {
 		storageAccount := lua.CheckString(l, 1)
 		accessKey := lua.CheckString(l, 2)
-
 		azClient, err := azure.BuildAzureServiceClient(params.Azure{
 			StorageAccount:   storageAccount,
 			StorageAccessKey: accessKey,
