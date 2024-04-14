@@ -2,6 +2,8 @@
 
 ## _Upcoming_
 
+lakeFSFS: new Token Provider feature with IAM Role Support for lakeFS authentication (#7659 + #7604)
+
 ## 0.2.3
 
 * Fix createDirectoryMarkerIfNotExists (#7510)

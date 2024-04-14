@@ -13,7 +13,9 @@ public class Constants {
     public static final String ACCESS_MODE_KEY_SUFFIX = "access.mode";
     // io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider, io.lakefs.auth.InstanceProfileAWSCredentialsLakeFSTokenProvider
     public static final String LAKEFS_AUTH_PROVIDER_KEY_SUFFIX = "auth.provider";
+
     // TODO(isan) document all configuration fields before merge.
+    public static final String LAKEFS_AUTH_TOKEN_TTL_KEY_SUFFIX = "token.duration_seconds";
     public static final String TOKEN_AWS_CREDENTIALS_PROVIDER_ACCESS_KEY_SUFFIX = "token.aws.access.key";
     public static final String TOKEN_AWS_CREDENTIALS_PROVIDER_SECRET_KEY_SUFFIX = "token.aws.secret.key";
     public static final String TOKEN_AWS_CREDENTIALS_PROVIDER_SESSION_TOKEN_KEY_SUFFIX = "token.aws.session.token";

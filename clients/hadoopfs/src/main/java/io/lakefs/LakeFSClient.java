@@ -6,19 +6,20 @@ import io.lakefs.clients.sdk.*;
 import io.lakefs.clients.sdk.auth.HttpBasicAuth;
 import io.lakefs.clients.sdk.auth.HttpBearerAuth;
 import org.apache.hadoop.conf.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-
-import static io.lakefs.auth.LakeFSTokenProviderFactory.newLakeFSTokenProvider;
 
 /**
  * Provides access to lakeFS API using client library.
  * This class uses the configuration to initialize API client and instance per API interface we expose.
  */
 public class LakeFSClient {
+    private static final Logger LOG = LoggerFactory.getLogger(LakeFSClient.class);
     private static final String BASIC_AUTH = "basic_auth";
     private static final String JWT_TOKEN_AUTH = "jwt_token";
-
+    LakeFSTokenProvider provider;
     private final ObjectsApi objectsApi;
     private final StagingApi stagingApi;
     private final RepositoriesApi repositoriesApi;
@@ -29,7 +30,7 @@ public class LakeFSClient {
     public LakeFSClient(String scheme, Configuration conf) throws IOException {
         String authProvider = FSConfiguration.get(conf, scheme, Constants.LAKEFS_AUTH_PROVIDER_KEY_SUFFIX, LakeFSClient.BASIC_AUTH);
         ApiClient apiClient;
-
+        LOG.info("Initiating lakeFS auth provider: {}", authProvider);
         if (authProvider == BASIC_AUTH) {
             String accessKey = FSConfiguration.get(conf, scheme, Constants.ACCESS_KEY_KEY_SUFFIX);
             if (accessKey == null) {
@@ -45,14 +46,11 @@ public class LakeFSClient {
             basicAuth.setUsername(accessKey);
             basicAuth.setPassword(secretKey);
         } else {
-            // TODO(isan) depends on missing functionality PR https://github.com/treeverse/lakeFS/pull/7578 being merged.
-            //  once merged, we can use the following code to get the token
-            throw new IOException("Unsupported auth provider: " + authProvider + ". Only basic_auth is supported at the moment.");
-//            LakeFSTokenProvider tokenProvider = newLakeFSTokenProvider(scheme, conf);
-//            String jwt = tokenProvider.getToken();
-//            apiClient = newApiClientNoAuth(scheme, conf);
-//            HttpBearerAuth tokenAuth = (HttpBearerAuth)apiClient.getAuthentication(JWT_TOKEN_AUTH);
-//            tokenAuth.setBearerToken(jwt);
+            this.provider = LakeFSTokenProviderFactory.newLakeFSTokenProvider(Constants.DEFAULT_SCHEME, conf);
+            String lakeFSToken = provider.getToken();
+            apiClient = newApiClientNoAuth(scheme, conf);
+            HttpBearerAuth tokenAuth = (HttpBearerAuth) apiClient.getAuthentication(JWT_TOKEN_AUTH);
+            tokenAuth.setBearerToken(lakeFSToken);
         }
 
         this.objectsApi = new ObjectsApi(apiClient);
