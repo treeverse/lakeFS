@@ -1,17 +1,22 @@
 package io.lakefs.auth;
+
 import com.amazonaws.auth.AWSCredentialsProvider;
 import io.lakefs.Constants;
 import io.lakefs.FSConfiguration;
 import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.AuthApi;
+import io.lakefs.clients.sdk.model.ExternalLoginInformation;
 import io.lakefs.clients.sdk.model.AuthenticationToken;
 import org.apache.commons.codec.binary.Base64;
 
 import java.io.IOException;
+
 import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.hadoop.conf.Configuration;
 
@@ -23,6 +28,7 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
     String stsEndpoint;
     Map<String, String> stsAdditionalHeaders;
     int stsExpirationInSeconds;
+    Optional<Integer> lakeFSTokenTTLSeconds = Optional.empty();
     ApiClient lakeFSApi;
 
     AWSLakeFSTokenProvider() {
@@ -68,6 +74,12 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
         }
         this.lakeFSApi.setBasePath(endpoint);
 
+        // optional timeout for lakeFS token
+        int tokenTTL = FSConfiguration.getInt(conf, scheme, Constants.LAKEFS_AUTH_TOKEN_TTL_KEY_SUFFIX, -1);
+        if (tokenTTL != -1) {
+            this.lakeFSTokenTTLSeconds = Optional.of(tokenTTL);
+        }
+
         // set additional headers (non-canonical) to sign with each request to STS
         // non-canonical headers are signed by the presigner and sent to STS for verification in the requests by lakeFS to exchange the token
         Map<String, String> additionalHeaders = FSConfiguration.getMap(conf, scheme, Constants.TOKEN_AWS_CREDENTIALS_PROVIDER_ADDITIONAL_HEADERS);
@@ -94,12 +106,7 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
     }
 
     public GeneratePresignGetCallerIdentityResponse newPresignedRequest() throws Exception {
-        GeneratePresignGetCallerIdentityRequest stsReq = new GeneratePresignGetCallerIdentityRequest(
-                new URI(this.stsEndpoint),
-                this.awsProvider.getCredentials(),
-                this.stsAdditionalHeaders,
-                this.stsExpirationInSeconds
-        );
+        GeneratePresignGetCallerIdentityRequest stsReq = new GeneratePresignGetCallerIdentityRequest(new URI(this.stsEndpoint), this.awsProvider.getCredentials(), this.stsAdditionalHeaders, this.stsExpirationInSeconds);
         return this.stsPresigner.presignRequest(stsReq);
     }
 
@@ -107,40 +114,29 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
         GeneratePresignGetCallerIdentityResponse signedRequest = this.newPresignedRequest();
 
         // generate token parameters object
-        LakeFSExternalPrincipalIdentityRequest identityTokenParams = new LakeFSExternalPrincipalIdentityRequest(
-                signedRequest.getHTTPMethod(),
-                signedRequest.getHost(),
-                signedRequest.getRegion(),
-                signedRequest.getAction(),
-                signedRequest.getDate(),
-                signedRequest.getExpires(),
-                signedRequest.getAccessKeyId(),
-                signedRequest.getSignature(),
-                Arrays.asList(signedRequest.getSignedHeadersParam().split(";")),
-                signedRequest.getVersion(),
-                signedRequest.getAlgorithm(),
-                signedRequest.getSecurityToken()
-        );
+        LakeFSExternalPrincipalIdentityRequest identityTokenParams = new LakeFSExternalPrincipalIdentityRequest(signedRequest.getHTTPMethod(), signedRequest.getHost(), signedRequest.getRegion(), signedRequest.getAction(), signedRequest.getDate(), signedRequest.getExpires(), signedRequest.getAccessKeyId(), signedRequest.getSignature(), Arrays.asList(signedRequest.getSignedHeadersParam().split(";")), signedRequest.getVersion(), signedRequest.getAlgorithm(), signedRequest.getSecurityToken());
 
         // base64 encode
         return Base64.encodeBase64String(identityTokenParams.toJSON().getBytes());
     }
 
     private void newToken() throws Exception {
+        // created identity token to exchange for lakeFS token
         String identityToken = this.newPresignedGetCallerIdentityToken();
-        /*
-        TODO(isan)
-         depends on missing functionality PR https://github.com/treeverse/lakeFS/pull/7578 being merged.
-         before merging this code - implement the call to lakeFS.
-         it will introduce the functionality in the generated client of actually doing the login.
-         call lakeFS to exchange the token for a lakeFS token
-         The flow will be:
-         1. use this.lakeFSApi Client with ExternalPrincipal API class (no auth required)
-         2. this.lakeFSAuthToken = call api.ExternalPrincipalLogin(identityToken, <lakeFS Token optional TTL>)
-        */
-        // dummy initiation
-        this.lakeFSAuthToken = new AuthenticationToken();
-        this.lakeFSAuthToken.setTokenExpiration(System.currentTimeMillis() + 60);
+
+        // build lakeFS login request
+        ExternalLoginInformation req = new ExternalLoginInformation();
+
+        // set lakeFS token expiration if provided by the configuration
+        this.lakeFSTokenTTLSeconds.ifPresent(req::setTokenExpirationDuration);
+
+        // set identity request
+        IdentityRequestRequestWrapper t = new IdentityRequestRequestWrapper(identityToken);
+        req.setIdentityRequest(t);
+
+        // call lakeFS to exchange the identity token for a lakeFS token
+        AuthApi auth = new AuthApi(this.lakeFSApi);
+        this.lakeFSAuthToken = auth.externalPrincipalLogin().externalLoginInformation(req).execute();
     }
 
     // refresh can be called to create a new token regardless if the current token is expired or not or does not exist.
