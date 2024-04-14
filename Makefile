@@ -129,7 +129,7 @@ sdk-python-legacy: api/swagger.yml  ## Generate SDK for Python client - openapi 
 sdk-python: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
 	# remove the build folder as it also holds lakefs_sdk folder which keeps because we skip it during find
 	rm -rf clients/python/build; cd clients/python && \
-		find . -depth -name lakefs_sdk -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache -or -name scripts -or -name pydantic.sh -or -name python-codegen-config.yaml \) -delete
+		find . -depth -name lakefs_sdk -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache -or -name requirements.mustache -or -name scripts -or -name pydantic.sh -or -name python-codegen-config.yaml \) -delete
 	$(PY_OPENAPI_GENERATOR) generate \
 		--enable-post-process-file \
 		-i /mnt/$< \
