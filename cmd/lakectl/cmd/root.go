@@ -27,8 +27,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type lakectlLocalContextKey string
-
 const (
 	DefaultMaxIdleConnsPerHost = 100
 	// version templates
@@ -51,7 +49,6 @@ lakeFS version: {{.LakeFSVersion}}
 Get the latest release {{ .UpgradeURL|blue }}
 {{- end }}
 `
-	lakectlLocalCommandNameKey lakectlLocalContextKey = "lakectl-local-command-name"
 )
 
 // Configuration is the user-visible configuration structure in Golang form.
@@ -285,63 +282,63 @@ func getKV(cmd *cobra.Command, name string) (map[string]string, error) { //nolin
 	return kv, nil
 }
 
-func rootPreRun(cmd *cobra.Command, _ []string) {
-	logging.SetLevel(logLevel)
-	logging.SetOutputFormat(logFormat)
-	err := logging.SetOutputs(logOutputs, 0, 0)
-	if err != nil {
-		DieFmt("Failed to setup logging: %s", err)
-	}
-	if noColorRequested {
-		DisableColors()
-	}
-	if cmd == configCmd {
-		return
-	}
-
-	switch {
-	case cfgErr == nil:
-		logging.ContextUnavailable().
-			WithField("file", viper.ConfigFileUsed()).
-			Debug("loaded configuration from file")
-	case errors.As(cfgErr, &viper.ConfigFileNotFoundError{}):
-		if cfgFile != "" {
-			// specific message in case the file isn't found
-			DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgErr)
-		}
-	case cfgErr != nil:
-		DieFmt("error reading configuration file: %v", cfgErr)
-	}
-
-	err = viper.UnmarshalExact(&cfg, viper.DecodeHook(
-		mapstructure.ComposeDecodeHookFunc(
-			lakefsconfig.DecodeOnlyString,
-			mapstructure.StringToTimeDurationHookFunc())))
-	if err != nil {
-		DieFmt("error unmarshal configuration: %v", err)
-	}
-
-	if cmd.HasParent() {
-		// Don't send statistics for root command or if one of the excluding
-		var cmdName string
-		for curr := cmd; curr.HasParent(); curr = curr.Parent() {
-			if cmdName != "" {
-				cmdName = curr.Name() + "_" + cmdName
-			} else {
-				cmdName = curr.Name()
-			}
-		}
-		if !slices.Contains(excludeStatsCmds, cmdName) {
-			sendStats(cmd.Context(), getClient(), cmdName)
-		}
-	}
-}
-
 // rootCmd represents the base command when called without any sub-commands
 var rootCmd = &cobra.Command{
 	Use:   "lakectl",
 	Short: "A cli tool to explore manage and work with lakeFS",
 	Long:  `lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		logging.SetLevel(logLevel)
+		logging.SetOutputFormat(logFormat)
+		err := logging.SetOutputs(logOutputs, 0, 0)
+		if err != nil {
+			DieFmt("Failed to setup logging: %s", err)
+		}
+		if noColorRequested {
+			DisableColors()
+		}
+		if cmd == configCmd {
+			return
+		}
+
+		if cfgErr == nil {
+			logging.ContextUnavailable().
+				WithField("file", viper.ConfigFileUsed()).
+				Debug("loaded configuration from file")
+		} else if errors.As(cfgErr, &viper.ConfigFileNotFoundError{}) {
+			if cfgFile != "" {
+				// specific message in case the file isn't found
+				DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgErr)
+			}
+			// if the config file wasn't provided, try to run using the default values + env vars
+		} else if cfgErr != nil {
+			// other errors while reading the config file
+			DieFmt("error reading configuration file: %v", cfgErr)
+		}
+
+		err = viper.UnmarshalExact(&cfg, viper.DecodeHook(
+			mapstructure.ComposeDecodeHookFunc(
+				lakefsconfig.DecodeOnlyString,
+				mapstructure.StringToTimeDurationHookFunc())))
+		if err != nil {
+			DieFmt("error unmarshal configuration: %v", err)
+		}
+
+		if cmd.HasParent() {
+			// Don't send statistics for root command or if one of the excluding
+			var cmdName string
+			for curr := cmd; curr.HasParent(); curr = curr.Parent() {
+				if cmdName != "" {
+					cmdName = curr.Name() + "_" + cmdName
+				} else {
+					cmdName = curr.Name()
+				}
+			}
+			if !slices.Contains(excludeStatsCmds, cmdName) {
+				sendStats(cmd.Context(), getClient(), cmdName)
+			}
+		}
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if !Must(cmd.Flags().GetBool("version")) {
 			if err := cmd.Help(); err != nil {
@@ -462,47 +459,29 @@ func getClient() *apigen.ClientWithResponses {
 	return client
 }
 
-func getBasename() string {
-	return strings.ToLower(filepath.Base(os.Args[0]))
-}
-
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	ctx := context.Background()
-
-	var cmd *cobra.Command
-	baseName := getBasename()
-	switch baseName {
-	case "git", "git.exe", "git-data", "git-data.exe":
-		cmd = localCmd
-		cmd.Use = baseName
-		cmd.SetContext(context.WithValue(ctx, lakectlLocalCommandNameKey, baseName))
-	default:
-		rootCmd.AddCommand(localCmd)
-		cmd = rootCmd
-		cmd.SetContext(context.WithValue(ctx, lakectlLocalCommandNameKey, "lakectl local"))
-	}
-	// make sure config is properly initialize
-	setupRootCommand(cmd)
-	cobra.OnInitialize(initConfig)
-	cmd.PersistentPreRun = rootPreRun
-	// run!
-	err := cmd.Execute()
+	err := rootCmd.Execute()
 	if err != nil {
 		DieErr(err)
 	}
 }
 
-func setupRootCommand(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakectl.yaml)")
-	cmd.PersistentFlags().BoolVar(&noColorRequested, "no-color", getEnvNoColor(), "don't use fancy output colors (default value can be set by NO_COLOR environment variable)")
-	cmd.PersistentFlags().StringVarP(&baseURI, "base-uri", "", os.Getenv("LAKECTL_BASE_URI"), "base URI used for lakeFS address parse")
-	cmd.PersistentFlags().StringVarP(&logLevel, "log-level", "", "none", "set logging level")
-	cmd.PersistentFlags().StringVarP(&logFormat, "log-format", "", "", "set logging output format")
-	cmd.PersistentFlags().StringSliceVarP(&logOutputs, "log-output", "", []string{}, "set logging output(s)")
-	cmd.PersistentFlags().BoolVar(&verboseMode, "verbose", false, "run in verbose mode")
-	cmd.Flags().BoolP("version", "v", false, "version for lakectl")
+//nolint:gochecknoinits
+func init() {
+	// Here you will define your flags and configuration settings.
+	// Cobra supports persistent flags, which, if defined here,
+	// will be global for your application.
+	cobra.OnInitialize(initConfig)
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakectl.yaml)")
+	rootCmd.PersistentFlags().BoolVar(&noColorRequested, "no-color", getEnvNoColor(), "don't use fancy output colors (default value can be set by NO_COLOR environment variable)")
+	rootCmd.PersistentFlags().StringVarP(&baseURI, "base-uri", "", os.Getenv("LAKECTL_BASE_URI"), "base URI used for lakeFS address parse")
+	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "", "none", "set logging level")
+	rootCmd.PersistentFlags().StringVarP(&logFormat, "log-format", "", "", "set logging output format")
+	rootCmd.PersistentFlags().StringSliceVarP(&logOutputs, "log-output", "", []string{}, "set logging output(s)")
+	rootCmd.PersistentFlags().BoolVar(&verboseMode, "verbose", false, "run in verbose mode")
+	rootCmd.Flags().BoolP("version", "v", false, "version for lakectl")
 }
 
 func getEnvNoColor() bool {
