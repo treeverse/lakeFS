@@ -75,7 +75,6 @@ func localDiff(ctx context.Context, client apigen.ClientWithResponsesInterface, 
 }
 
 func localHandleSyncInterrupt(ctx context.Context, idx *local.Index, operation string) context.Context {
-	cmdName := ctx.Value(lakectlLocalCommandNameKey).(string)
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		defer stop()
@@ -88,28 +87,27 @@ func localHandleSyncInterrupt(ctx context.Context, idx *local.Index, operation s
 		if err != nil {
 			WriteTo("{{.Error|red}}\n", struct{ Error string }{Error: "Failed to write failed operation to index file."}, os.Stderr)
 		}
-		DieFmt(`Operation was canceled, local data may be incomplete.
-	Use "%s checkout..." to sync with the remote.`, cmdName)
+		Die(`Operation was canceled, local data may be incomplete.
+	Use "lakectl local checkout..." to sync with the remote.`, 1)
 	}()
 	return ctx
 }
 
-func dieOnInterruptedOperation(ctx context.Context, interruptedOperation LocalOperation, force bool) {
-	cmdName := ctx.Value(lakectlLocalCommandNameKey).(string)
+func dieOnInterruptedOperation(interruptedOperation LocalOperation, force bool) {
 	if !force && interruptedOperation != "" {
 		switch interruptedOperation {
 		case commitOperation:
-			DieFmt(`Latest commit operation was interrupted, data may be incomplete.
-Use "%s commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`, cmdName)
+			Die(`Latest commit operation was interrupted, data may be incomplete.
+Use "lakectl local commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`, 1)
 		case checkoutOperation:
-			DieFmt(`Latest checkout operation was interrupted, local data may be incomplete.
-Use "%s checkout..." to sync with the remote.`, cmdName)
+			Die(`Latest checkout operation was interrupted, local data may be incomplete.
+Use "lakectl local checkout..." to sync with the remote.`, 1)
 		case pullOperation:
-			DieFmt(`Latest pull operation was interrupted, local data may be incomplete.
-Use "%s pull... --force" to sync with the remote.`, cmdName)
+			Die(`Latest pull operation was interrupted, local data may be incomplete.
+Use "lakectl local pull... --force" to sync with the remote.`, 1)
 		case cloneOperation:
-			DieFmt(`Latest clone operation was interrupted, local data may be incomplete.
-Use "%s checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`, cmdName)
+			Die(`Latest clone operation was interrupted, local data may be incomplete.
+Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`, 1)
 		default:
 			panic(fmt.Errorf("found an unknown interrupted operation in the index file: %s- %w", interruptedOperation, ErrUnknownOperation))
 		}
@@ -119,4 +117,9 @@ Use "%s checkout..." to sync with the remote or run "lakectl local clone..." wit
 var localCmd = &cobra.Command{
 	Use:   "local",
 	Short: "Sync local directories with lakeFS paths",
+}
+
+//nolint:gochecknoinits
+func init() {
+	rootCmd.AddCommand(localCmd)
 }
