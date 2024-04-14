@@ -30,7 +30,7 @@ For example, consider the following mapping:
 | arn:aws:sts::123:assumed-role/Dev/john@acme.com  | john        |
 
 if the bound ARN were `arn:aws:sts::123:assumed-role/Dev/<SessionName>` it would allow any principal assuming `Dev` role in AWS account `123456` to login to it.
-If the `SessionName` is `john@acme.com` then lakeFS would return token for `jogn` user
+If the `SessionName` is `john@acme.com` then lakeFS would return token for `john` user
 
 ### How AWS authentication works
 
@@ -51,7 +51,8 @@ It's also important to note that Amazon does NOT appear to include any sort of a
 > Note: lakeFS Helm chart supports the configuration since version `1.2.9` - see usage [values.yaml example](https://github.com/treeverse/charts/blob/master/examples/lakefs/enterprise/values-external-aws.yaml).
 
 * in lakeFS `auth.authentication_api.external_principals_enabled` must be set to `true` in the configuration file, other configuration (`auth.authentication_api.*`) can be found at at [configuration reference]({% link reference/configuration.md %})
-fluffy server configuration reference:
+
+**fluffy server configuration reference:**
 
 * `auth.external.aws_auth.enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
 * `auth.external.aws_auth.get_caller_identity_max_age` `(duration : 15m)` - The maximum age in seconds for the GetCallerIdentity request to be valid, the max is 15 minutes enforced by AWS, smaller TTL can be set.
@@ -109,14 +110,15 @@ for p in resp.results:
     # do something
 ```
 
-## Login to lakeFS 
+## Get lakeFS API Token
 
 the login to lakeFS is done by calling the [login API][login-api] with the `GetCallerIdentity` request signed by the client.
-Currently, the login operation is support out of the box in [lakeFS Hadoop FileSystem][lakefs-hadoopfs] version 0.2.4 or above.
-Other clients (i.e HTTP, Python etc) can use the login endpoint to authenticate to lakeFS but, you will have to build the request input. 
+Currently, the login operation is support out of the box in [lakeFS Hadoop FileSystem][lakefs-hadoopfs] version 0.2.4, see [Spark usage][lakefs-spark].
+Other clients (i.e HTTP, Python etc) can use the login endpoint to authenticate to lakeFS but, you will have to build the request input.
 
 ## Using with Spark
 
 [external-principal-admin]:  {% link reference/cli.md %}#external
 [login-api]: {% link reference/api.md %}#auth/externalPrincipalLogin
 [lakefs-hadoopfs]:  {% link integrations/spark.md %}#lakefs-hadoop-filesystem
+[lakefs-spark]:  {% link integrations/spark.md %}#usage-with-temporaryawscredentialslakefstokenprovider
