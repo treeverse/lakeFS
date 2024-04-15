@@ -95,7 +95,7 @@ Administration referes to the management of the IAM roles that are allowed to au
 Operations such as attaching and detaching IAM roles to a user, listing the roles attached to a user, and listing the users attached to a role. 
 Currently this is done through the lakeFS [External Principals API][external-principal-admin] and generated clients.
 
-Example of attaching a roles to a user:
+Example of attaching an IAM roles to a user:
 
 ```python
 import lakefs_sdk as lakefs  
@@ -118,8 +118,6 @@ for p in resp.results:
 The login to lakeFS is done by calling the [login API][login-api] with the `GetCallerIdentity` request signed by the client.
 Currently, the login operation is supported out of the box in [lakeFS Hadoop FileSystem][lakefs-hadoopfs] version 0.2.4, see [Spark usage][lakefs-spark].
 Other clients (i.e HTTP, Python etc) can use the login endpoint to authenticate to lakeFS but, you will have to build the request input.
-
-## Using with Spark
 
 [external-principal-admin]:  {% link reference/cli.md %}#external
 [login-api]: {% link reference/api.md %}#auth/externalPrincipalLogin
