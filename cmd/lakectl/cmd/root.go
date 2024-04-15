@@ -125,11 +125,10 @@ var (
 )
 
 const (
-	recursiveFlagName            = "recursive"
-	recursiveFlagShort           = "r"
-	presignFlagName              = "pre-sign"
-	allowCaseInsensitiveFlagName = "allow-case-insensitive"
-	parallelismFlagName          = "parallelism"
+	recursiveFlagName   = "recursive"
+	recursiveFlagShort  = "r"
+	presignFlagName     = "pre-sign"
+	parallelismFlagName = "parallelism"
 
 	defaultSyncParallelism = 25
 	defaultSyncPresign     = true
@@ -158,11 +157,6 @@ func withParallelismFlag(cmd *cobra.Command) {
 func withPresignFlag(cmd *cobra.Command) {
 	cmd.Flags().Bool(presignFlagName, defaultSyncPresign,
 		"Use pre-signed URLs when downloading/uploading data (recommended)")
-}
-
-func withAllowCaseInsensitiveFlag(cmd *cobra.Command) {
-	cmd.Flags().Bool(allowCaseInsensitiveFlagName, false,
-		"Allow init, clone even on case-insensitive filesystem")
 }
 
 func withSyncFlags(cmd *cobra.Command) {

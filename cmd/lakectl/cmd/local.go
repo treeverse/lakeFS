@@ -30,7 +30,6 @@ const (
 	checkoutOperation LocalOperation = "checkout"
 	cloneOperation    LocalOperation = "clone"
 
-	CaseInsensitiveFailureMessageFormat = `Directory '%s' is case-insensitive, versioning tools such as lakectl local and git will work incorrectly. Will only proceed with --force.`
 	CaseInsensitiveWarningMessageFormat = `Directory '%s' is case-insensitive, versioning tools such as lakectl local and git will work incorrectly. Proceeding because of --force.`
 )
 
@@ -120,12 +119,9 @@ Use "%s checkout..." to sync with the remote or run "lakectl local clone..." wit
 	}
 }
 
-func dieOnCaseInsensitiveDirectory(path string, allowButWarn bool) {
+func warnOnCaseInsensitiveDirectory(path string) {
 	isCaseInsensitive, err := fileutil.IsCaseInsensitiveLocation(fileutil.OSFS{}, path)
 	if isCaseInsensitive {
-		if !allowButWarn {
-			DieFmt(CaseInsensitiveFailureMessageFormat, path)
-		}
 		Warning(fmt.Sprintf(CaseInsensitiveWarningMessageFormat, path))
 	}
 	if err != nil {

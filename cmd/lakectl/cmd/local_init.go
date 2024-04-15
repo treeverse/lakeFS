@@ -95,9 +95,8 @@ var localInitCmd = &cobra.Command{
 		remote, localPath := getSyncArgs(args, true, false)
 		force := Must(cmd.Flags().GetBool(localForceFlagName))
 		updateIgnore := Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
-		allowCaseInsensitive := Must(cmd.Flags().GetBool(allowCaseInsensitiveFlagName))
 
-		dieOnCaseInsensitiveDirectory(localPath, allowCaseInsensitive)
+		warnOnCaseInsensitiveDirectory(localPath)
 
 		_, err := localInit(cmd.Context(), localPath, remote, force, updateIgnore)
 		if err != nil {
@@ -115,6 +114,5 @@ var localInitCmd = &cobra.Command{
 func init() {
 	withForceFlag(localInitCmd, "Overwrites if directory already linked to a lakeFS path")
 	withGitIgnoreFlag(localInitCmd)
-	withAllowCaseInsensitiveFlag(localInitCmd)
 	localCmd.AddCommand(localInitCmd)
 }

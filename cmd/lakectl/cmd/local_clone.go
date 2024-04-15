@@ -39,8 +39,7 @@ var localCloneCmd = &cobra.Command{
 			DieFmt("directory '%s' exists and is not empty", localPath)
 		}
 
-		allowCaseInsensitive := Must(cmd.Flags().GetBool(allowCaseInsensitiveFlagName))
-		dieOnCaseInsensitiveDirectory(localPath, allowCaseInsensitive)
+		warnOnCaseInsensitiveDirectory(localPath)
 
 		ctx := cmd.Context()
 		head, err := localInit(ctx, localPath, remote, false, updateIgnore)
@@ -110,6 +109,5 @@ var localCloneCmd = &cobra.Command{
 func init() {
 	withGitIgnoreFlag(localCloneCmd)
 	withSyncFlags(localCloneCmd)
-	withAllowCaseInsensitiveFlag(localCloneCmd)
 	localCmd.AddCommand(localCloneCmd)
 }
