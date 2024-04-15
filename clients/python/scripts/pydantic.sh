@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/bin/bash -eu
+
+set -o pipeline
 
 filename=$1
 
