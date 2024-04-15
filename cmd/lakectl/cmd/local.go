@@ -121,12 +121,12 @@ Use "%s checkout..." to sync with the remote or run "lakectl local clone..." wit
 
 func warnOnCaseInsensitiveDirectory(path string) {
 	isCaseInsensitive, err := fileutil.IsCaseInsensitiveLocation(fileutil.OSFS{}, path)
-	if isCaseInsensitive {
-		Warning(fmt.Sprintf(CaseInsensitiveWarningMessageFormat, path))
-	}
 	if err != nil {
 		Warning(fmt.Sprintf("Check whether directory '%s' is case-insensitive: %s", path, err))
 		Warning("Continuing without this check")
+	}
+	if isCaseInsensitive {
+		Warning(fmt.Sprintf(CaseInsensitiveWarningMessageFormat, path))
 	}
 }
 
