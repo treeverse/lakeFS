@@ -523,9 +523,10 @@ Set the `fs.lakefs.*` Hadoop configurations to point to your lakeFS installation
 * `fs.lakefs.secret.key`: lakeFS secret key
 * `fs.lakefs.endpoint`: lakeFS API URL (e.g. `https://example-org.us-east-1.lakefscloud.io/api/v1`)
 
-Configure the lakeFS client to to use a temporary token instead of static credentials:
+Configure the lakeFS client to use a temporary token instead of static credentials:
 
-* `fs.lakefs.auth.provider`: The default is `basic_auth` with `fs.lakefs.access.key` and `fs.lakefs.secret.key` for basic authentication, set to `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` for using temporary AWS credentials, you can read more about it [here]({% link reference/security/external-principals-aws.md %}).
+* `fs.lakefs.auth.provider`: The default is `basic_auth` with `fs.lakefs.access.key` and `fs.lakefs.secret.key` for basic authentication.
+Can be set to `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` for using temporary AWS credentials, you can read more about it [here]({% link reference/security/external-principals-aws.md %}).
 
 When using `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` as the auth provider the following configuration are relevant:
 
@@ -534,7 +535,7 @@ When using `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` as the au
 * `fs.lakefs.token.aws.session.token`: AWS assumed role temporary session token
 * `fs.lakefs.token.aws.sts.endpoint`: AWS STS regional endpoint for generated the presigned-url (i.e `https://sts.us-west-2.amazonaws.com`)
 * `fs.lakefs.token.aws.sts.duration_seconds`: Optional, the duration in seconds for the initial identity token (default is 60)
-* `fs.lakefs.token.duration_seconds`: Optional, the duration in seconds for the lakeFS JWT token (default is set in the lakeFS configuration [auth.login_duration]({% link reference/configuration.md %}))
+* `fs.lakefs.token.duration_seconds`: Optional, the duration in seconds for the lakeFS token (default is set in the lakeFS configuration [auth.login_duration]({% link reference/configuration.md %}))
 * `fs.lakefs.token.sts.additional_headers`: Optional, comma separated list of `header:value` to attach when generating presigned sts request. Default is `X-Lakefs-Server-ID:fs.lakefs.endpoint`.
 
 Configure the S3A FileSystem to access your S3 storage, for example using the `fs.s3a.*` configurations (these are **not** your lakeFS credentials):
