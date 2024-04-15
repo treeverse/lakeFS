@@ -20,7 +20,10 @@ import json
 
 
 from typing import Optional
-from pydantic import BaseModel, Field, StrictBool, StrictStr
+try:
+    from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr
+except ImportError:
+    from pydantic import BaseModel, Field, StrictBool, StrictStr
 
 class ErrorNoACL(BaseModel):
     """

@@ -20,7 +20,10 @@ import json
 
 
 from typing import Dict, List, Optional
-from pydantic import BaseModel, StrictStr, conlist
+try:
+    from pydantic.v1 import BaseModel, StrictStr, conlist
+except ImportError:
+    from pydantic import BaseModel, StrictStr, conlist
 
 class ExternalPrincipalCreation(BaseModel):
     """

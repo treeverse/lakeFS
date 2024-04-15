@@ -20,7 +20,10 @@ import json
 
 
 from typing import Dict, List, Optional
-from pydantic import BaseModel, Field, StrictStr, conlist
+try:
+    from pydantic.v1 import BaseModel, Field, StrictStr, conlist
+except ImportError:
+    from pydantic import BaseModel, Field, StrictStr, conlist
 from lakefs_sdk.models.upload_part import UploadPart
 
 class CompletePresignMultipartUpload(BaseModel):

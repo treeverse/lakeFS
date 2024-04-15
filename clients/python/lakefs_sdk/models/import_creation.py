@@ -20,7 +20,10 @@ import json
 
 
 from typing import List, Optional
-from pydantic import BaseModel, Field, StrictBool, conlist
+try:
+    from pydantic.v1 import BaseModel, Field, StrictBool, conlist
+except ImportError:
+    from pydantic import BaseModel, Field, StrictBool, conlist
 from lakefs_sdk.models.commit_creation import CommitCreation
 from lakefs_sdk.models.import_location import ImportLocation
 

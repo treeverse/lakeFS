@@ -20,7 +20,10 @@ import json
 
 
 from typing import Optional
-from pydantic import BaseModel, Field, StrictBool, StrictStr, validator
+try:
+    from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr, validator
+except ImportError:
+    from pydantic import BaseModel, Field, StrictBool, StrictStr, validator
 from lakefs_sdk.models.login_config import LoginConfig
 
 class SetupState(BaseModel):
