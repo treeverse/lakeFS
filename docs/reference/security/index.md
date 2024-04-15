@@ -17,3 +17,4 @@ has_toc: false
 - [Access Control Lists (ACLs)]({% link reference/security/access-control-lists.md %})
 - [Single Sign On (SSO)]({% link reference/security/sso.md %})
 - [Short Lived Token (STS like)]({% link reference/security/sts-login.md %})
+- [Login to lakeFS with AWS IAM]({% link reference/security/external-principals-aws.md %})
