@@ -86,6 +86,7 @@ This reference uses `.` to denote the nesting of values.
 * `auth.login_duration` `(time duration : "168h")` - The duration the login token is valid for
 * `auth.login_max_duration` `(time duration : "168h")` - The maximum duration user can ask for a login token
 * `auth.cookie_domain` `(string : "")` - [Domain attribute](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define_where_cookies_are_sent) to set the access_token cookie on (the default is an empty string which defaults to the same host that sets the cookie)
+* `auth.authentication_api.endpoint` `(string: https://external.authentication-service/api/v1)` - URL to external Authentication Service described at [authentication.yml](https://github.com/treeverse/lakeFS/blob/master/api/authentication.yml)
 * `auth.api.endpoint` `(string: https://external.service/api/v1)` - URL to external Authorization Service described at [authorization.yml](https://github.com/treeverse/lakeFS/blob/master/api/authorization.yml);
 * `auth.api.token` `(string: eyJhbGciOiJIUzI1NiIsInR5...)` - API token used to authenticate requests to api endpoint
 * `auth.api.health_check_timeout` `(time duration : "20s")` - Timeout duration for external auth API health check
