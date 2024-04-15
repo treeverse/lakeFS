@@ -53,7 +53,7 @@ It's also important to note that Amazon does NOT appear to include any sort of a
 ## Server Configuration
 
 {: .note}
-> Note: lakeFS Helm chart supports the configuration since version `1.2.9` - see usage [values.yaml example](https://github.com/treeverse/charts/blob/master/examples/lakefs/enterprise/values-external-aws.yaml).
+> Note: lakeFS Helm chart supports the configuration since version `1.2.11` - see usage [values.yaml example](https://github.com/treeverse/charts/blob/master/examples/lakefs/enterprise/values-external-aws.yaml).
 
 * in lakeFS `auth.authentication_api.external_principals_enabled` must be set to `true` in the configuration file, other configuration (`auth.authentication_api.*`) can be found at at [configuration reference]({% link reference/configuration.md %})
 
