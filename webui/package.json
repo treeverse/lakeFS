@@ -65,7 +65,7 @@
     "@typescript-eslint/eslint-plugin": "^6.13.2",
     "@typescript-eslint/parser": "^6.13.2",
     "@vitejs/plugin-react": "^4.2.1",
-    "@vitejs/plugin-react-swc": "^3.5.0",
+    "@vitejs/plugin-react-swc": "^3.6.0",
     "browserslist": "^4.22.2",
     "cross-env": "^7.0.3",
     "dotenv": "^16.3.1",
@@ -77,8 +77,8 @@
     "typescript": "^5.3.3",
     "typesync": "^0.11.1",
     "unified": "^10.1.2",
-    "vite": "^5.0.7",
+    "vite": "^5.2.8",
     "vite-plugin-eslint": "^1.8.1",
-    "vitest": "^1.0.4"
+    "vitest": "^1.5.0"
   }
 }
