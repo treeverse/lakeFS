@@ -83,7 +83,7 @@ auth:
     endpoint: http://<fluffy-sso>/api/v1
     external_principals_enabled: true
   api:
-    endpoint: <fluffy-rbac>
+    endpoint: http://<fluffy-rbac>/api/v1
 ```
 
 Configuration for `fluffy.yaml`:
