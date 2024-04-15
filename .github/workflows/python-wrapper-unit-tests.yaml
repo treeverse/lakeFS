@@ -32,6 +32,10 @@ jobs:
   unit-tests:
     needs: paths-filter
     if: ${{ needs.paths-filter.outputs.client-change == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        pydantic_v1: [ true, false ]
     name: Unit Test Python SDK Wrapper
     runs-on: ubuntu-22.04
     steps:
@@ -42,6 +46,11 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
+      
+      # When installed it will skip the installation of pydantic in the next step which will install the latest > 2
+      - name: Install pydantic V1
+        if: matrix.pydantic_v1
+        run: pip install pydantic==1.10.6
       
       - name: Install dependencies
         working-directory: ./clients/python-wrapper

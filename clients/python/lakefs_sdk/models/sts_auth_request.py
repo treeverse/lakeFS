@@ -20,7 +20,10 @@ import json
 
 
 from typing import Optional
-from pydantic import BaseModel, Field, StrictInt, StrictStr
+try:
+    from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr
+except ImportError:
+    from pydantic import BaseModel, Field, StrictInt, StrictStr
 
 class StsAuthRequest(BaseModel):
     """

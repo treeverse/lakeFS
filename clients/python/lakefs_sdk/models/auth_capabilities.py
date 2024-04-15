@@ -20,7 +20,10 @@ import json
 
 
 from typing import Optional
-from pydantic import BaseModel, StrictBool
+try:
+    from pydantic.v1 import BaseModel, StrictBool
+except ImportError:
+    from pydantic import BaseModel, StrictBool
 
 class AuthCapabilities(BaseModel):
     """

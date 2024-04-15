@@ -20,7 +20,10 @@ import json
 
 
 
-from pydantic import BaseModel, Field, constr
+try:
+    from pydantic.v1 import BaseModel, Field, constr
+except ImportError:
+    from pydantic import BaseModel, Field, constr
 
 class AccessKeyCredentials(BaseModel):
     """

@@ -20,7 +20,10 @@ import json
 
 
 from typing import Optional
-from pydantic import BaseModel, Field, StrictStr
+try:
+    from pydantic.v1 import BaseModel, Field, StrictStr
+except ImportError:
+    from pydantic import BaseModel, Field, StrictStr
 from lakefs_sdk.models.access_key_credentials import AccessKeyCredentials
 
 class Setup(BaseModel):
