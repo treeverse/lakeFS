@@ -154,6 +154,10 @@ For the full list of actions and their required permissions see the following ta
 | Get Action Run                     | `ci:ReadAction`                             | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET /repositories/{repository}/actions/runs/{run_id}                                | -                                                                     |
 | List Action Run Hooks              | `ci:ReadAction`                             | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET /repositories/{repository}/actions/runs/{run_id}/hooks                          | -                                                                     |
 | Get Action Run Hook Output         | `ci:ReadAction`                             | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output     | -                                                                     |
+| Attach External Principal to a User         | `auth:CreateUserExternalPrincipal`                             | `arn:lakefs:auth:::user/{userId}`                              | POST /auth/users/{userId}/external/principals     | -                                                                     |
+| Delete External Principal Attachment from a User         | `auth:DeleteUserExternalPrincipal`                             | `arn:lakefs:auth:::user/{userId}`                              | DELETE /auth/users/{userId}/external/principals     | -                                                                     |
+| Get the User attached to an External Principal         | `auth:ReadExternalPrincipal`                             | `arn:lakefs:auth:::externalPrincipal/{principalId}`                              | GET /auth/external/principals     | -                                                                     |
+
 
 Some APIs may require more than one action.For instance, in order to
 create a repository (`POST /repositories`), you need permission to
