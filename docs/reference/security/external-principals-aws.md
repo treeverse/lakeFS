@@ -26,10 +26,12 @@ A single lakeFS user may have many AWS's principle ARNs attached to it. When a c
 
 The bound ARN can be attached to a single lakeFS user with or without SessionName, serving different users.
 For example, consider the following mapping: 
-| Principal ARN                                    | lakeFS User |
-|--------------------------------------------------|-------------|
+
+| Principal ARN                                       | lakeFS User |
+|-----------------------------------------------------|-------------|
 | arn:aws:sts::123456:assumed-role/Dev                | foo         |
 | arn:aws:sts::123456:assumed-role/Dev/john@acme.com  | john        |
+
 if the bound ARN were `arn:aws:sts::123456:assumed-role/Dev/<SessionName>` it would allow any principal assuming `Dev` role in AWS account `123456` to login to it.
 If the `SessionName` is `john@acme.com` then lakeFS would return token for `john` user
 
