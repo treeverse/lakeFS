@@ -11,7 +11,6 @@ VERSION = "0.5.0"
 
 PYTHON_REQUIRES = ">=3.9"
 REQUIRES = [
-    "pydantic >= 1.10.5, < 2",
     "setuptools == 68.2.2",
     "lakefs-sdk ~= 1.0",
     "pyyaml ~= 6.0.1",

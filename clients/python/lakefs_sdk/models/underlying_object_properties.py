@@ -20,7 +20,10 @@ import json
 
 
 from typing import Optional
-from pydantic import BaseModel, StrictStr
+try:
+    from pydantic.v1 import BaseModel, StrictStr
+except ImportError:
+    from pydantic import BaseModel, StrictStr
 
 class UnderlyingObjectProperties(BaseModel):
     """

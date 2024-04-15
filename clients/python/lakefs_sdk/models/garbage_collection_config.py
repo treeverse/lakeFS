@@ -20,7 +20,10 @@ import json
 
 
 from typing import Optional
-from pydantic import BaseModel, Field, StrictInt
+try:
+    from pydantic.v1 import BaseModel, Field, StrictInt
+except ImportError:
+    from pydantic import BaseModel, Field, StrictInt
 
 class GarbageCollectionConfig(BaseModel):
     """

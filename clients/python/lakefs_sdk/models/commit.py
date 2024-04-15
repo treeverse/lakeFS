@@ -20,7 +20,10 @@ import json
 
 
 from typing import Dict, List, Optional
-from pydantic import BaseModel, Field, StrictInt, StrictStr, conint, conlist
+try:
+    from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr, conint, conlist
+except ImportError:
+    from pydantic import BaseModel, Field, StrictInt, StrictStr, conint, conlist
 
 class Commit(BaseModel):
     """
