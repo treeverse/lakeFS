@@ -16,6 +16,8 @@ redirect_from:
 {: .note}
 > External principals API is available for lakeFS Enterprise. If you're using the open-source version you can check the [pluggable APIs](https://docs.lakefs.io/reference/security/rbac.html#pluggable-authentication-and-authorization).
 
+{% include toc.html %}
+
 ## Overview 
 
 lakeFS supports authenticating users programmatically using AWS IAM roles instead of using static lakeFS access and secret keys.
@@ -118,6 +120,7 @@ for p in resp.results:
 The login to lakeFS is done by calling the [login API][login-api] with the `GetCallerIdentity` request signed by the client.
 Currently, the login operation is supported out of the box in [lakeFS Hadoop FileSystem][lakefs-hadoopfs] version 0.2.4, see [Spark usage][lakefs-spark].
 Other clients (i.e HTTP, Python etc) can use the login endpoint to authenticate to lakeFS but, you will have to build the request input.
+
 
 [external-principal-admin]:  {% link reference/cli.md %}#external
 [login-api]: {% link reference/api.md %}#auth/externalPrincipalLogin
