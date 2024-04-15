@@ -32,8 +32,14 @@ _Hooks_ can be either a [Lua]({% link howto/hooks/lua.md %}) script that lakeFS 
                         --source lakefs://quickstart/main
     ```
 
-2. Open up your favorite text editor (or emacs), and paste the following YAML: 
-
+2. Open up a text editor 
+   ```bash
+   docker exec lakefs \
+   vi /tmp/check_commit_metadata.yml
+   ```
+   
+3. Paste the following YAML:
+    
    ```yaml
    name: Check Commit Message and Metadata
    on:
@@ -72,11 +78,11 @@ _Hooks_ can be either a [Lua]({% link howto/hooks/lua.md %}) script that lakeFS 
            end
    ```
 
-3. Save this file as `/tmp/check_commit_metadata.yml`
+4. Save this file
 
     * You can save it elsewhere, but make sure you change the path below when uploading
 
-4. Upload the `check_commit_metadata.yml` file to the `add_action` branch under `_lakefs_actions/`. As above, you can use the UI (make sure you select the correct branch when you do), or with `lakectl`:
+5. Upload the `check_commit_metadata.yml` file to the `add_action` branch under `_lakefs_actions/`. As above, you can use the UI (make sure you select the correct branch when you do), or with `lakectl`:
 
     ```bash
     docker exec lakefs \
@@ -85,13 +91,13 @@ _Hooks_ can be either a [Lua]({% link howto/hooks/lua.md %}) script that lakeFS 
             --source /tmp/check_commit_metadata.yml
     ```
 
-5. Go to the **Uncommitted Changes** tab in the UI, and make sure that you see the new file in the path shown: 
+6. Go to the **Uncommitted Changes** tab in the UI, and make sure that you see the new file in the path shown: 
 
     <img width="75%" src="{{ site.baseurl }}/assets/img/quickstart/hooks-00.png" alt="lakeFS Uncommitted Changes view showing a file called `check_commit_metadata.yml` under the path `_lakefs_actions/`" class="quickstart"/>
 
     Click **Commit Changes** and enter a suitable message to commit this new file to the branch. 
 
-6. Now we'll merge this new branch into `main`. From the **Compare** tab in the UI compare the `main` branch with `add_action` and click **Merge**
+7. Now we'll merge this new branch into `main`. From the **Compare** tab in the UI compare the `main` branch with `add_action` and click **Merge**
 
     <img width="75%" src="{{ site.baseurl }}/assets/img/quickstart/hooks-01.png" alt="lakeFS Compare view showing the difference between `main` and `add_action` branches" class="quickstart"/>
 
