@@ -1,14 +1,16 @@
 #!/bin/bash -eu
 
-set -o pipeline
+set -o pipefail
 
 filename=$1
 
 while IFS= read -r line; do
-    echo "... $line ..."
-    modules=$(echo $line | awk -F 'from pydantic import ' '{print $2}')
+    if [ -z "${line}" ]; then
+      echo "Nothing to do"
+      continue 
+    fi
     echo $line
-    
+    modules=$(echo $line | awk -F 'from pydantic import ' '{print $2}')
     newline="try:\n    from pydantic.v1 import $modules\nexcept ImportError:\n    from pydantic import $modules"
     
     echo "$newline"
