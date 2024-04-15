@@ -49,7 +49,7 @@ jobs:
       
       # When installed it will skip the installation of pydantic in the next step which will install the latest > 2
       - name: Install pydantic V1
-        if: matrix.pydantic_v1 == 'true'
+        if: matrix.pydantic_v1
         run: pip install pydantic==1.10.6
       
       - name: Install dependencies
