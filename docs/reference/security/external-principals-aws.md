@@ -72,7 +72,21 @@ It's also important to note that Amazon does NOT appear to include any sort of a
 {: .note}
 > By default lakeFS clients will add the parameter `X-LakeFS-Server-ID: <lakefs.ingress.domain>` to the initial [login request][login-api] for STS.
 
-Example using required headers configuration for `fluffy.yaml`:
+
+**Example configuration with required headers:**
+
+Configuration for `lakefs.yaml`: 
+
+```yaml
+auth:
+  authentication_api:
+    endpoint: http://<fluffy-sso>/api/v1
+    external_principals_enabled: true
+  api:
+    endpoint: <fluffy-rbac>
+```
+
+Configuration for `fluffy.yaml`:
 
 ```yaml
 # fluffy address for lakefs auth.authentication_api.endpoint
