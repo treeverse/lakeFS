@@ -566,7 +566,12 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	c.LogAction(ctx, "external_principal_login", r, "", "", "")
-	c.Logger.Debug("external principal login")
+	jsonString, err := json.Marshal(body.IdentityRequest)
+	if err != nil {
+		c.Logger.WithError(err).Error("failed to marshal identity request")
+	} else {
+		c.Logger.WithField("identity_request", jsonString).Debug("external principal login")
+	}
 	externalPrincipal, err := c.Authentication.ExternalPrincipalLogin(ctx, body.IdentityRequest)
 	if c.handleAPIError(ctx, w, r, err) {
 		c.Logger.WithError(err).Error("external principal login failed")
