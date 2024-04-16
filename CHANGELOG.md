@@ -1,5 +1,11 @@
 # Changelog
 
+# v1.20.0
+
+:new:  What's new:
+
+- Python SDK: Support multiple pydantic versions (#7672)
+
 # v1.19.0
 
 :new:  What's new:
