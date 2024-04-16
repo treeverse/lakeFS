@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.6.0
+
+:new: What's new:
+
+- Support multiple pydantic versions (#7682)
+
 ## v0.5.0
 
 :new: What's new:
