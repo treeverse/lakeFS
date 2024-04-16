@@ -4,7 +4,7 @@
 
 :new:  What's new:
 
-- Experimental: Support pre-signed redirects for S3A (#7630)
+- Python SDK: Support multiple pydantic versions (#7672)
 
 # v1.19.0
 
