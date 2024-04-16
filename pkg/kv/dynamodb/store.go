@@ -505,6 +505,11 @@ func (e *EntriesIterator) runQuery() {
 	queryResult, err := e.store.svc.Query(e.scanCtx, queryInput)
 	const operation = "Query"
 	if err != nil {
+		if e.store.isSlowDownErr(err) {
+			e.store.logger.WithField("partition_key", e.partitionKey).WithContext(e.scanCtx).Error("query: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues("query").Inc()
+			err = errors.Join(err, kv.ErrSlowDown)
+		}
 		e.err = fmt.Errorf("query: %w", err)
 		return
 	}
