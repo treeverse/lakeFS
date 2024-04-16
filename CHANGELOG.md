@@ -1,5 +1,11 @@
 # Changelog
 
+# v1.20.0
+
+:new:  What's new:
+
+- Experimental: Support pre-signed redirects for S3A (#7630)
+
 # v1.19.0
 
 :new:  What's new:
