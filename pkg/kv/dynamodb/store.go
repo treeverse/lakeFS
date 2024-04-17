@@ -241,6 +241,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 		if s.isSlowDownErr(err) {
 			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("get item: %w", kv.ErrSlowDown)
 			dynamoSlowdown.WithLabelValues(operation).Inc()
+			err = errors.Join(err, kv.ErrSlowDown)
 		}
 		return nil, fmt.Errorf("get item: %w", err)
 	}
@@ -329,6 +330,7 @@ func (s *Store) setWithOptionalPredicate(ctx context.Context, partitionKey, key,
 		if s.isSlowDownErr(err) {
 			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("put item: %w", kv.ErrSlowDown)
 			dynamoSlowdown.WithLabelValues(operation).Inc()
+			err = errors.Join(err, kv.ErrSlowDown)
 		}
 		return fmt.Errorf("put item: %w", err)
 	}
@@ -356,6 +358,7 @@ func (s *Store) Delete(ctx context.Context, partitionKey, key []byte) error {
 		if s.isSlowDownErr(err) {
 			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("delete item: %w", kv.ErrSlowDown)
 			dynamoSlowdown.WithLabelValues(operation).Inc()
+			err = errors.Join(err, kv.ErrSlowDown)
 		}
 		return fmt.Errorf("delete item: %w", err)
 	}
@@ -384,11 +387,13 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	}
 	it.runQuery()
 	if it.err != nil {
+		err := it.err
 		if s.isSlowDownErr(it.err) {
 			s.logger.WithField("partition_key", partitionKey).WithContext(ctx).Error("scan: %w", kv.ErrSlowDown)
 			dynamoSlowdown.WithLabelValues("Scan").Inc()
+			err = errors.Join(err, kv.ErrSlowDown)
 		}
-		return nil, it.err
+		return nil, err
 	}
 	return it, nil
 }
@@ -406,6 +411,7 @@ func (s *Store) DropTable() error {
 	if s.isSlowDownErr(err) {
 		s.logger.WithField("table", s.params.TableName).WithContext(ctx).Error("drop table: %w", kv.ErrSlowDown)
 		dynamoSlowdown.WithLabelValues("DeleteTable").Inc()
+		err = errors.Join(err, kv.ErrSlowDown)
 	}
 	return err
 }
@@ -499,6 +505,11 @@ func (e *EntriesIterator) runQuery() {
 	queryResult, err := e.store.svc.Query(e.scanCtx, queryInput)
 	const operation = "Query"
 	if err != nil {
+		if e.store.isSlowDownErr(err) {
+			e.store.logger.WithField("partition_key", e.partitionKey).WithContext(e.scanCtx).Error("query: %w", kv.ErrSlowDown)
+			dynamoSlowdown.WithLabelValues("query").Inc()
+			err = errors.Join(err, kv.ErrSlowDown)
+		}
 		e.err = fmt.Errorf("query: %w", err)
 		return
 	}
