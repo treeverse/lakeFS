@@ -95,6 +95,9 @@ var localInitCmd = &cobra.Command{
 		remote, localPath := getSyncArgs(args, true, false)
 		force := Must(cmd.Flags().GetBool(localForceFlagName))
 		updateIgnore := Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
+
+		warnOnCaseInsensitiveDirectory(localPath)
+
 		_, err := localInit(cmd.Context(), localPath, remote, force, updateIgnore)
 		if err != nil {
 			if errors.Is(err, fs.ErrExist) {
