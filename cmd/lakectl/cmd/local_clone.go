@@ -39,6 +39,8 @@ var localCloneCmd = &cobra.Command{
 			DieFmt("directory '%s' exists and is not empty", localPath)
 		}
 
+		warnOnCaseInsensitiveDirectory(localPath)
+
 		ctx := cmd.Context()
 		head, err := localInit(ctx, localPath, remote, false, updateIgnore)
 		if err != nil {
