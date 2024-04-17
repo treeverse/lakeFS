@@ -9,6 +9,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/fileutil"
 )
 
+func fatal(t testing.TB) func(string) {
+	return func(message string) {
+		t.Fatal(message)
+	}
+}
+
 type nothing struct{}
 
 type PathSet map[string]nothing
@@ -81,7 +87,7 @@ func CaseInsensitiveFS() *PathMapFS {
 func TestIsCaseInsensitiveLocationFalse(t *testing.T) {
 	fs := CaseSensitiveFS()
 
-	insensitive, err := fileutil.IsCaseInsensitiveLocation(fs, "/home/me/dir")
+	insensitive, err := fileutil.IsCaseInsensitiveLocation(fs, "/home/me/dir", fatal(t))
 	if insensitive {
 		t.Error("Expected case-sensitive FS to be reported as such")
 	}
@@ -93,7 +99,7 @@ func TestIsCaseInsensitiveLocationFalse(t *testing.T) {
 func TestIsCaseInsensitiveLocationTrue(t *testing.T) {
 	fs := CaseInsensitiveFS()
 
-	insensitive, err := fileutil.IsCaseInsensitiveLocation(fs, "/home/me/dir")
+	insensitive, err := fileutil.IsCaseInsensitiveLocation(fs, "/home/me/dir", fatal(t))
 	if !insensitive {
 		t.Error("Expected case-insensitive FS to be reported as such")
 	}
@@ -109,7 +115,7 @@ func TestIsCaseInsensitiveLocationError(t *testing.T) {
 	fs.Err = testingErr
 	fs.ErrorPathPrefix = "/home/me/err/"
 
-	_, err := fileutil.IsCaseInsensitiveLocation(fs, "/home/me/err/")
+	_, err := fileutil.IsCaseInsensitiveLocation(fs, "/home/me/err/", fatal(t))
 	if !errors.Is(err, testingErr) {
 		t.Errorf("Got error %s when expecting %s", err, testingErr)
 	}
@@ -121,7 +127,7 @@ func TestIsCaseInsensitiveLocationError(t *testing.T) {
 func TestOSIsCaseInsensitiveLocation(t *testing.T) {
 	fs := fileutil.NewOSFS()
 	tempDir := t.TempDir()
-	isCaseInsensitive, err := fileutil.IsCaseInsensitiveLocation(fs, tempDir)
+	isCaseInsensitive, err := fileutil.IsCaseInsensitiveLocation(fs, tempDir, fatal(t))
 
 	if err != nil {
 		t.Errorf("IsCaseInsensitiveLocation failed: %s", err)

@@ -15,8 +15,9 @@ import (
 const caseSensitiveNamePrefix = ".cAsE."
 
 // IsCaseInsensitiveLocation returns true if dirPath is a directory on a
-// case-insensitive filesystem.  dirPath must be writable.
-func IsCaseInsensitiveLocation(fs FS, dirPath string) (bool, error) {
+// case-insensitive filesystem.  dirPath must be writable.  If it fails to
+// delete the file, it uses warnFunc to emit a warning message.
+func IsCaseInsensitiveLocation(fs FS, dirPath string, warnFunc func(string)) (bool, error) {
 	// Random element in the filename to ensure uniqueness: the filename
 	// will not be in use from anything else.
 	id, err := nanoid.New()
@@ -29,7 +30,10 @@ func IsCaseInsensitiveLocation(fs FS, dirPath string) (bool, error) {
 		return false, fmt.Errorf("touch %s: %w", path, err)
 	}
 	defer func() {
-		_ = fs.Remove(path)
+		err := fs.Remove(path)
+		if err != nil {
+			warnFunc(fmt.Sprintf("Garbage file %s remains: %s; make sure to delete this file", path, err))
+		}
 	}()
 
 	lowercasePrefix := strings.ToLower(caseSensitiveNamePrefix)

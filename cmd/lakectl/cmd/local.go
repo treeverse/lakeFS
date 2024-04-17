@@ -30,7 +30,7 @@ const (
 	checkoutOperation LocalOperation = "checkout"
 	cloneOperation    LocalOperation = "clone"
 
-	CaseInsensitiveWarningMessageFormat = `Directory '%s' is case-insensitive, versioning tools such as lakectl local and git will work incorrectly. Proceeding because of --force.`
+	CaseInsensitiveWarningMessageFormat = `Directory '%s' is case-insensitive, versioning tools such as lakectl local and git will work incorrectly.`
 )
 
 const localSummaryTemplate = `
@@ -120,7 +120,7 @@ Use "%s checkout..." to sync with the remote or run "lakectl local clone..." wit
 }
 
 func warnOnCaseInsensitiveDirectory(path string) {
-	isCaseInsensitive, err := fileutil.IsCaseInsensitiveLocation(fileutil.OSFS{}, path)
+	isCaseInsensitive, err := fileutil.IsCaseInsensitiveLocation(fileutil.OSFS{}, path, Warning)
 	if err != nil {
 		Warning(fmt.Sprintf("Check whether directory '%s' is case-insensitive: %s", path, err))
 		Warning("Continuing without this check")
