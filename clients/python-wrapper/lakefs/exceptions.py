@@ -155,5 +155,5 @@ def handle_http_error(resp: HTTPResponse) -> None:
     :param resp: The response to parse
     """
     if not http.HTTPStatus.OK <= resp.status < http.HTTPStatus.MULTIPLE_CHOICES:
-        lakefs_ex = _STATUS_CODE_TO_EXCEPTION.get(resp.status, ServerException)(resp.status, resp.reason)
+        lakefs_ex = _STATUS_CODE_TO_EXCEPTION.get(resp.status, ServerException)(resp.status, resp.reason, resp.data)
         raise lakefs_ex
