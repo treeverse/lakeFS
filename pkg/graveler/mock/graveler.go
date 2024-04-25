@@ -2856,6 +2856,59 @@ func (mr *MockStagingManagerMockRecorder) Update(ctx, st, key, updateFunc interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockStagingManager)(nil).Update), ctx, st, key, updateFunc)
 }
 
+// MockCompactionManager is a mock of CompactionManager interface.
+type MockCompactionManager struct {
+	ctrl     *gomock.Controller
+	recorder *MockCompactionManagerMockRecorder
+}
+
+// MockCompactionManagerMockRecorder is the mock recorder for MockCompactionManager.
+type MockCompactionManagerMockRecorder struct {
+	mock *MockCompactionManager
+}
+
+// NewMockCompactionManager creates a new mock instance.
+func NewMockCompactionManager(ctrl *gomock.Controller) *MockCompactionManager {
+	mock := &MockCompactionManager{ctrl: ctrl}
+	mock.recorder = &MockCompactionManagerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockCompactionManager) EXPECT() *MockCompactionManagerMockRecorder {
+	return m.recorder
+}
+
+// Get mocks base method.
+func (m *MockCompactionManager) Get(ctx context.Context, ns graveler.StorageNamespace, mr graveler.MetaRangeID, key graveler.Key) (*graveler.Value, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, ns, mr, key)
+	ret0, _ := ret[0].(*graveler.Value)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr_2 *MockCompactionManagerMockRecorder) Get(ctx, ns, mr, key interface{}) *gomock.Call {
+	mr_2.mock.ctrl.T.Helper()
+	return mr_2.mock.ctrl.RecordCallWithMethodType(mr_2.mock, "Get", reflect.TypeOf((*MockCompactionManager)(nil).Get), ctx, ns, mr, key)
+}
+
+// List mocks base method.
+func (m *MockCompactionManager) List(ctx context.Context, ns graveler.StorageNamespace, mr graveler.MetaRangeID) (graveler.ValueIterator, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", ctx, ns, mr)
+	ret0, _ := ret[0].(graveler.ValueIterator)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr_2 *MockCompactionManagerMockRecorder) List(ctx, ns, mr interface{}) *gomock.Call {
+	mr_2.mock.ctrl.T.Helper()
+	return mr_2.mock.ctrl.RecordCallWithMethodType(mr_2.mock, "List", reflect.TypeOf((*MockCompactionManager)(nil).List), ctx, ns, mr)
+}
+
 // MockBranchLocker is a mock of BranchLocker interface.
 type MockBranchLocker struct {
 	ctrl     *gomock.Controller
