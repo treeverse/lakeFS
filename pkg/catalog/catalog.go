@@ -27,7 +27,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/branch"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
-	"github.com/treeverse/lakefs/pkg/graveler/compaction"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/graveler/retention"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
@@ -368,7 +367,6 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	protectedBranchesManager := branch.NewProtectionManager(settingManager)
 	stagingManager := staging.NewManager(ctx, cfg.KVStore, storeLimiter, cfg.Config.Graveler.BatchDBIOTransactionMarkers, executor)
-	compactionManager := compaction.NewCompactionManager(sstableMetaRangeManager)
 	var deleteSensor *graveler.DeleteSensor
 	if cfg.Config.Graveler.CompactionSensorThreshold > 0 {
 		cb := func(repositoryID graveler.RepositoryID, branchID graveler.BranchID, stagingTokenID graveler.StagingToken, inGrace bool) {
@@ -381,7 +379,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		}
 		deleteSensor = graveler.NewDeleteSensor(cfg.Config.Graveler.CompactionSensorThreshold, cb)
 	}
-	gStore := graveler.NewGraveler(committedManager, stagingManager, compactionManager, refManager, gcManager, protectedBranchesManager, deleteSensor)
+	gStore := graveler.NewGraveler(committedManager, stagingManager, refManager, gcManager, protectedBranchesManager, deleteSensor)
 
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
 	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))

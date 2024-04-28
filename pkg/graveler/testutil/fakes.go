@@ -253,7 +253,7 @@ type RefsFake struct {
 	Commits             map[graveler.CommitID]*graveler.Commit
 	StagingToken        graveler.StagingToken
 	SealedTokens        []graveler.StagingToken
-	CompactedMetaRange  graveler.MetaRangeID
+	BaseMetaRangeID     graveler.MetaRangeID
 }
 
 func (m *RefsFake) CreateBranch(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, branch graveler.Branch) error {
@@ -304,12 +304,12 @@ func (m *RefsFake) ResolveRawRef(_ context.Context, _ *graveler.RepositoryRecord
 	var branch graveler.BranchID
 	var stagingToken graveler.StagingToken
 	var sealedTokens []graveler.StagingToken
-	var compactedMetaRange = graveler.MetaRangeID("")
+	var baseMetaRangeID graveler.MetaRangeID
 	if m.RefType == graveler.ReferenceTypeBranch {
 		branch = DefaultBranchID
 		stagingToken = m.StagingToken
 		sealedTokens = m.SealedTokens
-		compactedMetaRange = m.CompactedMetaRange
+		baseMetaRangeID = m.BaseMetaRangeID
 	}
 
 	return &graveler.ResolvedRef{
@@ -317,10 +317,10 @@ func (m *RefsFake) ResolveRawRef(_ context.Context, _ *graveler.RepositoryRecord
 		BranchRecord: graveler.BranchRecord{
 			BranchID: branch,
 			Branch: &graveler.Branch{
-				CommitID:           m.CommitID,
-				StagingToken:       stagingToken,
-				SealedTokens:       sealedTokens,
-				CompactedMetaRange: compactedMetaRange,
+				CommitID:        m.CommitID,
+				StagingToken:    stagingToken,
+				SealedTokens:    sealedTokens,
+				BaseMetaRangeID: baseMetaRangeID,
 			},
 		},
 	}, nil
@@ -901,29 +901,4 @@ func (m *RefsFake) SetRepositoryMetadata(_ context.Context, _ *graveler.Reposito
 func (m *RefsFake) CreateCommitRecord(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.CommitID, _ graveler.Commit) error {
 	// TODO implement me
 	panic("implement me")
-}
-
-type CompactionFake struct {
-	ValuesByKey   map[string]*graveler.Value
-	ValueIterator graveler.ValueIterator
-	Values        map[string]graveler.ValueIterator
-	Err           error
-	MetaRangeID   graveler.MetaRangeID
-}
-
-func (c *CompactionFake) Get(_ context.Context, _ graveler.StorageNamespace, _ graveler.MetaRangeID, key graveler.Key) (*graveler.Value, error) {
-	if c.Err != nil {
-		return nil, c.Err
-	}
-	return c.ValuesByKey[string(key)], nil
-}
-
-func (c *CompactionFake) List(_ context.Context, _ graveler.StorageNamespace, mr graveler.MetaRangeID) (graveler.ValueIterator, error) {
-	if c.Err != nil {
-		return nil, c.Err
-	}
-	if it, ok := c.Values[mr.String()]; ok {
-		return it, nil
-	}
-	return c.ValueIterator, nil
 }
