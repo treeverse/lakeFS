@@ -121,7 +121,7 @@ def test_object_copy(setup_repo):
     clt, repo = setup_repo
     data = "test_data"
     obj = WriteableObject(repository_id=repo.properties.id, reference_id="main", path="test_obj", client=clt).upload(
-        data=data, metadata={"foo": "bar"})
+        data=data, metadata={"foo": "bar", "key": "val"})
 
     copy_name = "copy_obj"
     copy = obj.copy("main", copy_name)
