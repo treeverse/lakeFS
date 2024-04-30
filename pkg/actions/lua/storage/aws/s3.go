@@ -150,6 +150,7 @@ func (c *S3Client) GetObject(l *lua.State) int {
 		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
 	}
+	defer resp.Body.Close()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		lua.Errorf(l, "%s", err.Error())
