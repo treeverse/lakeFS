@@ -19,17 +19,31 @@ Utilize the power of Spark to interact with the metadata on lakeFS. Possible use
 Please note that Spark 2 is no longer supported with the lakeFS metadata client.
 {: .note }
 
-Start Spark Shell / PySpark with the `--packages` flag:
+The Spark metadata client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but
+can work for other Spark versions and higher Hadoop versions.
 
-This client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but can work for other Spark
-versions and higher Hadoop versions.
+<div class="tabs">
+  <ul>
+    <li><a href="#spark-shell">PySpark, spark-shell, spark-submit, spark-sql</a></li>
+	<li><a href="#databricks">DataBricks</a></li>
+  </ul>
+  <div markdown="1" id="spark-shell">
+Start Spark Shell / PySpark with the `--packages` flag, for instance:
 
 ```bash
-spark-shell --packages io.lakefs:lakefs-spark-client_2.12:0.11.0
+spark-shell --packages io.lakefs:lakefs-spark-client_2.12:0.13.0
 ```
 
-Alternatively an assembled jar is available on S3, at
-`s3://treeverse-clients-us-east/lakefs-spark-client/0.11.0/lakefs-spark-client-assembly-0.11.0.jar`
+Alternatively use the assembled jar (an "Überjar") on S3, from
+`s3://treeverse-clients-us-east/lakefs-spark-client/0.13.0/lakefs-spark-client-assembly-0.13.0.jar`
+by passing its path to `--jars`.
+The assembled jar is larger but shades several common libraries.  Use it if Spark
+complains about bad classes or missing methods.
+</div>
+<div markdown="1" id="databricks">
+Include this assembled jar (an "Überjar") from S3, from
+`s3://treeverse-clients-us-east/lakefs-spark-client/0.13.0/lakefs-spark-client-assembly-0.13.0.jar`.
+</div>
 </div>
 
 ## Configuration
