@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"math/rand"
 	"path/filepath"
+	"slices"
 	"sort"
 	"testing"
 	"testing/fstest"
@@ -36,29 +37,68 @@ var basicFiles = []string{
 	"z/a31/b",
 }
 
+// trailingFiles holds files and directories that get mixed up when listed
+// in sorted order.  Note that "!" < "/".
+var trailingFiles = []string{
+	"z/a/b",
+	"z/a/c",
+	"z/a!",
+	"z/a1",
+
+	"z/b!/1",
+	"z/b!/2",
+	"z/b",
+	"z/b1/1",
+	"z/b1/2",
+
+	"z/c!/1",
+	"z/c!/2",
+	"z/c/1",
+	"z/c/2",
+	"z/c1",
+
+	"z/d!",
+	"z/d/1",
+	"z/d/2",
+	"z/d1/1",
+	"z/d2/2",
+}
+
 func TestWalkSortedFiles(t *testing.T) {
-	files := basicFiles
-
-	fakeFS := make(fstest.MapFS, len(files))
-	for _, file := range files {
-		fakeFS[file] = &fstest.MapFile{}
+	cases := []struct {
+		Name  string
+		Files []string
+	}{
+		{"basic", basicFiles},
+		{"trailing", trailingFiles},
 	}
 
-	actual := make([]string, 0, len(files))
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			files := slices.Clone(tc.Files)
 
-	err := fileutil.WalkSortedFiles(fakeFS, "z", 3, func(name string, _ fs.DirEntry) {
-		actual = append(actual, name)
-	})
-	if err != nil {
-		t.Errorf("WalkSortedFiles: %s", err)
-	}
+			fakeFS := make(fstest.MapFS, len(files))
+			for _, file := range files {
+				fakeFS[file] = &fstest.MapFile{}
+			}
 
-	sort.Sort(sort.StringSlice(files))
+			actual := make([]string, 0, len(files))
 
-	if diffs := deep.Equal(files, actual); diffs != nil {
-		t.Errorf("Missing files or files in wrong order: %s", diffs)
-		t.Logf("actual: %v", actual)
-		t.Logf("expected: %v", files)
+			err := fileutil.WalkSortedFiles(fakeFS, "z", 3, func(name string, _ fs.DirEntry) {
+				actual = append(actual, name)
+			})
+			if err != nil {
+				t.Errorf("WalkSortedFiles: %s", err)
+			}
+
+			sort.Sort(sort.StringSlice(files))
+
+			if diffs := deep.Equal(files, actual); diffs != nil {
+				t.Errorf("Missing files or files in wrong order: %s", diffs)
+				t.Logf("actual: %v", actual)
+				t.Logf("expected: %v", files)
+			}
+		})
 	}
 }
 

@@ -1,11 +1,10 @@
 package fileutil
 
 import (
+	"container/heap"
 	"fmt"
 	"io"
 	"io/fs"
-
-	"github.com/edwingeng/deque/v2"
 )
 
 // DirIterator iterates over an entire directory efficiently in time
@@ -55,57 +54,125 @@ func (d *DirIterator) Value() fs.DirEntry {
 	return d.entries[d.index]
 }
 
+type SorterEntry interface {
+	Name() string
+}
+
+// AugmentedNameSorterHeap is a priority queue of Entry that acts as
+// a min-heap by Entry.Name() + Suffix
+type AugmentedNameSorterHeap[Entry SorterEntry] struct {
+	Heap   []*Entry
+	Suffix string
+}
+
+func NewAugmentedNameSorterHeap[Entry SorterEntry](suffix String) *AugmentedNameSorterHeap[Entry] {
+	a := &AugmentedNameSorterHeap[Entry]{
+		Suffix: suffix,
+	}
+	heap.Init(a)
+}
+
+func (a *AugmentedNameSorterHeap[Entry]) Len() int {
+	return len(a.Heap)
+}
+
+func (a *AugmentedNameSorterHeap[Entry]) key(i int) string {
+	a.Heap[i].Name() + a.Suffix
+}
+
+// Less is used by heap.  It should not be called directly.
+func (a *AugmentedNameSorterHeap[Entry]) Less(i, j int) bool {
+	return a.key(i) < a.key(j)
+}
+
+// Swap is used by heap.  It should not be called directly.
+func (a *AugmentedNameSorterHeap[Entry]) Swap(i, j int) {
+	a.Heap[i], a.Heap[j] = a.Heap[j], a.Heap[i]
+}
+
+// Push is used by heap.  It should not be called directly.
+func (a *AugmentedNameSorterHeap[Entry]) Push(e *Entry) {
+	a.Heap = append(a.Heap, e)
+}
+
+// Pop is used by heap.  It should not be called directly.
+func (a *AugmentedNameSorterHeap[Entry]) Pop() *Entry {
+	old := a.Heap
+	n := len(old)
+	x := old[n-1]
+	// Don't leak returned x (because GC)!
+	old[n-1] = nil
+	a.Heap = old[:n-1]
+	return x
+}
+
+// Peek returns the first element in the heap or nil if heap is empty.
+func Peek[Entry SorterEntry](a *AugmentedNameSorterHeap[Entry]) *Entry {
+	if len(a.Heap) == 0 {
+		return nil
+	}
+	return a.Heap[0]
+}
+
+// entryName returns the name of e, appending a "/" if it's a directory.
+func entryName(e fs.DirEntry) string {
+	if e.IsDir() {
+		return e.Name() + "/"
+	}
+	return e.Name()
+}
+
 // WalkSortedFiles walks over files under dirName efficiently in time and
 // space, such that their pathnames appear in sorted order: a!, a!z, a/b,
 // a/b/c, a/d, ... .  It skips directories and calls fn on each file.
 func WalkSortedFiles(rootFS fs.FS, dirName string, readAhead int, fn func(string, fs.DirEntry)) error {
 	dir, err := rootFS.Open(dirName)
 	if err != nil {
-		return fmt.Errorf("%s: %w", dirName, err)
+		return fmt.Errorf("%s (rabbit): %w", dirName, err)
 	}
 
 	// TODO(ariels): panics if dir is not a directory.  But only need to
 	//     check this once at top level.
-	it := NewDirIterator(dir.(fs.ReadDirFile), readAhead)
 
-	// queue holds directories waiting to be traversed.  Note that '!',
-	// '#' < '/' < '0' < '1' < '9'.  When we encounter a directory $D we
-	// cannot traverse it until we see a filename > $D+"/".
-	queue := deque.NewDeque[fs.DirEntry]()
+	// dirIt scans the directory.
+	dirIt := NewDirIterator(dir.(fs.ReadDirFile), readAhead)
 
-	for it.Next() {
-		entry := it.Value()
-		// Handle  entries that are before entry.
-		for {
-			nextEntry, ok := queue.TryPopFront()
-			if !ok {
-				break
+	heap := NewAugmentedNameSorterHeap[fs.DirEntry]("/")
+
+	for dirIt.Next() {
+		dirEntry := dirIt.Value()
+
+		// Handle queud entries that are before dirEntry.
+		for heapEntry := heap.Peek(); heapEntry != nil && heapEntry.Name()+"/" < fileEntry.Name() {
+			// (Loop also stops when dirIt hits fileIt!)
+			if dirEntry.IsDir() {
+				// Everything inside dirEntry comes before entry, handle it now.
+				err = WalkSortedFiles(rootFS, dirName+"/"+dirEntry.Name(), readAhead, fn)
+				if err != nil {
+					return err
+				}
 			}
-			if nextEntry.Name()+"/" > entry.Name() {
-				break
-			}
-			// nextEntry is before entry, handle it now.
-			err = WalkSortedFiles(rootFS, dirName+"/"+nextEntry.Name(), readAhead, fn)
+			_ = dirIt.Next()
+			dirEntry = dirIt.Value()
+		}
+		if !fileEntry.IsDir() {
+			// Handle file
+			fn(dirName+"/"+fileEntry.Name(), fileEntry)
+		}
+		keepGoing = fileIt.Next()
+	}
+	for {
+		dirEntry := dirIt.Value()
+
+		if dirEntry.IsDir() {
+			// dirEntry is left over, handle it now.
+			err = WalkSortedFiles(rootFS, dirName+"/"+dirEntry.Name(), readAhead, fn)
 			if err != nil {
 				return err
 			}
 		}
-		if entry.IsDir() {
-			queue.PushBack(entry)
-		} else {
-			fn(dirName+"/"+entry.Name(), entry)
-			continue
-		}
-	}
-	for {
-		nextEntry, ok := queue.TryPopFront()
-		if !ok {
+		if !dirIt.Next() {
 			break
-		}
-		// nextEntry is left over, handle it now.
-		err = WalkSortedFiles(rootFS, dirName+"/"+nextEntry.Name(), readAhead, fn)
-		if err != nil {
-			return err
 		}
 	}
 	return nil
