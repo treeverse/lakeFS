@@ -483,6 +483,22 @@ Many more operations like retrieving an object's metadata or checking an
 object's existence on the lakeFS server are also supported. For a full list,
 see the [API reference](https://lakefs-spec.org/latest/reference/lakefs_spec/).
 
+### Integrations with popular data science packages
+
+A number of Python data science projects support fsspec, with [pandas](https://pandas.pydata.org/) being a prominent example. Reading a Parquet file from a lakeFS repository into a Pandas data frame for analysis is very easy, demonstrated on the quickstart repository sample data:
+
+```python
+import pandas as pd
+
+# Read into pandas directly by supplying the lakeFS URI...
+lakes = pd.read_parquet(f"lakefs://quickstart/main/lakes.parquet")
+german_lakes = lakes.query('Country == "Germany"')
+# ... and store directly, again with a raw lakeFS URI.
+german_lakes.to_csv(f"lakefs://quickstart/main/german_lakes.csv")
+```
+
+A list of integrations with popular data science libraries can be found in the [lakefs-spec documentation](https://lakefs-spec.org/latest/guides/integrations/).
+
 ### Using transactions for atomic versioning operations
 
 As with the high-level SDK (see above), lakefs-spec also supports transactions
@@ -504,26 +520,6 @@ with fs.transaction("example-repo", "main") as tx:
 ```
 
 Transactions are atomic - if an exception happens at any point of the transaction, the repository remains unchanged.
-
-### Integrations with popular data science packages
-
-A number of Python data science projects support fsspec, with [pandas](https://pandas.pydata.org/) being a prominent example. Reading a Parquet file from a lakeFS repository into a Pandas data frame for analysis is very easy, demonstrated on the quickstart repository sample data:
-
-```python
-import pandas as pd
-
-from lakefs_spec import LakeFSFileSystem
-
-fs = LakeFSFileSystem()
-
-# Read into pandas directly by supplying the lakeFS URI...
-lakes = pd.read_parquet(f"lakefs://quickstart/main/lakes.parquet")
-german_lakes = lakes.query('Country == "Germany"')
-# ... and store directly, again with a raw lakeFS URI.
-german_lakes.to_csv(f"lakefs://quickstart/main/german_lakes.csv")
-```
-
-A list of integrations with popular data science libraries can be found in the [lakefs-spec documentation](https://lakefs-spec.org/latest/guides/integrations/).
 
 ### Further information
 
