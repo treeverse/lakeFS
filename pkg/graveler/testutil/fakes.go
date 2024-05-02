@@ -317,10 +317,10 @@ func (m *RefsFake) ResolveRawRef(_ context.Context, _ *graveler.RepositoryRecord
 		BranchRecord: graveler.BranchRecord{
 			BranchID: branch,
 			Branch: &graveler.Branch{
-				CommitID:        m.CommitID,
-				StagingToken:    stagingToken,
-				SealedTokens:    sealedTokens,
-				BaseMetaRangeID: baseMetaRangeID,
+				CommitID:                 m.CommitID,
+				StagingToken:             stagingToken,
+				SealedTokens:             sealedTokens,
+				CompactedBaseMetaRangeID: baseMetaRangeID,
 			},
 		},
 	}, nil

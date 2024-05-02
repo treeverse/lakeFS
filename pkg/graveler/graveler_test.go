@@ -168,10 +168,26 @@ func TestGraveler_List(t *testing.T) {
 			expected: []*graveler.ValueRecord{{Key: graveler.Key("bar"), Value: &graveler.Value{}}, {Key: graveler.Key("foo"), Value: &graveler.Value{}}},
 		},
 		{
+			name: "one compacted one staged no paths",
+			r: newGraveler(t, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{}}}), MetaRangeID: "mr1"},
+				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("bar"), Value: &graveler.Value{}}})},
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}, BaseMetaRangeID: "mr1"}, nil, testutil.NewProtectedBranchesManagerFake(),
+			),
+			expected: []*graveler.ValueRecord{{Key: graveler.Key("bar"), Value: &graveler.Value{}}, {Key: graveler.Key("foo"), Value: &graveler.Value{}}},
+		},
+		{
 			name: "same path different file",
 			r: newGraveler(t, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("original")}}})},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("other")}}})},
 				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}}, nil, testutil.NewProtectedBranchesManagerFake(),
+			),
+			expected: []*graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("other")}}},
+		},
+		{
+			name: "same path different file compacted",
+			r: newGraveler(t, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("original")}}}), MetaRangeID: "mr1"},
+				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("other")}}})},
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}, BaseMetaRangeID: "mr1"}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			expected: []*graveler.ValueRecord{{Key: graveler.Key("foo"), Value: &graveler.Value{Identity: []byte("other")}}},
 		},
@@ -184,7 +200,7 @@ func TestGraveler_List(t *testing.T) {
 			expected: []*graveler.ValueRecord{{Key: graveler.Key("prefix/bar"), Value: &graveler.Value{}}, {Key: graveler.Key("prefix/foo"), Value: &graveler.Value{}}},
 		},
 		{
-			name: "compacted with prefix",
+			name: "one compacted one staged no paths - with prefix",
 			r: newGraveler(t, &testutil.CommittedFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("prefix/foo"), Value: &graveler.Value{}}}), MetaRangeID: "mr1"},
 				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("prefix/bar"), Value: &graveler.Value{}}})},
 				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}, BaseMetaRangeID: "mr1"}, nil, testutil.NewProtectedBranchesManagerFake(),
@@ -285,6 +301,20 @@ func TestGraveler_Get(t *testing.T) {
 		{
 			name: "branch - staged and compacted",
 			r: newGraveler(t, &testutil.CommittedFake{ValuesByKey: map[string]*graveler.Value{"key": {Identity: []byte("compacted")}}, MetaRangeID: "mir1"}, &testutil.StagingFake{Value: &graveler.Value{Identity: []byte("staged")}},
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token1", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}, BaseMetaRangeID: "mir1"}, nil, testutil.NewProtectedBranchesManagerFake(),
+			),
+			expectedValueResult: graveler.Value{Identity: []byte("staged")},
+		},
+		{
+			name: "branch - deleted from staged, exists in compaction",
+			r: newGraveler(t, &testutil.CommittedFake{ValuesByKey: map[string]*graveler.Value{"key": {Identity: []byte("compacted")}}, MetaRangeID: "mir1"}, &testutil.StagingFake{Value: nil},
+				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token1", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}, BaseMetaRangeID: "mir1"}, nil, testutil.NewProtectedBranchesManagerFake(),
+			),
+			expectedErr: graveler.ErrNotFound,
+		},
+		{
+			name: "branch - exists in staging and not in compaction",
+			r: newGraveler(t, &testutil.CommittedFake{MetaRangeID: "mir1"}, &testutil.StagingFake{Value: &graveler.Value{Identity: []byte("staged")}},
 				&testutil.RefsFake{RefType: graveler.ReferenceTypeBranch, StagingToken: "token1", Commits: map[graveler.CommitID]*graveler.Commit{"": {}}, BaseMetaRangeID: "mir1"}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			expectedValueResult: graveler.Value{Identity: []byte("staged")},
@@ -891,7 +921,7 @@ func TestGraveler_Diff(t *testing.T) {
 					},
 				}},
 				&testutil.RefsFake{
-					Branch:  &graveler.Branch{CommitID: "c1", StagingToken: "token", SealedTokens: []graveler.StagingToken{"token1", "token2"}, BaseMetaRangeID: "mri2"},
+					Branch:  &graveler.Branch{CommitID: "c1", StagingToken: "token", SealedTokens: []graveler.StagingToken{"token1", "token2"}, CompactedBaseMetaRangeID: "mri2"},
 					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}},
 					Refs: map[graveler.Ref]*graveler.ResolvedRef{
 						"b1": {
@@ -1068,41 +1098,113 @@ func TestGraveler_DiffUncommitted(t *testing.T) {
 			name: "diff with compacted",
 			r: newGraveler(t,
 				&testutil.CommittedFake{
-					ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("prefix/foo"), Value: &graveler.Value{Identity: []byte("original")}}}),
+					Values: map[string]graveler.ValueIterator{
+						"mri1": testutil.NewValueIteratorFake([]graveler.ValueRecord{
+							{Key: graveler.Key("foo/a"), Value: &graveler.Value{
+								Identity: []byte("BAD"),
+								Data:     []byte("BAD"),
+							}},
+							{Key: graveler.Key("foo/b"), Value: &graveler.Value{
+								Identity: []byte("BAD"),
+								Data:     []byte("BAD"),
+							}},
+							{Key: graveler.Key("foo/c"), Value: &graveler.Value{
+								Identity: []byte("BAD"),
+								Data:     []byte("BAD"),
+							}},
+							{Key: graveler.Key("foo/d"), Value: &graveler.Value{
+								Identity: []byte("BAD"),
+								Data:     []byte("BAD"),
+							}},
+							{Key: graveler.Key("foo/e"), Value: &graveler.Value{
+								Identity: []byte("BAD"),
+								Data:     []byte("BAD"),
+							}},
+							{Key: graveler.Key("foo/g"), Value: &graveler.Value{
+								Identity: []byte("BAD"),
+								Data:     []byte("BAD"),
+							}},
+						}),
+					},
 					DiffIterator: testutil.NewDiffIter([]graveler.Diff{
 						{
-							Key:   graveler.Key("prefix/abc"),
-							Type:  graveler.DiffTypeAdded,
+							Key:   graveler.Key("foo/a"),
+							Type:  graveler.DiffTypeRemoved,
 							Value: &graveler.Value{},
 						},
 						{
-							Key:   graveler.Key("prefix/foo"),
+							Key:   graveler.Key("foo/b"),
 							Type:  graveler.DiffTypeChanged,
-							Value: &graveler.Value{Identity: []byte("changed")},
+							Value: &graveler.Value{Identity: []byte("compacted"), Data: []byte("compacted")},
 						},
-					})},
-				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("prefix/abc"),
-					Value: &graveler.Value{}}, {Key: graveler.Key("prefix/bar"), Value: &graveler.Value{Identity: []byte("other")}},
-					{Key: graveler.Key("prefix/foo"), Value: nil}})},
-				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1", StagingToken: "token", BaseMetaRangeID: "mri2"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}}, nil, testutil.NewProtectedBranchesManagerFake(),
+						{
+							Key:  graveler.Key("foo/c"),
+							Type: graveler.DiffTypeRemoved,
+						},
+						{
+							Key:  graveler.Key("foo/d"),
+							Type: graveler.DiffTypeRemoved,
+						},
+						{
+							Key:   graveler.Key("foo/e"),
+							Type:  graveler.DiffTypeAdded,
+							Value: &graveler.Value{Identity: []byte("BAD"), Data: []byte("BAD")},
+						},
+						{
+							Key:   graveler.Key("foo/f"),
+							Type:  graveler.DiffTypeChanged,
+							Value: &graveler.Value{Identity: []byte("BAD"), Data: []byte("BAD")},
+						},
+						{
+							Key:   graveler.Key("foo/g"),
+							Type:  graveler.DiffTypeChanged,
+							Value: &graveler.Value{Identity: []byte("BAD"), Data: []byte("BAD")},
+						},
+					}),
+				},
+				&testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{
+					{Key: graveler.Key("foo/d"), Value: &graveler.Value{Identity: []byte("staged"), Data: []byte("staged")}},
+					{Key: graveler.Key("foo/e"), Value: &graveler.Value{Identity: []byte("staged"), Data: []byte("staged")}},
+					{Key: graveler.Key("foo/f"), Value: &graveler.Value{Identity: []byte("staged"), Data: []byte("staged")}},
+					{Key: graveler.Key("foo/g"), Value: nil},
+				})},
+				&testutil.RefsFake{Branch: &graveler.Branch{CommitID: "c1", StagingToken: "token", CompactedBaseMetaRangeID: "mri2"}, Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mri1"}}}, nil, testutil.NewProtectedBranchesManagerFake(),
 			),
 			expectedDiff: testutil.NewDiffIter([]graveler.Diff{
 				{
-					Key:   graveler.Key("prefix/abc"),
-					Type:  graveler.DiffTypeAdded,
+					Key:   graveler.Key("foo/a"),
+					Type:  graveler.DiffTypeRemoved,
 					Value: &graveler.Value{},
 				},
 				{
-					Key:   graveler.Key("prefix/bar"),
-					Type:  graveler.DiffTypeAdded,
-					Value: &graveler.Value{Identity: []byte("other")},
+					Key:   graveler.Key("foo/b"),
+					Type:  graveler.DiffTypeChanged,
+					Value: &graveler.Value{Identity: []byte("compacted"), Data: []byte("compacted")},
 				},
 				{
-					Key:          graveler.Key("prefix/foo"),
-					Type:         graveler.DiffTypeRemoved,
-					Value:        &graveler.Value{Identity: []byte("original")},
-					LeftIdentity: []byte("original"),
-				}}),
+					Key:  graveler.Key("foo/c"),
+					Type: graveler.DiffTypeRemoved,
+				},
+				{
+					Key:   graveler.Key("foo/d"),
+					Type:  graveler.DiffTypeChanged,
+					Value: &graveler.Value{Identity: []byte("staged"), Data: []byte("staged")},
+				},
+				{
+					Key:   graveler.Key("foo/e"),
+					Type:  graveler.DiffTypeChanged,
+					Value: &graveler.Value{Identity: []byte("staged"), Data: []byte("staged")},
+				},
+				{
+					Key:   graveler.Key("foo/f"),
+					Type:  graveler.DiffTypeAdded,
+					Value: &graveler.Value{Identity: []byte("staged"), Data: []byte("staged")},
+				},
+				{
+					Key:  graveler.Key("foo/g"),
+					Type: graveler.DiffTypeRemoved,
+				},
+			}),
 		},
 	}
 
@@ -1751,6 +1853,29 @@ func TestGravelerDelete(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
+			name: "exists only in compacted",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{
+					ValuesByKey: map[string]*graveler.Value{"key": {}},
+				},
+				StagingManager: &testutil.StagingFake{
+					Err: graveler.ErrNotFound,
+				},
+				RefManager: &testutil.RefsFake{
+					Branch:  &graveler.Branch{CommitID: "c1", CompactedBaseMetaRangeID: "mr2"},
+					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mr1"}},
+				},
+			},
+			args: args{
+				key: []byte("key"),
+			},
+			expectedSetValue: &graveler.ValueRecord{
+				Key:   []byte("key"),
+				Value: nil,
+			},
+			expectedErr: nil,
+		},
+		{
 			name: "exists in committed and in staging",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{
@@ -1776,6 +1901,43 @@ func TestGravelerDelete(t *testing.T) {
 				RefManager: &testutil.RefsFake{
 					Branch:  &graveler.Branch{CommitID: "c1", StagingToken: "token", SealedTokens: []graveler.StagingToken{"token", "token2"}},
 					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {}},
+				},
+			},
+			args: args{
+				key: []byte("key1"),
+			},
+			expectedSetValue: &graveler.ValueRecord{
+				Key:   []byte("key1"),
+				Value: nil,
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "exists in compacted and in staging",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{
+					ValuesByKey: map[string]*graveler.Value{"key1": {}},
+				},
+				StagingManager: &testutil.StagingFake{
+					Values: map[string]map[string]*graveler.Value{
+						"token": {
+							"key2": &graveler.Value{
+								Identity: []byte("BAD"),
+								Data:     []byte("BEEF"),
+							},
+						},
+						"token2": {
+							"key1": &graveler.Value{
+								Identity: []byte("test"),
+								Data:     []byte("test"),
+							},
+						},
+					},
+					Value: &graveler.Value{},
+				},
+				RefManager: &testutil.RefsFake{
+					Branch:  &graveler.Branch{CommitID: "c1", StagingToken: "token", SealedTokens: []graveler.StagingToken{"token", "token2"}, CompactedBaseMetaRangeID: "mr2"},
+					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mr1"}},
 				},
 			},
 			args: args{
@@ -1816,6 +1978,34 @@ func TestGravelerDelete(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
+			name: "exists in compacted tombstone in staging",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{
+					ValuesByKey: map[string]*graveler.Value{"key1": {}},
+				},
+				StagingManager: &testutil.StagingFake{
+					Values: map[string]map[string]*graveler.Value{
+						"token": {
+							"key1": nil,
+						},
+						"token2": {
+							"key1": &graveler.Value{
+								Identity: []byte("BAD"),
+								Data:     []byte("BEEF"),
+							},
+						},
+					},
+					Value: nil,
+				},
+				RefManager: &testutil.RefsFake{
+					Branch:  &graveler.Branch{CommitID: "c1", StagingToken: "token", SealedTokens: []graveler.StagingToken{"token", "token2"}, CompactedBaseMetaRangeID: "mr2"},
+					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mr1"}},
+				},
+			},
+			args:        args{key: []byte("key1")},
+			expectedErr: nil,
+		},
+		{
 			name: "exists only in staging - commits",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{
@@ -1840,6 +2030,30 @@ func TestGravelerDelete(t *testing.T) {
 			expectedErr:        nil,
 		},
 		{
+			name: "exists in staging and not in compaction",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{
+					Err: graveler.ErrNotFound,
+				},
+				StagingManager: &testutil.StagingFake{
+					Values: map[string]map[string]*graveler.Value{"token": {"key1": &graveler.Value{
+						Identity: []byte("test"),
+						Data:     []byte("test"),
+					}}},
+					Value: nil,
+				},
+				RefManager: &testutil.RefsFake{
+					Branch:  &graveler.Branch{CommitID: "c1", StagingToken: "token", CompactedBaseMetaRangeID: "mr2"},
+					Commits: map[graveler.CommitID]*graveler.Commit{"c1": {MetaRangeID: "mr1"}},
+				},
+			},
+			args: args{
+				key: []byte("key1"),
+			},
+			expectedRemovedKey: []byte("key1"),
+			expectedErr:        nil,
+		},
+		{
 			name: "not in committed not in staging",
 			fields: fields{
 				CommittedManager: &testutil.CommittedFake{
@@ -1851,6 +2065,23 @@ func TestGravelerDelete(t *testing.T) {
 				RefManager: &testutil.RefsFake{
 					Branch:  &graveler.Branch{},
 					Commits: map[graveler.CommitID]*graveler.Commit{"": {}},
+				},
+			},
+			args:        args{},
+			expectedErr: nil,
+		},
+		{
+			name: "not in compacted not in staging",
+			fields: fields{
+				CommittedManager: &testutil.CommittedFake{
+					Err: graveler.ErrNotFound,
+				},
+				StagingManager: &testutil.StagingFake{
+					Err: graveler.ErrNotFound,
+				},
+				RefManager: &testutil.RefsFake{
+					Branch:  &graveler.Branch{CompactedBaseMetaRangeID: "mr2"},
+					Commits: map[graveler.CommitID]*graveler.Commit{"": {MetaRangeID: "mr1"}},
 				},
 			},
 			args:        args{},

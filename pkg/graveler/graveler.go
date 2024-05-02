@@ -399,8 +399,9 @@ type Branch struct {
 	CommitID     CommitID
 	StagingToken StagingToken
 	// SealedTokens - Staging tokens are appended to the front, this allows building the diff iterator easily
-	SealedTokens    []StagingToken
-	BaseMetaRangeID MetaRangeID
+	SealedTokens []StagingToken
+	// CompactedBaseMetaRangeID - the MetaRangeID the last compaction's results meta range
+	CompactedBaseMetaRangeID MetaRangeID
 }
 
 // BranchRecord holds BranchID with the associated Branch data
@@ -487,7 +488,7 @@ type KeyValueStore interface {
 	// List lists values on repository / ref
 	List(ctx context.Context, repository *RepositoryRecord, ref Ref, batchSize int) (ValueIterator, error)
 
-	// ListStaging returns ValueIterator for branch staging area. Exposed to be used by X in PrepareGCUncommitted
+	// ListStaging returns ValueIterator for branch staging area.
 	ListStaging(ctx context.Context, branch *Branch, batchSize int) (ValueIterator, error)
 }
 
@@ -902,6 +903,7 @@ type CommittedManager interface {
 	// Exists returns true if a MetaRange matching ID exists in namespace ns.
 	Exists(ctx context.Context, ns StorageNamespace, id MetaRangeID) (bool, error)
 
+	// WriteMetaRangeByIterator flushes the iterator to a new MetaRange and returns the created ID.
 	// WriteMetaRangeByIterator flushes the iterator to a new MetaRange and returns the created ID.
 	WriteMetaRangeByIterator(ctx context.Context, ns StorageNamespace, it ValueIterator, metadata Metadata) (*MetaRangeID, error)
 
@@ -1655,14 +1657,36 @@ func (g *Graveler) Get(ctx context.Context, repository *RepositoryRecord, ref Re
 			return value, nil
 		}
 	}
-	if reference.BaseMetaRangeID == "" {
-		return g.CommittedManager.Get(ctx, repository.StorageNamespace, reference.BaseMetaRangeID, key)
-	}
 
 	var options GetOptions
 	for _, opt := range opts {
 		opt(&options)
 	}
+
+	if reference.CompactedBaseMetaRangeID != "" {
+		value, err := g.CommittedManager.Get(ctx, repository.StorageNamespace, reference.CompactedBaseMetaRangeID, key)
+		if err != nil {
+			return nil, err
+		}
+		// check if the key that we got from compaction is from compacted tokens or from committed
+		if options.StageOnly {
+			commitID := reference.CommitID
+			commit, err := g.RefManager.GetCommit(ctx, repository, commitID)
+			if err != nil {
+				return nil, err
+			}
+			committedVal, err := g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
+			if err != nil && !errors.Is(err, ErrNotFound) {
+				return nil, err
+			}
+			// the key we found is committed, return not found in staging
+			if !errors.Is(err, ErrNotFound) && committedVal == value {
+				return nil, ErrNotFound
+			}
+		}
+		return value, nil
+	}
+
 	if options.StageOnly {
 		return nil, ErrNotFound
 	}
@@ -1860,11 +1884,15 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 	if cachedMetaRangeID != nil && *cachedMetaRangeID != "" {
 		metaRangeID = *cachedMetaRangeID
 	} else {
-		commit, err := g.RefManager.GetCommit(ctx, repository, branchRecord.Branch.CommitID)
-		if err != nil {
-			return err
+		if branchRecord.Branch.CompactedBaseMetaRangeID != "" {
+			metaRangeID = branchRecord.Branch.CompactedBaseMetaRangeID
+		} else {
+			commit, err := g.RefManager.GetCommit(ctx, repository, branchRecord.Branch.CommitID)
+			if err != nil {
+				return err
+			}
+			metaRangeID = commit.MetaRangeID
 		}
-		metaRangeID = commit.MetaRangeID
 	}
 
 	_, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, metaRangeID, key)
@@ -1902,6 +1930,7 @@ func (g *Graveler) ListStaging(ctx context.Context, branch *Branch, batchSize in
 
 // listStagingArea Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)
 // for each key in the staging area it will return the latest update for that key (the value that appears in the newest token)
+// listStagingArea will not return changes that were already compacted and saved in the CompactedBaseMetaRangeID
 func (g *Graveler) listStagingArea(ctx context.Context, b *Branch, batchSize int) (ValueIterator, error) {
 	if b.StagingToken == "" {
 		return nil, ErrNotFound
@@ -1939,8 +1968,8 @@ func (g *Graveler) List(ctx context.Context, repository *RepositoryRecord, ref R
 		return nil, err
 	}
 	var metaRangeID MetaRangeID
-	if reference.BaseMetaRangeID != "" {
-		metaRangeID = reference.BaseMetaRangeID
+	if reference.CompactedBaseMetaRangeID != "" {
+		metaRangeID = reference.CompactedBaseMetaRangeID
 	} else if reference.CommitID != "" {
 		commit, err := g.RefManager.GetCommit(ctx, repository, reference.CommitID)
 		if err != nil {
@@ -3056,14 +3085,26 @@ func (g *Graveler) DiffUncommitted(ctx context.Context, repository *RepositoryRe
 			return nil, err
 		}
 	}
-	if branch.BaseMetaRangeID != "" {
-		compactedDiffIterator, err := g.CommittedManager.Diff(ctx, repository.StorageNamespace, metaRangeID, branch.BaseMetaRangeID)
+	if branch.CompactedBaseMetaRangeID != "" {
+		if metaRangeID == "" {
+			compactedIterator, err := g.CommittedManager.List(ctx, repository.StorageNamespace, branch.CompactedBaseMetaRangeID)
+			if err != nil {
+				valueIterator.Close()
+				committedValueIterator.Close()
+				return nil, err
+			}
+			// if no meta range (no commit data) return the diff of staging + sealed + compacted from committed (empty iterator)
+			return NewUncommittedDiffIterator(ctx, committedValueIterator, NewCombinedIterator(valueIterator, compactedIterator)), nil
+		}
+		// return the diff of staging + sealed from committed on top of the diff of compacted from committed
+		diffCommitAndCompacted, err := g.CommittedManager.Diff(ctx, repository.StorageNamespace, metaRangeID, branch.CompactedBaseMetaRangeID)
 		if err != nil {
 			valueIterator.Close()
 			committedValueIterator.Close()
 			return nil, err
 		}
-		return NewCombinedDiffIterator(compactedDiffIterator, committedValueIterator, valueIterator), nil
+
+		return NewCompactedDiffIterator(NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator), diffCommitAndCompacted), nil
 	}
 	return NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator), nil
 }
@@ -3124,8 +3165,8 @@ func (g *Graveler) Diff(ctx context.Context, repository *RepositoryRecord, left,
 		leftValueIterator.Close()
 		return nil, err
 	}
-	if rightBranch.BaseMetaRangeID != "" {
-		compactedDiffIterator, err := g.CommittedManager.Diff(ctx, repository.StorageNamespace, leftCommit.MetaRangeID, rightBranch.BaseMetaRangeID)
+	if rightBranch.CompactedBaseMetaRangeID != "" {
+		compactedDiffIterator, err := g.CommittedManager.Diff(ctx, repository.StorageNamespace, leftCommit.MetaRangeID, rightBranch.CompactedBaseMetaRangeID)
 		if err != nil {
 			leftValueIterator.Close()
 			return nil, err

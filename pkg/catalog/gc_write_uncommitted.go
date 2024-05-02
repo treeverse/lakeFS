@@ -18,15 +18,11 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 	pw.CompressionType = parquet.CompressionCodec_GZIP
 
 	// write uncommitted data from branches
-	it, err := NewUncommittedIterator(ctx, store, repository)
+	it, err := store.DiffUncommitted(ctx, repository, mark.BranchID)
 	if err != nil {
 		return nil, false, err
 	}
 	defer it.Close()
-
-	if mark != nil {
-		it.SeekGE(mark.BranchID, mark.Path)
-	}
 
 	normalizedStorageNamespace := string(repository.StorageNamespace)
 	if !strings.HasSuffix(normalizedStorageNamespace, DefaultPathDelimiter) {
@@ -37,14 +33,18 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 	startTime := time.Now()
 	var nextMark *GCUncommittedMark
 	for it.Next() {
-		entry := it.Value()
+		diff := it.Value()
 		// Skip if entry is tombstone
-		if entry.Entry == nil {
+		if diff.Type == graveler.DiffTypeRemoved {
 			continue
+		}
+		entry, err := ValueToEntry(diff.Value)
+		if err != nil {
+			return nil, false, err
 		}
 		// Skip non-relative that address outside the storage namespace
 		entryAddress := entry.Address
-		if entry.Entry.AddressType != Entry_RELATIVE {
+		if entry.AddressType != Entry_RELATIVE {
 			if !strings.HasPrefix(entry.Address, normalizedStorageNamespace) {
 				continue
 			}
@@ -64,8 +64,8 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 		if w.Size() > maxFileSize || (prepareDuration > 0 && time.Since(startTime) > prepareDuration) {
 			nextMark = &GCUncommittedMark{
 				RunID:    runID,
-				BranchID: entry.branchID,
-				Path:     entry.Path,
+				BranchID: mark.BranchID,
+				Path:     Path(diff.Key.String()),
 			}
 			break
 		}
