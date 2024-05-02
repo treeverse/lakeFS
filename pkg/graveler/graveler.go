@@ -904,7 +904,6 @@ type CommittedManager interface {
 	Exists(ctx context.Context, ns StorageNamespace, id MetaRangeID) (bool, error)
 
 	// WriteMetaRangeByIterator flushes the iterator to a new MetaRange and returns the created ID.
-	// WriteMetaRangeByIterator flushes the iterator to a new MetaRange and returns the created ID.
 	WriteMetaRangeByIterator(ctx context.Context, ns StorageNamespace, it ValueIterator, metadata Metadata) (*MetaRangeID, error)
 
 	// WriteRange creates a new Range from the iterator values.
