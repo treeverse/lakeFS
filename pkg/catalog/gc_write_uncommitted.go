@@ -14,8 +14,6 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 	if err != nil {
 		return nil, false, err
 	}
-	defer pw.WriteStop() // Ensure the writer is stopped even with errors
-
 	branchIterator, err := store.ListBranches(ctx, repository)
 	if err != nil {
 		return nil, false, err
@@ -26,6 +24,9 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 
 	nextMark, hasData, err := processBranches(ctx, store, repository, branchIterator, pw, normalizedStorageNamespace, mark, runID, maxFileSize, prepareDuration, w)
 
+	if err := pw.WriteStop(); err != nil {
+		return nil, false, err
+	}
 	return nextMark, hasData, err
 }
 
