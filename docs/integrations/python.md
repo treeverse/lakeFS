@@ -2,7 +2,7 @@
 title: Python
 description: Use Python to interact with your objects on lakeFS
 parent: Integrations
-redirect_from: 
+redirect_from:
   - /using/python.html
   - /using/boto.html
   - /integrations/boto.html
@@ -13,19 +13,21 @@ redirect_from:
 {% include toc_2-3.html %}
 
 
-**High Level Python SDK**  <span class="badge mr-1">New</span>  
+**High Level Python SDK**  <span class="badge mr-1">New</span>
 We've just released a new High Level Python SDK library, and we're super excited to tell you about it! Continue reading to get the
-full story!  
-Though our previous SDK client is still supported and maintained, we highly recommend using the new High Level SDK.  
-**For previous Python SDKs follow these links:**  
-[lakefs-sdk](https://pydocs-sdk.lakefs.io)  
+full story!
+Though our previous SDK client is still supported and maintained, we highly recommend using the new High Level SDK.
+**For previous Python SDKs follow these links:**
+[lakefs-sdk](https://pydocs-sdk.lakefs.io)
 [legacy-sdk](https://pydocs.lakefs.io) (Depracated)
 {: .note }
 
-There are two primary ways to work with lakeFS from Python: 
+There are three primary ways to work with lakeFS from Python:
 
 * [Use Boto](#using-boto) to perform **object operations** through the **lakeFS S3 gateway**.
 * [Use the High Level lakeFS SDK](#using-the-lakefs-sdk) to perform **object operations**, **versioning** and other **lakeFS-specific operations**.
+* [Using lakefs-spec](#using-lakefs-spec-for-higher-level-file-operations) to
+perform high-level file operations through a file-system-like API.
 
 ## Using the lakeFS SDK
 
@@ -186,9 +188,9 @@ main
 
 ## IO
 
-Great, now lets see some IO operations in action!  
+Great, now lets see some IO operations in action!
 The new High Level SDK provide IO semantics which allow to work with lakeFS objects as if they were files in your
-filesystem. This is extremely useful when working with data transformation packages that accept file descriptors and streams. 
+filesystem. This is extremely useful when working with data transformation packages that accept file descriptors and streams.
 
 ### Upload
 
@@ -299,7 +301,7 @@ print(len(list(branch1.uncommitted())))
 0
 ```
 
-#### Merging changes from a branch into main 
+#### Merging changes from a branch into main
 
 Let's diff between your branch and the main branch:
 
@@ -366,7 +368,7 @@ branch = lakefs.repository("example-repo").repo.branch("experiment3")
 
 # We can import data from multiple sources in a single import process
 # The following example initializes a new ImportManager and adds 2 source types; A prefix and an object.
-importer = branch.import_data(commit_message="added public S3 data") \ 
+importer = branch.import_data(commit_message="added public S3 data") \
     .prefix("s3://example-bucket1/path1/", destination="datasets/path1/") \
     .object("s3://example-bucket1/path2/imported_obj", destination="datasets/path2/imported_obj")
 
@@ -390,7 +392,7 @@ while not status.completed or status.error is None:
 
 if status.error:
     # handle!
-    
+
 print(f"imported a total of {status.ingested_objects} objects!")
 
 ```
@@ -432,6 +434,97 @@ True
 
 For the documentation of lakeFS’s Python package and full api reference, see [https://pydocs-lakefs.lakefs.io](https://pydocs-lakefs.lakefs.io)
 
+## Using lakefs-spec for higher-level file operations
+
+The [lakefs-spec](https://lakefs-spec.org/latest/) project
+provides higher-level file operations on lakeFS objects with a filesystem API,
+built on the [fsspec](https://github.com/fsspec/filesystem_spec) project.
+
+**Note** This library is a third-party package and not maintained by the lakeFS developers; please file issues and bug reports directly
+in the [lakefs-spec](https://github.com/aai-institute/lakefs-spec) repository.
+ {: .note}
+
+### Installation
+
+Install `lakefs-spec` directly with `pip`:
+
+```
+python -m pip install --upgrade lakefs-spec
+```
+
+### Interacting with lakeFS through a file system
+
+To write a file directly to a branch in a lakeFS repository, consider the following example:
+
+```python
+from pathlib import Path
+
+from lakefs_spec import LakeFSFileSystem
+
+REPO, BRANCH = "example-repo", "main"
+
+# Prepare a local example file.
+lpath = Path("demo.txt")
+lpath.write_text("Hello, lakeFS!")
+
+fs = LakeFSFileSystem()  # will auto-discover credentials from ~/.lakectl.yaml
+rpath = f"{REPO}/{BRANCH}/{lpath.name}"
+fs.put(lpath, rpath)
+```
+
+Reading it again from remote is as easy as the following:
+
+```python
+f = fs.open(rpath, "rt")
+print(f.readline())  # prints "Hello, lakeFS!"
+```
+
+Many more operations like retrieving an object's metadata or checking an
+object's existence on the lakeFS server are also supported. For a full list,
+see the [API reference](https://lakefs-spec.org/latest/reference/lakefs_spec/).
+
+### Integrations with popular data science packages
+
+A number of Python data science projects support fsspec, with [pandas](https://pandas.pydata.org/) being a prominent example. Reading a Parquet file from a lakeFS repository into a Pandas data frame for analysis is very easy, demonstrated on the quickstart repository sample data:
+
+```python
+import pandas as pd
+
+# Read into pandas directly by supplying the lakeFS URI...
+lakes = pd.read_parquet(f"lakefs://quickstart/main/lakes.parquet")
+german_lakes = lakes.query('Country == "Germany"')
+# ... and store directly, again with a raw lakeFS URI.
+german_lakes.to_csv(f"lakefs://quickstart/main/german_lakes.csv")
+```
+
+A list of integrations with popular data science libraries can be found in the [lakefs-spec documentation](https://lakefs-spec.org/latest/guides/integrations/).
+
+### Using transactions for atomic versioning operations
+
+As with the high-level SDK (see above), lakefs-spec also supports transactions
+for conducting versioning operations on newly modified files. The following is an example of creating a commit on the repository's main branch directly after a file upload:
+
+```python
+from lakefs_spec import LakeFSFileSystem
+
+fs = LakeFSFileSystem()
+
+# assumes you have a local train-test split as two text files:
+# train-data.txt, and test-data.txt.
+with fs.transaction("example-repo", "main") as tx:
+    fs.put_file("train-data.txt", f"example-repo/{tx.branch.id}/train-data.txt")
+    tx.commit(message="Add training data")
+    fs.put_file("test-data.txt", f"example-repo/{tx.branch.id}/test-data.txt")
+    sha = tx.commit(message="Add test data")
+    tx.tag(sha, name="My train-test split")
+```
+
+Transactions are atomic - if an exception happens at any point of the transaction, the repository remains unchanged.
+
+### Further information
+
+For more user guides, tutorials on integrations with data science tools like pandas, and more, check out the [lakefs-spec documentation](https://lakefs-spec.org/latest/).
+
 ## Using Boto
 
 💡 To use Boto with lakeFS alongside S3, check out [Boto S3 Router](https://github.com/treeverse/boto-s3-router){:target="_blank"}. It will route
@@ -470,7 +563,7 @@ You can now commit this change using the lakeFS UI or CLI.
 #### List objects
 
 List the branch objects starting with a prefix:
- 
+
 ```python
 list_resp = s3.list_objects_v2(Bucket='example-repo', Prefix='main/example-prefix')
 for obj in list_resp['Contents']:
@@ -478,7 +571,7 @@ for obj in list_resp['Contents']:
 ```
 
 Or, use a lakeFS commit ID to list objects for a specific commit:
- 
+
 ```python
 list_resp = s3.list_objects_v2(Bucket='example-repo', Prefix='c7a632d74f/example-prefix')
 for obj in list_resp['Contents']:
@@ -507,5 +600,4 @@ s3.head_object(Bucket='example-repo', Key='main/example-file.parquet')
 # 'ContentLength': 1024,
 # 'ETag': '"2398bc5880e535c61f7624ad6f138d62"',
 # 'Metadata': {}}
-``` 
-
+```
