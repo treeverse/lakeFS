@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/xitongsys/parquet-go/parquet"
 	"github.com/xitongsys/parquet-go/writer"
 )
 
@@ -14,6 +15,8 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 	if err != nil {
 		return nil, false, err
 	}
+	pw.CompressionType = parquet.CompressionCodec_GZIP
+
 	branchIterator, err := store.ListBranches(ctx, repository)
 	if err != nil {
 		return nil, false, err
@@ -23,7 +26,6 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 	normalizedStorageNamespace := normalizeStorageNamespace(string(repository.StorageNamespace))
 
 	nextMark, hasData, err := processBranches(ctx, store, repository, branchIterator, pw, normalizedStorageNamespace, mark, runID, maxFileSize, prepareDuration, w)
-
 	if err := pw.WriteStop(); err != nil {
 		return nil, false, err
 	}
@@ -44,44 +46,43 @@ func processBranches(ctx context.Context, store Store, repository *graveler.Repo
 		return nil, false, nil // No branches
 	}
 
-	var nextMark *GCUncommittedMark
-	var hasData bool
-	var err error
-
-	// process the first branch
-	nextMark, hasData, err = processBranch(ctx, store, repository, branchIterator.Value().BranchID, runID, parquetWriter, normalizedStorageNamespace, maxFileSize, prepareDuration, writer)
+	count := 0
+	countPtr := &count
+	// process the first branch before calling Next() again
+	hasData := false
+	nextMark, err := processBranch(ctx, store, repository, branchIterator.Value().BranchID, runID, parquetWriter, normalizedStorageNamespace, maxFileSize, prepareDuration, writer, countPtr, mark)
 	if nextMark != nil {
-		return nextMark, hasData, err
+		return nextMark, true, err
 	}
-
 	for branchIterator.Next() {
-		mark, foundData, err := processBranch(ctx, store, repository, branchIterator.Value().BranchID, runID, parquetWriter, normalizedStorageNamespace, maxFileSize, prepareDuration, writer)
+		nextMark, err = processBranch(ctx, store, repository, branchIterator.Value().BranchID, runID, parquetWriter, normalizedStorageNamespace, maxFileSize, prepareDuration, writer, countPtr, mark)
 		if err != nil {
 			return nil, false, err
 		}
-		if mark != nil {
-			nextMark = mark
-			break
-		}
-		if foundData {
-			hasData = true
+		if nextMark != nil {
+			return nextMark, true, nil
 		}
 	}
 
-	return nextMark, hasData, branchIterator.Err()
+	if *countPtr > 0 {
+		hasData = true
+	}
+	return nil, hasData, branchIterator.Err()
 }
 
-func processBranch(ctx context.Context, store Store, repository *graveler.RepositoryRecord, branchID graveler.BranchID, runID string, parquetWriter *writer.ParquetWriter, normalizedStorageNamespace string, maxFileSize int64, prepareDuration time.Duration, writer *UncommittedWriter) (*GCUncommittedMark, bool, error) {
+func processBranch(ctx context.Context, store Store, repository *graveler.RepositoryRecord, branchID graveler.BranchID, runID string, parquetWriter *writer.ParquetWriter, normalizedStorageNamespace string, maxFileSize int64, prepareDuration time.Duration, writer *UncommittedWriter, count *int, mark *GCUncommittedMark) (*GCUncommittedMark, error) {
 	diffIterator, err := store.DiffUncommitted(ctx, repository, branchID)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	defer diffIterator.Close()
 
-	count := 0
 	startTime := time.Now()
 	var nextMark *GCUncommittedMark
-	hasData := false
+
+	if mark != nil && mark.BranchID == branchID && mark.Path != "" {
+		diffIterator.SeekGE(graveler.Key(mark.Path))
+	}
 
 	for diffIterator.Next() {
 		diff := diffIterator.Value()
@@ -93,22 +94,23 @@ func processBranch(ctx context.Context, store Store, repository *graveler.Reposi
 
 		entry, err := ValueToEntry(diff.Value)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 
 		// Skip non-relative addresses outside the storage namespace
 		entryAddress := entry.Address
-		if entry.AddressType != Entry_RELATIVE || !strings.HasPrefix(entry.Address, normalizedStorageNamespace) {
-			continue
+		if entry.AddressType != Entry_RELATIVE {
+			if !strings.HasPrefix(entry.Address, normalizedStorageNamespace) {
+				continue
+			}
+			entryAddress = entryAddress[len(normalizedStorageNamespace):]
 		}
-		entryAddress = entryAddress[len(normalizedStorageNamespace):] // Adjust if relative
 
-		count++
-		hasData = true
+		*count = *count + 1
 
-		if count%gcPeriodicCheckSize == 0 {
+		if *count%gcPeriodicCheckSize == 0 {
 			if err := parquetWriter.Flush(true); err != nil {
-				return nil, false, err
+				return nil, err
 			}
 		}
 
@@ -127,9 +129,9 @@ func processBranch(ctx context.Context, store Store, repository *graveler.Reposi
 			CreationDate:    entry.LastModified.AsTime().Unix(),
 		})
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 	}
 
-	return nextMark, hasData, diffIterator.Err()
+	return nextMark, diffIterator.Err()
 }
