@@ -11,13 +11,20 @@ redirect_from:
 
 # lakeFS Enterprise
 
-lakeFS Enterprise is an enterprise-ready lakeFS solution that provides a support SLA and additional features to the open-source version of lakeFS. The additional features are:
+LakeFS Enterprise is a commercially-supported version of the open-source lakeFS project, 
+offering additional features and functionalities targeted for businesses. 
+It provides several benefits over the open-source version:
 
-* [RBAC]({% link reference/security/rbac.md %})
-* [SSO]({% link reference/security/sso.md %})
-* [STS Auth]({% link reference/security/sts-login.md %})
-* [External Principals AWS Auth]({% link reference/security/external-principals-aws.md %})
+* Security - Advanced Authorization
+    * [RBAC]({% link reference/security/rbac.md %}) -  implements role-based access control to manage user permissions. It allows for fine-grained control by associating permissions with users and groups, granting them specific actions on specific resources. This ensures data security and compliance within an organization.
+* Security - Advanced Authentication
+    * [SSO]({% link reference/security/sso.md %}) -  lets users sign in with existing credentials from a trusted provider, eliminating separate logins.
+    * [STS Auth]({% link reference/security/sts-login.md %}) - offers temporary, secure logins using an Identity Provider, simplifying user access and enhancing security.
+    * [Authenticate to lakeFS with AWS IAM Roles]({% link reference/security/external-principals-aws.md %}) - lets programs authenticate using AWS IAM roles instead of lakeFS credentials, granting access based on IAM policies.
 * Support SLA
+
+Contact Sales (https://lakefs.io/contact-sales/) to get the token for Fluffy.
+{: .note}
 
 ## Overview
 

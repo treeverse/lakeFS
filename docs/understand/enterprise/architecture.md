@@ -20,13 +20,14 @@ while maintaining the same host.
 
 [4] fluffy server - service that is responsible for the Enterprise features.,
 it is separated by ports for security reasons.
-i. SSO auth (i.e Browser login via Azure AD, Okta, Auth0), default port 8000.
-ii. RBAC authorization, default port 9000.
+
+1. SSO auth (i.e Browser login via Azure AD, Okta, Auth0), default port 8000.
+1. RBAC authorization, default port 9000.
 
 [5] KV Store - Where metadata is stored used both by lakeFS and fluffy.
 
-[6] SSO IdP - Identity provider (i.e Azure AD, Okta, Auth0). fluffy
-implements SAML and oAuth protocols regardless of the specific provider.
+[6] SSO IdP - Identity provider (e.g. Azure AD, Okta, JumpCloud). fluffy
+implements SAML and Oauth2 protocols.
 
 
 For more details and pricing, please [contact sales](https://lakefs.io/contact-sales/).

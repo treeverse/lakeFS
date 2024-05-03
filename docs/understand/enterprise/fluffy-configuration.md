@@ -18,7 +18,7 @@ The configuration file's location can be set with the '--config' flag. If not sp
 1. /etc/fluffy/config.yaml
 1. `$HOME`/.fluffy.yaml
 
-Configuration items can be controlled by an environment variables, see [below](#using-environment-variables).
+Configuration items can be controlled by environment variables, see [below](#using-environment-variables).
 
 
 ## Reference
@@ -108,17 +108,17 @@ This reference uses `.` to denote the nesting of values.
     + `auth.cache.size` `(int : 1024)` - Number of users, policies and credentials to cache.
     + `auth.cache.ttl` `(duration : 20s)` - Cache items time to live expiry.
     + `auth.cache.jitter` `(duration : 3s)` - Cache items time to live jitter.
-* `external` - Configuration section for the external authentication methods
-  + `external.aws_auth` - Configuration section for authenticating to lakeFS using AWS presign get-caller-identity request: [External Principals AWS Auth]({% link reference/security/external-principals-aws.md %})
-    + `external.aws_auth.enabled` `(bool : false)` - Enables aws authentication.
-    + `external.aws_auth.get_caller_identity_max_age` `(duration : 24h)` - The maximum age in seconds for the GetCallerIdentity request to be valid, the max is 15 minutes enforced by AWS, smaller TTL can be set.
-    + `external.aws_auth.required_headers` `(map[string]string : {})` - Headers that must be present by the client when doing login request (e.g X-LakeFS-Server-ID: <lakefs.ingress.domain>).
-    + `external.aws_auth.optional_headers` `(map[string]string : {})` - Optional headers that can be present by the client when doing login request.
-    + `external.aws_auth.valid_sts_hosts` `(string[] : )` - Default values are all STS endpoints taken from https://docs.aws.amazon.com/general/latest/gr/sts.html
-    + `external.aws_auth.http_client.skip_verify` `(bool : false)` - Skip SSL verification with AWS STS.
-    + `external.aws_auth.http_client.timeout` `(duration : 10s)` - The timeout for the HTTP client used to communicate with AWS STS.
-
-{: .ref-list }
+  + `auth.external` - Configuration section for the external authentication methods
+    + `auth.external.aws_auth` - Configuration section for authenticating to lakeFS using AWS presign get-caller-identity request: [External Principals AWS Auth]({% link reference/security/external-principals-aws.md %})
+      + `auth.external.aws_auth.enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
+      + `auth.external.aws_auth.get_caller_identity_max_age` `(duration : 15m)` - The maximum age in seconds for the GetCallerIdentity request to be valid, the max is 15 minutes enforced by AWS, smaller TTL can be set.
+      + `auth.authentication_api.external_principals_enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
+      + `auth.external.aws_auth.valid_sts_hosts` `([]string)` - The default are all the valid AWS STS hosts (`sts.amazonaws.com`, `sts.us-east-2.amazonaws.com` etc).
+      + `auth.external.aws_auth.required_headers` `(map[string]string : )` - Headers that must be present by the client when doing login request (e.g `X-LakeFS-Server-ID: <lakefs.ingress.domain>`).
+      + `auth.external.aws_auth.optional_headers` `(map[string]string : )` - Optional headers that can be present by the client when doing login request.
+      + `auth.external.aws_auth.http_client.timeout` `(duration : 10s)` - The timeout for the HTTP client used to communicate with AWS STS.
+      + `auth.external.aws_auth.http_client.skip_verify` `(bool : false)` - Skip SSL verification with AWS STS.
+      {: .ref-list }
 
 ## Using Environment Variables
 
