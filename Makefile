@@ -63,9 +63,7 @@ clean:
 		$(LAKECTL_BINARY_NAME) \
 		$(LAKEFS_BINARY_NAME) \
 		$(UI_BUILD_DIR) \
-		$(UI_DIR)/node_modules \
-		pkg/api/apigen/lakefs.gen.go \
-		pkg/auth/client.gen.go
+		$(UI_DIR)/node_modules
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -275,6 +273,12 @@ validate-mockgen: gen-code
 	git diff --quiet -- pkg/graveler/mock/graveler.go || (echo "Modification verification failed! pkg/graveler/mock/graveler.go"; false)
 	git diff --quiet -- pkg/kv/mock/store.go || (echo "Modification verification failed! pkg/kv/mock/store.go"; false)
 	git diff --quiet -- pkg/pyramid/mock/pyramid.go || (echo "Modification verification failed! pkg/pyramid/mock/pyramid.go"; false)
+
+.PHONY: validate-apigen
+validate-apigen: gen-api
+	git diff --quiet -- pkg/api/apigen/lakefs.gen.go || (echo "pkg/api/apigen/lakefs.gen.go"; false)
+	git diff --quiet -- pkg/auth/client.gen.go || (echo "pkg/auth/client.gen.go"; false)
+	git diff --quiet -- pkg/authentication/apiclient/client.gen.go || (echo "pkg/authentication/apiclient/client.gen.go"; false)
 
 .PHONY: validate-permissions-gen
 validate-permissions-gen: gen-code
