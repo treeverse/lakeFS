@@ -106,7 +106,7 @@ func processBranch(ctx context.Context, store Store, repository *graveler.Reposi
 			entryAddress = entryAddress[len(normalizedStorageNamespace):]
 		}
 
-		*count = *count + 1
+		*count++
 
 		if *count%gcPeriodicCheckSize == 0 {
 			if err := parquetWriter.Flush(true); err != nil {
