@@ -303,7 +303,7 @@ validate-python-wrapper:
 	git diff --quiet -- clients/python-wrapper || (echo 'Modification verification failed! python wrapper client'; false)
 
 # Run all validation/linting steps
-checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference validate-mockgen validate-permissions-gen
+checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference validate-mockgen validate-permissions-gen validate-apigen
 
 python-wrapper-lint:
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c "./pylint.sh"

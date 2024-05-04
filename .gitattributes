@@ -1,3 +1,4 @@
 *.sh text eol=lf
 *.bash text eol=lf
 *.pb linguist-generated=true
+*.gen.go linguist-generated=true
