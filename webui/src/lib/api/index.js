@@ -620,6 +620,33 @@ class Objects {
         return await response.json();
     }
 
+    async listAll(repoId, ref, tree, presign = false) {
+        const query = {
+            prefix: tree,
+            amount: DEFAULT_LISTING_AMOUNT,
+            presign,
+            after: "",
+        };
+        let accumulator = [];
+        let hasMore = true;
+        while (hasMore) {
+            const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + qs(query));
+            if (response.status === 404) {
+                throw new NotFoundError(response.message ?? "ref not found");
+            }
+
+            if (response.status !== 200) {
+                throw new Error(await extractError(response));
+            }
+            const responseBody = await response.json();
+            hasMore = responseBody.pagination.has_more;
+            if (hasMore)
+                query["after"] = responseBody.pagination.next_offset;
+            accumulator = accumulator.concat(responseBody.results);
+        }
+        return accumulator;
+    }
+
     async uploadPreflight(repoId, branchId, path) {
         const query = qs({path});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects/stage_allowed?` + query);
