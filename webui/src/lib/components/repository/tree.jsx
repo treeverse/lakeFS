@@ -311,18 +311,29 @@ export const PrefixSizeInfoCard = ({ entry, totalObjects }) => {
 }
 
 const PrefixSizeModal = ({show, onHide, entry, repo, reference }) => {
+  const [progress, setProgress] = useState(0)
   const {
     response,
     error,
     loading,
   } = useAPI(async () => {
     if (show) {
-      return await objects.listAll(repo.id, reference.id, entry.path);
+      setProgress(0)
+      let accumulator = []
+      let finished = false
+      const iterator = objects.listAll(repo.id, reference.id, entry.path)
+      while (!finished) {
+        let {page, done} = await iterator.next()
+        accumulator = accumulator.concat(page)
+        setProgress(accumulator.length)
+        if (done) finished = true
+      }
+      return accumulator;
     }
     return null;
-  }, [show, repo.id, reference.id, entry.path]);
+  }, [show, repo.id, reference.id, entry.path, setProgress]);
 
-  let content = <Loading message={"Finding all objects, this could take a while..."} />;
+  let content = <Loading message={`Finding all objects (${progress.toLocaleString()} so far). This could take a while...`} />;
 
   if (error) {
     content = <AlertError error={error} />;
