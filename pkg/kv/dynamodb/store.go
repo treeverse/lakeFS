@@ -82,7 +82,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 	if params.AwsProfile != "" {
 		opts = append(opts,
 			config.WithSharedConfigProfile(params.AwsProfile))
-	})
+	}
 	if params.AwsAccessKeyID != "" {
 		opts = append(opts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
 			params.AwsAccessKeyID,
