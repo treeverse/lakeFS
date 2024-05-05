@@ -80,7 +80,8 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		opts = append(opts, config.WithRegion(params.AwsRegion))
 	}
 	if params.AwsProfile != "" {
-		opts = append(opts, config.WithSharedConfigProfile(params.AwsProfile))
+		opts = append(opts,
+			config.WithSharedConfigProfile(params.AwsProfile))
 	}
 	if params.AwsAccessKeyID != "" {
 		opts = append(opts, config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
@@ -90,6 +91,8 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		)))
 	}
 	const maxConnectionPerHost = 10
+	const credsCacheExpiryWindow = 30 * time.Second
+	const credsCacheExpiryWindowJitterFrac = 0.5
 	opts = append(opts, config.WithHTTPClient(
 		awshttp.NewBuildableClient().WithTransportOptions(func(transport *http.Transport) {
 			transport.MaxConnsPerHost = maxConnectionPerHost
@@ -99,7 +102,12 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 				so.RateLimiter = &NopRateLimiter{}
 				so.MaxAttempts = params.MaxAttempts
 			})
-		}))
+		}),
+		config.WithCredentialsCacheOptions(func(options *aws.CredentialsCacheOptions) {
+			options.ExpiryWindow = credsCacheExpiryWindow
+			options.ExpiryWindowJitterFrac = credsCacheExpiryWindowJitterFrac
+		}),
+	)
 
 	cfg, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
