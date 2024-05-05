@@ -14,6 +14,7 @@ import {
   PlusIcon,
   TrashIcon,
   LogIcon,
+  BeakerIcon,
 } from "@primer/octicons-react";
 import Tooltip from "react-bootstrap/Tooltip";
 import Table from "react-bootstrap/Table";
@@ -59,6 +60,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
 
   const [showObjectStat, setShowObjectStat] = useState(false);
   const [showObjectOrigin, setShowObjectOrigin] = useState(false);
+  const [showPrefixSize, setShowPrefixSize] = useState(false);
 
   const handleShowObjectOrigin = useCallback(
     (e) => {
@@ -67,6 +69,11 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
     },
     [setShowObjectOrigin]
   );
+
+  const handleShowPrefixSize = useCallback(e => {
+    e.preventDefault();
+    setShowPrefixSize(true)
+  }, [setShowPrefixSize]);
 
   return (
     <>
@@ -127,6 +134,7 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
           >
             <PasteIcon /> Copy URI
           </Dropdown.Item>
+
           {entry.path_type === "object" && reference.type === RefTypeBranch && (
             <>
               <Dropdown.Divider />
@@ -140,6 +148,13 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
               </Dropdown.Item>
             </>
           )}
+
+          {entry.path_type === "common_prefix" && (
+            <Dropdown.Item onClick={handleShowPrefixSize}>
+              <BeakerIcon /> Calculate Size
+            </Dropdown.Item>
+          )}
+
         </Dropdown.Menu>
       </Dropdown>
 
@@ -162,6 +177,14 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
         reference={reference}
         show={showObjectOrigin}
         onHide={() => setShowObjectOrigin(false)}
+      />
+
+      <PrefixSizeModal
+        entry={entry}
+        repo={repo}
+        reference={reference}
+        show={showPrefixSize}
+        onHide={() => setShowPrefixSize(false)}
       />
     </>
   );
@@ -260,6 +283,78 @@ const EntryMetadata = ({ metadata }) => {
           </tbody>
         </Table>
     )
+};
+
+export const PrefixSizeInfoCard = ({ entry, totalObjects }) => {
+  const totalBytes = totalObjects.reduce((acc, obj) => acc + obj.size_bytes, 0)
+  const table = (
+    <Table>
+      <Table bordered hover>
+        <tbody>
+        <tr>
+          <td><strong>path</strong></td>
+          <td><code>{entry.path}</code></td>
+        </tr>
+        <tr>
+          <td><strong>Total Objects</strong></td>
+          <td><code>{totalObjects.length.toLocaleString()}</code></td>
+        </tr>
+        <tr>
+          <td><strong>Total Size</strong></td>
+          <td><code>{totalBytes.toLocaleString()} Bytes ({humanSize(totalBytes)})</code></td>
+        </tr>
+        </tbody>
+      </Table>
+    </Table>
+  )
+  return table;
+}
+
+const PrefixSizeModal = ({show, onHide, entry, repo, reference }) => {
+  const {
+    response,
+    error,
+    loading,
+  } = useAPI(async () => {
+    if (show) {
+      return await objects.listAll(repo.id, reference.id, entry.path);
+    }
+    return null;
+  }, [show, repo.id, reference.id, entry.path]);
+
+  let content = <Loading message={"Finding all objects, this could take a while..."} />;
+
+  if (error) {
+    content = <AlertError error={error} />;
+  }
+  if (!loading && !error && response) {
+    content = (
+      <PrefixSizeInfoCard repo={repo} reference={reference} entry={entry} totalObjects={response}/>
+    );
+  }
+
+  if (!loading && !error && !response) {
+    content = (
+      <>
+        <h5>
+          <small>
+            No objects found
+          </small>
+        </h5>
+      </>
+    );
+  }
+
+  return (
+    <Modal show={show} onHide={onHide} size={"lg"}>
+      <Modal.Header closeButton>
+        <Modal.Title>
+          Total Objects in Path
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body>{content}</Modal.Body>
+    </Modal>
+  );
 };
 
 const OriginModal = ({ show, onHide, entry, repo, reference }) => {
