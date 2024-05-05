@@ -1,7 +1,8 @@
-java/**			linguist-generated
-java-legacy/**		linguist-generated
-python/**		linguist-generated
-python-legacy/**		linguist-generated
+java/**			    linguist-generated
+java-legacy/**	    linguist-generated
+python/**		    linguist-generated
+python-legacy/**	linguist-generated
 python/Gemfile		linguist-generated=false
 python/Gemfile.lock	linguist-generated=false
 python/_config.yml	linguist-generated=false
+rust/**		        linguist-generated
