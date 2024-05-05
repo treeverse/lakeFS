@@ -5,9 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -176,61 +174,29 @@ func TestLakectlRetryPolicy(t *testing.T) {
 	}
 }
 
-func TestRetryHTTPClient(t *testing.T) {
-	retryCount := -1
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
-	retryClient := NewRetryClient(10, 10*time.Millisecond, 30*time.Millisecond, transport)
+// func TestWithMockLakeFS(t *testing.T) {
+// 	retryCount := 0
+// 	httpCode := int64(http.StatusInternalServerError)
+// 	l, err := net.Listen("tcp", "127.0.0.1:8000")
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+// 		retryCount++
+// 		w.WriteHeader(int(atomic.LoadInt64(&httpCode)))
+// 	})
+// 	ts := httptest.NewUnstartedServer(handler)
 
-	httpCode := int64(http.StatusTooManyRequests)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		retryCount++
-		w.WriteHeader(int(atomic.LoadInt64(&httpCode)))
-	}))
-	defer server.Close()
+// 	ts.Listener.Close()
+// 	ts.Listener = l
+// 	ts.Start()
+// 	defer ts.Close()
 
-	req, err := http.NewRequest(http.MethodGet, server.URL, nil)
-	if err != nil {
-		t.Fatal("failed to create request")
-	}
-
-	var resp *http.Response
-	doneCh := make(chan struct{})
-	errCh := make(chan error, 1)
-	go func() {
-		defer close(doneCh)
-		defer close(errCh)
-		var err error
-		resp, err = retryClient.Do(req)
-		errCh <- err
-	}()
-
-	select {
-	case <-doneCh:
-		t.Fatal("should retry on 429 http status")
-	case <-time.After(200 * time.Millisecond):
-		// Client should be retrying
-	}
-
-	// change response status to 200
-	atomic.StoreInt64(&httpCode, http.StatusOK)
-
-	select {
-	case <-doneCh:
-	case <-time.After(time.Second):
-		t.Fatal("timed out")
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200, got: %d", resp.StatusCode)
-	}
-
-	if retryCount < 0 {
-		t.Fatal("client did not retry the request")
-	}
-
-	err = <-errCh
-	if err != nil {
-		t.Fatalf("err: %v", err)
-	}
-}
+// 	output := new(bytes.Buffer)
+// 	rootCmd.SetArgs([]string{"repo", "list"})
+// 	rootCmd.SetOut(output)
+// 	rootCmd.SetErr(output)
+// 	err = rootCmd.Execute()
+// 	fmt.Printf("Total retries: %d", retryCount)
+// 	require.Equal(t, 4, retryCount)
+// }

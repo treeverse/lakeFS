@@ -57,7 +57,6 @@ func lakectlRetryPolicy(ctx context.Context, resp *http.Response, err error) (bo
 				return false, v
 			}
 		}
-
 		return true, nil
 	}
 
@@ -67,6 +66,5 @@ func lakectlRetryPolicy(ctx context.Context, resp *http.Response, err error) (bo
 		resp.StatusCode == http.StatusServiceUnavailable {
 		return true, nil
 	}
-
 	return false, nil
 }

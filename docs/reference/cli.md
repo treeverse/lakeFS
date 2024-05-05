@@ -87,7 +87,7 @@ lakectl [flags]
 {:.no_toc}
 
 ```
-      --base-uri string      base URI used for lakeFS address parse
+      --base-uri string      base URI used for lakeFS address parse (default "https://treeverse-proper-boar-yjz5us.us-east-1.lakefscloud.ninja/api/v1")
   -c, --config string        config file (default is $HOME/.lakectl.yaml)
   -h, --help                 help for lakectl
       --log-format string    set logging output format
