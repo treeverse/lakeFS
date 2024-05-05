@@ -161,10 +161,6 @@ func TestLakectlRetryPolicy(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// if tc.err != nil {
-			// 	errStr := tc.err.Error()
-			// 	fmt.Sprintf("%s", errStr)
-			// }
 			shouldRetry, err := lakectlRetryPolicy(tc.getTestContext(), tc.resp, tc.err)
 			require.Equal(t, tc.expectedShouldRetry, shouldRetry)
 			if tc.expectedError != "" {
@@ -173,30 +169,3 @@ func TestLakectlRetryPolicy(t *testing.T) {
 		})
 	}
 }
-
-// func TestWithMockLakeFS(t *testing.T) {
-// 	retryCount := 0
-// 	httpCode := int64(http.StatusInternalServerError)
-// 	l, err := net.Listen("tcp", "127.0.0.1:8000")
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-// 		retryCount++
-// 		w.WriteHeader(int(atomic.LoadInt64(&httpCode)))
-// 	})
-// 	ts := httptest.NewUnstartedServer(handler)
-
-// 	ts.Listener.Close()
-// 	ts.Listener = l
-// 	ts.Start()
-// 	defer ts.Close()
-
-// 	output := new(bytes.Buffer)
-// 	rootCmd.SetArgs([]string{"repo", "list"})
-// 	rootCmd.SetOut(output)
-// 	rootCmd.SetErr(output)
-// 	err = rootCmd.Execute()
-// 	fmt.Printf("Total retries: %d", retryCount)
-// 	require.Equal(t, 4, retryCount)
-// }
