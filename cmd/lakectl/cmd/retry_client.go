@@ -23,6 +23,7 @@ func NewRetryClient(maxRetries int, retryWaitMin, retryWaitMax time.Duration, tr
 	if transport != nil {
 		retryClient.HTTPClient.Transport = transport
 	}
+	retryClient.Logger = nil
 	retryClient.RetryMax = maxRetries
 	retryClient.RetryWaitMin = retryWaitMin
 	retryClient.RetryWaitMax = retryWaitMax
