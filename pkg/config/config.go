@@ -221,9 +221,9 @@ type Config struct {
 		} `mapstructure:"ui_config"`
 	} `mapstructure:"auth"`
 	Blockstore struct {
-		Encrypt struct {
+		Signing struct {
 			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
-		} `mapstructure:"encrypt"`
+		} `mapstructure:"signing"`
 		Type                   string  `mapstructure:"type" validate:"required"`
 		DefaultNamespacePrefix *string `mapstructure:"default_namespace_prefix"`
 		Local                  *struct {

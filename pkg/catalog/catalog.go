@@ -5,7 +5,9 @@ import (
 	"container/heap"
 	"context"
 	"crypto"
-	_ "crypto/sha256"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -70,6 +72,10 @@ const (
 	RestoreRefsTaskIDPrefix = "RR"
 
 	TaskExpiryTime = 24 * time.Hour
+
+	// LinkAddressTime the time address is valid from get to link
+	LinkAddressTime             = 6 * time.Hour
+	LinkAddressSigningDelimiter = ","
 )
 
 type Path string
@@ -225,6 +231,7 @@ type Catalog struct {
 	deleteSensor          *graveler.DeleteSensor
 	UGCPrepareMaxFileSize int64
 	UGCPrepareInterval    time.Duration
+	signingKey            config.SecureString
 }
 
 const (
@@ -398,6 +405,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		KVStoreLimited:        storeLimiter,
 		addressProvider:       addressProvider,
 		deleteSensor:          deleteSensor,
+		signingKey:            cfg.Config.Blockstore.Signing.SecretKey,
 	}, nil
 }
 
@@ -2734,6 +2742,53 @@ func (c *Catalog) listRepositoriesHelper(ctx context.Context) ([]*graveler.Repos
 		return nil, err
 	}
 	return repos, nil
+}
+
+func (c *Catalog) VerifyLinkAddress(repository, branch, path, physicalAddress string) error {
+	address, signature, found := strings.Cut(physicalAddress, LinkAddressSigningDelimiter)
+	if !found {
+		return fmt.Errorf("address is not signed: %w", graveler.ErrLinkAddressInvalid)
+	}
+
+	stringToVerify := getAddressToSign(repository, branch, path, address)
+	decodedSig, err := base64.URLEncoding.DecodeString(signature)
+	if err != nil {
+		return fmt.Errorf("malformed address signature: %s: %w", stringToVerify, graveler.ErrLinkAddressInvalid)
+	}
+
+	h := hmac.New(sha256.New, []byte(c.signingKey))
+	h.Write([]byte(stringToVerify))
+	calculated := h.Sum(nil)
+	if !hmac.Equal(calculated, decodedSig) {
+		return fmt.Errorf("invalid address signature: %w", block.ErrInvalidAddress)
+	}
+	creationTime, err := c.PathProvider.ResolvePathTime(address)
+	if err != nil {
+		return err
+	}
+
+	if time.Since(creationTime) > LinkAddressTime {
+		return graveler.ErrLinkAddressExpired
+	}
+	return nil
+}
+
+func (c *Catalog) signAddress(logicalAddress string) string {
+	// create a new HMAC by defining the hash type and the key
+	h := hmac.New(sha256.New, []byte(c.signingKey))
+	// compute the HMAC
+	h.Write([]byte(logicalAddress))
+	dataHmac := h.Sum(nil)
+	return base64.URLEncoding.EncodeToString(dataHmac) // Using url encoding to avoid "/"
+}
+
+func getAddressToSign(repository, branch, path, physicalAddress string) string {
+	return repository + branch + path + physicalAddress
+}
+
+func (c *Catalog) GetAddressWithSignature(repository, branch, path string) string {
+	physicalPath := c.PathProvider.NewPath()
+	return physicalPath + LinkAddressSigningDelimiter + c.signAddress(getAddressToSign(repository, branch, path, physicalPath))
 }
 
 func (c *Catalog) Close() error {

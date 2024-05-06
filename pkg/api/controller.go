@@ -3,8 +3,6 @@ package api
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -73,9 +71,6 @@ const (
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
 	httpStatusClientClosedRequestText = "Client closed request"
-
-	// LinkAddressTime the time address is valid from get to link
-	LinkAddressTime = 6 * time.Hour
 )
 
 type actionsHandler interface {
@@ -204,7 +199,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 	}
 
 	// generate a new address for the object we like to upload
-	address := c.getAddressWithSignature(repository, branch, params.Path)
+	address := c.Catalog.GetAddressWithSignature(repository, branch, params.Path)
 	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
@@ -292,7 +287,7 @@ func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if err := c.verifyLinkAddress(repository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+	if err := c.Catalog.VerifyLinkAddress(repository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -357,7 +352,7 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 	}
 
 	//  verify it has been saved for linking
-	if err := c.verifyLinkAddress(repository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+	if err := c.Catalog.VerifyLinkAddress(repository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -652,53 +647,6 @@ func (c *Controller) StsLogin(w http.ResponseWriter, r *http.Request, body apige
 	writeResponse(w, r, http.StatusOK, responseToken)
 }
 
-func (c *Controller) verifyLinkAddress(repository, branch, path, physicalAddress string) error {
-	address, signature, found := strings.Cut(physicalAddress, ",")
-	if !found {
-		return fmt.Errorf("address is not signed: %w", graveler.ErrLinkAddressInvalid)
-	}
-
-	stringToVerify := getAddressToSign(repository, branch, path, address)
-	decodedSig, err := base64.URLEncoding.DecodeString(signature)
-	if err != nil {
-		return fmt.Errorf("malformed address signature: %s: %w", stringToVerify, graveler.ErrLinkAddressInvalid)
-	}
-
-	h := hmac.New(sha256.New, []byte(c.Config.Blockstore.Encrypt.SecretKey))
-	h.Write([]byte(stringToVerify))
-	calculated := h.Sum(nil)
-	if !hmac.Equal(calculated, decodedSig) {
-		return fmt.Errorf("invalid address signature: %w", block.ErrInvalidAddress)
-	}
-	creationTime, err := c.PathProvider.ResolvePathTime(address)
-	if err != nil {
-		return err
-	}
-
-	if time.Since(creationTime) > LinkAddressTime {
-		return graveler.ErrLinkAddressExpired
-	}
-	return nil
-}
-
-func (c *Controller) encryptAddress(logicalAddress string) string {
-	// create a new HMAC by defining the hash type and the key
-	h := hmac.New(sha256.New, []byte(c.Config.Blockstore.Encrypt.SecretKey))
-	// compute the HMAC
-	h.Write([]byte(logicalAddress))
-	dataHmac := h.Sum(nil)
-	return base64.URLEncoding.EncodeToString(dataHmac) // Using url encoding to avoid "/"
-}
-
-func getAddressToSign(repository, branch, path, physicalAddress string) string {
-	return repository + branch + path + physicalAddress
-}
-
-func (c *Controller) getAddressWithSignature(repository, branch, path string) string {
-	physicalPath := c.PathProvider.NewPath()
-	return physicalPath + "," + c.encryptAddress(getAddressToSign(repository, branch, path, physicalPath))
-}
-
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -721,7 +669,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	address := c.getAddressWithSignature(repository, branch, params.Path)
+	address := c.Catalog.GetAddressWithSignature(repository, branch, params.Path)
 	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
@@ -807,7 +755,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 	if addressType == catalog.AddressTypeRelative {
 		// if the address is in the storage namespace, verify it has been produced by lakeFS
-		if err = c.verifyLinkAddress(repository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+		if err = c.Catalog.VerifyLinkAddress(repository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
 			return
 		}
 
@@ -5049,7 +4997,7 @@ func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.R
 	}
 
 	writeResponse(w, r, http.StatusOK, apigen.GarbageCollectionConfig{
-		GracePeriod: swag.Int(int(LinkAddressTime.Seconds())),
+		GracePeriod: swag.Int(int(catalog.LinkAddressTime.Seconds())),
 	})
 }
 
