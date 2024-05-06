@@ -75,7 +75,7 @@ const (
 
 	// LinkAddressTime the time address is valid from get to link
 	LinkAddressTime             = 6 * time.Hour
-	LinkAddressSigningDelimiter = ","
+	LinkAddressSigningDelimiter = "--sig--"
 )
 
 type Path string
@@ -2751,7 +2751,7 @@ func (c *Catalog) VerifyLinkAddress(repository, branch, path, physicalAddress st
 	}
 
 	stringToVerify := getAddressToSign(repository, branch, path, address)
-	decodedSig, err := base64.URLEncoding.DecodeString(signature)
+	decodedSig, err := base64.RawURLEncoding.DecodeString(signature)
 	if err != nil {
 		return fmt.Errorf("malformed address signature: %s: %w", stringToVerify, graveler.ErrLinkAddressInvalid)
 	}
@@ -2779,7 +2779,7 @@ func (c *Catalog) signAddress(logicalAddress string) string {
 	// compute the HMAC
 	h.Write([]byte(logicalAddress))
 	dataHmac := h.Sum(nil)
-	return base64.URLEncoding.EncodeToString(dataHmac) // Using url encoding to avoid "/"
+	return base64.RawURLEncoding.EncodeToString(dataHmac) // Using url encoding to avoid "/"
 }
 
 func getAddressToSign(repository, branch, path, physicalAddress string) string {
