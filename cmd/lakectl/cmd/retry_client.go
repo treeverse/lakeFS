@@ -79,7 +79,9 @@ func lakectlRetryPolicy(ctx context.Context, resp *http.Response, err error) (bo
 }
 
 func customErrorHandler(resp *http.Response, err error, _ int) (*http.Response, error) {
-	defer resp.Body.Close()
-	io.Copy(io.Discard, io.LimitReader(resp.Body, respReadLimit)) //nolint:errcheck
+	if resp != nil {
+		defer resp.Body.Close()
+		io.Copy(io.Discard, io.LimitReader(resp.Body, respReadLimit)) //nolint:errcheck
+	}
 	return resp, err
 }
