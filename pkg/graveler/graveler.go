@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/go-test/deep"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	"github.com/prometheus/client_golang/prometheus"
@@ -1680,7 +1681,7 @@ func (g *Graveler) Get(ctx context.Context, repository *RepositoryRecord, ref Re
 			return nil, err
 		}
 		// the key we found is committed, return not found in staging
-		if committedVal == updatedValue {
+		if diffs := deep.Equal(committedVal, updatedValue); diffs == nil {
 			return nil, ErrNotFound
 		}
 	}
@@ -3048,38 +3049,23 @@ func (g *Graveler) DiffUncommitted(ctx context.Context, repository *RepositoryRe
 	if err != nil {
 		return nil, err
 	}
-	var metaRangeID MetaRangeID
-	if branch.CommitID != "" {
-		commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
-		if err != nil {
-			return nil, err
-		}
-		metaRangeID = commit.MetaRangeID
+
+	commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
+	if err != nil {
+		return nil, err
 	}
+	metaRangeID := commit.MetaRangeID
 
 	valueIterator, err := g.listStagingArea(ctx, branch, 0)
 	if err != nil {
 		return nil, err
 	}
-	var committedValueIterator ValueIterator
-	if metaRangeID != "" {
-		committedValueIterator, err = g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
-		if err != nil {
-			valueIterator.Close()
-			return nil, err
-		}
+	committedValueIterator, err := g.CommittedManager.List(ctx, repository.StorageNamespace, metaRangeID)
+	if err != nil {
+		valueIterator.Close()
+		return nil, err
 	}
 	if branch.CompactedBaseMetaRangeID != "" {
-		if metaRangeID == "" {
-			compactedIterator, err := g.CommittedManager.List(ctx, repository.StorageNamespace, branch.CompactedBaseMetaRangeID)
-			if err != nil {
-				valueIterator.Close()
-				committedValueIterator.Close()
-				return nil, err
-			}
-			// if no meta range (no commit data) return the diff of staging + sealed + compacted from committed (empty iterator)
-			return NewUncommittedDiffIterator(ctx, committedValueIterator, NewCombinedIterator(valueIterator, compactedIterator)), nil
-		}
 		// return the diff of staging + sealed from committed on top of the diff of compacted from committed
 		diffCommitAndCompacted, err := g.CommittedManager.Diff(ctx, repository.StorageNamespace, metaRangeID, branch.CompactedBaseMetaRangeID)
 		if err != nil {

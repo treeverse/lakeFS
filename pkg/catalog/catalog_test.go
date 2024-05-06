@@ -621,7 +621,10 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 	records := make([][]*graveler.ValueRecord, numBranches)
 	var branches []*graveler.BranchRecord
 	var expectedRecords []string
-
+	if numBranches > 0 {
+		test.RefManager.EXPECT().GetCommit(gomock.Any(), gomock.Any(), gomock.Any()).MinTimes(1).Return(&graveler.Commit{}, nil)
+		test.CommittedManager.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).MinTimes(1).Return(cUtils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
+	}
 	for i := 0; i < numBranches; i++ {
 		branchID := graveler.BranchID(fmt.Sprintf("branch%04d", i))
 		token := graveler.StagingToken(fmt.Sprintf("%s_st%04d", branchID, i))

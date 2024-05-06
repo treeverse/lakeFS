@@ -39,7 +39,7 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 			return nil, false, err
 		}
 		if nextMark != nil {
-			return nextMark, true, nil
+			break
 		}
 	}
 	if branchIterator.Err() != nil {
@@ -100,7 +100,6 @@ func processBranch(ctx context.Context, store Store, repository *graveler.Reposi
 
 		count++
 		if count%gcPeriodicCheckSize == 0 {
-			println("flushing", "count", count, "size", writer.Size(), "runID", runID, "branchID", branchID)
 			if err := parquetWriter.Flush(true); err != nil {
 				return nil, 0, err
 			}
@@ -116,7 +115,6 @@ func processBranch(ctx context.Context, store Store, repository *graveler.Reposi
 				BranchID: branchID,
 				Path:     Path(diff.Key.String()),
 			}
-			println("next mark", "entry", entryAddress, "runID", runID, "branchID", branchID)
 			break
 		}
 
