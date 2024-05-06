@@ -56,3 +56,13 @@ Please follow the self-service setup wizard on [lakeFS Cloud](https://lakefs.clo
 
 ### GCP
 Please [contact us](mailto:support@treeverse.io) for onboarding instructions.
+
+## Scalability Model
+
+In lakeFS Cloud, a branch is the performance isolation unit.
+lakeFS Cloud offers clients up to 1000 write operations per second and
+3000 read operations per second for each branch. The defaults for a
+lakeFS Cloud installation is 1500 write operations per second and
+1500 read operations per second for all branches combined. This limit could 
+be increased by contacting [support]((mailto:support@treeverse.io)).
+
