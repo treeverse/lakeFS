@@ -414,6 +414,32 @@ func TestGravelerMerge(t *testing.T) {
 		require.Equal(t, graveler.CommitID(""), val)
 	})
 
+	t.Run("merge dirty compacted", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch3ID).Times(1).Return(&branch3, nil)
+		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch3ID, gomock.Any()).
+			DoAndReturn(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
+				branchTest := branch3
+				updatedBranch, err := f(&branchTest)
+				require.Error(t, err)
+				require.Nil(t, updatedBranch)
+				return err
+			}).Times(1)
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
+		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.CommittedManager.EXPECT().Diff(ctx, repository.StorageNamespace, mr1ID, mr2ID).Times(1).Return(testutil.NewDiffIter([]graveler.Diff{{Key: key1, Type: graveler.DiffTypeRemoved}}), nil)
+
+		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator(nil))
+		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator(nil))
+		test.StagingManager.EXPECT().List(ctx, stagingToken3, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator(nil))
+
+		val, err := test.Sut.Merge(ctx, repository, branch3ID, graveler.Ref(branch2ID), graveler.CommitParams{Metadata: graveler.Metadata{}}, "")
+
+		require.Equal(t, graveler.ErrDirtyBranch, err)
+		require.Equal(t, graveler.CommitID(""), val)
+	})
+
 	t.Run("merge successful with branchUpdate retry", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 
@@ -519,6 +545,7 @@ func TestGravelerRevert(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit2ID)).Times(1).Return(rawRefCommit2, nil)
@@ -561,6 +588,7 @@ func TestGravelerRevert(t *testing.T) {
 		emptyStagingTokenCombo(test, 1)
 		dirtyStagingTokenCombo(test)
 
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(2).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit2ID)).Times(1).Return(rawRefCommit2, nil)
@@ -612,6 +640,7 @@ func TestGravelerCherryPick(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit2ID)).Times(1).Return(rawRefCommit2, nil)
@@ -809,6 +838,7 @@ func TestGravelerImport(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
+		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch1ID)).Times(1).Return(rawRefCommit1, nil)
