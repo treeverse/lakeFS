@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/go-openapi/swag"
@@ -51,6 +52,13 @@ Get the latest release {{ .UpgradeURL|blue }}
 `
 )
 
+type RetriesCfg struct {
+	Enabled         bool          `mapstructure:"enabled"`
+	MaxAttempts     int           `mapstructure:"max_attempts"`      // MaxAttempts is the maximum number of attempts
+	MinWaitInterval time.Duration `mapstructure:"min_wait_interval"` // MinWaitInterval is the minimum amount of time to wait between retries
+	MaxWaitInterval time.Duration `mapstructure:"max_wait_interval"` // MaxWaitInterval is the maximum amount of time to wait between retries
+}
+
 // Configuration is the user-visible configuration structure in Golang form.
 // When editing, make sure *all* fields have a `mapstructure:"..."` tag, to simplify future refactoring.
 type Configuration struct {
@@ -60,6 +68,7 @@ type Configuration struct {
 	} `mapstructure:"credentials"`
 	Server struct {
 		EndpointURL lakefsconfig.OnlyString `mapstructure:"endpoint_url"`
+		Retries     RetriesCfg              `mapstructure:"retries"`
 	} `mapstructure:"server"`
 	Metastore struct {
 		Type lakefsconfig.OnlyString `mapstructure:"type"`
@@ -140,6 +149,10 @@ const (
 	allowEmptyMsgFlagName = "allow-empty-message"
 	fmtErrEmptyMsg        = `commit with no message without specifying the "--allow-empty-message" flag`
 	metaFlagName          = "meta"
+
+	defaultMaxAttempts      = 4
+	defaultMaxRetryInterval = 30 * time.Second
+	defaultMinRetryInterval = 200 * time.Millisecond
 )
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
@@ -428,8 +441,13 @@ func getClient() *apigen.ClientWithResponses {
 	// see: https://stackoverflow.com/a/39834253
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
-	httpClient := &http.Client{
-		Transport: transport,
+	var httpClient *http.Client
+	if !cfg.Server.Retries.Enabled {
+		httpClient = &http.Client{
+			Transport: transport,
+		}
+	} else {
+		httpClient = NewRetryClient(cfg.Server.Retries, transport)
 	}
 
 	accessKeyID := cfg.Credentials.AccessKeyID
@@ -521,6 +539,10 @@ func initConfig() {
 	// set defaults
 	viper.SetDefault("metastore.hive.db_location_uri", "file:/user/hive/warehouse/")
 	viper.SetDefault("server.endpoint_url", "http://127.0.0.1:8000")
+	viper.SetDefault("server.retries.enabled", true)
+	viper.SetDefault("server.retries.max_attempts", defaultMaxAttempts)
+	viper.SetDefault("server.retries.max_wait_interval", defaultMaxRetryInterval)
+	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 
 	cfgErr = viper.ReadInConfig()
 	if errors.Is(cfgErr, viper.ConfigFileNotFoundError{}) {
