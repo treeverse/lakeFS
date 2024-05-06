@@ -15,6 +15,7 @@ const (
 	DefaultQuickstartKeyID           = "AKIAIOSFOLQUICKSTART"                     //nolint:gosec
 	DefaultQuickstartSecretKey       = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" // nolint:gosec
 	DefaultAuthAPIHealthCheckTimeout = 20 * time.Second
+	DefaultSecretSigningKey          = "THIS_MUST_BE_CHANGED_IN_PRODUCTION" // #nosec
 )
 
 //nolint:gomnd
@@ -25,14 +26,15 @@ func setDefaults(cfgType string) {
 		viper.SetDefault("installation.access_key_id", DefaultQuickstartKeyID)
 		viper.SetDefault("installation.secret_access_key", DefaultQuickstartSecretKey)
 		viper.SetDefault("database.type", "local")
-		viper.SetDefault("auth.encrypt.secret_key", "THIS_MUST_BE_CHANGED_IN_PRODUCTION") // #nosec
+		viper.SetDefault("auth.encrypt.secret_key", DefaultSecretSigningKey)
 		viper.SetDefault(BlockstoreTypeKey, "local")
 	case UseLocalConfiguration:
 		viper.SetDefault("database.type", "local")
-		viper.SetDefault("auth.encrypt.secret_key", "THIS_MUST_BE_CHANGED_IN_PRODUCTION") // #nosec
+		viper.SetDefault("auth.encrypt.secret_key", DefaultSecretSigningKey)
 		viper.SetDefault(BlockstoreTypeKey, "local")
 	}
 
+	viper.SetDefault("blockstore.encrypt.secret_key", DefaultSecretSigningKey)
 	viper.SetDefault("listen_address", DefaultListenAddress)
 
 	viper.SetDefault("logging.format", "text")

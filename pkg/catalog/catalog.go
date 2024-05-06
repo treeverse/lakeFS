@@ -2689,38 +2689,6 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	return &dstEntry, nil
 }
 
-// SetLinkAddress to validate single use limited in time of a given physical address
-func (c *Catalog) SetLinkAddress(ctx context.Context, repository, physicalAddress string) error {
-	repo, err := c.getRepository(ctx, repository)
-	if err != nil {
-		return err
-	}
-	return c.Store.SetLinkAddress(ctx, repo, physicalAddress)
-}
-
-func (c *Catalog) VerifyLinkAddress(ctx context.Context, repository, physicalAddress string) error {
-	repo, err := c.getRepository(ctx, repository)
-	if err != nil {
-		return err
-	}
-	return c.Store.VerifyLinkAddress(ctx, repo, physicalAddress)
-}
-
-func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {
-	repos, err := c.listRepositoriesHelper(ctx)
-	if err != nil {
-		c.log(ctx).WithError(err).Warn("Failed list repositories during delete expired addresses")
-		return
-	}
-
-	for _, repo := range repos {
-		err := c.Store.DeleteExpiredLinkAddresses(ctx, repo)
-		if err != nil {
-			c.log(ctx).WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired address tokens failed")
-		}
-	}
-}
-
 func (c *Catalog) DeleteExpiredImports(ctx context.Context) {
 	repos, err := c.listRepositoriesHelper(ctx)
 	if err != nil {
