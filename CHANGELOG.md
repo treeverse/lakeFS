@@ -4,7 +4,7 @@
 
 :new: What's new:
 
-- Refuse to create lakectl local on case-insensitive filesystems (#7650)
+- Warn when creating lakectl local on case-insensitive filesystems (#7650)
 - lakectl added support for retries (#7723)
 - S3 gateway - return slowdown on DynamoDB throttle (#7685)
 - UI: calculate total size of common prefix (#7720)
