@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
 )
@@ -18,15 +17,15 @@ var (
 	notTrustedErrorRe = regexp.MustCompile(`certificate is not trusted`)
 )
 
-func NewRetryClient(maxRetries int, retryWaitMin, retryWaitMax time.Duration, transport *http.Transport) *http.Client {
+func NewRetryClient(retriesCfg RetriesCfg, transport *http.Transport) *http.Client {
 	retryClient := retryablehttp.NewClient()
 	if transport != nil {
 		retryClient.HTTPClient.Transport = transport
 	}
 	retryClient.Logger = nil
-	retryClient.RetryMax = maxRetries
-	retryClient.RetryWaitMin = retryWaitMin
-	retryClient.RetryWaitMax = retryWaitMax
+	retryClient.RetryMax = retriesCfg.MaxAttempts
+	retryClient.RetryWaitMin = retriesCfg.MinWaitInterval
+	retryClient.RetryWaitMax = retriesCfg.MaxWaitInterval
 	retryClient.CheckRetry = lakectlRetryPolicy
 	return retryClient.StandardClient()
 }
@@ -58,6 +57,8 @@ func lakectlRetryPolicy(ctx context.Context, resp *http.Response, err error) (bo
 				return false, v
 			}
 		}
+		// The stblib http.Client wraps the above errors in a url.Error
+		// If we got a different error, it's likely a retryable transport error like Timeout or Context Cancelation
 		return true, nil
 	}
 
