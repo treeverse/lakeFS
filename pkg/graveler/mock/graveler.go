@@ -139,21 +139,6 @@ func (mr *MockKeyValueStoreMockRecorder) List(ctx, repository, ref, batchSize in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockKeyValueStore)(nil).List), ctx, repository, ref, batchSize)
 }
 
-// ListStaging mocks base method.
-func (m *MockKeyValueStore) ListStaging(ctx context.Context, branch *graveler.Branch, batchSize int) (graveler.ValueIterator, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListStaging", ctx, branch, batchSize)
-	ret0, _ := ret[0].(graveler.ValueIterator)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListStaging indicates an expected call of ListStaging.
-func (mr *MockKeyValueStoreMockRecorder) ListStaging(ctx, branch, batchSize interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStaging", reflect.TypeOf((*MockKeyValueStore)(nil).ListStaging), ctx, branch, batchSize)
-}
-
 // Set mocks base method.
 func (m *MockKeyValueStore) Set(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, value graveler.Value, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()

@@ -32,8 +32,9 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 	count := 0
 	var nextMark *GCUncommittedMark
 	hasData := false
+	startTime := time.Now()
 	for branchIterator.Next() {
-		nextMark, count, err = processBranch(ctx, store, repository, branchIterator.Value().BranchID, runID, pw, normalizedStorageNamespace, maxFileSize, prepareDuration, w, count, mark)
+		nextMark, count, err = processBranch(ctx, store, repository, branchIterator.Value().BranchID, runID, pw, normalizedStorageNamespace, maxFileSize, prepareDuration, w, count, mark, startTime)
 		if err != nil {
 			return nil, false, err
 		}
@@ -62,14 +63,13 @@ func normalizeStorageNamespace(namespace string) string {
 	return namespace
 }
 
-func processBranch(ctx context.Context, store Store, repository *graveler.RepositoryRecord, branchID graveler.BranchID, runID string, parquetWriter *writer.ParquetWriter, normalizedStorageNamespace string, maxFileSize int64, prepareDuration time.Duration, writer *UncommittedWriter, count int, mark *GCUncommittedMark) (*GCUncommittedMark, int, error) {
+func processBranch(ctx context.Context, store Store, repository *graveler.RepositoryRecord, branchID graveler.BranchID, runID string, parquetWriter *writer.ParquetWriter, normalizedStorageNamespace string, maxFileSize int64, prepareDuration time.Duration, writer *UncommittedWriter, count int, mark *GCUncommittedMark, startTime time.Time) (*GCUncommittedMark, int, error) {
 	diffIterator, err := store.DiffUncommitted(ctx, repository, branchID)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer diffIterator.Close()
 
-	startTime := time.Now()
 	var nextMark *GCUncommittedMark
 
 	if mark != nil && mark.BranchID == branchID && mark.Path != "" {
@@ -99,8 +99,8 @@ func processBranch(ctx context.Context, store Store, repository *graveler.Reposi
 		}
 
 		count++
-
 		if count%gcPeriodicCheckSize == 0 {
+			println("flushing", "count", count, "size", writer.Size(), "runID", runID, "branchID", branchID)
 			if err := parquetWriter.Flush(true); err != nil {
 				return nil, 0, err
 			}
@@ -116,6 +116,7 @@ func processBranch(ctx context.Context, store Store, repository *graveler.Reposi
 				BranchID: branchID,
 				Path:     Path(diff.Key.String()),
 			}
+			println("next mark", "entry", entryAddress, "runID", runID, "branchID", branchID)
 			break
 		}
 
