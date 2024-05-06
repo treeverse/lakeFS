@@ -59,7 +59,7 @@ func lakectlRetryPolicy(ctx context.Context, resp *http.Response, err error) (bo
 			}
 		}
 		// The stblib http.Client wraps the above errors in a url.Error
-		// If we got a different error, it's likely a retryable transport error like Timeout or Context Cancelation
+		// They aren't retryable. Other errors are retryable.
 		return true, nil
 	}
 
