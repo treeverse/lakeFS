@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
@@ -61,7 +60,7 @@ func TestLakectlRetryPolicy(t *testing.T) {
 			resp:                nil,
 			err:                 &url.Error{Op: http.MethodGet, URL: testURL, Err: errors.New(tooManyRedirectsErrorMessage)},
 			expectedShouldRetry: false,
-			expectedError:       fmt.Sprintf(`%s "%s": %s`, http.MethodGet, testURL, tooManyRedirectsErrorMessage),
+			expectedError:       tooManyRedirectsErrorMessage,
 		},
 		{
 			name: "Transport Error - Random Transport Error",
