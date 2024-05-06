@@ -400,7 +400,7 @@ type Branch struct {
 	StagingToken StagingToken
 	// SealedTokens - Staging tokens are appended to the front, this allows building the diff iterator easily
 	SealedTokens []StagingToken
-	// CompactedBaseMetaRangeID - the MetaRangeID the last compaction's results meta range
+	// CompactedBaseMetaRangeID - the MetaRangeID of the last compaction's
 	CompactedBaseMetaRangeID MetaRangeID
 }
 
@@ -487,9 +487,6 @@ type KeyValueStore interface {
 
 	// List lists values on repository / ref
 	List(ctx context.Context, repository *RepositoryRecord, ref Ref, batchSize int) (ValueIterator, error)
-
-	// ListStaging returns ValueIterator for branch staging area.
-	ListStaging(ctx context.Context, branch *Branch, batchSize int) (ValueIterator, error)
 }
 
 type VersionController interface {
@@ -1316,7 +1313,7 @@ func (g *Graveler) monitorRetries(ctx context.Context, retries int, repositoryID
 // information on the algorithm used.
 func (g *Graveler) prepareForCommitIDUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, operation string) error {
 	return g.retryBranchUpdate(ctx, repository, branchID, func(currBranch *Branch) (*Branch, error) {
-		empty, err := g.isStagingEmpty(ctx, repository, currBranch)
+		empty, err := g.isStagingEmpty(ctx, repository, branchID)
 		if err != nil {
 			return nil, err
 		}
@@ -1642,18 +1639,24 @@ func (g *Graveler) Get(ctx context.Context, repository *RepositoryRecord, ref Re
 		return nil, err
 	}
 
+	var updatedValue *Value
 	if reference.StagingToken != "" {
 		// try to get from staging, if not found proceed to committed
-		value, err := g.getFromStagingArea(ctx, reference.Branch, key)
+		updatedValue, err = g.getFromStagingArea(ctx, reference.Branch, key)
 		if err != nil && !errors.Is(err, ErrNotFound) {
 			return nil, err
 		}
-		if err == nil {
-			if value == nil {
-				// tombstone - the entry was deleted on the branch => doesn't exist
-				return nil, ErrNotFound
-			}
-			return value, nil
+		// tombstone - the entry was deleted on the branch => doesn't exist
+		if err == nil && updatedValue == nil {
+			return nil, ErrNotFound
+		}
+	}
+
+	if updatedValue == nil && reference.CompactedBaseMetaRangeID != "" {
+		updatedValue, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, reference.CompactedBaseMetaRangeID, key)
+		// no need to check for ErrNotFound, since if the key is not found in the compacted base, it will not be found in the committed, and we already checked the staging area
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -1662,36 +1665,29 @@ func (g *Graveler) Get(ctx context.Context, repository *RepositoryRecord, ref Re
 		opt(&options)
 	}
 
-	if reference.CompactedBaseMetaRangeID != "" {
-		value, err := g.CommittedManager.Get(ctx, repository.StorageNamespace, reference.CompactedBaseMetaRangeID, key)
+	commitID := reference.CommitID
+	if options.StageOnly {
+		if updatedValue == nil {
+			return nil, ErrNotFound
+		}
+
+		commit, err := g.RefManager.GetCommit(ctx, repository, commitID)
 		if err != nil {
 			return nil, err
 		}
-		// check if the key that we got from compaction is from compacted tokens or from committed
-		if options.StageOnly {
-			commitID := reference.CommitID
-			commit, err := g.RefManager.GetCommit(ctx, repository, commitID)
-			if err != nil {
-				return nil, err
-			}
-			committedVal, err := g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
-			if err != nil && !errors.Is(err, ErrNotFound) {
-				return nil, err
-			}
-			// the key we found is committed, return not found in staging
-			if !errors.Is(err, ErrNotFound) && committedVal == value {
-				return nil, ErrNotFound
-			}
+		committedVal, err := g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
+		if err != nil && !errors.Is(err, ErrNotFound) {
+			return nil, err
 		}
-		return value, nil
+		// the key we found is committed, return not found in staging
+		if committedVal == updatedValue {
+			return nil, ErrNotFound
+		}
 	}
-
-	if options.StageOnly {
-		return nil, ErrNotFound
+	if updatedValue != nil {
+		return updatedValue, nil
 	}
-
 	// If key is not found in staging area (or reference is not a branch), return the key from committed
-	commitID := reference.CommitID
 	commit, err := g.RefManager.GetCommit(ctx, repository, commitID)
 	if err != nil {
 		return nil, err
@@ -1828,7 +1824,7 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "delete"})
 	err = g.safeBranchWrite(ctx, log, repository, branchID,
 		safeBranchWriteOptions{}, func(branch *Branch) error {
-			return g.deleteUnsafe(ctx, repository, key, nil, BranchRecord{branchID, branch})
+			return g.deleteUnsafe(ctx, repository, key, BranchRecord{branchID, branch})
 		}, "delete")
 	return err
 }
@@ -1859,9 +1855,8 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 	var m *multierror.Error
 	log := g.log(ctx).WithField("operation", "delete_keys")
 	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{}, func(branch *Branch) error {
-		var cachedMetaRangeID MetaRangeID // used to cache the committed branch metarange ID
 		for _, key := range keys {
-			err := g.deleteUnsafe(ctx, repository, key, &cachedMetaRangeID, BranchRecord{branchID, branch})
+			err := g.deleteUnsafe(ctx, repository, key, BranchRecord{branchID, branch})
 			if err != nil {
 				m = multierror.Append(m, &DeleteError{Key: key, Err: err})
 			}
@@ -1871,7 +1866,7 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 	return err
 }
 
-func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecord, key Key, cachedMetaRangeID *MetaRangeID, branchRecord BranchRecord) error {
+func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecord, key Key, branchRecord BranchRecord) error {
 	// First attempt to update on staging token
 	err := g.deleteAndNotify(ctx, repository.RepositoryID, branchRecord, key, true)
 	if !errors.Is(err, kv.ErrPredicateFailed) {
@@ -1880,18 +1875,14 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 
 	// check key in committed - do we need tombstone?
 	var metaRangeID MetaRangeID
-	if cachedMetaRangeID != nil && *cachedMetaRangeID != "" {
-		metaRangeID = *cachedMetaRangeID
+	if branchRecord.Branch.CompactedBaseMetaRangeID != "" {
+		metaRangeID = branchRecord.Branch.CompactedBaseMetaRangeID
 	} else {
-		if branchRecord.Branch.CompactedBaseMetaRangeID != "" {
-			metaRangeID = branchRecord.Branch.CompactedBaseMetaRangeID
-		} else {
-			commit, err := g.RefManager.GetCommit(ctx, repository, branchRecord.Branch.CommitID)
-			if err != nil {
-				return err
-			}
-			metaRangeID = commit.MetaRangeID
+		commit, err := g.RefManager.GetCommit(ctx, repository, branchRecord.Branch.CommitID)
+		if err != nil {
+			return err
 		}
+		metaRangeID = commit.MetaRangeID
 	}
 
 	_, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, metaRangeID, key)
@@ -1920,11 +1911,6 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 	}
 	// err == ErrNotFound, key is nowhere to be found - nothing to do
 	return nil
-}
-
-// ListStaging Exposing listStagingArea to catalog for PrepareGCUncommitted
-func (g *Graveler) ListStaging(ctx context.Context, branch *Branch, batchSize int) (ValueIterator, error) {
-	return g.listStagingArea(ctx, branch, batchSize)
 }
 
 // listStagingArea Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)
@@ -2019,7 +2005,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 
 	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		if params.SourceMetaRange != nil {
-			empty, err := g.isStagingEmpty(ctx, repository, branch)
+			empty, err := g.isStagingEmpty(ctx, repository, branchID)
 			if err != nil {
 				return nil, fmt.Errorf("checking empty branch: %w", err)
 			}
@@ -2266,15 +2252,14 @@ func (g *Graveler) addCommitNoLock(ctx context.Context, repository *RepositoryRe
 	return commitID, nil
 }
 
-func (g *Graveler) isStagingEmpty(ctx context.Context, repository *RepositoryRecord, branch *Branch) (bool, error) {
-	itr, err := g.listStagingArea(ctx, branch, 1)
+func (g *Graveler) isStagingEmpty(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (bool, error) {
+	diffIt, err := g.DiffUncommitted(ctx, repository, branchID)
 	if err != nil {
 		return false, err
 	}
-	defer itr.Close()
+	defer diffIt.Close()
 
-	// Iterating over staging area (staging + sealed) of the branch and check for entries
-	return g.checkEmpty(ctx, repository, branch, itr)
+	return !diffIt.Next(), nil
 }
 
 // checkEmpty - staging iterator is not considered empty IFF it contains any non-tombstone entry
@@ -3103,7 +3088,7 @@ func (g *Graveler) DiffUncommitted(ctx context.Context, repository *RepositoryRe
 			return nil, err
 		}
 
-		return NewCompactedDiffIterator(NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator), diffCommitAndCompacted), nil
+		return NewJoinedDiffIterator(NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator), diffCommitAndCompacted), nil
 	}
 	return NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator), nil
 }
@@ -3168,6 +3153,7 @@ func (g *Graveler) Diff(ctx context.Context, repository *RepositoryRecord, left,
 		compactedDiffIterator, err := g.CommittedManager.Diff(ctx, repository.StorageNamespace, leftCommit.MetaRangeID, rightBranch.CompactedBaseMetaRangeID)
 		if err != nil {
 			leftValueIterator.Close()
+			stagingIterator.Close()
 			return nil, err
 		}
 		return NewCombinedDiffIterator(compactedDiffIterator, leftValueIterator, stagingIterator), nil

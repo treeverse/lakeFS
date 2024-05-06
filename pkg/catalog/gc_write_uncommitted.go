@@ -25,9 +25,32 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 
 	normalizedStorageNamespace := normalizeStorageNamespace(string(repository.StorageNamespace))
 
-	nextMark, hasData, err := processBranches(ctx, store, repository, branchIterator, pw, normalizedStorageNamespace, mark, runID, maxFileSize, prepareDuration, w)
+	if mark != nil {
+		branchIterator.SeekGE(mark.BranchID)
+	}
+
+	count := 0
+	var nextMark *GCUncommittedMark
+	hasData := false
+	for branchIterator.Next() {
+		nextMark, count, err = processBranch(ctx, store, repository, branchIterator.Value().BranchID, runID, pw, normalizedStorageNamespace, maxFileSize, prepareDuration, w, count, mark)
+		if err != nil {
+			return nil, false, err
+		}
+		if nextMark != nil {
+			return nextMark, true, nil
+		}
+	}
+	if branchIterator.Err() != nil {
+		return nil, false, branchIterator.Err()
+	}
+
 	if err := pw.WriteStop(); err != nil {
 		return nil, false, err
+	}
+
+	if count > 0 {
+		hasData = true
 	}
 	return nextMark, hasData, err
 }
@@ -39,41 +62,10 @@ func normalizeStorageNamespace(namespace string) string {
 	return namespace
 }
 
-func processBranches(ctx context.Context, store Store, repository *graveler.RepositoryRecord, branchIterator graveler.BranchIterator, parquetWriter *writer.ParquetWriter, normalizedStorageNamespace string, mark *GCUncommittedMark, runID string, maxFileSize int64, prepareDuration time.Duration, writer *UncommittedWriter) (*GCUncommittedMark, bool, error) {
-	if mark != nil {
-		branchIterator.SeekGE(mark.BranchID)
-	} else if !branchIterator.Next() {
-		return nil, false, nil // No branches
-	}
-
-	count := 0
-	countPtr := &count
-	// process the first branch before calling Next() again
-	hasData := false
-	nextMark, err := processBranch(ctx, store, repository, branchIterator.Value().BranchID, runID, parquetWriter, normalizedStorageNamespace, maxFileSize, prepareDuration, writer, countPtr, mark)
-	if nextMark != nil {
-		return nextMark, true, err
-	}
-	for branchIterator.Next() {
-		nextMark, err = processBranch(ctx, store, repository, branchIterator.Value().BranchID, runID, parquetWriter, normalizedStorageNamespace, maxFileSize, prepareDuration, writer, countPtr, mark)
-		if err != nil {
-			return nil, false, err
-		}
-		if nextMark != nil {
-			return nextMark, true, nil
-		}
-	}
-
-	if *countPtr > 0 {
-		hasData = true
-	}
-	return nil, hasData, branchIterator.Err()
-}
-
-func processBranch(ctx context.Context, store Store, repository *graveler.RepositoryRecord, branchID graveler.BranchID, runID string, parquetWriter *writer.ParquetWriter, normalizedStorageNamespace string, maxFileSize int64, prepareDuration time.Duration, writer *UncommittedWriter, count *int, mark *GCUncommittedMark) (*GCUncommittedMark, error) {
+func processBranch(ctx context.Context, store Store, repository *graveler.RepositoryRecord, branchID graveler.BranchID, runID string, parquetWriter *writer.ParquetWriter, normalizedStorageNamespace string, maxFileSize int64, prepareDuration time.Duration, writer *UncommittedWriter, count int, mark *GCUncommittedMark) (*GCUncommittedMark, int, error) {
 	diffIterator, err := store.DiffUncommitted(ctx, repository, branchID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer diffIterator.Close()
 
@@ -94,7 +86,7 @@ func processBranch(ctx context.Context, store Store, repository *graveler.Reposi
 
 		entry, err := ValueToEntry(diff.Value)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		// Skip non-relative addresses outside the storage namespace
@@ -106,15 +98,18 @@ func processBranch(ctx context.Context, store Store, repository *graveler.Reposi
 			entryAddress = entryAddress[len(normalizedStorageNamespace):]
 		}
 
-		*count++
+		count++
 
-		if *count%gcPeriodicCheckSize == 0 {
+		if count%gcPeriodicCheckSize == 0 {
 			if err := parquetWriter.Flush(true); err != nil {
-				return nil, err
+				return nil, 0, err
 			}
 		}
 
-		// Check for size or duration limits
+		// check if we need to stop - based on max file size or prepare duration.
+		// prepare duration is optional, if 0 it will be ignored.
+		// prepare duration is used to stop the process in cases we scan a lot of data, and we want to stop
+		// so the api call will not time out.
 		if writer.Size() > maxFileSize || (prepareDuration > 0 && time.Since(startTime) > prepareDuration) {
 			nextMark = &GCUncommittedMark{
 				RunID:    runID,
@@ -129,9 +124,9 @@ func processBranch(ctx context.Context, store Store, repository *graveler.Reposi
 			CreationDate:    entry.LastModified.AsTime().Unix(),
 		})
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 	}
 
-	return nextMark, diffIterator.Err()
+	return nextMark, count, diffIterator.Err()
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/testutil"
 )
 
-func TestCompactedDiffIterator_NextValue(t *testing.T) {
+func TestJoinedDiffIterator_NextValue(t *testing.T) {
 	type fields struct {
 		stageAndCommittedDiffIterator     graveler.DiffIterator
 		compactedAndCommittedDiffIterator graveler.DiffIterator
@@ -339,7 +339,7 @@ func TestCompactedDiffIterator_NextValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var it graveler.DiffIterator
-			it = graveler.NewCompactedDiffIterator(tt.fields.stageAndCommittedDiffIterator, tt.fields.compactedAndCommittedDiffIterator)
+			it = graveler.NewJoinedDiffIterator(tt.fields.stageAndCommittedDiffIterator, tt.fields.compactedAndCommittedDiffIterator)
 			defer it.Close()
 
 			var got []*graveler.Diff
@@ -349,7 +349,7 @@ func TestCompactedDiffIterator_NextValue(t *testing.T) {
 			require.NoError(t, it.Err())
 			// verify that what we produced is what we got from the iterator
 			if diff := deep.Equal(got, tt.wantValue); diff != nil {
-				t.Fatal("CompactedDiffIterator iterator found diff:", diff)
+				t.Fatal("JoinedDiffIterator iterator found diff:", diff)
 			}
 		})
 	}

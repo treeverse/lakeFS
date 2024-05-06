@@ -176,7 +176,7 @@ func TestGravelerGet(t *testing.T) {
 		require.Equal(t, value1, val)
 	})
 
-	t.Run("get from branch - compacted with staged only flag when get object different in commit", func(t *testing.T) {
+	t.Run("get from branch - compacted with staged only flag when object is not committed", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch3ID)).Times(1).Return(rawRefBranch3, nil)
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefBranch3).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeBranch, BranchRecord: graveler.BranchRecord{BranchID: branch3ID, Branch: &branch3}}, nil)
