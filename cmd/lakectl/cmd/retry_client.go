@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"crypto/x509"
+	"errors"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -50,11 +51,11 @@ func lakectlRetryPolicy(ctx context.Context, resp *http.Response, err error) (bo
 			if redirectsErrorRe.MatchString(v.Error()) || // too many redirects
 				schemeErrorRe.MatchString(v.Error()) || // invalid http scheme/protocol
 				notTrustedErrorRe.MatchString(v.Error()) { // TLS cert verification failure
-				return false, v
+				return false, errors.Unwrap(v)
 			}
 
 			if _, ok := v.Err.(x509.UnknownAuthorityError); ok {
-				return false, v
+				return false, errors.Unwrap(v)
 			}
 		}
 		// The stblib http.Client wraps the above errors in a url.Error
