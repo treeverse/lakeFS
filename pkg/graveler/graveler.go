@@ -1680,7 +1680,7 @@ func (g *Graveler) Get(ctx context.Context, repository *RepositoryRecord, ref Re
 			return nil, err
 		}
 		// the key we found is committed, return not found in staging
-		if committedVal != nil && bytes.Compare(committedVal.Identity, updatedValue.Identity) == 0 {
+		if committedVal != nil && bytes.Equal(committedVal.Identity, updatedValue.Identity) {
 			return nil, ErrNotFound
 		}
 	}

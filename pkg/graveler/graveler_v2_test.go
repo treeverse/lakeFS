@@ -347,7 +347,6 @@ func TestGravelerMerge(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
-		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch2ID)).Times(1).Return(rawRefCommit2, nil)
@@ -384,7 +383,6 @@ func TestGravelerMerge(t *testing.T) {
 
 	t.Run("merge dirty destination while updating tokens", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
-		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
 			DoAndReturn(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				branchTest := branch1
@@ -417,7 +415,6 @@ func TestGravelerMerge(t *testing.T) {
 	t.Run("merge dirty compacted", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 
-		test.RefManager.EXPECT().GetBranch(ctx, repository, branch3ID).Times(1).Return(&branch3, nil)
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch3ID, gomock.Any()).
 			DoAndReturn(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				branchTest := branch3
@@ -449,7 +446,6 @@ func TestGravelerMerge(t *testing.T) {
 
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
-		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch2ID)).Times(1).Return(rawRefCommit2, nil)
@@ -492,7 +488,6 @@ func TestGravelerMerge(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 1)
-		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
@@ -545,7 +540,6 @@ func TestGravelerRevert(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
-		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit2ID)).Times(1).Return(rawRefCommit2, nil)
@@ -588,7 +582,6 @@ func TestGravelerRevert(t *testing.T) {
 		emptyStagingTokenCombo(test, 1)
 		dirtyStagingTokenCombo(test)
 
-		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(2).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit2ID)).Times(1).Return(rawRefCommit2, nil)
@@ -640,7 +633,6 @@ func TestGravelerCherryPick(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
-		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit2ID)).Times(1).Return(rawRefCommit2, nil)
@@ -838,7 +830,6 @@ func TestGravelerImport(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
-		test.RefManager.EXPECT().GetBranch(ctx, repository, branch1ID).Times(1).Return(&branch1, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
 		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch1ID)).Times(1).Return(rawRefCommit1, nil)
