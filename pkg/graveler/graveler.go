@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/go-test/deep"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	"github.com/prometheus/client_golang/prometheus"
@@ -1314,7 +1313,7 @@ func (g *Graveler) monitorRetries(ctx context.Context, retries int, repositoryID
 // information on the algorithm used.
 func (g *Graveler) prepareForCommitIDUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, operation string) error {
 	return g.retryBranchUpdate(ctx, repository, branchID, func(currBranch *Branch) (*Branch, error) {
-		empty, err := g.isStagingEmpty(ctx, repository, branchID)
+		empty, err := g.isStagingEmpty(ctx, repository, currBranch)
 		if err != nil {
 			return nil, err
 		}
@@ -1681,7 +1680,7 @@ func (g *Graveler) Get(ctx context.Context, repository *RepositoryRecord, ref Re
 			return nil, err
 		}
 		// the key we found is committed, return not found in staging
-		if diffs := deep.Equal(committedVal, updatedValue); diffs == nil {
+		if diffs := bytes.Compare(committedVal.Identity, updatedValue.Identity); diffs == 0 {
 			return nil, ErrNotFound
 		}
 	}
@@ -2006,7 +2005,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 
 	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		if params.SourceMetaRange != nil {
-			empty, err := g.isStagingEmpty(ctx, repository, branchID)
+			empty, err := g.isStagingEmpty(ctx, repository, branch)
 			if err != nil {
 				return nil, fmt.Errorf("checking empty branch: %w", err)
 			}
@@ -2253,8 +2252,8 @@ func (g *Graveler) addCommitNoLock(ctx context.Context, repository *RepositoryRe
 	return commitID, nil
 }
 
-func (g *Graveler) isStagingEmpty(ctx context.Context, repository *RepositoryRecord, branchID BranchID) (bool, error) {
-	diffIt, err := g.DiffUncommitted(ctx, repository, branchID)
+func (g *Graveler) isStagingEmpty(ctx context.Context, repository *RepositoryRecord, branch *Branch) (bool, error) {
+	diffIt, err := g.diffUncommitted(ctx, repository, branch)
 	if err != nil {
 		return false, err
 	}
@@ -2511,8 +2510,8 @@ func (g *Graveler) ResetPrefix(ctx context.Context, repository *RepositoryRecord
 		newSealedTokens = []StagingToken{branch.StagingToken}
 		newSealedTokens = append(newSealedTokens, branch.SealedTokens...)
 
-		// Reset keys by prefix on the new staging token
-		itr, err := g.listStagingAreaWithoutCompaction(ctx, branch, 0)
+		// Reset keys by prefix on the uncommitted entries
+		itr, err := g.DiffUncommitted(ctx, repository, branchID)
 		if err != nil {
 			return nil, err
 		}
@@ -3049,7 +3048,11 @@ func (g *Graveler) DiffUncommitted(ctx context.Context, repository *RepositoryRe
 	if err != nil {
 		return nil, err
 	}
+	return g.diffUncommitted(ctx, repository, branch)
 
+}
+
+func (g *Graveler) diffUncommitted(ctx context.Context, repository *RepositoryRecord, branch *Branch) (DiffIterator, error) {
 	commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
 	if err != nil {
 		return nil, err
@@ -3065,18 +3068,18 @@ func (g *Graveler) DiffUncommitted(ctx context.Context, repository *RepositoryRe
 		valueIterator.Close()
 		return nil, err
 	}
-	if branch.CompactedBaseMetaRangeID != "" {
-		// return the diff of staging + sealed from committed on top of the diff of compacted from committed
-		diffCommitAndCompacted, err := g.CommittedManager.Diff(ctx, repository.StorageNamespace, metaRangeID, branch.CompactedBaseMetaRangeID)
-		if err != nil {
-			valueIterator.Close()
-			committedValueIterator.Close()
-			return nil, err
-		}
-
-		return NewJoinedDiffIterator(NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator), diffCommitAndCompacted), nil
+	if branch.CompactedBaseMetaRangeID == "" {
+		return NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator), nil
 	}
-	return NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator), nil
+	// return the diff of staging + sealed from committed on top of the diff of compacted from committed
+	diffCommitAndCompacted, err := g.CommittedManager.Diff(ctx, repository.StorageNamespace, metaRangeID, branch.CompactedBaseMetaRangeID)
+	if err != nil {
+		valueIterator.Close()
+		committedValueIterator.Close()
+		return nil, err
+	}
+
+	return NewJoinedDiffIterator(NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator), diffCommitAndCompacted), nil
 }
 
 // dereferenceCommit will dereference and load the commit record based on 'ref'.
@@ -3135,17 +3138,17 @@ func (g *Graveler) Diff(ctx context.Context, repository *RepositoryRecord, left,
 		leftValueIterator.Close()
 		return nil, err
 	}
-	if rightBranch.CompactedBaseMetaRangeID != "" {
-		diff.Close()
-		compactedDiffIterator, err := g.CommittedManager.Diff(ctx, repository.StorageNamespace, leftCommit.MetaRangeID, rightBranch.CompactedBaseMetaRangeID)
-		if err != nil {
-			leftValueIterator.Close()
-			stagingIterator.Close()
-			return nil, err
-		}
-		return NewCombinedDiffIterator(compactedDiffIterator, leftValueIterator, stagingIterator), nil
+	if rightBranch.CompactedBaseMetaRangeID == "" {
+		return NewCombinedDiffIterator(diff, leftValueIterator, stagingIterator), nil
 	}
-	return NewCombinedDiffIterator(diff, leftValueIterator, stagingIterator), nil
+	diff.Close()
+	compactedDiffIterator, err := g.CommittedManager.Diff(ctx, repository.StorageNamespace, leftCommit.MetaRangeID, rightBranch.CompactedBaseMetaRangeID)
+	if err != nil {
+		leftValueIterator.Close()
+		stagingIterator.Close()
+		return nil, err
+	}
+	return NewCombinedDiffIterator(compactedDiffIterator, leftValueIterator, stagingIterator), nil
 }
 
 func (g *Graveler) FindMergeBase(ctx context.Context, repository *RepositoryRecord, from Ref, to Ref) (*CommitRecord, *CommitRecord, *Commit, error) {
