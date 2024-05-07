@@ -1680,7 +1680,7 @@ func (g *Graveler) Get(ctx context.Context, repository *RepositoryRecord, ref Re
 			return nil, err
 		}
 		// the key we found is committed, return not found in staging
-		if diffs := bytes.Compare(committedVal.Identity, updatedValue.Identity); diffs == 0 {
+		if committedVal != nil && bytes.Compare(committedVal.Identity, updatedValue.Identity) == 0 {
 			return nil, ErrNotFound
 		}
 	}
@@ -3049,7 +3049,6 @@ func (g *Graveler) DiffUncommitted(ctx context.Context, repository *RepositoryRe
 		return nil, err
 	}
 	return g.diffUncommitted(ctx, repository, branch)
-
 }
 
 func (g *Graveler) diffUncommitted(ctx context.Context, repository *RepositoryRecord, branch *Branch) (DiffIterator, error) {
