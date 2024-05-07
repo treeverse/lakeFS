@@ -62,6 +62,6 @@ Please [contact us](mailto:support@treeverse.io) for onboarding instructions.
 In lakeFS Cloud, a branch is the performance isolation unit.
 The defaults for a lakeFS Cloud installation is 1500 write operations per second and
 1500 read operations per second for all branches combined.
-This limit could be increased by contacting [support]((mailto:support@treeverse.io)).
+This limit can be increased by contacting [support]((mailto:support@treeverse.io)).
 lakeFS Cloud offers clients up to 1000 write operations per second and
-3000 read operations per second for each branch. This limit could not be increased.
+3000 read operations per second for each branch.
