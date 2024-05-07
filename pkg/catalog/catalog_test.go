@@ -533,6 +533,7 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 		numRecords             int
 		expectedCalls          int
 		expectedForUncommitted int
+		compactBranch          bool
 	}{
 		{
 			name:          "no branches",
@@ -547,10 +548,24 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			expectedCalls: 1,
 		},
 		{
+			name:          "no objects",
+			numBranch:     3,
+			numRecords:    0,
+			expectedCalls: 1,
+			compactBranch: true,
+		},
+		{
 			name:          "sanity",
 			numBranch:     5,
 			numRecords:    3,
 			expectedCalls: 1,
+		},
+		{
+			name:          "compacted",
+			numBranch:     5,
+			numRecords:    3,
+			expectedCalls: 1,
+			compactBranch: true,
 		},
 		{
 			name:          "tokenized",
@@ -558,11 +573,18 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			numRecords:    500,
 			expectedCalls: 2,
 		},
+		{
+			name:          "tokenized and compacted",
+			numBranch:     500,
+			numRecords:    500,
+			expectedCalls: 2,
+			compactBranch: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			const repositoryID = "repo1"
-			g, expectedRecords := createPrepareUncommittedTestScenario(t, repositoryID, tt.numBranch, tt.numRecords, tt.expectedCalls)
+			g, expectedRecords := createPrepareUncommittedTestScenario(t, repositoryID, tt.numBranch, tt.numRecords, tt.expectedCalls, tt.compactBranch)
 			blockAdapter := testutil.NewBlockAdapterByType(t, block.BlockstoreTypeMem)
 			c := &catalog.Catalog{
 				Store:                 g.Sut,
@@ -614,11 +636,12 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 	}
 }
 
-func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, numBranches, numRecords, expectedCalls int) (*gUtils.GravelerTest, []string) {
+func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, numBranches, numRecords, expectedCalls int, compact bool) (*gUtils.GravelerTest, []string) {
 	t.Helper()
 
 	test := gUtils.InitGravelerTest(t)
 	records := make([][]*graveler.ValueRecord, numBranches)
+	diffs := make([][]graveler.Diff, numBranches)
 	var branches []*graveler.BranchRecord
 	var expectedRecords []string
 	if numBranches > 0 {
@@ -628,10 +651,20 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 	for i := 0; i < numBranches; i++ {
 		branchID := graveler.BranchID(fmt.Sprintf("branch%04d", i))
 		token := graveler.StagingToken(fmt.Sprintf("%s_st%04d", branchID, i))
-		test.RefManager.EXPECT().GetBranch(gomock.Any(), gomock.Any(), branchID).MinTimes(1).Return(&graveler.Branch{StagingToken: token}, nil)
-		branches = append(branches, &graveler.BranchRecord{BranchID: branchID, Branch: &graveler.Branch{StagingToken: token}})
+		branch := &graveler.BranchRecord{BranchID: branchID, Branch: &graveler.Branch{StagingToken: token}}
+		compactBaseMetaRangeID := graveler.MetaRangeID(fmt.Sprintf("base%04d", i))
+		commitID := graveler.CommitID(fmt.Sprintf("commit%04d", i))
+		if !compact {
+			test.RefManager.EXPECT().GetBranch(gomock.Any(), gomock.Any(), branchID).MinTimes(1).Return(&graveler.Branch{StagingToken: token}, nil)
+		} else {
+			branch.CompactedBaseMetaRangeID = compactBaseMetaRangeID
+			branch.Branch.CommitID = commitID
+			test.RefManager.EXPECT().GetBranch(gomock.Any(), gomock.Any(), branchID).MinTimes(1).Return(&graveler.Branch{StagingToken: token, CommitID: commitID, CompactedBaseMetaRangeID: compactBaseMetaRangeID}, nil)
+		}
+		branches = append(branches, branch)
 
 		records[i] = make([]*graveler.ValueRecord, 0, numRecords)
+		diffs[i] = make([]graveler.Diff, 0, numRecords)
 		for j := 0; j < numRecords; j++ {
 			var (
 				addressType catalog.Entry_AddressType
@@ -674,6 +707,11 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 			Value: nil,
 		})
 
+		diffs[i] = append(diffs[i], graveler.Diff{
+			Type: graveler.DiffTypeRemoved,
+			Key:  []byte(fmt.Sprintf("%s_tombstone", branchID)),
+		})
+
 		// Add external address
 		e := catalog.Entry{
 			Address:      fmt.Sprintf("external/address/object_%s", branchID),
@@ -688,6 +726,15 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 		require.NoError(t, err)
 		records[i] = append(records[i], &graveler.ValueRecord{
 			Key: []byte(e.Address),
+			Value: &graveler.Value{
+				Identity: []byte("dont care"),
+				Data:     v,
+			},
+		})
+
+		diffs[i] = append(diffs[i], graveler.Diff{
+			Type: graveler.DiffTypeAdded,
+			Key:  []byte(e.Address),
 			Value: &graveler.Value{
 				Identity: []byte("dont care"),
 				Data:     v,
@@ -713,6 +760,9 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 			return bytes.Compare(records[i][ii].Key, records[i][jj].Key) < 0
 		})
 		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]))
+		if compact {
+			test.CommittedManager.EXPECT().Diff(gomock.Any(), repository.StorageNamespace, gomock.Any(), branches[i].CompactedBaseMetaRangeID).AnyTimes().Return(gUtils.NewDiffIter(diffs[i]), nil)
+		}
 	}
 
 	if numRecords > 0 {

@@ -1914,10 +1914,10 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 	return nil
 }
 
-// listStagingArea Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)
+// listStagingAreaWithoutCompaction Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)
 // for each key in the staging area it will return the latest update for that key (the value that appears in the newest token)
-// listStagingArea will not return changes that were already compacted and saved in the CompactedBaseMetaRangeID
-func (g *Graveler) listStagingArea(ctx context.Context, b *Branch, batchSize int) (ValueIterator, error) {
+// listStagingAreaWithoutCompaction will not return changes that were already compacted and saved in the CompactedBaseMetaRangeID
+func (g *Graveler) listStagingAreaWithoutCompaction(ctx context.Context, b *Branch, batchSize int) (ValueIterator, error) {
 	if b.StagingToken == "" {
 		return nil, ErrNotFound
 	}
@@ -1969,7 +1969,7 @@ func (g *Graveler) List(ctx context.Context, repository *RepositoryRecord, ref R
 		return nil, err
 	}
 	if reference.StagingToken != "" {
-		stagingList, err := g.listStagingArea(ctx, reference.BranchRecord.Branch, batchSize)
+		stagingList, err := g.listStagingAreaWithoutCompaction(ctx, reference.BranchRecord.Branch, batchSize)
 		if err != nil {
 			listing.Close()
 			return nil, err
@@ -2512,7 +2512,7 @@ func (g *Graveler) ResetPrefix(ctx context.Context, repository *RepositoryRecord
 		newSealedTokens = append(newSealedTokens, branch.SealedTokens...)
 
 		// Reset keys by prefix on the new staging token
-		itr, err := g.listStagingArea(ctx, branch, 0)
+		itr, err := g.listStagingAreaWithoutCompaction(ctx, branch, 0)
 		if err != nil {
 			return nil, err
 		}
@@ -3056,7 +3056,7 @@ func (g *Graveler) DiffUncommitted(ctx context.Context, repository *RepositoryRe
 	}
 	metaRangeID := commit.MetaRangeID
 
-	valueIterator, err := g.listStagingArea(ctx, branch, 0)
+	valueIterator, err := g.listStagingAreaWithoutCompaction(ctx, branch, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -3130,12 +3130,13 @@ func (g *Graveler) Diff(ctx context.Context, repository *RepositoryRecord, left,
 		leftValueIterator.Close()
 		return nil, err
 	}
-	stagingIterator, err := g.listStagingArea(ctx, rightBranch, 0)
+	stagingIterator, err := g.listStagingAreaWithoutCompaction(ctx, rightBranch, 0)
 	if err != nil {
 		leftValueIterator.Close()
 		return nil, err
 	}
 	if rightBranch.CompactedBaseMetaRangeID != "" {
+		diff.Close()
 		compactedDiffIterator, err := g.CommittedManager.Diff(ctx, repository.StorageNamespace, leftCommit.MetaRangeID, rightBranch.CompactedBaseMetaRangeID)
 		if err != nil {
 			leftValueIterator.Close()
