@@ -13,13 +13,13 @@ redirect_from:
 
 With lakeFS, you can access data directly from the storage and not through lakeFS using a presigned URL.
 Based on the user's access to an object in the object store, the presigned URL will get read or write access.
-The presign support is enabled for block adapter that supports it (S3, GCP, Azure), and can be disabled by the [configuration]({% link reference/configuration.md %}) (`blockstore.blockstore-name.disable_pre_signed`). Note that the UI support is disabled by default.
+The presign support is enabled for block adapter that supports it (S3, GCP, Azure), and can be disabled by the [configuration]({% link reference/configuration.md %}) (`blockstore.<blockstore_type>.disable_pre_signed`). Note that the UI support is disabled by default.
 
 ## Using presigned URLs in the UI
 For using presigned URLs in the UI:
-1. Enable the presigned URL support UI in the lakeFS [configuration]({% link reference/configuration.md %}) (`blockstore.blockstore-name.disable_pre_signed_ui`).
+1. Enable the presigned URL support UI in the lakeFS [configuration]({% link reference/configuration.md %}) (`blockstore.<blockstore_type>.disable_pre_signed_ui`   ).
 2. Add CORS (Cross-Origin Resource Sharing) permissions to the bucket for the UI to fetch objects using a presigned URL (instead of through lakeFS).
-3. The `disable_pre_signed` needs to be enabled to enable it in the UI.
+3. The `blockstore.<blockstore_type>.disable_pre_signed` must be false to enable it in the UI.
 
 **⚠️ Note** Currently DuckDB fetching data from lakeFS does not support fetching data using presigned URL.
 
@@ -33,7 +33,8 @@ For using presigned URLs in the UI:
         ],
         "AllowedMethods": [
             "GET",
-            "PUT"
+            "PUT",
+            "HEAD"
         ],
         "AllowedOrigins": [
             "lakefs.endpoint"
@@ -53,7 +54,7 @@ For using presigned URLs in the UI:
     {
         "origin": ["lakefs.endpoint"],
         "responseHeader": ["ETag"],
-        "method": ["PUT", "GET"],
+        "method": ["PUT", "GET", "HEAD"],
         "maxAgeSeconds": 3600
     }
    ]
@@ -66,7 +67,7 @@ For using presigned URLs in the UI:
   <Cors>
       <CorsRule>  
           <AllowedOrigins>lakefs.endpoint</AllowedOrigins>  
-          <AllowedMethods>PUT,GET</AllowedMethods>  
+          <AllowedMethods>PUT,GET,HEAD</AllowedMethods>  
           <AllowedHeaders>*</AllowedHeaders>  
           <ExposedHeaders>ETag,x-ms-*</ExposedHeaders>  
           <MaxAgeInSeconds>3600</MaxAgeInSeconds>  
