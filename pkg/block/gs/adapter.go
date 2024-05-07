@@ -103,60 +103,55 @@ func (a *Adapter) newPreSignedTime() time.Time {
 
 /*
 Ideally we assume all the objects should be encrypted with AES key at the very beginning
-But it can also be the case that some of existing objects are created before the key is introduced
-So we determined the object and see if it's encrypted. But we don't support multiple keys for
-individual objects, so it will generate the error when an improper key is supplied.
-
-We don't check the key from KMS as it will be decrypted as long as the service account with proper permissions
+It may be that some existing objects were created before the key is was introduced, so objects will be examined and checked for encryption.
+Multiple keys for individual objects aren't supported! An error will be generated if an improper key is supplied.
+Keys in KMS will not be validated. You should use a proper service account with permissions to access them.
 */
-func (o *storageObjectHandle) prepareEncryptedReadHandle(ctx context.Context, a *Adapter) *storage.ObjectHandle {
-	h := (*storage.ObjectHandle)(o)
-	att, err := h.Attrs(ctx)
+func (o *storageObjectHandle) prepareReadHandle(ctx context.Context, a *Adapter) *storage.ObjectHandle {
+	att, err := o.Attrs(ctx)
 	if err == nil {
-		a.log(ctx).Debug("Object has attribute customerKeySHA256 means it is encrypted by Customer-Supplied key: ", att.CustomerKeySHA256)
+		a.log(ctx).Debug("object has attribute customerKeySHA256 means it is encrypted by Customer-Supplied key: ", att.CustomerKeySHA256)
 		if a.ServerSideEncryptionCustomerSupplied != nil && att.CustomerKeySHA256 != "" {
-			return h.Key(a.ServerSideEncryptionCustomerSupplied)
+			return o.Key(a.ServerSideEncryptionCustomerSupplied)
 		}
 	}
 	// Assume no decryption needed when attrs is not found
-	a.log(ctx).Infof("Object Attrs get error %s", err)
-	return h
+	a.log(ctx).Debugf("object Attrs get error %w", err)
+	return o.ObjectHandle
 }
 
-type storageObjectHandle storage.ObjectHandle
+type storageObjectHandle struct {
+	*storage.ObjectHandle
+}
 
-func (o *storageObjectHandle) prepareEncryptedWriteHandle(a *Adapter) *storageObjectHandle {
+func (o *storageObjectHandle) prepareWriteHandle(a *Adapter) *storageObjectHandle {
 	if a.ServerSideEncryptionCustomerSupplied != nil {
-		return (*storageObjectHandle)(
-			(*storage.ObjectHandle)(o).Key(a.ServerSideEncryptionCustomerSupplied))
+		return &storageObjectHandle{o.Key(a.ServerSideEncryptionCustomerSupplied)}
 	}
 	return o
 }
-func (o *storageObjectHandle) withNewWriter(ctx context.Context, a *Adapter) (*storage.ObjectHandle, *storage.Writer) {
-	h := (*storage.ObjectHandle)(o)
-	w := h.NewWriter(ctx)
+func (o *storageObjectHandle) newWriter(ctx context.Context, a *Adapter) (*storage.ObjectHandle, *storage.Writer) {
+	w := o.NewWriter(ctx)
 	if a.ServerSideEncryptionKmsKeyID != "" {
 		w.KMSKeyName = a.ServerSideEncryptionKmsKeyID
 	}
-	return h, w
+	return o.ObjectHandle, w
 }
 
 func (o *storageObjectHandle) newCopier(a *Adapter, src *storage.ObjectHandle) *storage.Copier {
-	h := (*storage.ObjectHandle)(o)
-	c := h.CopierFrom(src)
+	c := o.CopierFrom(src)
 	if a.ServerSideEncryptionKmsKeyID != "" {
 		c.DestinationKMSKeyName = a.ServerSideEncryptionKmsKeyID
 	}
 	return c
 }
 
-func (o *storageObjectHandle) withNewComposer(a *Adapter, srcs ...*storage.ObjectHandle) (*storage.ObjectHandle, *storage.Composer) {
-	h := (*storage.ObjectHandle)(o)
-	c := h.ComposerFrom(srcs...)
+func (o *storageObjectHandle) newComposer(a *Adapter, srcs ...*storage.ObjectHandle) (*storage.ObjectHandle, *storage.Composer) {
+	c := o.ComposerFrom(srcs...)
 	if a.ServerSideEncryptionKmsKeyID != "" {
 		c.KMSKeyName = a.ServerSideEncryptionKmsKeyID
 	}
-	return h, c
+	return o.ObjectHandle, c
 }
 
 func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, _ block.PutOpts) error {
@@ -166,7 +161,8 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 	if err != nil {
 		return err
 	}
-	_, w := (*storageObjectHandle)(a.client.Bucket(bucket).Object(key)).prepareEncryptedWriteHandle(a).withNewWriter(ctx, a)
+	h := storageObjectHandle{a.client.Bucket(bucket).Object(key)}
+	_, w := h.prepareWriteHandle(a).newWriter(ctx, a)
 	_, err = io.Copy(w, reader)
 	if err != nil {
 		return fmt.Errorf("io.Copy: %w", err)
@@ -185,7 +181,8 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io
 	if err != nil {
 		return nil, err
 	}
-	objHandle := (*storageObjectHandle)(a.client.Bucket(bucket).Object(key)).prepareEncryptedReadHandle(ctx, a)
+	h := storageObjectHandle{a.client.Bucket(bucket).Object(key)}
+	objHandle := h.prepareReadHandle(ctx, a)
 	r, err := objHandle.NewReader(ctx)
 	if isErrNotFound(err) {
 		return nil, block.ErrDataNotFound
@@ -204,11 +201,11 @@ func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
 	return NewGCSWalker(a.client), nil
 }
 
-var errPreSignedURLWithCMEKNotSupportedError = errors.New("currently PreSignedURL with Customer-supplied encryption key " +
+var errPreSignedURLWithCSEKNotSupportedError = errors.New("currently PreSignedURL with Customer-supplied encryption key " +
 	"is not supported because the key in the config file must be exposed to user")
 
-func errPreSignedURLWithCMEKNotSupported() error {
-	return errPreSignedURLWithCMEKNotSupportedError
+func errPreSignedURLWithCSEKNotSupported() error {
+	return errPreSignedURLWithCSEKNotSupportedError
 }
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, time.Time, error) {
@@ -235,7 +232,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	bucketHandle := a.client.Bucket(bucket)
 	att, err := bucketHandle.Object(key).Attrs(ctx)
 	if err == nil && att.CustomerKeySHA256 != "" {
-		return "", time.Time{}, errPreSignedURLWithCMEKNotSupported()
+		return "", time.Time{}, errPreSignedURLWithCSEKNotSupported()
 	}
 	k, err := bucketHandle.SignedURL(key, opts)
 	if err != nil {
@@ -274,7 +271,8 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 	if err != nil {
 		return nil, err
 	}
-	objHandle := (*storageObjectHandle)(a.client.Bucket(bucket).Object(key)).prepareEncryptedReadHandle(ctx, a)
+	h := storageObjectHandle{a.client.Bucket(bucket).Object(key)}
+	objHandle := h.prepareReadHandle(ctx, a)
 	r, err := objHandle.NewRangeReader(ctx, startPosition, endPosition-startPosition+1)
 	if isErrNotFound(err) {
 		return nil, block.ErrDataNotFound
@@ -326,10 +324,10 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	if err != nil {
 		return fmt.Errorf("resolve source: %w", err)
 	}
-	destinationObjectHandle := (*storageObjectHandle)(
-		a.client.Bucket(dstBucket).Object(dstKey)).prepareEncryptedWriteHandle(a)
-	sourceObjectHandle := (*storageObjectHandle)(
-		a.client.Bucket(srcBucket).Object(srcKey)).prepareEncryptedReadHandle(ctx, a)
+	dstHandle := storageObjectHandle{a.client.Bucket(dstBucket).Object(dstKey)}
+	destinationObjectHandle := dstHandle.prepareWriteHandle(a)
+	srcHandle := storageObjectHandle{a.client.Bucket(srcBucket).Object(srcKey)}
+	sourceObjectHandle := srcHandle.prepareReadHandle(ctx, a)
 	copier := destinationObjectHandle.newCopier(a, sourceObjectHandle)
 	_, err = copier.Run(ctx)
 	if err != nil {
@@ -347,7 +345,8 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 	}
 	// we keep a marker file to identify multipart in progress
 	objName := formatMultipartMarkerFilename(uploadID)
-	_, w := (*storageObjectHandle)(a.client.Bucket(bucket).Object(objName)).prepareEncryptedWriteHandle(a).withNewWriter(ctx, a)
+	h := storageObjectHandle{a.client.Bucket(bucket).Object(objName)}
+	_, w := h.prepareWriteHandle(a).newWriter(ctx, a)
 	_, err = io.WriteString(w, uploadID)
 	if err != nil {
 		return nil, fmt.Errorf("io.WriteString: %w", err)
@@ -376,8 +375,8 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 		return nil, err
 	}
 	objName := formatMultipartFilename(uploadID, partNumber)
-	o, w := (*storageObjectHandle)(
-		a.client.Bucket(bucket).Object(objName)).prepareEncryptedWriteHandle(a).withNewWriter(ctx, a)
+	h := storageObjectHandle{a.client.Bucket(bucket).Object(objName)}
+	o, w := h.prepareWriteHandle(a).newWriter(ctx, a)
 	_, err = io.Copy(w, reader)
 	if err != nil {
 		return nil, fmt.Errorf("io.Copy: %w", err)
@@ -409,10 +408,10 @@ func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 		return nil, fmt.Errorf("resolve source: %w", err)
 	}
 
-	sourceObjectHandle := (*storageObjectHandle)(
-		a.client.Bucket(srcBucket).Object(srcKey)).prepareEncryptedReadHandle(ctx, a)
-	h := (*storageObjectHandle)(a.client.Bucket(bucket).Object(objName))
-	copier := h.prepareEncryptedWriteHandle(a).newCopier(a, sourceObjectHandle)
+	srcHandle := storageObjectHandle{a.client.Bucket(srcBucket).Object(srcKey)}
+	sourceObjectHandle := srcHandle.prepareReadHandle(ctx, a)
+	h := storageObjectHandle{a.client.Bucket(bucket).Object(objName)}
+	copier := h.prepareWriteHandle(a).newCopier(a, sourceObjectHandle)
 	attrs, err := copier.Run(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("CopierFrom: %w", err)
@@ -435,8 +434,8 @@ func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 	if err != nil {
 		return nil, fmt.Errorf("GetRange: %w", err)
 	}
-	h := (*storageObjectHandle)(a.client.Bucket(bucket).Object(objName))
-	o, w := h.prepareEncryptedWriteHandle(a).withNewWriter(ctx, a)
+	h := storageObjectHandle{a.client.Bucket(bucket).Object(objName)}
+	o, w := h.prepareWriteHandle(a).newWriter(ctx, a)
 	_, err = io.Copy(w, reader)
 	if err != nil {
 		return nil, fmt.Errorf("copy: %w", err)
@@ -590,11 +589,12 @@ func (a *Adapter) composeMultipartUploadParts(ctx context.Context, bucketName st
 	err := ComposeAll(uploadID, parts, func(target string, parts []string) error {
 		objs := make([]*storage.ObjectHandle, len(parts))
 		for i := range parts {
-			objs[i] = (*storageObjectHandle)(bucket.Object(parts[i])).prepareEncryptedReadHandle(ctx, a)
+			h := storageObjectHandle{bucket.Object(parts[i])}
+			objs[i] = h.prepareReadHandle(ctx, a)
 		}
 		// compose target from parts
-		h := (*storageObjectHandle)(bucket.Object(target))
-		_, composer := h.prepareEncryptedWriteHandle(a).withNewComposer(a, objs...)
+		h := storageObjectHandle{bucket.Object(target)}
+		_, composer := h.prepareWriteHandle(a).newComposer(a, objs...)
 		attrs, err := composer.Run(ctx)
 		if err != nil {
 			return err

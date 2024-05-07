@@ -137,10 +137,10 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 		gs.WithDisablePreSigned(params.DisablePreSigned),
 		gs.WithDisablePreSignedUI(params.DisablePreSignedUI),
 	}
-	if params.ServerSideEncryptionCustomerSupplied != nil {
+	switch {
+	case params.ServerSideEncryptionCustomerSupplied != nil:
 		opts = append(opts, gs.WithServerSideEncryptionCustomerSupplied(params.ServerSideEncryptionCustomerSupplied))
-	}
-	if params.ServerSideEncryptionKmsKeyID != "" {
+	case params.ServerSideEncryptionKmsKeyID != "":
 		opts = append(opts, gs.WithServerSideEncryptionKmsKeyID(params.ServerSideEncryptionKmsKeyID))
 	}
 	adapter := gs.NewAdapter(client, opts...)

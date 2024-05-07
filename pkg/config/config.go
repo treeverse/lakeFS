@@ -18,9 +18,11 @@ import (
 )
 
 var (
-	ErrBadConfiguration    = errors.New("bad configuration")
-	ErrBadDomainNames      = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
-	ErrMissingRequiredKeys = fmt.Errorf("%w: missing required keys", ErrBadConfiguration)
+	ErrBadConfiguration      = errors.New("bad configuration")
+	ErrBadDomainNames        = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
+	ErrMissingRequiredKeys   = fmt.Errorf("%w: missing required keys", ErrBadConfiguration)
+	ErrBadGCPCSEKValue       = fmt.Errorf("value of customer-supplied server side encryption is not a valid %d bytes AES key", gcpAESKeyLength)
+	ErrGCPEncryptKeyConflict = errors.New("setting both kms and customer supplied encryption will result failure when reading/writing object")
 )
 
 // UseLocalConfiguration set to true will add defaults that enable a lakeFS run
@@ -493,19 +495,22 @@ func (c *Config) BlockstoreLocalParams() (blockparams.Local, error) {
 }
 
 const (
-	GcpAESKeyLength = 32
+	gcpAESKeyLength = 32
 )
 
 func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
 	var customerSuppliedKey []byte = nil
 	if c.Blockstore.GS.ServerSideEncryptionCustomerSupplied != "" {
 		v, err := hex.DecodeString(c.Blockstore.GS.ServerSideEncryptionCustomerSupplied)
-		if err != nil || len(v) != GcpAESKeyLength {
-			logging.ContextUnavailable().WithError(err).Fatalf("Value of customer-supplied server side encryption is not a valid %d bytes AES key", GcpAESKeyLength)
+		if err != nil {
+			return blockparams.GS{}, err
+		}
+		if len(v) != gcpAESKeyLength {
+			return blockparams.GS{}, ErrBadGCPCSEKValue
 		}
 		customerSuppliedKey = v
 		if c.Blockstore.GS.ServerSideEncryptionKmsKeyID != "" {
-			logging.ContextUnavailable().Fatal("Setting both kms and customer supplied encryption will result failure when reading/writing object")
+			return blockparams.GS{}, ErrGCPEncryptKeyConflict
 		}
 	}
 
