@@ -31,7 +31,7 @@ var (
 	reShortCommitID   = regexp.MustCompile(`[\d|a-f]{16}`)
 	reChecksum        = regexp.MustCompile(`([\d|a-f]{32})|(0x[0-9A-F]{15})`)
 	reEndpoint        = regexp.MustCompile(`https?://\w+(:\d+)?/api/v\d+/`)
-	rePhysicalAddress = regexp.MustCompile(`/data/[0-9a-v]{20}/[0-9a-v]{20}?(--sig--.+)*`)
+	rePhysicalAddress = regexp.MustCompile(`/data/[0-9a-v]{20}/[0-9a-v]{20}?(--sig--.+)?`)
 	reVariable        = regexp.MustCompile(`\$\{([^${}]+)}`)
 	rePreSignURL      = regexp.MustCompile(`https://\S+\?\S+`)
 )
