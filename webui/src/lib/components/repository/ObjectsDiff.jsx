@@ -6,11 +6,13 @@ import {AlertError, Loading} from "../controls";
 import {humanSize} from "./tree";
 import Alert from "react-bootstrap/Alert";
 import {InfoIcon} from "@primer/octicons-react";
+import {useStorageConfig} from "../../hooks/storageConfig";
 
 const maxDiffSizeBytes = 120 << 10;
 const supportedReadableFormats = ["txt", "text", "csv", "tsv", "yaml", "yml", "json"];
 
 export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
+    const config = useStorageConfig();
     const readable = readableObject(path);
     let left;
     let right;
@@ -50,7 +52,7 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     }
     const leftSize = leftStat && leftStat.size_bytes;
     const rightSize = rightStat && rightStat.size_bytes;
-    return <ContentDiff repoId={repoId} path={path} leftRef={left && leftRef} rightRef={right && rightRef}
+    return <ContentDiff config={config} repoId={repoId} path={path} leftRef={left && leftRef} rightRef={right && rightRef}
                         leftSize={leftSize} rightSize={rightSize} diffType={diffType}/>;
 }
 
@@ -71,10 +73,10 @@ const NoContentDiff = ({left, right, diffType}) => {
     </div>;
 }
 
-const ContentDiff = ({repoId, path, leftRef, rightRef, leftSize, rightSize, diffType}) => {
-    const left = leftRef && useAPI(async () => objects.get(repoId, leftRef, path),
+const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType}) => {
+    const left = leftRef && useAPI(async () => objects.get(repoId, leftRef, path, config.pre_sign_support_ui),
         [repoId, leftRef, path]);
-    const right = rightRef && useAPI(async () => objects.get(repoId, rightRef, path),
+    const right = rightRef && useAPI(async () => objects.get(repoId, rightRef, path, config.pre_sign_support_ui),
         [repoId, rightRef, path]);
 
     if ((left && left.loading) || (right && right.loading)) return <Loading/>;
