@@ -699,6 +699,30 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 			})
 			// we always keep the relative path - as the prepared uncommitted will trim the storage namespace
 			expectedRecords = append(expectedRecords, fmt.Sprintf("%s_record%04d", branchID, j))
+
+			if compact {
+				diffs[i] = append(diffs[i], graveler.Diff{
+					Type: graveler.DiffTypeAdded,
+					Key:  []byte(e.Address),
+					Value: &graveler.Value{
+						Identity: []byte("dont care"),
+						Data:     v,
+					},
+				}) // record in compaction and in staging so no need to add it again to expected records
+				e.Address = fmt.Sprintf("%s_%s", e.Address, "compacted")
+				v, err = proto.Marshal(&e)
+				require.NoError(t, err)
+				diffs[i] = append(diffs[i], graveler.Diff{
+					Type: graveler.DiffTypeAdded,
+					Key:  []byte(e.Address),
+					Value: &graveler.Value{
+						Identity: []byte("dont care"),
+						Data:     v,
+					},
+				})
+				// record in compaction but not in staging
+				expectedRecords = append(expectedRecords, fmt.Sprintf("%s_record%04d_%s", branchID, j, "compacted"))
+			}
 		}
 
 		// Add tombstone
@@ -751,16 +775,19 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 			DefaultBranchID:  "main",
 		},
 	}
-	test.RefManager.EXPECT().GetRepository(gomock.Any(), graveler.RepositoryID(repositoryID)).Times(expectedCalls).Return(repository, nil)
+	test.RefManager.EXPECT().GetRepository(gomock.Any(), graveler.RepositoryID(repositoryID)).AnyTimes().Return(repository, nil)
 
 	// expect tracked addresses does not list branches, so remove one and keep at least the first
-	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).Times(expectedCalls).Return(gUtils.NewFakeBranchIterator(branches), nil)
+	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).AnyTimes().Return(gUtils.NewFakeBranchIterator(branches), nil)
 	for i := 0; i < len(branches); i++ {
 		sort.Slice(records[i], func(ii, jj int) bool {
 			return bytes.Compare(records[i][ii].Key, records[i][jj].Key) < 0
 		})
 		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]))
 		if compact {
+			sort.Slice(diffs[i], func(ii, jj int) bool {
+				return bytes.Compare(diffs[i][ii].Key, diffs[i][jj].Key) < 0
+			})
 			test.CommittedManager.EXPECT().Diff(gomock.Any(), repository.StorageNamespace, gomock.Any(), branches[i].CompactedBaseMetaRangeID).AnyTimes().Return(gUtils.NewDiffIter(diffs[i]), nil)
 		}
 	}
@@ -768,7 +795,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 	if numRecords > 0 {
 		test.GarbageCollectionManager.EXPECT().
 			GetUncommittedLocation(gomock.Any(), gomock.Any()).
-			Times(expectedCalls).
+			AnyTimes().
 			DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
 				return fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID), nil
 			})

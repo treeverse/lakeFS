@@ -3086,7 +3086,6 @@ func (g *Graveler) diffUncommitted(ctx context.Context, repository *RepositoryRe
 		committedValueIterator.Close()
 		return nil, err
 	}
-
 	return NewJoinedDiffIterator(NewUncommittedDiffIterator(ctx, committedValueIterator, valueIterator), diffCommitAndCompacted), nil
 }
 

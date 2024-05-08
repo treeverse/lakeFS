@@ -11,10 +11,10 @@ type JoinedDiffIterator struct {
 	p     DiffIterator
 }
 
-func NewJoinedDiffIterator(stageAndCommittedDiffIterator DiffIterator, compactedAndCommittedDiffIterator DiffIterator) *JoinedDiffIterator {
+func NewJoinedDiffIterator(iterA DiffIterator, iterB DiffIterator) *JoinedDiffIterator {
 	return &JoinedDiffIterator{
-		iterA: stageAndCommittedDiffIterator,
-		iterB: compactedAndCommittedDiffIterator,
+		iterA: iterA,
+		iterB: iterB,
 		p:     nil,
 	}
 }
