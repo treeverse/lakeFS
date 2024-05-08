@@ -3,6 +3,8 @@ package api_test
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -11,7 +13,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"path"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -2837,9 +2838,9 @@ func TestController_ObjectsUploadObjectHandler(t *testing.T) {
 func TestController_ObjectsStageObjectHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
-
+	ns := onBlock(deps, "bucket/prefix")
 	repo := testUniqueRepoName()
-	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "bucket/prefix"), "main", false)
+	_, err := deps.catalog.CreateRepository(ctx, repo, ns, "main", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2910,9 +2911,8 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 				SizeBytes:       38,
 			})
 		testutil.Must(t, err)
-		if resp.JSON404 == nil {
-			t.Fatal("Missing branch should return not found")
-		}
+		require.NotNil(t, resp.JSON404)
+		require.Contains(t, resp.JSON404.Message, "branch not found")
 	})
 
 	t.Run("wrong storage adapter", func(t *testing.T) {
@@ -2924,9 +2924,8 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 			SizeBytes:       38,
 		})
 		testutil.Must(t, err)
-		if resp.JSON400 == nil {
-			t.Fatalf("Wrong storage adapter should return 400, got status %s [%d]\n\tbody: %s", resp.Status(), resp.StatusCode(), string(resp.Body))
-		}
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, "physical address is not valid for block adapter")
 	})
 
 	t.Run("read-only repository", func(t *testing.T) {
@@ -2967,233 +2966,57 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 			t.Fatalf("unexpected physical address: %s", objectStat.PhysicalAddress)
 		}
 	})
-}
 
-func TestController_LinkPhysicalAddressHandler(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
-	ctx := context.Background()
-
-	repo := testUniqueRepoName()
-	ns := onBlock(deps, "bucket/prefix")
-	_, err := deps.catalog.CreateRepository(ctx, repo, ns, "main", false)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Run("get and link physical address", func(t *testing.T) {
-		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, repo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar2"})
-		verifyResponseOK(t, linkResp, err)
-		if linkResp.JSON200 == nil {
-			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
-		}
-		const expectedSizeBytes = 38
+	t.Run("missing signature", func(t *testing.T) {
+		address := fmt.Sprintf("%s/%s", ns, upload.DefaultPathProvider.NewPath())
 		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
-			Path: "foo/bar2",
+			Path: "foo/bar",
 		}, apigen.LinkPhysicalAddressJSONRequestBody{
 			Checksum:  "afb0689fe58b82c5f762991453edbbec",
-			SizeBytes: expectedSizeBytes,
+			SizeBytes: 38,
 			Staging: apigen.StagingLocation{
-				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
-			},
-		})
-		verifyResponseOK(t, resp, err)
-	})
-
-	t.Run("link physical address twice", func(t *testing.T) {
-		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, repo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar2"})
-		verifyResponseOK(t, linkResp, err)
-		if linkResp.JSON200 == nil {
-			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
-		}
-		const expectedSizeBytes = 38
-		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
-			Path: "foo/bar2",
-		}, apigen.LinkPhysicalAddressJSONRequestBody{
-			Checksum:  "afb0689fe58b82c5f762991453edbbec",
-			SizeBytes: expectedSizeBytes,
-			Staging: apigen.StagingLocation{
-				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
-			},
-		})
-		verifyResponseOK(t, resp, err)
-
-		resp, err = clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
-			Path: "foo/bar2",
-		}, apigen.LinkPhysicalAddressJSONRequestBody{
-			Checksum:  "afb0689fe58b82c5f762991453edbbec",
-			SizeBytes: expectedSizeBytes,
-			Staging: apigen.StagingLocation{
-				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+				PhysicalAddress: &address,
 			},
 		})
 		testutil.Must(t, err)
-		expectedStatusCode := http.StatusBadRequest
-		if resp.HTTPResponse.StatusCode != expectedStatusCode {
-			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
-		}
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, "address is not signed")
 	})
-
-	t.Run("link physical address twice if non match", func(t *testing.T) {
-		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, repo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar2"})
-		verifyResponseOK(t, linkResp, err)
-		if linkResp.JSON200 == nil {
-			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
-		}
-		const expectedSizeBytes = 38
+	t.Run("malformed signature", func(t *testing.T) {
+		address := fmt.Sprintf("%s/%s,someBadSig?=", ns, upload.DefaultPathProvider.NewPath())
 		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
-			Path: "foo/bar2",
+			Path: "foo/bar",
 		}, apigen.LinkPhysicalAddressJSONRequestBody{
 			Checksum:  "afb0689fe58b82c5f762991453edbbec",
-			SizeBytes: expectedSizeBytes,
+			SizeBytes: 38,
 			Staging: apigen.StagingLocation{
-				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
-			},
-		})
-		verifyResponseOK(t, resp, err)
-
-		// Try again with ifAbsent == true and expect failure
-		linkResp, err = clt.GetPhysicalAddressWithResponse(ctx, repo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar2"})
-		verifyResponseOK(t, linkResp, err)
-		if linkResp.JSON200 == nil {
-			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
-		}
-		ifNonMatch := apigen.IfNoneMatch("*")
-		resp, err = clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
-			Path:        "foo/bar2",
-			IfNoneMatch: &ifNonMatch,
-		}, apigen.LinkPhysicalAddressJSONRequestBody{
-			Checksum:  "afb0689fe58b82c5f762991453edbbec",
-			SizeBytes: expectedSizeBytes,
-			Staging: apigen.StagingLocation{
-				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
+				PhysicalAddress: &address,
 			},
 		})
 		testutil.Must(t, err)
-		expectedStatusCode := http.StatusPreconditionFailed
-		if resp.HTTPResponse.StatusCode != expectedStatusCode {
-			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
-		}
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, "malformed address signature")
 	})
+	t.Run("invalid signature", func(t *testing.T) {
+		// create a random 64 bytes (512 bits) secret
+		secret := make([]byte, 64)
+		_, err := rand.Read(secret)
+		require.NoError(t, err)
+		sig := base64.RawURLEncoding.EncodeToString(secret)
 
-	t.Run("link physical address invalid if non match", func(t *testing.T) {
-		const expectedSizeBytes = 38
-		ifNonMatch := apigen.IfNoneMatch("invalid")
+		address := fmt.Sprintf("%s/%s,%s", ns, upload.DefaultPathProvider.NewPath(), sig)
 		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
-			Path:        "foo/bar2",
-			IfNoneMatch: &ifNonMatch,
+			Path: "foo/bar",
 		}, apigen.LinkPhysicalAddressJSONRequestBody{
 			Checksum:  "afb0689fe58b82c5f762991453edbbec",
-			SizeBytes: expectedSizeBytes,
+			SizeBytes: 38,
 			Staging: apigen.StagingLocation{
-				PhysicalAddress: swag.String(fmt.Sprintf("%s/some-physical-address", ns)),
+				PhysicalAddress: &address,
 			},
 		})
 		testutil.Must(t, err)
-		expectedStatusCode := http.StatusBadRequest
-		if resp.HTTPResponse.StatusCode != expectedStatusCode {
-			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
-		}
-	})
-
-	t.Run("link physical address without getting it first", func(t *testing.T) {
-		const expectedSizeBytes = 38
-		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
-			Path: "foo/bar2",
-		}, apigen.LinkPhysicalAddressJSONRequestBody{
-			Checksum:  "afb0689fe58b82c5f762991453edbbec",
-			SizeBytes: expectedSizeBytes,
-			Staging: apigen.StagingLocation{
-				PhysicalAddress: swag.String(fmt.Sprintf("%s/some-physical-address", ns)),
-			},
-		})
-		testutil.Must(t, err)
-		expectedStatusCode := http.StatusBadRequest
-		if resp.HTTPResponse.StatusCode != expectedStatusCode {
-			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
-		}
-	})
-
-	t.Run("link physical address outside the storage namespace should succeed", func(t *testing.T) {
-		const expectedSizeBytes = 38
-		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
-			Path: "foo/bar2",
-		}, apigen.LinkPhysicalAddressJSONRequestBody{
-			Checksum:  "afb0689fe58b82c5f762991453edbbec",
-			SizeBytes: expectedSizeBytes,
-			Staging: apigen.StagingLocation{
-				PhysicalAddress: swag.String("s3://another-bucket/some/location"),
-			},
-		})
-		verifyResponseOK(t, resp, err)
-	})
-
-	t.Run("link expired address", func(t *testing.T) {
-		address := upload.DefaultPathProvider.NewPath()
-		dir, _ := path.Split(address)
-		newFilename := xid.NewWithTime(time.Now().Add(-24 * time.Hour))
-		path.Join(dir, newFilename.String())
-		address = path.Join(dir, newFilename.String())
-		err = deps.catalog.SetLinkAddress(ctx, repo, address)
-		testutil.Must(t, err)
-		const expectedSizeBytes = 38
-		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
-			Path: "foo/bar2",
-		}, apigen.LinkPhysicalAddressJSONRequestBody{
-			Checksum:  "afb0689fe58b82c5f762991453edbbec",
-			SizeBytes: expectedSizeBytes,
-			Staging: apigen.StagingLocation{
-				PhysicalAddress: swag.String(ns + "/" + address),
-			},
-		})
-		testutil.Must(t, err)
-		expectedStatusCode := http.StatusBadRequest
-		if resp.HTTPResponse.StatusCode != expectedStatusCode {
-			t.Fatalf("LinkPhysicalAddress status code: %d, expected: %d", resp.HTTPResponse.StatusCode, expectedStatusCode)
-		}
-	})
-
-	t.Run("read-only repository", func(t *testing.T) {
-		readOnlyRepo := testUniqueRepoName()
-		readOnlyns := onBlock(deps, "bucket/prefix2")
-		_, err := deps.catalog.CreateRepository(ctx, readOnlyRepo, readOnlyns, "main", true)
-		if err != nil {
-			t.Fatal(err)
-		}
-		linkResp, err := clt.GetPhysicalAddressWithResponse(ctx, readOnlyRepo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar2"})
-		verifyResponseOK(t, linkResp, err)
-		if linkResp.JSON200 == nil {
-			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
-		}
-		const expectedSizeBytes = 38
-		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, readOnlyRepo, "main", &apigen.LinkPhysicalAddressParams{
-			Path: "foo/bar2",
-		}, apigen.LinkPhysicalAddressJSONRequestBody{
-			Checksum:  "afb0689fe58b82c5f762991453edbbec",
-			SizeBytes: expectedSizeBytes,
-			Staging: apigen.StagingLocation{
-				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
-			},
-		})
-		testutil.Must(t, err)
-		if resp.StatusCode() != http.StatusForbidden {
-			t.Fatalf("LinkPhysicalAddress non 403 response - status code %d", resp.StatusCode())
-		}
-		linkResp, err = clt.GetPhysicalAddressWithResponse(ctx, readOnlyRepo, "main", &apigen.GetPhysicalAddressParams{Path: "foo/bar3"})
-		verifyResponseOK(t, linkResp, err)
-		if linkResp.JSON200 == nil {
-			t.Fatalf("GetPhysicalAddress non 200 response - status code %d", linkResp.StatusCode())
-		}
-		resp, err = clt.LinkPhysicalAddressWithResponse(ctx, readOnlyRepo, "main", &apigen.LinkPhysicalAddressParams{
-			Path: "foo/bar3",
-		}, apigen.LinkPhysicalAddressJSONRequestBody{
-			Checksum:  "afb0689fe58b82c5f762991453edbbed",
-			SizeBytes: expectedSizeBytes,
-			Staging: apigen.StagingLocation{
-				PhysicalAddress: linkResp.JSON200.PhysicalAddress,
-			},
-			Force: swag.Bool(true),
-		})
-		verifyResponseOK(t, resp, err)
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, "invalid address signature")
 	})
 }
 

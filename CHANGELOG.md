@@ -1,5 +1,10 @@
 # Changelog
 
+# Unreleased
+
+- Refactored Linked Address mechanism (#7725)
+  **Upgrading to this version will void all existing physical addresses issued by GetPhysicalAddress**
+
 # v1.21.0
 
 :new: What's new:

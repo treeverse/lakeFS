@@ -309,29 +309,6 @@ func (g *FakeGraveler) GetStagingToken(_ context.Context, _ *graveler.Repository
 	panic("implement me")
 }
 
-func (g *FakeGraveler) SetLinkAddress(_ context.Context, _ *graveler.RepositoryRecord, _ string) error {
-	panic("implement me")
-}
-
-func (g *FakeGraveler) VerifyLinkAddress(_ context.Context, _ *graveler.RepositoryRecord, _ string) error {
-	panic("implement me")
-}
-
-func (g *FakeGraveler) ListLinkAddresses(_ context.Context, _ *graveler.RepositoryRecord) (graveler.LinkAddressIterator, error) {
-	if g.Err != nil {
-		return nil, g.Err
-	}
-	return g.LinkAddressIteratorFactory(), nil
-}
-
-func (g *FakeGraveler) DeleteExpiredLinkAddresses(_ context.Context, _ *graveler.RepositoryRecord) error {
-	return nil
-}
-
-func (g *FakeGraveler) IsLinkAddressExpired(_ *graveler.LinkAddressData) (bool, error) {
-	return false, nil
-}
-
 type FakeValueIterator struct {
 	Data  []*graveler.ValueRecord
 	Index int
@@ -496,40 +473,3 @@ func (m *FakeTagIterator) Err() error {
 }
 
 func (m *FakeTagIterator) Close() {}
-
-type FakeLinkAddressIterator struct {
-	Data  []*graveler.LinkAddressData
-	Index int
-}
-
-func NewFakeLinkAddressIterator(data []*graveler.LinkAddressData) *FakeLinkAddressIterator {
-	return &FakeLinkAddressIterator{Data: data, Index: -1}
-}
-
-func (m *FakeLinkAddressIterator) Next() bool {
-	if m.Index >= len(m.Data) {
-		return false
-	}
-	m.Index++
-	return m.Index < len(m.Data)
-}
-
-func (m *FakeLinkAddressIterator) SeekGE(address string) {
-	m.Index = len(m.Data)
-	for i, item := range m.Data {
-		if item.Address >= address {
-			m.Index = i - 1
-			return
-		}
-	}
-}
-
-func (m *FakeLinkAddressIterator) Value() *graveler.LinkAddressData {
-	return m.Data[m.Index]
-}
-
-func (m *FakeLinkAddressIterator) Err() error {
-	return nil
-}
-
-func (m *FakeLinkAddressIterator) Close() {}
