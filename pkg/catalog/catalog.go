@@ -2744,6 +2744,14 @@ func (c *Catalog) listRepositoriesHelper(ctx context.Context) ([]*graveler.Repos
 	return repos, nil
 }
 
+func getHashSum(value, signingKey string) []byte {
+	// create a new HMAC by defining the hash type and the key
+	h := hmac.New(sha256.New, []byte(signingKey))
+	// compute the HMAC
+	h.Write([]byte(value))
+	return h.Sum(nil)
+}
+
 func (c *Catalog) VerifyLinkAddress(repository, branch, path, physicalAddress string) error {
 	address, signature, found := strings.Cut(physicalAddress, LinkAddressSigningDelimiter)
 	if !found {
@@ -2756,9 +2764,7 @@ func (c *Catalog) VerifyLinkAddress(repository, branch, path, physicalAddress st
 		return fmt.Errorf("malformed address signature: %s: %w", stringToVerify, graveler.ErrLinkAddressInvalid)
 	}
 
-	h := hmac.New(sha256.New, []byte(c.signingKey))
-	h.Write([]byte(stringToVerify))
-	calculated := h.Sum(nil)
+	calculated := getHashSum(stringToVerify, c.signingKey.String())
 	if !hmac.Equal(calculated, decodedSig) {
 		return fmt.Errorf("invalid address signature: %w", block.ErrInvalidAddress)
 	}
@@ -2774,11 +2780,7 @@ func (c *Catalog) VerifyLinkAddress(repository, branch, path, physicalAddress st
 }
 
 func (c *Catalog) signAddress(logicalAddress string) string {
-	// create a new HMAC by defining the hash type and the key
-	h := hmac.New(sha256.New, []byte(c.signingKey))
-	// compute the HMAC
-	h.Write([]byte(logicalAddress))
-	dataHmac := h.Sum(nil)
+	dataHmac := getHashSum(logicalAddress, c.signingKey.String())
 	return base64.RawURLEncoding.EncodeToString(dataHmac) // Using url encoding to avoid "/"
 }
 
