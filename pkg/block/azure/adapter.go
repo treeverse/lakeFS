@@ -41,7 +41,7 @@ const (
 var (
 	ErrInvalidDomain = errors.New("invalid Azure Domain")
 
-	endpointRegex    = regexp.MustCompile(`https://(?P<account>[\w]+).(?P<domain>[\w.-]+)[/:][\w-/]*$`)
+	endpointRegex    = regexp.MustCompile(`https://(?P<account>[\w]+).(?P<domain>[\w.-]+)[/:][\w-/,]*$`)
 	supportedDomains = []string{
 		BlobEndpointDefaultDomain,
 		BlobEndpointChinaDomain,
