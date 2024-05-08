@@ -2697,6 +2697,9 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, graveler.ErrTooManyTries):
 		log.Debug("Retried too many times")
 		cb(w, r, http.StatusLocked, "Too many attempts, try again later")
+	case errors.Is(err, kv.ErrSlowDown):
+		log.Debug("KV Throttling")
+		cb(w, r, http.StatusServiceUnavailable, "Throughput exceeded. Slow down and retry")
 	case errors.Is(err, graveler.ErrPreconditionFailed):
 		log.Debug("Precondition failed")
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
