@@ -199,7 +199,12 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 	}
 
 	// generate a new address for the object we like to upload
-	address := c.Catalog.GetAddressWithSignature(repository, branch, params.Path)
+	address, err := c.Catalog.GetAddressWithSignature(repository, branch, params.Path)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+
 	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
@@ -669,7 +674,12 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	address := c.Catalog.GetAddressWithSignature(repository, branch, params.Path)
+	address, err := c.Catalog.GetAddressWithSignature(repository, branch, params.Path)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+
 	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)

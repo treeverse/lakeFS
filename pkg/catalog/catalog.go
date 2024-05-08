@@ -8,6 +8,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -75,7 +76,7 @@ const (
 
 	// LinkAddressTime the time address is valid from get to link
 	LinkAddressTime             = 6 * time.Hour
-	LinkAddressSigningDelimiter = "--sig--"
+	LinkAddressSigningDelimiter = ","
 )
 
 type Path string
@@ -2744,27 +2745,32 @@ func (c *Catalog) listRepositoriesHelper(ctx context.Context) ([]*graveler.Repos
 	return repos, nil
 }
 
-func getHashSum(value, signingKey string) []byte {
+func getHashSum(value, signingKey []byte) []byte {
 	// create a new HMAC by defining the hash type and the key
-	h := hmac.New(sha256.New, []byte(signingKey))
+	h := hmac.New(sha256.New, signingKey)
 	// compute the HMAC
-	h.Write([]byte(value))
+	h.Write(value)
 	return h.Sum(nil)
 }
 
 func (c *Catalog) VerifyLinkAddress(repository, branch, path, physicalAddress string) error {
-	address, signature, found := strings.Cut(physicalAddress, LinkAddressSigningDelimiter)
-	if !found {
+	idx := strings.LastIndex(physicalAddress, LinkAddressSigningDelimiter)
+	if idx < 0 {
 		return fmt.Errorf("address is not signed: %w", graveler.ErrLinkAddressInvalid)
 	}
+	address := physicalAddress[:idx]
+	signature := physicalAddress[idx+1:]
 
-	stringToVerify := getAddressToSign(repository, branch, path, address)
+	stringToVerify, err := getAddressJSON(repository, branch, path, address)
+	if err != nil {
+		return fmt.Errorf("failed json encoding: %w", graveler.ErrLinkAddressInvalid)
+	}
 	decodedSig, err := base64.RawURLEncoding.DecodeString(signature)
 	if err != nil {
 		return fmt.Errorf("malformed address signature: %s: %w", stringToVerify, graveler.ErrLinkAddressInvalid)
 	}
 
-	calculated := getHashSum(stringToVerify, c.signingKey.String())
+	calculated := getHashSum(stringToVerify, []byte(c.signingKey))
 	if !hmac.Equal(calculated, decodedSig) {
 		return fmt.Errorf("invalid address signature: %w", block.ErrInvalidAddress)
 	}
@@ -2779,18 +2785,32 @@ func (c *Catalog) VerifyLinkAddress(repository, branch, path, physicalAddress st
 	return nil
 }
 
-func (c *Catalog) signAddress(logicalAddress string) string {
-	dataHmac := getHashSum(logicalAddress, c.signingKey.String())
+func (c *Catalog) signAddress(logicalAddress []byte) string {
+	dataHmac := getHashSum(logicalAddress, []byte(c.signingKey))
 	return base64.RawURLEncoding.EncodeToString(dataHmac) // Using url encoding to avoid "/"
 }
 
-func getAddressToSign(repository, branch, path, physicalAddress string) string {
-	return repository + branch + path + physicalAddress
+func getAddressJSON(repository, branch, path, physicalAddress string) ([]byte, error) {
+	return json.Marshal(struct {
+		Repository      string
+		Branch          string
+		Path            string
+		PhysicalAddress string
+	}{
+		Repository:      repository,
+		Branch:          branch,
+		Path:            path,
+		PhysicalAddress: physicalAddress,
+	})
 }
 
-func (c *Catalog) GetAddressWithSignature(repository, branch, path string) string {
+func (c *Catalog) GetAddressWithSignature(repository, branch, path string) (string, error) {
 	physicalPath := c.PathProvider.NewPath()
-	return physicalPath + LinkAddressSigningDelimiter + c.signAddress(getAddressToSign(repository, branch, path, physicalPath))
+	data, err := getAddressJSON(repository, branch, path, physicalPath)
+	if err != nil {
+		return "", err
+	}
+	return physicalPath + LinkAddressSigningDelimiter + c.signAddress(data), nil
 }
 
 func (c *Catalog) Close() error {

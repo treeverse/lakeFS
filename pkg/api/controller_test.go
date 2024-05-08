@@ -2983,7 +2983,7 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 		require.Contains(t, resp.JSON400.Message, "address is not signed")
 	})
 	t.Run("malformed signature", func(t *testing.T) {
-		address := fmt.Sprintf("%s/%s,someBadSig", ns, upload.DefaultPathProvider.NewPath())
+		address := fmt.Sprintf("%s/%s,someBadSig?=", ns, upload.DefaultPathProvider.NewPath())
 		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
 			Path: "foo/bar",
 		}, apigen.LinkPhysicalAddressJSONRequestBody{
@@ -2997,12 +2997,12 @@ func TestController_ObjectsStageObjectHandler(t *testing.T) {
 		require.NotNil(t, resp.JSON400)
 		require.Contains(t, resp.JSON400.Message, "malformed address signature")
 	})
-	t.Run("malformed signature", func(t *testing.T) {
+	t.Run("invalid signature", func(t *testing.T) {
 		// create a random 64 bytes (512 bits) secret
 		secret := make([]byte, 64)
 		_, err := rand.Read(secret)
 		require.NoError(t, err)
-		sig := base64.URLEncoding.EncodeToString(secret)
+		sig := base64.RawURLEncoding.EncodeToString(secret)
 
 		address := fmt.Sprintf("%s/%s,%s", ns, upload.DefaultPathProvider.NewPath(), sig)
 		resp, err := clt.LinkPhysicalAddressWithResponse(ctx, repo, "main", &apigen.LinkPhysicalAddressParams{
