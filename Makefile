@@ -12,6 +12,8 @@ OPENAPI_LEGACY_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v5.3.0
 OPENAPI_LEGACY_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_LEGACY_GENERATOR_IMAGE)
 OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.0.1
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
+OPENAPI_RUST_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.5.0
+OPENAPI_RUST_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_RUST_GENERATOR_IMAGE)
 PY_OPENAPI_GENERATOR=$(DOCKER) run -e PYTHON_POST_PROCESS_FILE="/mnt/clients/python/scripts/pydantic.sh" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
 GOLANGCI_LINT_VERSION=v1.53.3
@@ -138,10 +140,19 @@ sdk-python: api/swagger.yml  ## Generate SDK for Python client - openapi generat
 		--package-name lakefs_sdk \
 		--http-user-agent "lakefs-python-sdk/$(PACKAGE_VERSION)" \
 		--git-user-id treeverse --git-repo-id lakeFS \
-		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageVersion=$(PACKAGE_VERSION),packageName=lakefs_sdk,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-sdk,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
+		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-sdk,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
 		-c /mnt/clients/python/python-codegen-config.yaml \
 		-o /mnt/clients/python \
 		--ignore-file-override /mnt/clients/python/.openapi-generator-ignore
+
+sdk-rust: api/swagger.yml  ## Generate SDK for Rust client - openapi generator version 7.1.0
+	rm -rf clients/rust
+	mkdir -p clients/rust
+	$(OPENAPI_RUST_GENERATOR) generate \
+		-i /mnt/api/swagger.yml \
+		-g rust \
+		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs_sdk,packageVersion=$(PACKAGE_VERSION),packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/rust \
+		-o /mnt/clients/rust
 
 client-java-legacy: api/swagger.yml api/java-gen-ignore  ## Generate legacy SDK for Java (and Scala) client
 	rm -rf clients/java-legacy
@@ -167,7 +178,7 @@ client-java: api/swagger.yml api/java-gen-ignore  ## Generate SDK for Java (and 
 		-o /mnt/clients/java
 
 .PHONY: clients client-python sdk-python-legacy sdk-python client-java client-java-legacy
-clients: client-python client-java client-java-legacy
+clients: client-python client-java client-java-legacy sdk-rust
 
 package-python: package-python-client package-python-sdk
 
@@ -294,12 +305,15 @@ validate-python-sdk:
 validate-client-java:
 	git diff --quiet -- clients/java || (echo "Modification verification failed! java client"; false)
 
+validate-client-rust:
+	git diff --quiet -- clients/rust || (echo "Modification verification failed! rust client"; false)
+
 validate-python-wrapper:
 	sphinx-apidoc -o clients/python-wrapper/docs clients/python-wrapper/lakefs sphinx-apidoc --full -A 'Treeverse' -eq
 	git diff --quiet -- clients/python-wrapper || (echo 'Modification verification failed! python wrapper client'; false)
 
 # Run all validation/linting steps
-checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-reference validate-mockgen validate-permissions-gen
+checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-client-rust validate-reference validate-mockgen validate-permissions-gen
 
 python-wrapper-lint:
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c "./pylint.sh"
