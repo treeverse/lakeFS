@@ -2417,7 +2417,7 @@ func (g *Graveler) deleteAndNotify(ctx context.Context, repositoryID RepositoryI
 // resetKey resets given key on branch
 // Since we cannot (will not) modify sealed tokens data, we overwrite changes done on entry on a new staging token, effectively reverting it
 // to the current state in the branch committed data. If entry is not committed return an error
-func (g *Graveler) resetKey(ctx context.Context, repository *RepositoryRecord, branchID BranchID, branch *Branch, key Key, stagedValue *Value, st StagingToken) error {
+func (g *Graveler) resetKey(ctx context.Context, repository *RepositoryRecord, branchID BranchID, branch *Branch, key Key, uncommittedValue *Value, st StagingToken) error {
 	isCommitted := true
 	committed, err := g.Get(ctx, repository, branch.CommitID.Ref(), key)
 	if err != nil {
@@ -2428,13 +2428,13 @@ func (g *Graveler) resetKey(ctx context.Context, repository *RepositoryRecord, b
 	}
 
 	if isCommitted { // entry committed and changed in staging area => override with entry from commit
-		if stagedValue != nil && bytes.Equal(committed.Identity, stagedValue.Identity) {
+		if uncommittedValue != nil && bytes.Equal(committed.Identity, uncommittedValue.Identity) {
 			return nil // No change
 		}
 		return g.StagingManager.Set(ctx, st, key, committed, false)
 		// entry not committed and changed in staging area => override with tombstone
 		// If not committed and staging == tombstone => ignore
-	} else if !isCommitted && stagedValue != nil {
+	} else if !isCommitted && uncommittedValue != nil {
 		return g.deleteAndNotify(ctx, repository.RepositoryID, BranchRecord{branchID, branch}, key, false)
 	}
 
@@ -2463,15 +2463,24 @@ func (g *Graveler) ResetKey(ctx context.Context, repository *RepositoryRecord, b
 		return fmt.Errorf("getting branch: %w", err)
 	}
 
-	staged, err := g.getFromStagingArea(ctx, branch, key)
+	uncommittedValue, err := g.getFromStagingArea(ctx, branch, key)
 	if err != nil {
-		if errors.Is(err, ErrNotFound) { // If key is not in staging => nothing to do
+		if !errors.Is(err, ErrNotFound) {
+			return err
+		}
+		if branch.CompactedBaseMetaRangeID != "" {
+			uncommittedValue, err = g.CommittedManager.Get(ctx, repository.StorageNamespace, branch.CompactedBaseMetaRangeID, key)
+			if err != nil && !errors.Is(err, ErrNotFound) {
+				return err
+			}
+		}
+		// If key is not in staging nor compacted => nothing to do
+		if uncommittedValue == nil {
 			return nil
 		}
-		return err
 	}
 
-	err = g.resetKey(ctx, repository, branchID, branch, key, staged, branch.StagingToken)
+	err = g.resetKey(ctx, repository, branchID, branch, key, uncommittedValue, branch.StagingToken)
 	if err != nil {
 		if !errors.Is(err, ErrNotFound) { // Not found in staging => ignore
 			return err
