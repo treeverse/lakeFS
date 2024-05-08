@@ -18,6 +18,7 @@
     "typesync": "typesync"
   },
   "dependencies": {
+    "@beeswax/react-markdown-async": "9.0.1",
     "@duckdb/duckdb-wasm": "^1.28.0",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",

@@ -4,7 +4,7 @@ import { humanSize } from "../../../../lib/components/repository/tree";
 import { useAPI } from "../../../../lib/hooks/api";
 import { objects, qs } from "../../../../lib/api";
 import { AlertError, Loading } from "../../../../lib/components/controls";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown from "@beeswax/react-markdown-async";
 import remarkGfm from "remark-gfm";
 import remarkHtml from "remark-html";
 import rehypeRaw from "rehype-raw";
@@ -76,11 +76,13 @@ export const MarkdownRenderer: FC<RendererComponentWithText> = ({
   repoId,
   refId,
   path,
+  presign,
 }) => {
   return (
     <ReactMarkdown
       className="object-viewer-markdown"
       components={CustomMarkdownRenderer}
+      async={true}
       remarkPlugins={[
         [
           imageUriReplacer,
@@ -88,6 +90,7 @@ export const MarkdownRenderer: FC<RendererComponentWithText> = ({
             repo: repoId,
             ref: refId,
             path,
+            presign,
           },
         ],
         remarkGfm,
