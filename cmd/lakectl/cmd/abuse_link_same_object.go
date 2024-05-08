@@ -10,6 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
+	"github.com/treeverse/lakefs/pkg/uri"
 )
 
 var abuseLinkSameObjectCmd = &cobra.Command{
@@ -37,46 +38,50 @@ var abuseLinkSameObjectCmd = &cobra.Command{
 		})
 
 		// execute the things!
-		generator.Run(func(input chan string, output chan stress.Result) {
-			ctx := cmd.Context()
-			client := getClient()
-			for work := range input {
-				start := time.Now()
+		runLinkObject(cmd, u, generator)
+	},
+}
 
-				getResponse, err := client.GetPhysicalAddressWithResponse(ctx, u.Repository, u.Ref, &apigen.GetPhysicalAddressParams{Path: work})
-				if err == nil && getResponse.JSON200 == nil {
-					err = helpers.ResponseAsError(getResponse)
-				}
-				if err != nil {
-					output <- stress.Result{
-						Error: err,
-						Took:  time.Since(start),
-					}
-					continue
-				}
+func runLinkObject(cmd *cobra.Command, u *uri.URI, generator *stress.Generator) {
+	generator.Run(func(input chan string, output chan stress.Result) {
+		ctx := cmd.Context()
+		client := getClient()
+		for work := range input {
+			start := time.Now()
 
-				stagingLocation := getResponse.JSON200
-				linkResponse, err := client.LinkPhysicalAddressWithResponse(ctx, u.Repository, u.Ref,
-					&apigen.LinkPhysicalAddressParams{
-						Path: work,
-					},
-					apigen.LinkPhysicalAddressJSONRequestBody{
-						Checksum: "00695c7307b0480c7b6bdc873cf05c15",
-						Staging: apigen.StagingLocation{
-							PhysicalAddress: stagingLocation.PhysicalAddress,
-						},
-						UserMetadata: nil,
-					})
-				if err == nil && linkResponse.JSON200 == nil {
-					err = helpers.ResponseAsError(linkResponse)
-				}
+			getResponse, err := client.GetPhysicalAddressWithResponse(ctx, u.Repository, u.Ref, &apigen.GetPhysicalAddressParams{Path: work})
+			if err == nil && getResponse.JSON200 == nil {
+				err = helpers.ResponseAsError(getResponse)
+			}
+			if err != nil {
 				output <- stress.Result{
 					Error: err,
 					Took:  time.Since(start),
 				}
+				continue
 			}
-		})
-	},
+
+			stagingLocation := getResponse.JSON200
+			linkResponse, err := client.LinkPhysicalAddressWithResponse(ctx, u.Repository, u.Ref,
+				&apigen.LinkPhysicalAddressParams{
+					Path: work,
+				},
+				apigen.LinkPhysicalAddressJSONRequestBody{
+					Checksum: "00695c7307b0480c7b6bdc873cf05c15",
+					Staging: apigen.StagingLocation{
+						PhysicalAddress: stagingLocation.PhysicalAddress,
+					},
+					UserMetadata: nil,
+				})
+			if err == nil && linkResponse.JSON200 == nil {
+				err = helpers.ResponseAsError(linkResponse)
+			}
+			output <- stress.Result{
+				Error: err,
+				Took:  time.Since(start),
+			}
+		}
+	})
 }
 
 //nolint:gochecknoinits
