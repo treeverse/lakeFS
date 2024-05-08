@@ -5,7 +5,10 @@ import (
 	"container/heap"
 	"context"
 	"crypto"
-	_ "crypto/sha256"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -70,6 +73,10 @@ const (
 	RestoreRefsTaskIDPrefix = "RR"
 
 	TaskExpiryTime = 24 * time.Hour
+
+	// LinkAddressTime the time address is valid from get to link
+	LinkAddressTime             = 6 * time.Hour
+	LinkAddressSigningDelimiter = ","
 )
 
 type Path string
@@ -225,6 +232,7 @@ type Catalog struct {
 	deleteSensor          *graveler.DeleteSensor
 	UGCPrepareMaxFileSize int64
 	UGCPrepareInterval    time.Duration
+	signingKey            config.SecureString
 }
 
 const (
@@ -398,6 +406,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		KVStoreLimited:        storeLimiter,
 		addressProvider:       addressProvider,
 		deleteSensor:          deleteSensor,
+		signingKey:            cfg.Config.Blockstore.Signing.SecretKey,
 	}, nil
 }
 
@@ -2689,38 +2698,6 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	return &dstEntry, nil
 }
 
-// SetLinkAddress to validate single use limited in time of a given physical address
-func (c *Catalog) SetLinkAddress(ctx context.Context, repository, physicalAddress string) error {
-	repo, err := c.getRepository(ctx, repository)
-	if err != nil {
-		return err
-	}
-	return c.Store.SetLinkAddress(ctx, repo, physicalAddress)
-}
-
-func (c *Catalog) VerifyLinkAddress(ctx context.Context, repository, physicalAddress string) error {
-	repo, err := c.getRepository(ctx, repository)
-	if err != nil {
-		return err
-	}
-	return c.Store.VerifyLinkAddress(ctx, repo, physicalAddress)
-}
-
-func (c *Catalog) DeleteExpiredLinkAddresses(ctx context.Context) {
-	repos, err := c.listRepositoriesHelper(ctx)
-	if err != nil {
-		c.log(ctx).WithError(err).Warn("Failed list repositories during delete expired addresses")
-		return
-	}
-
-	for _, repo := range repos {
-		err := c.Store.DeleteExpiredLinkAddresses(ctx, repo)
-		if err != nil {
-			c.log(ctx).WithError(err).WithField("repository", repo.RepositoryID).Warn("Delete expired address tokens failed")
-		}
-	}
-}
-
 func (c *Catalog) DeleteExpiredImports(ctx context.Context) {
 	repos, err := c.listRepositoriesHelper(ctx)
 	if err != nil {
@@ -2766,6 +2743,74 @@ func (c *Catalog) listRepositoriesHelper(ctx context.Context) ([]*graveler.Repos
 		return nil, err
 	}
 	return repos, nil
+}
+
+func getHashSum(value, signingKey []byte) []byte {
+	// create a new HMAC by defining the hash type and the key
+	h := hmac.New(sha256.New, signingKey)
+	// compute the HMAC
+	h.Write(value)
+	return h.Sum(nil)
+}
+
+func (c *Catalog) VerifyLinkAddress(repository, branch, path, physicalAddress string) error {
+	idx := strings.LastIndex(physicalAddress, LinkAddressSigningDelimiter)
+	if idx < 0 {
+		return fmt.Errorf("address is not signed: %w", graveler.ErrLinkAddressInvalid)
+	}
+	address := physicalAddress[:idx]
+	signature := physicalAddress[idx+1:]
+
+	stringToVerify, err := getAddressJSON(repository, branch, path, address)
+	if err != nil {
+		return fmt.Errorf("failed json encoding: %w", graveler.ErrLinkAddressInvalid)
+	}
+	decodedSig, err := base64.RawURLEncoding.DecodeString(signature)
+	if err != nil {
+		return fmt.Errorf("malformed address signature: %s: %w", stringToVerify, graveler.ErrLinkAddressInvalid)
+	}
+
+	calculated := getHashSum(stringToVerify, []byte(c.signingKey))
+	if !hmac.Equal(calculated, decodedSig) {
+		return fmt.Errorf("invalid address signature: %w", block.ErrInvalidAddress)
+	}
+	creationTime, err := c.PathProvider.ResolvePathTime(address)
+	if err != nil {
+		return err
+	}
+
+	if time.Since(creationTime) > LinkAddressTime {
+		return graveler.ErrLinkAddressExpired
+	}
+	return nil
+}
+
+func (c *Catalog) signAddress(logicalAddress []byte) string {
+	dataHmac := getHashSum(logicalAddress, []byte(c.signingKey))
+	return base64.RawURLEncoding.EncodeToString(dataHmac) // Using url encoding to avoid "/"
+}
+
+func getAddressJSON(repository, branch, path, physicalAddress string) ([]byte, error) {
+	return json.Marshal(struct {
+		Repository      string
+		Branch          string
+		Path            string
+		PhysicalAddress string
+	}{
+		Repository:      repository,
+		Branch:          branch,
+		Path:            path,
+		PhysicalAddress: physicalAddress,
+	})
+}
+
+func (c *Catalog) GetAddressWithSignature(repository, branch, path string) (string, error) {
+	physicalPath := c.PathProvider.NewPath()
+	data, err := getAddressJSON(repository, branch, path, physicalPath)
+	if err != nil {
+		return "", err
+	}
+	return physicalPath + LinkAddressSigningDelimiter + c.signAddress(data), nil
 }
 
 func (c *Catalog) Close() error {

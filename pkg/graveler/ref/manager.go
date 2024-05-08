@@ -4,12 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -29,8 +27,6 @@ const (
 	MaxBatchDelay = 3 * time.Millisecond
 	// commitIDStringLength string representation length of commit ID - based on hex representation of sha256
 	commitIDStringLength = 64
-	// LinkAddressTime the time address is valid from get to link
-	LinkAddressTime = 6 * time.Hour
 	// ImportExpiryTime Expiry time to remove imports from ref-store
 	ImportExpiryTime = 24 * time.Hour
 )
@@ -621,100 +617,6 @@ func newCache(cfg CacheConfig) cache.Cache {
 		return cache.NoCache
 	}
 	return cache.NewCache(cfg.Size, cfg.Expiry, cache.NewJitterFn(cfg.Jitter))
-}
-
-func (m *Manager) SetLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
-	if physicalAddress == "" {
-		return graveler.ErrLinkAddressNotFound
-	}
-	a := &graveler.LinkAddressData{
-		Address: physicalAddress,
-	}
-	err := kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(graveler.LinkedAddressPath(physicalAddress)), a, nil)
-	if err != nil {
-		if errors.Is(err, kv.ErrPredicateFailed) {
-			err = graveler.ErrLinkAddressAlreadyExists
-		}
-		return err
-	}
-	return nil
-}
-
-func (m *Manager) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
-	if physicalAddress == "" {
-		return graveler.ErrLinkAddressNotFound
-	}
-
-	data := graveler.LinkAddressData{}
-	addrPath := []byte(graveler.LinkedAddressPath(physicalAddress))
-	_, err := kv.GetMsg(ctx, m.kvStore, graveler.RepoPartition(repository), addrPath, &data)
-	if err != nil {
-		if errors.Is(err, kv.ErrNotFound) {
-			err = graveler.ErrLinkAddressNotFound
-		}
-		return err
-	}
-
-	expired, err := m.IsLinkAddressExpired(&data)
-	if err != nil {
-		return err
-	}
-	if expired {
-		err = graveler.ErrLinkAddressExpired
-	}
-
-	_ = deleteLinkAddress(ctx, m.kvStore, repository, physicalAddress)
-	return err
-}
-
-func deleteLinkAddress(ctx context.Context, kvStore kv.Store, repository *graveler.RepositoryRecord, physicalAddress string) error {
-	addrPath := []byte(graveler.LinkedAddressPath(physicalAddress))
-	return kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), addrPath)
-}
-
-func (m *Manager) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.LinkAddressIterator, error) {
-	return NewLinkAddressIterator(ctx, m.kvStore, repository)
-}
-
-func (m *Manager) IsLinkAddressExpired(linkAddress *graveler.LinkAddressData) (bool, error) {
-	creationTime, err := m.resolveLinkAddressTime(linkAddress.Address)
-	if err != nil {
-		return false, err
-	}
-	return time.Since(creationTime) > LinkAddressTime, nil
-}
-
-func (m *Manager) resolveLinkAddressTime(address string) (time.Time, error) {
-	_, name := path.Split(address)
-	id, err := xid.FromString(name)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return id.Time(), nil
-}
-
-// DeleteExpiredLinkAddresses delete expired link addresses from kv store. This call uses limiter to access
-// kv, assuming the call does in the background.
-func (m *Manager) DeleteExpiredLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) error {
-	itr, err := NewLinkAddressIterator(ctx, m.kvStoreLimited, repository)
-	if err != nil {
-		return err
-	}
-	defer itr.Close()
-	for itr.Next() {
-		linkAddress := itr.Value()
-		expired, err := m.IsLinkAddressExpired(linkAddress)
-		if err != nil {
-			return err
-		}
-		if expired {
-			err := deleteLinkAddress(ctx, m.kvStoreLimited, repository, linkAddress.Address)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return itr.Err()
 }
 
 func (m *Manager) DeleteExpiredImports(ctx context.Context, repository *graveler.RepositoryRecord) error {

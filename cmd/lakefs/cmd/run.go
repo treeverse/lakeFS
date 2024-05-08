@@ -425,21 +425,13 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 }
 
 func scheduleCleanupJobs(ctx context.Context, s *gocron.Scheduler, c *catalog.Catalog) error {
-	const (
-		deleteExpiredLinkAddressesInterval = 3 * ref.LinkAddressTime
-		deleteExpiredTaskInterval          = 24 * time.Hour
-	)
+	const deleteExpiredTaskInterval = 24 * time.Hour
 
 	jobData := []struct {
 		name     string
 		interval time.Duration
 		fn       func(context.Context)
 	}{
-		{
-			name:     "delete expired link addresses",
-			interval: deleteExpiredLinkAddressesInterval,
-			fn:       c.DeleteExpiredLinkAddresses,
-		},
 		{
 			name:     "delete expired imports",
 			interval: ref.ImportExpiryTime,
