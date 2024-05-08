@@ -1313,7 +1313,7 @@ func (g *Graveler) monitorRetries(ctx context.Context, retries int, repositoryID
 // information on the algorithm used.
 func (g *Graveler) prepareForCommitIDUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, operation string) error {
 	return g.retryBranchUpdate(ctx, repository, branchID, func(currBranch *Branch) (*Branch, error) {
-		empty, err := g.isStagingEmpty(ctx, repository, currBranch)
+		empty, err := g.isUncommittedEmpty(ctx, repository, currBranch)
 		if err != nil {
 			return nil, err
 		}
@@ -2005,7 +2005,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 
 	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		if params.SourceMetaRange != nil {
-			empty, err := g.isStagingEmpty(ctx, repository, branch)
+			empty, err := g.isUncommittedEmpty(ctx, repository, branch)
 			if err != nil {
 				return nil, fmt.Errorf("checking empty branch: %w", err)
 			}
@@ -2252,7 +2252,7 @@ func (g *Graveler) addCommitNoLock(ctx context.Context, repository *RepositoryRe
 	return commitID, nil
 }
 
-func (g *Graveler) isStagingEmpty(ctx context.Context, repository *RepositoryRecord, branch *Branch) (bool, error) {
+func (g *Graveler) isUncommittedEmpty(ctx context.Context, repository *RepositoryRecord, branch *Branch) (bool, error) {
 	diffIt, err := g.diffUncommitted(ctx, repository, branch)
 	if err != nil {
 		return false, err
