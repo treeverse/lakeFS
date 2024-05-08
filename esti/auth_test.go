@@ -244,7 +244,7 @@ func mapGroupNamesToIDs(t *testing.T, ctx context.Context, groups []string) (map
 	mapGroupNameToID := make(map[string]string)
 
 	// get group list
-	resListGroups, err := client.ListGroupsWithResponse(ctx, &apigen.ListGroupsParams{Amount: apiutil.Ptr(apigen.PaginationAmount(-1))})
+	resListGroups, err := client.ListGroupsWithResponse(ctx, &apigen.ListGroupsParams{Amount: apiutil.Ptr(-1)})
 	require.NoError(t, err, "unexpectedly failed while listing groups")
 	require.Equal(t, http.StatusOK, resListGroups.StatusCode())
 	require.NotNil(t, resListGroups.JSON200, "unexpectedly got empty response when listing groups")

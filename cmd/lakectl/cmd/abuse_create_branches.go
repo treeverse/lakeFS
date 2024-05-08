@@ -34,7 +34,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 
 		const paginationAmount = 1000
 		deleteGen.Setup(func(add stress.GeneratorAddFn) {
-			currentOffset := apigen.PaginationAfter(branchPrefix)
+			currentOffset := branchPrefix
 			amount := apigen.PaginationAmount(paginationAmount)
 			for {
 				resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &apigen.ListBranchesParams{
@@ -56,7 +56,7 @@ var abuseCreateBranchesCmd = &cobra.Command{
 				if !pagination.HasMore {
 					return
 				}
-				currentOffset = apigen.PaginationAfter(pagination.NextOffset)
+				currentOffset = pagination.NextOffset
 			}
 		})
 

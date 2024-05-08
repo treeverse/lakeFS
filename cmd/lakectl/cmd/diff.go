@@ -89,8 +89,8 @@ func printDiffBranch(ctx context.Context, client apigen.ClientWithResponsesInter
 	pageSize := pageSize(minDiffPageSize)
 	for {
 		resp, err := client.DiffBranchWithResponse(ctx, repository, branch, &apigen.DiffBranchParams{
-			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
-			Amount: apiutil.Ptr(apigen.PaginationAmount(pageSize)),
+			After:  &after,
+			Amount: apiutil.Ptr(int(pageSize)),
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
@@ -124,7 +124,7 @@ func printDiffRefs(ctx context.Context, client apigen.ClientWithResponsesInterfa
 }
 
 func FmtDiff(d apigen.Diff, withDirection bool) {
-	action, color := diff.Fmt(d.Type)
+	action, color := diff.Fmt(string(d.Type))
 
 	if !withDirection {
 		_, _ = os.Stdout.WriteString(

@@ -122,7 +122,7 @@ func TestSanityAPI(t *testing.T) {
 
 	log.Debug("branch1 - diff changes with main")
 	diffResp, err = client.DiffRefsWithResponse(ctx, repo, mainBranch, "branch1", &apigen.DiffRefsParams{
-		Amount: apiutil.Ptr(apigen.PaginationAmount(-1)),
+		Amount: apiutil.Ptr(-1),
 	})
 	require.NoError(t, err, "diff between branch1 and main")
 	require.Equal(t, http.StatusOK, diffResp.StatusCode())

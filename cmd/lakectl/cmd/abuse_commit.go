@@ -51,7 +51,7 @@ var abuseCommitCmd = &cobra.Command{
 			for work := range input {
 				start := time.Now()
 				resp, err := client.CommitWithResponse(ctx, u.Repository, u.Ref, &apigen.CommitParams{},
-					apigen.CommitJSONRequestBody(apigen.CommitCreation{Message: work}))
+					apigen.CommitCreation{Message: work})
 				if err == nil && resp.StatusCode() != http.StatusOK {
 					err = helpers.ResponseAsError(resp)
 				}

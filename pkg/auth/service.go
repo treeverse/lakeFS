@@ -1,6 +1,6 @@
 package auth
 
-//go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package auth -generate "types,client" -o client.gen.go ../../api/authorization.yml
+//go:generate go run github.com/deepmap/oapi-codegen/v2/cmd/oapi-codegen@v2.1.0 -package auth -generate "types,client" -o client.gen.go ../../api/authorization.yml
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mock -destination=mock/mock_auth_client.go github.com/treeverse/lakefs/pkg/auth ClientWithResponsesInterface
 
 import (
@@ -15,7 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/cenkalti/backoff/v4"
-	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	"github.com/deepmap/oapi-codegen/v2/pkg/securityprovider"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-openapi/swag"
 	"github.com/golang-jwt/jwt/v4"
@@ -1341,13 +1341,10 @@ func toPagination(paginator Pagination) *model.Paginator {
 }
 
 func (a *APIAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
-	paginationPrefix := PaginationPrefix(params.Prefix)
-	paginationAfter := PaginationAfter(params.After)
-	paginationAmount := PaginationAmount(params.Amount)
 	resp, err := a.apiClient.ListUsersWithResponse(ctx, &ListUsersParams{
-		Prefix: &paginationPrefix,
-		After:  &paginationAfter,
-		Amount: &paginationAmount,
+		Prefix: &params.Prefix,
+		After:  &params.After,
+		Amount: &params.Amount,
 	})
 	if err != nil {
 		a.logger.WithError(err).Error("failed to list users")
@@ -1423,18 +1420,15 @@ func (a *APIAuthService) validateResponse(resp openapi3filter.StatusCoder, expec
 }
 
 func paginationPrefix(prefix string) *PaginationPrefix {
-	p := PaginationPrefix(prefix)
-	return &p
+	return &prefix
 }
 
 func paginationAfter(after string) *PaginationAfter {
-	p := PaginationAfter(after)
-	return &p
+	return &after
 }
 
 func paginationAmount(amount int) *PaginationAmount {
-	p := PaginationAmount(amount)
-	return &p
+	return &amount
 }
 
 func (a *APIAuthService) DeleteGroup(ctx context.Context, groupID string) error {
@@ -1564,7 +1558,7 @@ func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy, 
 	for i, s := range policy.Statement {
 		stmts[i] = Statement{
 			Action:   s.Action,
-			Effect:   s.Effect,
+			Effect:   StatementEffect(s.Effect),
 			Resource: s.Resource,
 		}
 	}
@@ -1600,7 +1594,7 @@ func serializePolicyToModalPolicy(p Policy) *model.Policy {
 	stmts := make(model.Statements, len(p.Statement))
 	for i, apiStatement := range p.Statement {
 		stmts[i] = model.Statement{
-			Effect:   apiStatement.Effect,
+			Effect:   string(apiStatement.Effect),
 			Action:   apiStatement.Action,
 			Resource: apiStatement.Resource,
 		}

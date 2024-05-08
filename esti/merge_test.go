@@ -76,12 +76,12 @@ func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Co
 	res, err := client.GetCommitWithResponse(ctx, repo, mergeRes.JSON200.Reference)
 	require.NoError(t, err, "failed to get commit")
 	require.NotNil(t, res.JSON200)
-	metadata := res.JSON200.Metadata
-	val, ok := metadata.AdditionalProperties[graveler.MergeStrategyMetadataKey]
+	metadata := *res.JSON200.Metadata
+	val, ok := metadata[graveler.MergeStrategyMetadataKey]
 	require.True(t, ok)
 	require.Equal(t, strategy, val)
 
-	resp, err := client.ListObjectsWithResponse(ctx, repo, mainBranch, &apigen.ListObjectsParams{Amount: apiutil.Ptr(apigen.PaginationAmount(100))})
+	resp, err := client.ListObjectsWithResponse(ctx, repo, mainBranch, &apigen.ListObjectsParams{Amount: apiutil.Ptr(100)})
 	require.NoError(t, err, "failed to list objects")
 	require.Equal(t, http.StatusOK, resp.StatusCode())
 	payload := resp.JSON200

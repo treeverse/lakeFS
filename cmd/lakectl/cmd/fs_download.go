@@ -70,8 +70,8 @@ var fsDownloadCmd = &cobra.Command{
 			var after string
 			for {
 				listResp, err := client.ListObjectsWithResponse(ctx, remote.Repository, remote.Ref, &apigen.ListObjectsParams{
-					After:        (*apigen.PaginationAfter)(swag.String(after)),
-					Prefix:       (*apigen.PaginationPrefix)(remote.Path),
+					After:        &after,
+					Prefix:       remote.Path,
 					UserMetadata: swag.Bool(true),
 				})
 				DieOnErrorOrUnexpectedStatusCode(listResp, err, http.StatusOK)

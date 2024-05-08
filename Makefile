@@ -17,6 +17,7 @@ OPENAPI_RUST_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt
 PY_OPENAPI_GENERATOR=$(DOCKER) run -e PYTHON_POST_PROCESS_FILE="/mnt/clients/python/scripts/pydantic.sh" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
 GOLANGCI_LINT_VERSION=v1.53.3
+GOLANGCI_LINT_FLAGS=--max-same-issues=50
 BUF_CLI_VERSION=v1.28.1
 
 ifndef PACKAGE_VERSION

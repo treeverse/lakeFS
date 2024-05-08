@@ -149,7 +149,7 @@ func (b *Bisect) Update(ctx context.Context, client apigen.ClientWithResponsesIn
 	b.Commits = nil
 	const amountPerCall = 500
 	params := &apigen.LogCommitsParams{
-		Amount: apiutil.Ptr(apigen.PaginationAmount(amountPerCall)),
+		Amount: apiutil.Ptr(amountPerCall),
 	}
 	var commits []*apigen.Commit
 	for {
@@ -169,7 +169,7 @@ func (b *Bisect) Update(ctx context.Context, client apigen.ClientWithResponsesIn
 		if !logResponse.JSON200.Pagination.HasMore {
 			break
 		}
-		params.After = apiutil.Ptr(apigen.PaginationAfter(logResponse.JSON200.Pagination.NextOffset))
+		params.After = &logResponse.JSON200.Pagination.NextOffset
 	}
 	return fmt.Errorf("good %w", ErrCommitNotFound)
 }

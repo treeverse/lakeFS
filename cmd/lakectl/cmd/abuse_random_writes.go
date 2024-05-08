@@ -60,7 +60,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 			for work := range input {
 				start := time.Now()
 				resp, err := client.StageObjectWithResponse(ctx, u.Repository, u.Ref, &apigen.StageObjectParams{Path: work},
-					apigen.StageObjectJSONRequestBody(creationInfo))
+					creationInfo)
 				if err == nil && resp.StatusCode() != http.StatusOK {
 					err = helpers.ResponseAsError(resp)
 				}
