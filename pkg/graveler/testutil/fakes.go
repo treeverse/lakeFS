@@ -94,7 +94,7 @@ func (c *CommittedFake) Import(_ context.Context, _ graveler.StorageNamespace, _
 	return c.MetaRangeID, nil
 }
 
-func (c *CommittedFake) Commit(_ context.Context, _ graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator, allowEmpty bool, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, graveler.DiffSummary, error) {
+func (c *CommittedFake) Commit(_ context.Context, _ graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator, _ bool, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	if c.Err != nil {
 		return "", graveler.DiffSummary{}, c.Err
 	}
@@ -240,7 +240,6 @@ type RefsFake struct {
 	ListCommitsRes      graveler.CommitIterator
 	Refs                map[graveler.Ref]*graveler.ResolvedRef
 	ListTagsRes         graveler.TagIterator
-	linkAddressIterator graveler.LinkAddressIterator
 	CommitIter          graveler.CommitIterator
 	RefType             graveler.ReferenceType
 	Branch              *graveler.Branch
@@ -426,24 +425,8 @@ func (m *RefsFake) Log(context.Context, *graveler.RepositoryRecord, graveler.Com
 	return m.CommitIter, nil
 }
 
-func (m *RefsFake) VerifyLinkAddress(context.Context, *graveler.RepositoryRecord, string) error {
+func (m *RefsFake) VerifyLinkAddress(_ context.Context, _ *graveler.RepositoryRecord, _ string) error {
 	return m.Err
-}
-
-func (m *RefsFake) SetLinkAddress(context.Context, *graveler.RepositoryRecord, string) error {
-	return nil
-}
-
-func (m *RefsFake) ListLinkAddresses(context.Context, *graveler.RepositoryRecord) (graveler.LinkAddressIterator, error) {
-	return m.linkAddressIterator, nil
-}
-
-func (m *RefsFake) IsLinkAddressExpired(*graveler.LinkAddressData) (bool, error) {
-	return false, nil
-}
-
-func (m *RefsFake) DeleteExpiredLinkAddresses(context.Context, *graveler.RepositoryRecord) error {
-	return nil
 }
 
 func (m *RefsFake) DeleteExpiredImports(context.Context, *graveler.RepositoryRecord) error {

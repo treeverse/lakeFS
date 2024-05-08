@@ -392,20 +392,6 @@ func (mr *MockVersionControllerMockRecorder) DeleteExpiredImports(ctx, repositor
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteExpiredImports", reflect.TypeOf((*MockVersionController)(nil).DeleteExpiredImports), ctx, repository)
 }
 
-// DeleteExpiredLinkAddresses mocks base method.
-func (m *MockVersionController) DeleteExpiredLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteExpiredLinkAddresses", ctx, repository)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteExpiredLinkAddresses indicates an expected call of DeleteExpiredLinkAddresses.
-func (mr *MockVersionControllerMockRecorder) DeleteExpiredLinkAddresses(ctx, repository interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteExpiredLinkAddresses", reflect.TypeOf((*MockVersionController)(nil).DeleteExpiredLinkAddresses), ctx, repository)
-}
-
 // DeleteRepository mocks base method.
 func (m *MockVersionController) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
@@ -676,21 +662,6 @@ func (mr *MockVersionControllerMockRecorder) Import(ctx, repository, destination
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockVersionController)(nil).Import), varargs...)
 }
 
-// IsLinkAddressExpired mocks base method.
-func (m *MockVersionController) IsLinkAddressExpired(address *graveler.LinkAddressData) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsLinkAddressExpired", address)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsLinkAddressExpired indicates an expected call of IsLinkAddressExpired.
-func (mr *MockVersionControllerMockRecorder) IsLinkAddressExpired(address interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsLinkAddressExpired", reflect.TypeOf((*MockVersionController)(nil).IsLinkAddressExpired), address)
-}
-
 // ListBranches mocks base method.
 func (m *MockVersionController) ListBranches(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
 	m.ctrl.T.Helper()
@@ -704,21 +675,6 @@ func (m *MockVersionController) ListBranches(ctx context.Context, repository *gr
 func (mr *MockVersionControllerMockRecorder) ListBranches(ctx, repository interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBranches", reflect.TypeOf((*MockVersionController)(nil).ListBranches), ctx, repository)
-}
-
-// ListLinkAddresses mocks base method.
-func (m *MockVersionController) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.LinkAddressIterator, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListLinkAddresses", ctx, repository)
-	ret0, _ := ret[0].(graveler.LinkAddressIterator)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListLinkAddresses indicates an expected call of ListLinkAddresses.
-func (mr *MockVersionControllerMockRecorder) ListLinkAddresses(ctx, repository interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLinkAddresses", reflect.TypeOf((*MockVersionController)(nil).ListLinkAddresses), ctx, repository)
 }
 
 // ListRepositories mocks base method.
@@ -967,20 +923,6 @@ func (mr *MockVersionControllerMockRecorder) SetHooksHandler(handler interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHooksHandler", reflect.TypeOf((*MockVersionController)(nil).SetHooksHandler), handler)
 }
 
-// SetLinkAddress mocks base method.
-func (m *MockVersionController) SetLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetLinkAddress", ctx, repository, physicalAddress)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetLinkAddress indicates an expected call of SetLinkAddress.
-func (mr *MockVersionControllerMockRecorder) SetLinkAddress(ctx, repository, physicalAddress interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLinkAddress", reflect.TypeOf((*MockVersionController)(nil).SetLinkAddress), ctx, repository, physicalAddress)
-}
-
 // SetRepositoryMetadata mocks base method.
 func (m *MockVersionController) SetRepositoryMetadata(ctx context.Context, repository *graveler.RepositoryRecord, updateFunc graveler.RepoMetadataUpdateFunc) error {
 	m.ctrl.T.Helper()
@@ -1013,20 +955,6 @@ func (mr *MockVersionControllerMockRecorder) UpdateBranch(ctx, repository, branc
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, repository, branchID, ref}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBranch", reflect.TypeOf((*MockVersionController)(nil).UpdateBranch), varargs...)
-}
-
-// VerifyLinkAddress mocks base method.
-func (m *MockVersionController) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VerifyLinkAddress", ctx, repository, physicalAddress)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// VerifyLinkAddress indicates an expected call of VerifyLinkAddress.
-func (mr *MockVersionControllerMockRecorder) VerifyLinkAddress(ctx, repository, physicalAddress interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyLinkAddress", reflect.TypeOf((*MockVersionController)(nil).VerifyLinkAddress), ctx, repository, physicalAddress)
 }
 
 // WriteMetaRangeByIterator mocks base method.
@@ -2079,20 +2007,6 @@ func (mr *MockRefManagerMockRecorder) DeleteExpiredImports(ctx, repository inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteExpiredImports", reflect.TypeOf((*MockRefManager)(nil).DeleteExpiredImports), ctx, repository)
 }
 
-// DeleteExpiredLinkAddresses mocks base method.
-func (m *MockRefManager) DeleteExpiredLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteExpiredLinkAddresses", ctx, repository)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteExpiredLinkAddresses indicates an expected call of DeleteExpiredLinkAddresses.
-func (mr *MockRefManagerMockRecorder) DeleteExpiredLinkAddresses(ctx, repository interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteExpiredLinkAddresses", reflect.TypeOf((*MockRefManager)(nil).DeleteExpiredLinkAddresses), ctx, repository)
-}
-
 // DeleteRepository mocks base method.
 func (m *MockRefManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
@@ -2266,21 +2180,6 @@ func (mr *MockRefManagerMockRecorder) GetTag(ctx, repository, tagID interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTag", reflect.TypeOf((*MockRefManager)(nil).GetTag), ctx, repository, tagID)
 }
 
-// IsLinkAddressExpired mocks base method.
-func (m *MockRefManager) IsLinkAddressExpired(linkAddress *graveler.LinkAddressData) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsLinkAddressExpired", linkAddress)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// IsLinkAddressExpired indicates an expected call of IsLinkAddressExpired.
-func (mr *MockRefManagerMockRecorder) IsLinkAddressExpired(linkAddress interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsLinkAddressExpired", reflect.TypeOf((*MockRefManager)(nil).IsLinkAddressExpired), linkAddress)
-}
-
 // ListBranches mocks base method.
 func (m *MockRefManager) ListBranches(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
 	m.ctrl.T.Helper()
@@ -2309,21 +2208,6 @@ func (m *MockRefManager) ListCommits(ctx context.Context, repository *graveler.R
 func (mr *MockRefManagerMockRecorder) ListCommits(ctx, repository interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCommits", reflect.TypeOf((*MockRefManager)(nil).ListCommits), ctx, repository)
-}
-
-// ListLinkAddresses mocks base method.
-func (m *MockRefManager) ListLinkAddresses(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.LinkAddressIterator, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListLinkAddresses", ctx, repository)
-	ret0, _ := ret[0].(graveler.LinkAddressIterator)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListLinkAddresses indicates an expected call of ListLinkAddresses.
-func (mr *MockRefManagerMockRecorder) ListLinkAddresses(ctx, repository interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLinkAddresses", reflect.TypeOf((*MockRefManager)(nil).ListLinkAddresses), ctx, repository)
 }
 
 // ListRepositories mocks base method.
@@ -2429,20 +2313,6 @@ func (mr *MockRefManagerMockRecorder) SetBranch(ctx, repository, branchID, branc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBranch", reflect.TypeOf((*MockRefManager)(nil).SetBranch), ctx, repository, branchID, branch)
 }
 
-// SetLinkAddress mocks base method.
-func (m *MockRefManager) SetLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetLinkAddress", ctx, repository, physicalAddress)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetLinkAddress indicates an expected call of SetLinkAddress.
-func (mr *MockRefManagerMockRecorder) SetLinkAddress(ctx, repository, physicalAddress interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLinkAddress", reflect.TypeOf((*MockRefManager)(nil).SetLinkAddress), ctx, repository, physicalAddress)
-}
-
 // SetRepositoryMetadata mocks base method.
 func (m *MockRefManager) SetRepositoryMetadata(ctx context.Context, repository *graveler.RepositoryRecord, updateFunc graveler.RepoMetadataUpdateFunc) error {
 	m.ctrl.T.Helper()
@@ -2455,20 +2325,6 @@ func (m *MockRefManager) SetRepositoryMetadata(ctx context.Context, repository *
 func (mr *MockRefManagerMockRecorder) SetRepositoryMetadata(ctx, repository, updateFunc interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRepositoryMetadata", reflect.TypeOf((*MockRefManager)(nil).SetRepositoryMetadata), ctx, repository, updateFunc)
-}
-
-// VerifyLinkAddress mocks base method.
-func (m *MockRefManager) VerifyLinkAddress(ctx context.Context, repository *graveler.RepositoryRecord, physicalAddress string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VerifyLinkAddress", ctx, repository, physicalAddress)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// VerifyLinkAddress indicates an expected call of VerifyLinkAddress.
-func (mr *MockRefManagerMockRecorder) VerifyLinkAddress(ctx, repository, physicalAddress interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyLinkAddress", reflect.TypeOf((*MockRefManager)(nil).VerifyLinkAddress), ctx, repository, physicalAddress)
 }
 
 // MockCommittedManager is a mock of CommittedManager interface.

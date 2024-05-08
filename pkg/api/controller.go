@@ -36,7 +36,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -105,6 +104,27 @@ type Controller struct {
 }
 
 var usageCounter = stats.NewUsageCounter()
+
+func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
+	return &Controller{
+		Config:                cfg,
+		Catalog:               catalog,
+		Authenticator:         authenticator,
+		Auth:                  authService,
+		Authentication:        authenticationService,
+		BlockAdapter:          blockAdapter,
+		MetadataManager:       metadataManager,
+		Migrator:              migrator,
+		Collector:             collector,
+		CloudMetadataProvider: cloudMetadataProvider,
+		Actions:               actions,
+		AuditChecker:          auditChecker,
+		Logger:                logger,
+		sessionStore:          sessionStore,
+		PathProvider:          pathProvider,
+		usageReporter:         usageReporter,
+	}
+}
 
 func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID string) {
 	if !c.authorize(w, r, permissions.Node{
@@ -179,14 +199,15 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 	}
 
 	// generate a new address for the object we like to upload
-	address := c.PathProvider.NewPath()
-	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
+	address, err := c.Catalog.GetAddressWithSignature(repository, branch, params.Path)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	err = c.Catalog.SetLinkAddress(ctx, repository, address)
-	if c.handleAPIError(ctx, w, r, err) {
+
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -271,7 +292,7 @@ func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if err := c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+	if err := c.Catalog.VerifyLinkAddress(repository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -336,7 +357,7 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 	}
 
 	//  verify it has been saved for linking
-	if err := c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+	if err := c.Catalog.VerifyLinkAddress(repository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -652,15 +673,16 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	address := c.PathProvider.NewPath()
-	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
+
+	address, err := c.Catalog.GetAddressWithSignature(repository, branch, params.Path)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	err = c.Catalog.SetLinkAddress(ctx, repository, address)
+
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
 	if err != nil {
-		c.handleAPIError(ctx, w, r, err)
+		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -742,8 +764,11 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, fullPhysicalAddress)
 
 	if addressType == catalog.AddressTypeRelative {
-		// if the address is in the storage namespace, verify it has been saved for linking
-		err = c.Catalog.VerifyLinkAddress(ctx, repository, physicalAddress)
+		// if the address is in the storage namespace, verify it has been produced by lakeFS
+		if err = c.Catalog.VerifyLinkAddress(repository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
@@ -2632,10 +2657,10 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	// order of case is important, more specific errors should be first
 	switch {
-	case errors.Is(err, graveler.ErrLinkAddressNotFound),
+	case errors.Is(err, graveler.ErrLinkAddressInvalid),
 		errors.Is(err, graveler.ErrLinkAddressExpired):
 		log.Debug("Expired or invalid address token")
-		cb(w, r, http.StatusBadRequest, "bad address token (expired or invalid)")
+		cb(w, r, http.StatusBadRequest, err)
 
 	case errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
@@ -4982,7 +5007,7 @@ func (c *Controller) GetGarbageCollectionConfig(w http.ResponseWriter, r *http.R
 	}
 
 	writeResponse(w, r, http.StatusOK, apigen.GarbageCollectionConfig{
-		GracePeriod: swag.Int(int(ref.LinkAddressTime.Seconds())),
+		GracePeriod: swag.Int(int(catalog.LinkAddressTime.Seconds())),
 	})
 }
 
@@ -5122,27 +5147,6 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 		}
 	}
 	return pathRecords
-}
-
-func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
-	return &Controller{
-		Config:                cfg,
-		Catalog:               catalog,
-		Authenticator:         authenticator,
-		Auth:                  authService,
-		Authentication:        authenticationService,
-		BlockAdapter:          blockAdapter,
-		MetadataManager:       metadataManager,
-		Migrator:              migrator,
-		Collector:             collector,
-		CloudMetadataProvider: cloudMetadataProvider,
-		Actions:               actions,
-		AuditChecker:          auditChecker,
-		Logger:                logger,
-		sessionStore:          sessionStore,
-		PathProvider:          pathProvider,
-		usageReporter:         usageReporter,
-	}
 }
 
 func (c *Controller) LogAction(ctx context.Context, action string, r *http.Request, repository, ref, sourceRef string) {
@@ -5328,7 +5332,7 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.Request, body apigen.CreateUserExternalPrincipalJSONRequestBody, userID string, params apigen.CreateUserExternalPrincipalParams) {
+func (c *Controller) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.Request, _ apigen.CreateUserExternalPrincipalJSONRequestBody, userID string, params apigen.CreateUserExternalPrincipalParams) {
 	ctx := r.Context()
 	if c.isExternalPrincipalNotSupported(ctx) {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
