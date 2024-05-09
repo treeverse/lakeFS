@@ -63,7 +63,7 @@ By default, a lakeFS Cloud installation supports:
 - 1,500 read operations/second across all branches on all repositories within a region
 - 1,500 write operations per second across all branches on all repositories within a region
 
-This limit can be increased by contacting [support]((mailto:support@treeverse.io)). 
+This limit can be increased by contacting [support](mailto:support@treeverse.io?subject=quota+increase). 
 
 Each lakeFS branch can sustain up to a maximum of 1,000 write operations/second and 3,000 read operations per second. 
 This scales horizontally, so for example, with 10 concurrent branches, a repository could sustain 10k writes/second and 30k reads/second, assuming load is distributed evenly between them.
