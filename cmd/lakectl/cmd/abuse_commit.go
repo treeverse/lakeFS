@@ -48,10 +48,14 @@ var abuseCommitCmd = &cobra.Command{
 		generator.Run(func(input chan string, output chan stress.Result) {
 			ctx := cmd.Context()
 			client := getClient()
+			allowEmpty := true
 			for work := range input {
 				start := time.Now()
 				resp, err := client.CommitWithResponse(ctx, u.Repository, u.Ref, &apigen.CommitParams{},
-					apigen.CommitJSONRequestBody(apigen.CommitCreation{Message: work}))
+					apigen.CommitJSONRequestBody(apigen.CommitCreation{
+						Message:    work,
+						AllowEmpty: &allowEmpty,
+					}))
 				if err == nil && resp.StatusCode() != http.StatusOK {
 					err = helpers.ResponseAsError(resp)
 				}
