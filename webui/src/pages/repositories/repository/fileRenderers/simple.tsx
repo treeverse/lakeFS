@@ -4,23 +4,18 @@ import { humanSize } from "../../../../lib/components/repository/tree";
 import { useAPI } from "../../../../lib/hooks/api";
 import { objects, qs } from "../../../../lib/api";
 import { AlertError, Loading } from "../../../../lib/components/controls";
-import ReactMarkdown from "@beeswax/react-markdown-async";
-import remarkGfm from "remark-gfm";
-import remarkHtml from "remark-html";
-import rehypeRaw from "rehype-raw";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { githubGist as syntaxHighlightStyle } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { IpynbRenderer as NbRenderer } from "react-ipynb-renderer";
 import { guessLanguage } from "./index";
-import { CustomMarkdownRenderer } from "./CustomMarkdownRenderer";
 import {
   RendererComponent,
   RendererComponentWithText,
   RendererComponentWithTextCallback,
 } from "./types";
-import imageUriReplacer from "../../../../lib/remark-plugins/imageUriReplacer";
 
 import "react-ipynb-renderer/dist/styles/default.css";
+import { useMarkdownProcessor } from "./useMarkdownProcessor";
 
 export const ObjectTooLarge: FC<RendererComponent> = ({ path, sizeBytes }) => {
   return (
@@ -76,31 +71,9 @@ export const MarkdownRenderer: FC<RendererComponentWithText> = ({
   repoId,
   refId,
   path,
-  presign,
+  presign = false,
 }) => {
-  return (
-    <ReactMarkdown
-      className="object-viewer-markdown"
-      components={CustomMarkdownRenderer}
-      async={true}
-      remarkPlugins={[
-        [
-          imageUriReplacer,
-          {
-            repo: repoId,
-            ref: refId,
-            path,
-            presign,
-          },
-        ],
-        remarkGfm,
-        remarkHtml,
-      ]}
-      rehypePlugins={[rehypeRaw]}
-    >
-      {text}
-    </ReactMarkdown>
-  );
+  return useMarkdownProcessor(text, repoId, refId, path, presign);
 };
 
 export const TextRenderer: FC<RendererComponentWithText> = ({

@@ -1,7 +1,5 @@
 import { visit } from "unist-util-visit";
 import type { Node } from "unist";
-import type { Root } from "mdast";
-import type { Plugin } from "unified";
 import {objects} from "../api";
 
 type ImageUriReplacerOptions = {
@@ -38,8 +36,8 @@ export const getImageUrl = async (
   )}/refs/${encodeURIComponent(ref)}/objects?${query}`;
 };
 
-const imageUriReplacer: Plugin<[ImageUriReplacerOptions], Root> =
-  (options) => async (tree) => {
+const imageUriReplacer =
+  (options: ImageUriReplacerOptions) => async (tree: Node) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const promises: any[] = [];
     visit(tree, "image", visitor);
