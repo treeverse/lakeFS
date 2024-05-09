@@ -1,9 +1,17 @@
 # Changelog
 
-# Unreleased
+# v1.22.0
 
-- Refactored Linked Address mechanism (#7725)
-  **Upgrading to this version will void all existing physical addresses issued by GetPhysicalAddress**
+:new: What's new:
+
+- UI: Report progress when calculating size (#7722)
+- Handle KV slow down error (#7744)
+- Remove linked addresses from KV (#7725)
+**Upgrading to this version will void all existing physical addresses issued by GetPhysicalAddress and require them to be re-issued. This will only effect some of the in-flight uploads during the upgrade**
+
+:bug: Bugs fixed:
+
+- Fix: Object diff to use pre-sign when presign ui is enabled (#7736)
 
 # v1.21.0
 
