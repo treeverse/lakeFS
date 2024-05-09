@@ -919,7 +919,7 @@ func TestLakectlAbuse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Cmd, func(t *testing.T) {
 			lakefsURI := "lakefs://" + repoName + "/" + mainBranch
-			RunCmdAndVerifyContainsText(t, fmt.Sprintf("%s abuse %s %s --amount %s %s", Lakectl(), tt.Cmd, lakefsURI, tt.Amount, tt.AdditionalArgs), false, "errors: 0", map[string]string{})
+			RunCmdAndVerifyContainsText(t, fmt.Sprintf("%s abuse %s %s --amount %d %s", Lakectl(), tt.Cmd, lakefsURI, tt.Amount, tt.AdditionalArgs), false, "errors: 0", map[string]string{})
 		})
 	}
 }
