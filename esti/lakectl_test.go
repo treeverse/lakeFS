@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -919,7 +918,8 @@ func TestLakectlAbuse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.Cmd, func(t *testing.T) {
-			RunCmdAndVerifyContainsText(t, Lakectl()+" abuse "+tt.Cmd+" lakefs://"+repoName+"/"+mainBranch+" --amount "+strconv.Itoa(tt.Amount)+" "+tt.AdditionalArgs, false, "errors: 0", map[string]string{})
+			lakefsURI := "lakefs://" + repoName + "/" + mainBranch
+			RunCmdAndVerifyContainsText(t, fmt.Sprintf("%s abuse %s %s --amount %s %s", Lakectl(), tt.Cmd, lakefsURI, tt.Amount, tt.AdditionalArgs), false, "errors: 0", map[string]string{})
 		})
 	}
 }

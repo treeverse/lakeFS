@@ -61,6 +61,9 @@ func runLinkObject(cmd *cobra.Command, u *uri.URI, generator *stress.Generator) 
 				continue
 			}
 
+			// The code links an "existing object" without actually uploading the object.
+			// This tests the operations done on the lakeFS server side without the overhead of uploading the
+			// object to the object store which should optimally be performed with lakeFS not in the data path (upload using pre-signed urls / set/link).
 			stagingLocation := getResponse.JSON200
 			linkResponse, err := client.LinkPhysicalAddressWithResponse(ctx, u.Repository, u.Ref,
 				&apigen.LinkPhysicalAddressParams{
