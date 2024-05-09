@@ -7,7 +7,7 @@
 - UI: Report progress when calculating size (#7722)
 - Handle KV slow down error (#7744)
 - Remove linked addresses from KV (#7725)
-**Upgrading to this version will void all existing physical addresses issued by GetPhysicalAddress and require them to be re-issued**
+**Upgrading to this version will void all existing physical addresses issued by GetPhysicalAddress and require them to be re-issued. This will only effect some of the in-flight uploads during the upgrade**
 
 :bug: Bugs fixed:
 
