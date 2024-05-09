@@ -157,6 +157,8 @@ type Config struct {
 
 			// MaxAttempts - Specifies the maximum number attempts to make on a request.
 			MaxAttempts int `mapstructure:"max_attempts"`
+
+			MaxConnectionPerHost int `mapstructure:"max_connection_per_host"`
 		} `mapstructure:"dynamodb"`
 
 		CosmosDB *struct {
