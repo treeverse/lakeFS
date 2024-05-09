@@ -6,77 +6,81 @@ import "bytes"
 // The output iterator yields a single result for each key.
 // If a key exist in the 2 iterators, iteratorA value prevails.
 type JoinedDiffIterator struct {
-	iterA DiffIterator
-	iterB DiffIterator
-	p     DiffIterator
+	iterA        DiffIterator
+	iterAHasMore bool
+	iterB        DiffIterator
+	iterBHasMore bool
+	p            DiffIterator
+	started      bool
 }
 
 func NewJoinedDiffIterator(iterA DiffIterator, iterB DiffIterator) *JoinedDiffIterator {
 	return &JoinedDiffIterator{
-		iterA: iterA,
-		iterB: iterB,
-		p:     nil,
+		iterA:        iterA,
+		iterAHasMore: true,
+		iterB:        iterB,
+		iterBHasMore: true,
+		p:            nil,
 	}
 }
 
-// advanceInnerIterators advances the inner iterators and returns true if it has more
-func (c *JoinedDiffIterator) advanceInnerIterators() bool {
+func (c *JoinedDiffIterator) Next() bool {
 	valA := c.iterA.Value()
 	valB := c.iterB.Value()
-	var nextA bool
-	var nextB bool
 	switch {
-	case c.p == nil:
+	case !c.started:
 		// first
-		nextA = c.iterA.Next()
-		nextB = c.iterB.Next()
-	case valA == nil && valB == nil:
+		c.iterAHasMore = c.iterA.Next()
+		c.iterBHasMore = c.iterB.Next()
+		c.started = true
+	case !c.iterAHasMore && !c.iterBHasMore:
 		// last
 		return false
-	case valA == nil:
+	case !c.iterAHasMore:
 		// iterA is done
 		c.p = c.iterB
-		nextB = c.iterB.Next()
-	case valB == nil:
+		c.iterBHasMore = c.iterB.Next()
+	case !c.iterBHasMore:
 		// iterB is done
 		c.p = c.iterA
-		nextA = c.iterA.Next()
+		c.iterAHasMore = c.iterA.Next()
 	case bytes.Equal(valA.Key, valB.Key):
-		nextA = c.iterA.Next()
-		nextB = c.iterB.Next()
+		c.iterAHasMore = c.iterA.Next()
+		c.iterBHasMore = c.iterB.Next()
 	case bytes.Compare(valA.Key, valB.Key) < 0:
-		nextA = c.iterA.Next()
-		nextB = true
+		c.iterAHasMore = c.iterA.Next()
+		c.iterBHasMore = true
 	default:
 		// value of iterA < value of iterB
-		nextB = c.iterB.Next()
-		nextA = true
+		c.iterBHasMore = c.iterB.Next()
+		c.iterAHasMore = true
 	}
 	if c.iterA.Err() != nil {
 		c.p = c.iterA
+		c.iterAHasMore = false
+		c.iterBHasMore = false
 		return false
 	}
 	if c.iterB.Err() != nil {
 		c.p = c.iterB
+		c.iterAHasMore = false
+		c.iterBHasMore = false
 		return false
 	}
-	return nextA || nextB
-}
+	if !c.iterAHasMore && !c.iterBHasMore {
+		return false
+	}
 
-func (c *JoinedDiffIterator) Next() bool {
-	if !c.advanceInnerIterators() {
-		return false
-	}
 	// set c.p to be the next (smaller) value
-	valA := c.iterA.Value()
-	valB := c.iterB.Value()
+	valA = c.iterA.Value()
+	valB = c.iterB.Value()
 	switch {
-	case valA == nil && valB == nil:
+	case !c.iterAHasMore && !c.iterBHasMore:
 		c.p = c.iterA
 		return false
-	case valA == nil:
+	case !c.iterAHasMore:
 		c.p = c.iterB
-	case valB == nil:
+	case !c.iterBHasMore:
 		c.p = c.iterA
 	case bytes.Compare(valA.Key, valB.Key) <= 0:
 		c.p = c.iterA
@@ -96,12 +100,6 @@ func (c *JoinedDiffIterator) Value() *Diff {
 func (c *JoinedDiffIterator) Err() error {
 	if c.p != nil && c.p.Err() != nil {
 		return c.p.Err()
-	}
-	if c.iterA != nil && c.iterA.Err() != nil {
-		return c.iterA.Err()
-	}
-	if c.iterB != nil && c.iterB.Err() != nil {
-		return c.iterB.Err()
 	}
 	return nil
 }

@@ -11,8 +11,8 @@ import (
 
 func TestJoinedDiffIterator_NextValue(t *testing.T) {
 	type fields struct {
-		stageAndCommittedDiffIterator     graveler.DiffIterator
-		compactedAndCommittedDiffIterator graveler.DiffIterator
+		iterA graveler.DiffIterator
+		iterB graveler.DiffIterator
 	}
 	tests := []struct {
 		name      string
@@ -22,15 +22,15 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 		{
 			name: "empty iterators",
 			fields: fields{
-				stageAndCommittedDiffIterator:     testutil.NewDiffIter([]graveler.Diff{}),
-				compactedAndCommittedDiffIterator: testutil.NewDiffIter([]graveler.Diff{}),
+				iterA: testutil.NewDiffIter([]graveler.Diff{}),
+				iterB: testutil.NewDiffIter([]graveler.Diff{}),
 			},
 			wantValue: nil,
 		},
 		{
 			name: "only stage iterator",
 			fields: fields{
-				stageAndCommittedDiffIterator: testutil.NewDiffIter([]graveler.Diff{
+				iterA: testutil.NewDiffIter([]graveler.Diff{
 					{
 						Type: graveler.DiffTypeAdded,
 						Key:  []byte("iterA/one"),
@@ -64,7 +64,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 						},
 					},
 				}),
-				compactedAndCommittedDiffIterator: testutil.NewDiffIter([]graveler.Diff{}),
+				iterB: testutil.NewDiffIter([]graveler.Diff{}),
 			},
 			wantValue: []*graveler.Diff{
 				{
@@ -104,8 +104,8 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 		{
 			name: "only compacted iterator",
 			fields: fields{
-				stageAndCommittedDiffIterator: testutil.NewDiffIter([]graveler.Diff{}),
-				compactedAndCommittedDiffIterator: testutil.NewDiffIter([]graveler.Diff{
+				iterA: testutil.NewDiffIter([]graveler.Diff{}),
+				iterB: testutil.NewDiffIter([]graveler.Diff{
 					{
 						Type: graveler.DiffTypeAdded,
 						Key:  []byte("iterA/one"),
@@ -178,7 +178,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 		{
 			name: "one from each",
 			fields: fields{
-				stageAndCommittedDiffIterator: testutil.NewDiffIter([]graveler.Diff{
+				iterA: testutil.NewDiffIter([]graveler.Diff{
 					{
 						Type: graveler.DiffTypeAdded,
 						Key:  []byte("iterA/one"),
@@ -187,7 +187,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 						},
 					},
 				}),
-				compactedAndCommittedDiffIterator: testutil.NewDiffIter([]graveler.Diff{
+				iterB: testutil.NewDiffIter([]graveler.Diff{
 					{
 						Type: graveler.DiffTypeAdded,
 						Key:  []byte("iterA/two"),
@@ -219,7 +219,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 		{
 			name: "one from each different order",
 			fields: fields{
-				stageAndCommittedDiffIterator: testutil.NewDiffIter([]graveler.Diff{
+				iterA: testutil.NewDiffIter([]graveler.Diff{
 					{
 						Type: graveler.DiffTypeAdded,
 						Key:  []byte("iterA/b"),
@@ -228,7 +228,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 						},
 					},
 				}),
-				compactedAndCommittedDiffIterator: testutil.NewDiffIter([]graveler.Diff{
+				iterB: testutil.NewDiffIter([]graveler.Diff{
 					{
 						Type: graveler.DiffTypeAdded,
 						Key:  []byte("iterA/a"),
@@ -258,9 +258,9 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 			},
 		},
 		{
-			name: "taking staging before compacted",
+			name: "taking from first iterator before second",
 			fields: fields{
-				stageAndCommittedDiffIterator: testutil.NewDiffIter([]graveler.Diff{
+				iterA: testutil.NewDiffIter([]graveler.Diff{
 					{
 						Type: graveler.DiffTypeAdded,
 						Key:  []byte("iterA/a"),
@@ -283,7 +283,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 						},
 					},
 				}),
-				compactedAndCommittedDiffIterator: testutil.NewDiffIter([]graveler.Diff{
+				iterB: testutil.NewDiffIter([]graveler.Diff{
 					{
 						Type: graveler.DiffTypeAdded,
 						Key:  []byte("iterA/a"),
@@ -339,7 +339,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var it graveler.DiffIterator
-			it = graveler.NewJoinedDiffIterator(tt.fields.stageAndCommittedDiffIterator, tt.fields.compactedAndCommittedDiffIterator)
+			it = graveler.NewJoinedDiffIterator(tt.fields.iterA, tt.fields.iterB)
 			defer it.Close()
 
 			var got []*graveler.Diff
@@ -348,6 +348,12 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 			}
 			require.NoError(t, it.Err())
 			// verify that what we produced is what we got from the iterator
+			for i := range got {
+				println("got", got[i].Key.String())
+			}
+			for i := range tt.wantValue {
+				println("want", tt.wantValue[i].Key.String())
+			}
 			if diff := deep.Equal(got, tt.wantValue); diff != nil {
 				t.Fatal("JoinedDiffIterator iterator found diff:", diff)
 			}

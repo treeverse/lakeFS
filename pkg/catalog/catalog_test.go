@@ -548,24 +548,10 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			expectedCalls: 1,
 		},
 		{
-			name:          "no objects",
-			numBranch:     3,
-			numRecords:    0,
-			expectedCalls: 1,
-			compactBranch: true,
-		},
-		{
 			name:          "sanity",
 			numBranch:     5,
 			numRecords:    3,
 			expectedCalls: 1,
-		},
-		{
-			name:          "compacted",
-			numBranch:     5,
-			numRecords:    3,
-			expectedCalls: 1,
-			compactBranch: true,
 		},
 		{
 			name:          "tokenized",
@@ -573,66 +559,61 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 			numRecords:    500,
 			expectedCalls: 2,
 		},
-		{
-			name:          "tokenized and compacted",
-			numBranch:     500,
-			numRecords:    500,
-			expectedCalls: 2,
-			compactBranch: true,
-		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			const repositoryID = "repo1"
-			g, expectedRecords := createPrepareUncommittedTestScenario(t, repositoryID, tt.numBranch, tt.numRecords, tt.expectedCalls, tt.compactBranch)
-			blockAdapter := testutil.NewBlockAdapterByType(t, block.BlockstoreTypeMem)
-			c := &catalog.Catalog{
-				Store:                 g.Sut,
-				BlockAdapter:          blockAdapter,
-				UGCPrepareMaxFileSize: 500 * 1024,
-				KVStore:               g.KVStore,
-			}
-
-			var (
-				mark       *catalog.GCUncommittedMark
-				runID      string
-				allRecords []string
-			)
-			for {
-				result, err := c.PrepareGCUncommitted(ctx, repositoryID, mark)
-				require.NoError(t, err)
-
-				// keep or check run id match previous calls
-				if runID == "" {
-					runID = result.RunID
-				} else {
-					require.Equal(t, runID, result.RunID)
+		for _, compactBranch := range []bool{false, true} {
+			t.Run(tt.name, func(t *testing.T) {
+				const repositoryID = "repo1"
+				g, expectedRecords := createPrepareUncommittedTestScenario(t, repositoryID, tt.numBranch, tt.numRecords, tt.expectedCalls, compactBranch)
+				blockAdapter := testutil.NewBlockAdapterByType(t, block.BlockstoreTypeMem)
+				c := &catalog.Catalog{
+					Store:                 g.Sut,
+					BlockAdapter:          blockAdapter,
+					UGCPrepareMaxFileSize: 500 * 1024,
+					KVStore:               g.KVStore,
 				}
 
-				if tt.numRecords == 0 {
-					require.Equal(t, "", result.Location)
-					require.Equal(t, "", result.Filename)
-				} else {
-					// read parquet information if data was stored to location
-					objLocation, err := url.JoinPath(result.Location, result.Filename)
+				var (
+					mark       *catalog.GCUncommittedMark
+					runID      string
+					allRecords []string
+				)
+				for {
+					result, err := c.PrepareGCUncommitted(ctx, repositoryID, mark)
 					require.NoError(t, err)
-					addresses := readPhysicalAddressesFromParquetObject(t, repositoryID, ctx, c, objLocation)
-					allRecords = append(allRecords, addresses...)
+
+					// keep or check run id match previous calls
+					if runID == "" {
+						runID = result.RunID
+					} else {
+						require.Equal(t, runID, result.RunID)
+					}
+
+					if tt.numRecords == 0 {
+						require.Equal(t, "", result.Location)
+						require.Equal(t, "", result.Filename)
+					} else {
+						// read parquet information if data was stored to location
+						objLocation, err := url.JoinPath(result.Location, result.Filename)
+						require.NoError(t, err)
+						addresses := readPhysicalAddressesFromParquetObject(t, repositoryID, ctx, c, objLocation)
+						allRecords = append(allRecords, addresses...)
+					}
+
+					mark = result.Mark
+					if mark == nil {
+						break
+					}
+					require.Equal(t, runID, result.Mark.RunID)
 				}
 
-				mark = result.Mark
-				if mark == nil {
-					break
+				// match expected records found in parquet data
+				sort.Strings(allRecords)
+				if diff := deep.Equal(allRecords, expectedRecords); diff != nil {
+					t.Errorf("Found diff in expected records: %s", diff)
 				}
-				require.Equal(t, runID, result.Mark.RunID)
-			}
-
-			// match expected records found in parquet data
-			sort.Strings(allRecords)
-			if diff := deep.Equal(allRecords, expectedRecords); diff != nil {
-				t.Errorf("Found diff in expected records: %s", diff)
-			}
-		})
+			})
+		}
 	}
 }
 
@@ -775,27 +756,27 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 			DefaultBranchID:  "main",
 		},
 	}
-	test.RefManager.EXPECT().GetRepository(gomock.Any(), graveler.RepositoryID(repositoryID)).AnyTimes().Return(repository, nil)
+	test.RefManager.EXPECT().GetRepository(gomock.Any(), graveler.RepositoryID(repositoryID)).MinTimes(1).Return(repository, nil)
 
 	// expect tracked addresses does not list branches, so remove one and keep at least the first
-	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).AnyTimes().Return(gUtils.NewFakeBranchIterator(branches), nil)
+	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).MinTimes(1).Return(gUtils.NewFakeBranchIterator(branches), nil)
 	for i := 0; i < len(branches); i++ {
 		sort.Slice(records[i], func(ii, jj int) bool {
 			return bytes.Compare(records[i][ii].Key, records[i][jj].Key) < 0
 		})
-		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).AnyTimes().Return(cUtils.NewFakeValueIterator(records[i]))
+		test.StagingManager.EXPECT().List(gomock.Any(), branches[i].StagingToken, gomock.Any()).MinTimes(1).Return(cUtils.NewFakeValueIterator(records[i]))
 		if compact {
 			sort.Slice(diffs[i], func(ii, jj int) bool {
 				return bytes.Compare(diffs[i][ii].Key, diffs[i][jj].Key) < 0
 			})
-			test.CommittedManager.EXPECT().Diff(gomock.Any(), repository.StorageNamespace, gomock.Any(), branches[i].CompactedBaseMetaRangeID).AnyTimes().Return(gUtils.NewDiffIter(diffs[i]), nil)
+			test.CommittedManager.EXPECT().Diff(gomock.Any(), repository.StorageNamespace, gomock.Any(), branches[i].CompactedBaseMetaRangeID).MinTimes(1).Return(gUtils.NewDiffIter(diffs[i]), nil)
 		}
 	}
 
 	if numRecords > 0 {
 		test.GarbageCollectionManager.EXPECT().
 			GetUncommittedLocation(gomock.Any(), gomock.Any()).
-			AnyTimes().
+			MinTimes(1).
 			DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
 				return fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID), nil
 			})
