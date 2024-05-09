@@ -83,12 +83,12 @@ This reference uses `.` to denote the nesting of values.
     + `auth.saml.sp_x509_key_path` `(string : '')` - The path to the private key, e.g '/etc/saml_certs/rsa_saml_private.cert'
     + `auth.saml.sp_x509_cert_path` `(string : '')` - The path to the public key, '/etc/saml_certs/rsa_saml_public.pem'
     + `auth.saml.sp_sign_request` `(bool : 'false')` SPSignRequest some IdP require the SLO request to be signed
-    + `auth.saml.sp_signature_method` `(string : '')` SPSignatureMethod optional valid signature values depending on the IDP configuration, e.g. 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256'
+    + `auth.saml.sp_signature_method` `(string : '')` SPSignatureMethod optional valid signature values depending on the IdP configuration, e.g. 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256'
     + `auth.saml.idp_metadata_url` `(string : '')` - The URL for the metadata server, e.g. 'https://<adfs-auth.company.com>/federationmetadata/2007-06/federationmetadata.xml'
-    + `auth.saml.idp_skip_verify_tls_cert` `(bool : false)` - Insecure skip verification of the IDP TLS certificate, like when signed by a private CA
+    + `auth.saml.idp_skip_verify_tls_cert` `(bool : false)` - Insecure skip verification of the IdP TLS certificate, like when signed by a private CA
     + `auth.saml.idp_authn_name_id_format` `(string : 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified')` - The format used in the NameIDPolicy for authentication requests
     + `auth.saml.idp_request_timeout` `(duration : '10s')` The timeout for remote authentication requests.
-    + `auth.saml.external_user_id_claim_name` `(string : '')` - The claim name to use as the user identifier with an IDP mostly for logout
+    + `auth.saml.external_user_id_claim_name` `(string : '')` - The claim name to use as the user identifier with an IdP mostly for logout
   + `auth.oidc` Configuration section for OIDC
     + `auth.oidc.enabled` `(bool : false)` - Enables OIDC Authentication.
     + `auth.oidc.url` `(string : '')` - The OIDC provider url, e.g. 'https://oidc-provider-url.com/'

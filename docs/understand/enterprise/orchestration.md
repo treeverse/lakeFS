@@ -20,7 +20,7 @@ lakeFS Enterprise solution consists of 2 main components:
 ### Prerequisites
 
 1. A KV Database, like postgres, should be configured and shared by fluffy and lakeFS.
-1. Access to configure SSO IDP, like Azure AD Enterprise Application.
+1. Access to configure SSO IdP, like Azure AD Enterprise Application.
 1. A proxy server should be configured to route traffic between the 2 servers.
 
 

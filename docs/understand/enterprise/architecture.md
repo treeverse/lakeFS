@@ -33,6 +33,6 @@ implements SAML and Oauth2 protocols.
 For more details and pricing, please [contact sales](https://lakefs.io/contact-sales/).
 
 
-**Note:** Setting up lakeFS enterprise with an SSO IDP (OIDC, SAML or LDAP) requires
-configuring access from the IDP too.
+**Note:** Setting up lakeFS enterprise with an SSO IdP (OIDC, SAML or LDAP) requires
+configuring access from the IdP too.
 {: .note }
