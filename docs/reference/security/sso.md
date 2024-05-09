@@ -340,8 +340,8 @@ Notes:
 * Check the [examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) we provide for each authentication method (oidc/adfs/ldap + rbac).
 * The examples are provisioned with a Postgres pod for quick-start, make sure to replace that to a stable database once ready.
 * The encrypt secret key `secrets.authEncryptSecretKey` is shared between fluffy and lakeFS for authentication.
-* The lakeFS `image.tag` must be >= 0.100.0
-* The fluffy `image.tag` must be >= 0.2.0
+* The lakeFS `image.tag` must be >= 1.0.0
+* The fluffy `image.tag` must be >= 0.2.7
 * Change the `ingress.hosts[0]` from `lakefs.company.com` to a real host (usually same as lakeFS), also update additional references in the file (note: URL path after host if provided should stay unchanged).
 * Update the `ingress` configuration with other optional fields if used
 * Fluffy docker image: replace the `fluffy.image.privateRegistry.secretToken` with real token to dockerhub for the fluffy docker image.
