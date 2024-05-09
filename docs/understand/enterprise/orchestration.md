@@ -205,21 +205,18 @@ configs:
             - http://localhost:8080/oidc/login
 ```
 
-## More values file examples
+## More examples
 
-Few more examples for `values.yaml` file based on the SSO provider. 
+Few more examples for running lakeFS Enterprise based on the SSO provider and the setup. 
 
-<div class="tabs">
-  <ul>
-    <li><a href="#adfs">AD FS</a></li>
-    <li><a href="#ldap">LDAP</a></li>
-  </ul> 
-  <div markdown="1" id="adfs">
-
-## Active Directory Federation Services (AD FS) (using SAML)
+### Active Directory Federation Services (AD FS) (using SAML) without helm
 {:.no_toc}
 
-### Azure Configuration
+**Note:** If you'd like to run this example on a k8s cluster, follow this section
+and replace fluffy and lakeFS configuration in the helm's `values.yaml` file.
+{: .note }
+
+#### Azure Configuration
 
 1. Create an Enterprise Application with SAML toolkit - see [Azure quickstart](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/add-application-portal)
 1. Add users: **App > Users and groups**: Attach users and roles from their existing AD users
@@ -230,7 +227,7 @@ Few more examples for `values.yaml` file based on the SSO provider.
    1. Sign on URL: lakefs-url/sso/login-saml (e.g. https://lakefs.acme.com/sso/login-saml)
    1. Relay State (Optional): /
 
-### Fluffy Configuration
+#### Fluffy Configuration
 
 **Note:** Full Fluffy configuration can be found [here]({% link understand/enterprise/fluffy-configuration.md %})..
 {: .note }
@@ -275,7 +272,7 @@ auth:
     idp_skip_verify_tls_cert: true
 ```
 
-### lakeFS Configuration
+#### lakeFS Configuration
 
 ```yaml
 # lakeFS configuration.yaml 
@@ -307,8 +304,8 @@ auth:
        - saml_auth_session
 ```
 
-  </div>
-  <div markdown="1" id="ldap">
+### LDAP `values.yaml` file for helm deployments
+{:.no_toc}
 
 ```yaml
 lakefsConfig: |
@@ -370,12 +367,6 @@ fluffy:
 
 useDevPostgres: true
 ```
-
-  </div>
-</div>
-
-
-
 
 ## Log Collection
 
