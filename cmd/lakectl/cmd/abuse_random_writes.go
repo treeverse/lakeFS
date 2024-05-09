@@ -5,11 +5,8 @@ import (
 	"net/http"
 	"os"
 	"syscall"
-	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/api/apigen"
-	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
 )
 
@@ -42,34 +39,8 @@ var abuseRandomWritesCmd = &cobra.Command{
 			Die("Bad response from server", 1)
 		}
 
-		repo := resp.JSON200
-		storagePrefix := repo.StorageNamespace
-		var size int64
-		checksum := "00695c7307b0480c7b6bdc873cf05c15"
-		addr := storagePrefix + "/random-write"
-		creationInfo := apigen.ObjectStageCreation{
-			Checksum:        checksum,
-			PhysicalAddress: addr,
-			SizeBytes:       size,
-		}
-
 		// execute the things!
-		generator.Run(func(input chan string, output chan stress.Result) {
-			ctx := cmd.Context()
-			client := getClient()
-			for work := range input {
-				start := time.Now()
-				resp, err := client.StageObjectWithResponse(ctx, u.Repository, u.Ref, &apigen.StageObjectParams{Path: work},
-					apigen.StageObjectJSONRequestBody(creationInfo))
-				if err == nil && resp.StatusCode() != http.StatusOK {
-					err = helpers.ResponseAsError(resp)
-				}
-				output <- stress.Result{
-					Error: err,
-					Took:  time.Since(start),
-				}
-			}
-		})
+		runLinkObject(cmd, u, generator)
 	},
 }
 

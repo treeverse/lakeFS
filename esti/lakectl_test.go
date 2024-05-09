@@ -856,3 +856,70 @@ func TestLakectlBranchProtection(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch-protect add lakefs://"+repoName+" "+mainBranch, false, "lakectl_empty", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch-protect list lakefs://"+repoName, false, "lakectl_branch_protection_list.term", vars)
 }
+
+func TestLakectlAbuse(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	fromFile := ""
+	const totalObjects = 5
+	for i := 0; i < totalObjects; i++ {
+		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
+		fromFile = fromFile + vars["FILE_PATH"] + "\n"
+		runCmd(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
+	}
+	f, err := os.CreateTemp("", "abuse-read")
+	require.NoError(t, err)
+	_, err = f.WriteString(fromFile)
+	require.NoError(t, err)
+	require.NoError(t, f.Close())
+
+	tests := []struct {
+		Cmd            string
+		Amount         int
+		AdditionalArgs string
+	}{
+		{
+			Cmd:    "commit",
+			Amount: 10,
+		},
+		{
+			Cmd:    "create-branches",
+			Amount: 1000,
+		},
+		{
+			Cmd:    "link-same-object",
+			Amount: 1000,
+		},
+		{
+			Cmd:    "list",
+			Amount: 1000,
+		},
+		{
+			Cmd:            "random-read",
+			Amount:         1000,
+			AdditionalArgs: "--from-file " + f.Name(),
+		},
+		{
+			Cmd:            "random-delete",
+			Amount:         1000,
+			AdditionalArgs: "--from-file " + f.Name(),
+		},
+		{
+			Cmd:    "random-write",
+			Amount: 1000,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.Cmd, func(t *testing.T) {
+			lakefsURI := "lakefs://" + repoName + "/" + mainBranch
+			RunCmdAndVerifyContainsText(t, fmt.Sprintf("%s abuse %s %s --amount %d %s", Lakectl(), tt.Cmd, lakefsURI, tt.Amount, tt.AdditionalArgs), false, "errors: 0", map[string]string{})
+		})
+	}
+}

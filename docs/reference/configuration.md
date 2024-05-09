@@ -116,6 +116,7 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.default_namespace_prefix` `(string : )` - Use this to help your users choose a storage namespace for their repositories.
    If specified, the storage namespace will be filled with this default value as a prefix when creating a repository from the UI.
    The user may still change it to something else.
+* `blockstore.signing.secret_key` `(string : required)` - A random generated string that is used for HMAC signing when using get/link physical address
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
 * `blockstore.local.import_enabled` `(bool: false)` - Enable import for local Block Adapter, relevant only if you are using shared location
 * `blockstore.local.import_hidden` `(bool: false)` - When enabled import will scan and import any file or folder that starts with a dot character.

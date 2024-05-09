@@ -57,17 +57,8 @@ It's also important to note that Amazon does NOT appear to include any sort of a
 
 * in lakeFS `auth.authentication_api.external_principals_enabled` must be set to `true` in the configuration file, other configuration (`auth.authentication_api.*`) can be found at at [configuration reference]({% link reference/configuration.md %})
 
-**fluffy server configuration reference:**
+For the full list of the Fluffy server configuration, see [Fluffy Configuration]({% link understand/enterprise/fluffy-configuration.md %}) under `auth.external.aws_auth`
 
-* `auth.external.aws_auth.enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
-* `auth.external.aws_auth.get_caller_identity_max_age` `(duration : 15m)` - The maximum age in seconds for the GetCallerIdentity request to be valid, the max is 15 minutes enforced by AWS, smaller TTL can be set.
-* `auth.authentication_api.external_principals_enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
-* `auth.external.aws_auth.valid_sts_hosts` `([]string)` - The default are all the valid AWS STS hosts (`sts.amazonaws.com`, `sts.us-east-2.amazonaws.com` etc).
-* `auth.external.aws_auth.required_headers` `(map[string]string : )` - Headers that must be present by the client when doing login request (e.g `X-LakeFS-Server-ID: <lakefs.ingress.domain>`).
-* `auth.external.aws_auth.optional_headers` `(map[string]string : )` - Optional headers that can be present by the client when doing login request.
-* `auth.external.aws_auth.http_client.timeout` `(duration : 10s)` - The timeout for the HTTP client used to communicate with AWS STS.
-* `auth.external.aws_auth.http_client.skip_verify` `(bool : false)` - Skip SSL verification with AWS STS.
-  
 
 {: .note}
 > By default lakeFS clients will add the parameter `X-LakeFS-Server-ID: <lakefs.ingress.domain>` to the initial [login request][login-api] for STS.
