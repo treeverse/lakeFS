@@ -52,6 +52,6 @@ The [FAQ](./faq.html) covers many common questions around lakeFS, and the [gloss
 lakeFS is an Apache 2.0 licensed [open-source]({% link project/index.md %}#our-commitment-to-open-source) [project]({% link project/index.md %}). Treeverse also provides two commercial products: 
 
 - [lakeFS Cloud]({% link understand/lakefs-cloud.md %})
-- [lakeFS Enterprise]({% link understand/lakefs-enterprise.md %})
+- [lakeFS Enterprise]({% link understand/enterprise/index.md %})
 
 Find out more on the [pricing page](https://lakefs.io/pricing/), or [contact us](https://lakefs.io/contact-sales/) for details.
