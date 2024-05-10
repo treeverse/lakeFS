@@ -8,7 +8,7 @@ import (
 
 // helpers for writing lua actions
 
-// ErrHookFailure indicates an explict failure from a hook
+// ErrHookFailure indicates an explicit failure from a hook
 // (as opposed to a generic error that occurred during execution)
 type ErrHookFailure string
 
