@@ -75,9 +75,9 @@ func Parse(pth, sep string) map[string]string {
 }
 
 func join(l *lua.State) int {
-	sep := lua.CheckString(l, 1)
-	parts := getVarArgs(l, 2)
-	l.PushString(Join(sep, parts...))
+	parts := getVarArgs(l, 1)
+	ret := Join(SEPARATOR, parts...)
+	l.PushString(ret)
 	return 1
 }
 

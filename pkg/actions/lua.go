@@ -13,7 +13,9 @@ import (
 
 	"github.com/Shopify/go-lua"
 	"github.com/spf13/viper"
+
 	lualibs "github.com/treeverse/lakefs/pkg/actions/lua"
+	"github.com/treeverse/lakefs/pkg/actions/lua/hook"
 	"github.com/treeverse/lakefs/pkg/actions/lua/lakefs"
 	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -151,11 +153,21 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 }
 
 func LuaRun(l *lua.State, code, name string) error {
+	l.Global("debug")
+	l.Field(-1, "traceback")
+	traceback := l.Top()
 	var mode string
 	if err := lua.LoadBuffer(l, code, name, mode); err != nil {
+		v, ok := l.ToString(l.Top())
+		if ok {
+			err = fmt.Errorf("%w: %s", err, v)
+		}
 		return err
 	}
-	return l.ProtectedCall(0, lua.MultipleReturns, 0)
+	if err := l.ProtectedCall(0, lua.MultipleReturns, traceback); err != nil {
+		return hook.Unwrap(err)
+	}
+	return nil
 }
 
 func (h *LuaHook) collectMetrics(l *lua.State) {
