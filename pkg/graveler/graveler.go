@@ -2791,6 +2791,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 				BranchID:         destination,
 				SourceRef:        fromCommit.CommitID.Ref(),
 				Commit:           commit,
+				CommitID:         commitID,
 			})
 			if err != nil {
 				return nil, &HookAbortError{
