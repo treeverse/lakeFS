@@ -100,7 +100,7 @@ while has_more do
                     has_parent = false
                     break
                 end
-                current_descriptor = path.join(parsed.parent, args.metadata_file_name)
+                current_descriptor = path.join("/", parsed.parent, args.metadata_file_name)
                 -- check if this descriptor has already been cached
                 if metadata_files[current_descriptor] then
                     -- cache hit
