@@ -94,7 +94,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 	const credsCacheExpiryWindowJitterFrac = 0.5
 	opts = append(opts, config.WithHTTPClient(
 		awshttp.NewBuildableClient().WithTransportOptions(func(transport *http.Transport) {
-			transport.MaxConnsPerHost = params.MaxConnectionPerHost
+			transport.MaxConnsPerHost = params.MaxConnectionsPerHost
 		})),
 		config.WithRetryer(func() aws.Retryer {
 			return retry.NewStandard(func(so *retry.StandardOptions) {
