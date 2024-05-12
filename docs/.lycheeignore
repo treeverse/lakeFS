@@ -22,4 +22,4 @@ lakefs://
 local://
 s3://
 https://lakefs.io/
-https://lakefs.acme.com/ 
+https://lakefs.acme.com/
