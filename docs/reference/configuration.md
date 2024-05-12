@@ -57,6 +57,8 @@ This reference uses `.` to denote the nesting of values.
     + **Note:** `endpoint` `aws_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials.
       {: .note }
     + `database.dynamodb.health_check_interval` `(duration : 0s)` - Interval to run health check for the DynamoDB instance (won't run if equal to 0).
+    + `database.dynamodb.max_attempts` `(int : 10)` - The maximum number of attempts to perform on a DynamoDB request
+    + `database.dynamodb.max_connections` `(int : 0)` - The maximum number of connections to DynamoDB. 0 means no limit.
   + `database.cosmosdb` - Configuration section when using `database.type="cosmosdb"`
     + `database.cosmosdb.key` `(string : "")` - If specified, will 
       be used to authenticate to the CosmosDB account. Otherwise, Azure SDK 
