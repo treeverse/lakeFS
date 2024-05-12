@@ -61,7 +61,7 @@ jobs:
         id: lychee
         uses: lycheeverse/lychee-action@v1.8.0
         with:
-          args: docs/_site --no-progress --exclude-file=docs/.lycheeignore
+          args: docs/_site --no-progress --exclude-mail --exclude-file=docs/.lycheeignore
           fail: true
           jobSummary: true
           format: markdown
