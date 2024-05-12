@@ -162,7 +162,7 @@ func (m *Manager) DropAsync(ctx context.Context, st graveler.StagingToken) error
 }
 
 func (m *Manager) DropByPrefix(ctx context.Context, st graveler.StagingToken, prefix graveler.Key) error {
-	m.dropByPrefix(ctx, m.kvStore, st, prefix)
+	return m.dropByPrefix(ctx, m.kvStore, st, prefix)
 }
 
 func (m *Manager) dropByPrefix(ctx context.Context, store kv.Store, st graveler.StagingToken, prefix graveler.Key) error {
