@@ -194,6 +194,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 		BranchID:      mainBranch,
 		Committer:     commitRecord.Committer,
 		CommitMessage: fmt.Sprintf("Merge '%s' into '%s'", branch, mainBranch),
+		CommitID:      mergeRef,
 	}, preMergeEvent)
 
 	// Testing post-merge hook response
@@ -212,7 +213,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 		HookID:        "test_webhook",
 		RepositoryID:  repo,
 		BranchID:      mainBranch,
-		CommitID:      mergeResp.JSON200.Reference,
+		CommitID:      mergeRef,
 		Committer:     commitRecord.Committer,
 		CommitMessage: fmt.Sprintf("Merge '%s' into '%s'", branch, mainBranch),
 	}, postMergeEvent)
