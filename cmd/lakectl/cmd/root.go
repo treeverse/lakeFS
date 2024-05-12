@@ -23,6 +23,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/osstats"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"github.com/treeverse/lakefs/pkg/version"
 	"golang.org/x/exp/slices"
@@ -462,12 +463,13 @@ func getClient() *apigen.ClientWithResponses {
 		DieErr(err)
 	}
 
+	oss, _ := osstats.GetOSStats()
 	client, err := apigen.NewClientWithResponses(
 		serverEndpoint,
 		apigen.WithHTTPClient(httpClient),
 		apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
 		apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
-			req.Header.Set("User-Agent", "lakectl/"+version.Version)
+			req.Header.Set("User-Agent", fmt.Sprintf("lakectl/%s/%s/%s/%s", version.Version, oss.OS, oss.Version, oss.Platform))
 			return nil
 		}),
 	)
