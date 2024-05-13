@@ -1,4 +1,4 @@
-package osstats
+package osinfo
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func GetOSStats() (OSStats, error) {
+func GetOSInfo() (OSInfo, error) {
 	cmd := exec.Command("cmd", "ver")
 	cmd.Stdin = strings.NewReader("some input")
 	var out bytes.Buffer
@@ -16,7 +16,7 @@ func GetOSStats() (OSStats, error) {
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		oss := OSStats{
+		oss := OSInfo{
 			OS:       "windows",
 			Platform: "unknown",
 		}
@@ -29,7 +29,7 @@ func GetOSStats() (OSStats, error) {
 	if verOpen != -1 && verClose != -1 {
 		ver = osStr[verOpen+9 : verClose]
 	}
-	oss := OSStats{
+	oss := OSInfo{
 		OS:       "windows",
 		Version:  ver,
 		Platform: "unknown",

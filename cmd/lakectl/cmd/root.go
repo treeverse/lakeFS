@@ -23,7 +23,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"github.com/treeverse/lakefs/pkg/osstats"
+	"github.com/treeverse/lakefs/pkg/osinfo"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"github.com/treeverse/lakefs/pkg/version"
 	"golang.org/x/exp/slices"
@@ -463,7 +463,7 @@ func getClient() *apigen.ClientWithResponses {
 		DieErr(err)
 	}
 
-	oss, _ := osstats.GetOSStats()
+	oss, _ := osinfo.GetOSInfo()
 	client, err := apigen.NewClientWithResponses(
 		serverEndpoint,
 		apigen.WithHTTPClient(httpClient),

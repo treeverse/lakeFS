@@ -1,29 +1,30 @@
-package osstats
+package osinfo
 
 import (
 	"bytes"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 )
 
-func GetOSStats() (OSStats, error) {
-	out, err := _getStats()
+func GetOSInfo() (OSInfo, error) {
+	out, err := getInfo()
 	for strings.Contains(out, brokenPipeOutput) {
-		out, err = _getStats()
+		out, err = getInfo()
 		time.Sleep(retryWaitTime)
 	}
 	osStr := replaceLineTerminations(out)
 	osInfo := strings.Split(osStr, " ")
-	oss := OSStats{
-		OS:       osInfo[0],
+	oss := OSInfo{
 		Version:  osInfo[1],
-		Platform: osInfo[2],
+		Platform: runtime.GOARCH,
+		OS:       osInfo[2],
 	}
 	return oss, err
 }
 
-func _getStats() (string, error) {
+func getInfo() (string, error) {
 	cmd := exec.Command("uname", "-srm")
 	cmd.Stdin = strings.NewReader("some input")
 	var out bytes.Buffer

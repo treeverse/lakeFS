@@ -1,4 +1,4 @@
-package osstats
+package osinfo
 
 import (
 	"fmt"
@@ -11,13 +11,13 @@ const (
 	brokenPipeOutput = "broken pipe"
 )
 
-type OSStats struct {
+type OSInfo struct {
 	Platform string
 	OS       string
 	Version  string
 }
 
-func (os *OSStats) String() string {
+func (os *OSInfo) String() string {
 	return fmt.Sprintf("Platform: %s, OS: %s, Version: %s", os.Platform, os.OS, os.Version)
 }
 
