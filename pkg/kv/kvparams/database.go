@@ -58,11 +58,12 @@ type DynamoDB struct {
 	// in case there are no credentials configured in the system
 	// This is a client requirement as described in section 4 in
 	// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
-	AwsRegion           string
-	AwsProfile          string
-	AwsAccessKeyID      string
-	AwsSecretAccessKey  string
-	HealthCheckInterval time.Duration
+	AwsRegion             string
+	AwsProfile            string
+	AwsAccessKeyID        string
+	AwsSecretAccessKey    string
+	HealthCheckInterval   time.Duration
+	MaxConnectionsPerHost int
 }
 
 type CosmosDB struct {
@@ -103,15 +104,16 @@ func NewConfig(cfg *config.Config) (Config, error) {
 
 	if cfg.Database.DynamoDB != nil {
 		p.DynamoDB = &DynamoDB{
-			TableName:           cfg.Database.DynamoDB.TableName,
-			ScanLimit:           cfg.Database.DynamoDB.ScanLimit,
-			Endpoint:            cfg.Database.DynamoDB.Endpoint,
-			AwsRegion:           cfg.Database.DynamoDB.AwsRegion,
-			AwsProfile:          cfg.Database.DynamoDB.AwsProfile,
-			AwsAccessKeyID:      cfg.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
-			AwsSecretAccessKey:  cfg.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
-			HealthCheckInterval: cfg.Database.DynamoDB.HealthCheckInterval,
-			MaxAttempts:         cfg.Database.DynamoDB.MaxAttempts,
+			TableName:             cfg.Database.DynamoDB.TableName,
+			ScanLimit:             cfg.Database.DynamoDB.ScanLimit,
+			Endpoint:              cfg.Database.DynamoDB.Endpoint,
+			AwsRegion:             cfg.Database.DynamoDB.AwsRegion,
+			AwsProfile:            cfg.Database.DynamoDB.AwsProfile,
+			AwsAccessKeyID:        cfg.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
+			AwsSecretAccessKey:    cfg.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
+			HealthCheckInterval:   cfg.Database.DynamoDB.HealthCheckInterval,
+			MaxAttempts:           cfg.Database.DynamoDB.MaxAttempts,
+			MaxConnectionsPerHost: cfg.Database.DynamoDB.MaxConnections,
 		}
 	}
 

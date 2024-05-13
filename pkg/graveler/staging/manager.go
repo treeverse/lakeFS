@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"path"
 	"strings"
 	"time"
@@ -161,13 +162,17 @@ func (m *Manager) DropAsync(ctx context.Context, st graveler.StagingToken) error
 }
 
 func (m *Manager) DropByPrefix(ctx context.Context, st graveler.StagingToken, prefix graveler.Key) error {
-	itr, err := kv.ScanPrefix(ctx, m.kvStore, []byte(graveler.StagingTokenPartition(st)), prefix, []byte(""))
+	return m.dropByPrefix(ctx, m.kvStore, st, prefix)
+}
+
+func (m *Manager) dropByPrefix(ctx context.Context, store kv.Store, st graveler.StagingToken, prefix graveler.Key) error {
+	itr, err := kv.ScanPrefix(ctx, store, []byte(graveler.StagingTokenPartition(st)), prefix, []byte(""))
 	if err != nil {
 		return err
 	}
 	defer itr.Close()
 	for itr.Next() {
-		err = m.kvStore.Delete(ctx, []byte(graveler.StagingTokenPartition(st)), itr.Entry().Key)
+		err = store.Delete(ctx, []byte(graveler.StagingTokenPartition(st)), itr.Entry().Key)
 		if err != nil {
 			return err
 		}
@@ -200,18 +205,31 @@ func (m *Manager) asyncLoop(ctx context.Context) {
 // findAndDrop lookup for staging tokens to delete and drop keys by prefix. Uses store limited to rate limit the access.
 // it assumes we are processing the data in the background.
 func (m *Manager) findAndDrop(ctx context.Context) error {
-	it, err := m.kvStoreLimited.Scan(ctx, []byte(graveler.CleanupTokensPartition()), kv.ScanOptions{})
+	const maxTokensToFetch = 512
+	it, err := m.kvStoreLimited.Scan(ctx, []byte(graveler.CleanupTokensPartition()), kv.ScanOptions{BatchSize: maxTokensToFetch})
 	if err != nil {
 		return err
 	}
 	defer it.Close()
-	for it.Next() {
-		if err := m.DropByPrefix(ctx, graveler.StagingToken(it.Entry().Key), []byte("")); err != nil {
+
+	// Collecting all the tokens so we can shuffle them.
+	// Shuffling reduces the chances of 2 servers working on the same staging token
+	var stagingTokens [][]byte
+	for len(stagingTokens) < maxTokensToFetch && it.Next() {
+		stagingTokens = append(stagingTokens, it.Entry().Key)
+	}
+	rand.Shuffle(len(stagingTokens), func(i, j int) {
+		stagingTokens[i], stagingTokens[j] = stagingTokens[j], stagingTokens[i]
+	})
+
+	for _, token := range stagingTokens {
+		if err := m.dropByPrefix(ctx, m.kvStoreLimited, graveler.StagingToken(token), []byte("")); err != nil {
 			return err
 		}
-		if err := m.kvStoreLimited.Delete(ctx, []byte(graveler.CleanupTokensPartition()), it.Entry().Key); err != nil {
+		if err := m.kvStoreLimited.Delete(ctx, []byte(graveler.CleanupTokensPartition()), token); err != nil {
 			return err
 		}
 	}
+
 	return it.Err()
 }
