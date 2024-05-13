@@ -1872,7 +1872,7 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 				repo = repositoryRO
 			}
 			// call merge
-			_, err := g.Merge(ctx, repo, mergeDestination, expectedCommitID.Ref(), graveler.CommitParams{
+			mergeCommitID, err := g.Merge(ctx, repo, mergeDestination, expectedCommitID.Ref(), graveler.CommitParams{
 				Committer: commitCommitter,
 				Message:   mergeMessage,
 				Metadata:  mergeMetadata,
@@ -1913,6 +1913,9 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 			}
 			if h.Commit.Message != mergeMessage {
 				t.Errorf("Hook merge message '%s', expected '%s'", h.Commit.Message, mergeMessage)
+			}
+			if h.CommitID != mergeCommitID {
+				t.Errorf("Hook merge commit ID '%s', expected '%s'", h.CommitID, mergeCommitID)
 			}
 			if diff := deep.Equal(h.Commit.Metadata, expectedMergeMetadata); diff != nil {
 				t.Error("Hook merge metadata diff:", diff)

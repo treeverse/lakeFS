@@ -539,12 +539,6 @@ func (s *StoreService) PreMergeHook(ctx context.Context, record graveler.HookRec
 }
 
 func (s *StoreService) PostMergeHook(ctx context.Context, record graveler.HookRecord) error {
-	// update pre-merge with commit ID if needed
-	err := s.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.PreRunID, record.CommitID.String())
-	if err != nil {
-		return err
-	}
-
 	s.asyncRun(ctx, record)
 	return nil
 }
