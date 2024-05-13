@@ -73,7 +73,7 @@ Upon execution, a webhook will send a request containing a JSON object with the 
 | commit_message[^2]  | The message for the commit (or merge) that is taking place        | string |
 | committer[^2]       | Name of the committer                                             | string |
 | commit_metadata[^2] | The metadata for the commit that is taking place                  | string |
-| commit_id[^2,^4]    | The metadata for the commit that is taking place                  | string |
+| commit_id[^2,^4]    | The ID of the commit that is being created              | string |
 | tag_id[^3]          | The ID of the created/deleted tag                                 | string |
 
 [^1]: N\A for Tag events  
