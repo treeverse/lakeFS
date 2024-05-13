@@ -2777,6 +2777,10 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		}
 		metadata[MergeStrategyMetadataKey] = mergeStrategyString[mergeStrategy]
 		commit.Metadata = metadata
+		commitID, err = g.RefManager.AddCommit(ctx, repository, commit)
+		if err != nil {
+			return nil, fmt.Errorf("add commit: %w", err)
+		}
 		if !repository.ReadOnly {
 			preRunID = g.hooks.NewRunID()
 			err = g.hooks.PreMergeHook(ctx, HookRecord{
@@ -2787,6 +2791,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 				BranchID:         destination,
 				SourceRef:        fromCommit.CommitID.Ref(),
 				Commit:           commit,
+				CommitID:         commitID,
 			})
 			if err != nil {
 				return nil, &HookAbortError{
@@ -2796,11 +2801,6 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 				}
 			}
 		}
-		commitID, err = g.RefManager.AddCommit(ctx, repository, commit)
-		if err != nil {
-			return nil, fmt.Errorf("add commit: %w", err)
-		}
-
 		tokensToDrop = branch.SealedTokens
 		branch.SealedTokens = []StagingToken{}
 		branch.CommitID = commitID
