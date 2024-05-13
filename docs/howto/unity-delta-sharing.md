@@ -12,6 +12,10 @@ redirect_from:
 lakeFS Cloud
 {: .label .label-green }
 
+
+{: .warning }
+> Please note, as of June 15th 2024, the Unity Delta Sharing feature will be removed. To integrate lakeFS with Unity Catalog, refer to the [Unity integration](../integrations/unity-catalog.md) docs.
+
 ## Introduction
 
 lakeFS Unity Delta Sharing provides a read-only experience from Unity Catalog for lakeFS customers.  Currently, this is available as a private
