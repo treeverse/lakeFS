@@ -1,5 +1,6 @@
 export const API_ENDPOINT = '/api/v1';
 export const DEFAULT_LISTING_AMOUNT = 100;
+export const MAX_LISTING_AMOUNT = 1000;
 
 export const SETUP_STATE_INITIALIZED = "initialized";
 export const SETUP_STATE_NOT_INITIALIZED = "not_initialized";
@@ -620,31 +621,25 @@ class Objects {
         return await response.json();
     }
 
-    async listAll(repoId, ref, tree, presign = false) {
-        const query = {
-            prefix: tree,
-            amount: DEFAULT_LISTING_AMOUNT,
-            presign,
-            after: "",
-        };
-        let accumulator = [];
-        let hasMore = true;
-        while (hasMore) {
-            const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + qs(query));
-            if (response.status === 404) {
-                throw new NotFoundError(response.message ?? "ref not found");
-            }
-
-            if (response.status !== 200) {
-                throw new Error(await extractError(response));
-            }
-            const responseBody = await response.json();
-            hasMore = responseBody.pagination.has_more;
-            if (hasMore)
-                query["after"] = responseBody.pagination.next_offset;
-            accumulator = accumulator.concat(responseBody.results);
+    listAll(repoId, ref, prefix, presign = false) {
+        let after = "";
+        return {
+            next: async () => {
+                const query = qs({prefix, presign, after, amount: MAX_LISTING_AMOUNT});
+                const response = await apiRequest(
+                  `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
+                if (response.status === 404) {
+                    throw new NotFoundError(response.message ?? "ref not found");
+                }
+                if (response.status !== 200) {
+                    throw new Error(await extractError(response));
+                }
+                const responseBody = await response.json();
+                const done = !responseBody.pagination.has_more;
+                if (!done) after = responseBody.pagination.next_offset;
+                return {page:responseBody.results, done}
+            },
         }
-        return accumulator;
     }
 
     async uploadPreflight(repoId, branchId, path) {
