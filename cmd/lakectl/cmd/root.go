@@ -463,12 +463,14 @@ func getClient() *apigen.ClientWithResponses {
 		DieErr(err)
 	}
 
-	oss, _ := osinfo.GetOSInfo()
+	oss := osinfo.GetOSInfo()
 	client, err := apigen.NewClientWithResponses(
 		serverEndpoint,
 		apigen.WithHTTPClient(httpClient),
 		apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
 		apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+			// This UA string structure is agreed upon
+			// Please consider that when making changes
 			req.Header.Set("User-Agent", fmt.Sprintf("lakectl/%s/%s/%s/%s", version.Version, oss.OS, oss.Version, oss.Platform))
 			return nil
 		}),

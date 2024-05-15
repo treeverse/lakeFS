@@ -12,8 +12,7 @@ import (
 )
 
 func TestLakectlUserAgentString(t *testing.T) {
-	osInfo, err := osinfo.GetOSInfo()
-	assert.NoError(t, err)
+	osInfo := osinfo.GetOSInfo()
 	expectedUserAgent := fmt.Sprintf("lakectl/%s/%s/%s/%s", version.Version, osInfo.OS, osInfo.Version, osInfo.Platform)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

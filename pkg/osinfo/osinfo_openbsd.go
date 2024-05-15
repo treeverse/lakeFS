@@ -8,11 +8,20 @@ import (
 	"time"
 )
 
-func GetOSInfo() (OSInfo, error) {
+var defaultReturnValue = OSInfo{
+	OS:       "openbsd",
+	Version:  "unknown",
+	Platform: "unknown",
+}
+
+func GetOSInfo() OSInfo {
 	out, err := getInfo()
 	for strings.Contains(out, brokenPipeOutput) {
 		out, err = getInfo()
 		time.Sleep(retryWaitTime)
+	}
+	if err != nil {
+		return defaultReturnValue
 	}
 	osStr := replaceLineTerminations(out)
 	osInfo := strings.Split(osStr, " ")
@@ -21,7 +30,7 @@ func GetOSInfo() (OSInfo, error) {
 		Platform: runtime.GOARCH,
 		OS:       osInfo[2],
 	}
-	return oss, err
+	return oss
 }
 
 func getInfo() (string, error) {

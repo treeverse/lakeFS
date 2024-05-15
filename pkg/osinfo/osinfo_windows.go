@@ -2,12 +2,17 @@ package osinfo
 
 import (
 	"bytes"
-	"fmt"
 	"os/exec"
 	"strings"
 )
 
-func GetOSInfo() (OSInfo, error) {
+var defaultReturnValue = OSInfo{
+	OS:       "windows",
+	Version:  "unknown",
+	Platform: "unknown",
+}
+
+func GetOSInfo() OSInfo {
 	cmd := exec.Command("cmd", "ver")
 	cmd.Stdin = strings.NewReader("some input")
 	var out bytes.Buffer
@@ -16,11 +21,7 @@ func GetOSInfo() (OSInfo, error) {
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		oss := OSInfo{
-			OS:       "windows",
-			Platform: "unknown",
-		}
-		return oss, fmt.Errorf("GetOSStats: %s", err)
+		return defaultReturnValue
 	}
 	osStr := replaceLineTerminations(out.String())
 	verOpen := strings.Index(osStr, "[Version")
@@ -34,5 +35,5 @@ func GetOSInfo() (OSInfo, error) {
 		Version:  ver,
 		Platform: "unknown",
 	}
-	return oss, err
+	return oss
 }
