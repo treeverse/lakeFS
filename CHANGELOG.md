@@ -1,5 +1,16 @@
 # Changelog
 
+# v1.23.0
+
+:new: What's new:
+- Support presigned image URLs in markdown (#7745)
+- Make the number of DynamoDB connections configurable (#7751)
+
+:bug: Bugs fixed:
+
+- Fix background staging token behaviour (#7754)
+- Fix: pre-merge is missing commit ID (#7750)
+
 # v1.22.0
 
 :new: What's new:
