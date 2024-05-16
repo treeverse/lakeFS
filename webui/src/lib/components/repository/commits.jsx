@@ -127,7 +127,7 @@ const CommitInfo = ({ repo, commit }) => {
 };
 
 export const CommitMessage = ({ commit }) =>
-    commit.message && commit.message.length ?
+    commit.message?.length ?
         <span>{commit.message}</span> : <span className="text-muted">(No commit message)</span>;
 
 export const CommitInfoCard = ({ repo, commit, bare = false }) => {
