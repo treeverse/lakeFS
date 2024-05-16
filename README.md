@@ -123,7 +123,6 @@ lakeFS is used by numerous companies, including those below. _If you use lakeFS 
 * Giesecke+Devrient
 * greehill
 * Karius
-* Lockheed Martin
 * Luxonis
 * Mixpeek
 * Netflix
