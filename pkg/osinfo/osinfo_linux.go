@@ -15,6 +15,9 @@ var defaultReturnValue = OSInfo{
 
 func GetOSInfo() OSInfo {
 	out, err := getInfo()
+	if err != nil {
+		return defaultReturnValue
+	}
 	for strings.Contains(out, brokenPipeOutput) {
 		out, err = getInfo()
 		time.Sleep(retryWaitTime)
