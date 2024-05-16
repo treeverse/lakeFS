@@ -100,8 +100,7 @@ type Store interface {
 	// Delete will delete the key, no error in if key doesn't exist
 	Delete(ctx context.Context, partitionKey, key []byte) error
 
-	// Scan returns entries that can be read by key order
-	// partitionKey is optional, passing it might increase performance.
+	// Scan returns entries of partitionKey, by key order.
 	// 'options' holds optional parameters to control the batch size and the key to start the scan with.
 	Scan(ctx context.Context, partitionKey []byte, options ScanOptions) (EntriesIterator, error)
 
