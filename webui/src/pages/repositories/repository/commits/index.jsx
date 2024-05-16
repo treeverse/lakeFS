@@ -16,6 +16,7 @@ import {
     LinkButton,
     Loading, RefreshButton
 } from "../../../../lib/components/controls";
+import {CommitMessage} from "../../../../lib/components/repository/commits";
 import {useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {Paginator} from "../../../../lib/components/pagination";
@@ -38,7 +39,7 @@ const CommitWidget = ({ repo, commit }) => {
                             pathname: '/repositories/:repoId/commits/:commitId',
                             params: {repoId: repo.id, commitId: commit.id}
                         }}>
-                            {commit.message}
+                            <CommitMessage commit={commit}/>
                         </Link>
                     </h6>
                     <p>
