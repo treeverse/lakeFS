@@ -28,12 +28,12 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 			wantValue: nil,
 		},
 		{
-			name: "only stage iterator",
+			name: "only first iterator",
 			fields: fields{
 				iterA: testutil.NewDiffIter([]graveler.Diff{
 					{
 						Type: graveler.DiffTypeAdded,
-						Key:  []byte("iterA/one"),
+						Key:  []byte("iterA/a"),
 						Value: &graveler.Value{
 							Identity: []byte("id"),
 							Data:     nil,
@@ -41,7 +41,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 					},
 					{
 						Type: graveler.DiffTypeChanged,
-						Key:  []byte("iterA/two"),
+						Key:  []byte("iterA/b"),
 						Value: &graveler.Value{
 							Identity: []byte("id"),
 							Data:     nil,
@@ -49,7 +49,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 					},
 					{
 						Type: graveler.DiffTypeRemoved,
-						Key:  []byte("iterA/three"),
+						Key:  []byte("iterA/c"),
 						Value: &graveler.Value{
 							Identity: []byte("id"),
 							Data:     nil,
@@ -57,7 +57,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 					},
 					{
 						Type: graveler.DiffTypeConflict,
-						Key:  []byte("iterA/four"),
+						Key:  []byte("iterA/d"),
 						Value: &graveler.Value{
 							Identity: []byte("id"),
 							Data:     nil,
@@ -69,7 +69,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 			wantValue: []*graveler.Diff{
 				{
 					Type: graveler.DiffTypeAdded,
-					Key:  []byte("iterA/one"),
+					Key:  []byte("iterA/a"),
 					Value: &graveler.Value{
 						Identity: []byte("id"),
 						Data:     nil,
@@ -77,7 +77,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 				},
 				{
 					Type: graveler.DiffTypeChanged,
-					Key:  []byte("iterA/two"),
+					Key:  []byte("iterA/b"),
 					Value: &graveler.Value{
 						Identity: []byte("id"),
 						Data:     nil,
@@ -85,7 +85,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 				},
 				{
 					Type: graveler.DiffTypeRemoved,
-					Key:  []byte("iterA/three"),
+					Key:  []byte("iterA/c"),
 					Value: &graveler.Value{
 						Identity: []byte("id"),
 						Data:     nil,
@@ -93,7 +93,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 				},
 				{
 					Type: graveler.DiffTypeConflict,
-					Key:  []byte("iterA/four"),
+					Key:  []byte("iterA/d"),
 					Value: &graveler.Value{
 						Identity: []byte("id"),
 						Data:     nil,
@@ -102,13 +102,13 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 			},
 		},
 		{
-			name: "only compacted iterator",
+			name: "only second iterator",
 			fields: fields{
 				iterA: testutil.NewDiffIter([]graveler.Diff{}),
 				iterB: testutil.NewDiffIter([]graveler.Diff{
 					{
 						Type: graveler.DiffTypeAdded,
-						Key:  []byte("iterA/one"),
+						Key:  []byte("iterA/a"),
 						Value: &graveler.Value{
 							Identity: []byte("id"),
 							Data:     nil,
@@ -116,7 +116,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 					},
 					{
 						Type: graveler.DiffTypeChanged,
-						Key:  []byte("iterA/two"),
+						Key:  []byte("iterA/b"),
 						Value: &graveler.Value{
 							Identity: []byte("id"),
 							Data:     nil,
@@ -124,7 +124,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 					},
 					{
 						Type: graveler.DiffTypeRemoved,
-						Key:  []byte("iterA/three"),
+						Key:  []byte("iterA/c"),
 						Value: &graveler.Value{
 							Identity: []byte("id"),
 							Data:     nil,
@@ -132,7 +132,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 					},
 					{
 						Type: graveler.DiffTypeConflict,
-						Key:  []byte("iterA/four"),
+						Key:  []byte("iterA/d"),
 						Value: &graveler.Value{
 							Identity: []byte("id"),
 							Data:     nil,
@@ -143,7 +143,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 			wantValue: []*graveler.Diff{
 				{
 					Type: graveler.DiffTypeAdded,
-					Key:  []byte("iterA/one"),
+					Key:  []byte("iterA/a"),
 					Value: &graveler.Value{
 						Identity: []byte("id"),
 						Data:     nil,
@@ -151,7 +151,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 				},
 				{
 					Type: graveler.DiffTypeChanged,
-					Key:  []byte("iterA/two"),
+					Key:  []byte("iterA/b"),
 					Value: &graveler.Value{
 						Identity: []byte("id"),
 						Data:     nil,
@@ -159,7 +159,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 				},
 				{
 					Type: graveler.DiffTypeRemoved,
-					Key:  []byte("iterA/three"),
+					Key:  []byte("iterA/c"),
 					Value: &graveler.Value{
 						Identity: []byte("id"),
 						Data:     nil,
@@ -167,7 +167,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 				},
 				{
 					Type: graveler.DiffTypeConflict,
-					Key:  []byte("iterA/four"),
+					Key:  []byte("iterA/d"),
 					Value: &graveler.Value{
 						Identity: []byte("id"),
 						Data:     nil,
@@ -181,7 +181,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 				iterA: testutil.NewDiffIter([]graveler.Diff{
 					{
 						Type: graveler.DiffTypeAdded,
-						Key:  []byte("iterA/one"),
+						Key:  []byte("iterA/a"),
 						Value: &graveler.Value{
 							Identity: []byte("id"),
 						},
@@ -190,7 +190,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 				iterB: testutil.NewDiffIter([]graveler.Diff{
 					{
 						Type: graveler.DiffTypeAdded,
-						Key:  []byte("iterA/two"),
+						Key:  []byte("iterA/b"),
 						Value: &graveler.Value{
 							Identity: []byte("id"),
 						},
@@ -200,7 +200,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 			wantValue: []*graveler.Diff{
 				{
 					Type: graveler.DiffTypeAdded,
-					Key:  []byte("iterA/one"),
+					Key:  []byte("iterA/a"),
 					Value: &graveler.Value{
 						Identity: []byte("id"),
 						Data:     nil,
@@ -208,7 +208,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 				},
 				{
 					Type: graveler.DiffTypeAdded,
-					Key:  []byte("iterA/two"),
+					Key:  []byte("iterA/b"),
 					Value: &graveler.Value{
 						Identity: []byte("id"),
 						Data:     nil,
@@ -327,6 +327,113 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 				},
 				{
 					Type: graveler.DiffTypeAdded,
+					Key:  []byte("iterA/d"),
+					Value: &graveler.Value{
+						Identity: []byte("id"),
+						Data:     nil,
+					},
+				},
+			},
+		},
+		{
+			name: "same values",
+			fields: fields{
+				iterA: testutil.NewDiffIter([]graveler.Diff{
+					{
+						Type: graveler.DiffTypeAdded,
+						Key:  []byte("iterA/a"),
+						Value: &graveler.Value{
+							Identity: []byte("id"),
+							Data:     nil,
+						},
+					},
+					{
+						Type: graveler.DiffTypeChanged,
+						Key:  []byte("iterA/b"),
+						Value: &graveler.Value{
+							Identity: []byte("id"),
+							Data:     nil,
+						},
+					},
+					{
+						Type: graveler.DiffTypeRemoved,
+						Key:  []byte("iterA/c"),
+						Value: &graveler.Value{
+							Identity: []byte("id"),
+							Data:     nil,
+						},
+					},
+					{
+						Type: graveler.DiffTypeConflict,
+						Key:  []byte("iterA/d"),
+						Value: &graveler.Value{
+							Identity: []byte("id"),
+							Data:     nil,
+						},
+					},
+				}),
+				iterB: testutil.NewDiffIter([]graveler.Diff{
+					{
+						Type: graveler.DiffTypeAdded,
+						Key:  []byte("iterA/a"),
+						Value: &graveler.Value{
+							Identity: []byte("id"),
+							Data:     nil,
+						},
+					},
+					{
+						Type: graveler.DiffTypeChanged,
+						Key:  []byte("iterA/b"),
+						Value: &graveler.Value{
+							Identity: []byte("id"),
+							Data:     nil,
+						},
+					},
+					{
+						Type: graveler.DiffTypeRemoved,
+						Key:  []byte("iterA/c"),
+						Value: &graveler.Value{
+							Identity: []byte("id"),
+							Data:     nil,
+						},
+					},
+					{
+						Type: graveler.DiffTypeConflict,
+						Key:  []byte("iterA/d"),
+						Value: &graveler.Value{
+							Identity: []byte("id"),
+							Data:     nil,
+						},
+					},
+				}),
+			},
+			wantValue: []*graveler.Diff{
+				{
+					Type: graveler.DiffTypeAdded,
+					Key:  []byte("iterA/a"),
+					Value: &graveler.Value{
+						Identity: []byte("id"),
+						Data:     nil,
+					},
+				},
+				{
+					Type: graveler.DiffTypeChanged,
+					Key:  []byte("iterA/b"),
+					Value: &graveler.Value{
+						Identity: []byte("id"),
+						Data:     nil,
+					},
+				},
+				{
+					Type: graveler.DiffTypeRemoved,
+					Key:  []byte("iterA/c"),
+					Value: &graveler.Value{
+						Identity: []byte("id"),
+						Data:     nil,
+					},
+				},
+				{
+					Type: graveler.DiffTypeConflict,
 					Key:  []byte("iterA/d"),
 					Value: &graveler.Value{
 						Identity: []byte("id"),
