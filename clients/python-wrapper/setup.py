@@ -11,7 +11,6 @@ VERSION = "0.6.0"
 
 PYTHON_REQUIRES = ">=3.9"
 REQUIRES = [
-    "setuptools == 68.2.2",
     "lakefs-sdk >= 1.20, < 2",
     "pyyaml ~= 6.0.1",
 ]

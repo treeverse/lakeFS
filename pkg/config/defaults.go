@@ -137,6 +137,15 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("graveler.commit_cache.expiry", 10*time.Minute)
 	viper.SetDefault("graveler.commit_cache.jitter", 2*time.Second)
 
+	// MaxBatchDelay - 3ms was chosen as a max delay time for critical path queries.
+	// It trades off amount of queries per second (and thus effectiveness of the batching mechanism) with added latency.
+	// Since reducing # of expensive operations is only beneficial when there are a lot of concurrent requests,
+	//
+	//	the sweet spot is probably between 1-5 milliseconds (representing 200-1000 requests/second to the data store).
+	//
+	// 3ms of delay with ~300 requests/second per resource sounds like a reasonable tradeoff.
+	viper.SetDefault("graveler.max_batch_delay", 3*time.Millisecond)
+
 	viper.SetDefault("ugc.prepare_interval", time.Minute)
 	viper.SetDefault("ugc.prepare_max_file_size", 20*1024*1024)
 
