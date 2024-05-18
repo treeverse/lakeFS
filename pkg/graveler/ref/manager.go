@@ -17,14 +17,6 @@ import (
 )
 
 const (
-	// MaxBatchDelay - 3ms was chosen as a max delay time for critical path queries.
-	// It trades off amount of queries per second (and thus effectiveness of the batching mechanism) with added latency.
-	// Since reducing # of expensive operations is only beneficial when there are a lot of concurrent requests,
-	//
-	//	the sweet spot is probably between 1-5 milliseconds (representing 200-1000 requests/second to the data store).
-	//
-	// 3ms of delay with ~300 requests/second per resource sounds like a reasonable tradeoff.
-	MaxBatchDelay = 3 * time.Millisecond
 	// commitIDStringLength string representation length of commit ID - based on hex representation of sha256
 	commitIDStringLength = 64
 	// ImportExpiryTime Expiry time to remove imports from ref-store
@@ -44,6 +36,7 @@ type Manager struct {
 	batchExecutor   batch.Batcher
 	repoCache       cache.Cache
 	commitCache     cache.Cache
+	maxBatchDelay   time.Duration
 }
 
 func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
@@ -80,6 +73,7 @@ type ManagerConfig struct {
 	AddressProvider       ident.AddressProvider
 	RepositoryCacheConfig CacheConfig
 	CommitCacheConfig     CacheConfig
+	MaxBatchDelay         time.Duration
 }
 
 func NewRefManager(cfg ManagerConfig) *Manager {
@@ -90,6 +84,7 @@ func NewRefManager(cfg ManagerConfig) *Manager {
 		batchExecutor:   cfg.Executor,
 		repoCache:       newCache(cfg.RepositoryCacheConfig),
 		commitCache:     newCache(cfg.CommitCacheConfig),
+		maxBatchDelay:   cfg.MaxBatchDelay,
 	}
 }
 
@@ -107,7 +102,7 @@ func (m *Manager) getRepository(ctx context.Context, repositoryID graveler.Repos
 
 func (m *Manager) getRepositoryBatch(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {
 	key := fmt.Sprintf("GetRepository:%s", repositoryID)
-	repository, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+	repository, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
 		return m.getRepository(context.Background(), repositoryID)
 	}))
 	if err != nil {
@@ -359,7 +354,7 @@ func (m *Manager) getBranchWithPredicate(ctx context.Context, repository *gravel
 		*graveler.Branch
 		kv.Predicate
 	}
-	result, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+	result, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
 		key := graveler.BranchPath(branchID)
 		data := graveler.BranchData{}
 		pred, err := kv.GetMsg(context.Background(), m.kvStore, graveler.RepoPartition(repository), []byte(key), &data)
@@ -430,7 +425,7 @@ func (m *Manager) GCBranchIterator(ctx context.Context, repository *graveler.Rep
 
 func (m *Manager) GetTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID) (*graveler.CommitID, error) {
 	key := fmt.Sprintf("GetTag:%s:%s", repository.RepositoryID, tagID)
-	commitID, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+	commitID, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
 		tagKey := graveler.TagPath(tagID)
 		t := graveler.TagData{}
 		_, err := kv.GetMsg(context.Background(), m.kvStore, graveler.RepoPartition(repository), []byte(tagKey), &t)
@@ -481,7 +476,7 @@ func (m *Manager) GetCommitByPrefix(ctx context.Context, repository *graveler.Re
 		return m.GetCommit(ctx, repository, prefix)
 	}
 	key := fmt.Sprintf("GetCommitByPrefix:%s:%s", repository.RepositoryID, prefix)
-	commit, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+	commit, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
 		it, err := NewOrderedCommitIterator(context.Background(), m.kvStore, repository, false)
 		if err != nil {
 			return nil, err
@@ -527,7 +522,7 @@ func (m *Manager) GetCommit(ctx context.Context, repository *graveler.Repository
 
 func (m *Manager) getCommitBatch(ctx context.Context, repository *graveler.RepositoryRecord, commitID graveler.CommitID) (*graveler.Commit, error) {
 	key := fmt.Sprintf("GetCommit:%s:%s", repository.RepositoryID, commitID)
-	commit, err := m.batchExecutor.BatchFor(ctx, key, MaxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+	commit, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
 		return m.getCommit(context.Background(), commitID, repository)
 	}))
 	if err != nil {
