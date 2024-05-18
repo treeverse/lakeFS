@@ -78,30 +78,56 @@ timeouts:
   (default 10) to wait longer for lakeFS to accept connections.
 
 ### Using custom code (Notebook/Spark)
+
 Set up lakeFS Spark metadata client with the endpoint and credentials as instructed in the previous [page]({% link reference/spark-client.md %}).
 
 The client exposes the `Exporter` object with three export options:
 
-1. Export *all* the objects at the HEAD of a given branch. Does not include
+<ol><li>
+Export *all* the objects at the HEAD of a given branch. Does not include
 files that were added to that branch but were not committed.
 
+<div class="tabs">
+  <ul>
+  <li><a href="#export-head-scala">Scala</a></li>
+  </ul>
+  <div markdown="1" id="export-head-scala">
 ```scala
 exportAllFromBranch(branch: String)
 ```
+  </div>
+</div>
+</li>
+<li>Export ALL objects from a commit:
 
-2. Export ALL objects from a commit:
-
+<div class="tabs">
+  <ul>
+  <li><a href="#export-commit-scala">Scala</a></li>
+  </ul>
+  <div markdown="1" id="export-commit-scala">
 ```scala
 exportAllFromCommit(commitID: String)
 ```
+  </div>
+</div>
+</li>
+<li>Export just the diff between a commit and the HEAD of a branch.
 
-3. Export just the diff between a commit and the HEAD of a branch.
    This is an ideal option for continuous exports of a branch since it will change only the files
    that have been changed since the previous commit.
 
-   ```scala
-   exportFrom(branch: String, prevCommitID: String)
-   ```
+<div class="tabs">
+  <ul>
+  <li><a href="#export-diffs-scala">Scala</a></li>
+  </ul>
+  <div markdown="1" id="export-diffs-scala">
+```scala
+exportFrom(branch: String, prevCommitID: String)
+```
+  </div>
+</div>
+</li>
+</ol>
 
 ## Success/Failure Indications
 
@@ -123,46 +149,65 @@ You may override the default behavior by passing a custom `filter` to the Export
 
 ## Example
 
-1. First configure the `Exporter` instance:
+<ol><li>First configure the `Exporter` instance:
 
-   ```scala
-   import io.treeverse.clients.{ApiClient, Exporter}
-   import org.apache.spark.sql.SparkSession
+<div class="tabs">
+  <ul>
+    <li><a href="#export-custom-setup-scala">Scala</a></li>
+  </ul>
+  <div markdown="1" id="export-custom-setup-scala">
+```scala
+import io.treeverse.clients.{ApiClient, Exporter}
+import org.apache.spark.sql.SparkSession
 
-   val endpoint = "http://<LAKEFS_ENDPOINT>/api/v1"
-   val accessKey = "<LAKEFS_ACCESS_KEY_ID>"
-   val secretKey = "<LAKEFS_SECRET_ACCESS_KEY>"
+val endpoint = "http://<LAKEFS_ENDPOINT>/api/v1"
+val accessKey = "<LAKEFS_ACCESS_KEY_ID>"
+val secretKey = "<LAKEFS_SECRET_ACCESS_KEY>"
 
-   val repo = "example-repo"
+val repo = "example-repo"
 
-   val spark = SparkSession.builder().appName("I can export").master("local").getOrCreate()
-   val sc = spark.sparkContext
-   sc.hadoopConfiguration.set("lakefs.api.url", endpoint)
-   sc.hadoopConfiguration.set("lakefs.api.access_key", accessKey)
-   sc.hadoopConfiguration.set("lakefs.api.secret_key", secretKey)
+val spark = SparkSession.builder().appName("I can export").master("local").getOrCreate()
+val sc = spark.sparkContext
+sc.hadoopConfiguration.set("lakefs.api.url", endpoint)
+sc.hadoopConfiguration.set("lakefs.api.access_key", accessKey)
+sc.hadoopConfiguration.set("lakefs.api.secret_key", secretKey)
 
-   // Add any required spark context configuration for s3
-   val rootLocation = "s3://company-bucket/example/latest"
+// Add any required spark context configuration for s3
+val rootLocation = "s3://company-bucket/example/latest"
 
-   val apiClient = new ApiClient(endpoint, accessKey, secretKey)
-   val exporter = new Exporter(spark, apiClient, repo, rootLocation)
-   ```
+val apiClient = new ApiClient(endpoint, accessKey, secretKey)
+val exporter = new Exporter(spark, apiClient, repo, rootLocation)
+```
+  </div>
+</div></li>
+<li>Now you can export all objects from `main` branch to `s3://company-bucket/example/latest`:
 
-1. Now you can export all objects from `main` branch to `s3://company-bucket/example/latest`:
-
-   ```scala
-   val branch = "main"
-   exporter.exportAllFromBranch(branch)
-   ```
-
-1. Assuming a previous successful export on commit `f3c450d8cd0e84ac67e7bc1c5dcde9bef82d8ba7`,
+<div class="tabs">
+  <ul>
+  <li><a href="#export-custom-branch-scala">Scala</a></li>
+  </ul>
+  <div markdown="1" id="export-custom-branch-scala">
+```scala
+val branch = "main"
+exporter.exportAllFromBranch(branch)
+```
+  </div>
+</div></li>
+<li>Assuming a previous successful export on commit `f3c450d8cd0e84ac67e7bc1c5dcde9bef82d8ba7`,
 you can alternatively export just the difference between `main` branch and the commit:
 
-   ```scala
-   val branch = "main"
-   val commit = "f3c450d8cd0e84ac67e7bc1c5dcde9bef82d8ba7"
-   exporter.exportFrom(branch, commit)
-   ```
+<div class="tabs">
+  <ul>
+    <li><a href="#export-custom-diffs-scala">Scala</a></li>
+  </ul>
+  <div markdown="1" id="export-custom-diffs-scala">
+```scala
+val branch = "main"
+val commit = "f3c450d8cd0e84ac67e7bc1c5dcde9bef82d8ba7"
+exporter.exportFrom(branch, commit)
+```
+  </div>
+</div></li></ol>
 
 ## Exporting Data with Docker
 
