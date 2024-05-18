@@ -321,6 +321,7 @@ type Config struct {
 		Background struct {
 			RateLimit int `mapstructure:"rate_limit"`
 		} `mapstructure:"background"`
+		MaxBatchDelay time.Duration `mapstructure:"max_batch_delay"`
 	} `mapstructure:"graveler"`
 	Gateways struct {
 		S3 struct {
