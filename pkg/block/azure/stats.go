@@ -19,7 +19,7 @@ var requestSizeHistograms = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
 		Name:    "azure_operation_size_bytes",
 		Help:    "handled sizes of outgoing azure operations",
-		Buckets: prometheus.ExponentialBuckets(1, 10, 10), //nolint: gomnd
+		Buckets: prometheus.ExponentialBuckets(1, 10, 10), //nolint: mnd
 	}, []string{"operation", "error"})
 
 func reportMetrics(operation string, start time.Time, sizeBytes *int64, err *error) {

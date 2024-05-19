@@ -45,7 +45,7 @@ func ParseRange(spec string, length int64) (Range, error) {
 	}
 	// negative only
 	if len(fromString) == 0 {
-		endOffset, err := strconv.ParseInt(toString, 10, 64) //nolint: gomnd
+		endOffset, err := strconv.ParseInt(toString, 10, 64) //nolint: mnd
 		if err != nil {
 			return r, ErrBadRange
 		}
@@ -58,7 +58,7 @@ func ParseRange(spec string, length int64) (Range, error) {
 	}
 	// positive only
 	if len(toString) == 0 {
-		beginOffset, err := strconv.ParseInt(fromString, 10, 64) //nolint: gomnd
+		beginOffset, err := strconv.ParseInt(fromString, 10, 64) //nolint: mnd
 		if err != nil {
 			return r, ErrBadRange
 		} else if beginOffset > length-1 {
@@ -69,11 +69,11 @@ func ParseRange(spec string, length int64) (Range, error) {
 		return r, nil
 	}
 	// both set
-	beginOffset, err := strconv.ParseInt(fromString, 10, 64) //nolint: gomnd
+	beginOffset, err := strconv.ParseInt(fromString, 10, 64) //nolint: mnd
 	if err != nil {
 		return r, ErrBadRange
 	}
-	endOffset, err := strconv.ParseInt(toString, 10, 64) //nolint: gomnd
+	endOffset, err := strconv.ParseInt(toString, 10, 64) //nolint: mnd
 	if err != nil {
 		return r, ErrBadRange
 	}
