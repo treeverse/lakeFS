@@ -5,6 +5,7 @@
 :new: What's new:
 - Make MaxBatchDelay configurable (#7774)
 - Handle empty commit messages (#7767)
+  * 🐣 Welcome @itaigilo!
 
 # v1.23.0
 
