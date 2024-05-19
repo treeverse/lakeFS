@@ -161,7 +161,7 @@ func TestPreSign(t *testing.T) {
 		rangeId := committed.ID(gv.Identity)
 
 		// now try the range ID
-		rangeResponse, err := client.GetRangeWithResponse(ctx, repo, metarangeId, &apigen.GetRangeParams{
+		rangeResponse, err := client.GetRangeWithResponse(ctx, repo, string(rangeId), &apigen.GetRangeParams{
 			Presign: swag.Bool(true),
 		})
 		require.NoError(t, err, "failed to get range with presign=true")
