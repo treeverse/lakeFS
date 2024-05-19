@@ -82,10 +82,7 @@ func (c *JoinedDiffIterator) Next() bool {
 	// if one of the iterators is done, set the other one as the current iterator and return
 	if !c.iterAHasMore {
 		c.currenIter = c.iterB
-		if !c.iterBHasMore {
-			return false
-		}
-		return true
+		return c.iterBHasMore
 	} else if !c.iterBHasMore {
 		c.currenIter = c.iterA
 		return true
