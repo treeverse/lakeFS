@@ -1,5 +1,11 @@
 # Changelog
 
+# v1.24.0
+
+:new: What's new:
+- Make MaxBatchDelay configurable (#7774)
+- Handle empty commit messages (#7767)
+
 # v1.23.0
 
 :new: What's new:
