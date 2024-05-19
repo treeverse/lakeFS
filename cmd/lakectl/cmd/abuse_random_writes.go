@@ -28,7 +28,7 @@ var abuseRandomWritesCmd = &cobra.Command{
 		// generate randomly selected keys as input
 		generator.Setup(func(add stress.GeneratorAddFn) {
 			for i := 0; i < amount; i++ {
-				add(fmt.Sprintf("%sfile-%d", prefix, i))
+				add(fmt.Sprintf("_%d#%sfile-%d", i%100, prefix, i))
 			}
 		})
 

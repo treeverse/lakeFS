@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 	"syscall"
 	"time"
 
@@ -48,8 +49,10 @@ func runLinkObject(cmd *cobra.Command, u *uri.URI, generator *stress.Generator) 
 		client := getClient()
 		for work := range input {
 			start := time.Now()
-
-			getResponse, err := client.GetPhysicalAddressWithResponse(ctx, u.Repository, u.Ref, &apigen.GetPhysicalAddressParams{Path: work})
+			splits := strings.Split(work, "#")
+			ref := u.Ref + splits[0]
+			path := splits[1]
+			getResponse, err := client.GetPhysicalAddressWithResponse(ctx, u.Repository, ref, &apigen.GetPhysicalAddressParams{Path: path})
 			if err == nil && getResponse.JSON200 == nil {
 				err = helpers.ResponseAsError(getResponse)
 			}
@@ -65,9 +68,9 @@ func runLinkObject(cmd *cobra.Command, u *uri.URI, generator *stress.Generator) 
 			// This tests the operations done on the lakeFS server side without the overhead of uploading the
 			// object to the object store which should optimally be performed with lakeFS not in the data path (upload using pre-signed urls / set/link).
 			stagingLocation := getResponse.JSON200
-			linkResponse, err := client.LinkPhysicalAddressWithResponse(ctx, u.Repository, u.Ref,
+			linkResponse, err := client.LinkPhysicalAddressWithResponse(ctx, u.Repository, ref,
 				&apigen.LinkPhysicalAddressParams{
-					Path: work,
+					Path: path,
 				},
 				apigen.LinkPhysicalAddressJSONRequestBody{
 					Checksum: "00695c7307b0480c7b6bdc873cf05c15",

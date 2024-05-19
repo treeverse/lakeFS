@@ -24,7 +24,7 @@ const (
 	//	the sweet spot is probably between 1-5 milliseconds (representing 200-1000 requests/second to the data store).
 	//
 	// 3ms of delay with ~300 requests/second per resource sounds like a reasonable tradeoff.
-	MaxBatchDelay = 3 * time.Millisecond
+	MaxBatchDelay = 50 * time.Millisecond
 	// commitIDStringLength string representation length of commit ID - based on hex representation of sha256
 	commitIDStringLength = 64
 	// ImportExpiryTime Expiry time to remove imports from ref-store

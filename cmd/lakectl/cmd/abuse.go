@@ -7,6 +7,7 @@ import (
 const (
 	abuseDefaultAmount      = 1000000
 	abuseDefaultParallelism = 100
+	abuseDefaultBranches    = 100
 )
 
 var abuseCmd = &cobra.Command{
