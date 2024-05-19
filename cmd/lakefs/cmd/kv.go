@@ -156,7 +156,7 @@ var kvScanCmd = &cobra.Command{
 	},
 }
 
-//nolint:gochecknoinits,gomnd
+//nolint:gochecknoinits,mnd
 func init() {
 	rootCmd.AddCommand(kvCmd)
 	kvCmd.AddCommand(kvGetCmd)

@@ -977,7 +977,7 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 	ctx := r.Context()
 	c.LogAction(ctx, "get_group_acl", r, "", "", "")
 	policies, _, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
-		Amount: 2, //nolint:gomnd
+		Amount: 2, //nolint:mnd
 	})
 	if c.handleAPIError(ctx, w, r, err) {
 		return

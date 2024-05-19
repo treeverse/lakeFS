@@ -45,7 +45,7 @@ func getPackageName(f string) string {
 func getCaller() *runtime.Frame {
 	// cache this package's fully-qualified name
 	callerInitOnce.Do(func() {
-		pcs := make([]uintptr, 2) //nolint: gomnd
+		pcs := make([]uintptr, 2) //nolint: mnd
 		_ = runtime.Callers(0, pcs)
 		loggingPackage = getPackageName(runtime.FuncForPC(pcs[1]).Name())
 

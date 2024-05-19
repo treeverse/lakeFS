@@ -19,7 +19,7 @@ import (
 
 type MakeStore func(t testing.TB, ctx context.Context) kv.Store
 
-var runTestID = nanoid.MustGenerate("abcdef1234567890", 8) //nolint:gomnd
+var runTestID = nanoid.MustGenerate("abcdef1234567890", 8) //nolint:mnd
 
 const (
 	testPartitionKey       = "test"
@@ -862,7 +862,7 @@ func testDeleteWhileIterSamePrefixSingleRun(t *testing.T, ms MakeStore, prefsToC
 	// initialKv holds all the created items, to later verify that no items, that do not fit delPref, were deleted
 	var initialKv []kv.Entry
 	for _, pref := range prefsToCreate {
-		initialKv = append(initialKv, setupSampleData(t, ctx, store, testPartitionKey, string(pref), 100)...) //nolint:gomnd
+		initialKv = append(initialKv, setupSampleData(t, ctx, store, testPartitionKey, string(pref), 100)...) //nolint:mnd
 	}
 
 	// Will be filled by the scan&read routine, to later verify that all values are passed by scan
