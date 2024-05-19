@@ -199,7 +199,7 @@ func branchExists(ctx context.Context, client *apigen.ClientWithResponses, repos
 	return RetrieveError(resp, err), false
 }
 
-//nolint:gochecknoinits,gomnd
+//nolint:gochecknoinits,mnd
 func init() {
 	importCmd.Flags().String("from", "", "prefix to read from (e.g. \"s3://bucket/sub/path/\"). must not be in a storage namespace")
 	_ = importCmd.MarkFlagRequired("from")

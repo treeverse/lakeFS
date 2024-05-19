@@ -343,7 +343,7 @@ func (ctx *verificationCtx) contentLength() (int64, error) {
 				return 0, errors.ErrMissingContentLength
 			}
 			var err error
-			size, err = strconv.ParseInt(sizeStr[0], 10, 64) //nolint: gomnd
+			size, err = strconv.ParseInt(sizeStr[0], 10, 64) //nolint: mnd
 			if err != nil {
 				return 0, err
 			}

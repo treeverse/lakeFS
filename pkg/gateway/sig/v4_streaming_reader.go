@@ -259,8 +259,8 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 // readCRLF - check if reader only has '\r\n' CRLF character.
 // returns malformed encoding if it doesn't.
 func readCRLF(reader io.Reader) error {
-	buf := make([]byte, 2)                 //nolint: gomnd
-	_, err := io.ReadFull(reader, buf[:2]) //nolint: gomnd
+	buf := make([]byte, 2)                 //nolint: mnd
+	_, err := io.ReadFull(reader, buf[:2]) //nolint: mnd
 	if err != nil {
 		return err
 	}
@@ -326,7 +326,7 @@ func parseS3ChunkExtension(buf []byte) ([]byte, []byte) {
 
 // parseChunkSignature - parse chunk signature.
 func parseChunkSignature(chunk []byte) []byte {
-	chunkSplits := bytes.SplitN(chunk, []byte(s3ChunkSignatureStr), 2) //nolint: gomnd
+	chunkSplits := bytes.SplitN(chunk, []byte(s3ChunkSignatureStr), 2) //nolint: mnd
 	return chunkSplits[1]
 }
 

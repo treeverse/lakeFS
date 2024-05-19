@@ -75,7 +75,7 @@ var runCmd = &cobra.Command{
 	},
 }
 
-//nolint:gochecknoinits,gomnd
+//nolint:gochecknoinits,mnd
 func init() {
 	rootCmd.AddCommand(runCmd)
 	runCmd.Flags().StringP(RepoNameFlag, "r", "", "Existing lakeFS repo name to use. Leave empty to create a dedicated repo")
