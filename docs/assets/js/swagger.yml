@@ -5171,6 +5171,11 @@ paths:
         required: true
         schema:
           type: string
+      - in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
     get:
       tags:
         - metadata
@@ -5188,6 +5193,12 @@ paths:
               schema:
                 type: string
               description: redirect to S3
+        302:
+          description: Redirect to a pre-signed URL for the object
+          headers:
+            Location:
+              schema:
+                type: string
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -5209,6 +5220,11 @@ paths:
         required: true
         schema:
           type: string
+      - in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
     get:
       tags:
         - metadata
@@ -5226,6 +5242,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StorageURI"
+        302:
+          description: Redirect to a pre-signed URL for the object
+          headers:
+            Location:
+              schema:
+                type: string
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

@@ -56,6 +56,7 @@ class MetadataApi(object):
                 'all': [
                     'repository',
                     'meta_range',
+                    'presign',
                 ],
                 'required': [
                     'repository',
@@ -78,14 +79,18 @@ class MetadataApi(object):
                         (str,),
                     'meta_range':
                         (str,),
+                    'presign':
+                        (bool,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'meta_range': 'meta_range',
+                    'presign': 'presign',
                 },
                 'location_map': {
                     'repository': 'path',
                     'meta_range': 'path',
+                    'presign': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -117,6 +122,7 @@ class MetadataApi(object):
                 'all': [
                     'repository',
                     'range',
+                    'presign',
                 ],
                 'required': [
                     'repository',
@@ -139,14 +145,18 @@ class MetadataApi(object):
                         (str,),
                     'range':
                         (str,),
+                    'presign':
+                        (bool,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'range': 'range',
+                    'presign': 'presign',
                 },
                 'location_map': {
                     'repository': 'path',
                     'range': 'path',
+                    'presign': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -179,6 +189,7 @@ class MetadataApi(object):
             meta_range (str):
 
         Keyword Args:
+            presign (bool): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -248,6 +259,7 @@ class MetadataApi(object):
             range (str):
 
         Keyword Args:
+            presign (bool): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

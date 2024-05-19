@@ -10,7 +10,7 @@ Method | HTTP request | Description
 
 <a name="getMetaRange"></a>
 # **getMetaRange**
-> StorageURI getMetaRange(repository, metaRange)
+> StorageURI getMetaRange(repository, metaRange, presign)
 
 return URI to a meta-range file
 
@@ -59,8 +59,9 @@ public class Example {
     MetadataApi apiInstance = new MetadataApi(defaultClient);
     String repository = "repository_example"; // String | 
     String metaRange = "metaRange_example"; // String | 
+    Boolean presign = true; // Boolean | 
     try {
-      StorageURI result = apiInstance.getMetaRange(repository, metaRange);
+      StorageURI result = apiInstance.getMetaRange(repository, metaRange, presign);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling MetadataApi#getMetaRange");
@@ -79,6 +80,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **metaRange** | **String**|  |
+ **presign** | **Boolean**|  | [optional]
 
 ### Return type
 
@@ -97,6 +99,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | meta-range URI |  * Location - redirect to S3 <br>  |
+**302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
@@ -104,7 +107,7 @@ Name | Type | Description  | Notes
 
 <a name="getRange"></a>
 # **getRange**
-> StorageURI getRange(repository, range)
+> StorageURI getRange(repository, range, presign)
 
 return URI to a range file
 
@@ -153,8 +156,9 @@ public class Example {
     MetadataApi apiInstance = new MetadataApi(defaultClient);
     String repository = "repository_example"; // String | 
     String range = "range_example"; // String | 
+    Boolean presign = true; // Boolean | 
     try {
-      StorageURI result = apiInstance.getRange(repository, range);
+      StorageURI result = apiInstance.getRange(repository, range, presign);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling MetadataApi#getRange");
@@ -173,6 +177,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **String**|  |
  **range** | **String**|  |
+ **presign** | **Boolean**|  | [optional]
 
 ### Return type
 
@@ -191,6 +196,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | range URI |  * Location - redirect to S3 <br>  |
+**302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |

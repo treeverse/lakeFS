@@ -74,11 +74,21 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = metadata_api.MetadataApi(api_client)
     repository = "repository_example" # str | 
     meta_range = "meta_range_example" # str | 
+    presign = True # bool |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
         # return URI to a meta-range file
         api_response = api_instance.get_meta_range(repository, meta_range)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling MetadataApi->get_meta_range: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # return URI to a meta-range file
+        api_response = api_instance.get_meta_range(repository, meta_range, presign=presign)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling MetadataApi->get_meta_range: %s\n" % e)
@@ -91,6 +101,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **meta_range** | **str**|  |
+ **presign** | **bool**|  | [optional]
 
 ### Return type
 
@@ -111,6 +122,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | meta-range URI |  * Location - redirect to S3 <br>  |
+**302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
@@ -184,11 +196,21 @@ with lakefs_client.ApiClient(configuration) as api_client:
     api_instance = metadata_api.MetadataApi(api_client)
     repository = "repository_example" # str | 
     range = "range_example" # str | 
+    presign = True # bool |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
         # return URI to a range file
         api_response = api_instance.get_range(repository, range)
+        pprint(api_response)
+    except lakefs_client.ApiException as e:
+        print("Exception when calling MetadataApi->get_range: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # return URI to a range file
+        api_response = api_instance.get_range(repository, range, presign=presign)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling MetadataApi->get_range: %s\n" % e)
@@ -201,6 +223,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  |
  **range** | **str**|  |
+ **presign** | **bool**|  | [optional]
 
 ### Return type
 
@@ -221,6 +244,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | range URI |  * Location - redirect to S3 <br>  |
+**302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |

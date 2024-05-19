@@ -9,7 +9,7 @@ Method | HTTP request | Description
 
 
 # **get_meta_range**
-> StorageURI get_meta_range(repository, meta_range)
+> StorageURI get_meta_range(repository, meta_range, presign=presign)
 
 return URI to a meta-range file
 
@@ -75,10 +75,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     api_instance = lakefs_sdk.MetadataApi(api_client)
     repository = 'repository_example' # str | 
     meta_range = 'meta_range_example' # str | 
+    presign = True # bool |  (optional)
 
     try:
         # return URI to a meta-range file
-        api_response = api_instance.get_meta_range(repository, meta_range)
+        api_response = api_instance.get_meta_range(repository, meta_range, presign=presign)
         print("The response of MetadataApi->get_meta_range:\n")
         pprint(api_response)
     except Exception as e:
@@ -94,6 +95,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
  **meta_range** | **str**|  | 
+ **presign** | **bool**|  | [optional] 
 
 ### Return type
 
@@ -113,6 +115,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | meta-range URI |  * Location - redirect to S3 <br>  |
+**302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
@@ -121,7 +124,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **get_range**
-> StorageURI get_range(repository, range)
+> StorageURI get_range(repository, range, presign=presign)
 
 return URI to a range file
 
@@ -187,10 +190,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     api_instance = lakefs_sdk.MetadataApi(api_client)
     repository = 'repository_example' # str | 
     range = 'range_example' # str | 
+    presign = True # bool |  (optional)
 
     try:
         # return URI to a range file
-        api_response = api_instance.get_range(repository, range)
+        api_response = api_instance.get_range(repository, range, presign=presign)
         print("The response of MetadataApi->get_range:\n")
         pprint(api_response)
     except Exception as e:
@@ -206,6 +210,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **repository** | **str**|  | 
  **range** | **str**|  | 
+ **presign** | **bool**|  | [optional] 
 
 ### Return type
 
@@ -225,6 +230,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | range URI |  * Location - redirect to S3 <br>  |
+**302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |

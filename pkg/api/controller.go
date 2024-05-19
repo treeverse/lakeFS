@@ -3656,7 +3656,7 @@ func (c *Controller) InternalCreateBranchProtectionRule(w http.ResponseWriter, r
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository, metaRange string) {
+func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository string, metaRange string, params apigen.GetMetaRangeParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -3684,6 +3684,26 @@ func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
+	// check if presign
+	if swag.BoolValue(params.Presign) {
+		repo, err := c.Catalog.GetRepository(ctx, repository)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		pointer := block.ObjectPointer{
+			StorageNamespace: repo.StorageNamespace,
+			IdentifierType:   block.IdentifierTypeRelative,
+			Identifier:       string(metarange),
+		}
+		location, _, err := c.BlockAdapter.GetPreSignedURL(ctx, pointer, block.PreSignModeRead)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		w.Header().Set("Location", location)
+		w.WriteHeader(http.StatusFound)
+		return
+	}
+
 	response := apigen.StorageURI{
 		Location: string(metarange),
 	}
@@ -3691,7 +3711,7 @@ func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, reposi
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository, pRange string) {
+func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository string, pRange string, params apigen.GetRangeParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -3718,6 +3738,26 @@ func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+	// check if presign
+	if swag.BoolValue(params.Presign) {
+		repo, err := c.Catalog.GetRepository(ctx, repository)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		pointer := block.ObjectPointer{
+			StorageNamespace: repo.StorageNamespace,
+			IdentifierType:   block.IdentifierTypeRelative,
+			Identifier:       string(rng),
+		}
+		location, _, err := c.BlockAdapter.GetPreSignedURL(ctx, pointer, block.PreSignModeRead)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		w.Header().Set("Location", location)
+		w.WriteHeader(http.StatusFound)
+		return
+	}
+
 	response := apigen.StorageURI{
 		Location: string(rng),
 	}

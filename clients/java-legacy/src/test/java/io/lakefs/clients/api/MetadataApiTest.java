@@ -45,7 +45,8 @@ public class MetadataApiTest {
     public void getMetaRangeTest() throws ApiException {
         String repository = null;
         String metaRange = null;
-                StorageURI response = api.getMetaRange(repository, metaRange);
+        Boolean presign = null;
+                StorageURI response = api.getMetaRange(repository, metaRange, presign);
         // TODO: test validations
     }
     
@@ -61,7 +62,8 @@ public class MetadataApiTest {
     public void getRangeTest() throws ApiException {
         String repository = null;
         String range = null;
-                StorageURI response = api.getRange(repository, range);
+        Boolean presign = null;
+                StorageURI response = api.getRange(repository, range, presign);
         // TODO: test validations
     }
     

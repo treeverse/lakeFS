@@ -11,7 +11,7 @@ Method | HTTP request | Description
 
 ## get_meta_range
 
-> models::StorageUri get_meta_range(repository, meta_range)
+> models::StorageUri get_meta_range(repository, meta_range, presign)
 return URI to a meta-range file
 
 ### Parameters
@@ -21,6 +21,7 @@ Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **repository** | **String** |  | [required] |
 **meta_range** | **String** |  | [required] |
+**presign** | Option<**bool**> |  |  |
 
 ### Return type
 
@@ -40,7 +41,7 @@ Name | Type | Description  | Required | Notes
 
 ## get_range
 
-> models::StorageUri get_range(repository, range)
+> models::StorageUri get_range(repository, range, presign)
 return URI to a range file
 
 ### Parameters
@@ -50,6 +51,7 @@ Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **repository** | **String** |  | [required] |
 **range** | **String** |  | [required] |
+**presign** | Option<**bool**> |  |  |
 
 ### Return type
 

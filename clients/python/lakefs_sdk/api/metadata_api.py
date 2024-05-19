@@ -24,9 +24,11 @@ except ImportError:
 from typing_extensions import Annotated
 
 try:
-    from pydantic.v1 import StrictStr
+    from pydantic.v1 import StrictBool, StrictStr
 except ImportError:
-    from pydantic import StrictStr
+    from pydantic import StrictBool, StrictStr
+
+from typing import Optional
 
 from lakefs_sdk.models.storage_uri import StorageURI
 
@@ -51,19 +53,21 @@ class MetadataApi(object):
         self.api_client = api_client
 
     @validate_arguments
-    def get_meta_range(self, repository : StrictStr, meta_range : StrictStr, **kwargs) -> StorageURI:  # noqa: E501
+    def get_meta_range(self, repository : StrictStr, meta_range : StrictStr, presign : Optional[StrictBool] = None, **kwargs) -> StorageURI:  # noqa: E501
         """return URI to a meta-range file  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.get_meta_range(repository, meta_range, async_req=True)
+        >>> thread = api.get_meta_range(repository, meta_range, presign, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
         :param meta_range: (required)
         :type meta_range: str
+        :param presign:
+        :type presign: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request. If one
@@ -78,22 +82,24 @@ class MetadataApi(object):
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
             raise ValueError("Error! Please call the get_meta_range_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.get_meta_range_with_http_info(repository, meta_range, **kwargs)  # noqa: E501
+        return self.get_meta_range_with_http_info(repository, meta_range, presign, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def get_meta_range_with_http_info(self, repository : StrictStr, meta_range : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
+    def get_meta_range_with_http_info(self, repository : StrictStr, meta_range : StrictStr, presign : Optional[StrictBool] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """return URI to a meta-range file  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.get_meta_range_with_http_info(repository, meta_range, async_req=True)
+        >>> thread = api.get_meta_range_with_http_info(repository, meta_range, presign, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
         :param meta_range: (required)
         :type meta_range: str
+        :param presign:
+        :type presign: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -123,7 +129,8 @@ class MetadataApi(object):
 
         _all_params = [
             'repository',
-            'meta_range'
+            'meta_range',
+            'presign'
         ]
         _all_params.extend(
             [
@@ -160,6 +167,9 @@ class MetadataApi(object):
 
         # process the query parameters
         _query_params = []
+        if _params.get('presign') is not None:  # noqa: E501
+            _query_params.append(('presign', _params['presign']))
+
         # process the header parameters
         _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
@@ -176,6 +186,7 @@ class MetadataApi(object):
 
         _response_types_map = {
             '200': "StorageURI",
+            '302': None,
             '401': "Error",
             '404': "Error",
             '420': None,
@@ -199,19 +210,21 @@ class MetadataApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def get_range(self, repository : StrictStr, range : StrictStr, **kwargs) -> StorageURI:  # noqa: E501
+    def get_range(self, repository : StrictStr, range : StrictStr, presign : Optional[StrictBool] = None, **kwargs) -> StorageURI:  # noqa: E501
         """return URI to a range file  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.get_range(repository, range, async_req=True)
+        >>> thread = api.get_range(repository, range, presign, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
         :param range: (required)
         :type range: str
+        :param presign:
+        :type presign: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request. If one
@@ -226,22 +239,24 @@ class MetadataApi(object):
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
             raise ValueError("Error! Please call the get_range_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.get_range_with_http_info(repository, range, **kwargs)  # noqa: E501
+        return self.get_range_with_http_info(repository, range, presign, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def get_range_with_http_info(self, repository : StrictStr, range : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
+    def get_range_with_http_info(self, repository : StrictStr, range : StrictStr, presign : Optional[StrictBool] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """return URI to a range file  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.get_range_with_http_info(repository, range, async_req=True)
+        >>> thread = api.get_range_with_http_info(repository, range, presign, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
         :type repository: str
         :param range: (required)
         :type range: str
+        :param presign:
+        :type presign: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -271,7 +286,8 @@ class MetadataApi(object):
 
         _all_params = [
             'repository',
-            'range'
+            'range',
+            'presign'
         ]
         _all_params.extend(
             [
@@ -308,6 +324,9 @@ class MetadataApi(object):
 
         # process the query parameters
         _query_params = []
+        if _params.get('presign') is not None:  # noqa: E501
+            _query_params.append(('presign', _params['presign']))
+
         # process the header parameters
         _header_params = dict(_params.get('_headers', {}))
         # process the form parameters
@@ -324,6 +343,7 @@ class MetadataApi(object):
 
         _response_types_map = {
             '200': "StorageURI",
+            '302': None,
             '401': "Error",
             '404': "Error",
             '420': None,

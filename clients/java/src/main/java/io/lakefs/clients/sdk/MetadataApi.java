@@ -73,7 +73,7 @@ public class MetadataApi {
         this.localCustomBaseUrl = customBaseUrl;
     }
 
-    private okhttp3.Call getMetaRangeCall(String repository, String metaRange, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call getMetaRangeCall(String repository, String metaRange, Boolean presign, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -100,6 +100,10 @@ public class MetadataApi {
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
+        if (presign != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("presign", presign));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -120,7 +124,7 @@ public class MetadataApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call getMetaRangeValidateBeforeCall(String repository, String metaRange, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call getMetaRangeValidateBeforeCall(String repository, String metaRange, Boolean presign, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling getMetaRange(Async)");
@@ -131,20 +135,20 @@ public class MetadataApi {
             throw new ApiException("Missing the required parameter 'metaRange' when calling getMetaRange(Async)");
         }
 
-        return getMetaRangeCall(repository, metaRange, _callback);
+        return getMetaRangeCall(repository, metaRange, presign, _callback);
 
     }
 
 
-    private ApiResponse<StorageURI> getMetaRangeWithHttpInfo(String repository, String metaRange) throws ApiException {
-        okhttp3.Call localVarCall = getMetaRangeValidateBeforeCall(repository, metaRange, null);
+    private ApiResponse<StorageURI> getMetaRangeWithHttpInfo(String repository, String metaRange, Boolean presign) throws ApiException {
+        okhttp3.Call localVarCall = getMetaRangeValidateBeforeCall(repository, metaRange, presign, null);
         Type localVarReturnType = new TypeToken<StorageURI>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call getMetaRangeAsync(String repository, String metaRange, final ApiCallback<StorageURI> _callback) throws ApiException {
+    private okhttp3.Call getMetaRangeAsync(String repository, String metaRange, Boolean presign, final ApiCallback<StorageURI> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = getMetaRangeValidateBeforeCall(repository, metaRange, _callback);
+        okhttp3.Call localVarCall = getMetaRangeValidateBeforeCall(repository, metaRange, presign, _callback);
         Type localVarReturnType = new TypeToken<StorageURI>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -153,10 +157,21 @@ public class MetadataApi {
     public class APIgetMetaRangeRequest {
         private final String repository;
         private final String metaRange;
+        private Boolean presign;
 
         private APIgetMetaRangeRequest(String repository, String metaRange) {
             this.repository = repository;
             this.metaRange = metaRange;
+        }
+
+        /**
+         * Set presign
+         * @param presign  (optional)
+         * @return APIgetMetaRangeRequest
+         */
+        public APIgetMetaRangeRequest presign(Boolean presign) {
+            this.presign = presign;
+            return this;
         }
 
         /**
@@ -168,6 +183,7 @@ public class MetadataApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> meta-range URI </td><td>  * Location - redirect to S3 <br>  </td></tr>
+            <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -175,7 +191,7 @@ public class MetadataApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return getMetaRangeCall(repository, metaRange, _callback);
+            return getMetaRangeCall(repository, metaRange, presign, _callback);
         }
 
         /**
@@ -186,6 +202,7 @@ public class MetadataApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> meta-range URI </td><td>  * Location - redirect to S3 <br>  </td></tr>
+            <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -193,7 +210,7 @@ public class MetadataApi {
          </table>
          */
         public StorageURI execute() throws ApiException {
-            ApiResponse<StorageURI> localVarResp = getMetaRangeWithHttpInfo(repository, metaRange);
+            ApiResponse<StorageURI> localVarResp = getMetaRangeWithHttpInfo(repository, metaRange, presign);
             return localVarResp.getData();
         }
 
@@ -205,6 +222,7 @@ public class MetadataApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> meta-range URI </td><td>  * Location - redirect to S3 <br>  </td></tr>
+            <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -212,7 +230,7 @@ public class MetadataApi {
          </table>
          */
         public ApiResponse<StorageURI> executeWithHttpInfo() throws ApiException {
-            return getMetaRangeWithHttpInfo(repository, metaRange);
+            return getMetaRangeWithHttpInfo(repository, metaRange, presign);
         }
 
         /**
@@ -224,6 +242,7 @@ public class MetadataApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> meta-range URI </td><td>  * Location - redirect to S3 <br>  </td></tr>
+            <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -231,7 +250,7 @@ public class MetadataApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<StorageURI> _callback) throws ApiException {
-            return getMetaRangeAsync(repository, metaRange, _callback);
+            return getMetaRangeAsync(repository, metaRange, presign, _callback);
         }
     }
 
@@ -245,6 +264,7 @@ public class MetadataApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> meta-range URI </td><td>  * Location - redirect to S3 <br>  </td></tr>
+        <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -254,7 +274,7 @@ public class MetadataApi {
     public APIgetMetaRangeRequest getMetaRange(String repository, String metaRange) {
         return new APIgetMetaRangeRequest(repository, metaRange);
     }
-    private okhttp3.Call getRangeCall(String repository, String range, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call getRangeCall(String repository, String range, Boolean presign, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -281,6 +301,10 @@ public class MetadataApi {
         Map<String, String> localVarCookieParams = new HashMap<String, String>();
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
+        if (presign != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("presign", presign));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -301,7 +325,7 @@ public class MetadataApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call getRangeValidateBeforeCall(String repository, String range, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call getRangeValidateBeforeCall(String repository, String range, Boolean presign, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling getRange(Async)");
@@ -312,20 +336,20 @@ public class MetadataApi {
             throw new ApiException("Missing the required parameter 'range' when calling getRange(Async)");
         }
 
-        return getRangeCall(repository, range, _callback);
+        return getRangeCall(repository, range, presign, _callback);
 
     }
 
 
-    private ApiResponse<StorageURI> getRangeWithHttpInfo(String repository, String range) throws ApiException {
-        okhttp3.Call localVarCall = getRangeValidateBeforeCall(repository, range, null);
+    private ApiResponse<StorageURI> getRangeWithHttpInfo(String repository, String range, Boolean presign) throws ApiException {
+        okhttp3.Call localVarCall = getRangeValidateBeforeCall(repository, range, presign, null);
         Type localVarReturnType = new TypeToken<StorageURI>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call getRangeAsync(String repository, String range, final ApiCallback<StorageURI> _callback) throws ApiException {
+    private okhttp3.Call getRangeAsync(String repository, String range, Boolean presign, final ApiCallback<StorageURI> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = getRangeValidateBeforeCall(repository, range, _callback);
+        okhttp3.Call localVarCall = getRangeValidateBeforeCall(repository, range, presign, _callback);
         Type localVarReturnType = new TypeToken<StorageURI>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -334,10 +358,21 @@ public class MetadataApi {
     public class APIgetRangeRequest {
         private final String repository;
         private final String range;
+        private Boolean presign;
 
         private APIgetRangeRequest(String repository, String range) {
             this.repository = repository;
             this.range = range;
+        }
+
+        /**
+         * Set presign
+         * @param presign  (optional)
+         * @return APIgetRangeRequest
+         */
+        public APIgetRangeRequest presign(Boolean presign) {
+            this.presign = presign;
+            return this;
         }
 
         /**
@@ -349,6 +384,7 @@ public class MetadataApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> range URI </td><td>  * Location - redirect to S3 <br>  </td></tr>
+            <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -356,7 +392,7 @@ public class MetadataApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return getRangeCall(repository, range, _callback);
+            return getRangeCall(repository, range, presign, _callback);
         }
 
         /**
@@ -367,6 +403,7 @@ public class MetadataApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> range URI </td><td>  * Location - redirect to S3 <br>  </td></tr>
+            <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -374,7 +411,7 @@ public class MetadataApi {
          </table>
          */
         public StorageURI execute() throws ApiException {
-            ApiResponse<StorageURI> localVarResp = getRangeWithHttpInfo(repository, range);
+            ApiResponse<StorageURI> localVarResp = getRangeWithHttpInfo(repository, range, presign);
             return localVarResp.getData();
         }
 
@@ -386,6 +423,7 @@ public class MetadataApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> range URI </td><td>  * Location - redirect to S3 <br>  </td></tr>
+            <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -393,7 +431,7 @@ public class MetadataApi {
          </table>
          */
         public ApiResponse<StorageURI> executeWithHttpInfo() throws ApiException {
-            return getRangeWithHttpInfo(repository, range);
+            return getRangeWithHttpInfo(repository, range, presign);
         }
 
         /**
@@ -405,6 +443,7 @@ public class MetadataApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> range URI </td><td>  * Location - redirect to S3 <br>  </td></tr>
+            <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -412,7 +451,7 @@ public class MetadataApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<StorageURI> _callback) throws ApiException {
-            return getRangeAsync(repository, range, _callback);
+            return getRangeAsync(repository, range, presign, _callback);
         }
     }
 
@@ -426,6 +465,7 @@ public class MetadataApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> range URI </td><td>  * Location - redirect to S3 <br>  </td></tr>
+        <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>

@@ -6130,6 +6130,13 @@ paths:
         schema:
           type: string
         style: simple
+      - explode: true
+        in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
+        style: form
       responses:
         "200":
           content:
@@ -6140,6 +6147,14 @@ paths:
           headers:
             Location:
               description: redirect to S3
+              explode: false
+              schema:
+                type: string
+              style: simple
+        "302":
+          description: Redirect to a pre-signed URL for the object
+          headers:
+            Location:
               explode: false
               schema:
                 type: string
@@ -6186,6 +6201,13 @@ paths:
         schema:
           type: string
         style: simple
+      - explode: true
+        in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
+        style: form
       responses:
         "200":
           content:
@@ -6196,6 +6218,14 @@ paths:
           headers:
             Location:
               description: redirect to S3
+              explode: false
+              schema:
+                type: string
+              style: simple
+        "302":
+          description: Redirect to a pre-signed URL for the object
+          headers:
+            Location:
               explode: false
               schema:
                 type: string

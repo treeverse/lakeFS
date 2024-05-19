@@ -38,7 +38,7 @@ pub enum GetRangeError {
 }
 
 
-pub async fn get_meta_range(configuration: &configuration::Configuration, repository: &str, meta_range: &str) -> Result<models::StorageUri, Error<GetMetaRangeError>> {
+pub async fn get_meta_range(configuration: &configuration::Configuration, repository: &str, meta_range: &str, presign: Option<bool>) -> Result<models::StorageUri, Error<GetMetaRangeError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -46,6 +46,9 @@ pub async fn get_meta_range(configuration: &configuration::Configuration, reposi
     let local_var_uri_str = format!("{}/repositories/{repository}/metadata/meta_range/{meta_range}", local_var_configuration.base_path, repository=crate::apis::urlencode(repository), meta_range=crate::apis::urlencode(meta_range));
     let mut local_var_req_builder = local_var_client.request(reqwest::Method::GET, local_var_uri_str.as_str());
 
+    if let Some(ref local_var_str) = presign {
+        local_var_req_builder = local_var_req_builder.query(&[("presign", &local_var_str.to_string())]);
+    }
     if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
         local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());
     }
@@ -71,7 +74,7 @@ pub async fn get_meta_range(configuration: &configuration::Configuration, reposi
     }
 }
 
-pub async fn get_range(configuration: &configuration::Configuration, repository: &str, range: &str) -> Result<models::StorageUri, Error<GetRangeError>> {
+pub async fn get_range(configuration: &configuration::Configuration, repository: &str, range: &str, presign: Option<bool>) -> Result<models::StorageUri, Error<GetRangeError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -79,6 +82,9 @@ pub async fn get_range(configuration: &configuration::Configuration, repository:
     let local_var_uri_str = format!("{}/repositories/{repository}/metadata/range/{range}", local_var_configuration.base_path, repository=crate::apis::urlencode(repository), range=crate::apis::urlencode(range));
     let mut local_var_req_builder = local_var_client.request(reqwest::Method::GET, local_var_uri_str.as_str());
 
+    if let Some(ref local_var_str) = presign {
+        local_var_req_builder = local_var_req_builder.query(&[("presign", &local_var_str.to_string())]);
+    }
     if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
         local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());
     }

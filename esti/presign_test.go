@@ -8,6 +8,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/treeverse/lakefs/pkg/graveler/committed"
+
+	pebblesst "github.com/cockroachdb/pebble/sstable"
+	"github.com/treeverse/lakefs/pkg/graveler/sstable"
+
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
@@ -24,6 +29,24 @@ func matchPreSignedURLContent(t *testing.T, preSignedURL, content string) {
 	require.NoErrorf(t, err, "failed to read GET body from pre-signed url - %s", preSignedURL)
 	require.Equal(t, string(retrievedData), content, "pre-signed url body doesn't match uploaded content")
 	require.NoError(t, r.Body.Close(), "could not close response body")
+}
+
+func gravelerIterator(data []byte) (*sstable.Iterator, error) {
+	// read file descriptor
+	reader, err := pebblesst.NewMemReader(data, pebblesst.ReaderOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// create an iterator over the whole thing
+	iter, err := reader.NewIter(nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// wrap it in a Graveler iterator
+	dummyDeref := func() error { return nil }
+	return sstable.NewIterator(iter, dummyDeref), nil
 }
 
 func TestPreSign(t *testing.T) {
@@ -101,6 +124,61 @@ func TestPreSign(t *testing.T) {
 		endpointParsedURL, err := url.Parse(endpointURL)
 		require.NoError(t, err, "failed to parse the endpoint URL used by esti")
 		require.NotEqual(t, endpointParsedURL.Host, responseHost, "Should have been redirected to the object store")
+	})
+
+	t.Run("preSignGetMetaRangeAndRange", func(t *testing.T) {
+		// get a metarange from main
+		uploadFileRandomData(ctx, t, repo, mainBranch, "some/random/path/43543985430548930")
+		commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+			Message: "committing just to get a meta range!",
+		})
+		require.NoError(t, err, "failed to commit changes")
+		metarangeId := commitResp.JSON201.MetaRangeId
+
+		response, err := client.GetMetaRangeWithResponse(ctx, repo, metarangeId, &apigen.GetMetaRangeParams{
+			Presign: swag.Bool(true),
+		})
+		require.NoError(t, err, "failed to get meta range with presign=true")
+
+		responseHost := response.HTTPResponse.Header.Get("Host")
+		endpointParsedURL, err := url.Parse(endpointURL)
+		require.NoError(t, err, "failed to parse the endpoint URL used by esti")
+		require.NotEqual(t, endpointParsedURL.Host, responseHost, "Should have been redirected to the object store")
+
+		// try reading the meta-range
+		iter, err := gravelerIterator(response.Body)
+		if err != nil {
+			t.Error("could not get an iterator from metarange body")
+		}
+		if !iter.Next() {
+			t.Error("should have at least one range")
+		}
+		record := iter.Value()
+		gv, err := committed.UnmarshalValue(record.Value)
+		if err != nil {
+			t.Error("could not read range data")
+		}
+		rangeId := committed.ID(gv.Identity)
+
+		// now try the range ID
+		rangeResponse, err := client.GetRangeWithResponse(ctx, repo, metarangeId, &apigen.GetRangeParams{
+			Presign: swag.Bool(true),
+		})
+		require.NoError(t, err, "failed to get range with presign=true")
+
+		responseHost = response.HTTPResponse.Header.Get("Host")
+		endpointParsedURL, err = url.Parse(endpointURL)
+		require.NoError(t, err, "failed to parse the endpoint URL used by esti")
+		require.NotEqual(t, endpointParsedURL.Host, responseHost, "Should have been redirected to the object store")
+
+		// try reading the meta-range
+		iter, err = gravelerIterator(rangeResponse.Body)
+		if err != nil {
+			t.Error("could not get an iterator from range body")
+		}
+		if !iter.Next() {
+			t.Error("should have at least one record")
+		}
 	})
 
 	t.Run("preSignGetPhysicalAddress", func(t *testing.T) {
