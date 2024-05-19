@@ -1,7 +1,5 @@
 run:
   tests: false
-  skip-dirs:
-    - pkg/metastore/hive/gen-go
   timeout: 5m
 
 linters:
@@ -14,10 +12,10 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - goerr113
+    - err113
     - gofmt
     - goimports
-    - gomnd
+    - mnd
     - goprintffuncname
     - gosec
     - gosimple
@@ -35,6 +33,10 @@ linters:
     - whitespace
 
 linters-settings:
-  gomnd:
+  mnd:
     ignored-files:
       - 'pkg/actions/lua/.*'
+
+issues:
+  exclude-dirs:
+    - pkg/metastore/hive/gen-go
