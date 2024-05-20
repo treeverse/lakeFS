@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v0.6.1
+
+:bug: Bugs fixed:
+
+- Remove setuptools constraint (#7765)
+- Add body to http error (#7697)
+
 ## v0.6.0
 
 :new: What's new:
