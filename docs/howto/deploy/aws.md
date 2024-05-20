@@ -367,8 +367,8 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
 lakeFS currently supports the following S3 Storage Classes:
 
 1. [S3 Standard](https://aws.amazon.com/s3/storage-classes/#General_purpose) - The default AWS S3 storage tier. Fully supported.
-2. [S3 Express One-Zone](https://aws.amazon.com/s3/storage-classes/#High_performance) - Fully supported.
-3. [S3 Intelligent-Tiering](https://aws.amazon.com/s3/storage-classes/#Unknown_or_changing_access) - Supported with limitations: currently, pre-signed URLs are not supported when using Intelligent Tiering. The outstanding feature request [could be tracked here](https://github.com/treeverse/lakeFS/issues/7784).  
+2. [S3 Express One-Zone](https://aws.amazon.com/s3/storage-classes/express-one-zone/) - Fully supported.
+3. [S3 Glacier Instant Retrival](https://aws.amazon.com/s3/storage-classes/glacier/instant-retrieval/) - Supported with limitations: currently, pre-signed URLs are not supported when using Instant Retrival. The outstanding feature request [could be tracked here](https://github.com/treeverse/lakeFS/issues/7784).  
 
 Other storage classes are currently unsupported - either because they have not been tested with lakeFS or because they cannot be supported.
 
