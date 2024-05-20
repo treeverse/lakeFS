@@ -89,7 +89,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 			"",
 		)))
 	}
-	const maxConnectionPerHost = 10
+	const maxConnectionPerHost = 10000
 	opts = append(opts, config.WithHTTPClient(
 		awshttp.NewBuildableClient().WithTransportOptions(func(transport *http.Transport) {
 			transport.MaxConnsPerHost = maxConnectionPerHost
