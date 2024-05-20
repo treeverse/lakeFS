@@ -194,6 +194,7 @@ Class | Method | HTTP request | Description
 *InternalApi* | [**get_auth_capabilities**](docs/InternalApi.md#get_auth_capabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 *InternalApi* | [**get_garbage_collection_config**](docs/InternalApi.md#get_garbage_collection_config) | **GET** /config/garbage-collection | 
 *InternalApi* | [**get_lake_fs_version**](docs/InternalApi.md#get_lake_fs_version) | **GET** /config/version | 
+*InternalApi* | [**get_metadata_object**](docs/InternalApi.md#get_metadata_object) | **GET** /repositories/{repository}/metadata/object/{type}/{object_id} | return a lakeFS metadata object by ID
 *InternalApi* | [**get_setup_state**](docs/InternalApi.md#get_setup_state) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 *InternalApi* | [**get_storage_config**](docs/InternalApi.md#get_storage_config) | **GET** /config/storage | 
 *InternalApi* | [**get_usage_report_summary**](docs/InternalApi.md#get_usage_report_summary) | **GET** /usage-report/summary | get usage report summary

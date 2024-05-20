@@ -317,7 +317,7 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 				"fullpath":  fileRef.fullPath,
 			}).Trace("get file from block storage")
 		}
-		reader, err := tfs.adapter.Get(ctx, tfs.objPointer(fileRef.namespace, fileRef.filename), 0)
+		reader, err := tfs.adapter.Get(ctx, tfs.objPointer(fileRef.namespace, fileRef.filename))
 		if err != nil {
 			return nil, fmt.Errorf("read from block storage: %w", err)
 		}

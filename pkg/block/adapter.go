@@ -145,7 +145,7 @@ type Properties struct {
 
 type Adapter interface {
 	Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error
-	Get(ctx context.Context, obj ObjectPointer, expectedSize int64) (io.ReadCloser, error)
+	Get(ctx context.Context, obj ObjectPointer) (io.ReadCloser, error)
 	GetWalker(uri *url.URL) (Walker, error)
 
 	// GetPreSignedURL returns a pre-signed URL for accessing obj with mode, and the

@@ -73,7 +73,7 @@ func TestGarbageCollectionManager_SaveGarbageCollectionUncommitted(t *testing.T)
 		StorageNamespace: "",
 		Identifier:       fmt.Sprintf("%s%s", location, filename),
 		IdentifierType:   block.IdentifierTypeFull,
-	}, 0)
+	})
 	require.NoError(t, err)
 	fileScanner := bufio.NewScanner(reader)
 	line := 0

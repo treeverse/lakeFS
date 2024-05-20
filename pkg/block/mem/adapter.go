@@ -94,7 +94,7 @@ func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 	return nil
 }
 
-func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
+func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer) (io.ReadCloser, error) {
 	if err := verifyObjectPointer(obj); err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, _ block.ObjectP
 	if !ok {
 		return nil, ErrMultiPartNotFound
 	}
-	entry, err := a.Get(ctx, sourceObj, 0)
+	entry, err := a.Get(ctx, sourceObj)
 	if err != nil {
 		return nil, err
 	}

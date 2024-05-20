@@ -5159,6 +5159,66 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/metadata/object/{type}/{object_id}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: object_id
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: type
+        required: true
+        schema:
+          type: string
+          enum:
+            - range
+            - meta_range
+    get:
+      tags:
+        - internal
+      operationId: getMetadataObject
+      summary: return a lakeFS metadata object by ID
+      parameters:
+        - in: query
+          name: presign
+          required: false
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: object content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Length:
+              schema:
+                type: integer
+                format: int64
+        302:
+          description: Redirect to a pre-signed URL for the object
+          headers:
+            Location:
+              schema:
+                type: string
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+
   /repositories/{repository}/metadata/meta_range/{meta_range}:
     parameters:
       - in: path

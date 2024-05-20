@@ -20,6 +20,7 @@ import io.lakefs.clients.sdk.model.CommPrefsInput;
 import io.lakefs.clients.sdk.model.CommitRecordCreation;
 import io.lakefs.clients.sdk.model.CredentialsWithSecret;
 import io.lakefs.clients.sdk.model.Error;
+import java.io.File;
 import io.lakefs.clients.sdk.model.GarbageCollectionConfig;
 import io.lakefs.clients.sdk.model.GarbageCollectionPrepareResponse;
 import io.lakefs.clients.sdk.model.GarbageCollectionRules;
@@ -157,6 +158,23 @@ public class InternalApiTest {
     @Test
     public void getLakeFSVersionTest() throws ApiException {
         VersionConfig response = api.getLakeFSVersion()
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * return a lakeFS metadata object by ID
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getMetadataObjectTest() throws ApiException {
+        String repository = null;
+        String objectId = null;
+        String type = null;
+        Boolean presign = null;
+        File response = api.getMetadataObject(repository, objectId, type)
+                .presign(presign)
                 .execute();
         // TODO: test validations
     }
