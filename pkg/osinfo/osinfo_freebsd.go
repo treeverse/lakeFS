@@ -28,6 +28,9 @@ func GetOSInfo() OSInfo {
 	}
 	osStr := replaceLineTerminations(out)
 	osInfo := strings.Split(osStr, " ")
+	if len(osInfo) != 3 {
+		return defaultReturnValue
+	}
 	oss := OSInfo{
 		Version:  osInfo[1],
 		Platform: runtime.GOARCH,
