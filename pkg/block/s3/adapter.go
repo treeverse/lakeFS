@@ -323,7 +323,7 @@ func isErrNotFound(err error) bool {
 	return errors.As(err, &errNoSuchKey) || errors.As(err, &errNotFound)
 }
 
-func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
+func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer) (io.ReadCloser, error) {
 	var err error
 	var sizeBytes int64
 	defer reportMetrics("Get", time.Now(), &sizeBytes, &err)

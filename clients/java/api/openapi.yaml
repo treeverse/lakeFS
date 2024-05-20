@@ -6107,6 +6107,88 @@ paths:
       tags:
       - actions
       x-accepts: application/json
+  /repositories/{repository}/metadata/object/{type}/{object_id}:
+    get:
+      operationId: getMetadataObject
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: object_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: type
+        required: true
+        schema:
+          enum:
+          - range
+          - meta_range
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: presign
+        required: false
+        schema:
+          type: boolean
+        style: form
+      responses:
+        "200":
+          content:
+            application/octet-stream:
+              schema:
+                format: binary
+                type: string
+          description: object content
+          headers:
+            Content-Length:
+              explode: false
+              schema:
+                format: int64
+                type: integer
+              style: simple
+        "302":
+          description: Redirect to a pre-signed URL for the object
+          headers:
+            Location:
+              explode: false
+              schema:
+                type: string
+              style: simple
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: return a lakeFS metadata object by ID
+      tags:
+      - internal
+      x-accepts: application/json
   /repositories/{repository}/metadata/meta_range/{meta_range}:
     get:
       operationId: getMetaRange

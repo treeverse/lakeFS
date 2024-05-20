@@ -2067,7 +2067,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 			Identifier:       dummyObjName,
 		}
 
-		if s, err := c.BlockAdapter.Get(ctx, rootObj, objLen); err == nil {
+		if s, err := c.BlockAdapter.Get(ctx, rootObj); err == nil {
 			_ = s.Close()
 			return fmt.Errorf("found lakeFS objects in the storage namespace root(%s): %w",
 				storageNamespace, ErrStorageNamespaceInUse)
@@ -2083,7 +2083,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 		Identifier:       dummyKey,
 	}
 
-	if s, err := c.BlockAdapter.Get(ctx, obj, objLen); err == nil {
+	if s, err := c.BlockAdapter.Get(ctx, obj); err == nil {
 		_ = s.Close()
 		return fmt.Errorf("found lakeFS objects in the storage namespace(%s) key(%s): %w",
 			storageNamespace, obj.Identifier, ErrStorageNamespaceInUse)
@@ -2095,7 +2095,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 		return err
 	}
 
-	_, err := c.BlockAdapter.Get(ctx, obj, objLen)
+	_, err := c.BlockAdapter.Get(ctx, obj)
 	return err
 }
 
@@ -2526,7 +2526,7 @@ func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, re
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       logPath,
-	}, -1)
+	})
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -4286,6 +4286,94 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	}
 }
 
+func (c *Controller) GetMetadataObject(w http.ResponseWriter, r *http.Request, repository string, objectType string, objectID string, params apigen.GetMetadataObjectParams) {
+	const getTypeMetaRange = "meta_range"
+	const getTypeRange = "range"
+
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ListObjectsAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadRepositoryAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "get_metadata_object", r, repository, "", "")
+
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	var objPath string
+	if objectType == getTypeMetaRange {
+		addr, err := c.Catalog.GetMetaRange(ctx, repository, objectID)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		objPath = string(addr)
+	} else if objectType == getTypeRange {
+		addr, err := c.Catalog.GetRange(ctx, repository, objectID)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		objPath = string(addr)
+	}
+
+	// if pre-sign, return a redirect
+	pointer := block.ObjectPointer{
+		StorageNamespace: repo.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       objPath,
+	}
+	if swag.BoolValue(params.Presign) {
+		location, _, err := c.BlockAdapter.GetPreSignedURL(ctx, pointer, block.PreSignModeRead)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		w.Header().Set("Location", location)
+		w.WriteHeader(http.StatusFound)
+		return
+	}
+
+	// set response headers
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'")
+
+	reader, err := c.BlockAdapter.Get(ctx, pointer)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	defer func() {
+		_ = reader.Close()
+	}()
+
+	// copy the content
+	_, err = io.Copy(w, reader)
+	if err != nil {
+		c.Logger.
+			WithError(err).
+			WithFields(logging.Fields{
+				"storage_namespace": repo.StorageNamespace,
+			}).
+			Debug("GetObjectMetadata copy content")
+	}
+}
+
 func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repository, ref string, params apigen.GetObjectParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -4370,7 +4458,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", rng.EndOffset-rng.StartOffset+1))
 		w.WriteHeader(http.StatusPartialContent)
 	} else {
-		reader, err = c.BlockAdapter.Get(ctx, pointer, entry.Size)
+		reader, err = c.BlockAdapter.Get(ctx, pointer)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
