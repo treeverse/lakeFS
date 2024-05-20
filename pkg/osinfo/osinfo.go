@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	retryWaitTime    = 500 * time.Millisecond
-	brokenPipeOutput = "broken pipe"
+	retryWaitTime        = 500 * time.Millisecond
+	brokenPipeOutput     = "broken pipe"
+	expectedOSInfoArrLen = 3
 )
 
 type OSInfo struct {

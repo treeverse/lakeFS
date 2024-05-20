@@ -27,7 +27,7 @@ func GetOSInfo() OSInfo {
 	}
 	osStr := replaceLineTerminations(out)
 	osInfo := strings.Split(osStr, " ")
-	if len(osInfo) != 3 {
+	if len(osInfo) != expectedOSInfoArrLen {
 		return defaultReturnValue
 	}
 	oss := OSInfo{
