@@ -90,6 +90,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		)))
 	}
 	const maxConnectionPerHost = 10000
+
 	opts = append(opts, config.WithHTTPClient(
 		awshttp.NewBuildableClient().WithTransportOptions(func(transport *http.Transport) {
 			transport.MaxConnsPerHost = maxConnectionPerHost
@@ -124,6 +125,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 	}
 
 	logger := logging.FromContext(ctx).WithField("store", DriverName)
+	logger.Info("XXXXXXXX TESTING DDB CP XXXXXXXX")
 	s := &Store{
 		svc:    svc,
 		params: params,
