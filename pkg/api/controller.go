@@ -4286,7 +4286,7 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 	}
 }
 
-func (c *Controller) GetMetadataObject(w http.ResponseWriter, r *http.Request, repository string, objectType string, objectId string, params apigen.GetMetadataObjectParams) {
+func (c *Controller) GetMetadataObject(w http.ResponseWriter, r *http.Request, repository string, objectType string, objectID string, params apigen.GetMetadataObjectParams) {
 	const getTypeMetaRange = "meta_range"
 	const getTypeRange = "range"
 
@@ -4319,13 +4319,13 @@ func (c *Controller) GetMetadataObject(w http.ResponseWriter, r *http.Request, r
 
 	var objPath string
 	if objectType == getTypeMetaRange {
-		addr, err := c.Catalog.GetMetaRange(ctx, repository, objectId)
+		addr, err := c.Catalog.GetMetaRange(ctx, repository, objectID)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
 		objPath = string(addr)
 	} else if objectType == getTypeRange {
-		addr, err := c.Catalog.GetRange(ctx, repository, objectId)
+		addr, err := c.Catalog.GetRange(ctx, repository, objectID)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
