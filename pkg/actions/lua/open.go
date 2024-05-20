@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Shopify/go-lua"
+
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/aes"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/hmac"
 	"github.com/treeverse/lakefs/pkg/actions/lua/crypto/sha256"
@@ -14,6 +15,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/parquet"
 	"github.com/treeverse/lakefs/pkg/actions/lua/encoding/yaml"
 	"github.com/treeverse/lakefs/pkg/actions/lua/formats"
+	"github.com/treeverse/lakefs/pkg/actions/lua/hook"
 	"github.com/treeverse/lakefs/pkg/actions/lua/net/http"
 	"github.com/treeverse/lakefs/pkg/actions/lua/net/url"
 	"github.com/treeverse/lakefs/pkg/actions/lua/path"
@@ -45,6 +47,7 @@ func Open(l *lua.State, ctx context.Context, cfg OpenSafeConfig) {
 	aes.Open(l)
 	parquet.Open(l)
 	path.Open(l)
+	hook.Open(l)
 	aws.Open(l, ctx)
 	gcloud.Open(l, ctx)
 	azure.Open(l, ctx)
