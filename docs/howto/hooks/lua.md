@@ -434,6 +434,22 @@ gs.write_fuse_symlink(source, destination, mount_info)
 -- Symlink: "/home/user/gcs-mount/exported/path/to/object" -> "/home/user/gcs-mount/lakefs/data/abc/def"
 ```
 
+### `hook`
+
+A set of utilities to aide in writing user friendly hooks.
+
+### `hook/fail(message)`
+
+Will abort the current hook's execution with the given message. This is similar to using `error()`, but is typically used to separate
+generic runtime errors (an API call that returned an unexpected response) and explict failure of the calling hook.
+
+When called, errors will appear without a stacktrace, and the error message will be directly the one given as `message`.
+
+```lua
+> hook = require("hook")
+> hook.fail("this hook shall not pass because of: " .. reason)
+```
+
 ### `lakefs`
 
 The Lua Hook library allows calling back to the lakeFS API using the identity of the user that triggered the action.
@@ -811,8 +827,8 @@ Returns a table for the given path string with the following structure:
 Receives a variable number of strings and returns a joined string that represents a path:
 
 ```lua
-> require("path")
-> path.join("path/", "to", "a", "file.data")
+> path = require("path")
+> path.join("/", "path/", "to", "a", "file.data")
 path/o/a/file.data
 ```
 

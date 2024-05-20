@@ -2651,7 +2651,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	var hookAbortErr *graveler.HookAbortError
 	if errors.As(err, &hookAbortErr) {
 		log.WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks")
-		cb(w, r, http.StatusPreconditionFailed, err)
+		cb(w, r, http.StatusPreconditionFailed, hookAbortErr.Unwrap())
 		return true
 	}
 
