@@ -96,7 +96,7 @@ func (s *ActionsSource) load(ctx context.Context, record graveler.HookRecord, na
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       ent.PhysicalAddress,
-	}, 0)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("getting action file %s: %w", name, err)
 	}

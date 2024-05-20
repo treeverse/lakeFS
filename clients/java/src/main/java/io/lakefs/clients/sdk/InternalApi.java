@@ -33,6 +33,7 @@ import io.lakefs.clients.sdk.model.CommPrefsInput;
 import io.lakefs.clients.sdk.model.CommitRecordCreation;
 import io.lakefs.clients.sdk.model.CredentialsWithSecret;
 import io.lakefs.clients.sdk.model.Error;
+import java.io.File;
 import io.lakefs.clients.sdk.model.GarbageCollectionConfig;
 import io.lakefs.clients.sdk.model.GarbageCollectionPrepareResponse;
 import io.lakefs.clients.sdk.model.GarbageCollectionRules;
@@ -1460,6 +1461,217 @@ public class InternalApi {
     @Deprecated
     public APIgetLakeFSVersionRequest getLakeFSVersion() {
         return new APIgetLakeFSVersionRequest();
+    }
+    private okhttp3.Call getMetadataObjectCall(String repository, String objectId, String type, Boolean presign, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/metadata/object/{type}/{object_id}"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
+            .replace("{" + "object_id" + "}", localVarApiClient.escapeString(objectId.toString()))
+            .replace("{" + "type" + "}", localVarApiClient.escapeString(type.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (presign != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("presign", presign));
+        }
+
+        final String[] localVarAccepts = {
+            "application/octet-stream",
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call getMetadataObjectValidateBeforeCall(String repository, String objectId, String type, Boolean presign, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling getMetadataObject(Async)");
+        }
+
+        // verify the required parameter 'objectId' is set
+        if (objectId == null) {
+            throw new ApiException("Missing the required parameter 'objectId' when calling getMetadataObject(Async)");
+        }
+
+        // verify the required parameter 'type' is set
+        if (type == null) {
+            throw new ApiException("Missing the required parameter 'type' when calling getMetadataObject(Async)");
+        }
+
+        return getMetadataObjectCall(repository, objectId, type, presign, _callback);
+
+    }
+
+
+    private ApiResponse<File> getMetadataObjectWithHttpInfo(String repository, String objectId, String type, Boolean presign) throws ApiException {
+        okhttp3.Call localVarCall = getMetadataObjectValidateBeforeCall(repository, objectId, type, presign, null);
+        Type localVarReturnType = new TypeToken<File>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call getMetadataObjectAsync(String repository, String objectId, String type, Boolean presign, final ApiCallback<File> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = getMetadataObjectValidateBeforeCall(repository, objectId, type, presign, _callback);
+        Type localVarReturnType = new TypeToken<File>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIgetMetadataObjectRequest {
+        private final String repository;
+        private final String objectId;
+        private final String type;
+        private Boolean presign;
+
+        private APIgetMetadataObjectRequest(String repository, String objectId, String type) {
+            this.repository = repository;
+            this.objectId = objectId;
+            this.type = type;
+        }
+
+        /**
+         * Set presign
+         * @param presign  (optional)
+         * @return APIgetMetadataObjectRequest
+         */
+        public APIgetMetadataObjectRequest presign(Boolean presign) {
+            this.presign = presign;
+            return this;
+        }
+
+        /**
+         * Build call for getMetadataObject
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> object content </td><td>  * Content-Length -  <br>  </td></tr>
+            <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return getMetadataObjectCall(repository, objectId, type, presign, _callback);
+        }
+
+        /**
+         * Execute getMetadataObject request
+         * @return File
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> object content </td><td>  * Content-Length -  <br>  </td></tr>
+            <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public File execute() throws ApiException {
+            ApiResponse<File> localVarResp = getMetadataObjectWithHttpInfo(repository, objectId, type, presign);
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute getMetadataObject request with HTTP info returned
+         * @return ApiResponse&lt;File&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> object content </td><td>  * Content-Length -  <br>  </td></tr>
+            <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<File> executeWithHttpInfo() throws ApiException {
+            return getMetadataObjectWithHttpInfo(repository, objectId, type, presign);
+        }
+
+        /**
+         * Execute getMetadataObject request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> object content </td><td>  * Content-Length -  <br>  </td></tr>
+            <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<File> _callback) throws ApiException {
+            return getMetadataObjectAsync(repository, objectId, type, presign, _callback);
+        }
+    }
+
+    /**
+     * return a lakeFS metadata object by ID
+     * 
+     * @param repository  (required)
+     * @param objectId  (required)
+     * @param type  (required)
+     * @return APIgetMetadataObjectRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> object content </td><td>  * Content-Length -  <br>  </td></tr>
+        <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIgetMetadataObjectRequest getMetadataObject(String repository, String objectId, String type) {
+        return new APIgetMetadataObjectRequest(repository, objectId, type);
     }
     private okhttp3.Call getSetupStateCall(final ApiCallback _callback) throws ApiException {
         String basePath = null;

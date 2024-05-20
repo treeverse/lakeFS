@@ -51,7 +51,7 @@ func (a *mockAdapter) Exists(_ context.Context, _ block.ObjectPointer) (bool, er
 	return false, nil
 }
 
-func (a *mockAdapter) Get(_ context.Context, _ block.ObjectPointer, _ int64) (io.ReadCloser, error) {
+func (a *mockAdapter) Get(_ context.Context, _ block.ObjectPointer) (io.ReadCloser, error) {
 	return nil, nil
 }
 

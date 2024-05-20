@@ -237,7 +237,7 @@ func (l *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 	if err := isValidUploadID(uploadID); err != nil {
 		return nil, err
 	}
-	r, err := l.Get(ctx, sourceObj, 0)
+	r, err := l.Get(ctx, sourceObj)
 	if err != nil {
 		return nil, fmt.Errorf("copy get: %w", err)
 	}
@@ -273,7 +273,7 @@ func (l *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 	}, err
 }
 
-func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer, _ int64) (reader io.ReadCloser, err error) {
+func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer) (reader io.ReadCloser, err error) {
 	p, err := l.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err

@@ -82,6 +82,13 @@ class TestInternalApi(unittest.TestCase):
         """
         pass
 
+    def test_get_metadata_object(self):
+        """Test case for get_metadata_object
+
+        return a lakeFS metadata object by ID  # noqa: E501
+        """
+        pass
+
     def test_get_setup_state(self):
         """Test case for get_setup_state
 

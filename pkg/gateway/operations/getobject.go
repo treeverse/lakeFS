@@ -130,7 +130,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 
 	if rangeSpec == "" || err != nil {
 		// assemble a response body (range-less query)
-		data, err = o.BlockStore.Get(ctx, objectPointer, entry.Size)
+		data, err = o.BlockStore.Get(ctx, objectPointer)
 	} else {
 		contentLength = rng.Size()
 		contentRange = fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size)

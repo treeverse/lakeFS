@@ -728,7 +728,7 @@ func readPhysicalAddressesFromParquetObject(t *testing.T, repositoryID string, c
 		Identifier:       obj,
 		IdentifierType:   block.IdentifierTypeFull,
 		StorageNamespace: "mem://" + repositoryID,
-	}, 0)
+	})
 	require.NoError(t, err)
 	defer func() { _ = objReader.Close() }()
 
