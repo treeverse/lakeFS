@@ -2651,7 +2651,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	var hookAbortErr *graveler.HookAbortError
 	if errors.As(err, &hookAbortErr) {
 		log.WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks")
-		cb(w, r, http.StatusPreconditionFailed, err)
+		cb(w, r, http.StatusPreconditionFailed, hookAbortErr.Unwrap())
 		return true
 	}
 
@@ -4637,14 +4637,11 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		swag.StringValue(body.Strategy),
 		graveler.WithForce(swag.BoolValue(body.Force)))
 
-	var v *graveler.HookAbortError
 	if errors.Is(err, graveler.ErrConflictFound) {
 		writeResponse(w, r, http.StatusConflict, apigen.MergeResult{
 			Reference: reference,
 		})
 		return
-	} else if errors.As(err, &v) {
-		err = v.Unwrap()
 	}
 	if c.handleAPIError(ctx, w, r, err) {
 		return
