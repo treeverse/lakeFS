@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/NYTimes/gziphandler"
 	gomime "github.com/cubewise-code/go-mime"
 	"github.com/treeverse/lakefs/pkg/api/params"
 	gwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -33,7 +34,8 @@ func NewUIHandler(gatewayDomains []string, snippets []params.CodeSnippet) http.H
 		panic(err)
 	}
 	fileSystem := http.FS(injectedContent)
-	etagHandler := EtagMiddleware(injectedContent, http.StripPrefix("/", http.FileServer(fileSystem)))
+	gzipHandler := gziphandler.GzipHandler(http.FileServer(fileSystem))
+	etagHandler := EtagMiddleware(injectedContent, http.StripPrefix("/", gzipHandler))
 	return NewHandlerWithDefault(fileSystem, etagHandler, gatewayDomains)
 }
 
