@@ -122,7 +122,7 @@ var localCommitCmd = &cobra.Command{
 			d := make(chan apigen.Diff, maxDiffPageSize)
 			var wg errgroup.Group
 			wg.Go(func() error {
-				return diff.StreamRepositoryDiffs(cmd.Context(), client, baseRemote, newRemote, swag.StringValue(remote.Path), d, true)
+				return diff.StreamRepositoryDiffs(cmd.Context(), client, baseRemote, newRemote, swag.StringValue(remote.Path), d, false)
 			})
 
 			var remoteChanges local.Changes
