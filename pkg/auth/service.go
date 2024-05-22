@@ -1913,25 +1913,7 @@ func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupID string, 
 	return policies, toPagination(resp.JSON200.Pagination), nil
 }
 
-func (a *APIAuthService) Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error) {
-	//policies, _, err := a.ListEffectivePolicies(ctx, req.Username, &model.PaginationParams{
-	//	After:  "", // all
-	//	Amount: -1, // all
-	//})
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//allowed := checkPermissions(ctx, req.RequiredPermissions, req.Username, policies)
-	//
-	//if allowed != CheckAllow {
-	//	return &AuthorizationResponse{
-	//		Allowed: false,
-	//		Error:   ErrInsufficientPermissions,
-	//	}, nil
-	//}
-
-	// we're allowed!
+func (a *APIAuthService) Authorize(_ context.Context, _ *AuthorizationRequest) (*AuthorizationResponse, error) {
 	return &AuthorizationResponse{Allowed: true}, nil
 }
 

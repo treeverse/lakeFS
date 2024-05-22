@@ -53,17 +53,7 @@ func NewBuiltinAuthenticator(service Service) *BuiltinAuthenticator {
 	return &BuiltinAuthenticator{creds: service}
 }
 
-func (ba *BuiltinAuthenticator) AuthenticateUser(ctx context.Context, username, password string) (string, error) {
-	//// Look user up in DB.  username is really the access key ID.
-	//cred, err := ba.creds.GetCredentials(ctx, username)
-	//if err != nil {
-	//	return InvalidUserID, err
-	//}
-	//if subtle.ConstantTimeCompare([]byte(password), []byte(cred.SecretAccessKey)) != 1 {
-	//	return InvalidUserID, ErrInvalidSecretAccessKey
-	//}
-	//return cred.Username, nil
-
+func (ba *BuiltinAuthenticator) AuthenticateUser(_ context.Context, _, _ string) (string, error) {
 	return "test-user", nil
 }
 
