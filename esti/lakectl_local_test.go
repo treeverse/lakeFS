@@ -487,6 +487,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 		uncommittedLocal  []string
 		expectFailure     bool
 		expectedMessage   string
+		withForceFlag     bool
 	}{
 		{
 			name:              "uncommitted_changes_-_none",
@@ -496,6 +497,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			},
 			expectFailure:   false,
 			expectedMessage: "Commit for branch \"${BRANCH}\" completed",
+			withForceFlag:   false,
 		},
 		{
 			name: "uncommitted_changes_-_outside",
@@ -507,6 +509,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			},
 			expectFailure:   true,
 			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
+			withForceFlag:   false,
 		},
 		{
 			name: "uncommitted_changes_-_inside",
@@ -518,6 +521,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			},
 			expectFailure:   false,
 			expectedMessage: "Commit for branch \"${BRANCH}\" completed",
+			withForceFlag:   false,
 		},
 		{
 			name: "uncommitted_changes_-_inside_before_outside",
@@ -529,6 +533,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			},
 			expectFailure:   true,
 			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
+			withForceFlag:   false,
 		},
 		{
 			name: "uncommitted_changes_-_on_boundry",
@@ -540,6 +545,19 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			},
 			expectFailure:   true,
 			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
+			withForceFlag:   false,
+		},
+		{
+			name: "uncommitted_changes_-_outside_force",
+			uncommittedRemote: []string{
+				"otherPrefix/a",
+			},
+			uncommittedLocal: []string{
+				"test.data",
+			},
+			expectFailure:   false,
+			expectedMessage: "Commit for branch \"${BRANCH}\" completed",
+			withForceFlag:   true,
 		},
 	}
 	for _, tc := range testCases {
@@ -570,7 +588,12 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 					require.NoError(t, fd.Close())
 				}
 			}
-			cmd := fmt.Sprintf("%s local commit -m test %s", Lakectl(), dataDir)
+
+			force := ""
+			if tc.withForceFlag {
+				force = "--force"
+			}
+			cmd := fmt.Sprintf("%s local commit %s -m test %s", Lakectl(), force, dataDir)
 			if tc.expectFailure {
 				RunCmdAndVerifyFailureContainsText(t, cmd, false, tc.expectedMessage, vars)
 			} else {
