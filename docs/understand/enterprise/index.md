@@ -23,7 +23,7 @@ It provides several benefits over the open-source version:
     * [Authenticate to lakeFS with AWS IAM Roles]({% link reference/security/external-principals-aws.md %}) - lets programs authenticate using AWS IAM roles instead of lakeFS credentials, granting access based on IAM policies.
 * Support SLA
 
-Contact Sales (https://lakefs.io/contact-sales/) to get the token for Fluffy.
+[Contact Sales](https://lakefs.io/contact-sales/) to get the token for Fluffy.
 {: .note}
 
 ## Overview
