@@ -545,7 +545,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			vars["LOCAL_DIR"] = dataDir
 			vars["BRANCH"] = tc.name
 			vars["REF"] = tc.name
-			RunCmdAndVerifyContainsText(t, fmt.Sprintf("%s local clone lakefs://%s/%s/%s %s", Lakectl(), repoName, vars["BRANCH"], vars["PREFIX"], dataDir), false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+			RunCmdAndVerifyContainsText(t, fmt.Sprintf("%s local clone lakefs://%s/%s/%s %s", Lakectl(), repoName, vars["BRANCH"], vars["PREFIX"], dataDir), false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX}/ to ${LOCAL_DIR}.", vars)
 
 			// add remote files
 			if len(tc.uncommittedRemote) > 0 {
