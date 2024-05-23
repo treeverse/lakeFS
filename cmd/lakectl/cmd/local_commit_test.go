@@ -209,7 +209,7 @@ func TestUncommittedOutsideOfPrefix(t *testing.T) {
 			defer server.Close()
 
 			testClient := getTestClient(t, server.URL)
-			res := hasUncommittedOutsideLocalPrefix(context.Background(), testClient, remote, idx)
+			res := hasExternalChange(context.Background(), testClient, remote, idx)
 			require.Equal(t, tc.expectedResult, res)
 		})
 	}

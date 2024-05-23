@@ -32,7 +32,7 @@ func findConflicts(changes local.Changes) (conflicts []string) {
 	return
 }
 
-func hasUncommittedOutsideLocalPrefix(ctx context.Context, client *apigen.ClientWithResponses, remote *uri.URI, idx *local.Index) bool {
+func hasExternalChange(ctx context.Context, client *apigen.ClientWithResponses, remote *uri.URI, idx *local.Index) bool {
 	currentURI, err := idx.GetCurrentURI()
 	if err != nil {
 		DieErr(err)
@@ -65,6 +65,9 @@ func hasUncommittedOutsideLocalPrefix(ctx context.Context, client *apigen.Client
 	statResp, err := client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
 		Path: nextPrefix,
 	})
+	if err != nil {
+		DieErr(err)
+	}
 
 	if len(dirtyResp.JSON200.Results) > 0 || statResp.StatusCode() == http.StatusOK {
 		return true
@@ -106,9 +109,9 @@ var localCommitCmd = &cobra.Command{
 		resp, err := client.GetBranchWithResponse(cmd.Context(), remote.Repository, remote.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
-		hasChangesOutsideSyncedPrefix := hasUncommittedOutsideLocalPrefix(cmd.Context(), client, remote, idx)
+		hasChangesOutsideSyncedPrefix := hasExternalChange(cmd.Context(), client, remote, idx)
 		if hasChangesOutsideSyncedPrefix && !force {
-			DieFmt("The branch you are trying to commit to contains uncommitted changes outside the lakeFS path your local directory '%s' is synced with.\nTo proceed, use the --force flag.", localPath)
+			DieFmt("Branch %s contains uncommitted changes outside of local path '%s'.\nTo proceed, use the --force flag.", remote.Ref, localPath)
 		}
 
 		// Diff local with current head
@@ -225,7 +228,7 @@ var localCommitCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	withForceFlag(localCommitCmd, "Commit changes even if remote branch includes uncommitted changes outside the synced directory")
+	withForceFlag(localCommitCmd, "Commit changes even if remote branch includes uncommitted changes external to the synced path")
 	withCommitFlags(localCommitCmd, false)
 	withSyncFlags(localCommitCmd)
 	localCmd.AddCommand(localCommitCmd)
