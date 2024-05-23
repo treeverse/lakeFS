@@ -485,6 +485,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 		name              string
 		uncommittedRemote []string
 		uncommittedLocal  []string
+		expectFailure     bool
 		expectedMessage   string
 	}{
 		{
@@ -493,6 +494,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			uncommittedLocal: []string{
 				"test.data",
 			},
+			expectFailure:   false,
 			expectedMessage: "Commit for branch \"${BRANCH}\" completed",
 		},
 		{
@@ -503,6 +505,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			uncommittedLocal: []string{
 				"test.data",
 			},
+			expectFailure:   true,
 			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
 		},
 		{
@@ -513,6 +516,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			uncommittedLocal: []string{
 				"test.data",
 			},
+			expectFailure:   false,
 			expectedMessage: "Commit for branch \"${BRANCH}\" completed",
 		},
 		{
@@ -523,6 +527,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			uncommittedLocal: []string{
 				"test.data",
 			},
+			expectFailure:   true,
 			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
 		},
 		{
@@ -533,6 +538,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			uncommittedLocal: []string{
 				"test.data",
 			},
+			expectFailure:   true,
 			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
 		},
 	}
@@ -564,7 +570,12 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 					require.NoError(t, fd.Close())
 				}
 			}
-			RunCmdAndVerifyContainsText(t, fmt.Sprintf("%s local commit -m test %s", Lakectl(), dataDir), false, tc.expectedMessage, vars)
+			cmd := fmt.Sprintf("%s local commit -m test %s", Lakectl(), dataDir)
+			if tc.expectFailure {
+				RunCmdAndVerifyFailure(t, cmd, false, tc.expectedMessage, vars)
+			} else {
+				RunCmdAndVerifyContainsText(t, cmd, false, tc.expectedMessage, vars)
+			}
 		})
 	}
 }
