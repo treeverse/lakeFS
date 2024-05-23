@@ -488,7 +488,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 		expectedMessage   string
 	}{
 		{
-			name:              "uncommitted changes - none",
+			name:              "uncommitted_changes_-_none",
 			uncommittedRemote: []string{},
 			uncommittedLocal: []string{
 				"test.data",
@@ -496,7 +496,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			expectedMessage: "Commit for branch \"${BRANCH}\" completed",
 		},
 		{
-			name: "uncommitted changes - outside",
+			name: "uncommitted_changes_-_outside",
 			uncommittedRemote: []string{
 				"otherPrefix/a",
 			},
@@ -506,7 +506,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
 		},
 		{
-			name: "uncommitted changes - inside",
+			name: "uncommitted_changes_-_inside",
 			uncommittedRemote: []string{
 				fmt.Sprintf("%s/a", vars["PREFIX"]),
 			},
@@ -516,7 +516,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			expectedMessage: "Commit for branch \"${BRANCH}\" completed",
 		},
 		{
-			name: "uncommitted changes - inside before outside",
+			name: "uncommitted_changes_-_inside_before_outside",
 			uncommittedRemote: []string{
 				"zzz/a",
 			},
@@ -526,7 +526,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
 		},
 		{
-			name: "uncommitted changes - on boundry",
+			name: "uncommitted_changes_-_on_boundry",
 			uncommittedRemote: []string{
 				fmt.Sprintf("%s0", vars["PREFIX"]),
 			},
