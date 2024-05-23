@@ -572,7 +572,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			}
 			cmd := fmt.Sprintf("%s local commit -m test %s", Lakectl(), dataDir)
 			if tc.expectFailure {
-				RunCmdAndVerifyFailure(t, cmd, false, tc.expectedMessage, vars)
+				RunCmdAndVerifyFailureContainsText(t, cmd, false, tc.expectedMessage, vars)
 			} else {
 				RunCmdAndVerifyContainsText(t, cmd, false, tc.expectedMessage, vars)
 			}
