@@ -464,6 +464,145 @@ func TestLakectlLocal_commit(t *testing.T) {
 	}
 }
 
+func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
+	tmpDir := t.TempDir()
+	fd, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+		"PREFIX":  "test-data",
+	}
+
+	runCmd(t, fmt.Sprintf("%s repo create lakefs://%s %s", Lakectl(), repoName, storage), false, false, vars)
+
+	testCases := []struct {
+		name              string
+		uncommittedRemote []string
+		uncommittedLocal  []string
+		expectFailure     bool
+		expectedMessage   string
+		withForceFlag     bool
+	}{
+		{
+			name:              "uncommitted_changes_-_none",
+			uncommittedRemote: []string{},
+			uncommittedLocal: []string{
+				"test.data",
+			},
+			expectFailure:   false,
+			expectedMessage: "Commit for branch \"${BRANCH}\" completed",
+			withForceFlag:   false,
+		},
+		{
+			name: "uncommitted_changes_-_outside",
+			uncommittedRemote: []string{
+				"otherPrefix/a",
+			},
+			uncommittedLocal: []string{
+				"test.data",
+			},
+			expectFailure:   true,
+			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
+			withForceFlag:   false,
+		},
+		{
+			name: "uncommitted_changes_-_inside",
+			uncommittedRemote: []string{
+				fmt.Sprintf("%s/a", vars["PREFIX"]),
+			},
+			uncommittedLocal: []string{
+				"test.data",
+			},
+			expectFailure:   false,
+			expectedMessage: "Commit for branch \"${BRANCH}\" completed",
+			withForceFlag:   false,
+		},
+		{
+			name: "uncommitted_changes_-_inside_before_outside",
+			uncommittedRemote: []string{
+				"zzz/a",
+			},
+			uncommittedLocal: []string{
+				"test.data",
+			},
+			expectFailure:   true,
+			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
+			withForceFlag:   false,
+		},
+		{
+			name: "uncommitted_changes_-_on_boundry",
+			uncommittedRemote: []string{
+				fmt.Sprintf("%s0", vars["PREFIX"]),
+			},
+			uncommittedLocal: []string{
+				"test.data",
+			},
+			expectFailure:   true,
+			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
+			withForceFlag:   false,
+		},
+		{
+			name: "uncommitted_changes_-_outside_force",
+			uncommittedRemote: []string{
+				"otherPrefix/a",
+			},
+			uncommittedLocal: []string{
+				"test.data",
+			},
+			expectFailure:   false,
+			expectedMessage: "Commit for branch \"${BRANCH}\" completed",
+			withForceFlag:   true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			dataDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
+
+			runCmd(t, fmt.Sprintf("%s branch create lakefs://%s/%s --source lakefs://%s/%s", Lakectl(), repoName, tc.name, repoName, mainBranch), false, false, vars)
+			vars["LOCAL_DIR"] = dataDir
+			vars["BRANCH"] = tc.name
+			vars["REF"] = tc.name
+			RunCmdAndVerifyContainsText(t, fmt.Sprintf("%s local clone lakefs://%s/%s/%s %s", Lakectl(), repoName, vars["BRANCH"], vars["PREFIX"], dataDir), false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX}/ to ${LOCAL_DIR}.", vars)
+
+			// add remote files
+			if len(tc.uncommittedRemote) > 0 {
+				for _, f := range tc.uncommittedRemote {
+					vars["FILE_PATH"] = f
+					runCmd(t, fmt.Sprintf("%s fs upload -s files/ro_1k lakefs://%s/%s/%s", Lakectl(), vars["REPO"], vars["BRANCH"], vars["FILE_PATH"]), false, false, vars)
+
+				}
+			}
+
+			// add local files
+			if len(tc.uncommittedLocal) > 0 {
+				for _, f := range tc.uncommittedLocal {
+					fd, err = os.Create(filepath.Join(dataDir, f))
+					require.NoError(t, err)
+					require.NoError(t, fd.Close())
+				}
+			}
+
+			force := ""
+			if tc.withForceFlag {
+				force = "--force"
+			}
+			cmd := fmt.Sprintf("%s local commit %s -m test %s", Lakectl(), force, dataDir)
+			if tc.expectFailure {
+				RunCmdAndVerifyFailureContainsText(t, cmd, false, tc.expectedMessage, vars)
+			} else {
+				RunCmdAndVerifyContainsText(t, cmd, false, tc.expectedMessage, vars)
+			}
+		})
+	}
+}
+
 func TestLakectlLocal_interrupted(t *testing.T) {
 	tmpDir := t.TempDir()
 	repoName := generateUniqueRepositoryName()

@@ -2575,6 +2575,7 @@ lakectl local commit [directory] [flags]
 
 ```
       --allow-empty-message   allow an empty commit message
+      --force                 Commit changes even if remote branch includes uncommitted changes external to the synced path
   -h, --help                  help for commit
   -m, --message string        commit message
       --meta strings          key value pair in the form of key=value
