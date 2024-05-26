@@ -581,12 +581,10 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			}
 
 			// add local files
-			if len(tc.uncommittedLocal) > 0 {
-				for _, f := range tc.uncommittedLocal {
-					fd, err = os.Create(filepath.Join(dataDir, f))
-					require.NoError(t, err)
-					require.NoError(t, fd.Close())
-				}
+			for _, f := range tc.uncommittedLocal {
+				fd, err = os.Create(filepath.Join(dataDir, f))
+				require.NoError(t, err)
+				require.NoError(t, fd.Close())
 			}
 
 			force := ""
