@@ -165,13 +165,13 @@ var localCommitCmd = &cobra.Command{
 				c <- change
 			}
 		}()
-		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(commitOperation))
 
 		hasChangesOutsideSyncedPrefix := hasExternalChange(cmd.Context(), client, remote, idx)
 		if hasChangesOutsideSyncedPrefix && !force {
 			DieFmt("Branch %s contains uncommitted changes outside of local path '%s'.\nTo proceed, use the --force flag.", remote.Ref, localPath)
 		}
 
+		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(commitOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags)
 		err = s.Sync(idx.LocalPath(), remote, c)
 		if err != nil {
