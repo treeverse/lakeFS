@@ -25,6 +25,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/auth/wildcard"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -2079,6 +2080,7 @@ func NewAPIAuthService(apiEndpoint, token string, externalPrincipalseEnabled boo
 	client, err := NewClientWithResponses(
 		apiEndpoint,
 		WithRequestEditorFn(bearerToken.Intercept),
+		WithRequestEditorFn(AddRequestID(httputil.RequestIDHeaderName)),
 		WithHTTPClient(httpClient),
 	)
 	if err != nil {

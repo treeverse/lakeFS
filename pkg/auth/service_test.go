@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -23,6 +24,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	authtestutil "github.com/treeverse/lakefs/pkg/auth/testutil"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -2743,4 +2745,30 @@ func TestAPIAuthService_DeleteExternalPrincipalAttachedToUserDelete(t *testing.T
 
 	_, err = s.GetExternalPrincipal(ctx, principalId)
 	require.Errorf(t, err, "principal should not exist if a user is deleted")
+}
+
+func TestAPIService_RequestIDPropagation(t *testing.T) {
+	const requestID = "the-quick-brown-fox-jumps-over-the-lazy-dog"
+	called := false
+	innerServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle (only) fake deleteUser, by returning 204.
+		if actual := r.Header.Get("X-Request-ID"); actual != requestID {
+			t.Errorf("Got request ID %s expecting %s", actual, requestID)
+		}
+		called = true
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	secretStore := crypt.NewSecretStore([]byte("secret"))
+	cacheParams := authparams.ServiceCache{}
+	service, err := auth.NewAPIAuthService(innerServer.URL, "token", true, secretStore, cacheParams, logging.ContextUnavailable())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.WithValue(context.Background(), httputil.RequestIDContextKey, requestID)
+
+	service.DeleteUser(ctx, "foo")
+	if !called {
+		t.Error("Expected inner server to be called but it wasn't")
+	}
 }
