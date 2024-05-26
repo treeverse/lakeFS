@@ -9,6 +9,8 @@ import Card from "react-bootstrap/Card";
 import {Link} from "../nav";
 import {useLoginConfigContext} from "../../hooks/conf";
 import {useLayoutOutletContext} from "../layout";
+import Alert from "react-bootstrap/Alert";
+import {InfoIcon} from "@primer/octicons-react";
 
 type AuthOutletContext = [(tab: string) => void];
 
@@ -23,6 +25,12 @@ export const AuthLayout = () => {
     return (
         <Container fluid="xl">
             <Row className="mt-5">
+                <div>
+                    {rbac === 'simplified' &&
+                    <Alert severity="info" title="rbac CTA"><InfoIcon/>{" "}Enhance Your Security with <Alert.Link href={"https://docs.lakefs.io/reference/security/rbac.html"}>Role-Based Access Control</Alert.Link>{" "}
+                         – Available on <Alert.Link href={"https://lakefs.cloud/register"}>lakeFS Cloud</Alert.Link> and <Alert.Link href={"https://docs.lakefs.io/understand/enterprise/"}>lakeFS Enterprise</Alert.Link>!</Alert>
+                    }
+                </div>
                 <Col md={{span: 3}}>
                     <Card>
                         <Card.Header>
