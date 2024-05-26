@@ -38,7 +38,7 @@ func hasExternalChange(ctx context.Context, client *apigen.ClientWithResponses, 
 		DieErr(err)
 	}
 
-	// Get first uncommitted change. If it's outside the local prefix, we're done
+	// Get first uncommitted change. If there are no changes or it's outside the local prefix, we're done
 	dirtyResp, err := client.DiffBranchWithResponse(ctx, remote.Repository, remote.Ref, &apigen.DiffBranchParams{
 		Amount: apiutil.Ptr(apigen.PaginationAmount(1)),
 	})
@@ -54,6 +54,8 @@ func hasExternalChange(ctx context.Context, client *apigen.ClientWithResponses, 
 	}
 
 	// Get the first uncommitted change after the prefix. If it exists, we're also done
+	// For example, if the prefix is "test-data/", the next item in lexicographic order will be "test-data0"
+	// because "/" is ordinal 47 and "0" is ordinal 48
 	nextPrefix := fmt.Sprintf("%s%s", filepath.Clean(*currentURI.Path), asciiCharAfterSlash)
 	dirtyResp, err = client.DiffBranchWithResponse(ctx, remote.Repository, remote.Ref, &apigen.DiffBranchParams{
 		Amount: apiutil.Ptr(apigen.PaginationAmount(1)),
@@ -109,11 +111,6 @@ var localCommitCmd = &cobra.Command{
 		resp, err := client.GetBranchWithResponse(cmd.Context(), remote.Repository, remote.Ref)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 
-		hasChangesOutsideSyncedPrefix := hasExternalChange(cmd.Context(), client, remote, idx)
-		if hasChangesOutsideSyncedPrefix && !force {
-			DieFmt("Branch %s contains uncommitted changes outside of local path '%s'.\nTo proceed, use the --force flag.", remote.Ref, localPath)
-		}
-
 		// Diff local with current head
 		baseRemote := remote.WithRef(idx.AtHead)
 		changes := localDiff(cmd.Context(), client, baseRemote, idx.LocalPath())
@@ -168,6 +165,12 @@ var localCommitCmd = &cobra.Command{
 				c <- change
 			}
 		}()
+
+		hasChangesOutsideSyncedPrefix := hasExternalChange(cmd.Context(), client, remote, idx)
+		if hasChangesOutsideSyncedPrefix && !force {
+			DieFmt("Branch %s contains uncommitted changes outside of local path '%s'.\nTo proceed, use the --force flag.", remote.Ref, localPath)
+		}
+
 		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(commitOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags)
 		err = s.Sync(idx.LocalPath(), remote, c)
