@@ -16,7 +16,7 @@ type AuthOutletContext = [(tab: string) => void];
 
 
 export const AuthLayout = () => {
-    const rbacDismissedKey = "lakefs:ui:acl:showRBACAlert";
+    const rbacDismissedKey = "lakefs:ui:acl:dismissRBACAlert";
     const [showRBACAlert, setShowRBACAlert] = useState(!window.localStorage.getItem(rbacDismissedKey));
     const [activeTab, setActiveTab] = useState("credentials");
     const {RBAC: rbac} = useLoginConfigContext();
