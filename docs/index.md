@@ -16,6 +16,8 @@ lakeFS provides version control over the data lake, and uses Git-like semantics 
 
 With lakeFS, you can use concepts on your data lake such as **branch** to create an isolated version of the data, **commit** to create a reproducible point in time, and **merge** in order to incorporate your changes in one atomic action.
 
+<iframe width="420" height="315" src="https://www.youtube.com/embed/GTxsyeoLccw"></iframe>
+
 ## How Do I Get Started? 
 
 **[The hands-on quickstart](./quickstart) guides you through some core features of lakeFS**. 

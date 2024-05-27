@@ -31,6 +31,8 @@ Like other version control systems, lakeFS allows you to configure _Actions_ to 
 
 For step-by-step examples of hooks in action check out the [lakeFS Quickstart]({% link quickstart/actions-and-hooks.md %}) and the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
 
+<iframe width="420" height="315" src="https://www.youtube.com/embed/Joare70FlIA"></iframe>
+
 ## Overview
 
 An _action_ defines one or more _hooks_ to execute. lakeFS supports three types of hook: 
