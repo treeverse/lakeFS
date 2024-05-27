@@ -10,8 +10,10 @@ redirect_from:
 
 # Access Control Lists (ACLs)
 
-{: .note}
-> ACLs were introduced in their current form in v0.98 of lakeFS as part of [changes to the security model][security-changes] in lakeFS. They are an alternative to the more granular control that [role-based access control](rbac.html) provides.
+{: .note .warning}
+> ACLS are deprecated and will be removed in future versions of lakeFS.
+> 
+> For a more robust authorization solution, please see [Role-Based Access Control](./rbac.html), available in [lakeFS Cloud](../../understand/lakefs-cloud.html) and [lakeFS Enterprise](../../understand/enterprise/index.html). 
 
 
 {% include toc.html %}
