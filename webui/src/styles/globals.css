@@ -288,23 +288,23 @@ td.tree-path {
   width: 30%;
 }
 
-.diff-changed {
+.diff-changed td {
   background-color: var(--color-bg-changed);
 }
 
-.diff-added {
+.diff-added td {
   background-color: var(--color-bg-added)
 }
 
-.diff-removed {
+.diff-removed td {
   background-color: var(--color-bg-removed);
 }
 
-.diff-conflict {
+.diff-conflict td {
   background-color: var(--color-bg-conflict);
 }
 
-.diff-more {
+.diff-more td {
   background-color: #ffffff;
 }
 
