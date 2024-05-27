@@ -16,6 +16,8 @@ type AuthOutletContext = [(tab: string) => void];
 
 
 export const AuthLayout = () => {
+    const rbacDismissedKey = "lakefs:ui:acl:showRBACAlert";
+    const [showRBACAlert, setShowRBACAlert] = useState(!window.localStorage.getItem(rbacDismissedKey));
     const [activeTab, setActiveTab] = useState("credentials");
     const {RBAC: rbac} = useLoginConfigContext();
     const [setIsLogged] = useLayoutOutletContext();
@@ -26,9 +28,12 @@ export const AuthLayout = () => {
         <Container fluid="xl">
             <Row className="mt-5">
                 <div>
-                    {rbac === 'simplified' &&
-                    <Alert severity="info" title="rbac CTA"><InfoIcon/>{" "}Enhance Your Security with <Alert.Link href={"https://docs.lakefs.io/reference/security/rbac.html"}>Role-Based Access Control</Alert.Link>{" "}
-                         – Available on <Alert.Link href={"https://lakefs.cloud/register"}>lakeFS Cloud</Alert.Link> and <Alert.Link href={"https://docs.lakefs.io/understand/enterprise/"}>lakeFS Enterprise</Alert.Link>!</Alert>
+                    {rbac === 'simplified' &&  showRBACAlert &&
+                    <Alert severity="info" title="rbac CTA" dismissible onClose={() => {
+                        window.localStorage.setItem(rbacDismissedKey, "true");
+                        setShowRBACAlert(false);
+                    }}><InfoIcon/>{" "}Enhance Your Security with<Alert.Link href={"https://docs.lakefs.io/reference/security/rbac.html"}>Role-Based Access Control</Alert.Link>{" "}
+                        – Available on <Alert.Link href={"https://lakefs.cloud/register"}>lakeFS Cloud</Alert.Link> and <Alert.Link href={"https://docs.lakefs.io/understand/enterprise/"}>lakeFS Enterprise</Alert.Link>!</Alert>
                     }
                 </div>
                 <Col md={{span: 3}}>
