@@ -44,7 +44,8 @@ class TestMerge(unittest.TestCase):
                     'key' : ''
                     }, 
                 strategy = '', 
-                force = True
+                force = True, 
+                allow_empty = True
             )
         else :
             return Merge(

@@ -4723,7 +4723,9 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		swag.StringValue(body.Message),
 		metadata,
 		swag.StringValue(body.Strategy),
-		graveler.WithForce(swag.BoolValue(body.Force)))
+		graveler.WithForce(swag.BoolValue(body.Force)),
+		graveler.WithAllowEmpty(swag.BoolValue(body.AllowEmpty)),
+	)
 
 	if errors.Is(err, graveler.ErrConflictFound) {
 		writeResponse(w, r, http.StatusConflict, apigen.MergeResult{

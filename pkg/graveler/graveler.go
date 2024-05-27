@@ -191,6 +191,8 @@ type SetOptions struct {
 	MaxTries int
 	// Force set to true will bypass repository read-only protection.
 	Force bool
+	// AllowEmpty set to true will allow committing an empty commit.
+	AllowEmpty bool
 }
 
 type SetOptionsFunc func(opts *SetOptions)
@@ -204,6 +206,12 @@ func WithIfAbsent(v bool) SetOptionsFunc {
 func WithForce(v bool) SetOptionsFunc {
 	return func(opts *SetOptions) {
 		opts.Force = v
+	}
+}
+
+func WithAllowEmpty(v bool) SetOptionsFunc {
+	return func(opts *SetOptions) {
+		opts.AllowEmpty = v
 	}
 }
 
@@ -2758,7 +2766,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 			return nil, ErrInvalidMergeStrategy
 		}
 
-		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID, mergeStrategy)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID, mergeStrategy, opts...)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge in CommitManager: %w", err)

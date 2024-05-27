@@ -645,7 +645,8 @@ components:
         force:
           type: boolean
           default: false
-        allow_no_changes:
+          description: TBD
+        allow_empty:
           type: boolean
           default: false
           description: Allow merge when the branches have the same content
