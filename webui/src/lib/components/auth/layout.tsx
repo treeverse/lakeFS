@@ -15,8 +15,8 @@ import {InfoIcon} from "@primer/octicons-react";
 type AuthOutletContext = [(tab: string) => void];
 
 
+const rbacDismissedKey = "lakefs:ui:acl:dismissRBACAlert";
 export const AuthLayout = () => {
-    const rbacDismissedKey = "lakefs:ui:acl:dismissRBACAlert";
     const [showRBACAlert, setShowRBACAlert] = useState(!window.localStorage.getItem(rbacDismissedKey));
     const [activeTab, setActiveTab] = useState("credentials");
     const {RBAC: rbac} = useLoginConfigContext();
