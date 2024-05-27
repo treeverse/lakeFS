@@ -2065,7 +2065,7 @@ func NewAPIAuthService(apiEndpoint, token string, externalPrincipalseEnabled boo
 		// when no token is provided, generate one.
 		// communicate with auth service always uses a token
 		var err error
-		token, err = generateAuthAPIJWT(secretStore.SharedSecret())
+		token, err = generateAuthAPIJWT(logger, secretStore.SharedSecret())
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate auth api token: %w", err)
 		}
@@ -2104,7 +2104,7 @@ func NewAPIAuthService(apiEndpoint, token string, externalPrincipalseEnabled boo
 }
 
 // generateAuthAPIJWT generates a new auth api jwt token
-func generateAuthAPIJWT(secret []byte) (string, error) {
+func generateAuthAPIJWT(logger logging.Logger, secret []byte) (string, error) {
 	const tokenExprInYears = 10
 	now := time.Now()
 	exp := now.AddDate(tokenExprInYears, 0, 0)
@@ -2117,7 +2117,7 @@ func generateAuthAPIJWT(secret []byte) (string, error) {
 		ExpiresAt: jwt.NewNumericDate(exp),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	logging.ContextUnavailable().WithField("id", id).Info("generated auth api token")
+	logger.WithField("id", id).Info("generated auth api token")
 	return token.SignedString(secret)
 }
 

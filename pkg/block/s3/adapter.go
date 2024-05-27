@@ -125,7 +125,10 @@ func LoadConfig(ctx context.Context, params params.S3) (aws.Config, error) {
 	var opts []func(*config.LoadOptions) error
 
 	opts = append(opts, config.WithLogger(&logging.AWSAdapter{
-		Logger: logging.ContextUnavailable().WithField("sdk", "aws"),
+		// AWS do not transfer execution context to their logger;
+		// pass the adapter base logger, which has a few static
+		// fields but still no context from the call.
+		Logger: logging.FromContext(ctx).WithField("sdk", "aws"),
 	}))
 	var logMode aws.ClientLogMode
 	if params.ClientLogRetries {
