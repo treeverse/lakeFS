@@ -39,6 +39,8 @@ lakeFS exposes a frontend UI, an [OpenAPI server](#openapi-server), as well as a
 lakeFS uses a single port that serves all three endpoints, so for most use cases a single load balancer pointing
 to lakeFS server(s) would do.
 
+<iframe width="420" height="315" src="https://www.youtube.com/embed/1vNQXFceFx4"></iframe>
+
 ## lakeFS Components
 
 ### S3 Gateway

@@ -114,3 +114,6 @@ This quickstart will introduce you to some of the core ideas in lakeFS and show 
 
 {: .note}
 You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register) if you want to try out lakeFS without installing anything. 
+
+<iframe width="420" height="315" src="https://www.youtube.com/embed/R1r023CsTOw"></iframe>
+
