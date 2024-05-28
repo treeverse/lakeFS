@@ -155,7 +155,7 @@ public class Merge {
   }
 
    /**
-   * TBD
+   * Allow merge into a read-only branch or into a branch with the same content
    * @return force
   **/
   @javax.annotation.Nullable

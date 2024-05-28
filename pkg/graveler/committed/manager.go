@@ -207,7 +207,7 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 		opt(options)
 	}
 
-	if source == base && !options.AllowEmpty {
+	if source == base && !options.AllowEmpty && !options.Force {
 		// no changes on source
 		return "", graveler.ErrNoChanges
 	}

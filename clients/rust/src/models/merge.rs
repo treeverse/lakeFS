@@ -19,7 +19,7 @@ pub struct Merge {
     /// In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict
     #[serde(rename = "strategy", skip_serializing_if = "Option::is_none")]
     pub strategy: Option<String>,
-    /// TBD
+    /// Allow merge into a read-only branch or into a branch with the same content
     #[serde(rename = "force", skip_serializing_if = "Option::is_none")]
     pub force: Option<bool>,
     /// Allow merge when the branches have the same content

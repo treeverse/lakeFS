@@ -32,7 +32,7 @@ class Merge(BaseModel):
     message: Optional[StrictStr] = None
     metadata: Optional[Dict[str, StrictStr]] = None
     strategy: Optional[StrictStr] = Field(None, description="In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict")
-    force: Optional[StrictBool] = Field(False, description="TBD")
+    force: Optional[StrictBool] = Field(False, description="Allow merge into a read-only branch or into a branch with the same content")
     allow_empty: Optional[StrictBool] = Field(False, description="Allow merge when the branches have the same content")
     __properties = ["message", "metadata", "strategy", "force", "allow_empty"]
 

@@ -645,7 +645,7 @@ components:
         force:
           type: boolean
           default: false
-          description: TBD
+          description: Allow merge into a read-only branch or into a branch with the same content
         allow_empty:
           type: boolean
           default: false
