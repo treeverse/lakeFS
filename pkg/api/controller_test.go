@@ -3817,27 +3817,16 @@ func TestController_MergeBranchWithNoChanges(t *testing.T) {
 	})
 	verifyResponseOK(t, repoResp, err)
 
-	const content = "awesome content"
-
 	branch1Resp, err := clt.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{Name: "branch1", Source: "main"})
 	verifyResponseOK(t, branch1Resp, err)
-	//upload1Resp, err := uploadObjectHelper(t, ctx, clt, "file0", strings.NewReader(content), repoName, "branch1")
-	//verifyResponseOK(t, upload1Resp, err)
-	//commit1Resp, err := clt.CommitWithResponse(ctx, repoName, "branch1", &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Add file0 to branch1"})
-	//verifyResponseOK(t, commit1Resp, err)
 
 	branch2Resp, err := clt.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{Name: "branch2", Source: "main"})
 	verifyResponseOK(t, branch2Resp, err)
-	//upload2Resp, err := uploadObjectHelper(t, ctx, clt, "file0", strings.NewReader(content), repoName, "branch2")
-	//verifyResponseOK(t, upload2Resp, err)
-	//commit2Resp, err := clt.CommitWithResponse(ctx, repoName, "branch2", &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Add file0 to branch2"})
-	//verifyResponseOK(t, commit2Resp, err)
 
 	mergeResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "branch2", "branch1", apigen.MergeIntoBranchJSONRequestBody{
 		Message: apiutil.Ptr("Merge branch2 to branch1"),
 	})
 	testutil.MustDo(t, "perform merge with no changes", err)
-	// TODO: is there a better way to check this error message?
 	if mergeResp.JSON400 == nil || !strings.HasSuffix(mergeResp.JSON400.Message, graveler.ErrNoChanges.Error()) {
 		t.Errorf("Merge branches with no changes should fail with ErrNoChanges, got %+v", mergeResp)
 	}
@@ -3853,8 +3842,6 @@ func TestController_MergeBranchWithNoChanges(t *testing.T) {
 		Force:   swag.Bool(true),
 	})
 	verifyResponseOK(t, mergeWithForceFlagResp, err)
-
-	// TODO: upload files to branches and verify the merge
 }
 
 func TestController_CreateTag(t *testing.T) {
