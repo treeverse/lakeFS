@@ -1,18 +1,26 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/diff"
 	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
+)
+
+const (
+	asciiCharAfterSlash = "0"
 )
 
 func findConflicts(changes local.Changes) (conflicts []string) {
@@ -24,6 +32,52 @@ func findConflicts(changes local.Changes) (conflicts []string) {
 	return
 }
 
+func hasExternalChange(ctx context.Context, client *apigen.ClientWithResponses, remote *uri.URI, idx *local.Index) bool {
+	currentURI, err := idx.GetCurrentURI()
+	if err != nil {
+		DieErr(err)
+	}
+
+	// Get first uncommitted change. If there are no changes or it's outside the local prefix, we're done
+	dirtyResp, err := client.DiffBranchWithResponse(ctx, remote.Repository, remote.Ref, &apigen.DiffBranchParams{
+		Amount: apiutil.Ptr(apigen.PaginationAmount(1)),
+	})
+	DieOnErrorOrUnexpectedStatusCode(dirtyResp, err, http.StatusOK)
+
+	if len(dirtyResp.JSON200.Results) == 0 {
+		return false
+	}
+	if slices.ContainsFunc(dirtyResp.JSON200.Results, func(diff apigen.Diff) bool {
+		return diff.PathType == "object" && !strings.HasPrefix(diff.Path, *currentURI.Path)
+	}) {
+		return true
+	}
+
+	// Get the first uncommitted change after the prefix. If it exists, we're also done
+	// For example, if the prefix is "test-data/", the next item in lexicographic order will be "test-data0"
+	// because "/" is ordinal 47 and "0" is ordinal 48
+	nextPrefix := fmt.Sprintf("%s%s", filepath.Clean(*currentURI.Path), asciiCharAfterSlash)
+	dirtyResp, err = client.DiffBranchWithResponse(ctx, remote.Repository, remote.Ref, &apigen.DiffBranchParams{
+		Amount: apiutil.Ptr(apigen.PaginationAmount(1)),
+		After:  apiutil.Ptr(apigen.PaginationAfter(nextPrefix)),
+	})
+	DieOnErrorOrUnexpectedStatusCode(dirtyResp, err, http.StatusOK)
+
+	// The above gives us SeekGT. Since we need SeekGE, we do another stat for exact match
+	statResp, err := client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
+		Path: nextPrefix,
+	})
+	if err != nil {
+		DieErr(err)
+	}
+
+	if len(dirtyResp.JSON200.Results) > 0 || statResp.StatusCode() == http.StatusOK {
+		return true
+	}
+
+	return false
+}
+
 var localCommitCmd = &cobra.Command{
 	Use:   "commit [directory]",
 	Short: "Commit changes from local directory to the lakeFS branch it tracks.",
@@ -33,6 +87,7 @@ var localCommitCmd = &cobra.Command{
 		_, localPath := getSyncArgs(args, false, false)
 		syncFlags := getSyncFlags(cmd, client)
 		message, kvPairs := getCommitFlags(cmd)
+		force := Must(cmd.Flags().GetBool(localForceFlagName))
 
 		idx, err := local.ReadIndex(localPath)
 		if err != nil {
@@ -110,6 +165,12 @@ var localCommitCmd = &cobra.Command{
 				c <- change
 			}
 		}()
+
+		hasChangesOutsideSyncedPrefix := hasExternalChange(cmd.Context(), client, remote, idx)
+		if hasChangesOutsideSyncedPrefix && !force {
+			DieFmt("Branch %s contains uncommitted changes outside of local path '%s'.\nTo proceed, use the --force flag.", remote.Ref, localPath)
+		}
+
 		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(commitOperation))
 		s := local.NewSyncManager(sigCtx, client, syncFlags)
 		err = s.Sync(idx.LocalPath(), remote, c)
@@ -170,6 +231,7 @@ var localCommitCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
+	withForceFlag(localCommitCmd, "Commit changes even if remote branch includes uncommitted changes external to the synced path")
 	withCommitFlags(localCommitCmd, false)
 	withSyncFlags(localCommitCmd)
 	localCmd.AddCommand(localCommitCmd)

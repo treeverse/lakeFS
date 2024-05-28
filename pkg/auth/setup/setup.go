@@ -252,7 +252,7 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 
 	// update setup timestamp
 	if err := metadataManger.UpdateSetupTimestamp(ctx, time.Now()); err != nil {
-		logging.ContextUnavailable().WithError(err).Error("Failed the update setup timestamp")
+		logging.FromContext(ctx).WithError(err).Error("Failed the update setup timestamp")
 	}
 	return cred, err
 }

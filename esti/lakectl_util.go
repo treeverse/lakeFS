@@ -146,10 +146,20 @@ func RunCmdAndVerifySuccessWithFile(t *testing.T, cmd string, isTerminal bool, g
 
 func RunCmdAndVerifyContainsText(t *testing.T, cmd string, isTerminal bool, expectedRaw string, vars map[string]string) {
 	t.Helper()
+	runCmdAndVerifyContainsText(t, cmd, false, isTerminal, expectedRaw, vars)
+}
+
+func RunCmdAndVerifyFailureContainsText(t *testing.T, cmd string, isTerminal bool, expectedRaw string, vars map[string]string) {
+	t.Helper()
+	runCmdAndVerifyContainsText(t, cmd, true, isTerminal, expectedRaw, vars)
+}
+
+func runCmdAndVerifyContainsText(t *testing.T, cmd string, expectFail, isTerminal bool, expectedRaw string, vars map[string]string) {
+	t.Helper()
 	s := sanitize(expectedRaw, vars)
 	expected, err := expandVariables(s, vars)
-	require.NoErrorf(t, err, "Variable embed failed - %s", err)
-	sanitizedResult := runCmd(t, cmd, false, isTerminal, vars)
+	require.NoError(t, err, "Variable embed failed - %s", err)
+	sanitizedResult := runCmd(t, cmd, expectFail, isTerminal, vars)
 	require.Contains(t, sanitizedResult, expected)
 }
 

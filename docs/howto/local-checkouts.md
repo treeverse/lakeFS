@@ -37,6 +37,8 @@ GPU usage and prevent them from sitting idle. Many deep learning tasks involve a
 same images are accessed multiple times. Localizing the data can eliminate redundant round trip times to access remote 
 storage, resulting in cost savings.
 
+<iframe width="420" height="315" src="https://www.youtube.com/embed/afgQnmesLZM"></iframe>
+
 ## **lakectl local**: The way to work with lakeFS data locally  
 
 The _local_ command of lakeFS' CLI _lakectl_ enables working with lakeFS data locally.

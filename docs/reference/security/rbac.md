@@ -25,6 +25,8 @@ lakeFS Enterprise
 
 {% include toc.html %}
 
+<iframe width="420" height="315" src="https://www.youtube.com/embed/Ekjv9FumIPg"></iframe>
+
 ## RBAC Model
 
 Access to resources is managed very much like [AWS IAM](https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-structure.html){:target="_blank"}.

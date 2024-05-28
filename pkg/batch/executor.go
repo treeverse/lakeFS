@@ -77,13 +77,27 @@ type request struct {
 	onResponse chan *response
 }
 
+// Waiters holds waiting requests.
+type Waiters struct {
+	// ctx is the context associated with the first request.  It is
+	// waiting for the longest time.
+	ctx      context.Context
+	requests []*request
+}
+
+// WaitFor holds a request and its original context.
+type WaitFor struct {
+	ctx     context.Context
+	request *request
+}
+
 type Executor struct {
 	// requests is the channel accepting inbound requests
-	requests chan *request
+	requests chan *WaitFor
 	// execs is the internal channel used to dispatch the callback functions.
 	// Several requests with the same key in a given duration will trigger a single write to exec said key.
 	execs        chan string
-	waitingOnKey map[string][]*request
+	waitingOnKey map[string]*Waiters
 	Logger       logging.Logger
 	Delay        DelayFn
 }
@@ -94,21 +108,24 @@ func NopExecutor() *NoOpBatchingExecutor {
 
 func NewExecutor(logger logging.Logger) *Executor {
 	return &Executor{
-		requests:     make(chan *request, RequestBufferSize),
+		requests:     make(chan *WaitFor, RequestBufferSize),
 		execs:        make(chan string, RequestBufferSize),
-		waitingOnKey: make(map[string][]*request),
+		waitingOnKey: make(map[string]*Waiters),
 		Logger:       logger,
 		Delay:        time.Sleep,
 	}
 }
 
-func (e *Executor) BatchFor(_ context.Context, key string, timeout time.Duration, exec Executer) (interface{}, error) {
+func (e *Executor) BatchFor(ctx context.Context, key string, timeout time.Duration, exec Executer) (interface{}, error) {
 	cb := make(chan *response)
-	e.requests <- &request{
-		key:        key,
-		timeout:    timeout,
-		exec:       exec,
-		onResponse: cb,
+	e.requests <- &WaitFor{
+		ctx: ctx,
+		request: &request{
+			key:        key,
+			timeout:    timeout,
+			exec:       exec,
+			onResponse: cb,
+		},
 	}
 	res := <-cb
 	return res.v, res.err
@@ -119,10 +136,13 @@ func (e *Executor) Run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case req := <-e.requests:
+		case waitFor := <-e.requests:
+			req := waitFor.request
 			// see if we have it scheduled already
-			if _, exists := e.waitingOnKey[req.key]; !exists {
-				e.waitingOnKey[req.key] = []*request{req}
+			waiters, exists := e.waitingOnKey[req.key]
+			if !exists {
+				waiters = &Waiters{ctx: waitFor.ctx, requests: []*request{req}}
+				e.waitingOnKey[req.key] = waiters
 				// this is a new key, let's fire a timer for it
 				go func(req *request) {
 					e.Delay(req.timeout)
@@ -132,7 +152,7 @@ func (e *Executor) Run(ctx context.Context) {
 				if b, ok := req.exec.(Tracker); ok {
 					b.Batched()
 				}
-				e.waitingOnKey[req.key] = append(e.waitingOnKey[req.key], req)
+				waiters.requests = append(waiters.requests, req)
 			}
 		case execKey := <-e.execs:
 			// let's take all callbacks
@@ -140,14 +160,16 @@ func (e *Executor) Run(ctx context.Context) {
 			delete(e.waitingOnKey, execKey)
 			go func(key string) {
 				// execute and call all mapped callbacks
-				v, err := waiters[0].exec.Execute()
+				v, err := waiters.requests[0].exec.Execute()
 				if e.Logger.IsTracing() {
-					e.Logger.WithFields(logging.Fields{
-						"waiters": len(waiters),
-						"key":     key,
-					}).Trace("dispatched execute result")
+					e.Logger.
+						WithContext(waiters.ctx).
+						WithFields(logging.Fields{
+							"waiters": len(waiters.requests),
+							"key":     key,
+						}).Trace("dispatched execute result")
 				}
-				for _, waiter := range waiters {
+				for _, waiter := range waiters.requests {
 					waiter.onResponse <- &response{v, err}
 				}
 			}(execKey)

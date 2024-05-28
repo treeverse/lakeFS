@@ -86,6 +86,8 @@ Here, 'main' is the name of the lakeFS branch from which the delta table was exp
 
 To enable Delta table exports to Unity catalog use the Unity [catalog integration guide](unity-catalog.md).
 
+<iframe width="420" height="315" src="https://www.youtube.com/embed/rMDsnh7S2O0"></iframe>
+
 ## Limitations
 
 ### Multi-Writer Support in lakeFS for Delta Lake Tables
