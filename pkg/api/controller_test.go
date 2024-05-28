@@ -3842,11 +3842,17 @@ func TestController_MergeBranchWithNoChanges(t *testing.T) {
 		t.Errorf("Merge branches with no changes should fail with ErrNoChanges, got %+v", mergeResp)
 	}
 
-	mergeWithFlagResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "branch2", "branch1", apigen.MergeIntoBranchJSONRequestBody{
+	mergeWithAllowEmptyFlagResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "branch2", "branch1", apigen.MergeIntoBranchJSONRequestBody{
 		Message:    apiutil.Ptr("Merge branch2 to branch1"),
 		AllowEmpty: swag.Bool(true),
 	})
-	verifyResponseOK(t, mergeWithFlagResp, err)
+	verifyResponseOK(t, mergeWithAllowEmptyFlagResp, err)
+
+	mergeWithForceFlagResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "branch2", "branch1", apigen.MergeIntoBranchJSONRequestBody{
+		Message: apiutil.Ptr("Merge branch2 to branch1"),
+		Force:   swag.Bool(true),
+	})
+	verifyResponseOK(t, mergeWithForceFlagResp, err)
 
 	// TODO: upload files to branches and verify the merge
 }
