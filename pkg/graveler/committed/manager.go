@@ -201,11 +201,7 @@ func (c *committedManager) Import(ctx context.Context, ns graveler.StorageNamesp
 }
 
 func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, strategy graveler.MergeStrategy, opts ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
-	// TODO: this repeats a lot (in graveler.go) - can it be encapsulated in a function?
-	options := &graveler.SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := graveler.NewSetOptions(opts)
 
 	if source == base && !options.AllowEmpty && !options.Force {
 		// no changes on source
