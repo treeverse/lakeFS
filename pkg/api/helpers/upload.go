@@ -124,10 +124,10 @@ type presignUpload struct {
 	numParts    int
 }
 
-func NewPreSignUploader(client apigen.ClientWithResponsesInterface, multipartSupport bool) *PreSignUploader {
+func NewPreSignUploader(client apigen.ClientWithResponsesInterface, httpClient *http.Client, multipartSupport bool) *PreSignUploader {
 	return &PreSignUploader{
 		Concurrency:      DefaultUploadConcurrency,
-		HTTPClient:       http.DefaultClient,
+		HTTPClient:       httpClient,
 		Client:           client,
 		MultipartSupport: multipartSupport,
 	}
@@ -403,9 +403,9 @@ func (u *presignUpload) Upload(ctx context.Context) (*apigen.ObjectStats, error)
 	return u.uploadObject(ctx)
 }
 
-func ClientUploadPreSign(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, presignMultipartSupport bool) (*apigen.ObjectStats, error) {
+func ClientUploadPreSign(ctx context.Context, client apigen.ClientWithResponsesInterface, httpClient *http.Client, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, presignMultipartSupport bool) (*apigen.ObjectStats, error) {
 	// upload loop, retry on conflict
-	uploader := NewPreSignUploader(client, presignMultipartSupport)
+	uploader := NewPreSignUploader(client, httpClient, presignMultipartSupport)
 	for {
 		stats, err := uploader.Upload(ctx, repoID, branchID, objPath, contents, contentType, metadata)
 		if err == nil {

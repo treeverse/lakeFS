@@ -277,7 +277,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	}
 	if s.flags.Presign {
 		_, err = helpers.ClientUploadPreSign(
-			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader, s.flags.PresignMultipart)
+			ctx, s.client, s.httpClient, remote.Repository, remote.Ref, dest, metadata, "", reader, s.flags.PresignMultipart)
 		return err
 	}
 	// not pre-signed
