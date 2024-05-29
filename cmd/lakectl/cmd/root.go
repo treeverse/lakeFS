@@ -435,21 +435,21 @@ func sendStats(ctx context.Context, client apigen.ClientWithResponsesInterface, 
 	}
 }
 
-func getClient() *apigen.ClientWithResponses {
+func getHTTPClient() *http.Client {
 	// Override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
 	// only to be immediately reopened.
 	// see: https://stackoverflow.com/a/39834253
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
-	var httpClient *http.Client
 	if !cfg.Server.Retries.Enabled {
-		httpClient = &http.Client{
-			Transport: transport,
-		}
-	} else {
-		httpClient = NewRetryClient(cfg.Server.Retries, transport)
+		return &http.Client{Transport: transport}
 	}
+	return NewRetryClient(cfg.Server.Retries, transport)
+}
+
+func getClient() *apigen.ClientWithResponses {
+	httpClient := getHTTPClient()
 
 	accessKeyID := cfg.Credentials.AccessKeyID
 	secretAccessKey := cfg.Credentials.SecretAccessKey

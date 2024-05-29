@@ -61,7 +61,7 @@ var fsUploadCmd = &cobra.Command{
 				c <- change
 			}
 		}()
-		s := local.NewSyncManager(ctx, client, syncFlags)
+		s := local.NewSyncManager(ctx, client, getHTTPClient(), syncFlags)
 		fullPath, err := filepath.Abs(source)
 		if err != nil {
 			DieErr(err)
@@ -87,7 +87,7 @@ func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sou
 	}()
 	objectPath := apiutil.Value(destURI.Path)
 	if syncFlags.Presign {
-		return helpers.ClientUploadPreSign(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp, syncFlags.PresignMultipart)
+		return helpers.ClientUploadPreSign(ctx, client, getHTTPClient(), destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp, syncFlags.PresignMultipart)
 	}
 	return helpers.ClientUpload(ctx, client, destURI.Repository, destURI.Ref, objectPath, nil, contentType, fp)
 }
