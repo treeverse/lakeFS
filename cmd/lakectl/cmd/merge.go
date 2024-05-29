@@ -10,7 +10,7 @@ import (
 
 const (
 	mergeCmdMinArgs = 2
-	mergeCmdMaxArgs = 5
+	mergeCmdMaxArgs = 6
 
 	mergeCreateTemplate = `Merged "{{.Merge.FromRef|yellow}}" into "{{.Merge.ToRef|yellow}}" to get "{{.Result.Reference|green}}".
 `
@@ -36,24 +36,31 @@ var mergeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		message, kvPairs := getCommitFlags(cmd)
 		client := getClient()
+
 		sourceRef := MustParseBranchURI("source ref", args[0])
 		destinationRef := MustParseBranchURI("destination ref", args[1])
 		strategy := Must(cmd.Flags().GetString("strategy"))
+		force := Must(cmd.Flags().GetBool("force"))
+		allowEmpty := Must(cmd.Flags().GetBool("allow-empty"))
+
 		fmt.Println("Source:", sourceRef)
 		fmt.Println("Destination:", destinationRef)
+
 		if destinationRef.Repository != sourceRef.Repository {
 			Die("both references must belong to the same repository", 1)
 		}
-
 		if strategy != "dest-wins" && strategy != "source-wins" && strategy != "" {
 			Die("Invalid strategy value. Expected \"dest-wins\" or \"source-wins\"", 1)
 		}
 
 		body := apigen.MergeIntoBranchJSONRequestBody{
-			Message:  &message,
-			Metadata: &apigen.Merge_Metadata{AdditionalProperties: kvPairs},
-			Strategy: &strategy,
+			Message:    &message,
+			Metadata:   &apigen.Merge_Metadata{AdditionalProperties: kvPairs},
+			Strategy:   &strategy,
+			Force:      &force,
+			AllowEmpty: &allowEmpty,
 		}
+
 		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, body)
 		if resp != nil && resp.JSON409 != nil {
 			Die("Conflict found.", 1)
@@ -78,7 +85,10 @@ var mergeCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	mergeCmd.Flags().String("strategy", "", "In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch (\"dest-wins\") or from the source branch(\"source-wins\"). In case no selection is made, the merge process will fail in case of a conflict")
+	flags := mergeCmd.Flags()
+	flags.String("strategy", "", "In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch (\"dest-wins\") or from the source branch(\"source-wins\"). In case no selection is made, the merge process will fail in case of a conflict")
+	flags.Bool("force", false, "Allow merge into a read-only branch or into a branch with the same content")
+	flags.Bool("allow-empty", false, "Allow merge when the branches have the same content")
 	withCommitFlags(mergeCmd, true)
 	rootCmd.AddCommand(mergeCmd)
 }

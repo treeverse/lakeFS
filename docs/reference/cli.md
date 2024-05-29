@@ -2738,7 +2738,9 @@ lakectl merge <source ref> <destination ref> [flags]
 {:.no_toc}
 
 ```
+      --allow-empty           Allow merge when the branches have the same content
       --allow-empty-message   allow an empty commit message (default true)
+      --force                 Allow merge into a read-only branch or into a branch with the same content
   -h, --help                  help for merge
   -m, --message string        commit message
       --meta strings          key value pair in the form of key=value

@@ -7762,6 +7762,7 @@ components:
         force: false
         message: message
         strategy: strategy
+        allow_empty: false
       properties:
         message:
           type: string
@@ -7777,6 +7778,12 @@ components:
           type: string
         force:
           default: false
+          description: Allow merge into a read-only branch or into a branch with the
+            same content
+          type: boolean
+        allow_empty:
+          default: false
+          description: Allow merge when the branches have the same content
           type: boolean
       type: object
     BranchCreation:

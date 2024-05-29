@@ -86,6 +86,7 @@ class Merge(ModelNormal):
             'metadata': ({str: (str,)},),  # noqa: E501
             'strategy': (str,),  # noqa: E501
             'force': (bool,),  # noqa: E501
+            'allow_empty': (bool,),  # noqa: E501
         }
 
     @cached_property
@@ -98,6 +99,7 @@ class Merge(ModelNormal):
         'metadata': 'metadata',  # noqa: E501
         'strategy': 'strategy',  # noqa: E501
         'force': 'force',  # noqa: E501
+        'allow_empty': 'allow_empty',  # noqa: E501
     }
 
     read_only_vars = {
@@ -144,7 +146,8 @@ class Merge(ModelNormal):
             message (str): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             strategy (str): In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict. [optional]  # noqa: E501
-            force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
+            force (bool): Allow merge into a read-only branch or into a branch with the same content. [optional] if omitted the server will use the default value of False  # noqa: E501
+            allow_empty (bool): Allow merge when the branches have the same content. [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -229,7 +232,8 @@ class Merge(ModelNormal):
             message (str): [optional]  # noqa: E501
             metadata ({str: (str,)}): [optional]  # noqa: E501
             strategy (str): In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict. [optional]  # noqa: E501
-            force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
+            force (bool): Allow merge into a read-only branch or into a branch with the same content. [optional] if omitted the server will use the default value of False  # noqa: E501
+            allow_empty (bool): Allow merge when the branches have the same content. [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
