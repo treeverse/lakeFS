@@ -191,9 +191,19 @@ type SetOptions struct {
 	MaxTries int
 	// Force set to true will bypass repository read-only protection.
 	Force bool
+	// AllowEmpty set to true will allow committing an empty commit.
+	AllowEmpty bool
 }
 
 type SetOptionsFunc func(opts *SetOptions)
+
+func NewSetOptions(opts []SetOptionsFunc) *SetOptions {
+	options := &SetOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	return options
+}
 
 func WithIfAbsent(v bool) SetOptionsFunc {
 	return func(opts *SetOptions) {
@@ -204,6 +214,12 @@ func WithIfAbsent(v bool) SetOptionsFunc {
 func WithForce(v bool) SetOptionsFunc {
 	return func(opts *SetOptions) {
 		opts.Force = v
+	}
+}
+
+func WithAllowEmpty(v bool) SetOptionsFunc {
+	return func(opts *SetOptions) {
+		opts.AllowEmpty = v
 	}
 }
 
@@ -1092,10 +1108,7 @@ func (g *Graveler) SetRepositoryMetadata(ctx context.Context, repository *Reposi
 }
 
 func (g *Graveler) WriteRange(ctx context.Context, repository *RepositoryRecord, it ValueIterator, opts ...SetOptionsFunc) (*RangeInfo, error) {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return nil, ErrReadOnlyRepository
 	}
@@ -1103,10 +1116,7 @@ func (g *Graveler) WriteRange(ctx context.Context, repository *RepositoryRecord,
 }
 
 func (g *Graveler) WriteMetaRange(ctx context.Context, repository *RepositoryRecord, ranges []*RangeInfo, opts ...SetOptionsFunc) (*MetaRangeInfo, error) {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return nil, ErrReadOnlyRepository
 	}
@@ -1118,10 +1128,7 @@ func (g *Graveler) StageObject(ctx context.Context, stagingToken string, object 
 }
 
 func (g *Graveler) WriteMetaRangeByIterator(ctx context.Context, repository *RepositoryRecord, it ValueIterator, opts ...SetOptionsFunc) (*MetaRangeID, error) {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return nil, ErrReadOnlyRepository
 	}
@@ -1138,10 +1145,7 @@ func GenerateStagingToken(repositoryID RepositoryID, branchID BranchID) StagingT
 }
 
 func (g *Graveler) CreateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, opts ...SetOptionsFunc) (*Branch, error) {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return nil, ErrReadOnlyRepository
 	}
@@ -1210,10 +1214,7 @@ func (g *Graveler) CreateBranch(ctx context.Context, repository *RepositoryRecor
 }
 
 func (g *Graveler) UpdateBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, opts ...SetOptionsFunc) (*Branch, error) {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return nil, ErrReadOnlyRepository
 	}
@@ -1306,10 +1307,7 @@ func (g *Graveler) GetTag(ctx context.Context, repository *RepositoryRecord, tag
 }
 
 func (g *Graveler) CreateTag(ctx context.Context, repository *RepositoryRecord, tagID TagID, commitID CommitID, opts ...SetOptionsFunc) error {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
@@ -1369,10 +1367,7 @@ func (g *Graveler) CreateTag(ctx context.Context, repository *RepositoryRecord, 
 }
 
 func (g *Graveler) DeleteTag(ctx context.Context, repository *RepositoryRecord, tagID TagID, opts ...SetOptionsFunc) error {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
@@ -1455,10 +1450,7 @@ func (g *Graveler) ListBranches(ctx context.Context, repository *RepositoryRecor
 }
 
 func (g *Graveler) DeleteBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, opts ...SetOptionsFunc) error {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
@@ -1667,10 +1659,7 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 		return ErrWriteToProtectedBranch
 	}
 
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
@@ -1759,10 +1748,7 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 		return ErrWriteToProtectedBranch
 	}
 
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
@@ -1786,10 +1772,7 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 		return ErrWriteToProtectedBranch
 	}
 
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
@@ -1943,10 +1926,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 		return "", ErrCommitToProtectedBranch
 	}
 
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
 	}
@@ -2078,10 +2058,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 }
 
 func (g *Graveler) CreateCommitRecord(ctx context.Context, repository *RepositoryRecord, commitID CommitID, commit Commit, opts ...SetOptionsFunc) error {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
@@ -2149,10 +2126,7 @@ func CommitExists(ctx context.Context, repository *RepositoryRecord, commitID Co
 }
 
 func (g *Graveler) AddCommit(ctx context.Context, repository *RepositoryRecord, commit Commit, opts ...SetOptionsFunc) (CommitID, error) {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
 	}
@@ -2268,10 +2242,7 @@ func (g *Graveler) ResetHard(ctx context.Context, repository *RepositoryRecord, 
 		return ErrWriteToProtectedBranch
 	}
 
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 
 	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
@@ -2325,10 +2296,7 @@ func (g *Graveler) Reset(ctx context.Context, repository *RepositoryRecord, bran
 		return ErrWriteToProtectedBranch
 	}
 
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
@@ -2400,10 +2368,7 @@ func (g *Graveler) ResetKey(ctx context.Context, repository *RepositoryRecord, b
 		return ErrWriteToProtectedBranch
 	}
 
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
@@ -2444,10 +2409,7 @@ func (g *Graveler) ResetPrefix(ctx context.Context, repository *RepositoryRecord
 		return ErrWriteToProtectedBranch
 	}
 
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
@@ -2509,10 +2471,7 @@ type CommitIDAndSummary struct {
 // That is, try to apply the diff from C2 to C1 on the tip of the branch.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the revert is done.
 func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams, opts ...SetOptionsFunc) (CommitID, error) {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
 	}
@@ -2596,10 +2555,7 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 // CherryPick creates a new commit on the given branch, with the changes from the given commit.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the cherry-pick is done.
 func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber *int, committer string, opts ...SetOptionsFunc) (CommitID, error) {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
 	}
@@ -2691,10 +2647,7 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 }
 
 func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string, opts ...SetOptionsFunc) (CommitID, error) {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
 	}
@@ -2758,7 +2711,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 			return nil, ErrInvalidMergeStrategy
 		}
 
-		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID, mergeStrategy)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID, mergeStrategy, opts...)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge in CommitManager: %w", err)
@@ -2864,10 +2817,7 @@ func (g *Graveler) retryRepoMetadataUpdate(ctx context.Context, repository *Repo
 }
 
 func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams, prefixes []Prefix, opts ...SetOptionsFunc) (CommitID, error) {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
 	}
@@ -3117,10 +3067,7 @@ func (g *Graveler) SetHooksHandler(handler HooksHandler) {
 }
 
 func (g *Graveler) LoadCommits(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID, opts ...SetOptionsFunc) error {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
@@ -3169,10 +3116,7 @@ func (g *Graveler) LoadCommits(ctx context.Context, repository *RepositoryRecord
 }
 
 func (g *Graveler) LoadBranches(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID, opts ...SetOptionsFunc) error {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}
@@ -3205,10 +3149,7 @@ func (g *Graveler) LoadBranches(ctx context.Context, repository *RepositoryRecor
 }
 
 func (g *Graveler) LoadTags(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID, opts ...SetOptionsFunc) error {
-	options := &SetOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
+	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return ErrReadOnlyRepository
 	}

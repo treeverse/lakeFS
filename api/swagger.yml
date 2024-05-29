@@ -645,6 +645,11 @@ components:
         force:
           type: boolean
           default: false
+          description: Allow merge into a read-only branch or into a branch with the same content
+        allow_empty:
+          type: boolean
+          default: false
+          description: Allow merge when the branches have the same content
 
     BranchCreation:
       type: object

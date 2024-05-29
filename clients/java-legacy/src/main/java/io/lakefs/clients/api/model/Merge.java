@@ -48,6 +48,10 @@ public class Merge {
   @SerializedName(SERIALIZED_NAME_FORCE)
   private Boolean force = false;
 
+  public static final String SERIALIZED_NAME_ALLOW_EMPTY = "allow_empty";
+  @SerializedName(SERIALIZED_NAME_ALLOW_EMPTY)
+  private Boolean allowEmpty = false;
+
 
   public Merge message(String message) {
     
@@ -133,11 +137,11 @@ public class Merge {
   }
 
    /**
-   * Get force
+   * Allow merge into a read-only branch or into a branch with the same content
    * @return force
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @ApiModelProperty(value = "Allow merge into a read-only branch or into a branch with the same content")
 
   public Boolean getForce() {
     return force;
@@ -146,6 +150,29 @@ public class Merge {
 
   public void setForce(Boolean force) {
     this.force = force;
+  }
+
+
+  public Merge allowEmpty(Boolean allowEmpty) {
+    
+    this.allowEmpty = allowEmpty;
+    return this;
+  }
+
+   /**
+   * Allow merge when the branches have the same content
+   * @return allowEmpty
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "Allow merge when the branches have the same content")
+
+  public Boolean getAllowEmpty() {
+    return allowEmpty;
+  }
+
+
+  public void setAllowEmpty(Boolean allowEmpty) {
+    this.allowEmpty = allowEmpty;
   }
 
 
@@ -161,12 +188,13 @@ public class Merge {
     return Objects.equals(this.message, merge.message) &&
         Objects.equals(this.metadata, merge.metadata) &&
         Objects.equals(this.strategy, merge.strategy) &&
-        Objects.equals(this.force, merge.force);
+        Objects.equals(this.force, merge.force) &&
+        Objects.equals(this.allowEmpty, merge.allowEmpty);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(message, metadata, strategy, force);
+    return Objects.hash(message, metadata, strategy, force, allowEmpty);
   }
 
   @Override
@@ -177,6 +205,7 @@ public class Merge {
     sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("    strategy: ").append(toIndentedString(strategy)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
+    sb.append("    allowEmpty: ").append(toIndentedString(allowEmpty)).append("\n");
     sb.append("}");
     return sb.toString();
   }

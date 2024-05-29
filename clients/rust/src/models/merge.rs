@@ -19,8 +19,12 @@ pub struct Merge {
     /// In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict
     #[serde(rename = "strategy", skip_serializing_if = "Option::is_none")]
     pub strategy: Option<String>,
+    /// Allow merge into a read-only branch or into a branch with the same content
     #[serde(rename = "force", skip_serializing_if = "Option::is_none")]
     pub force: Option<bool>,
+    /// Allow merge when the branches have the same content
+    #[serde(rename = "allow_empty", skip_serializing_if = "Option::is_none")]
+    pub allow_empty: Option<bool>,
 }
 
 impl Merge {
@@ -30,6 +34,7 @@ impl Merge {
             metadata: None,
             strategy: None,
             force: None,
+            allow_empty: None,
         }
     }
 }
