@@ -61,7 +61,7 @@ var fsUploadCmd = &cobra.Command{
 				c <- change
 			}
 		}()
-		s := local.NewSyncManager(ctx, client, syncFlags)
+		s := local.NewSyncManager(ctx, client, getHTTPClient(), syncFlags)
 		fullPath, err := filepath.Abs(source)
 		if err != nil {
 			DieErr(err)

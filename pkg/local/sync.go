@@ -62,11 +62,11 @@ type SyncManager struct {
 	tasks       Tasks
 }
 
-func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, flags SyncFlags) *SyncManager {
+func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, httpClient *http.Client, flags SyncFlags) *SyncManager {
 	return &SyncManager{
 		ctx:         ctx,
 		client:      client,
-		httpClient:  http.DefaultClient,
+		httpClient:  httpClient,
 		progressBar: NewProgressPool(),
 		flags:       flags,
 	}
