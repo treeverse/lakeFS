@@ -1,5 +1,19 @@
 # Changelog
 
+# v1.25.0
+
+:new: What's new:
+- Add OS info to `lakectl` User Agent (#7759)
+- Serve GZipped Static Assets (#7788)
+- Propagate request ID from context to API auth service calls (#7803)
+- Add more context-based logging (#7804)
+- Add "allow-empty" flag to Merge (#7798)
+- Sync Manager to use HTTP client with retries (#7815)
+
+:bug: Bugs fixed:
+- `lakectl local commit`: Prevent remote changes outside synced prefix (#7796)
+- UI: Restore colors in diff view (#7808)
+
 # v1.24.0
 
 :new: What's new:
