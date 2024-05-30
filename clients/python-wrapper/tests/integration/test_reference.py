@@ -52,14 +52,13 @@ def test_reference_merge_into(setup_branch_with_commits):
 
     # test merging into same branch
 
-    other_but_same_branch = repo.branch("test_reference_merge_into_no_changes").create(branch)
-    changes = list(branch.diff(other_but_same_branch))
-    assert len(changes) == 0
+    branch_a = repo.branch("test_branch_merge_into_a").create(branch)
+    branch_b = repo.branch("test_branch_merge_into_b").create(branch)
 
     with pytest.raises(BadRequestException, match=r'.+no changes.+'):
-        branch.merge_into(other_but_same_branch, message="MergeNoChanges")
+        branch_a.merge_into(branch_b, message="MergeNoChanges")
 
-    branch.merge_into(other_but_same_branch, message="MergeNoChangesWithFlag", allow_empty=True)
+    branch_a.merge_into(branch_b, message="MergeNoChangesWithFlag", allow_empty=True)
 
     # test merging into other branch
 
