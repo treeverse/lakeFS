@@ -1,4 +1,7 @@
+import pytest
+
 import lakefs
+from lakefs.exceptions import BadRequestException
 
 
 def test_reference_log(setup_branch_with_commits):
@@ -46,6 +49,19 @@ def test_reference_merge_into(setup_branch_with_commits):
     branch = setup_branch_with_commits
     repo = lakefs.Repository(branch.repo_id)
     main = repo.branch("main")
+
+    # test merging into same branch
+
+    other_but_same_branch = repo.branch("test_reference_merge_into_no_changes").create(branch)
+    changes = list(branch.diff(other_but_same_branch))
+    assert len(changes) == 0
+
+    with pytest.raises(BadRequestException, match=r'.+no changes.+'):
+        branch.merge_into(other_but_same_branch, message="MergeNoChanges")
+
+    branch.merge_into(other_but_same_branch, message="MergeNoChangesWithFlag", allow_empty=True)
+
+    # test merging into other branch
 
     commits = list(branch.log(max_amount=2))
     other_branch = repo.branch("test_reference_merge_into").create(main)
