@@ -14,7 +14,6 @@
 - `lakectl local commit`: Prevent remote changes outside synced prefix (#7796)
 - UI: Restore colors in diff view (#7808)
 
-
 # v1.24.0
 
 :new: What's new:
