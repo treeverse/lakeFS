@@ -450,7 +450,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 
 func (a *Adapter) validateMultipartUploadParts(uploadID string, multipartList *block.MultipartUploadCompletion, bucketParts []*storage.ObjectAttrs) error {
 	if len(multipartList.Part) != len(bucketParts) {
-		return ErrPartListMismatch
+		return fmt.Errorf("part list mismatch - expected %d parts, got %d: %w", len(bucketParts), len(multipartList.Part), ErrPartListMismatch)
 	}
 	for i, p := range multipartList.Part {
 		objName := formatMultipartFilename(uploadID, p.PartNumber)
