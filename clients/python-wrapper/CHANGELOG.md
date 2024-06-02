@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.6.2
+
+:new: What's new:
+
+- Expose "allow_empty" and "force" flags for Merge (#7820)
+
 ## v0.6.1
 
 :bug: Bugs fixed:
