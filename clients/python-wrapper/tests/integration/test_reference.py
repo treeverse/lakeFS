@@ -51,7 +51,6 @@ def test_reference_merge_into(setup_branch_with_commits):
     main = repo.branch("main")
 
     # test merging into same branch
-
     branch_a = repo.branch("test_branch_merge_into_a").create(branch)
     branch_b = repo.branch("test_branch_merge_into_b").create(branch)
 
@@ -61,7 +60,6 @@ def test_reference_merge_into(setup_branch_with_commits):
     branch_a.merge_into(branch_b, message="MergeNoChangesWithFlag", allow_empty=True)
 
     # test merging into other branch
-
     commits = list(branch.log(max_amount=2))
     other_branch = repo.branch("test_reference_merge_into").create(main)
     ref = repo.ref(commits[1].id)
