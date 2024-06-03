@@ -184,6 +184,13 @@ func EnrichWithRepositoryOrFallback(c *catalog.Catalog, authService auth.Gateway
 				fallbackProxy.ServeHTTP(w, req)
 				return
 			}
+
+			// see: github.com/treeverse/lakeFS/issues/3082
+			if strings.HasPrefix(req.RequestURI, "/api/v1") {
+				_ = o.EncodeError(w, req, err, gatewayerrors.ErrNoSuchBucketPossibleApiEndpoint.ToAPIErr())
+				return
+			}
+
 			_ = o.EncodeError(w, req, err, gatewayerrors.ErrNoSuchBucket.ToAPIErr())
 			return
 		}
