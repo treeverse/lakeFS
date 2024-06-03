@@ -676,6 +676,6 @@ func TestPossibleAPIEndpointError(t *testing.T) {
 	t.Run("use_open_api_for_client_endpoint", func(t *testing.T) {
 		_, err := minioClient.GetObject(ctx, repo, "main/some", minio.GetObjectOptions{})
 		require.NotNil(t, err)
-		require.Contains(t, err.Error(), "Using lakeFS API URI as the endpoint")
+		require.Contains(t, err.Error(), `Repository "api" not found`)
 	})
 }

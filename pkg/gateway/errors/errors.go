@@ -2,6 +2,7 @@ package errors
 
 import (
 	"encoding/xml"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"net/http"
 )
 
@@ -344,7 +345,7 @@ var Codes = errorCodeMap{
 	},
 	ErrNoSuchBucketPossibleAPIEndpoint: {
 		Code:           "ErrNoSuchBucketPossibleAPIEndpoint",
-		Description:    "Using lakeFS API URI as the endpoint. Try removing the 'api/v1/' part from the endpoint.",
+		Description:    `Repository "api" not found; this can happen if your endpoint URL mistakenly ends in "` + apiutil.BaseURL + `".`,
 		HTTPStatusCode: http.StatusNotFound,
 	},
 	ErrNoSuchKey: {
