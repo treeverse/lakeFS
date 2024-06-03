@@ -2,8 +2,9 @@ package errors
 
 import (
 	"encoding/xml"
-	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"net/http"
+
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 /*
