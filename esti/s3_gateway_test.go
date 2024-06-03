@@ -662,7 +662,7 @@ func TestPossibleAPIEndpointError(t *testing.T) {
 
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
-	endpoint := "/api/v1" + viper.GetString("s3_endpoint")
+	endpoint := viper.GetString("s3_endpoint") + apiutil.BaseURL
 	endpointSecure := viper.GetBool("s3_endpoint_secure")
 
 	minioClient, err := minio.New(endpoint, &minio.Options{
@@ -673,8 +673,9 @@ func TestPossibleAPIEndpointError(t *testing.T) {
 		t.Fatalf("minio.New: %s", err)
 	}
 
-	t.Run("use_api_v1_for_client_endpoint", func(t *testing.T) {
+	t.Run("use_open_api_for_client_endpoint", func(t *testing.T) {
 		_, err := minioClient.GetObject(ctx, repo, "main/some", minio.GetObjectOptions{})
+		require.NotNil(t, err)
 		require.Contains(t, err.Error(), "Using lakeFS API URI as the endpoint")
 	})
 }
