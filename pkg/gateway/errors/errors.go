@@ -80,7 +80,6 @@ const (
 	ErrNoSuchBucket
 	ErrNoSuchBucketPolicy
 	ErrNoSuchBucketLifecycle
-	ErrNoSuchBucketPossibleApiEndpoint
 	ErrNoSuchKey
 	ErrNoSuchUpload
 	ErrNoSuchVersion
@@ -340,11 +339,6 @@ var Codes = errorCodeMap{
 	ErrNoSuchBucketLifecycle: {
 		Code:           "NoSuchBucketLifecycle",
 		Description:    "The bucket lifecycle configuration does not exist",
-		HTTPStatusCode: http.StatusNotFound,
-	},
-	ErrNoSuchBucketPossibleApiEndpoint: {
-		Code:           "ErrNoSuchBucketPossibleApiEndpoint",
-		Description:    "Using lakeFS API URI as the endpoint. Try removing the 'api/v1/' part from the endpoint.",
 		HTTPStatusCode: http.StatusNotFound,
 	},
 	ErrNoSuchKey: {
