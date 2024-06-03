@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -185,8 +186,9 @@ func EnrichWithRepositoryOrFallback(c *catalog.Catalog, authService auth.Gateway
 				return
 			}
 
-			// see: github.com/treeverse/lakeFS/issues/3082
-			if strings.HasPrefix(req.RequestURI, "/api/v1") {
+			// users often set the gateway endpoint in the clients with /api/v1/ which is the openAPI endpoint.
+			// returning a more informative error in such case.
+			if strings.HasPrefix(req.RequestURI, apiutil.BaseURL) {
 				_ = o.EncodeError(w, req, err, gatewayerrors.ErrNoSuchBucketPossibleAPIEndpoint.ToAPIErr())
 				return
 			}
