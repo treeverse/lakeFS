@@ -655,3 +655,26 @@ func TestS3ReadObjectRedirect(t *testing.T) {
 		require.Contains(t, err.Error(), "307 Temporary Redirect")
 	})
 }
+
+func TestPossibleAPIEndpointError(t *testing.T) {
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	accessKeyID := viper.GetString("access_key_id")
+	secretAccessKey := viper.GetString("secret_access_key")
+	endpoint := "/api/v1" + viper.GetString("s3_endpoint")
+	endpointSecure := viper.GetBool("s3_endpoint_secure")
+
+	minioClient, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+		Secure: endpointSecure,
+	})
+	if err != nil {
+		t.Fatalf("minio.New: %s", err)
+	}
+
+	t.Run("use_api_v1_for_client_endpoint", func(t *testing.T) {
+		_, err := minioClient.GetObject(ctx, repo, "main/some", minio.GetObjectOptions{})
+		require.Contains(t, err.Error(), "Using lakeFS API URI as the endpoint")
+	})
+}
