@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"reflect"
@@ -17,9 +18,11 @@ import (
 )
 
 var (
-	ErrBadConfiguration    = errors.New("bad configuration")
-	ErrBadDomainNames      = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
-	ErrMissingRequiredKeys = fmt.Errorf("%w: missing required keys", ErrBadConfiguration)
+	ErrBadConfiguration      = errors.New("bad configuration")
+	ErrBadDomainNames        = fmt.Errorf("%w: domain names are prefixes", ErrBadConfiguration)
+	ErrMissingRequiredKeys   = fmt.Errorf("%w: missing required keys", ErrBadConfiguration)
+	ErrBadGCPCSEKValue       = fmt.Errorf("value of customer-supplied server side encryption is not a valid %d bytes AES key", gcpAESKeyLength)
+	ErrGCPEncryptKeyConflict = errors.New("setting both kms and customer supplied encryption will result failure when reading/writing object")
 )
 
 // UseLocalConfiguration set to true will add defaults that enable a lakeFS run
@@ -272,12 +275,14 @@ type Config struct {
 			Domain string `mapstructure:"domain"`
 		} `mapstructure:"azure"`
 		GS *struct {
-			S3Endpoint         string        `mapstructure:"s3_endpoint"`
-			CredentialsFile    string        `mapstructure:"credentials_file"`
-			CredentialsJSON    string        `mapstructure:"credentials_json"`
-			PreSignedExpiry    time.Duration `mapstructure:"pre_signed_expiry"`
-			DisablePreSigned   bool          `mapstructure:"disable_pre_signed"`
-			DisablePreSignedUI bool          `mapstructure:"disable_pre_signed_ui"`
+			S3Endpoint                           string        `mapstructure:"s3_endpoint"`
+			CredentialsFile                      string        `mapstructure:"credentials_file"`
+			CredentialsJSON                      string        `mapstructure:"credentials_json"`
+			PreSignedExpiry                      time.Duration `mapstructure:"pre_signed_expiry"`
+			DisablePreSigned                     bool          `mapstructure:"disable_pre_signed"`
+			DisablePreSignedUI                   bool          `mapstructure:"disable_pre_signed_ui"`
+			ServerSideEncryptionCustomerSupplied string        `mapstructure:"server_side_encryption_customer_supplied"`
+			ServerSideEncryptionKmsKeyID         string        `mapstructure:"server_side_encryption_kms_key_id"`
 		} `mapstructure:"gs"`
 	} `mapstructure:"blockstore"`
 	Committed struct {
@@ -499,17 +504,38 @@ func (c *Config) BlockstoreLocalParams() (blockparams.Local, error) {
 	return params, nil
 }
 
+const (
+	gcpAESKeyLength = 32
+)
+
 func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
+	var customerSuppliedKey []byte = nil
+	if c.Blockstore.GS.ServerSideEncryptionCustomerSupplied != "" {
+		v, err := hex.DecodeString(c.Blockstore.GS.ServerSideEncryptionCustomerSupplied)
+		if err != nil {
+			return blockparams.GS{}, err
+		}
+		if len(v) != gcpAESKeyLength {
+			return blockparams.GS{}, ErrBadGCPCSEKValue
+		}
+		customerSuppliedKey = v
+		if c.Blockstore.GS.ServerSideEncryptionKmsKeyID != "" {
+			return blockparams.GS{}, ErrGCPEncryptKeyConflict
+		}
+	}
+
 	credPath, err := homedir.Expand(c.Blockstore.GS.CredentialsFile)
 	if err != nil {
 		return blockparams.GS{}, fmt.Errorf("parse GS credentials path '%s': %w", c.Blockstore.GS.CredentialsFile, err)
 	}
 	return blockparams.GS{
-		CredentialsFile:    credPath,
-		CredentialsJSON:    c.Blockstore.GS.CredentialsJSON,
-		PreSignedExpiry:    c.Blockstore.GS.PreSignedExpiry,
-		DisablePreSigned:   c.Blockstore.GS.DisablePreSigned,
-		DisablePreSignedUI: c.Blockstore.GS.DisablePreSignedUI,
+		CredentialsFile:                      credPath,
+		CredentialsJSON:                      c.Blockstore.GS.CredentialsJSON,
+		PreSignedExpiry:                      c.Blockstore.GS.PreSignedExpiry,
+		DisablePreSigned:                     c.Blockstore.GS.DisablePreSigned,
+		DisablePreSignedUI:                   c.Blockstore.GS.DisablePreSignedUI,
+		ServerSideEncryptionCustomerSupplied: customerSuppliedKey,
+		ServerSideEncryptionKmsKeyID:         c.Blockstore.GS.ServerSideEncryptionKmsKeyID,
 	}, nil
 }
 
