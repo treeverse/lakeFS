@@ -18,13 +18,8 @@ Everest is a complementary binary to lakeFS that allows users to virtually mount
 Once mounted, users can access the data as if it resides on their local filesystem, using any tool, library, or framework that reads from a local filesystem.
 This functionality is currently supported only on macOS using the NFS (Network File System) protocol.
 
-There is no installation required, please [contact us](mailto:support@treeverse.io) to get access to the Everest binary.
-
 **Note**
-⚠️ Everest is currently in beta and is available for lakeFS Cloud and Enterprise users upon demand. 
-{: .note }
-
-{% include toc.html %}
+⚠️ Everest is currently in beta and is available for lakeFS Cloud and Enterprise users upon demand. There is no installation required, please [contact us](mailto:support@treeverse.io) to get access to the Everest binary.
 {: .note }
 
 {% include toc.html %}
@@ -51,9 +46,7 @@ The `mount` command is used to mount a lakeFS repository to a local directory, i
 - Step 1: Starting a server that listens on a local address and serves the data from the remote lakeFS repository.
 - Step 2:  Running the required mount command on the OS level to connect the server to the local directory.
 
-**Tips:**
-- Since the server runs in the background set `--log-output /some/file` to view the logs in a file. 
-- The best `--cache-size` value is the size of the data you are going to read.
+**Tips:** Since the server runs in the background set `--log-output /some/file` to view the logs in a file. Regarding cache, the best `--cache-size` value is the size of the data you are going to read.
 {: .note }
 
 ```bash
