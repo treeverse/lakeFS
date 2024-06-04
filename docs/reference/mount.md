@@ -18,12 +18,45 @@ Everest is a complementary binary to lakeFS that allows users to virtually mount
 Once mounted, users can access the data as if it resides on their local filesystem, using any tool, library, or framework that reads from a local filesystem.
 This functionality is currently supported only on macOS using the NFS (Network File System) protocol.
 
-There is no installation required. Users can download a binary from S3 upon request.
+There is no installation required, please [contact us](mailto:support@treeverse.io) to get access to the Everest binary.
+
+**Note**
+⚠️ Everest is currently in beta and is available for lakeFS Cloud and Enterprise users upon demand. 
+{: .note }
+
+{% include toc.html %}
+{: .note }
+
+{% include toc.html %}
+
+## Authentication with lakeFS 
+
+The authentication with the target lakeFS server is equal to [lakectl CLI][lakectl].
+Searching for lakeFS credentials and server endpoint in the following order:
+- `LAKECTL_*` Environment variables
+- `~/.lakectl.yaml` Configuration file or via `--lakectl-config` flag
+- Command line flags `--lakectl-access-key-id`, `--lakectl-secret-access-key` and `--lakectl-server-url`
+
+### OS Requirements
+
+Currently the implemented protocols are `nfs` and `fuse`. 
+- NFS 3 is supported on macOS.
+- FUSE is supported on Linux. 
 
 ## Command Line Interface
 
 ### Mount Command
-The `mount` command is used to mount a lakeFS repository to a local directory. 
+
+The `mount` command is used to mount a lakeFS repository to a local directory, it does it in 2 steps: 
+- Step 1: Starting a server that listens on a local address and serves the data from the remote lakeFS repository.
+- Step 2:  Running the required mount command on the OS level to connect the server to the local directory.
+
+**Tips:**
+- Since the server runs in the background set `--log-output /some/file` to view the logs in a file. 
+- The best `--cache-size` value is the size of the data you are going to read.
+{: .note }
+
+```bash
 
 #### Usage
 ```bash
@@ -40,8 +73,6 @@ Flags
 --log-level: Set logging level.
 --log-format: Set logging output format.
 --log-output: Set logging output(s).
-umount Command
-The umount command is used to unmount a currently mounted lakeFS repository.
 ```
 
 ### Umount Command
@@ -51,7 +82,8 @@ The `umount` command is used to unmount a currently mounted lakeFS repository.
 everest umount <data_directory>
 ````
 
-### mount-server Command
+### mount-server Command (Advanced)
+
 The mount-server command starts a mount server manually. Generally, users would use the mount command which handles server operations automatically.
 
 ```bash
@@ -86,9 +118,10 @@ everest umount "./pets"
 #### Working with Data Locally
 Mount the remote lakeFS server and use all familiar tools without changing the workflow.
 ```bash
-everest mount --prefetch "lakefs://image-repo/main/datasets/pets/" "./pets"
+everest mount "lakefs://image-repo/main/datasets/pets/" "./pets"
 pytorch_train.py --input "./pets"
 duckdb "SELECT * FROM read_parquet('pets/labels.parquet')"
 everest umount "./pets"
 ```
 
+[lakectl]: {% link reference/cli.md %}
