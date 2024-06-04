@@ -16,15 +16,17 @@ lakeFS Enterprise
 
 Everest is a complementary binary to lakeFS that allows users to virtually mount a remote lakeFS repository onto a local directory.
 Once mounted, users can access the data as if it resides on their local filesystem, using any tool, library, or framework that reads from a local filesystem.
-This functionality is currently supported only on macOS using the NFS (Network File System) protocol.
+This functionality is currently in limited support and is a Read-Only file system and is pointing to a commit in lakeFS.
 
 **Note**
-⚠️ Everest is currently in beta and is available for lakeFS Cloud and Enterprise users upon demand. There is no installation required, please [contact us](mailto:support@treeverse.io) to get access to the Everest binary.
+⚠️ Everest is currently in beta. There is no installation required, please [contact us](mailto:support@treeverse.io) to get access to the Everest binary.
 {: .note }
 
 {% include toc.html %}
 
-## Authentication with lakeFS 
+## Requirements
+
+### Authentication with lakeFS 
 
 The authentication with the target lakeFS server is equal to [lakectl CLI][lakectl].
 Searching for lakeFS credentials and server endpoint in the following order:
@@ -32,11 +34,12 @@ Searching for lakeFS credentials and server endpoint in the following order:
 - `~/.lakectl.yaml` Configuration file or via `--lakectl-config` flag
 - Command line flags `--lakectl-access-key-id`, `--lakectl-secret-access-key` and `--lakectl-server-url`
 
-### OS Requirements
+### OS and Protocol Support
 
 Currently the implemented protocols are `nfs` and `fuse`. 
-- NFS 3 is supported on macOS.
-- FUSE is supported on Linux. 
+- NFS V3 (Network File System) is supported on macOS.
+- FUSE is supported on Linux (no root required). 
+
 
 ## Command Line Interface
 
