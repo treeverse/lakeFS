@@ -30,9 +30,9 @@ This functionality is currently in limited support and is a Read-Only file syste
 
 The authentication with the target lakeFS server is equal to [lakectl CLI][lakectl].
 Searching for lakeFS credentials and server endpoint in the following order:
+- Command line flags `--lakectl-access-key-id`, `--lakectl-secret-access-key` and `--lakectl-server-url`
 - `LAKECTL_*` Environment variables
 - `~/.lakectl.yaml` Configuration file or via `--lakectl-config` flag
-- Command line flags `--lakectl-access-key-id`, `--lakectl-secret-access-key` and `--lakectl-server-url`
 
 ### OS and Protocol Support
 
@@ -51,8 +51,6 @@ The `mount` command is used to mount a lakeFS repository to a local directory, i
 
 **Tips:** Since the server runs in the background set `--log-output /some/file` to view the logs in a file. Regarding cache, the best `--cache-size` value is the size of the data you are going to read.
 {: .note }
-
-```bash
 
 #### Usage
 ```bash
