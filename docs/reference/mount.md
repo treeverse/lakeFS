@@ -26,8 +26,9 @@ This functionality is currently in limited support and is a Read-Only file syste
 
 ## Requirements
 
+- lakeFS Version `1.25.0` or higher.
+  
 ### Authentication with lakeFS 
-
 The authentication with the target lakeFS server is equal to [lakectl CLI][lakectl].
 Searching for lakeFS credentials and server endpoint in the following order:
 - Command line flags `--lakectl-access-key-id`, `--lakectl-secret-access-key` and `--lakectl-server-url`
