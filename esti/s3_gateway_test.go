@@ -671,13 +671,13 @@ func TestPossibleAPIEndpointError(t *testing.T) {
 	defer tearDownTest(repo)
 
 	t.Run("use_open_api_for_client_endpoint", func(t *testing.T) {
-		s3Client := createS3Client(viper.GetString("s3_endpoint")+apiutil.BaseURL, t)
+		s3Client := createS3Client(endpointURL+apiutil.BaseURL, t)
 		_, listErr := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("not-exists")})
 		require.ErrorContains(t, listErr, gtwerrors.ErrNoSuchBucketPossibleAPIEndpoint.Error())
 	})
 
 	t.Run("use_proper_client_endpoint", func(t *testing.T) {
-		s3Client := createS3Client(viper.GetString("s3_endpoint"), t)
+		s3Client := createS3Client(endpointURL, t)
 		_, listErr := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("not-exists")})
 		require.ErrorContains(t, listErr, gtwerrors.ErrNoSuchBucket.Error())
 	})
