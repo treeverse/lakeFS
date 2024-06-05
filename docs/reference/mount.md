@@ -26,21 +26,21 @@ This functionality is currently in limited support and is a Read-Only file syste
 
 ## Requirements
 
-- lakeFS Version `1.25.0` or higher.
+- For enterprise installations: lakeFS Version `1.25.0` or higher.
   
-### Authentication with lakeFS 
-The authentication with the target lakeFS server is equal to [lakectl CLI][lakectl].
-Searching for lakeFS credentials and server endpoint in the following order:
-- Command line flags `--lakectl-access-key-id`, `--lakectl-secret-access-key` and `--lakectl-server-url`
-- `LAKECTL_*` Environment variables
-- `~/.lakectl.yaml` Configuration file or via `--lakectl-config` flag
-
 ### OS and Protocol Support
 
 Currently the implemented protocols are `nfs` and `fuse`. 
 - NFS V3 (Network File System) is supported on macOS.
 - FUSE is supported on Linux (no root required). 
 
+## Authentication with lakeFS 
+
+The authentication with the target lakeFS server is equal to [lakectl CLI][lakectl].
+Searching for lakeFS credentials and server endpoint in the following order:
+- Command line flags `--lakectl-access-key-id`, `--lakectl-secret-access-key` and `--lakectl-server-url`
+- `LAKECTL_*` Environment variables
+- `~/.lakectl.yaml` Configuration file or via `--lakectl-config` flag
 
 ## Command Line Interface
 
@@ -98,6 +98,10 @@ Flags
 ```
 
 ## Examples
+
+**Note**
+⚠️ For simplicity the examples show `main` as the ref, Everest will always mount a specific commit ID, given a ref it will use the HEAD (e.g most recent commit).
+{: .note }
 
 #### Data Exploration
 Mount the lakeFS repository and explore data as if it's on the local filesystem.
