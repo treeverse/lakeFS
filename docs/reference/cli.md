@@ -2045,8 +2045,9 @@ lakectl diff <ref URI> [ref URI] [flags]
 {:.no_toc}
 
 ```
-  -h, --help      help for diff
-      --two-way   Use two-way diff: show difference between the given refs, regardless of a common ancestor.
+  -h, --help            help for diff
+      --prefix string   Show only changes in the given prefix.
+      --two-way         Use two-way diff: show difference between the given refs, regardless of a common ancestor.
 ```
 
 
