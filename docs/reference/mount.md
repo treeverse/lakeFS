@@ -26,22 +26,22 @@ This functionality is currently in limited support and is a Read-Only file syste
 
 ## Requirements
 
-- lakeFS Version `1.25.0` or higher.
+- For enterprise installations: lakeFS Version `1.25.0` or higher.
   
-### Authentication with lakeFS 
-The authentication with the target lakeFS server is equal to [lakectl CLI][lakectl].
-Searching for lakeFS credentials and server endpoint in the following order:
-- Command line flags `--lakectl-access-key-id`, `--lakectl-secret-access-key` and `--lakectl-server-url`
-- `LAKECTL_*` Environment variables
-- `~/.lakectl.yaml` Configuration file or via `--lakectl-config` flag
-
 ### OS and Protocol Support
 
 Currently the implemented protocols are `nfs` and `fuse`. 
 - NFS V3 (Network File System) is supported on macOS.
 - FUSE is supported on Linux (no root required). 
 
+## Authentication with lakeFS 
 
+The authentication with the target lakeFS server is equal to [lakectl CLI][lakectl].
+Searching for lakeFS credentials and server endpoint in the following order:
+- Command line flags `--lakectl-access-key-id`, `--lakectl-secret-access-key` and `--lakectl-server-url`
+- `LAKECTL_*` Environment variables
+- `~/.lakectl.yaml` Configuration file or via `--lakectl-config` flag
+  
 ## Command Line Interface
 
 ### Mount Command
@@ -50,8 +50,12 @@ The `mount` command is used to mount a lakeFS repository to a local directory, i
 - Step 1: Starting a server that listens on a local address and serves the data from the remote lakeFS repository.
 - Step 2:  Running the required mount command on the OS level to connect the server to the local directory.
 
-**Tips:** Since the server runs in the background set `--log-output /some/file` to view the logs in a file. Regarding cache, the best `--cache-size` value is the size of the data you are going to read.
-{: .note }
+#### Tips:
+
+- Since the server runs in the background set `--log-output /some/file` to view the logs in a file.
+- Cache: Everest uses a local cache to store the data and metadata of the lakeFS repository. The optimal cache size is the size of the data you are going to read.
+- Reusing Cache: between restarts of the same mount endpoint, set `--cache-dir` to make sure the cache is reused.
+- Mounted data consistency: When providing lakeFS URI mount endpoint `lakefs://<repo>/<ref>/<path>` the `<ref>` should be a specific commit ID. If a branch/tag is provided, Everest will use the HEAD commit instead.
 
 #### Usage
 ```bash
@@ -79,6 +83,10 @@ everest umount <data_directory>
 
 ### mount-server Command (Advanced)
 
+**Note**
+⚠️ The `mount-server` command is for advanced use cases and will only spin the server without calling OS mount command.
+{: .note }
+
 The mount-server command starts a mount server manually. Generally, users would use the mount command which handles server operations automatically.
 
 ```bash
@@ -98,6 +106,10 @@ Flags
 ```
 
 ## Examples
+
+**Note**
+⚠️ For simplicity, the examples show `main` as the ref, Everest will always mount a specific commit ID, given a ref it will use the HEAD (e.g most recent commit).
+{: .note }
 
 #### Data Exploration
 Mount the lakeFS repository and explore data as if it's on the local filesystem.
