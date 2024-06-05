@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"io"
 	"math/rand"
 	"net/http"
@@ -662,19 +664,12 @@ func TestPossibleAPIEndpointError(t *testing.T) {
 
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
-	endpoint := viper.GetString("s3_endpoint") + apiutil.BaseURL
-	endpointSecure := viper.GetBool("s3_endpoint_secure")
 
-	minioClient, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
-		Secure: endpointSecure,
-	})
-	if err != nil {
-		t.Fatalf("minio.New: %s", err)
-	}
+	s3Client, err := testutil.SetupTestS3Client("http://127.0.0.1:8000/api/v1", accessKeyID, secretAccessKey)
+	require.NoError(t, err, "failed creating s3 client")
 
 	t.Run("use_open_api_for_client_endpoint", func(t *testing.T) {
-		_, err := minioClient.GetObject(ctx, repo, "main/some", minio.GetObjectOptions{})
+		_, err := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("test")})
 		require.NotNil(t, err)
 		require.Contains(t, err.Error(), `Repository "api" not found`)
 	})
