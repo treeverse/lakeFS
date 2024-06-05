@@ -661,7 +661,7 @@ func TestS3ReadObjectRedirect(t *testing.T) {
 func createS3Client(endpoint string, t *testing.T) *s3.Client {
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
-	s3Client, err := testutil.SetupTestS3Client(endpoint, accessKeyID, secretAccessKey)
+	s3Client, err := testutil.SetupTestS3ClientWithForcePathStyle(endpoint, accessKeyID, secretAccessKey, true)
 	require.NoError(t, err, "failed creating s3 client")
 	return s3Client
 }
