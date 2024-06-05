@@ -177,7 +177,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 	storageURL, err := url.Parse(symlinksPrefix)
 	require.NoError(t, err, "failed extracting bucket name")
 
-	s3Client, err := testutil.SetupTestS3Client("https://s3.amazonaws.com", testData.AWSAccessKeyID, testData.AWSSecretAccessKey)
+	s3Client, err := testutil.SetupTestS3Client("https://s3.amazonaws.com", testData.AWSAccessKeyID, testData.AWSSecretAccessKey, viper.GetBool("force_path_style"))
 
 	require.NoError(t, err, "failed creating s3 client")
 
