@@ -2,6 +2,7 @@ package esti
 
 import (
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -48,11 +49,13 @@ func (a ExpectedDiff) buildAssertionString() string {
 		return all[i].path < all[j].path
 	})
 
-	var assertionString string
+	var sb strings.Builder
 	for _, file := range all {
-		assertionString += file.prefix + file.path + "\n"
+		sb.WriteString(file.prefix)
+		sb.WriteString(file.path)
+		sb.WriteString("\n")
 	}
-	return assertionString
+	return sb.String()
 }
 
 func runDiffAndExpect(t *testing.T, repoName string, testBranch string, diffArgs *ExpectedDiff) {
