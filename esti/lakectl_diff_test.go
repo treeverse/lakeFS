@@ -18,19 +18,19 @@ func TestLakectlDiffAddedFiles(t *testing.T) {
 		"path/to/other/file2.txt": "ro_1k_other",
 	}
 	commitFilesForDiff(t, repoName, testBranch, files)
-	runDiffArgs := &RunDiffArgs{
+	expectedDiff := &ExpectedDiff{
 		added:   []string{"path/to/file1.txt", "path/to/other/file2.txt"},
 		deleted: []string{},
 	}
-	runDiff(t, repoName, testBranch, runDiffArgs)
+	runDiffAndExpect(t, repoName, testBranch, expectedDiff)
 }
 
-type RunDiffArgs struct {
+type ExpectedDiff struct {
 	added   []string
 	deleted []string
 }
 
-func (a RunDiffArgs) buildAssertionString() string {
+func (a ExpectedDiff) buildAssertionString() string {
 	type PrefixedFile struct {
 		prefix string
 		path   string
@@ -55,7 +55,7 @@ func (a RunDiffArgs) buildAssertionString() string {
 	return assertionString
 }
 
-func runDiff(t *testing.T, repoName string, testBranch string, diffArgs *RunDiffArgs) {
+func runDiffAndExpect(t *testing.T, repoName string, testBranch string, diffArgs *ExpectedDiff) {
 	diffVars := map[string]string{
 		"REPO":         repoName,
 		"LEFT_BRANCH":  mainBranch,
