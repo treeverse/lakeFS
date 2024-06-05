@@ -6,24 +6,79 @@ import (
 	"testing"
 )
 
+const (
+	filePath1  = "path/to/file1.txt"
+	filePath2  = "path/to/other/file2.txt"
+	testBranch = "test"
+)
+
+var filesForDiffTest = map[string]string{
+	filePath1: "ro_1k",
+	filePath2: "ro_1k_other",
+}
+
 func TestLakectlDiffAddedFiles(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
-	testBranch := "test"
 
 	createRepo(t, repoName, storage)
 	createBranch(t, repoName, storage, testBranch)
 
-	files := map[string]string{
-		"path/to/file1.txt":       "ro_1k",
-		"path/to/other/file2.txt": "ro_1k_other",
-	}
-	commitFilesForDiff(t, repoName, testBranch, files)
+	uploadFiles(t, repoName, testBranch, filesForDiffTest)
+	commit(t, repoName, testBranch, "adding test files to "+testBranch)
+
 	expectedDiff := &ExpectedDiff{
-		added:   []string{"path/to/file1.txt", "path/to/other/file2.txt"},
+		added:   []string{filePath1, filePath2},
 		deleted: []string{},
 	}
-	runDiffAndExpect(t, repoName, testBranch, expectedDiff)
+	runDiffAndExpect(t, repoName, testBranch, expectedDiff, "")
+}
+
+func TestLakectlDiffDeletedFiles(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+
+	createRepo(t, repoName, storage)
+	uploadFiles(t, repoName, mainBranch, filesForDiffTest)
+	commit(t, repoName, mainBranch, "adding test files to "+mainBranch)
+
+	createBranch(t, repoName, storage, testBranch)
+	deleteFiles(t, repoName, testBranch, filePath1, filePath2)
+	commit(t, repoName, testBranch, "deleting test files from "+testBranch)
+
+	expectedDiff := &ExpectedDiff{
+		added:   []string{},
+		deleted: []string{filePath1, filePath2},
+	}
+	runDiffAndExpect(t, repoName, testBranch, expectedDiff, "")
+}
+
+func TestLakectlDiffPrefix(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+
+	createRepo(t, repoName, storage)
+	createBranch(t, repoName, storage, testBranch)
+
+	uploadFiles(t, repoName, testBranch, filesForDiffTest)
+	commit(t, repoName, testBranch, "adding test files to "+testBranch)
+
+	runDiffAndExpect(t, repoName, testBranch, &ExpectedDiff{
+		added:   []string{filePath1, filePath2},
+		deleted: []string{},
+	}, "path/to/")
+	runDiffAndExpect(t, repoName, testBranch, &ExpectedDiff{
+		added:   []string{filePath2},
+		deleted: []string{},
+	}, "path/to/o")
+	runDiffAndExpect(t, repoName, testBranch, &ExpectedDiff{
+		added:   []string{filePath1},
+		deleted: []string{},
+	}, "path/to/f")
+	runDiffAndExpect(t, repoName, testBranch, &ExpectedDiff{
+		added:   []string{},
+		deleted: []string{},
+	}, "path/to/x")
 }
 
 type ExpectedDiff struct {
@@ -42,7 +97,7 @@ func (a ExpectedDiff) buildAssertionString() string {
 		added = append(added, PrefixedFile{"+ added ", file})
 	}
 	for _, file := range a.deleted {
-		deleted = append(deleted, PrefixedFile{"- deleted ", file})
+		deleted = append(deleted, PrefixedFile{"- removed ", file})
 	}
 	var all = append(added, deleted...)
 	sort.Slice(all, func(i, j int) bool {
@@ -58,23 +113,36 @@ func (a ExpectedDiff) buildAssertionString() string {
 	return sb.String()
 }
 
-func runDiffAndExpect(t *testing.T, repoName string, testBranch string, diffArgs *ExpectedDiff) {
+func runDiffAndExpect(t *testing.T, repoName string, testBranch string, diffArgs *ExpectedDiff, prefix string) {
 	diffVars := map[string]string{
 		"REPO":         repoName,
 		"LEFT_BRANCH":  mainBranch,
 		"RIGHT_BRANCH": testBranch,
 		"DIFF_LIST":    diffArgs.buildAssertionString(),
 	}
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" diff lakefs://"+repoName+"/"+mainBranch+" lakefs://"+repoName+"/test", false, "lakectl_diff", diffVars)
+
+	cmdArgs := " diff lakefs://" + repoName + "/" + mainBranch + " lakefs://" + repoName + "/" + testBranch
+	if prefix != "" {
+		cmdArgs += " --prefix " + prefix
+	}
+
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+cmdArgs, false, "lakectl_diff", diffVars)
 }
 
-func commitFilesForDiff(t *testing.T, repoName string, branch string, files map[string]string) {
+func uploadFiles(t *testing.T, repoName string, branch string, files map[string]string) {
 	for filePath, contentPath := range files {
 		RunCmdAndVerifyContainsText(t, Lakectl()+" fs upload -s files/"+contentPath+" lakefs://"+repoName+"/"+branch+"/"+filePath, false, filePath, nil)
 	}
+}
 
-	commitMessage := "committing test files to " + branch
+func commit(t *testing.T, repoName string, branch string, commitMessage string) {
 	RunCmdAndVerifyContainsText(t, Lakectl()+" commit lakefs://"+repoName+"/"+branch+" -m \""+commitMessage+"\"", false, commitMessage, nil)
+}
+
+func deleteFiles(t *testing.T, repoName string, branch string, files ...string) {
+	for _, filePath := range files {
+		RunCmdAndVerifySuccess(t, Lakectl()+" fs rm lakefs://"+repoName+"/"+branch+"/"+filePath, false, "", nil)
+	}
 }
 
 func createRepo(t *testing.T, repoName string, storage string) {
