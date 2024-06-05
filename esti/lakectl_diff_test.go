@@ -31,7 +31,7 @@ func TestLakectlDiffAddedFiles(t *testing.T) {
 		added:   []string{filePath1, filePath2},
 		deleted: []string{},
 	}
-	runDiffAndExpect(t, repoName, testBranch, expectedDiff, "")
+	runDiffAndExpect(t, repoName, testBranch, "", expectedDiff)
 }
 
 func TestLakectlDiffDeletedFiles(t *testing.T) {
@@ -50,7 +50,7 @@ func TestLakectlDiffDeletedFiles(t *testing.T) {
 		added:   []string{},
 		deleted: []string{filePath1, filePath2},
 	}
-	runDiffAndExpect(t, repoName, testBranch, expectedDiff, "")
+	runDiffAndExpect(t, repoName, testBranch, "", expectedDiff)
 }
 
 func TestLakectlDiffPrefix(t *testing.T) {
@@ -63,22 +63,22 @@ func TestLakectlDiffPrefix(t *testing.T) {
 	uploadFiles(t, repoName, testBranch, filesForDiffTest)
 	commit(t, repoName, testBranch, "adding test files to "+testBranch)
 
-	runDiffAndExpect(t, repoName, testBranch, &ExpectedDiff{
+	runDiffAndExpect(t, repoName, testBranch, "path/to/", &ExpectedDiff{
 		added:   []string{filePath1, filePath2},
 		deleted: []string{},
-	}, "path/to/")
-	runDiffAndExpect(t, repoName, testBranch, &ExpectedDiff{
+	})
+	runDiffAndExpect(t, repoName, testBranch, "path/to/o", &ExpectedDiff{
 		added:   []string{filePath2},
 		deleted: []string{},
-	}, "path/to/o")
-	runDiffAndExpect(t, repoName, testBranch, &ExpectedDiff{
+	})
+	runDiffAndExpect(t, repoName, testBranch, "path/to/f", &ExpectedDiff{
 		added:   []string{filePath1},
 		deleted: []string{},
-	}, "path/to/f")
-	runDiffAndExpect(t, repoName, testBranch, &ExpectedDiff{
+	})
+	runDiffAndExpect(t, repoName, testBranch, "path/to/x", &ExpectedDiff{
 		added:   []string{},
 		deleted: []string{},
-	}, "path/to/x")
+	})
 }
 
 type ExpectedDiff struct {
@@ -113,7 +113,7 @@ func (a ExpectedDiff) buildAssertionString() string {
 	return sb.String()
 }
 
-func runDiffAndExpect(t *testing.T, repoName string, testBranch string, diffArgs *ExpectedDiff, prefix string) {
+func runDiffAndExpect(t *testing.T, repoName string, testBranch string, prefix string, diffArgs *ExpectedDiff) {
 	diffVars := map[string]string{
 		"REPO":         repoName,
 		"LEFT_BRANCH":  mainBranch,
