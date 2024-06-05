@@ -658,30 +658,27 @@ func TestS3ReadObjectRedirect(t *testing.T) {
 	})
 }
 
+func createS3Client(endpoint string, t *testing.T) *s3.Client {
+	accessKeyID := viper.GetString("access_key_id")
+	secretAccessKey := viper.GetString("secret_access_key")
+	s3Client, err := testutil.SetupTestS3Client(endpoint, accessKeyID, secretAccessKey)
+	require.NoError(t, err, "failed creating s3 client")
+	return s3Client
+}
+
 func TestPossibleAPIEndpointError(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	accessKeyID := viper.GetString("access_key_id")
-	secretAccessKey := viper.GetString("secret_access_key")
-
 	t.Run("use_open_api_for_client_endpoint", func(t *testing.T) {
-		endpoint := viper.GetString("s3_endpoint") + apiutil.BaseURL
-		s3Client, err := testutil.SetupTestS3Client(endpoint, accessKeyID, secretAccessKey)
-		require.NoError(t, err, "failed creating s3 client")
-
-		_, listErr := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("test")})
-		require.NotNil(t, listErr)
-		require.Contains(t, listErr.Error(), `Repository "api" not found`)
+		s3Client := createS3Client(viper.GetString("s3_endpoint")+apiutil.BaseURL, t)
+		_, listErr := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("not-exists")})
+		require.ErrorContains(t, listErr, gtwerrors.ErrNoSuchBucketPossibleAPIEndpoint.Error())
 	})
 
 	t.Run("use_proper_client_endpoint", func(t *testing.T) {
-		endpoint := viper.GetString("s3_endpoint")
-		s3Client, err := testutil.SetupTestS3Client(endpoint, accessKeyID, secretAccessKey)
-		require.NoError(t, err, "failed creating s3 client")
-
-		_, listErr := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("test")})
-		require.NotNil(t, listErr)
-		require.NotContains(t, listErr.Error(), `Repository "api" not found`)
+		s3Client := createS3Client(viper.GetString("s3_endpoint"), t)
+		_, listErr := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("not-exists")})
+		require.ErrorContains(t, listErr, gtwerrors.ErrNoSuchBucket.Error())
 	})
 }
