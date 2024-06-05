@@ -665,12 +665,23 @@ func TestPossibleAPIEndpointError(t *testing.T) {
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
 
-	s3Client, err := testutil.SetupTestS3Client("http://127.0.0.1:8000/api/v1", accessKeyID, secretAccessKey)
-	require.NoError(t, err, "failed creating s3 client")
-
 	t.Run("use_open_api_for_client_endpoint", func(t *testing.T) {
-		_, err := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("test")})
-		require.NotNil(t, err)
-		require.Contains(t, err.Error(), `Repository "api" not found`)
+		endpoint := viper.GetString("s3_endpoint") + apiutil.BaseURL
+		s3Client, err := testutil.SetupTestS3Client(endpoint, accessKeyID, secretAccessKey)
+		require.NoError(t, err, "failed creating s3 client")
+
+		_, listErr := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("test")})
+		require.NotNil(t, listErr)
+		require.Contains(t, listErr.Error(), `Repository "api" not found`)
+	})
+
+	t.Run("use_proper_client_endpoint", func(t *testing.T) {
+		endpoint := viper.GetString("s3_endpoint")
+		s3Client, err := testutil.SetupTestS3Client(endpoint, accessKeyID, secretAccessKey)
+		require.NoError(t, err, "failed creating s3 client")
+
+		_, listErr := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("test")})
+		require.NotNil(t, listErr)
+		require.NotContains(t, listErr.Error(), `Repository "api" not found`)
 	})
 }
