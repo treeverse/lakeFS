@@ -126,7 +126,7 @@ func runDiffAndExpect(t *testing.T, repoName string, testBranch string, prefix s
 		URLArg("lakefs://", repoName, mainBranch).
 		URLArg("lakefs://", repoName, testBranch)
 	if prefix != "" {
-		cmd.Arg("--prefix").Arg(prefix)
+		cmd.Flag("--prefix").Arg(prefix)
 	}
 
 	RunCmdAndVerifySuccessWithFile(t, cmd.Get(), false, "lakectl_diff", diffVars)
@@ -136,7 +136,7 @@ func uploadFiles(t *testing.T, repoName string, branch string, files map[string]
 	for filePath, contentPath := range files {
 		cmd := NewLakeCtl().
 			Arg("fs upload").
-			Arg("-s").
+			Flag("-s").
 			PathArg("files", contentPath).
 			URLArg("lakefs://", repoName, branch, filePath)
 		RunCmdAndVerifyContainsText(t, cmd.Get(), false, filePath, nil)
@@ -147,7 +147,7 @@ func commit(t *testing.T, repoName string, branch string, commitMessage string) 
 	cmd := NewLakeCtl().
 		Arg("commit").
 		URLArg("lakefs://", repoName, branch).
-		Arg("-m").
+		Flag("-m").
 		Arg("\"" + commitMessage + "\"")
 	RunCmdAndVerifyContainsText(t, cmd.Get(), false, commitMessage, nil)
 }
@@ -183,7 +183,7 @@ func createBranch(t *testing.T, repoName string, storage string, branch string) 
 	cmd := NewLakeCtl().
 		Arg("branch create").
 		URLArg("lakefs://", repoName, branch).
-		Arg("--source").
+		Flag("--source").
 		URLArg("lakefs://", repoName, mainBranch)
 	RunCmdAndVerifySuccessWithFile(t, cmd.Get(), false, "lakectl_branch_create", branchVars)
 }
