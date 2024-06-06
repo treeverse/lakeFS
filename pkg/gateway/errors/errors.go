@@ -3,6 +3,8 @@ package errors
 import (
 	"encoding/xml"
 	"net/http"
+
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 /*
@@ -80,6 +82,7 @@ const (
 	ErrNoSuchBucket
 	ErrNoSuchBucketPolicy
 	ErrNoSuchBucketLifecycle
+	ErrNoSuchBucketPossibleAPIEndpoint
 	ErrNoSuchKey
 	ErrNoSuchUpload
 	ErrNoSuchVersion
@@ -339,6 +342,11 @@ var Codes = errorCodeMap{
 	ErrNoSuchBucketLifecycle: {
 		Code:           "NoSuchBucketLifecycle",
 		Description:    "The bucket lifecycle configuration does not exist",
+		HTTPStatusCode: http.StatusNotFound,
+	},
+	ErrNoSuchBucketPossibleAPIEndpoint: {
+		Code:           "ErrNoSuchBucketPossibleAPIEndpoint",
+		Description:    `Repository "api" not found; this can happen if your endpoint URL mistakenly ends in "` + apiutil.BaseURL + `".`,
 		HTTPStatusCode: http.StatusNotFound,
 	},
 	ErrNoSuchKey: {
