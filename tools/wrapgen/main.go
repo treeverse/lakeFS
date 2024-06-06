@@ -1,0 +1,297 @@
+package main
+
+import (
+	"errors"
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"go/types"
+	"os"
+	"strings"
+	"text/template"
+
+	"github.com/Masterminds/sprig/v3"
+	"golang.org/x/tools/go/ast/inspector"
+)
+
+const MethodTemplate = `
+package {{ .Package }}
+
+import ( {{"\n"}}
+{{- range .Imports -}}
+	{{ printf "\t%s %s\n" .Name .Path }}
+{{- end -}}
+
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"	
+)
+
+{{- $interfaceName := .Interface.Name }}
+{{- $monitored := printf "Monitored%s" $interfaceName }}
+type {{$monitored}} struct {
+	Wrapped {{$interfaceName}}
+	Observe func(duration time.Duration, success bool)
+}
+
+// {{$monitored}} is a {{$interfaceName}}
+var _ {{$interfaceName}} = &{{$monitored}}{}
+
+{{- $metric := printf "durations%sMetric" $interfaceName }}
+
+{{range .Interface.Methods}}
+  {{- $method := .Name -}}
+  {{- $returns := list -}}
+  {{- $returnHolders := list -}}
+  {{- range $index, $type := .ReturnTypes }}
+    {{- $returns = append $returns $type -}}
+    {{- $returnHolders = append $returnHolders (printf "r%d" $index) -}}
+  {{- end -}}
+  {{- $paramDecls := list -}}
+  {{- range .Params -}}{{- $paramDecls = printf "%s %s" .Name .Type | append $paramDecls -}}{{- end -}}
+  {{- $params := list -}}
+  {{- range .Params -}}{{- $params = append $params .Name -}}{{- end -}}
+func (w *{{$monitored}}) {{$method}}({{$paramDecls | join ", "}}) ({{$returns | join ", "}}) {
+{{- if .HasError -}}
+	const op = "{{ snakecase .Name }}"
+	start := time.Now()
+	
+	{{$returnHolders | join ", "}} := w.Wrapped.{{.Name}}({{- $params | join ", " -}})
+	w.Observe(time.Since(start), {{ last $returnHolders }} == nil)
+	return {{$returnHolders | join ", "}}
+{{- else -}}
+	return w.Wrapped.{{.Name}}({{- $params | join ", " -}})
+{{- end -}}
+}
+{{end}}
+`
+
+// Import holds data about an import.  The template will also receive unused
+// imports, and its output should probably be "go fmt"'ed.
+type Import struct {
+	// Name is the local package name, as appears in the interface
+	// definition.  It might be empty.
+	Name string
+	// Path is the path to the package, as appears in the import
+	// statement.
+	Path string
+}
+
+// Declaration holds data about a parameter declaration.  It can be used in
+// a template.
+type Declaration struct {
+	Name string
+	// Type is a mostly-correct representation of the Go type of Name.
+	// It can be incorrect for imported data types.
+	Type string
+}
+
+// InterfaceMethod holds data about a method of an interface.
+type InterfaceMethod struct {
+	Name        string
+	Params      []Declaration
+	ReturnTypes []string
+	// HasError is true if the last return parameter of the method has
+	// type "error".
+	HasError bool
+}
+
+type Interface struct {
+	Name            string
+	Methods         []*InterfaceMethod
+	interfacesToAdd []string
+}
+
+type Data struct {
+	// Package is the package name for which to generate code.
+	Package string
+	// Imports contains also _unused_ imports.
+	Imports []*Import
+	// Interface is the interface to generate, including all methods
+	// nested from other interfaces.
+	Interface *Interface
+}
+
+func ExtractParamsList(fl *ast.FieldList) []Declaration {
+	params := make([]Declaration, 0, len(fl.List))
+	for _, field := range fl.List {
+		typeString := types.ExprString(field.Type.(ast.Expr))
+		for _, n := range field.Names {
+			params = append(params, Declaration{Name: n.Name, Type: typeString})
+		}
+	}
+	return params
+}
+
+func ExtractTypesList(fl *ast.FieldList) []string {
+	typeNames := make([]string, 0, len(fl.List))
+	for _, field := range fl.List {
+		typeString := types.ExprString(field.Type.(ast.Expr))
+		typeNames = append(typeNames, typeString)
+	}
+	return typeNames
+}
+
+func HasError(t *ast.FieldList) bool {
+	l := t.List
+	if len(l) < 1 {
+		return false
+	}
+	return types.ExprString(l[len(l)-1].Type.(ast.Expr)) == "error"
+}
+
+func GetInterfaceMethod(name string, ft *ast.FuncType) InterfaceMethod {
+	return InterfaceMethod{
+		Name:        name,
+		Params:      ExtractParamsList(ft.Params),
+		ReturnTypes: ExtractTypesList(ft.Results),
+		HasError:    HasError(ft.Results),
+	}
+}
+
+func getImportLocalName(i *ast.ImportSpec) string {
+	if i.Name != nil { // Import renamed in file
+		return strings.Trim(i.Name.Name, "\"")
+	}
+	return ""
+}
+
+var (
+	ErrNotFound = errors.New("not found")
+)
+
+// flattenNeededInterfaces flattens all methods from interfaces into
+// interfaceName.  Each method is included at most once.
+func flattenNeededInterfaces(interfaces map[string]Interface, interfaceName string) (*Interface, error) {
+	ret := &Interface{Name: interfaceName}
+
+	added := make(map[string]struct{})
+	addMethod := func(m *InterfaceMethod) {
+		if _, ok := added[m.Name]; ok {
+			return
+		}
+		added[m.Name] = struct{}{}
+		ret.Methods = append(ret.Methods, m)
+	}
+
+	// BUG(ariels): If interfaces include each other many times, this
+	//     loop can be very inefficient.
+
+	// todo is a stack of interfaces that still need to be handled.  It
+	// allows for depth-first flattening, which gives a reasonably
+	// readable order of methods.
+	todo := []string{interfaceName}
+
+	for len(todo) > 0 {
+		var nextName string
+		todo, nextName = todo[:len(todo)-1], todo[len(todo)-1]
+		thisInterface, ok := interfaces[nextName]
+		if !ok {
+			return nil, fmt.Errorf("interface %s %w", nextName, ErrNotFound)
+		}
+		for _, method := range thisInterface.Methods {
+			addMethod(method)
+		}
+		// Add any included interfaces in _reverse_ order: they will
+		// be popped, reversing that order again.
+		for i := len(thisInterface.interfacesToAdd) - 1; i >= 0; i-- {
+			todo = append(todo, thisInterface.interfacesToAdd[i])
+		}
+	}
+	return ret, nil
+}
+
+func Parse(filename string, interfaceTypeName string) (*Data, error) {
+	fs := token.NewFileSet()
+	file, err := parser.ParseFile(fs, filename, nil, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// No support for imported interfaces.
+
+	i := inspector.New([]*ast.File{file})
+
+	nodeTypes := []ast.Node{
+		(*ast.TypeSpec)(nil),
+		(*ast.ImportSpec)(nil),
+	}
+
+	result := Data{}
+
+	interfaces := make(map[string]Interface)
+	i.Nodes(nodeTypes, func(n ast.Node, push bool) bool {
+		switch n.(type) {
+		case *ast.TypeSpec:
+			ts := n.(*ast.TypeSpec)
+			interfaceType, ok := ts.Type.(*ast.InterfaceType)
+			if !ok {
+				return false
+			}
+			name := ts.Name.Name
+			interfaceData := Interface{Name: name}
+		METHOD_LOOP:
+			for _, m := range interfaceType.Methods.List {
+				switch m.Type.(type) {
+				case *ast.FuncType:
+					methodName := m.Names[0].Name
+					methodType := m.Type.(*ast.FuncType)
+					method := GetInterfaceMethod(methodName, methodType)
+					interfaceData.Methods = append(interfaceData.Methods, &method)
+				case *ast.Ident:
+					nestedInterfaceTypeName := m.Type.(*ast.Ident).Name
+					if nestedInterfaceTypeName != interfaceTypeName {
+						interfaceData.interfacesToAdd = append(interfaceData.interfacesToAdd, nestedInterfaceTypeName)
+					}
+				default:
+					err = fmt.Errorf("%+v: %s unexpected type", m, types.ExprString(m.Type))
+					break METHOD_LOOP
+				}
+			}
+			interfaces[ts.Name.Name] = interfaceData
+			return true
+		case *ast.ImportSpec:
+			i := n.(*ast.ImportSpec)
+			name := getImportLocalName(i)
+			result.Imports = append(result.Imports, &Import{
+				Name: name,
+				Path: i.Path.Value,
+			})
+			return false
+		}
+		return false
+	})
+	if err != nil {
+		return &result, err
+	}
+
+	result.Interface, err = flattenNeededInterfaces(interfaces, interfaceTypeName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+func main() {
+	methods, err := Parse(os.Args[1], "Service")
+	if err != nil {
+		panic(err)
+	}
+	methods.Package = "gen"
+	if len(os.Args) >= 3 {
+		methods.Package = os.Args[2]
+	}
+
+	fmap := sprig.TxtFuncMap()
+	t := template.New("code")
+	t = t.Funcs(fmap)
+	t = template.Must(t.Parse(MethodTemplate))
+
+	err = t.Execute(os.Stdout, methods)
+	if err != nil {
+		panic(err)
+	}
+}
