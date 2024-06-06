@@ -19,8 +19,7 @@ func (l *LakeCtl) Arg(arg string) *LakeCtl {
 
 // Flag Same as Arg, added for usage clarity.
 func (l *LakeCtl) Flag(arg string) *LakeCtl {
-	l.rawCmd += " " + arg
-	return l
+	return l.Arg(arg)
 }
 
 func (l *LakeCtl) PathArg(components ...string) *LakeCtl {
