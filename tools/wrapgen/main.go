@@ -36,11 +36,8 @@ import ( {{"\n"}}
 {{- $monitored := printf "Monitored%s" $interfaceName }}
 type {{$monitored}} struct {
 	Wrapped {{$interfaceName}}
-	Observe func(duration time.Duration, success bool)
+	Observe func(operation string, duration time.Duration, success bool)
 }
-
-// {{$monitored}} is a {{$interfaceName}}
-var _ {{$interfaceName}} = &{{$monitored}}{}
 
 {{- $metric := printf "durations%sMetric" $interfaceName }}
 
@@ -60,9 +57,9 @@ func (w *{{$monitored}}) {{$method}}({{$paramDecls | join ", "}}) ({{$returns | 
 {{- if .HasError -}}
 	const op = "{{ snakecase .Name }}"
 	start := time.Now()
-	
+
 	{{$returnHolders | join ", "}} := w.Wrapped.{{.Name}}({{- $params | join ", " -}})
-	w.Observe(time.Since(start), {{ last $returnHolders }} == nil)
+	w.Observe(op, time.Since(start), {{ last $returnHolders }} == nil)
 	return {{$returnHolders | join ", "}}
 {{- else -}}
 	return w.Wrapped.{{.Name}}({{- $params | join ", " -}})
@@ -279,16 +276,18 @@ func Parse(filename string, interfaceTypeName string) (*Data, error) {
 }
 
 var (
-	packageName = flag.String("package", "gen", "Generate in this package")
-	outputFile  = flag.String("output", "-", "Path to output file to generate")
+	packageName   = flag.String("package", "gen", "Generate in this package")
+	outputFile    = flag.String("output", "-", "Path to output file to generate")
+	interfaceName = flag.String("interface", "", "Name of interface type to wrap")
 )
 
 func main() {
 	flag.Parse()
 
-	methods, err := Parse(flag.Args()[0], "Service")
+	methods, err := Parse(flag.Args()[0], *interfaceName)
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "Parse: %s\n", err)
+		os.Exit(1)
 	}
 	methods.Package = *packageName
 
@@ -299,12 +298,14 @@ func main() {
 
 	file, err := os.Create(*outputFile)
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "Write %s: %s\n", *outputFile, err)
+		os.Exit(2)
 	}
 	defer file.Close()
 
 	err = t.Execute(file, methods)
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "Execute: %s\n", err)
+		os.Exit(3)
 	}
 }

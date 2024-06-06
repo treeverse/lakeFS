@@ -67,7 +67,7 @@ clean:
 		$(UI_BUILD_DIR) \
 		$(UI_DIR)/node_modules \
 		pkg/api/apigen/lakefs.gen.go \
-		pkg/auth/client.gen.go
+		pkg/auth/*.gen.go
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -290,6 +290,10 @@ validate-mockgen: gen-code
 .PHONY: validate-permissions-gen
 validate-permissions-gen: gen-code
 	git diff --quiet -- pkg/permissions/actions.gen.go || (echo "Modification verification failed!  pkg/permissions/actions.gen.go"; false)
+
+.PHONY: validate-wrapper
+validate-wrapper: gen-code
+	git diff --quiet -- pkg/auth/wrapper.gen.go || (echo "Modification verification failed! pkg/auth/wrapper.gen.go"; false)
 
 validate-reference:
 	git diff --quiet -- docs/reference/cli.md || (echo "Modification verification failed! docs/reference/cli.md"; false)

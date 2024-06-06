@@ -143,6 +143,8 @@ var runCmd = &cobra.Command{
 				logger.WithField("service", "auth_service"),
 			)
 		}
+		authService = auth.NewMonitoredAuthService(authService)
+
 		// initialize authentication service
 		var authenticationService authentication.Service
 		if cfg.IsAuthenticationTypeAPI() {

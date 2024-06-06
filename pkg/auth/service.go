@@ -1,10 +1,9 @@
 package auth
 
+//go:generate go run github.com/treeverse/lakefs/tools/wrapgen --package auth --output ./wrapper.gen.go --interface Service ./service.go
+//go:generate go run golang.org/x/tools/cmd/goimports@latest -w ./wrapper.gen.go
 //go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package auth -generate "types,client" -o client.gen.go ../../api/authorization.yml
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mock -destination=mock/mock_auth_client.go github.com/treeverse/lakefs/pkg/auth ClientWithResponsesInterface
-
-//go:generate go run github.com/treeverse/lakefs/tools/wrapgen --package auth --output ./wrapper.gen.go ./service.go
-//go:generate go run golang.org/x/tools/cmd/goimports@latest -w ./wrapper.gen.go
 
 import (
 	"context"
