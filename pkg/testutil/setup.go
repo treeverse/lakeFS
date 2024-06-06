@@ -128,14 +128,15 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	}
 
 	s3Endpoint := viper.GetString("s3_endpoint")
-	svc, err := SetupTestS3Client(s3Endpoint, key, secret)
+	forcePathStyle := viper.GetBool("force_path_style")
+	svc, err := SetupTestS3Client(s3Endpoint, key, secret, forcePathStyle)
 	if err != nil {
 		logger.WithError(err).Fatal("could not initialize S3 client")
 	}
 	return logger, client, svc, endpointURL
 }
 
-func SetupTestS3Client(endpoint, key, secret string) (*s3.Client, error) {
+func SetupTestS3Client(endpoint, key, secret string, forcePathStyle bool) (*s3.Client, error) {
 	if !strings.HasPrefix(endpoint, "http") {
 		endpoint = "http://" + endpoint
 	}
@@ -146,10 +147,9 @@ func SetupTestS3Client(endpoint, key, secret string) (*s3.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	forcePathStyleS3Client := viper.GetBool("force_path_style")
 	svc := s3.NewFromConfig(cfg, func(options *s3.Options) {
 		options.BaseEndpoint = aws.String(endpoint)
-		options.UsePathStyle = forcePathStyleS3Client
+		options.UsePathStyle = forcePathStyle
 	})
 	return svc, nil
 }
