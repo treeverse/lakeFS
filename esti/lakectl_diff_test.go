@@ -121,32 +121,52 @@ func runDiffAndExpect(t *testing.T, repoName string, testBranch string, prefix s
 		"DIFF_LIST":    diffArgs.buildAssertionString(),
 	}
 
-	cmdArgs := " diff lakefs://" + repoName + "/" + mainBranch + " lakefs://" + repoName + "/" + testBranch
+	cmd := NewLakeCtl().
+		Arg("diff").
+		URLArg("lakefs://", repoName, mainBranch).
+		URLArg("lakefs://", repoName, testBranch)
 	if prefix != "" {
-		cmdArgs += " --prefix " + prefix
+		cmd.Flag("--prefix").Arg(prefix)
 	}
 
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+cmdArgs, false, "lakectl_diff", diffVars)
+	RunCmdAndVerifySuccessWithFile(t, cmd.Get(), false, "lakectl_diff", diffVars)
 }
 
 func uploadFiles(t *testing.T, repoName string, branch string, files map[string]string) {
 	for filePath, contentPath := range files {
-		RunCmdAndVerifyContainsText(t, Lakectl()+" fs upload -s files/"+contentPath+" lakefs://"+repoName+"/"+branch+"/"+filePath, false, filePath, nil)
+		cmd := NewLakeCtl().
+			Arg("fs upload").
+			Flag("-s").
+			PathArg("files", contentPath).
+			URLArg("lakefs://", repoName, branch, filePath)
+		RunCmdAndVerifyContainsText(t, cmd.Get(), false, filePath, nil)
 	}
 }
 
 func commit(t *testing.T, repoName string, branch string, commitMessage string) {
-	RunCmdAndVerifyContainsText(t, Lakectl()+" commit lakefs://"+repoName+"/"+branch+" -m \""+commitMessage+"\"", false, commitMessage, nil)
+	cmd := NewLakeCtl().
+		Arg("commit").
+		URLArg("lakefs://", repoName, branch).
+		Flag("-m").
+		Arg("\"" + commitMessage + "\"")
+	RunCmdAndVerifyContainsText(t, cmd.Get(), false, commitMessage, nil)
 }
 
 func deleteFiles(t *testing.T, repoName string, branch string, files ...string) {
 	for _, filePath := range files {
-		RunCmdAndVerifySuccess(t, Lakectl()+" fs rm lakefs://"+repoName+"/"+branch+"/"+filePath, false, "", nil)
+		cmd := NewLakeCtl().
+			Arg("fs rm").
+			URLArg("lakefs://", repoName, branch, filePath)
+		RunCmdAndVerifySuccess(t, cmd.Get(), false, "", nil)
 	}
 }
 
 func createRepo(t *testing.T, repoName string, storage string) {
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", map[string]string{
+	cmd := NewLakeCtl().
+		Arg("repo create").
+		URLArg("lakefs://", repoName).
+		Arg(storage)
+	RunCmdAndVerifySuccessWithFile(t, cmd.Get(), false, "lakectl_repo_create", map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
@@ -160,5 +180,10 @@ func createBranch(t *testing.T, repoName string, storage string, branch string) 
 		"SOURCE_BRANCH": mainBranch,
 		"DEST_BRANCH":   branch,
 	}
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+branch+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", branchVars)
+	cmd := NewLakeCtl().
+		Arg("branch create").
+		URLArg("lakefs://", repoName, branch).
+		Flag("--source").
+		URLArg("lakefs://", repoName, mainBranch)
+	RunCmdAndVerifySuccessWithFile(t, cmd.Get(), false, "lakectl_branch_create", branchVars)
 }
