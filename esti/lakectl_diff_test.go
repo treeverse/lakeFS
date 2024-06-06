@@ -123,8 +123,8 @@ func runDiffAndExpect(t *testing.T, repoName string, testBranch string, prefix s
 
 	cmd := NewLakeCtl().
 		Arg("diff").
-		UrlArg("lakefs://", repoName, mainBranch).
-		UrlArg("lakefs://", repoName, testBranch)
+		URLArg("lakefs://", repoName, mainBranch).
+		URLArg("lakefs://", repoName, testBranch)
 	if prefix != "" {
 		cmd.Arg("--prefix").Arg(prefix)
 	}
@@ -138,7 +138,7 @@ func uploadFiles(t *testing.T, repoName string, branch string, files map[string]
 			Arg("fs upload").
 			Arg("-s").
 			PathArg("files", contentPath).
-			UrlArg("lakefs://", repoName, branch, filePath)
+			URLArg("lakefs://", repoName, branch, filePath)
 		RunCmdAndVerifyContainsText(t, cmd.Get(), false, filePath, nil)
 	}
 }
@@ -146,7 +146,7 @@ func uploadFiles(t *testing.T, repoName string, branch string, files map[string]
 func commit(t *testing.T, repoName string, branch string, commitMessage string) {
 	cmd := NewLakeCtl().
 		Arg("commit").
-		UrlArg("lakefs://", repoName, branch).
+		URLArg("lakefs://", repoName, branch).
 		Arg("-m").
 		Arg("\"" + commitMessage + "\"")
 	RunCmdAndVerifyContainsText(t, cmd.Get(), false, commitMessage, nil)
@@ -156,7 +156,7 @@ func deleteFiles(t *testing.T, repoName string, branch string, files ...string) 
 	for _, filePath := range files {
 		cmd := NewLakeCtl().
 			Arg("fs rm").
-			UrlArg("lakefs://", repoName, branch, filePath)
+			URLArg("lakefs://", repoName, branch, filePath)
 		RunCmdAndVerifySuccess(t, cmd.Get(), false, "", nil)
 	}
 }
@@ -164,7 +164,7 @@ func deleteFiles(t *testing.T, repoName string, branch string, files ...string) 
 func createRepo(t *testing.T, repoName string, storage string) {
 	cmd := NewLakeCtl().
 		Arg("repo create").
-		UrlArg("lakefs://", repoName).
+		URLArg("lakefs://", repoName).
 		Arg(storage)
 	RunCmdAndVerifySuccessWithFile(t, cmd.Get(), false, "lakectl_repo_create", map[string]string{
 		"REPO":    repoName,
@@ -182,8 +182,8 @@ func createBranch(t *testing.T, repoName string, storage string, branch string) 
 	}
 	cmd := NewLakeCtl().
 		Arg("branch create").
-		UrlArg("lakefs://", repoName, branch).
+		URLArg("lakefs://", repoName, branch).
 		Arg("--source").
-		UrlArg("lakefs://", repoName, mainBranch)
+		URLArg("lakefs://", repoName, mainBranch)
 	RunCmdAndVerifySuccessWithFile(t, cmd.Get(), false, "lakectl_branch_create", branchVars)
 }

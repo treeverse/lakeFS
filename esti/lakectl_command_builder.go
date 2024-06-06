@@ -22,7 +22,7 @@ func (l *LakeCtl) PathArg(components ...string) *LakeCtl {
 	return l
 }
 
-func (l *LakeCtl) UrlArg(schemaPrefix string, components ...string) *LakeCtl {
+func (l *LakeCtl) URLArg(schemaPrefix string, components ...string) *LakeCtl {
 	l.rawCmd += " " + schemaPrefix + strings.Join(components, "/")
 	return l
 }
