@@ -170,7 +170,10 @@ func (controller *PostObject) Handle(w http.ResponseWriter, req *http.Request, o
 	if o.HandleUnsupported(w, req, "select", "restore") {
 		return
 	}
-
+	if o.Repository.ReadOnly {
+		_ = o.EncodeError(w, req, nil, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrReadOnlyRepository))
+		return
+	}
 	// POST is only supported for CreateMultipartUpload/CompleteMultipartUpload
 	// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html
 	// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompleteMultipartUpload.html

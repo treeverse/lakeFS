@@ -63,6 +63,10 @@ func (controller *DeleteObject) Handle(w http.ResponseWriter, req *http.Request,
 	if o.HandleUnsupported(w, req, "tagging", "acl", "torrent") {
 		return
 	}
+	if o.Repository.ReadOnly {
+		_ = o.EncodeError(w, req, nil, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrReadOnlyRepository))
+		return
+	}
 	query := req.URL.Query()
 	if query.Has(QueryParamUploadID) {
 		controller.HandleAbortMultipartUpload(w, req, o)
