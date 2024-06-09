@@ -22,6 +22,7 @@ const (
 	maxDiffPageSize = 1000
 
 	twoWayFlagName = "two-way"
+	prefixFlagName = "prefix"
 )
 
 var diffCmd = &cobra.Command{
@@ -42,7 +43,10 @@ var diffCmd = &cobra.Command{
 	Uncommitted changes are not shown.
 
 	lakectl diff --%s lakefs://example-repo/main lakefs://example-repo/dev$
-	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.`, twoWayFlagName, twoWayFlagName),
+	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.
+	
+	lakectl diff --%s some/path lakefs://example-repo/main lakefs://example-repo/dev
+	Show changes of objects prefixed with 'some/path' between the tips of the main and dev branches.`, twoWayFlagName, twoWayFlagName, prefixFlagName),
 
 	Args: cobra.RangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -62,13 +66,14 @@ var diffCmd = &cobra.Command{
 		}
 
 		twoWay := Must(cmd.Flags().GetBool(twoWayFlagName))
+		prefix := Must(cmd.Flags().GetString(prefixFlagName))
 		leftRefURI := MustParseRefURI("left ref", args[0])
 		rightRefURI := MustParseRefURI("right ref", args[1])
 		fmt.Printf("Left ref: %s\nRight ref: %s\n", leftRefURI, rightRefURI)
 		if leftRefURI.Repository != rightRefURI.Repository {
 			Die("both references must belong to the same repository", 1)
 		}
-		printDiffRefs(cmd.Context(), client, leftRefURI, rightRefURI, twoWay)
+		printDiffRefs(cmd.Context(), client, leftRefURI, rightRefURI, twoWay, prefix)
 	},
 }
 
@@ -109,11 +114,11 @@ func printDiffBranch(ctx context.Context, client apigen.ClientWithResponsesInter
 	}
 }
 
-func printDiffRefs(ctx context.Context, client apigen.ClientWithResponsesInterface, left, right *uri.URI, twoDot bool) {
+func printDiffRefs(ctx context.Context, client apigen.ClientWithResponsesInterface, left, right *uri.URI, twoDot bool, prefix string) {
 	diffs := make(chan apigen.Diff, maxDiffPageSize)
 	var wg errgroup.Group
 	wg.Go(func() error {
-		return diff.StreamRepositoryDiffs(ctx, client, left, right, "", diffs, twoDot)
+		return diff.StreamRepositoryDiffs(ctx, client, left, right, prefix, diffs, twoDot)
 	})
 	for d := range diffs {
 		FmtDiff(d, true)
@@ -140,6 +145,6 @@ func FmtDiff(d apigen.Diff, withDirection bool) {
 //nolint:gochecknoinits
 func init() {
 	diffCmd.Flags().Bool(twoWayFlagName, false, "Use two-way diff: show difference between the given refs, regardless of a common ancestor.")
-
+	diffCmd.Flags().String(prefixFlagName, "", "Show only changes in the given prefix.")
 	rootCmd.AddCommand(diffCmd)
 }
