@@ -40,7 +40,7 @@ jobs:
           make -j3 gen-api gen-code VERSION=${{ steps.version.outputs.tag }}
           mkdir webui/dist
           touch webui/dist/index.html
-          tar -cf /tmp/generated.tar.gz .
+          tar -czf /tmp/generated.tar.gz .
 
       - name: Store generated code
         uses: actions/upload-artifact@v3
@@ -88,7 +88,7 @@ jobs:
           path: /tmp/
 
       - name: Unpack generated code
-        run: tar -xf /tmp/generated.tar.gz
+        run: tar -xzvf /tmp/generated.tar.gz
 
       - name: Extract version
         shell: bash
