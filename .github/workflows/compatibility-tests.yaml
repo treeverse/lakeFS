@@ -37,7 +37,7 @@ jobs:
 
       - name: Generate code
         run: |
-          make -j3 gen-api VERSION=${{ steps.version.outputs.tag }}
+          make -j3 gen-api gen-code VERSION=${{ steps.version.outputs.tag }}
           mkdir webui/dist
           touch webui/dist/index.html
           tar -cf /tmp/generated.tar.gz .
@@ -115,7 +115,7 @@ jobs:
 
   compatibility-checks-client:
     name: Test lakeFS Hadoop FileSystem compatibility
-    needs: gen-code
+    needs: [gen-code]
     strategy:
       fail-fast: false
       matrix:
@@ -191,7 +191,7 @@ jobs:
 
   compatibility-checks-server:
     name: Test lakeFS server FileSystem compatibility
-    needs: [gen-code, deploy-image]
+    needs: [deploy-image]
     strategy:
       fail-fast: false
       matrix:

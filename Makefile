@@ -67,7 +67,7 @@ clean:
 		$(UI_BUILD_DIR) \
 		$(UI_DIR)/node_modules \
 		pkg/api/apigen/lakefs.gen.go \
-		pkg/auth/client.gen.go
+		pkg/auth/*.gen.go
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -291,6 +291,10 @@ validate-mockgen: gen-code
 validate-permissions-gen: gen-code
 	git diff --quiet -- pkg/permissions/actions.gen.go || (echo "Modification verification failed!  pkg/permissions/actions.gen.go"; false)
 
+.PHONY: validate-wrapper
+validate-wrapper: gen-code
+	git diff --quiet -- pkg/auth/wrapper.gen.go || (echo "Modification verification failed! pkg/auth/wrapper.gen.go"; false)
+
 validate-reference:
 	git diff --quiet -- docs/reference/cli.md || (echo "Modification verification failed! docs/reference/cli.md"; false)
 
@@ -343,4 +347,4 @@ help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-ui gen-api clients gen-docs
+gen: gen-ui gen-api gen-code clients gen-docs
