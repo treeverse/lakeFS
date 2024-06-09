@@ -46,7 +46,7 @@ var diffCmd = &cobra.Command{
 	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.
 	
 	lakectl diff --%s some/path lakefs://example-repo/main lakefs://example-repo/dev
-	Show changes only on files prefixed with 'some/path' between the tips of the main and dev branches.`, twoWayFlagName, twoWayFlagName, prefixFlagName),
+	Show changes of objects prefixed with 'some/path' between the tips of the main and dev branches.`, twoWayFlagName, twoWayFlagName, prefixFlagName),
 
 	Args: cobra.RangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
