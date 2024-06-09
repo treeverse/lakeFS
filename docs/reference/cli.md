@@ -2041,7 +2041,7 @@ lakectl diff <ref URI> [ref URI] [flags]
 	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.
 	
 	lakectl diff --prefix some/path lakefs://example-repo/main lakefs://example-repo/dev
-	Show changes only on files prefixed with 'some/path' between the tips of the main and dev branches.
+	Show changes of objects prefixed with 'some/path' between the tips of the main and dev branches.
 ```
 
 #### Options
