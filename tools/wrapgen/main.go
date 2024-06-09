@@ -117,7 +117,7 @@ type Data struct {
 func ExtractParamsList(fl *ast.FieldList) []Declaration {
 	params := make([]Declaration, 0, len(fl.List))
 	for _, field := range fl.List {
-		typeString := types.ExprString(field.Type.(ast.Expr))
+		typeString := types.ExprString(field.Type)
 		for _, n := range field.Names {
 			params = append(params, Declaration{Name: n.Name, Type: typeString})
 		}
@@ -128,7 +128,7 @@ func ExtractParamsList(fl *ast.FieldList) []Declaration {
 func ExtractTypesList(fl *ast.FieldList) []string {
 	typeNames := make([]string, 0, len(fl.List))
 	for _, field := range fl.List {
-		typeString := types.ExprString(field.Type.(ast.Expr))
+		typeString := types.ExprString(field.Type)
 		typeNames = append(typeNames, typeString)
 	}
 	return typeNames
@@ -139,7 +139,7 @@ func HasError(t *ast.FieldList) bool {
 	if len(l) < 1 {
 		return false
 	}
-	return types.ExprString(l[len(l)-1].Type.(ast.Expr)) == "error"
+	return types.ExprString(l[len(l)-1].Type) == "error"
 }
 
 func GetInterfaceMethod(name string, ft *ast.FuncType) InterfaceMethod {
@@ -159,7 +159,8 @@ func getImportLocalName(i *ast.ImportSpec) string {
 }
 
 var (
-	ErrNotFound = errors.New("not found")
+	ErrNotFound       = errors.New("not found")
+	ErrUnexpectedType = errors.New("unexpected type [internal error]")
 )
 
 // flattenNeededInterfaces flattens all methods from interfaces into
@@ -223,41 +224,38 @@ func Parse(filename string, interfaceTypeName string) (*Data, error) {
 
 	interfaces := make(map[string]Interface)
 	i.Nodes(nodeTypes, func(n ast.Node, push bool) bool {
-		switch n.(type) {
+		switch n := n.(type) {
 		case *ast.TypeSpec:
-			ts := n.(*ast.TypeSpec)
-			interfaceType, ok := ts.Type.(*ast.InterfaceType)
+			interfaceType, ok := n.Type.(*ast.InterfaceType)
 			if !ok {
 				return false
 			}
-			name := ts.Name.Name
+			name := n.Name.Name
 			interfaceData := Interface{Name: name}
 		METHOD_LOOP:
 			for _, m := range interfaceType.Methods.List {
-				switch m.Type.(type) {
+				switch t := m.Type.(type) {
 				case *ast.FuncType:
 					methodName := m.Names[0].Name
-					methodType := m.Type.(*ast.FuncType)
-					method := GetInterfaceMethod(methodName, methodType)
+					method := GetInterfaceMethod(methodName, t)
 					interfaceData.Methods = append(interfaceData.Methods, &method)
 				case *ast.Ident:
-					nestedInterfaceTypeName := m.Type.(*ast.Ident).Name
+					nestedInterfaceTypeName := t.Name
 					if nestedInterfaceTypeName != interfaceTypeName {
 						interfaceData.interfacesToAdd = append(interfaceData.interfacesToAdd, nestedInterfaceTypeName)
 					}
 				default:
-					err = fmt.Errorf("%+v: %s unexpected type", m, types.ExprString(m.Type))
+					err = fmt.Errorf("%+v: %s %w", m, types.ExprString(m.Type), ErrUnexpectedType)
 					break METHOD_LOOP
 				}
 			}
-			interfaces[ts.Name.Name] = interfaceData
+			interfaces[n.Name.Name] = interfaceData
 			return true
 		case *ast.ImportSpec:
-			i := n.(*ast.ImportSpec)
-			name := getImportLocalName(i)
+			name := getImportLocalName(n)
 			result.Imports = append(result.Imports, &Import{
 				Name: name,
-				Path: i.Path.Value,
+				Path: n.Path.Value,
 			})
 			return false
 		}
@@ -282,12 +280,20 @@ var (
 )
 
 func main() {
+	// Ensure defer'ed calls are executed, which os.Exit would not do.
+	// See https://stackoverflow.com/a/46255965/192263.
+	exitCode := 0
+	defer func() {
+		os.Exit(exitCode)
+	}()
+
 	flag.Parse()
 
 	methods, err := Parse(flag.Args()[0], *interfaceName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Parse: %s\n", err)
-		os.Exit(1)
+		exitCode = 1
+		return
 	}
 	methods.Package = *packageName
 
@@ -299,13 +305,15 @@ func main() {
 	file, err := os.Create(*outputFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Write %s: %s\n", *outputFile, err)
-		os.Exit(2)
+		exitCode = 2
+		return
 	}
 	defer file.Close()
 
 	err = t.Execute(file, methods)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Execute: %s\n", err)
-		os.Exit(3)
+		exitCode = 3
+		return
 	}
 }
