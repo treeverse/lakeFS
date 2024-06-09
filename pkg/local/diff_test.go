@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -188,4 +189,46 @@ func fixTime(t *testing.T, localPath string) {
 		return nil
 	})
 	require.NoError(t, err)
+}
+
+func TestWalkS3(t *testing.T) {
+	cases := []struct {
+		Name     string
+		FileList []string
+	}{
+		{
+			Name:     "reverse order",
+			FileList: []string{"imported/new-prefix/prefix-1/file000001", "imported./new-prefix/prefix-1/file002100"},
+		},
+		{
+			Name:     "file in the middle",
+			FileList: []string{"imported/file000001", "imported/new-prefix/prefix-1/file000001", "imported./new-prefix/prefix-1/file002100"},
+		},
+		{
+			Name:     "dirs at the end",
+			FileList: []string{"imported/new-prefix/prefix-1/file000001", "imported./new-prefix/prefix-1/file002100", "file000001"},
+		},
+	}
+	for _, tt := range cases {
+		t.Run(tt.Name, func(t *testing.T) {
+			dir := t.TempDir() + string(filepath.Separator)
+			for _, file := range tt.FileList {
+				p := filepath.Join(dir, file)
+				require.NoError(t, os.MkdirAll(filepath.Dir(p), os.ModePerm))
+				fd, err := os.Create(p)
+				require.NoError(t, err)
+				_ = fd.Close()
+			}
+			var walkOrder []string
+			err := local.WalkS3(dir, func(p string, info fs.FileInfo, err error) error {
+				walkOrder = append(walkOrder, strings.TrimPrefix(p, dir))
+				return nil
+			})
+			require.NoError(t, err)
+			sort.Strings(tt.FileList)
+			require.Equal(t, tt.FileList, walkOrder)
+
+		})
+	}
+
 }

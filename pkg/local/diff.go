@@ -206,13 +206,11 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 			return filepath.SkipDir
 		}
 
-		// Sort the queue since the order might change after adding the suffix
-		sort.Strings(dirQueue)
-		// It is enough to compare the file with the last encountered directory (suffixed by the PathSeparator)
-		// if file > last_dir + "/" then by transitiveness it is also > than all previous directories
-		queueLen := len(dirQueue)
-		if queueLen > 0 && p > dirQueue[len(dirQueue)-1] {
-			// if file > dirs, handle the dirs first
+		// It is enough to compare the file's last char with the path separator in order to determine whether
+		// file > from all preceding directories, otherwise we should have gotten the file from the walk function before.
+		if len(dirQueue) > 0 && string(p[len(p)-1]) > path.Separator {
+			// Sort the queue since the order might change after adding the suffix
+			sort.Strings(dirQueue)
 			for _, dir := range dirQueue {
 				if err = WalkS3(dir, callbackFunc); err != nil {
 					return err
@@ -231,6 +229,8 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 	}
 
 	// Finally, finished walking over FS, handle remaining dirs
+	// Sort the queue since the order might change after adding the suffix
+	sort.Strings(dirQueue)
 	for _, dir := range dirQueue {
 		if err = WalkS3(dir, callbackFunc); err != nil {
 			return err
