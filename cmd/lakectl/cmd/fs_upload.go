@@ -33,7 +33,12 @@ var fsUploadCmd = &cobra.Command{
 		ctx, stop := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 		defer stop()
 
-		if !recursive { // Assume source is a single file
+		stat, err := os.Stat(source)
+		if err != nil {
+			Die("failed to stat source", 1)
+		}
+
+		if !recursive || !stat.IsDir() { // Ignore recursive if source is a file and not a directory
 			if strings.HasSuffix(remotePath, uri.PathSeparator) {
 				Die("target path is not a valid URI", 1)
 			}
