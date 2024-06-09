@@ -206,7 +206,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 			return filepath.SkipDir
 		}
 
-		// Sort the queue since adding the suffix might the order might change after adding the suffix
+		// Sort the queue since the order might change after adding the suffix
 		sort.Strings(dirQueue)
 		// It is enough to compare the file with the last encountered directory (suffixed by the PathSeparator)
 		// if file > last_dir + "/" then by transitiveness it is also > than all previous directories
