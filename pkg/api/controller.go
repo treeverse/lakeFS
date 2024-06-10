@@ -1935,6 +1935,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", graveler.ErrNotUnique))
 		return
 	}
+
 	sampleData := swag.BoolValue(body.SampleData)
 	c.LogAction(ctx, "create_repo", r, body.Name, "", "")
 	if sampleData {
@@ -1944,6 +1945,14 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	if err := c.validateStorageNamespace(body.StorageNamespace); err != nil {
 		writeError(w, r, http.StatusBadRequest, err)
 		return
+	}
+
+	allowInterRegionStorage := c.Config.Installation.AllowInterRegionStorage
+	if !allowInterRegionStorage {
+		if err := c.validateInterRegionStorage(r, body.StorageNamespace); err != nil {
+			writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
 	}
 
 	defaultBranch := swag.StringValue(body.DefaultBranch)
@@ -2097,6 +2106,27 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 
 	_, err := c.BlockAdapter.Get(ctx, obj)
 	return err
+}
+
+func (c *Controller) validateInterRegionStorage(r *http.Request, storageNamespace string) error {
+	ctx := r.Context()
+
+	storeRegion := c.BlockAdapter.BlockstoreMetadata().Region
+	if storeRegion == nil {
+		// region not determined for the server instance, skip validation
+		return nil
+	}
+
+	bucketRegion, err := c.BlockAdapter.GetRegion(ctx, storageNamespace)
+	if err != nil {
+		return fmt.Errorf("failed to get region for storage namespace %s", storageNamespace)
+	}
+
+	if *storeRegion != bucketRegion {
+		return fmt.Errorf(`storage namespace region ("%s") does not match server region ("%s")`, bucketRegion, *storeRegion)
+	}
+
+	return nil
 }
 
 func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, repository string, params apigen.DeleteRepositoryParams) {

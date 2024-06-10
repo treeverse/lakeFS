@@ -522,6 +522,11 @@ func (l *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeLocal
 }
 
+func (l *Adapter) BlockstoreMetadata() block.BlockstoreMetadata {
+	// not implemented at the moment
+	return block.BlockstoreMetadata{Region: nil}
+}
+
 func (l *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeLocal)
 	info.PreSignSupport = false
@@ -550,6 +555,10 @@ func (l *Adapter) ResolveNamespace(storageNamespace, key string, identifierType 
 		CommonQualifiedKey: qk,
 		path:               l.path,
 	}, nil
+}
+
+func (l *Adapter) GetRegion(_ context.Context, _ string) (string, error) {
+	return "", block.ErrOperationNotSupported
 }
 
 func (l *Adapter) RuntimeStats() map[string]string {

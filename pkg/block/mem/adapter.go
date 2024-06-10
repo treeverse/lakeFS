@@ -339,6 +339,11 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeMem
 }
 
+func (a *Adapter) BlockstoreMetadata() block.BlockstoreMetadata {
+	// not implemented at the moment
+	return block.BlockstoreMetadata{Region: nil}
+}
+
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeMem)
 	info.PreSignSupport = false
@@ -348,6 +353,10 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 
 func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
+}
+
+func (a *Adapter) GetRegion(_ context.Context, _ string) (string, error) {
+	return "", block.ErrOperationNotSupported
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

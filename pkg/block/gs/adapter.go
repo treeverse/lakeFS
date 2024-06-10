@@ -630,6 +630,11 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeGS
 }
 
+func (a *Adapter) BlockstoreMetadata() block.BlockstoreMetadata {
+	// not implemented at the moment
+	return block.BlockstoreMetadata{Region: nil}
+}
+
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeGS)
 	if a.disablePreSigned {
@@ -663,6 +668,10 @@ func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType 
 		return qualifiedKey, fmt.Errorf("expected storage type gs: %w", block.ErrInvalidAddress)
 	}
 	return qualifiedKey, nil
+}
+
+func (a *Adapter) GetRegion(_ context.Context, _ string) (string, error) {
+	return "", block.ErrOperationNotSupported
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {
