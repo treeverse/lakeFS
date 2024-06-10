@@ -22,7 +22,10 @@ This reference uses `.` to denote the nesting of values.
 
 ## Reference
 
+* `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
+
 ### logging
+
 * `logging.format` `(one of ["json", "text"] : "text")` - Format to output log message in
 * `logging.level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "INFO")` - Logging level to output
 * `logging.audit_log_level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Audit logs level to output.
@@ -34,17 +37,20 @@ This reference uses `.` to denote the nesting of values.
 * `logging.files_keep` `(int : 0)` - Number of log files to keep, default is all.
 
 ### actions
+
 * `actions.enabled` `(bool : true)` - Setting this to false will block hooks from being executed.
 * `actions.lua.net_http_enabled` `(bool : false)` - Setting this to true will load the `net/http` package.
 * `actions.env.enabled` `(bool : true)` - Environment variables accessible by hooks, disabled values evaluated to empty strings
 * `actions.env.prefix` `(string : "LAKEFSACTION_")` - Access to environment variables is restricted to those with the prefix. When environment access is enabled and no prefix is provided, all variables are accessible.
 
 ### database
+
 Configuration section for the lakeFS key-value store database.
 * `database.type` `(string ["postgres"|"dynamodb"|"cosmosdb"|"local"] : )` - 
   lakeFS database type
 
 #### database.postgres
+
 Configuration section when using `database.type="postgres"`
 * `database.postgres.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
 * `database.postgres.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
@@ -52,6 +58,7 @@ Configuration section when using `database.type="postgres"`
 * `database.postgres.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused `(valid units: ns|us|ms|s|m|h)`
 
 #### database.dynamodb
+
 Configuration section when using `database.type="dynamodb"`
 * `database.dynamodb.table_name` `(string : "kvstore")` - Table used to store the data
 * `database.dynamodb.scan_limit` `(int : 1025)` - Maximal number of items per page during scan operation
@@ -69,6 +76,7 @@ Configuration section when using `database.type="dynamodb"`
 * `database.dynamodb.max_connections` `(int : 0)` - The maximum number of connections to DynamoDB. 0 means no limit.
 
 #### database.cosmosdb
+
 Configuration section when using `database.type="cosmosdb"`
 * `database.cosmosdb.key` `(string : "")` - If specified, will 
   be used to authenticate to the CosmosDB account. Otherwise, Azure SDK 
@@ -80,12 +88,12 @@ Configuration section when using `database.type="cosmosdb"`
 * `database.cosmosdb.autoscale` `(bool : false)` - If set, CosmosDB container throughput is autoscaled (See CosmosDB docs for minimum throughput requirement). Otherwise, uses "Manual" mode ([Docs](https://learn.microsoft.com/en-us/azure/cosmos-db/provision-throughput-autoscale)).
 
 #### database.local
+
 Configuration section when using `database.type="local"`
 * `database.local.path` `(string : "~/lakefs/metadata")` - Local path on the filesystem to store embedded KV metadata, like branches and uncommitted entries
 * `database.local.sync_writes` `(bool: true)` - Ensure each write is written to the disk. Disable to increase performance
 * `database.local.prefetch_size` `(int: 256)` - How many items to prefetch when iterating over embedded KV records
 * `database.local.enable_logging` `(bool: false)` - Enable trace logging for local driver
-
 
 ### auth
 
@@ -97,6 +105,7 @@ Configuration section when using `database.type="local"`
   If you are using the enteprrise version of lakeFS, you can set this to "internal" to use the built-in policy editor.
 
 #### auth.cache
+
 * `auth.cache.enabled` `(bool : true)` - Whether to cache access credentials and user policies in-memory. Can greatly improve throughput when enabled.
 * `auth.cache.size` `(int : 1024)` - How many items to store in the auth cache. Systems with a very high user count should use a larger value at the expense of ~1kb of memory per cached user.
 * `auth.cache.ttl` `(time duration : "20s")` - How long to store an item in the auth cache. Using a higher value reduces load on the database, but will cause changes longer to take effect for cached users.
@@ -106,23 +115,27 @@ Configuration section when using `database.type="local"`
   {: .note }
 
 #### auth.api
+
 * `auth.api.endpoint` `(string: https://external.service/api/v1)` - URL to external Authorization Service described at [authorization.yml](https://github.com/treeverse/lakeFS/blob/master/api/authorization.yml);
 * `auth.api.token` `(string: eyJhbGciOiJIUzI1NiIsInR5...)` - API token used to authenticate requests to api endpoint
 * `auth.api.health_check_timeout` `(time duration : "20s")` - Timeout duration for external auth API health check
 * `auth.api.skip_health_check` `(bool : false)` - Skip external auth API health check
 
 #### auth.authentication_api
+
 * `auth.authentication_api.endpoint` `(string: https://external.authentication-service/api/v1)` - URL to external Authentication Service described at [authentication.yml](https://github.com/treeverse/lakeFS/blob/master/api/authentication.yml)
 * `auth.authentication_api.endpoint` `(string : "")` - URL to external Authentication Service described at [authentication.yml](https://github.com/treeverse/lakeFS/blob/master/api/authentication.yml);
 * `auth.authentication_api.external_principals_enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
 
 #### auth.remote_authenticator
+
 * `auth.remote_authenticator.enabled` `(bool : false)` - If specified, also authenticate users via this Remote Authenticator server.
 * `auth.remote_authenticator.endpoint` `(string : required)` - Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth).
 * `auth.remote_authenticator.default_user_group` `(string : Viewers)` - Create users in this group (i.e `Viewers`, `Developers`, etc).
 * `auth.remote_authenticator.request_timeout` `(duration : 10s)` - If specified, timeout for remote authentication requests.
 
 #### auth.cookie_auth_verification
+
 * `auth.cookie_auth_verification.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
 * `auth.cookie_auth_verification.default_initial_groups` (string[] : [])` - By default, users will be assigned to these groups
 * `auth.cookie_auth_verification.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.cookie_auth_verification.default_initial_groups` is also set.
@@ -132,6 +145,7 @@ Configuration section when using `database.type="local"`
 * `auth.cookie_auth_verification.auth_source` - `(string : )` - If specified, user will be labeled with this auth source.
 
 #### auth.oidc
+
 * `auth.oidc.default_initial_groups` `(string[] : [])` - By default, OIDC users will be assigned to these groups
 * `auth.oidc.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.oidc.default_initial_groups` is also set.
 * `auth.oidc.friendly_name_claim_name` `(string[] : )` - If specified, the value from the claim with this name will be used as the user's display name.
@@ -139,6 +153,7 @@ Configuration section when using `database.type="local"`
 * `auth.oidc.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
 
 ### blockstore
+
 * `blockstore.type` `(one of ["local", "s3", "gs", "azure", "mem"] : required)`. Block adapter to use. This controls where the underlying data will be stored
 * `blockstore.default_namespace_prefix` `(string : )` - Use this to help your users choose a storage namespace for their repositories.
    If specified, the storage namespace will be filled with this default value as a prefix when creating a repository from the UI.
@@ -146,12 +161,14 @@ Configuration section when using `database.type="local"`
 * `blockstore.signing.secret_key` `(string : required)` - A random generated string that is used for HMAC signing when using get/link physical address
 
 #### blockstore.local
+
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
 * `blockstore.local.import_enabled` `(bool: false)` - Enable import for local Block Adapter, relevant only if you are using shared location
 * `blockstore.local.import_hidden` `(bool: false)` - When enabled import will scan and import any file or folder that starts with a dot character.
 * `blockstore.local.allowed_external_prefixes` `([]string: [])` - List of absolute path prefixes used to match any access for external location (ex: /var/data/). Empty list mean no access to external location.
 
 #### blockstore.s3
+
 * `blockstore.s3.region` `(string : "us-east-1")` - Default region for lakeFS to use when interacting with S3.
 * `blockstore.s3.profile` `(string : )` - If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles)
 * `blockstore.s3.credentials_file` `(string : )` - If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
@@ -172,6 +189,7 @@ Configuration section when using `database.type="local"`
 * `blockstore.s3.client_log_retries` `(bool : false)` - Set SDK logging bit to log retries
 
 #### blockstore.azure
+
 * `blockstore.azure.storage_account` `(string : )` - If specified, will be used as the Azure storage account
 * `blockstore.azure.storage_access_key` `(string : )` - If specified, will be used as the Azure storage access key
 * `blockstore.azure.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
@@ -183,6 +201,7 @@ Configuration section when using `database.type="local"`
 * `blockstore.azure.domain` `(string : blob.core.windows.net)` - Enables support of different Azure cloud domains. Current supported domains (in Beta stage): [`blob.core.chinacloudapi.cn`, `blob.core.usgovcloudapi.net`]
 
 #### blockstore.gs
+
 * `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
 * `blockstore.gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
 * `blockstore.gs.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
@@ -198,11 +217,13 @@ Configuration section when using `database.type="local"`
 * `graveler.background.rate_limit` `(int : 0)` - Requests per seconds limit on background work performed (default: 0 - unlimited), like deleting committed staging tokens.
 
 #### graveler.repository_cache
+
 * `graveler.reposiory_cache.size` `(int : 1000)` - How many items to store in the repository cache.
 * `graveler.reposiory_cache.ttl` `(time duration : "5s")` - How long to store an item in the repository cache.
 * `graveler.reposiory_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.
 
 #### graveler.commit_cache
+
 * `graveler.commit_cache.size` `(int : 50000)` - How many items to store in the commit cache.
 * `graveler.commit_cache.ttl` `(time duration : "10m")` - How long to store an item in the commit cache.
 * `graveler.commit_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.
@@ -215,6 +236,7 @@ Configuration section when using `database.type="local"`
   in-memory cache used for each SSTable reader.
 
 #### committed.local_cache
+
 An object describing the local (on-disk) cache of metadata from permanent storage.
 * `committed.local_cache.size_bytes` (`int` : `1073741824`) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.
 * `committed.local_cache.dir` (`string`, `~/lakefs/local_tier`) - directory to store local cache.
@@ -233,6 +255,7 @@ An object describing the local (on-disk) cache of metadata from permanent storag
   `sqrt(committed.local_cache.metarange.open_readers)`.
 
 #### committed.permanent
+
 * `committed.permanent.min_range_size_bytes` (`int` : `0`) - Smallest allowable range in
   metadata.  Increase to somewhat reduce random access time on committed metadata, at the cost
   of increased committed metadata storage cost.
@@ -243,6 +266,7 @@ An object describing the local (on-disk) cache of metadata from permanent storag
   `max_range_size_bytes`).
 
 ### email
+
 * `email.smtp_host` `(string)` - A string representing the URL of the SMTP host.
 * `email.smtp_port` (`int`) - An integer representing the port of the SMTP service (465, 587, 993, 25 are some standard ports)
 * `email.use_ssl` (`bool : false`) - Use SSL connection with SMTP host.
@@ -255,6 +279,7 @@ An object describing the local (on-disk) cache of metadata from permanent storag
 * `email.lakefs_base_url` `(string : "http://localhost:8000")` - A string representing the base lakeFS endpoint to be directed to when emails are sent inviting users, reseting passwords etc.
 
 ### gateways
+
 * `gateways.s3.domain_name` `(string : "s3.local.lakefs.io")` - a FQDN
   representing the S3 endpoint used by S3 clients to call this server
   (`*.s3.local.lakefs.io` always resolves to 127.0.0.1, useful for
@@ -264,28 +289,38 @@ An object describing the local (on-disk) cache of metadata from permanent storag
 * `gateways.s3.verify_unsupported` `(bool : true)` - The S3 gateway errors on unsupported requests, but when disabled, defers to target-based handlers.
 
 ### tls
+
 * `tls.enabled` `(bool :false)` - Enable TLS listening. The `listen_address` will be used to serve HTTPS requests. (mainly for local development)
 * `tls.cert_file` `(string : )` - Server certificate file path used while serve HTTPS (.cert or .crt file - signed certificates).
 * `tls.key_file` `(string : )` - Server secret key file path used whie serve HTTPS (.key file - private key).
 
 ### stats
+
 * `stats.enabled` `(bool : true)` - Whether to periodically collect anonymous usage statistics
 * `stats.flush_interval` `(duration : 30s)` - Interval used to post anonymous statistics collected
 * `stats.flush_size` `(int : 100)` - A size (in records) of anonymous statistics collected in which we post
 
 ### installation
+
 * `installation.user_name` `(string : )` - When specified, an initial admin user will be created when the server is first run. Works only when `database.type` is set to local. Requires `installation.access_key_id` and `installation.secret_access_key`. 
 * `installation.access_key_id` `(string : )` - Admin's initial access key id (used once in the initial setup process)
 * `installation.secret_access_key` `(string : )` - Admin's initial secret access key (used once in the initial setup process)
 
 ### usage_report
+
 * `usage_report.enabled` `(bool : false)` - Store API and Gateway usage reports into key-value store.
 * `usage_report.flush_interval` `(duration : 5m)` - Sets interval for flushing in-memory usage data to key-value store.
 
-### more
-* `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
+### ui
+
 * `ui.enabled` `(bool: true)` - Whether to server the embedded UI from the binary
+
+### security
+
 * `security.audit_check_interval` `(duration : 24h)` - Duration in which we check for security audit.
+
+### garbage collection
+
 * `ugc.prepare_max_file_size` `(int: 125829120)` - Uncommitted garbage collection prepare request, limit the produced file maximum size
 * `ugc.prepare_interval` `(duraction: 1m)` - Uncommitted garbage collection prepare request, limit produce time to interval
 
