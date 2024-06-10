@@ -1947,8 +1947,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	allowInterRegionStorage := c.Config.Installation.AllowInterRegionStorage
-	if !allowInterRegionStorage {
+	if !c.Config.Installation.AllowInterRegionStorage {
 		if err := c.validateInterRegionStorage(r, body.StorageNamespace); err != nil {
 			writeError(w, r, http.StatusBadRequest, err)
 			return
