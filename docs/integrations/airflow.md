@@ -9,6 +9,8 @@ redirect_from: /using/airflow.html
 
 [Apache Airflow](https://airflow.apache.org/) is a platform that allows users to programmatically author, schedule, and monitor workflows.
 
+<iframe width="420" height="315" src="https://www.youtube.com/embed/HuQQUvmVjhU"></iframe>
+
 To run Airflow with lakeFS, you need to follow a few steps.
 
 ## Create a lakeFS connection on Airflow

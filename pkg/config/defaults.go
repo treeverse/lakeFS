@@ -19,7 +19,7 @@ const (
 	DefaultSigningSecretKey          = "OVERRIDE_THIS_SIGNING_SECRET_DEFAULT" // #nosec
 )
 
-//nolint:gomnd
+//nolint:mnd
 func setDefaults(cfgType string) {
 	switch cfgType {
 	case QuickstartConfiguration:

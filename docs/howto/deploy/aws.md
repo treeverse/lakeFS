@@ -362,6 +362,18 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
    </div>
    </div>
 
+#### S3 Storage Tier Classes
+
+lakeFS currently supports the following S3 Storage Classes:
+
+1. [S3 Standard](https://aws.amazon.com/s3/storage-classes/#General_purpose) - The default AWS S3 storage tier. Fully supported.
+2. [S3 Express One-Zone](https://aws.amazon.com/s3/storage-classes/express-one-zone/) - Fully supported.
+3. [S3 Glacier Instant Retrival](https://aws.amazon.com/s3/storage-classes/glacier/instant-retrieval/) - Supported with limitations: currently, pre-signed URLs are not supported when using Instant Retrival. The outstanding feature request [could be tracked here](https://github.com/treeverse/lakeFS/issues/7784).  
+
+Other storage classes are currently unsupported - either because they have not been tested with lakeFS or because they cannot be supported.
+
+If you need lakeFS to support a storage tier that isn't currently on the supported list, please [open an issue on GitHub](https://github.com/treeverse/lakeFS/issues).
+
 ### Alternative: use an AWS user
 
 lakeFS can authenticate with your AWS account using an AWS user, using an access key and secret. To allow this, change the policy's Principal accordingly:

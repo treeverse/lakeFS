@@ -20,7 +20,7 @@ var (
 
 	// We need to consume response bodies to maintain http connections, but
 	// limit the size we consume to respReadLimit.
-	respReadLimit = int64(4096) //nolint:gomnd
+	respReadLimit = int64(4096) //nolint:mnd
 )
 
 func NewRetryClient(retriesCfg RetriesCfg, transport *http.Transport) *http.Client {

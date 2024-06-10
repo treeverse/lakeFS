@@ -132,11 +132,18 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 	if err != nil {
 		return nil, err
 	}
-	adapter := gs.NewAdapter(client,
+	opts := []gs.AdapterOption{
 		gs.WithPreSignedExpiry(params.PreSignedExpiry),
 		gs.WithDisablePreSigned(params.DisablePreSigned),
 		gs.WithDisablePreSignedUI(params.DisablePreSignedUI),
-	)
+	}
+	switch {
+	case params.ServerSideEncryptionCustomerSupplied != nil:
+		opts = append(opts, gs.WithServerSideEncryptionCustomerSupplied(params.ServerSideEncryptionCustomerSupplied))
+	case params.ServerSideEncryptionKmsKeyID != "":
+		opts = append(opts, gs.WithServerSideEncryptionKmsKeyID(params.ServerSideEncryptionKmsKeyID))
+	}
+	adapter := gs.NewAdapter(client, opts...)
 	logging.FromContext(ctx).WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
 }

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -184,6 +185,14 @@ func EnrichWithRepositoryOrFallback(c *catalog.Catalog, authService auth.Gateway
 				fallbackProxy.ServeHTTP(w, req)
 				return
 			}
+
+			// users often set the gateway endpoint in the clients with /api/v1/ which is the openAPI endpoint.
+			// returning a more informative error in such case.
+			if strings.HasPrefix(req.RequestURI, apiutil.BaseURL) {
+				_ = o.EncodeError(w, req, err, gatewayerrors.ErrNoSuchBucketPossibleAPIEndpoint.ToAPIErr())
+				return
+			}
+
 			_ = o.EncodeError(w, req, err, gatewayerrors.ErrNoSuchBucket.ToAPIErr())
 			return
 		}
@@ -250,7 +259,7 @@ func ParseRequestParts(host string, urlPath string, bareDomains []string) Reques
 	// 3. none of the above, path based
 	if memberFold(httputil.HostOnly(host), ourHosts) {
 		// path style: extract repo from first part
-		p = strings.SplitN(urlPath, path.Separator, 3) //nolint: gomnd
+		p = strings.SplitN(urlPath, path.Separator, 3) //nolint: mnd
 		parts.Repository = p[0]
 		if len(p) >= 1 {
 			p = p[1:]
@@ -267,13 +276,13 @@ func ParseRequestParts(host string, urlPath string, bareDomains []string) Reques
 			}
 		}
 		if parts.MatchedHost {
-			p = strings.SplitN(urlPath, path.Separator, 2) //nolint: gomnd
+			p = strings.SplitN(urlPath, path.Separator, 2) //nolint: mnd
 		}
 	}
 
 	if !parts.MatchedHost {
 		// assume path-based for domains we don't explicitly know
-		p = strings.SplitN(urlPath, path.Separator, 3) //nolint: gomnd
+		p = strings.SplitN(urlPath, path.Separator, 3) //nolint: mnd
 		parts.Repository = p[0]
 		if len(p) >= 1 {
 			p = p[1:]

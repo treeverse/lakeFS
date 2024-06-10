@@ -468,6 +468,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
         },
         strategy="strategy_example",
         force=False,
+        allow_empty=False,
     ) # Merge |  (optional)
 
     # example passing only required values which don't have defaults set

@@ -57,7 +57,7 @@ func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, ex
 			err := adapter.Put(ctx, obj, size, strings.NewReader(contents), block.PutOpts{})
 			require.NoError(t, err)
 
-			reader, err := adapter.Get(ctx, obj, size)
+			reader, err := adapter.Get(ctx, obj)
 			require.NoError(t, err)
 			defer func() {
 				require.NoError(t, reader.Close())
@@ -86,7 +86,7 @@ func testAdapterCopy(t *testing.T, adapter block.Adapter, storageNamespace strin
 	require.NoError(t, adapter.Put(ctx, src, int64(len(contents)), strings.NewReader(contents), block.PutOpts{}))
 
 	require.NoError(t, adapter.Copy(ctx, src, dst))
-	reader, err := adapter.Get(ctx, dst, 0)
+	reader, err := adapter.Get(ctx, dst)
 	require.NoError(t, err)
 	got, err := io.ReadAll(reader)
 	require.NoError(t, err)
@@ -285,7 +285,7 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 				require.NotNil(t, err)
 			}
 
-			reader, err := adapter.Get(ctx, obj, 0)
+			reader, err := adapter.Get(ctx, obj)
 			require.NoError(t, err)
 
 			got, err := io.ReadAll(reader)

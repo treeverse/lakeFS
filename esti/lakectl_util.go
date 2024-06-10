@@ -130,12 +130,12 @@ func sanitize(output string, vars map[string]string) string {
 	if _, ok := vars["DATE"]; !ok {
 		s = normalizeProgramTimestamp(s)
 	}
-	s = normalizeCommitID(s)
-	s = normalizeChecksum(s)
-	s = normalizeShortCommitID(s)
 	s = normalizeEndpoint(s, vars["LAKEFS_ENDPOINT"])
 	s = normalizePreSignURL(s)                       // should be after storage and endpoint to enable non pre-sign url on azure
 	s = normalizeRandomObjectKey(s, vars["STORAGE"]) // should be after pre-sign on azure in order not to break the pre-sign url
+	s = normalizeCommitID(s)
+	s = normalizeChecksum(s)
+	s = normalizeShortCommitID(s)
 	return s
 }
 
@@ -146,10 +146,20 @@ func RunCmdAndVerifySuccessWithFile(t *testing.T, cmd string, isTerminal bool, g
 
 func RunCmdAndVerifyContainsText(t *testing.T, cmd string, isTerminal bool, expectedRaw string, vars map[string]string) {
 	t.Helper()
+	runCmdAndVerifyContainsText(t, cmd, false, isTerminal, expectedRaw, vars)
+}
+
+func RunCmdAndVerifyFailureContainsText(t *testing.T, cmd string, isTerminal bool, expectedRaw string, vars map[string]string) {
+	t.Helper()
+	runCmdAndVerifyContainsText(t, cmd, true, isTerminal, expectedRaw, vars)
+}
+
+func runCmdAndVerifyContainsText(t *testing.T, cmd string, expectFail, isTerminal bool, expectedRaw string, vars map[string]string) {
+	t.Helper()
 	s := sanitize(expectedRaw, vars)
 	expected, err := expandVariables(s, vars)
-	require.NoErrorf(t, err, "Variable embed failed - %s", err)
-	sanitizedResult := runCmd(t, cmd, false, isTerminal, vars)
+	require.NoError(t, err, "Variable embed failed - %s", err)
+	sanitizedResult := runCmd(t, cmd, expectFail, isTerminal, vars)
 	require.Contains(t, sanitizedResult, expected)
 }
 
@@ -180,7 +190,7 @@ func updateGoldenFile(t *testing.T, cmd string, isTerminal bool, goldenFile stri
 	s := sanitize(string(result), vars)
 	s, err := embedVariables(s, vars)
 	require.NoError(t, err, "Variable embed failed")
-	err = os.WriteFile(goldenFile, []byte(s), 0o600) //nolint: gomnd
+	err = os.WriteFile(goldenFile, []byte(s), 0o600) //nolint: mnd
 	require.NoErrorf(t, err, "Failed to write file %s", goldenFile)
 }
 

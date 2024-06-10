@@ -1,5 +1,10 @@
 package auth
 
+//go:generate go run github.com/treeverse/lakefs/tools/wrapgen --package auth --output ./wrapper.gen.go --interface Service ./service.go
+
+// Must run goimports after wrapgen: it adds unused imports.
+//go:generate go run golang.org/x/tools/cmd/goimports@latest -w ./wrapper.gen.go
+
 //go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package auth -generate "types,client" -o client.gen.go ../../api/authorization.yml
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mock -destination=mock/mock_auth_client.go github.com/treeverse/lakefs/pkg/auth ClientWithResponsesInterface
 
@@ -25,6 +30,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/auth/wildcard"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
@@ -2064,7 +2070,7 @@ func NewAPIAuthService(apiEndpoint, token string, externalPrincipalseEnabled boo
 		// when no token is provided, generate one.
 		// communicate with auth service always uses a token
 		var err error
-		token, err = generateAuthAPIJWT(secretStore.SharedSecret())
+		token, err = generateAuthAPIJWT(logger, secretStore.SharedSecret())
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate auth api token: %w", err)
 		}
@@ -2079,6 +2085,7 @@ func NewAPIAuthService(apiEndpoint, token string, externalPrincipalseEnabled boo
 	client, err := NewClientWithResponses(
 		apiEndpoint,
 		WithRequestEditorFn(bearerToken.Intercept),
+		WithRequestEditorFn(AddRequestID(httputil.RequestIDHeaderName)),
 		WithHTTPClient(httpClient),
 	)
 	if err != nil {
@@ -2102,7 +2109,7 @@ func NewAPIAuthService(apiEndpoint, token string, externalPrincipalseEnabled boo
 }
 
 // generateAuthAPIJWT generates a new auth api jwt token
-func generateAuthAPIJWT(secret []byte) (string, error) {
+func generateAuthAPIJWT(logger logging.Logger, secret []byte) (string, error) {
 	const tokenExprInYears = 10
 	now := time.Now()
 	exp := now.AddDate(tokenExprInYears, 0, 0)
@@ -2115,7 +2122,7 @@ func generateAuthAPIJWT(secret []byte) (string, error) {
 		ExpiresAt: jwt.NewNumericDate(exp),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	logging.ContextUnavailable().WithField("id", id).Info("generated auth api token")
+	logger.WithField("id", id).Info("generated auth api token")
 	return token.SignedString(secret)
 }
 

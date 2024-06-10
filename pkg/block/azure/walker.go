@@ -25,7 +25,7 @@ func extractAzurePrefix(storageURI *url.URL) (*url.URL, string, error) {
 	if len(path) == 0 {
 		return nil, "", fmt.Errorf("%w: could not parse container URL: %s", ErrAzureInvalidURL, storageURI)
 	}
-	parts := strings.SplitN(path, "/", 2) // nolint: gomnd
+	parts := strings.SplitN(path, "/", 2) // nolint: mnd
 	if len(parts) == 1 {
 		// we only have a container
 		return storageURI, "", nil

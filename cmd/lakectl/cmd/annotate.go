@@ -99,7 +99,7 @@ func stringTrimLen(str string, size int) string {
 }
 
 func splitOnNewLine(str string) string {
-	return strings.SplitN(str, "\\n", 2)[0] //nolint: gomnd
+	return strings.SplitN(str, "\\n", 2)[0] //nolint: mnd
 }
 
 //nolint:gochecknoinits

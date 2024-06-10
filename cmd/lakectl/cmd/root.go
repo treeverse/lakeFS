@@ -23,6 +23,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/osinfo"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"github.com/treeverse/lakefs/pkg/version"
 	"golang.org/x/exp/slices"
@@ -434,21 +435,21 @@ func sendStats(ctx context.Context, client apigen.ClientWithResponsesInterface, 
 	}
 }
 
-func getClient() *apigen.ClientWithResponses {
+func getHTTPClient() *http.Client {
 	// Override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
 	// only to be immediately reopened.
 	// see: https://stackoverflow.com/a/39834253
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
-	var httpClient *http.Client
 	if !cfg.Server.Retries.Enabled {
-		httpClient = &http.Client{
-			Transport: transport,
-		}
-	} else {
-		httpClient = NewRetryClient(cfg.Server.Retries, transport)
+		return &http.Client{Transport: transport}
 	}
+	return NewRetryClient(cfg.Server.Retries, transport)
+}
+
+func getClient() *apigen.ClientWithResponses {
+	httpClient := getHTTPClient()
 
 	accessKeyID := cfg.Credentials.AccessKeyID
 	secretAccessKey := cfg.Credentials.SecretAccessKey
@@ -462,12 +463,15 @@ func getClient() *apigen.ClientWithResponses {
 		DieErr(err)
 	}
 
+	oss := osinfo.GetOSInfo()
 	client, err := apigen.NewClientWithResponses(
 		serverEndpoint,
 		apigen.WithHTTPClient(httpClient),
 		apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
 		apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
-			req.Header.Set("User-Agent", "lakectl/"+version.Version)
+			// This UA string structure is agreed upon
+			// Please consider that when making changes
+			req.Header.Set("User-Agent", fmt.Sprintf("lakectl/%s/%s/%s/%s", version.Version, oss.OS, oss.Version, oss.Platform))
 			return nil
 		}),
 	)

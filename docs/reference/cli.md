@@ -45,7 +45,7 @@ lakectl config
 ```
 
 This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoint you've supplied.
-When setting up a new installation and creating initial credentials (see [Quickstart]({{ site.baseurl }}/quickstart/index.md)), the UI
+When setting up a new installation and creating initial credentials (see [Quickstart]({{ site.baseurl }}/quickstart/)), the UI
 will provide a link to download a preconfigured configuration file for you.
 
 `lakectl` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
@@ -2039,14 +2039,18 @@ lakectl diff <ref URI> [ref URI] [flags]
 
 	lakectl diff --two-way lakefs://example-repo/main lakefs://example-repo/dev$
 	Show changes between the tip of the main and the dev branch, including uncommitted changes on dev.
+	
+	lakectl diff --prefix some/path lakefs://example-repo/main lakefs://example-repo/dev
+	Show changes of objects prefixed with 'some/path' between the tips of the main and dev branches.
 ```
 
 #### Options
 {:.no_toc}
 
 ```
-  -h, --help      help for diff
-      --two-way   Use two-way diff: show difference between the given refs, regardless of a common ancestor.
+  -h, --help            help for diff
+      --prefix string   Show only changes in the given prefix.
+      --two-way         Use two-way diff: show difference between the given refs, regardless of a common ancestor.
 ```
 
 
@@ -2575,6 +2579,7 @@ lakectl local commit [directory] [flags]
 
 ```
       --allow-empty-message   allow an empty commit message
+      --force                 Commit changes even if remote branch includes uncommitted changes external to the synced path
   -h, --help                  help for commit
   -m, --message string        commit message
       --meta strings          key value pair in the form of key=value
@@ -2737,7 +2742,9 @@ lakectl merge <source ref> <destination ref> [flags]
 {:.no_toc}
 
 ```
+      --allow-empty           Allow merge when the branches have the same content
       --allow-empty-message   allow an empty commit message (default true)
+      --force                 Allow merge into a read-only branch or into a branch with the same content
   -h, --help                  help for merge
   -m, --message string        commit message
       --meta strings          key value pair in the form of key=value

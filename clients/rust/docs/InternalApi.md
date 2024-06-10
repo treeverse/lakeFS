@@ -12,6 +12,7 @@ Method | HTTP request | Description
 [**get_auth_capabilities**](InternalApi.md#get_auth_capabilities) | **GET** /auth/capabilities | list authentication capabilities supported
 [**get_garbage_collection_config**](InternalApi.md#get_garbage_collection_config) | **GET** /config/garbage-collection | 
 [**get_lake_fs_version**](InternalApi.md#get_lake_fs_version) | **GET** /config/version | 
+[**get_metadata_object**](InternalApi.md#get_metadata_object) | **GET** /repositories/{repository}/metadata/object/{type}/{object_id} | return a lakeFS metadata object by ID
 [**get_setup_state**](InternalApi.md#get_setup_state) | **GET** /setup_lakefs | check if the lakeFS installation is already set up
 [**get_storage_config**](InternalApi.md#get_storage_config) | **GET** /config/storage | 
 [**get_usage_report_summary**](InternalApi.md#get_usage_report_summary) | **GET** /usage-report/summary | get usage report summary
@@ -255,6 +256,37 @@ This endpoint does not need any parameter.
 
 - **Content-Type**: Not defined
 - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## get_metadata_object
+
+> std::path::PathBuf get_metadata_object(repository, object_id, r#type, presign)
+return a lakeFS metadata object by ID
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**repository** | **String** |  | [required] |
+**object_id** | **String** |  | [required] |
+**r#type** | **String** |  | [required] |
+**presign** | Option<**bool**> |  |  |
+
+### Return type
+
+[**std::path::PathBuf**](std::path::PathBuf.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/octet-stream, application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

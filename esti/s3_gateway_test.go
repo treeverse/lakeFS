@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"io"
 	"math/rand"
 	"net/http"
@@ -653,5 +655,30 @@ func TestS3ReadObjectRedirect(t *testing.T) {
 		// Verify we got redirect
 		_, err = io.ReadAll(res)
 		require.Contains(t, err.Error(), "307 Temporary Redirect")
+	})
+}
+
+func createS3Client(endpoint string, t *testing.T) *s3.Client {
+	accessKeyID := viper.GetString("access_key_id")
+	secretAccessKey := viper.GetString("secret_access_key")
+	s3Client, err := testutil.SetupTestS3Client(endpoint, accessKeyID, secretAccessKey, true)
+	require.NoError(t, err, "failed creating s3 client")
+	return s3Client
+}
+
+func TestPossibleAPIEndpointError(t *testing.T) {
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	t.Run("use_open_api_for_client_endpoint", func(t *testing.T) {
+		s3Client := createS3Client(endpointURL+apiutil.BaseURL, t)
+		_, listErr := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("not-exists")})
+		require.ErrorContains(t, listErr, gtwerrors.ErrNoSuchBucketPossibleAPIEndpoint.Error())
+	})
+
+	t.Run("use_proper_client_endpoint", func(t *testing.T) {
+		s3Client := createS3Client(endpointURL, t)
+		_, listErr := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("not-exists")})
+		require.ErrorContains(t, listErr, gtwerrors.ErrNoSuchBucket.Error())
 	})
 }

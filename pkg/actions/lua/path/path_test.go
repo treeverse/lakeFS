@@ -131,6 +131,11 @@ func TestParse(t *testing.T) {
 			ExpectedParent:   "",
 		},
 		{
+			Input:            "bar/",
+			ExpectedBasename: "bar",
+			ExpectedParent:   "",
+		},
+		{
 			Input:            "/bar",
 			ExpectedBasename: "bar",
 			ExpectedParent:   "/",

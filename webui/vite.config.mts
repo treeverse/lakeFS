@@ -2,6 +2,7 @@ import react from '@vitejs/plugin-react-swc';
 import eslintPlugin from 'vite-plugin-eslint';
 import replace from '@rollup/plugin-replace';
 import { splitVendorChunkPlugin } from 'vite';
+import * as http from "node:http";
 
 // https://vitejs.dev/config/
 export default ({ command }) => {
@@ -48,6 +49,17 @@ export default ({ command }) => {
             target: 'http://localhost:8000',
             changeOrigin: false,
             secure: false
+          },
+          '/': {
+            target: 'http://localhost:8000',
+            changeOrigin: false,
+            secure: false,
+            bypass: (req: http.IncomingMessage) : void | null | undefined | false | string => {
+              if ("x-amz-date" in req.headers) {
+                return null;
+              }
+              return req.url;
+            }
           }
         }
       },

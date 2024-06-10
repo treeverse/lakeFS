@@ -3805,6 +3805,45 @@ func TestController_MergeDirtyBranch(t *testing.T) {
 	}
 }
 
+func TestController_MergeBranchWithNoChanges(t *testing.T) {
+	clt, _ := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	repoName := testUniqueRepoName()
+	repoResp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    apiutil.Ptr("main"),
+		Name:             repoName,
+		StorageNamespace: "mem://",
+	})
+	verifyResponseOK(t, repoResp, err)
+
+	branch1Resp, err := clt.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{Name: "branch1", Source: "main"})
+	verifyResponseOK(t, branch1Resp, err)
+
+	branch2Resp, err := clt.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{Name: "branch2", Source: "main"})
+	verifyResponseOK(t, branch2Resp, err)
+
+	mergeResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "branch2", "branch1", apigen.MergeIntoBranchJSONRequestBody{
+		Message: apiutil.Ptr("Merge branch2 to branch1"),
+	})
+	testutil.MustDo(t, "perform merge with no changes", err)
+	if mergeResp.JSON400 == nil || !strings.HasSuffix(mergeResp.JSON400.Message, graveler.ErrNoChanges.Error()) {
+		t.Errorf("Merge branches with no changes should fail with ErrNoChanges, got %+v", mergeResp)
+	}
+
+	mergeWithAllowEmptyFlagResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "branch2", "branch1", apigen.MergeIntoBranchJSONRequestBody{
+		Message:    apiutil.Ptr("Merge branch2 to branch1"),
+		AllowEmpty: swag.Bool(true),
+	})
+	verifyResponseOK(t, mergeWithAllowEmptyFlagResp, err)
+
+	mergeWithForceFlagResp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "branch2", "branch1", apigen.MergeIntoBranchJSONRequestBody{
+		Message: apiutil.Ptr("Merge branch2 to branch1"),
+		Force:   swag.Bool(true),
+	})
+	verifyResponseOK(t, mergeWithForceFlagResp, err)
+}
+
 func TestController_CreateTag(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()

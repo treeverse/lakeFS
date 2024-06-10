@@ -200,15 +200,19 @@ func (c *committedManager) Import(ctx context.Context, ns graveler.StorageNamesp
 	return c.merge(ctx, mctx)
 }
 
-func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, strategy graveler.MergeStrategy, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
-	if source == base {
+func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID, strategy graveler.MergeStrategy, opts ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
+	options := graveler.NewSetOptions(opts)
+
+	if source == base && !options.AllowEmpty && !options.Force {
 		// no changes on source
 		return "", graveler.ErrNoChanges
 	}
+
 	if destination == base {
 		// changes introduced only on source
 		return source, nil
 	}
+
 	mctx := mergeContext{
 		strategy:      strategy,
 		ns:            ns,

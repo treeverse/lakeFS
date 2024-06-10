@@ -14,6 +14,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 )
 
+const (
+	DefaultReaderSize = 1024 * 1024
+)
+
 type Adapter struct{}
 
 func New(_ context.Context) *Adapter {
@@ -25,11 +29,8 @@ func (a *Adapter) Put(_ context.Context, _ block.ObjectPointer, _ int64, reader 
 	return err
 }
 
-func (a *Adapter) Get(_ context.Context, _ block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
-	if expectedSize < 0 {
-		return nil, io.ErrUnexpectedEOF
-	}
-	return io.NopCloser(&io.LimitedReader{R: rand.Reader, N: expectedSize}), nil
+func (a *Adapter) Get(_ context.Context, _ block.ObjectPointer) (io.ReadCloser, error) {
+	return io.NopCloser(&io.LimitedReader{R: rand.Reader, N: DefaultReaderSize}), nil
 }
 
 func (a *Adapter) GetWalker(_ *url.URL) (block.Walker, error) {

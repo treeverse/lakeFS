@@ -110,7 +110,7 @@ func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespac
 		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
 		IdentifierType:   block.IdentifierTypeRelative,
 	}
-	reader, err := m.blockAdapter.Get(ctx, objectPointer, -1)
+	reader, err := m.blockAdapter.Get(ctx, objectPointer)
 	if errors.Is(err, block.ErrDataNotFound) {
 		return nil, graveler.ErrNotFound
 	}

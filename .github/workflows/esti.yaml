@@ -48,7 +48,7 @@ jobs:
         id: restore-cache
         with:
           path: /tmp/generated.tar.gz
-          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**', './api/*', './webui/**') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**', './api/**', './webui/**', './auth/**') }}
           restore-keys: ${{ runner.os }}-go-
 
       - name: Setup Go
@@ -69,8 +69,8 @@ jobs:
       - name: Generate code
         if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
-          make -j3 gen-api gen-ui VERSION=${{ steps.version.outputs.tag }}
-          tar -cf /tmp/generated.tar.gz ./webui/dist ./pkg/auth/client.gen.go ./pkg/authentication/apiclient/client.gen.go ./pkg/permissions/actions.gen.go ./pkg/api/apigen/lakefs.gen.go
+          make -j3 gen-api gen-code gen-ui VERSION=${{ steps.version.outputs.tag }}
+          tar -czf /tmp/generated.tar.gz ./webui/dist ./pkg/auth/{client,wrapper}.gen.go ./pkg/authentication/apiclient/client.gen.go ./pkg/permissions/actions.gen.go ./pkg/api/apigen/lakefs.gen.go
 
         # must upload artifact in order to download generated later
       - name: Store generated code
@@ -97,7 +97,7 @@ jobs:
           path: /tmp/
 
       - name: Unpack generated code
-        run: tar -xf /tmp/generated.tar.gz
+        run: tar -xzvf /tmp/generated.tar.gz
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -146,7 +146,7 @@ jobs:
 
   unified-gc-test:
     name: Test unified gc
-    needs: [ gen-code, deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
+    needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-latest-8-cores
     services:
       lakefs:
@@ -216,7 +216,7 @@ jobs:
 
       - name: Unpack generated code
         shell: bash
-        run: tar -xf /tmp/generated.tar.gz
+        run: tar -xzvf /tmp/generated.tar.gz
 
       - name: Restore cache
         uses: actions/cache@v3
@@ -593,7 +593,7 @@ jobs:
 
   metastore-client-with-trino:
     name: Test metastore client commands using trino
-    needs: [gen-code, deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -750,7 +750,7 @@ jobs:
 
   run-system-aws-s3-kv-dynamodb:
     name: Run latest lakeFS app on AWS S3 DynamoDB KV
-    needs: [gen-code, deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -805,7 +805,7 @@ jobs:
 
   run-system-aws-s3:
     name: Run latest lakeFS app on AWS S3
-    needs: [gen-code, deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -857,7 +857,7 @@ jobs:
 
   run-system-gcp-gs:
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
-    needs: [gen-code, deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -892,7 +892,7 @@ jobs:
 
   run-system-azure-abfs:
     name: Run latest lakeFS app on Azure with Azure blobstore
-    needs: [gen-code, deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -934,7 +934,7 @@ jobs:
 
   run-system-azure-adls-gen2:
     name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2 and CosmosDB
-    needs: [gen-code, deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}

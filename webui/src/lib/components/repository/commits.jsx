@@ -126,12 +126,16 @@ const CommitInfo = ({ repo, commit }) => {
   );
 };
 
+export const CommitMessage = ({ commit }) =>
+    commit.message?.length ?
+        <span>{commit.message}</span> : <span className="text-muted">(No commit message)</span>;
+
 export const CommitInfoCard = ({ repo, commit, bare = false }) => {
   const content = (
     <>
         <div className="d-flex">
           <div className="flex-grow-1">
-            <h4>{commit.message}</h4>
+            <h4><CommitMessage commit={commit}/></h4>
           </div>
           <div>
             <CommitActions repo={repo} commit={commit}/>

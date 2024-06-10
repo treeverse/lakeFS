@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/actions/lua/hook"
+
 	"github.com/antonmedv/expr"
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -374,8 +376,12 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 				if task.Err != nil {
 					_, _ = fmt.Fprintf(&buf, "Error: %s\n", task.Err)
 					// wrap error with more information
-					task.Err = fmt.Errorf("hook run id '%s' failed on action '%s' hook '%s': %w",
-						task.HookRunID, task.Action.Name, task.HookID, task.Err)
+					if _, ok := task.Err.(hook.ErrHookFailure); ok {
+						task.Err = fmt.Errorf("%s: %w", task.HookID, task.Err)
+					} else {
+						task.Err = fmt.Errorf("hook run id '%s' failed on action '%s' hook '%s': %w",
+							task.HookRunID, task.Action.Name, task.HookID, task.Err)
+					}
 				}
 
 				err := hookOutputWriter.OutputWrite(ctx, &buf, int64(buf.Len()))

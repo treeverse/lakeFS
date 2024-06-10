@@ -87,7 +87,8 @@ func TestDeleteObjects_Viewer(t *testing.T) {
 	key := resCreateCreds.JSON201.AccessKeyId
 	secret := resCreateCreds.JSON201.SecretAccessKey
 	s3Endpoint := viper.GetString("s3_endpoint")
-	s3Client, err := testutil.SetupTestS3Client(s3Endpoint, key, secret)
+	forcePathStyle := viper.GetBool("force_path_style")
+	s3Client, err := testutil.SetupTestS3Client(s3Endpoint, key, secret, forcePathStyle)
 	require.NoError(t, err)
 
 	// delete objects using viewer
