@@ -522,7 +522,7 @@ func (l *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeLocal
 }
 
-func (l *Adapter) BlockstoreMetadata() block.BlockstoreMetadata {
+func (l *Adapter) BlockstoreMetadata(ctx context.Context) block.BlockstoreMetadata {
 	// not implemented at the moment
 	return block.BlockstoreMetadata{Region: nil}
 }

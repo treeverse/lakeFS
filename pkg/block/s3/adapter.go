@@ -832,8 +832,8 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeS3
 }
 
-func (a *Adapter) BlockstoreMetadata() block.BlockstoreMetadata {
-	region, _ := a.clients.GetBucketRegionDefault(nil, "")
+func (a *Adapter) BlockstoreMetadata(ctx context.Context) block.BlockstoreMetadata {
+	region, _ := a.clients.GetBucketRegionDefault(ctx, "")
 	return block.BlockstoreMetadata{
 		Region: &region,
 	}
@@ -871,7 +871,7 @@ func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType 
 func (a *Adapter) GetRegion(ctx context.Context, storageNamespace string) (string, error) {
 	bucket, found := strings.CutPrefix(storageNamespace, "s3://")
 	if !found {
-		return "", fmt.Errorf("invalid storage namespace %s", storageNamespace)
+		return "", fmt.Errorf(`%w: "s3://" prefix not found %s`, block.ErrInvalidNamespace, storageNamespace)
 	}
 
 	return a.clients.GetBucketRegionFromAWS(ctx, bucket)
