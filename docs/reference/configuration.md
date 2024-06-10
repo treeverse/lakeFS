@@ -313,7 +313,7 @@ An object describing the local (on-disk) cache of metadata from permanent storag
 
 ### ui
 
-* `ui.enabled` `(bool: true)` - Whether to server the embedded UI from the binary
+* `ui.enabled` `(bool: true)` - Whether to serve the embedded UI from the binary
 
 ### security
 
