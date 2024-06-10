@@ -107,6 +107,11 @@ func (a *mockAdapter) BlockstoreType() string {
 	return "s3"
 }
 
+func (a *mockAdapter) BlockstoreMetadata(ctx context.Context) block.BlockstoreMetadata {
+	// not implemented at the moment
+	return block.BlockstoreMetadata{Region: nil}
+}
+
 func (a *mockAdapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo("mock")
 	info.PreSignSupport = false
@@ -116,6 +121,10 @@ func (a *mockAdapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 
 func (a *mockAdapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
+}
+
+func (a *mockAdapter) GetRegion(_ context.Context, _ string) (string, error) {
+	return "", block.ErrOperationNotSupported
 }
 
 func (a *mockAdapter) RuntimeStats() map[string]string {
