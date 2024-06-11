@@ -32,9 +32,6 @@ var defaultEnvVarPrefixs = []string{"LAKEFS_", "HTTP_", "HOSTNAME"}
 const (
 	DirPermissions  = 0700
 	FilePremissions = 0600
-
-	secretStructTagName   = "flare"
-	plainTextTimeProperty = "time=\""
 )
 
 // LogFormat is a log file format supported by the flare package
@@ -420,9 +417,13 @@ func redactSecrets(line string, secretReplacementValue string) (string, error) {
 	return line, nil
 }
 
+//nolint:gochecknoinits
 func init() {
 	// Registering our custom IP detector with the secrets scanner
-	secrets.GetDetectorFactory().Register(DetectorName, NewIPDetector)
+	err := secrets.GetDetectorFactory().Register(DetectorName, NewIPDetector)
+	if err != nil {
+		secretScannerInitErr = err
+	}
 	// Adding our custom IP detector
 	// and removing the ini transformer because it has false positives with plain text log lines
 	config := scanner.NewConfigBuilderFrom(scanner.NewConfigWithDefaults()).AppendDetectors("ip").RemoveTransformers("ini").Build()

@@ -64,7 +64,10 @@ var flareCmd = &cobra.Command{
 			printMsgAndExit(msg, err)
 		}
 
-		flr.ProcessConfig(cfg, flarePath, flareConfigFileName)
+		err = flr.ProcessConfig(cfg, flarePath, flareConfigFileName)
+		if err != nil {
+			printMsgAndExit("failed to process config", err)
+		}
 
 		if includeLogs {
 			outFileIdx := slices.IndexFunc(cfg.Logging.Output, func(e string) bool {
