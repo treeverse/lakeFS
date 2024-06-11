@@ -13,7 +13,7 @@ Public Preview
 {: .label .label-green }
 
 {: .note}
-> Mirroring is only available for [lakeFS Cloud]({% link cloud/ %}).
+> Mirroring is only available for [lakeFS Cloud](../cloud/index.md).
 
 
 {% include toc.html %}
