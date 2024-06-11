@@ -39,14 +39,14 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 						{
 							Key: []byte("iterA/one"),
 							Value: &graveler.Value{
-								Identity: []byte("id"),
+								Identity: []byte("id1"),
 								Data:     nil,
 							},
 						},
 						{
 							Key: []byte("iterA/two"),
 							Value: &graveler.Value{
-								Identity: []byte("id"),
+								Identity: []byte("id2"),
 								Data:     nil,
 							},
 						},
@@ -59,14 +59,14 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 				{
 					Key: []byte("iterA/one"),
 					Value: &graveler.Value{
-						Identity: []byte("id"),
+						Identity: []byte("id1"),
 						Data:     nil,
 					},
 				},
 				{
 					Key: []byte("iterA/two"),
 					Value: &graveler.Value{
-						Identity: []byte("id"),
+						Identity: []byte("id2"),
 						Data:     nil,
 					},
 				},
@@ -80,14 +80,14 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 						{
 							Key: []byte("iterA/one"),
 							Value: &graveler.Value{
-								Identity: []byte("id"),
+								Identity: []byte("id1"),
 								Data:     nil,
 							},
 						},
 						{
 							Key: []byte("iterA/two"),
 							Value: &graveler.Value{
-								Identity: []byte("id"),
+								Identity: []byte("id2"),
 								Data:     nil,
 							},
 						},
@@ -99,14 +99,14 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 				{
 					Key: []byte("iterA/one"),
 					Value: &graveler.Value{
-						Identity: []byte("id"),
+						Identity: []byte("id1"),
 						Data:     nil,
 					},
 				},
 				{
 					Key: []byte("iterA/two"),
 					Value: &graveler.Value{
-						Identity: []byte("id"),
+						Identity: []byte("id2"),
 						Data:     nil,
 					},
 				},
@@ -121,14 +121,14 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 						{
 							Key: []byte("iterA/one"),
 							Value: &graveler.Value{
-								Identity: []byte("id"),
+								Identity: []byte("id1"),
 								Data:     nil,
 							},
 						},
 						{
 							Key: []byte("iterA/two"),
 							Value: &graveler.Value{
-								Identity: []byte("id"),
+								Identity: []byte("id2"),
 								Data:     nil,
 							},
 						},
@@ -140,14 +140,14 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 				{
 					Key: []byte("iterA/one"),
 					Value: &graveler.Value{
-						Identity: []byte("id"),
+						Identity: []byte("id1"),
 						Data:     nil,
 					},
 				},
 				{
 					Key: []byte("iterA/two"),
 					Value: &graveler.Value{
-						Identity: []byte("id"),
+						Identity: []byte("id2"),
 						Data:     nil,
 					},
 				},
@@ -161,7 +161,7 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 						{
 							Key: []byte("iterA/two"),
 							Value: &graveler.Value{
-								Identity: []byte("id"),
+								Identity: []byte("id2"),
 								Data:     nil,
 							},
 						},
@@ -170,7 +170,7 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 						{
 							Key: []byte("iterA/one"),
 							Value: &graveler.Value{
-								Identity: []byte("id"),
+								Identity: []byte("id1"),
 								Data:     nil,
 							},
 						},
@@ -182,14 +182,14 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 				{
 					Key: []byte("iterA/one"),
 					Value: &graveler.Value{
-						Identity: []byte("id"),
+						Identity: []byte("id1"),
 						Data:     nil,
 					},
 				},
 				{
 					Key: []byte("iterA/two"),
 					Value: &graveler.Value{
-						Identity: []byte("id"),
+						Identity: []byte("id2"),
 						Data:     nil,
 					},
 				},
@@ -207,7 +207,7 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 						{
 							Key: []byte("path/two"),
 							Value: &graveler.Value{
-								Identity: []byte("id"),
+								Identity: []byte("id2"),
 								Data:     nil,
 							},
 						},
@@ -216,7 +216,7 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 						{
 							Key: []byte("path/one"),
 							Value: &graveler.Value{
-								Identity: []byte("id"),
+								Identity: []byte("id1"),
 								Data:     nil,
 							},
 						},
@@ -228,7 +228,7 @@ func TestCombinedIterator_NextValue(t *testing.T) {
 				{
 					Key: []byte("path/two"),
 					Value: &graveler.Value{
-						Identity: []byte("id"),
+						Identity: []byte("id2"),
 						Data:     nil,
 					},
 				},

@@ -252,6 +252,7 @@ type RefsFake struct {
 	Commits             map[graveler.CommitID]*graveler.Commit
 	StagingToken        graveler.StagingToken
 	SealedTokens        []graveler.StagingToken
+	BaseMetaRangeID     graveler.MetaRangeID
 }
 
 func (m *RefsFake) CreateBranch(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, branch graveler.Branch) error {
@@ -302,10 +303,12 @@ func (m *RefsFake) ResolveRawRef(_ context.Context, _ *graveler.RepositoryRecord
 	var branch graveler.BranchID
 	var stagingToken graveler.StagingToken
 	var sealedTokens []graveler.StagingToken
+	var baseMetaRangeID graveler.MetaRangeID
 	if m.RefType == graveler.ReferenceTypeBranch {
 		branch = DefaultBranchID
 		stagingToken = m.StagingToken
 		sealedTokens = m.SealedTokens
+		baseMetaRangeID = m.BaseMetaRangeID
 	}
 
 	return &graveler.ResolvedRef{
@@ -313,9 +316,10 @@ func (m *RefsFake) ResolveRawRef(_ context.Context, _ *graveler.RepositoryRecord
 		BranchRecord: graveler.BranchRecord{
 			BranchID: branch,
 			Branch: &graveler.Branch{
-				CommitID:     m.CommitID,
-				StagingToken: stagingToken,
-				SealedTokens: sealedTokens,
+				CommitID:                 m.CommitID,
+				StagingToken:             stagingToken,
+				SealedTokens:             sealedTokens,
+				CompactedBaseMetaRangeID: baseMetaRangeID,
 			},
 		},
 	}, nil
@@ -464,6 +468,10 @@ func (r *diffIter) Value() *graveler.Diff {
 
 func (r *diffIter) Err() error {
 	return r.err
+}
+
+func (r *diffIter) SetErr(err error) {
+	r.err = err
 }
 
 func (r *diffIter) Close() {}
