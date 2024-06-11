@@ -112,8 +112,8 @@ func TestPlainTextLogFileHandler(t *testing.T) {
 			Name:         "with start and end dates",
 			InFile:       "testdata/plain_text_logs_in.txt",
 			ExpectedFile: "testdata/plain_text_logs_out_start_and_end_date.txt",
-			StartDate:    time.Date(2024, 06, 06, 12, 48, 52, 0, time.Local),
-			EndDate:      time.Date(2024, 06, 06, 12, 48, 54, 0, time.Local),
+			StartDate:    time.Date(2024, 06, 06, 12, 48, 52, 0, time.FixedZone("GMT+3", int((3*time.Hour).Seconds()))),
+			EndDate:      time.Date(2024, 06, 06, 12, 48, 54, 0, time.FixedZone("GMT+3", int((3*time.Hour).Seconds()))),
 		},
 	}
 
