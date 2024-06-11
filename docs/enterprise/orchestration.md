@@ -2,7 +2,6 @@
 title: Run lakeFS Enterprise
 description: Start using lakeFS-enterprise
 parent: lakeFS Enterprise
-grand_parent: Understanding lakeFS
 ---
 
 # Run lakeFS Enterprise

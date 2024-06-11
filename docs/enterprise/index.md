@@ -2,10 +2,10 @@
 title: lakeFS Enterprise
 description: lakeFS Enterprise is an enterprise-ready lakeFS solution providing additional features including RBAC, SSO and Support SLA.
 has_children: true
+nav_order: 110
 has_toc: false
-parent: Understanding lakeFS
 redirect_from:
-- /understand/lakefs-enterprise.html
+- /lakefs-enterprise.html
 - /enterprise/index.html
 ---
 
