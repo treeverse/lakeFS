@@ -1,6 +1,11 @@
 package graveler
 
-import "bytes"
+import (
+	"bytes"
+	"errors"
+
+	"github.com/treeverse/lakefs/pkg/logging"
+)
 
 // JoinedDiffIterator calculate the union diff between 2 iterators.
 // The output iterator yields a single result for each key.
@@ -11,8 +16,9 @@ type JoinedDiffIterator struct {
 	iterB        DiffIterator
 	iterBHasMore bool
 	// the current iterator that has the value to return (iterA or iterB)
-	currenIter DiffIterator
-	started    bool
+	currentIter DiffIterator
+	started     bool
+	log         logging.Logger
 }
 
 func NewJoinedDiffIterator(iterA DiffIterator, iterB DiffIterator) *JoinedDiffIterator {
@@ -21,7 +27,7 @@ func NewJoinedDiffIterator(iterA DiffIterator, iterB DiffIterator) *JoinedDiffIt
 		iterAHasMore: true,
 		iterB:        iterB,
 		iterBHasMore: true,
-		currenIter:   nil,
+		currentIter:  nil,
 	}
 }
 
@@ -54,59 +60,66 @@ func (c *JoinedDiffIterator) Next() bool {
 		return false
 	case !c.iterAHasMore:
 		// iterA is done
-		c.currenIter = c.iterB
+		c.currentIter = c.iterB
 		c.iterBHasMore = c.iterB.Next()
 	case !c.iterBHasMore:
 		// iterB is done
-		c.currenIter = c.iterA
+		c.currentIter = c.iterA
 		c.iterAHasMore = c.iterA.Next()
 	default:
 		// both iterators has more keys- progress by key
 		c.progressIterByKey(c.iterA.Value().Key, c.iterB.Value().Key)
 	}
 	if c.iterA.Err() != nil {
-		c.currenIter = c.iterA
+		c.currentIter = c.iterA
 		c.iterAHasMore = false
 		c.iterBHasMore = false
 		return false
 	}
 	if c.iterB.Err() != nil {
-		c.currenIter = c.iterB
+		c.currentIter = c.iterB
 		c.iterAHasMore = false
 		c.iterBHasMore = false
 		return false
 	}
 
-	// set c.currenIter to be the next (smaller) value
+	// set c.currentIter to be the next (smaller) value
 
 	// if one of the iterators is done, set the other one as the current iterator and return
 	if !c.iterAHasMore {
-		c.currenIter = c.iterB
+		c.currentIter = c.iterB
 		return c.iterBHasMore
 	} else if !c.iterBHasMore {
-		c.currenIter = c.iterA
+		c.currentIter = c.iterA
 		return true
 	}
 
 	// if both iterators has more keys, set the iterator with the smaller key as the current iterator
 	if bytes.Compare(c.iterA.Value().Key, c.iterB.Value().Key) <= 0 {
-		c.currenIter = c.iterA
+		c.currentIter = c.iterA
 	} else {
-		c.currenIter = c.iterB
+		c.currentIter = c.iterB
 	}
 	return true
 }
 
 func (c *JoinedDiffIterator) Value() *Diff {
-	if c.currenIter == nil {
+	if c.currentIter == nil {
+		c.log.Errorf("current iterator is nil")
 		return nil
 	}
-	return c.currenIter.Value()
+	return c.currentIter.Value()
 }
 
 func (c *JoinedDiffIterator) Err() error {
-	if c.currenIter != nil && c.currenIter.Err() != nil {
-		return c.currenIter.Err()
+	if c.iterA.Err() != nil && c.iterB.Err() != nil {
+		return errors.Join(c.iterA.Err(), c.iterB.Err())
+	}
+	if c.iterA.Err() != nil {
+		return c.iterA.Err()
+	}
+	if c.iterB.Err() != nil {
+		return c.iterB.Err()
 	}
 	return nil
 }
@@ -117,7 +130,7 @@ func (c *JoinedDiffIterator) Close() {
 }
 
 func (c *JoinedDiffIterator) SeekGE(id Key) {
-	c.currenIter = nil
+	c.currentIter = nil
 	c.iterA.SeekGE(id)
 	c.iterB.SeekGE(id)
 }

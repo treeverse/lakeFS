@@ -470,6 +470,10 @@ func (r *diffIter) Err() error {
 	return r.err
 }
 
+func (r *diffIter) SetErr(err error) {
+	r.err = err
+}
+
 func (r *diffIter) Close() {}
 
 type valueIteratorFake struct {

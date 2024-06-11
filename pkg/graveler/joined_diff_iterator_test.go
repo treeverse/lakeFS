@@ -1,6 +1,7 @@
 package graveler_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -463,6 +464,59 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 			}
 			if diff := deep.Equal(got, tt.wantValue); diff != nil {
 				t.Fatal("JoinedDiffIterator iterator found diff:", diff)
+			}
+		})
+	}
+}
+
+func TestJoinedDiffIterator_Error(t *testing.T) {
+	tests := []struct {
+		name        string
+		iterAErr    error
+		iterBErr    error
+		expectedErr error
+	}{
+		{
+			name:        "iterA error",
+			iterAErr:    errors.New("iterA error"),
+			iterBErr:    nil,
+			expectedErr: errors.New("iterA error"),
+		},
+		{
+			name:        "iterB error",
+			iterAErr:    nil,
+			iterBErr:    errors.New("iterB error"),
+			expectedErr: errors.New("iterB error"),
+		},
+		{
+			name:        "iterA and iterB error",
+			iterAErr:    errors.New("iterA error"),
+			iterBErr:    errors.New("iterB error"),
+			expectedErr: errors.Join(errors.New("iterA error"), errors.New("iterB error")),
+		},
+		{
+			name: "no error",
+
+			iterAErr: nil,
+			iterBErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			itA := testutil.NewDiffIter([]graveler.Diff{})
+			itB := testutil.NewDiffIter([]graveler.Diff{})
+			if tt.iterAErr != nil {
+				itA.SetErr(tt.iterAErr)
+			}
+			if tt.iterBErr != nil {
+				itB.SetErr(tt.iterBErr)
+			}
+			combinedIter := graveler.NewJoinedDiffIterator(itA, itB)
+
+			if tt.expectedErr != nil {
+				require.Equal(t, tt.expectedErr, combinedIter.Err())
+			} else {
+				require.NoError(t, combinedIter.Err())
 			}
 		})
 	}
