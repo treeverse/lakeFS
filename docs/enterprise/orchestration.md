@@ -228,7 +228,7 @@ and replace fluffy and lakeFS configuration in the helm's `values.yaml` file.
 
 #### Fluffy Configuration
 
-**Note:** Full Fluffy configuration can be found [here](fluffy-configuration.md)..
+**Note:** Full Fluffy configuration can be found [here]({% link enterprise/fluffy-configuration.md %})..
 {: .note }
 
 1. `auth.saml.idp_metadata_url`: Set from the Azure app created above _SAML configuration > “App Federation Metadata Url”_
