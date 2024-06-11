@@ -630,9 +630,8 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeGS
 }
 
-func (a *Adapter) BlockstoreMetadata(ctx context.Context) block.BlockstoreMetadata {
-	// not implemented at the moment
-	return block.BlockstoreMetadata{Region: nil}
+func (a *Adapter) BlockstoreMetadata(ctx context.Context) (block.BlockstoreMetadata, error) {
+	return block.BlockstoreMetadata{}, block.ErrOperationNotSupported
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {

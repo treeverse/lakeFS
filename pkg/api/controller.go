@@ -1947,11 +1947,9 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	if !c.Config.Installation.AllowInterRegionStorage {
-		if err := c.validateInterRegionStorage(r, body.StorageNamespace); err != nil {
-			writeError(w, r, http.StatusBadRequest, err)
-			return
-		}
+	if err := c.validateInterRegionStorage(r, body.StorageNamespace); err != nil {
+		writeError(w, r, http.StatusBadRequest, err)
+		return
 	}
 
 	defaultBranch := swag.StringValue(body.DefaultBranch)
@@ -2108,12 +2106,18 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 }
 
 func (c *Controller) validateInterRegionStorage(r *http.Request, storageNamespace string) error {
+	if c.Config.Installation.AllowInterRegionStorage {
+		return nil
+	}
+
 	ctx := r.Context()
 
-	storeRegion := c.BlockAdapter.BlockstoreMetadata(ctx).Region
-	if storeRegion == nil {
+	blockstoreMetadata, err := c.BlockAdapter.BlockstoreMetadata(ctx)
+	if errors.Is(err, block.ErrOperationNotSupported) || blockstoreMetadata.Region == nil {
 		// region not determined for the server instance, skip validation
 		return nil
+	} else if err != nil {
+		return fmt.Errorf("failed to get blockstore region: %w", err)
 	}
 
 	bucketRegion, err := c.BlockAdapter.GetRegion(ctx, storageNamespace)
@@ -2121,8 +2125,9 @@ func (c *Controller) validateInterRegionStorage(r *http.Request, storageNamespac
 		return fmt.Errorf("failed to get region of storage namespace %s: %w", storageNamespace, block.ErrInvalidNamespace)
 	}
 
-	if *storeRegion != bucketRegion {
-		return fmt.Errorf(`%w: namespace region ("%s") does not match block region ("%s")`, block.ErrInvalidNamespace, bucketRegion, *storeRegion)
+	blockstoreRegion := *blockstoreMetadata.Region
+	if blockstoreRegion != bucketRegion {
+		return fmt.Errorf(`%w: namespace region ("%s") does not match block region ("%s")`, block.ErrInvalidNamespace, bucketRegion, blockstoreRegion)
 	}
 
 	return nil

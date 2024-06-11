@@ -107,9 +107,8 @@ func (a *mockAdapter) BlockstoreType() string {
 	return "s3"
 }
 
-func (a *mockAdapter) BlockstoreMetadata(ctx context.Context) block.BlockstoreMetadata {
-	// not implemented at the moment
-	return block.BlockstoreMetadata{Region: nil}
+func (a *mockAdapter) BlockstoreMetadata(ctx context.Context) (block.BlockstoreMetadata, error) {
+	return block.BlockstoreMetadata{}, block.ErrOperationNotSupported
 }
 
 func (a *mockAdapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {

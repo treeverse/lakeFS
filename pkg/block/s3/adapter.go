@@ -832,11 +832,12 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeS3
 }
 
-func (a *Adapter) BlockstoreMetadata(ctx context.Context) block.BlockstoreMetadata {
-	region, _ := a.clients.GetBucketRegionDefault(ctx, "")
-	return block.BlockstoreMetadata{
-		Region: &region,
+func (a *Adapter) BlockstoreMetadata(ctx context.Context) (block.BlockstoreMetadata, error) {
+	region, err := a.clients.GetBucketRegionDefault(ctx, "")
+	if err != nil {
+		return block.BlockstoreMetadata{}, err
 	}
+	return block.BlockstoreMetadata{Region: &region}, nil
 }
 
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
