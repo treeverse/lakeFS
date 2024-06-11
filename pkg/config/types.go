@@ -44,6 +44,13 @@ func (s SecureString) SecureValue() string {
 	return string(s)
 }
 
+func (s SecureString) MarshalText() ([]byte, error) {
+	if string(s) == "" {
+		return []byte(""), nil
+	}
+	return []byte("[SECRET]"), nil
+}
+
 // OnlyString is a string that can deserialize only from a string.  Use it
 // to prevent YAML configuration reading a number-like string with leading
 // zeros, and then Viper using mapstructure to convert it silently back to a
