@@ -14,7 +14,7 @@ lakeFS Cloud
 {: .label .label-green }
 
 {: .note}
-> Auditing is only available for [lakeFS Cloud]({% link understand/lakefs-cloud.md %}).
+> Auditing is only available for [lakeFS Cloud]({% link cloud/index.md %}).
 
 {: .warning }
 > Please note, as of Jan 2024, the queryable interface within the lakeFS Cloud UI has been removed in favor of direct access to lakeFS audit logs. This document now describes how to set up and query this information using [AWS Glue](https://aws.amazon.com/glue/) as a reference.

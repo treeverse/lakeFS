@@ -57,7 +57,7 @@ It's also important to note that Amazon does NOT appear to include any sort of a
 
 * in lakeFS `auth.authentication_api.external_principals_enabled` must be set to `true` in the configuration file, other configuration (`auth.authentication_api.*`) can be found at at [configuration reference]({% link reference/configuration.md %})
 
-For the full list of the Fluffy server configuration, see [Fluffy Configuration]({% link understand/enterprise/fluffy-configuration.md %}) under `auth.external.aws_auth`
+For the full list of the Fluffy server configuration, see [Fluffy Configuration]({% link enterprise/fluffy-configuration.md %}) under `auth.external.aws_auth`
 
 
 {: .note}
