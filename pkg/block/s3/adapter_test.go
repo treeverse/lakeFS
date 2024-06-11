@@ -30,6 +30,7 @@ func getS3BlockAdapter(t *testing.T) *s3.Adapter {
 	return adapter
 }
 
+// Test basic functionality of the S3 block adapter(backed by MinIO)
 func TestS3Adapter(t *testing.T) {
 	basePath, err := url.JoinPath("s3://", bucketName)
 	require.NoError(t, err)
@@ -42,6 +43,7 @@ func TestS3Adapter(t *testing.T) {
 	blocktest.AdapterTest(t, adapter, localPath, externalPath)
 }
 
+// Test the namespace validity regex with various paths
 func TestAdapterNamespace(t *testing.T) {
 	adapter := getS3BlockAdapter(t)
 	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo().ValidityRegex)
