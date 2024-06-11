@@ -6,7 +6,7 @@ parent: lakeFS Enterprise
 
 # Architecture
 
-![img.png](docs/assets/img/enterprise/enterprise-arch.png)
+![img.png](../assets/img/enterprise/enterprise-arch.png)
 
 [1] Any user request to lakeFS via Browser or Programmatic access (SDK, HTTP
 API, lakectl).
