@@ -2,9 +2,6 @@
 title: lakeFS Cloud
 description: lakeFS Cloud is a fully-managed lakeFS solution
 nav_order: 105
-redirect_from: 
-    - /cloud.html
-    - /cloud/index.html
 ---
 
 # lakeFS Cloud

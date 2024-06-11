@@ -4,9 +4,6 @@ description: lakeFS Enterprise is an enterprise-ready lakeFS solution providing 
 has_children: true
 nav_order: 110
 has_toc: false
-redirect_from:
-- /lakefs-enterprise.html
-- /enterprise/index.html
 ---
 
 # lakeFS Enterprise
