@@ -1,0 +1,2 @@
+go test fuzz v1
+string("imported/0\x00imported 0")
