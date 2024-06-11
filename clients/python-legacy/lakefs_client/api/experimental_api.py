@@ -154,6 +154,7 @@ class ExperimentalApi(object):
                     'branch',
                     'upload_id',
                     'path',
+                    'complete_presign_multipart_upload',
                 ],
                 'nullable': [
                 ],
@@ -792,6 +793,7 @@ class ExperimentalApi(object):
         branch,
         upload_id,
         path,
+        complete_presign_multipart_upload,
         **kwargs
     ):
         """Complete a presign multipart upload request  # noqa: E501
@@ -800,7 +802,7 @@ class ExperimentalApi(object):
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.complete_presign_multipart_upload(repository, branch, upload_id, path, async_req=True)
+        >>> thread = api.complete_presign_multipart_upload(repository, branch, upload_id, path, complete_presign_multipart_upload, async_req=True)
         >>> result = thread.get()
 
         Args:
@@ -808,9 +810,9 @@ class ExperimentalApi(object):
             branch (str):
             upload_id (str):
             path (str): relative to the branch
+            complete_presign_multipart_upload (CompletePresignMultipartUpload):
 
         Keyword Args:
-            complete_presign_multipart_upload (CompletePresignMultipartUpload): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
@@ -863,6 +865,8 @@ class ExperimentalApi(object):
             upload_id
         kwargs['path'] = \
             path
+        kwargs['complete_presign_multipart_upload'] = \
+            complete_presign_multipart_upload
         return self.complete_presign_multipart_upload_endpoint.call_with_http_info(**kwargs)
 
     def create_presign_multipart_upload(

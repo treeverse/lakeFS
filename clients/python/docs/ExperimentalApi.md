@@ -136,7 +136,7 @@ void (empty response body)
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **complete_presign_multipart_upload**
-> ObjectStats complete_presign_multipart_upload(repository, branch, upload_id, path, complete_presign_multipart_upload=complete_presign_multipart_upload)
+> ObjectStats complete_presign_multipart_upload(repository, branch, upload_id, path, complete_presign_multipart_upload)
 
 Complete a presign multipart upload request
 
@@ -207,11 +207,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     branch = 'branch_example' # str | 
     upload_id = 'upload_id_example' # str | 
     path = 'path_example' # str | relative to the branch
-    complete_presign_multipart_upload = lakefs_sdk.CompletePresignMultipartUpload() # CompletePresignMultipartUpload |  (optional)
+    complete_presign_multipart_upload = lakefs_sdk.CompletePresignMultipartUpload() # CompletePresignMultipartUpload | 
 
     try:
         # Complete a presign multipart upload request
-        api_response = api_instance.complete_presign_multipart_upload(repository, branch, upload_id, path, complete_presign_multipart_upload=complete_presign_multipart_upload)
+        api_response = api_instance.complete_presign_multipart_upload(repository, branch, upload_id, path, complete_presign_multipart_upload)
         print("The response of ExperimentalApi->complete_presign_multipart_upload:\n")
         pprint(api_response)
     except Exception as e:
@@ -229,7 +229,7 @@ Name | Type | Description  | Notes
  **branch** | **str**|  | 
  **upload_id** | **str**|  | 
  **path** | **str**| relative to the branch | 
- **complete_presign_multipart_upload** | [**CompletePresignMultipartUpload**](CompletePresignMultipartUpload.md)|  | [optional] 
+ **complete_presign_multipart_upload** | [**CompletePresignMultipartUpload**](CompletePresignMultipartUpload.md)|  | 
 
 ### Return type
 

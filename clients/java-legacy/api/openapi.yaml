@@ -4704,6 +4704,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CompletePresignMultipartUpload'
+        required: true
       responses:
         "200":
           content:

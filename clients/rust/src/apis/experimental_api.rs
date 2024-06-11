@@ -171,7 +171,7 @@ pub async fn abort_presign_multipart_upload(configuration: &configuration::Confi
 }
 
 /// Completes a presign multipart upload by assembling the uploaded parts.
-pub async fn complete_presign_multipart_upload(configuration: &configuration::Configuration, repository: &str, branch: &str, upload_id: &str, path: &str, complete_presign_multipart_upload: Option<models::CompletePresignMultipartUpload>) -> Result<models::ObjectStats, Error<CompletePresignMultipartUploadError>> {
+pub async fn complete_presign_multipart_upload(configuration: &configuration::Configuration, repository: &str, branch: &str, upload_id: &str, path: &str, complete_presign_multipart_upload: models::CompletePresignMultipartUpload) -> Result<models::ObjectStats, Error<CompletePresignMultipartUploadError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;

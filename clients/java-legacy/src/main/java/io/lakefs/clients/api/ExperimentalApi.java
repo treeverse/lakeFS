@@ -236,7 +236,7 @@ public class ExperimentalApi {
      * @param branch  (required)
      * @param uploadId  (required)
      * @param path relative to the branch (required)
-     * @param completePresignMultipartUpload  (optional)
+     * @param completePresignMultipartUpload  (required)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -312,6 +312,11 @@ public class ExperimentalApi {
             throw new ApiException("Missing the required parameter 'path' when calling completePresignMultipartUpload(Async)");
         }
         
+        // verify the required parameter 'completePresignMultipartUpload' is set
+        if (completePresignMultipartUpload == null) {
+            throw new ApiException("Missing the required parameter 'completePresignMultipartUpload' when calling completePresignMultipartUpload(Async)");
+        }
+        
 
         okhttp3.Call localVarCall = completePresignMultipartUploadCall(repository, branch, uploadId, path, completePresignMultipartUpload, _callback);
         return localVarCall;
@@ -325,7 +330,7 @@ public class ExperimentalApi {
      * @param branch  (required)
      * @param uploadId  (required)
      * @param path relative to the branch (required)
-     * @param completePresignMultipartUpload  (optional)
+     * @param completePresignMultipartUpload  (required)
      * @return ObjectStats
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -352,7 +357,7 @@ public class ExperimentalApi {
      * @param branch  (required)
      * @param uploadId  (required)
      * @param path relative to the branch (required)
-     * @param completePresignMultipartUpload  (optional)
+     * @param completePresignMultipartUpload  (required)
      * @return ApiResponse&lt;ObjectStats&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -380,7 +385,7 @@ public class ExperimentalApi {
      * @param branch  (required)
      * @param uploadId  (required)
      * @param path relative to the branch (required)
-     * @param completePresignMultipartUpload  (optional)
+     * @param completePresignMultipartUpload  (required)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object

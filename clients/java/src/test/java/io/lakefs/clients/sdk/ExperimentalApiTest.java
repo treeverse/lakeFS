@@ -76,8 +76,7 @@ public class ExperimentalApiTest {
         String uploadId = null;
         String path = null;
         CompletePresignMultipartUpload completePresignMultipartUpload = null;
-        ObjectStats response = api.completePresignMultipartUpload(repository, branch, uploadId, path)
-                .completePresignMultipartUpload(completePresignMultipartUpload)
+        ObjectStats response = api.completePresignMultipartUpload(repository, branch, uploadId, path, completePresignMultipartUpload)
                 .execute();
         // TODO: test validations
     }

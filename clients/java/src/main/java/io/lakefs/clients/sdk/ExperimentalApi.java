@@ -372,6 +372,11 @@ public class ExperimentalApi {
             throw new ApiException("Missing the required parameter 'path' when calling completePresignMultipartUpload(Async)");
         }
 
+        // verify the required parameter 'completePresignMultipartUpload' is set
+        if (completePresignMultipartUpload == null) {
+            throw new ApiException("Missing the required parameter 'completePresignMultipartUpload' when calling completePresignMultipartUpload(Async)");
+        }
+
         return completePresignMultipartUploadCall(repository, branch, uploadId, path, completePresignMultipartUpload, _callback);
 
     }
@@ -396,23 +401,14 @@ public class ExperimentalApi {
         private final String branch;
         private final String uploadId;
         private final String path;
-        private CompletePresignMultipartUpload completePresignMultipartUpload;
+        private final CompletePresignMultipartUpload completePresignMultipartUpload;
 
-        private APIcompletePresignMultipartUploadRequest(String repository, String branch, String uploadId, String path) {
+        private APIcompletePresignMultipartUploadRequest(String repository, String branch, String uploadId, String path, CompletePresignMultipartUpload completePresignMultipartUpload) {
             this.repository = repository;
             this.branch = branch;
             this.uploadId = uploadId;
             this.path = path;
-        }
-
-        /**
-         * Set completePresignMultipartUpload
-         * @param completePresignMultipartUpload  (optional)
-         * @return APIcompletePresignMultipartUploadRequest
-         */
-        public APIcompletePresignMultipartUploadRequest completePresignMultipartUpload(CompletePresignMultipartUpload completePresignMultipartUpload) {
             this.completePresignMultipartUpload = completePresignMultipartUpload;
-            return this;
         }
 
         /**
@@ -506,6 +502,7 @@ public class ExperimentalApi {
      * @param branch  (required)
      * @param uploadId  (required)
      * @param path relative to the branch (required)
+     * @param completePresignMultipartUpload  (required)
      * @return APIcompletePresignMultipartUploadRequest
      * @http.response.details
      <table summary="Response Details" border="1">
@@ -519,8 +516,8 @@ public class ExperimentalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public APIcompletePresignMultipartUploadRequest completePresignMultipartUpload(String repository, String branch, String uploadId, String path) {
-        return new APIcompletePresignMultipartUploadRequest(repository, branch, uploadId, path);
+    public APIcompletePresignMultipartUploadRequest completePresignMultipartUpload(String repository, String branch, String uploadId, String path, CompletePresignMultipartUpload completePresignMultipartUpload) {
+        return new APIcompletePresignMultipartUploadRequest(repository, branch, uploadId, path, completePresignMultipartUpload);
     }
     private okhttp3.Call createPresignMultipartUploadCall(String repository, String branch, String path, Integer parts, final ApiCallback _callback) throws ApiException {
         String basePath = null;

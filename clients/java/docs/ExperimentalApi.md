@@ -122,7 +122,7 @@ null (empty response body)
 
 <a id="completePresignMultipartUpload"></a>
 # **completePresignMultipartUpload**
-> ObjectStats completePresignMultipartUpload(repository, branch, uploadId, path).completePresignMultipartUpload(completePresignMultipartUpload).execute();
+> ObjectStats completePresignMultipartUpload(repository, branch, uploadId, path, completePresignMultipartUpload).execute();
 
 Complete a presign multipart upload request
 
@@ -177,8 +177,7 @@ public class Example {
     String path = "path_example"; // String | relative to the branch
     CompletePresignMultipartUpload completePresignMultipartUpload = new CompletePresignMultipartUpload(); // CompletePresignMultipartUpload | 
     try {
-      ObjectStats result = apiInstance.completePresignMultipartUpload(repository, branch, uploadId, path)
-            .completePresignMultipartUpload(completePresignMultipartUpload)
+      ObjectStats result = apiInstance.completePresignMultipartUpload(repository, branch, uploadId, path, completePresignMultipartUpload)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -200,7 +199,7 @@ public class Example {
 | **branch** | **String**|  | |
 | **uploadId** | **String**|  | |
 | **path** | **String**| relative to the branch | |
-| **completePresignMultipartUpload** | [**CompletePresignMultipartUpload**](CompletePresignMultipartUpload.md)|  | [optional] |
+| **completePresignMultipartUpload** | [**CompletePresignMultipartUpload**](CompletePresignMultipartUpload.md)|  | |
 
 ### Return type
 

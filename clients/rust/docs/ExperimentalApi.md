@@ -67,7 +67,7 @@ Name | Type | Description  | Required | Notes
 **branch** | **String** |  | [required] |
 **upload_id** | **String** |  | [required] |
 **path** | **String** | relative to the branch | [required] |
-**complete_presign_multipart_upload** | Option<[**CompletePresignMultipartUpload**](CompletePresignMultipartUpload.md)> |  |  |
+**complete_presign_multipart_upload** | [**CompletePresignMultipartUpload**](CompletePresignMultipartUpload.md) |  | [required] |
 
 ### Return type
 

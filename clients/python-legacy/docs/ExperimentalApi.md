@@ -145,7 +145,7 @@ void (empty response body)
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **complete_presign_multipart_upload**
-> ObjectStats complete_presign_multipart_upload(repository, branch, upload_id, path)
+> ObjectStats complete_presign_multipart_upload(repository, branch, upload_id, path, complete_presign_multipart_upload)
 
 Complete a presign multipart upload request
 
@@ -228,21 +228,12 @@ with lakefs_client.ApiClient(configuration) as api_client:
             "key": "key_example",
         },
         content_type="content_type_example",
-    ) # CompletePresignMultipartUpload |  (optional)
+    ) # CompletePresignMultipartUpload | 
 
     # example passing only required values which don't have defaults set
     try:
         # Complete a presign multipart upload request
-        api_response = api_instance.complete_presign_multipart_upload(repository, branch, upload_id, path)
-        pprint(api_response)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling ExperimentalApi->complete_presign_multipart_upload: %s\n" % e)
-
-    # example passing only required values which don't have defaults set
-    # and optional values
-    try:
-        # Complete a presign multipart upload request
-        api_response = api_instance.complete_presign_multipart_upload(repository, branch, upload_id, path, complete_presign_multipart_upload=complete_presign_multipart_upload)
+        api_response = api_instance.complete_presign_multipart_upload(repository, branch, upload_id, path, complete_presign_multipart_upload)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ExperimentalApi->complete_presign_multipart_upload: %s\n" % e)
@@ -257,7 +248,7 @@ Name | Type | Description  | Notes
  **branch** | **str**|  |
  **upload_id** | **str**|  |
  **path** | **str**| relative to the branch |
- **complete_presign_multipart_upload** | [**CompletePresignMultipartUpload**](CompletePresignMultipartUpload.md)|  | [optional]
+ **complete_presign_multipart_upload** | [**CompletePresignMultipartUpload**](CompletePresignMultipartUpload.md)|  |
 
 ### Return type
 

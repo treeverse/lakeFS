@@ -238,7 +238,7 @@ class ExperimentalApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def complete_presign_multipart_upload(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], complete_presign_multipart_upload : Optional[CompletePresignMultipartUpload] = None, **kwargs) -> ObjectStats:  # noqa: E501
+    def complete_presign_multipart_upload(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], complete_presign_multipart_upload : CompletePresignMultipartUpload, **kwargs) -> ObjectStats:  # noqa: E501
         """Complete a presign multipart upload request  # noqa: E501
 
         Completes a presign multipart upload by assembling the uploaded parts.  # noqa: E501
@@ -256,7 +256,7 @@ class ExperimentalApi(object):
         :type upload_id: str
         :param path: relative to the branch (required)
         :type path: str
-        :param complete_presign_multipart_upload:
+        :param complete_presign_multipart_upload: (required)
         :type complete_presign_multipart_upload: CompletePresignMultipartUpload
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
@@ -275,7 +275,7 @@ class ExperimentalApi(object):
         return self.complete_presign_multipart_upload_with_http_info(repository, branch, upload_id, path, complete_presign_multipart_upload, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def complete_presign_multipart_upload_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], complete_presign_multipart_upload : Optional[CompletePresignMultipartUpload] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def complete_presign_multipart_upload_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], complete_presign_multipart_upload : CompletePresignMultipartUpload, **kwargs) -> ApiResponse:  # noqa: E501
         """Complete a presign multipart upload request  # noqa: E501
 
         Completes a presign multipart upload by assembling the uploaded parts.  # noqa: E501
@@ -293,7 +293,7 @@ class ExperimentalApi(object):
         :type upload_id: str
         :param path: relative to the branch (required)
         :type path: str
-        :param complete_presign_multipart_upload:
+        :param complete_presign_multipart_upload: (required)
         :type complete_presign_multipart_upload: CompletePresignMultipartUpload
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional

@@ -196,7 +196,7 @@ Name | Type | Description  | Notes
  **branch** | **String**|  |
  **uploadId** | **String**|  |
  **path** | **String**| relative to the branch |
- **completePresignMultipartUpload** | [**CompletePresignMultipartUpload**](CompletePresignMultipartUpload.md)|  | [optional]
+ **completePresignMultipartUpload** | [**CompletePresignMultipartUpload**](CompletePresignMultipartUpload.md)|  |
 
 ### Return type
 
