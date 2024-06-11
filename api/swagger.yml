@@ -4325,7 +4325,7 @@ paths:
       summary: Complete a presign multipart upload request
       description: Completes a presign multipart upload by assembling the uploaded parts.
       requestBody:
-      required: true
+        required: true
         content:
           application/json:
             schema:
