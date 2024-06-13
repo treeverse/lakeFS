@@ -14,7 +14,7 @@ lakeFS Enterprise
 {: .label .label-purple }
 
 Private preview
-{: .label .label-gray }
+{: .label .label-yellow }
 
 
 Everest is a complementary binary to lakeFS that allows users to virtually mount a remote lakeFS repository onto a local directory.
