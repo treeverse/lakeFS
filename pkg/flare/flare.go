@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
 	"time"
 
@@ -23,11 +22,10 @@ import (
 
 // defaults
 const (
-	defaultLogDateLayout          = "2006-01-02T15:04:05-07:00"
 	defaultSecretReplacementValue = "<REDACTED>"
 )
 
-var defaultEnvVarPrefixs = []string{"LAKEFS_", "HTTP_", "HOSTNAME"}
+var defaultEnvVarPrefixes = []string{"LAKEFS_", "HTTP_", "HOSTNAME"}
 
 const (
 	DirPermissions  = 0700
@@ -45,7 +43,6 @@ const (
 var (
 	ErrExtractDateFromJSONLogLine = errors.New("failed to extract date from log line")
 	ErrDateNotFound               = errors.New("date not found in log line")
-	ErrNoWriterProvided           = errors.New("writer was not provided for processing environment variables")
 
 	secretScanner        secrets.Scanner
 	secretScannerInitErr error
@@ -53,12 +50,16 @@ var (
 	plainTextLogDateRegex = regexp.MustCompile(`\[\d{4}(.\d{2}){2}(\s|T)(\d{2}.){2}\d{2}[\+-]?\d{2}:\d{2}\]`)
 )
 
+type WithTime struct {
+	Time time.Time
+}
+
 type Flare struct {
 	envVarPrefixes         []string
 	secretReplacementValue string
 	logFormat              LogFormat
 	// LogDateLayout is the layout used by time.Parse to parse dates in log lines.
-	// The default value is "2006-01-02T15:04:05-07:00".
+	// The default value is time.RFC3339.
 	// This can be changed using the WithLogDateLayout option.
 	LogDateLayout string
 }
@@ -70,9 +71,9 @@ func NewFlare(logFormat LogFormat, options ...Option) (*Flare, error) {
 		return nil, fmt.Errorf("failed to init secrets scanner: %w", secretScannerInitErr)
 	}
 	flare := &Flare{
-		envVarPrefixes:         defaultEnvVarPrefixs,
+		envVarPrefixes:         defaultEnvVarPrefixes,
 		secretReplacementValue: defaultSecretReplacementValue,
-		LogDateLayout:          defaultLogDateLayout,
+		LogDateLayout:          time.RFC3339,
 		logFormat:              logFormat,
 	}
 
@@ -83,45 +84,40 @@ func NewFlare(logFormat LogFormat, options ...Option) (*Flare, error) {
 	return flare, nil
 }
 
-// WithEnvVarPrefixes is used to replace the default list of environment variable prefixes that flare processes.
-// The default list is "LAKEFS_", "FLUFFY_", "HTTP_", "HOSTNAME".
+// WithEnvVarPrefixes replaces the default list of environment variable prefixes that flare processes.
+// The default list is "LAKEFS_", "HTTP_", "HOSTNAME".
 func WithEnvVarPrefixes(prefixes []string) Option {
 	return func(f *Flare) {
 		f.envVarPrefixes = prefixes
 	}
 }
 
-// WithAdditionalEnvVarPrefix is used to add additional environment prefixes to the default list that flare processes.
-// The default list is "LAKEFS_", "FLUFFY_", "HTTP_", "HOSTNAME".
+// WithAdditionalEnvVarPrefix adds additional environment prefixes to the default list that flare processes.
+// The default list is "LAKEFS_", "HTTP_", "HOSTNAME".
 func WithAdditionalEnvVarPrefix(envVar string) Option {
 	return func(f *Flare) {
 		f.envVarPrefixes = append(f.envVarPrefixes, envVar)
 	}
 }
 
-// WithSecretReplacementValue is used to replace the default secret replacement value of "<REDACTED>".
+// WithSecretReplacementValue replaces the default secret replacement value of "<REDACTED>".
 func WithSecretReplacementValue(v string) Option {
 	return func(f *Flare) {
 		f.secretReplacementValue = v
 	}
 }
 
-// WithLogDateLayout is used to set an alternate date layout for parsing dates in log lines.
+// WithLogDateLayout sets an alternate date layout for parsing dates in log lines.
 func WithLogDateLayout(l string) Option {
 	return func(f *Flare) {
 		f.LogDateLayout = l
 	}
 }
 
-// Marshalable is used to limit the types passable as a template parameter to MaskConfig
-type Marshalable[T any] interface {
-	Marshal() ([]byte, error)
-}
-
 // LogLineDateExtractor represents a function that extracts the date from a log line in a specific format.
 type LogLineDateExtractor func(line, logDateLayout string) (time.Time, error)
 
-var dateExpractors = map[LogFormat]LogLineDateExtractor{
+var dateExtractors = map[LogFormat]LogLineDateExtractor{
 	LogFormatJSON:      extractDateFromJSONLine,
 	LogFormatPlainText: extractDateFromPlainTextLine,
 }
@@ -133,13 +129,14 @@ func (f *Flare) ProcessConfig(cfg interface{}, outputPath, fileName string) (ret
 		return err
 	}
 
-	configOutPath := outputPath + fileName
+	configOutPath := filepath.Join(outputPath, fileName)
 	outputFile, err := os.Create(configOutPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %w", configOutPath, err)
 	}
 	defer func() {
-		if e := outputFile.Close(); retErr == nil {
+		e := outputFile.Close()
+		if retErr == nil {
 			retErr = e
 		}
 	}()
@@ -151,18 +148,21 @@ func (f *Flare) ProcessConfig(cfg interface{}, outputPath, fileName string) (ret
 // ProcessEnvVars iterates over all defined env vars, filters them according to the defined prefixes,
 // redacts secrets, and writes them out to file.
 func (f *Flare) ProcessEnvVars(outPath, fileName string) (retErr error) {
-	outputFile, err := os.OpenFile(outPath+fileName, os.O_WRONLY|os.O_CREATE, FilePremissions)
+	outputFilePath := filepath.Join(outPath, fileName)
+	outputFile, err := os.Create(outputFilePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %w", outputFilePath, err)
 	}
 	defer func() {
-		if e := outputFile.Close(); retErr == nil {
+		e := outputFile.Close()
+		if retErr == nil {
 			retErr = e
 		}
 	}()
 	bw := bufio.NewWriter(outputFile)
 	defer func() {
-		if e := bw.Flush(); retErr == nil {
+		e := bw.Flush()
+		if retErr == nil {
 			retErr = e
 		}
 	}()
@@ -171,11 +171,7 @@ func (f *Flare) ProcessEnvVars(outPath, fileName string) (retErr error) {
 	return err
 }
 
-func (f *Flare) processEnvVars(bw *bufio.Writer) error {
-	if bw == nil {
-		return ErrNoWriterProvided
-	}
-
+func (f *Flare) processEnvVars(w io.Writer) error {
 	for _, e := range os.Environ() {
 		for _, p := range f.envVarPrefixes {
 			if strings.HasPrefix(e, p) {
@@ -183,7 +179,7 @@ func (f *Flare) processEnvVars(bw *bufio.Writer) error {
 				if err != nil {
 					return err
 				}
-				if _, err := bw.WriteString(fmt.Sprintf("%s\n", re)); err != nil {
+				if _, err := w.Write([]byte(fmt.Sprintf("%s\n", re))); err != nil {
 					return err
 				}
 			}
@@ -195,7 +191,12 @@ func (f *Flare) processEnvVars(bw *bufio.Writer) error {
 
 // ZipFolder zips the files created during the flare process into a single file
 // for sharing and writes to outputPath
-func (f *Flare) ZipFolder(inputPath, outputPath string) error {
+func (f *Flare) ZipFolder(inputPath, outputPath string) (retErr error) {
+	ex, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
 	fl, err := os.Create(outputPath)
 	if err != nil {
 		return err
@@ -203,17 +204,18 @@ func (f *Flare) ZipFolder(inputPath, outputPath string) error {
 	defer fl.Close()
 
 	w := zip.NewWriter(fl)
-	defer w.Close()
+	defer func() {
+		e := w.Close()
+		if retErr == nil {
+			retErr = e
+		}
+	}()
 
 	walker := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		ex, err := os.Executable()
-		if err != nil {
-			return err
-		}
 		exPath := filepath.Dir(ex)
 		relPath, err := filepath.Rel(exPath, path)
 		if err != nil {
@@ -224,32 +226,24 @@ func (f *Flare) ZipFolder(inputPath, outputPath string) error {
 		}
 		file, err := os.Open(path)
 		if err != nil {
-			return err
+			return fmt.Errorf("%s: %w", path, err)
 		}
 		defer file.Close()
 
 		f, err := w.Create(relPath)
 		if err != nil {
-			return err
+			return fmt.Errorf("%s: %w", path, err)
 		}
 
 		_, err = io.Copy(f, file)
 		if err != nil {
-			return err
+			return fmt.Errorf("%s: %w", path, err)
 		}
 
 		return nil
 	}
 	err = filepath.Walk(inputPath, walker)
-	return err
-}
-
-// HasLogFileOutput checks the outputs property under the logging property of the config
-// to make sure logs are configured to be written to file.
-func (f *Flare) HasLogFileOutput(outputs []string) bool {
-	return slices.ContainsFunc(outputs, func(e string) bool {
-		return e != "" && e != "-" && e != "="
-	})
+	return fmt.Errorf("%s: %w", outputPath, err)
 }
 
 // SupportedLogFormat checks that the string provided is one of the supported LogFormats
@@ -291,12 +285,12 @@ func (f *Flare) ProcessLogFiles(inputPath, outputPath string, startDate, endDate
 }
 
 func extractDateFromPlainTextLine(line, logDateLayout string) (time.Time, error) {
-	idxs := plainTextLogDateRegex.FindIndex([]byte(line))
-	if idxs == nil {
+	strDate := plainTextLogDateRegex.FindString(line)
+	if strDate == "" {
 		return time.Time{}, ErrDateNotFound
 	}
 
-	strDate := line[idxs[0]+1 : idxs[1]-1]
+	strDate = strDate[1 : len(strDate)-1]
 	date, err := time.Parse(logDateLayout, strDate)
 	if err != nil {
 		return time.Time{}, err
@@ -305,36 +299,34 @@ func extractDateFromPlainTextLine(line, logDateLayout string) (time.Time, error)
 }
 
 func extractDateFromJSONLine(line, logDateLayout string) (time.Time, error) {
-	logPropsMap := make(map[string](interface{}))
-	err := json.Unmarshal([]byte(line), &logPropsMap)
+	var t WithTime
+	err := json.Unmarshal([]byte(line), &t)
 	if err != nil {
 		return time.Time{}, err
 	}
-	lineDateStr, ok := logPropsMap["time"].(string)
-	if !ok {
+
+	if t.Time.IsZero() {
 		return time.Time{}, ErrExtractDateFromJSONLogLine
 	}
-	lineDate, err := time.Parse(logDateLayout, lineDateStr)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return lineDate, nil
+
+	return t.Time, nil
 }
 
 func (f *Flare) handleLogLine(line string, start, end *time.Time) (string, error) {
-	lineDate, err := dateExpractors[f.logFormat](line, f.LogDateLayout)
+	lineDate, err := dateExtractors[f.logFormat](line, f.LogDateLayout)
 	if err != nil {
 		return "", err
 	}
-	if (start == nil || lineDate.Equal(*start) || lineDate.After(*start)) &&
-		(end == nil || lineDate.Equal(*end) || lineDate.Before(*end)) {
-		redactedLine, err := f.redactSecrets(line)
-		if err != nil {
-			return "", err
-		}
-		return redactedLine, nil
+	if !((start == nil || lineDate.Equal(*start) || lineDate.After(*start)) &&
+		(end == nil || lineDate.Equal(*end) || lineDate.Before(*end))) {
+		return "", nil
 	}
-	return "", nil
+
+	redactedLine, err := f.redactSecrets(line)
+	if err != nil {
+		return "", err
+	}
+	return redactedLine, nil
 }
 
 func (f *Flare) processLogFile(inputFileName, outputPath string, startDate, endDate *time.Time) (retErr error) {
@@ -345,47 +337,44 @@ func (f *Flare) processLogFile(inputFileName, outputPath string, startDate, endD
 	}
 	defer sourceFile.Close()
 
-	outputFileName := fmt.Sprintf("%s%s", outputPath, inputFileName)
+	outputFileName := filepath.Join(outputPath, inputFileName)
 	outputFile, err := os.OpenFile(outputFileName, os.O_WRONLY|os.O_CREATE, FilePremissions)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		if e := outputFile.Close(); retErr == nil {
+		e := outputFile.Close()
+		if retErr == nil {
 			retErr = e
 		}
 	}()
 
 	bw := bufio.NewWriter(outputFile)
 	defer func() {
-		if e := bw.Flush(); retErr == nil {
+		e := bw.Flush()
+		if retErr == nil {
 			retErr = e
 		}
 	}()
 
-	first := true
-	scanner := bufio.NewScanner(sourceFile)
+	r := bufio.NewReader(sourceFile)
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	for {
+		line, err := r.ReadString('\n')
+		if line == "" && err == io.EOF {
+			break
+		}
 		pLine, err := f.handleLogLine(line, startDate, endDate)
 		if err != nil {
 			skippedLines += 1
-			fmt.Println("failed to process log line: ", err)
+			fmt.Fprintf(os.Stderr, "failed to process log line: %s\n", err)
 		}
 
 		if pLine != "" {
-			b := strings.Builder{}
-			if !first {
-				b.WriteString("\n")
-			}
-			b.WriteString(line)
-			if _, err := bw.WriteString(b.String()); err != nil {
+			if _, err := bw.WriteString(pLine); err != nil {
 				return err
 			}
 		}
-
-		first = false
 	}
 
 	fmt.Printf("Skipped %d log lines\n", skippedLines)

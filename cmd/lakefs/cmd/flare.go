@@ -3,30 +3,31 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"slices"
-	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/flare"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const (
-	flareFilePath       = "%s/flare/%s/"
-	flareConfigFileName = "lakefs-config.yaml"
-	flareEnvVarFileName = "lakefs-env.txt"
-	flareZipFileName    = "lakefs-flare.zip"
+	flareFilePath              = "%s/flare/%s/"
+	flareConfigFileName        = "lakefs-config.yaml"
+	flareDefaultEnvVarFileName = "lakefs-env.txt"
+	flareDefaultZipFileName    = "lakefs-flare.zip"
+	flareDefaultOutputPath     = "."
 )
 
 var (
-	startLogDate       string
-	parsedStartLogDate *time.Time = nil
-	endLogDate         string
-	parsedEndLogDate   *time.Time = nil
-	packageContents    bool       = false
-	includeLogs        bool       = true
-	includeEnvVars     bool       = true
+	startLogDate         string
+	endLogDate           string
+	packageContents      bool   = false
+	includeLogs          bool   = true
+	includeEnvVars       bool   = true
+	outputPath           string = flareDefaultOutputPath
+	envVarOutputFileName string = flareDefaultEnvVarFileName
+	zipOutputFileName    string = flareDefaultZipFileName
 )
 
 var flareCmd = &cobra.Command{
@@ -34,7 +35,7 @@ var flareCmd = &cobra.Command{
 	Short: "collect configuration, environment variables, and logs for debugging and troubleshooting",
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		timestamp := strconv.FormatInt(time.Now().Unix(), 10)
+		now := time.Now().String()
 		cfg := loadConfig()
 		logFormat := flare.LogFormat(cfg.Logging.Format)
 		if !flare.SupportedLogFormat(string(logFormat)) {
@@ -44,20 +45,9 @@ var flareCmd = &cobra.Command{
 		if err != nil {
 			printMsgAndExit("failed to create flare instance", err)
 		}
-		preflightValidations(cfg, flr)
-		// we already do the validation in the preflight
-		if startLogDate != "" {
-			*parsedStartLogDate, _ = time.Parse(flr.LogDateLayout, startLogDate)
-		}
-		if endLogDate != "" {
-			*parsedEndLogDate, _ = time.Parse(flr.LogDateLayout, endLogDate)
-		}
+		parsedStartLogDate, parsedEndLogDate := preflightValidations(cfg, flr)
 
-		path, err := os.Getwd()
-		if err != nil {
-			printMsgAndExit("failed to get working directory", err)
-		}
-		flarePath := fmt.Sprintf(flareFilePath, path, timestamp)
+		flarePath := fmt.Sprintf(flareFilePath, outputPath, now)
 		err = os.MkdirAll(flarePath, flare.DirPermissions)
 		if err != nil {
 			msg := fmt.Sprintf("failed to create flare directory at %s", flarePath)
@@ -70,12 +60,10 @@ var flareCmd = &cobra.Command{
 		}
 
 		if includeLogs {
-			outFileIdx := slices.IndexFunc(cfg.Logging.Output, func(e string) bool {
-				return e != "" && e != "-" && e != "="
-			})
+			logFilePath := logging.GetLogFileOutputPath(cfg.Logging.Output)
 
 			err = flr.ProcessLogFiles(
-				cfg.Logging.Output[outFileIdx],
+				logFilePath,
 				flarePath,
 				parsedStartLogDate,
 				parsedEndLogDate,
@@ -86,14 +74,14 @@ var flareCmd = &cobra.Command{
 		}
 
 		if includeEnvVars {
-			err = flr.ProcessEnvVars(flarePath, flareEnvVarFileName)
+			err = flr.ProcessEnvVars(flarePath, envVarOutputFileName)
 			if err != nil {
 				printMsgAndExit("failed to process env vars ", err)
 			}
 		}
 
 		if packageContents {
-			err = flr.ZipFolder(flarePath, flareZipFileName)
+			err = flr.ZipFolder(flarePath, zipOutputFileName)
 			if err != nil {
 				printMsgAndExit("failed to package contents", err)
 			}
@@ -106,31 +94,33 @@ func printMsgAndExit(params ...any) {
 	os.Exit(1)
 }
 
-func preflightValidations(cfg *config.Config, flr *flare.Flare) {
-	hasFileOutput := flr.HasLogFileOutput(cfg.Logging.Output)
+func preflightValidations(cfg *config.Config, flr *flare.Flare) (*time.Time, *time.Time) {
+	hasFileOutput := logging.HasLogFileOutput(cfg.Logging.Output)
 	if !hasFileOutput {
 		printMsgAndExit("lakefs isn't configured to output logs to a file. ")
 	}
 
-	err := validateAndParseDateFlags(startLogDate, flr.LogDateLayout)
+	start, err := validateAndParseDateFlags(startLogDate, flr.LogDateLayout)
 	if err != nil {
 		printMsgAndExit("failed parsing start date flag ", err)
 	}
-	err = validateAndParseDateFlags(endLogDate, flr.LogDateLayout)
+	end, err := validateAndParseDateFlags(endLogDate, flr.LogDateLayout)
 	if err != nil {
 		printMsgAndExit("failed parsing end date flag ", err)
 	}
+	return start, end
 }
 
-func validateAndParseDateFlags(dateFlag, dateLayout string) error {
+func validateAndParseDateFlags(dateFlag, dateLayout string) (*time.Time, error) {
 	if dateFlag == "" {
-		return nil
+		return nil, nil
 	}
 
-	if _, err := time.Parse(dateLayout, dateFlag); err != nil {
-		return err
+	parsedDate, err := time.Parse(dateLayout, dateFlag)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	return &parsedDate, nil
 }
 
 //nolint:gochecknoinits
@@ -140,5 +130,8 @@ func init() {
 	flareCmd.Flags().BoolVarP(&packageContents, "package", "p", false, "Package generated artifacts into a .zip file. Default: false")
 	flareCmd.Flags().BoolVar(&includeLogs, "include-logs", true, "Collect logs. Default: true")
 	flareCmd.Flags().BoolVar(&includeEnvVars, "include-env-vars", true, "Collect environment variables. Default: true")
+	flareCmd.Flags().StringVarP(&outputPath, "output", "o", flareDefaultOutputPath, "Output path relative to the current path")
+	flareCmd.Flags().StringVar(&envVarOutputFileName, "env-var-filename", flareDefaultEnvVarFileName, "The name of the file to which env vars will be written")
+	flareCmd.Flags().StringVar(&zipOutputFileName, "zip-filename", flareDefaultZipFileName, "The file name of the output zip archive")
 	rootCmd.AddCommand(flareCmd)
 }
