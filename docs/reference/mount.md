@@ -146,40 +146,40 @@ everest umount "./pets"
 
 <!-- START EXCLUDE FROM TOC -->
 
-#### How do I get started with lakeFS Mount (Everest)?
+### How do I get started with lakeFS Mount (Everest)?
 
 lakeFS Mount is avaialble for lakeFS Cloud and lakeFS Enterprise customers. Once your setup is complete, [contact us](support@treeverse.io) to access the lakeFS Mounts (beta) binary and follow the provided docs.
 
 * Want to try lakeFS Cloud? [Signup](https://lakefs.cloud/register) for a 30-day free trial.
 * Interested in lakeFS Enterprise? [Contact sales](https://lakefs.io/contact-sales/) for a 30-day free license.
 
-####  Can I write to lakeFS using lakeFS Mount?
+###  Can I write to lakeFS using lakeFS Mount?
 
 Currently, lakeFS Mount supports read-only file system operations. Write support is on our roadmap and will be added in the future.
 
-#### What operating systems are supported by lakeFS Mount?
+### What operating systems are supported by lakeFS Mount?
 
 lakeFS Mount supports Linux and MacOS. Windows support is on the roadmap.
 
-#### How can I control access to my data when using lakeFS Mount?
+### How can I control access to my data when using lakeFS Mount?
 
 You can use lakeFS’s existing [Role-Based Access Control mechanism](../reference/security/rbac.md), which includes repository and path-level policies. lakeFS Mount translates filesystem operations into lakeFS API operations and authorizes them based on these policies.
 
-#### Does data pass through the lakeFS server when using lakeFS Mount?
+### Does data pass through the lakeFS server when using lakeFS Mount?
 
 lakeFS Mount leverages  pre-signed URLs to read data directly from the underlying object store, meaning data doesn’t  pass through the lakeFS server. By default, presign is disabled. To enable it, use:
 ```shell
 everest mount <lakefs_uri> <mount_directory> --presign
 ```
 
-#### What happens if a lakeFS branch is updated after I mount it?
+### What happens if a lakeFS branch is updated after I mount it?
 
 lakeFS Mount points to the commit that was the HEAD commit of the branch at the time of mounting. This means the local directory reflects the branch state at the time of mounting and does not update with subsequent branch changes.
 
-#### When are files downloaded to my local environment?
+### When are files downloaded to my local environment?
 lakeFS Mount uses a lazy prefetch strategy. Files are not downloaded at mount time or during operations that only inspect file metadata (e.g., `ls`). Files are downloaded only when commands that require file access (e.g., `cat`) are used.
 
-#### What are the scale limitations of lakeFS Mount, and what are the recommended configurations for dealing with large datasets?
+### What are the scale limitations of lakeFS Mount, and what are the recommended configurations for dealing with large datasets?
 
 When using lakeFS Mount, the volume of data accessed by the local machine influences the scale limitations more than the total size of the dataset under the mounted prefix. This is because lakeFS Mount uses a lazy downloading approach, meaning it only downloads the accessed files. lakeFS Mount listing capability is limited to performing efficiently for prefixes containing fewer than 8000 objects, but we are working to increase this limit.
 
@@ -187,7 +187,7 @@ When using lakeFS Mount, the volume of data accessed by the local machine influe
 
 Ensure your **cache size** is large enough to accommodate the volume of files being accessed.
 
-#### I’m already using lakectl local for working with lakeFS data locally, why should I use lakeFS Mount?
+### I’m already using lakectl local for working with lakeFS data locally, why should I use lakeFS Mount?
 
 While both lakectl local and lakeFS Mount enable working with lakeFS data locally, they serve different purposes:
 
