@@ -1,12 +1,12 @@
 package local
 
 import (
+	"container/heap"
 	"context"
 	"fmt"
 	"io/fs"
 	"net/http"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/go-openapi/swag"
@@ -191,7 +191,8 @@ func Undo(c Changes) Changes {
 // does not take into consideration the directory hierarchy. Instead, object paths include the entire path relative to the root and as a result
 // the directory or "path separator" is also taken into account when providing the listing in a lexicographical order.
 func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error) error) error {
-	var dirQueue []string
+	var dirQueue SortedQueue
+
 	err := filepath.Walk(root, func(p string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -201,24 +202,24 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 		}
 		if info.IsDir() {
 			// TODO: We don't return dir results for the listing, how will this effect directory markers, and can we even support directory markers?
-			// Save encountered directories in a queue and compare them with the first appearance of an file in that level
-			dirQueue = append(dirQueue, p+path.Separator) // add path separator to dir name and sort it later
+			// Save encountered directories in a sorted queue and compare them with the first appearance of an file in that level
+			heap.Push(&dirQueue, p+path.Separator) // add path separator to dir name and sort it later
 			return filepath.SkipDir
 		}
 
-		// It is enough to compare the file's last char with the path separator in order to determine whether
-		// file > from all preceding directories, otherwise we should have gotten the file from the walk function before.
-		if len(dirQueue) > 0 && string(p[len(p)-1]) > path.Separator {
-			// Sort the queue since the order might change after adding the suffix
-			sort.Strings(dirQueue)
-			for _, dir := range dirQueue {
+		heap.Init(&dirQueue)
+		for dirQueue.Len() > 0 {
+			dir := heap.Pop(&dirQueue).(string)
+			if p > dir {
 				if err = WalkS3(dir, callbackFunc); err != nil {
 					return err
 				}
+			} else { // Put it back in its place
+				heap.Push(&dirQueue, dir)
+				break
 			}
-			dirQueue = []string{} // Empty queue once finished processing dirs
 		}
-		// Process the after we finished processing all the dirs that precede it
+		// Process the file after we finished processing all the dirs that precede it
 		if err = callbackFunc(p, info, err); err != nil {
 			return err
 		}
@@ -229,9 +230,8 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 	}
 
 	// Finally, finished walking over FS, handle remaining dirs
-	// Sort the queue since the order might change after adding the suffix
-	sort.Strings(dirQueue)
-	for _, dir := range dirQueue {
+	for dirQueue.Len() > 0 {
+		dir := heap.Pop(&dirQueue).(string)
 		if err = WalkS3(dir, callbackFunc); err != nil {
 			return err
 		}

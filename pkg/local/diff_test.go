@@ -275,6 +275,10 @@ func TestWalkS3(t *testing.T) {
 			Name:     "files mixed with directories",
 			FileList: []string{"imported/0000/1", "imported/00000", "imported/00010/1"},
 		},
+		{
+			Name:     "file in between",
+			FileList: []string{"imported,/0000/1", "imported.", "imported/00010/1"},
+		},
 	}
 	for _, tt := range cases {
 		t.Run(tt.Name, func(t *testing.T) {
