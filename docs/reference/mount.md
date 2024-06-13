@@ -13,6 +13,9 @@ lakeFS Cloud
 lakeFS Enterprise
 {: .label .label-purple }
 
+Private preview
+{: .label .label-gray }
+
 
 Everest is a complementary binary to lakeFS that allows users to virtually mount a remote lakeFS repository onto a local directory.
 Once mounted, users can access the data as if it resides on their local filesystem, using any tool, library, or framework that reads from a local filesystem.
@@ -190,7 +193,7 @@ While both lakectl local and lakeFS Mount enable working with lakeFS data locall
 
 ##### Use lakectl local
 
-* For enabling lakeFS writes with `[lakectl local commit](https://docs.lakefs.io/reference/cli.html#lakectl-local-commit)`.
+* For enabling lakeFS writes with [lakectl local commit](https://docs.lakefs.io/reference/cli.html#lakectl-local-commit).
 * To integrate seamlessly with [Git](https://docs.lakefs.io/integrations/git.html).
 
 ##### Use lakeFS Mount
