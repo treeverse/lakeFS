@@ -23,6 +23,7 @@ lakeFS Enterprise solution consists of 2 main components:
 2. [Docker Compose](https://docs.docker.com/compose/install/) installed version `2.23.1` or higher on your machine.
 
 The following docker-compose file will spin up lakeFS, Fluffy and postgres as a shared KV database. 
+For additional examples check out the [lakeFS Enterprise sample](https://github.com/treeverse/lakeFS-samples/tree/main/02_lakefs_enterprise) for all-in-one setup including storage and spark.
 
 ⚠️ Using a local postgres is not suitable for production use-cases.
 
@@ -107,9 +108,9 @@ configs:
 <div markdown="1" id="docker-compose-with-sso">
 This setup uses OIDC as the SSO authentication method thus requiring a valid OIDC configuration.
 
-1. Create a `.env` file in the same directory as the `docker-compose.yaml` with the required configurations, those will be added to the docker compose file. 
+Create a `.env` file in the same directory as the `docker-compose.yaml` with the required configurations, docker compose will automatically use that. 
 
-```sh
+```
 FLUFFY_AUTH_OIDC_CLIENT_ID=
 FLUFFY_AUTH_OIDC_CLIENT_SECRET=
 # The name of the query parameter that is used to pass the client ID to the logout endpoint of the SSO provider, i.e client_id
@@ -120,7 +121,7 @@ FLUFFY_AUTH_LOGOUT_REDIRECT_URL=https://my-sso.com/logout
 LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
 ```
 
-2. Create `docker-compose.yaml` file with the following content
+Next, create `docker-compose.yaml` file with the following content.
 
 ```yaml
 version: "3"
@@ -213,6 +214,9 @@ configs:
             - returnTo
             - http://localhost:8080/oidc/login
 ```
+
+Test the OIDC configuration works - in your browser go to [http://localhost:8080](http://localhost:8080) to access lakeFS UI.
+
 </div>
 </div>
 
