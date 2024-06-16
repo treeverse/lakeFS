@@ -105,7 +105,114 @@ configs:
 
 </div>
 <div markdown="1" id="docker-compose-with-sso">
-This setup uses OIDC as the SSO authentication method.  
+This setup uses OIDC as the SSO authentication method thus requiring a valid OIDC configuration.
+
+1. Create a `.env` file in the same directory as the `docker-compose.yaml` with the required configurations, those will be added to the docker compose file. 
+
+```sh
+FLUFFY_AUTH_OIDC_CLIENT_ID=
+FLUFFY_AUTH_OIDC_CLIENT_SECRET=
+# The name of the query parameter that is used to pass the client ID to the logout endpoint of the SSO provider, i.e client_id
+FLUFFY_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=
+FLUFFY_AUTH_OIDC_URL=https://my-sso.com/
+FLUFFY_AUTH_LOGOUT_REDIRECT_URL=https://my-sso.com/logout
+# Optional: display a friendly name in the lakeFS UI by specifying which claim from the provider to show (i.e name, nickname, email etc)
+LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
+```
+
+2. Create `docker-compose.yaml` file with the following content
+
+```yaml
+version: "3"
+services:
+  lakefs:
+    image: "treeverse/lakefs:1.25.0"
+    command: "RUN"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - "postgres"
+    environment:
+      - LAKEFS_LISTEN_ADDRESS=0.0.0.0:8080
+      - LAKEFS_LOGGING_LEVEL=DEBUG
+      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY="random_secret"
+      - LAKEFS_AUTH_API_ENDPOINT=http://fluffy:9000/api/v1
+      - LAKEFS_AUTH_API_SUPPORTS_INVITES=true
+      - LAKEFS_AUTH_UI_CONFIG_LOGIN_URL=http://localhost:8000/oidc/login
+      - LAKEFS_AUTH_UI_CONFIG_LOGOUT_URL=http://localhost:8000/oidc/logout
+      - LAKEFS_AUTH_UI_CONFIG_RBAC=internal
+      - LAKEFS_AUTH_AUTHENTICATION_API_ENDPOINT=http://localhost:8000/api/v1
+      - LAKEFS_AUTH_AUTHENTICATION_API_EXTERNAL_PRINCIPALS_ENABLED=true
+      - LAKEFS_DATABASE_TYPE=postgres
+      - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
+      - LAKEFS_BLOCKSTORE_TYPE=local
+      - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
+      - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
+      - LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=${LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME}
+    entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
+    configs:
+      - source: lakefs.yaml
+        target: /etc/lakefs/config.yaml
+  postgres:
+    image: "postgres:11"
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: lakefs
+      POSTGRES_PASSWORD: lakefs
+
+  fluffy:
+    image: "${FLUFFY_REPO:-treeverse}/fluffy:${TAG:-0.4.4}"
+    command: "${COMMAND:-run}"
+    ports:
+      - "8000:8000"
+      - "9000:9000"
+    depends_on:
+      - "postgres"
+    environment:
+      - FLUFFY_LOGGING_LEVEL=DEBUG
+      - FLUFFY_DATABASE_TYPE=postgres
+      - FLUFFY_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
+      - FLUFFY_AUTH_ENCRYPT_SECRET_KEY="random_secret"
+      - FLUFFY_AUTH_SERVE_LISTEN_ADDRESS=0.0.0.0:9000
+      - FLUFFY_LISTEN_ADDRESS=0.0.0.0:8000
+      - FLUFFY_AUTH_SERVE_DISABLE_AUTHENTICATION=true
+      - FLUFFY_AUTH_LOGOUT_REDIRECT_URL=${FLUFFY_AUTH_LOGOUT_REDIRECT_URL}
+      - FLUFFY_AUTH_POST_LOGIN_REDIRECT_URL=http://localhost:8080/
+      - FLUFFY_AUTH_OIDC_ENABLED=true
+      - FLUFFY_AUTH_OIDC_URL=${FLUFFY_AUTH_OIDC_URL}
+      - FLUFFY_AUTH_OIDC_CLIENT_ID=${FLUFFY_AUTH_OIDC_CLIENT_ID}
+      - FLUFFY_AUTH_OIDC_CLIENT_SECRET=${FLUFFY_AUTH_OIDC_CLIENT_SECRET}
+      - FLUFFY_AUTH_OIDC_CALLBACK_BASE_URL=http://localhost:8000
+      - FLUFFY_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${FLUFFY_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
+    entrypoint: [ "/app/wait-for", "postgres:5432", "--", "/app/fluffy" ]
+    configs:
+      - source: fluffy.yaml
+        target: /etc/fluffy/config.yaml
+
+ #This tweak is unfortunate but also necessary. logout_endpoint_query_parameters is a list
+ #of strings which isn't parsed nicely as env vars.
+configs:
+  lakefs.yaml:
+    content: |
+      auth:
+        ui_config:
+          login_cookie_names:
+            - internal_auth_session
+            - oidc_auth_session
+        oidc:
+          # friendly_name_claim_name: "name"        
+          default_initial_groups:
+            - Admins
+
+  fluffy.yaml:
+    content: |
+      auth:
+        oidc:
+          logout_endpoint_query_parameters:
+            - returnTo
+            - http://localhost:8080/oidc/login
+```
 </div>
 </div>
 
