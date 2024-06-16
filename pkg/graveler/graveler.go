@@ -1577,7 +1577,7 @@ func (g *Graveler) SetBranchProtectionRules(ctx context.Context, repository *Rep
 // TODO: in most cases it is used by Get flow, assuming that usually the key will be found in committed we need to parallelize the get from tokens
 func (g *Graveler) getFromStagingArea(ctx context.Context, b *Branch, key Key) (*Value, error) {
 	if b.StagingToken == "" {
-		return nil, ErrNotFound
+		return nil, fmt.Errorf("missing staging token: %w", ErrNotFound)
 	}
 	tokens := []StagingToken{b.StagingToken}
 	tokens = append(tokens, b.SealedTokens...)
@@ -1870,7 +1870,7 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 // listStagingAreaWithoutCompaction will not return changes that were already compacted and saved in the CompactedBaseMetaRangeID
 func (g *Graveler) listStagingAreaWithoutCompaction(ctx context.Context, b *Branch, batchSize int) (ValueIterator, error) {
 	if b.StagingToken == "" {
-		return nil, ErrNotFound
+		return nil, fmt.Errorf("missing staging token: %w", ErrNotFound)
 	}
 	it := g.StagingManager.List(ctx, b.StagingToken, batchSize)
 
