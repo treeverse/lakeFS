@@ -14,7 +14,6 @@ type FakeGraveler struct {
 	KeyValue                   map[string]*graveler.Value
 	Err                        error
 	ListIteratorFactory        func() graveler.ValueIterator
-	ListStagingIteratorFactory func(token graveler.StagingToken) graveler.ValueIterator
 	DiffIteratorFactory        func() graveler.DiffIterator
 	RepositoryIteratorFactory  func() graveler.RepositoryIterator
 	BranchIteratorFactory      func() graveler.BranchIterator
@@ -123,13 +122,6 @@ func (g *FakeGraveler) Delete(ctx context.Context, repository *graveler.Reposito
 
 func (g *FakeGraveler) DeleteBatch(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, keys []graveler.Key, _ ...graveler.SetOptionsFunc) error {
 	return nil
-}
-
-func (g *FakeGraveler) ListStaging(_ context.Context, b *graveler.Branch, _ int) (graveler.ValueIterator, error) {
-	if g.Err != nil {
-		return nil, g.Err
-	}
-	return g.ListStagingIteratorFactory(b.StagingToken), nil
 }
 
 func (g *FakeGraveler) List(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.Ref, _ int) (graveler.ValueIterator, error) {

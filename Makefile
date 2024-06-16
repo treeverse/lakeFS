@@ -67,7 +67,7 @@ clean:
 		$(UI_BUILD_DIR) \
 		$(UI_DIR)/node_modules \
 		pkg/api/apigen/lakefs.gen.go \
-		pkg/auth/client.gen.go
+		pkg/auth/*.gen.go
 
 check-licenses: check-licenses-go-mod check-licenses-npm
 
@@ -211,7 +211,8 @@ gen-code: gen-api ## Run the generator for inline commands
 		./pkg/graveler/sstable \
 		./pkg/kv \
 		./pkg/permissions \
-		./pkg/pyramid
+		./pkg/pyramid \
+		./tools/wrapgen/testcode
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary
@@ -291,6 +292,14 @@ validate-mockgen: gen-code
 validate-permissions-gen: gen-code
 	git diff --quiet -- pkg/permissions/actions.gen.go || (echo "Modification verification failed!  pkg/permissions/actions.gen.go"; false)
 
+.PHONY: validate-wrapper
+validate-wrapper: gen-code
+	git diff --quiet -- pkg/auth/wrapper.gen.go || (echo "Modification verification failed! pkg/auth/wrapper.gen.go"; false)
+
+.PHONY: validate-wrapgen-testcode
+validate-wrapgen-testcode: gen-code
+	git diff --quiet -- ./tools/wrapgen/testcode || (echo "Modification verification failed! tools/wrapgen/testcode"; false)
+
 validate-reference:
 	git diff --quiet -- docs/reference/cli.md || (echo "Modification verification failed! docs/reference/cli.md"; false)
 
@@ -313,7 +322,11 @@ validate-python-wrapper:
 	git diff --quiet -- clients/python-wrapper || (echo 'Modification verification failed! python wrapper client'; false)
 
 # Run all validation/linting steps
-checks-validator: lint validate-fmt validate-proto validate-client-python validate-client-java validate-client-rust validate-reference validate-mockgen validate-permissions-gen
+checks-validator: lint validate-fmt validate-proto \
+	validate-client-python validate-client-java validate-client-rust validate-reference \
+	validate-mockgen \
+	validate-permissions-gen \
+	validate-wrapper validate-wrapgen-testcode
 
 python-wrapper-lint:
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python-wrapper $(PYTHON_IMAGE) /bin/bash -c "./pylint.sh"
@@ -343,4 +356,4 @@ help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # helpers
-gen: gen-ui gen-api clients gen-docs
+gen: gen-ui gen-api gen-code clients gen-docs

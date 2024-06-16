@@ -1,8 +1,9 @@
 ---
 name: Feature request
+description: Suggest an idea for lakeFS
 about: Suggest an idea for lakeFS
 title: ''
-labels: ''
+labels: ["feature-request", "contributor"]
 assignees: ''
 
 ---
