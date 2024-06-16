@@ -375,21 +375,16 @@ func preRunCmd(cmd *cobra.Command) {
 		return
 	}
 
-	if errors.As(cfgErr, &viper.ConfigFileNotFoundError{}) && cfgFile != "" {
-		// specific message in case the file isn't found
-		DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgErr)
-	}
-	if cfgErr != nil {
+	if cfgFile != "" && cfgErr != nil {
 		DieFmt("error reading configuration file: %v", cfgErr)
 	}
 
 	logging.ContextUnavailable().
 		WithField("file", viper.ConfigFileUsed()).
 		Debug("loaded configuration from file")
-	err = viper.UnmarshalExact(&cfg, viper.DecodeHook(
-		mapstructure.ComposeDecodeHookFunc(
-			lakefsconfig.DecodeOnlyString,
-			mapstructure.StringToTimeDurationHookFunc())))
+	err = viper.UnmarshalExact(&cfg, viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(
+		lakefsconfig.DecodeOnlyString,
+		mapstructure.StringToTimeDurationHookFunc())))
 	if err != nil {
 		DieFmt("error unmarshal configuration: %v", err)
 	}
@@ -547,7 +542,4 @@ func initConfig() {
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 
 	cfgErr = viper.ReadInConfig()
-	if errors.Is(cfgErr, viper.ConfigFileNotFoundError{}) {
-		DieFmt("Failed to read config file '%s': %s", viper.ConfigFileUsed(), cfgErr)
-	}
 }
