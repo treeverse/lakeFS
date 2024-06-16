@@ -522,8 +522,8 @@ func (l *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeLocal
 }
 
-func (l *Adapter) BlockstoreMetadata(ctx context.Context) (block.BlockstoreMetadata, error) {
-	return block.BlockstoreMetadata{}, block.ErrOperationNotSupported
+func (l *Adapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMetadata, error) {
+	return nil, block.ErrOperationNotSupported
 }
 
 func (l *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {

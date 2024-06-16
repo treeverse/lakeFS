@@ -133,11 +133,11 @@ func (a *MockAdapter) BlockstoreType() string {
 	return "s3"
 }
 
-func (a *MockAdapter) BlockstoreMetadata(_ context.Context) (block.BlockstoreMetadata, error) {
+func (a *MockAdapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
 	if a.blockstoreMetadata != nil {
-		return *a.blockstoreMetadata, nil
+		return a.blockstoreMetadata, nil
 	} else {
-		return block.BlockstoreMetadata{}, block.ErrOperationNotSupported
+		return nil, block.ErrOperationNotSupported
 	}
 }
 
