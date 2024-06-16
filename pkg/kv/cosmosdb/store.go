@@ -356,11 +356,10 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		store:        s,
 		partitionKey: partitionKey,
 		startKey:     options.KeyStart,
-		limit:        options.BatchSize,
 		queryCtx:     ctx,
 		encoding:     encoding,
 	}
-	if err := it.runQuery(); err != nil {
+	if err := it.runQuery(options.BatchSize); err != nil {
 		return nil, convertError(err)
 	}
 	return it, nil
@@ -373,7 +372,6 @@ type EntriesIterator struct {
 	store        *Store
 	partitionKey []byte
 	startKey     []byte
-	limit        int
 
 	entry        *kv.Entry
 	err          error
@@ -445,7 +443,8 @@ func (e *EntriesIterator) Next() bool {
 func (e *EntriesIterator) SeekGE(key []byte) {
 	e.startKey = key
 	if !e.isInRange() {
-		if err := e.runQuery(); err != nil {
+		// '-1' Used for dynamic page size.
+		if err := e.runQuery(-1); err != nil {
 			e.err = convertError(err)
 		}
 		return
@@ -476,11 +475,11 @@ func (e *EntriesIterator) Close() {
 	e.err = kv.ErrClosedEntries
 }
 
-func (e *EntriesIterator) runQuery() error {
+func (e *EntriesIterator) runQuery(limit int) error {
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(e.partitionKey))
 	e.queryPager = e.store.containerClient.NewQueryItemsPager("select * from c where c.key >= @start order by c.key", pk, &azcosmos.QueryOptions{
 		ConsistencyLevel: e.store.consistencyLevel.ToPtr(),
-		PageSizeHint:     int32(e.limit),
+		PageSizeHint:     int32(limit),
 		QueryParameters: []azcosmos.QueryParameter{{
 			Name:  "@start",
 			Value: encoding.EncodeToString(e.startKey),

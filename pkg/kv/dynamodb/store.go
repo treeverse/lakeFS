@@ -45,7 +45,7 @@ type EntriesIterator struct {
 	store        *Store
 	queryResult  *dynamodb.QueryOutput
 	currEntryIdx int
-	limit        int64
+	limit        int
 }
 
 type DynKVItem struct {
@@ -380,19 +380,22 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		return nil, kv.ErrMissingPartitionKey
 	}
 	// limit set to the minimum 'params.ScanLimit' and 'options.BatchSize', unless 0 (not set)
-	limit := s.params.ScanLimit
+	firstScanLimit := s.params.ScanLimit
 	batchSize := int64(options.BatchSize)
-	if batchSize != 0 && limit != 0 && batchSize < limit {
-		limit = batchSize
+	if batchSize != 0 && firstScanLimit != 0 && batchSize < firstScanLimit {
+		firstScanLimit = batchSize
 	}
 	it := &EntriesIterator{
 		partitionKey: partitionKey,
 		startKey:     options.KeyStart,
 		scanCtx:      ctx,
 		store:        s,
-		limit:        limit,
+		limit:        int(s.params.ScanLimit),
 	}
-	it.runQuery()
+
+	// Setting the limit just for the first scan to avoid issues like
+	// https://github.com/treeverse/lakeFS/issues/7864
+	it.runQuery(int(firstScanLimit))
 	if it.err != nil {
 		err := it.err
 		if s.isSlowDownErr(it.err) {
@@ -427,7 +430,7 @@ func (e *EntriesIterator) SeekGE(key []byte) {
 	if !e.isInRange(key) {
 		e.startKey = key
 		e.exclusiveStartKey = nil
-		e.runQuery()
+		e.runQuery(e.limit)
 		return
 	}
 	var item DynKVItem
@@ -453,7 +456,7 @@ func (e *EntriesIterator) Next() bool {
 			return false
 		}
 		e.exclusiveStartKey = e.queryResult.LastEvaluatedKey
-		e.runQuery()
+		e.runQuery(e.limit)
 		if e.err != nil {
 			return false
 		}
@@ -483,7 +486,7 @@ func (e *EntriesIterator) Close() {
 	e.err = kv.ErrClosedEntries
 }
 
-func (e *EntriesIterator) runQuery() {
+func (e *EntriesIterator) runQuery(limit int) {
 	expressionAttributeValues := map[string]types.AttributeValue{
 		":partitionkey": &types.AttributeValueMemberB{
 			Value: e.partitionKey,
@@ -505,9 +508,8 @@ func (e *EntriesIterator) runQuery() {
 		ExclusiveStartKey:         e.exclusiveStartKey,
 		ReturnConsumedCapacity:    types.ReturnConsumedCapacityTotal,
 	}
-	if e.limit != 0 {
-		queryInput.Limit = aws.Int32(int32(e.limit))
-	}
+
+	queryInput.Limit = aws.Int32(int32(limit))
 
 	queryResult, err := e.store.svc.Query(e.scanCtx, queryInput)
 	const operation = "Query"
