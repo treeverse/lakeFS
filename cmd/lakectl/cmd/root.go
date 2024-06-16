@@ -302,56 +302,8 @@ var rootCmd = &cobra.Command{
 	Short: "A cli tool to explore manage and work with lakeFS",
 	Long:  `lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		logging.SetLevel(logLevel)
-		logging.SetOutputFormat(logFormat)
-		err := logging.SetOutputs(logOutputs, 0, 0)
-		if err != nil {
-			DieFmt("Failed to setup logging: %s", err)
-		}
-		if noColorRequested {
-			DisableColors()
-		}
-		if cmd == configCmd {
-			return
-		}
-
-		if cfgErr == nil {
-			logging.ContextUnavailable().
-				WithField("file", viper.ConfigFileUsed()).
-				Debug("loaded configuration from file")
-		} else if errors.As(cfgErr, &viper.ConfigFileNotFoundError{}) {
-			if cfgFile != "" {
-				// specific message in case the file isn't found
-				DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgErr)
-			}
-			// if the config file wasn't provided, try to run using the default values + env vars
-		} else if cfgErr != nil {
-			// other errors while reading the config file
-			DieFmt("error reading configuration file: %v", cfgErr)
-		}
-
-		err = viper.UnmarshalExact(&cfg, viper.DecodeHook(
-			mapstructure.ComposeDecodeHookFunc(
-				lakefsconfig.DecodeOnlyString,
-				mapstructure.StringToTimeDurationHookFunc())))
-		if err != nil {
-			DieFmt("error unmarshal configuration: %v", err)
-		}
-
-		if cmd.HasParent() {
-			// Don't send statistics for root command or if one of the excluding
-			var cmdName string
-			for curr := cmd; curr.HasParent(); curr = curr.Parent() {
-				if cmdName != "" {
-					cmdName = curr.Name() + "_" + cmdName
-				} else {
-					cmdName = curr.Name()
-				}
-			}
-			if !slices.Contains(excludeStatsCmds, cmdName) {
-				sendStats(cmd.Context(), getClient(), cmdName)
-			}
-		}
+		preRunCmd(cmd)
+		sendStats(cmd, "")
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if !Must(cmd.Flags().GetBool("version")) {
@@ -409,29 +361,70 @@ var excludeStatsCmds = []string{
 	"config",
 }
 
-func sendStats(ctx context.Context, client apigen.ClientWithResponsesInterface, cmd string) {
-	if version.IsVersionUnreleased() {
+func preRunCmd(cmd *cobra.Command) {
+	logging.SetLevel(logLevel)
+	logging.SetOutputFormat(logFormat)
+	err := logging.SetOutputs(logOutputs, 0, 0)
+	if err != nil {
+		DieFmt("Failed to setup logging: %s", err)
+	}
+	if noColorRequested {
+		DisableColors()
+	}
+	if cmd == configCmd {
 		return
 	}
 
-	resp, err := client.PostStatsEventsWithResponse(ctx, apigen.PostStatsEventsJSONRequestBody{
-		Events: []apigen.StatsEvent{
-			{
-				Class: "lakectl",
-				Name:  cmd,
-				Count: 1,
-			},
-		},
-	})
-
-	var errStr string
-	if err != nil {
-		errStr = err.Error()
-	} else if resp.StatusCode() != http.StatusNoContent {
-		errStr = resp.Status()
+	if cfgFile != "" && cfgErr != nil {
+		DieFmt("error reading configuration file: %v", cfgErr)
 	}
-	if errStr != "" {
-		_, _ = fmt.Fprintf(os.Stderr, "Warning: failed sending statistics: %s\n", errStr)
+
+	logging.ContextUnavailable().
+		WithField("file", viper.ConfigFileUsed()).
+		Debug("loaded configuration from file")
+	err = viper.UnmarshalExact(&cfg, viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(
+		lakefsconfig.DecodeOnlyString,
+		mapstructure.StringToTimeDurationHookFunc())))
+	if err != nil {
+		DieFmt("error unmarshal configuration: %v", err)
+	}
+}
+
+func sendStats(cmd *cobra.Command, cmdSuffix string) {
+	if version.IsVersionUnreleased() || !cmd.HasParent() { // Don't send statistics for root command
+		return
+	}
+	var cmdName string
+	for curr := cmd; curr.HasParent(); curr = curr.Parent() {
+		if cmdName != "" {
+			cmdName = curr.Name() + "_" + cmdName
+		} else {
+			cmdName = curr.Name()
+		}
+	}
+	if cmdSuffix != "" {
+		cmdName = cmdName + "_" + cmdSuffix
+	}
+	if !slices.Contains(excludeStatsCmds, cmdName) { // Skip excluded commands
+		resp, err := getClient().PostStatsEventsWithResponse(cmd.Context(), apigen.PostStatsEventsJSONRequestBody{
+			Events: []apigen.StatsEvent{
+				{
+					Class: "lakectl",
+					Name:  cmdName,
+					Count: 1,
+				},
+			},
+		})
+
+		var errStr string
+		if err != nil {
+			errStr = err.Error()
+		} else if resp.StatusCode() != http.StatusNoContent {
+			errStr = resp.Status()
+		}
+		if errStr != "" {
+			_, _ = fmt.Fprintf(os.Stderr, "Warning: failed sending statistics: %s\n", errStr)
+		}
 	}
 }
 
@@ -549,7 +542,4 @@ func initConfig() {
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 
 	cfgErr = viper.ReadInConfig()
-	if errors.Is(cfgErr, viper.ConfigFileNotFoundError{}) {
-		DieFmt("Failed to read config file '%s': %s", viper.ConfigFileUsed(), cfgErr)
-	}
 }
