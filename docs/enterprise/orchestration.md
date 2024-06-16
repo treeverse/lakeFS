@@ -13,8 +13,7 @@ parent: lakeFS Enterprise
 lakeFS Enterprise solution consists of 2 main components:
 1. lakeFS - Open Source: [treeverse/lakeFS](https://hub.docker.com/r/treeverse/lakefs),
    release info found in [Github releases](https://github.com/treeverse/lakeFS/releases).
-2. Fluffy - Proprietary: In charge of the Enterprise features. Can be retrieved from
-   [Treeverse Dockerhub](https://hub.docker.com/u/treeverse) using the granted token, please [contact us](mailto:support@treeverse.io) to get access to the Dockerhub image.
+2. Fluffy - Proprietary: In charge of the Enterprise features. Can be retrieved from [Treeverse Dockerhub](https://hub.docker.com/u/treeverse) using the granted token, please [contact support](mailto:support@treeverse.io) to get access to the Dockerhub image.
 
 ## Quickstart with Docker Compose
 
@@ -26,6 +25,7 @@ lakeFS Enterprise solution consists of 2 main components:
 
 
 The following docker-compose file will spin up lakeFS, Fluffy and postgres as a shared KV database. 
+
 ⚠️ Using a local postgres is not suitable for production use-cases.
 
 <div class="tabs">
@@ -34,12 +34,12 @@ The following docker-compose file will spin up lakeFS, Fluffy and postgres as a 
     <li><a href="#docker-compose-with-sso">With SSO</a></li>
   </ul> 
   <div markdown="1" id="docker-compose-no-sso">
-    For ease of use, this example  does not use SSO and only supports basic authentication of access key and secret key.
+    For simplicity, this example  does not use SSO and only supports basic authentication of access key and secret key.
     
     1. Create `docker-compose.yaml` file with the following content
     2. Run `docker compose up` in the same directory as the `docker-compose.yaml` file.
-   
-    ```yaml
+
+```yaml
 version: "3"
 services:
   lakefs:
@@ -102,7 +102,8 @@ configs:
           login_cookie_names:
             - internal_auth_session
 
-    ```
+```
+
   </div>
     <div markdown="1" id="docker-compose-with-sso">
     This setup uses OIDC as the SSO authentication method.  
