@@ -19,7 +19,7 @@ lakeFS Enterprise solution consists of 2 main components:
 
 ### Prerequisites
 
-1. Access to download [dockerhub/fluffy](https://hub.docker.com/r/treeverse/fluffy) Docker image, to login locally `docker login -u <USERNAME> -p <TOKEN>`. Please [contact us](mailto:support@treeverse.io) to get access to the Dockerhub image.
+1. Access to download [dockerhub/fluffy](https://hub.docker.com/u/treeverse) Docker image, to login locally `docker login -u <USERNAME> -p <TOKEN>`. Please [contact us](mailto:support@treeverse.io) to get access to the Dockerhub image.
 2. [Docker Compose](https://docs.docker.com/compose/install/) installed version `2.23.1` or higher on your machine.
 
 
