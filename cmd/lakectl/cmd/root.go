@@ -375,14 +375,14 @@ func preRunCmd(cmd *cobra.Command) {
 		return
 	}
 
-if  errors.As(cfgErr, &viper.ConfigFileNotFoundError{}) && cfgFile != "" {
+	if errors.As(cfgErr, &viper.ConfigFileNotFoundError{}) && cfgFile != "" {
 		// specific message in case the file isn't found
 		DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgErr)
 	}
 	if cfgErr != nil {
 		DieFmt("error reading configuration file: %v", cfgErr)
 	}
-	
+
 	logging.ContextUnavailable().
 		WithField("file", viper.ConfigFileUsed()).
 		Debug("loaded configuration from file")
@@ -396,43 +396,40 @@ if  errors.As(cfgErr, &viper.ConfigFileNotFoundError{}) && cfgFile != "" {
 }
 
 func sendStats(cmd *cobra.Command, cmdSuffix string) {
-	if cmd.HasParent() {
-		// Don't send statistics for root command or if one of the excluding
-		var cmdName string
-		for curr := cmd; curr.HasParent(); curr = curr.Parent() {
-			if cmdName != "" {
-				cmdName = curr.Name() + "_" + cmdName
-			} else {
-				cmdName = curr.Name()
-			}
-		}
-		if cmdSuffix != "" {
-			cmdName = cmdName + "_" + cmdSuffix
-		}
-		if !slices.Contains(excludeStatsCmds, cmdName) {
-			resp, err := getClient().PostStatsEventsWithResponse(cmd.Context(), apigen.PostStatsEventsJSONRequestBody{
-				Events: []apigen.StatsEvent{
-					{
-						Class: "lakectl",
-						Name:  cmdName,
-						Count: 1,
-					},
-				},
-			})
-
-			var errStr string
-			if err != nil {
-				errStr = err.Error()
-			} else if resp.StatusCode() != http.StatusNoContent {
-				errStr = resp.Status()
-			}
-			if errStr != "" {
-				_, _ = fmt.Fprintf(os.Stderr, "Warning: failed sending statistics: %s\n", errStr)
-			}
+	if version.IsVersionUnreleased() || !cmd.HasParent() { // Don't send statistics for root command
+		return
+	}
+	var cmdName string
+	for curr := cmd; curr.HasParent(); curr = curr.Parent() {
+		if cmdName != "" {
+			cmdName = curr.Name() + "_" + cmdName
+		} else {
+			cmdName = curr.Name()
 		}
 	}
-	if version.IsVersionUnreleased() {
-		return
+	if cmdSuffix != "" {
+		cmdName = cmdName + "_" + cmdSuffix
+	}
+	if !slices.Contains(excludeStatsCmds, cmdName) { // Skip excluded commands
+		resp, err := getClient().PostStatsEventsWithResponse(cmd.Context(), apigen.PostStatsEventsJSONRequestBody{
+			Events: []apigen.StatsEvent{
+				{
+					Class: "lakectl",
+					Name:  cmdName,
+					Count: 1,
+				},
+			},
+		})
+
+		var errStr string
+		if err != nil {
+			errStr = err.Error()
+		} else if resp.StatusCode() != http.StatusNoContent {
+			errStr = resp.Status()
+		}
+		if errStr != "" {
+			_, _ = fmt.Fprintf(os.Stderr, "Warning: failed sending statistics: %s\n", errStr)
+		}
 	}
 }
 
