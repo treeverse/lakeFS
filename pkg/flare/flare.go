@@ -30,6 +30,7 @@ var defaultEnvVarPrefixes = []string{"LAKEFS_", "HTTP_", "HOSTNAME"}
 const (
 	DirPermissions  = 0700
 	FilePremissions = 0600
+	FlareUmask      = 002
 )
 
 // LogFormat is a log file format supported by the flare package
@@ -215,15 +216,15 @@ func (f *Flare) ZipFolder(inputPath, outputPath string) (retErr error) {
 		if err != nil {
 			return err
 		}
-
+		if info.IsDir() {
+			return nil
+		}
 		exPath := filepath.Dir(ex)
 		relPath, err := filepath.Rel(exPath, path)
 		if err != nil {
 			return err
 		}
-		if info.IsDir() {
-			return nil
-		}
+
 		file, err := os.Open(path)
 		if err != nil {
 			return fmt.Errorf("%s: %w", path, err)

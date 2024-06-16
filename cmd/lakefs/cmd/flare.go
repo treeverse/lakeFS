@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -35,6 +36,7 @@ var flareCmd = &cobra.Command{
 	Short: "collect configuration, environment variables, and logs for debugging and troubleshooting",
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
+		syscall.Umask(flare.FlareUmask)
 		now := time.Now().String()
 		cfg := loadConfig()
 		logFormat := flare.LogFormat(cfg.Logging.Format)
