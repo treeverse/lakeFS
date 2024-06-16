@@ -20,6 +20,7 @@ docs/CommPrefsInput.md
 docs/Commit.md
 docs/CommitCreation.md
 docs/CommitList.md
+docs/CommitOverrides.md
 docs/CommitRecordCreation.md
 docs/CommitsApi.md
 docs/CompletePresignMultipartUpload.md
@@ -151,6 +152,7 @@ src/models/comm_prefs_input.rs
 src/models/commit.rs
 src/models/commit_creation.rs
 src/models/commit_list.rs
+src/models/commit_overrides.rs
 src/models/commit_record_creation.rs
 src/models/complete_presign_multipart_upload.rs
 src/models/config.rs

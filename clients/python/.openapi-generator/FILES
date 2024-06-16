@@ -17,6 +17,7 @@ docs/CommPrefsInput.md
 docs/Commit.md
 docs/CommitCreation.md
 docs/CommitList.md
+docs/CommitOverrides.md
 docs/CommitRecordCreation.md
 docs/CommitsApi.md
 docs/CompletePresignMultipartUpload.md
@@ -152,6 +153,7 @@ lakefs_sdk/models/comm_prefs_input.py
 lakefs_sdk/models/commit.py
 lakefs_sdk/models/commit_creation.py
 lakefs_sdk/models/commit_list.py
+lakefs_sdk/models/commit_overrides.py
 lakefs_sdk/models/commit_record_creation.py
 lakefs_sdk/models/complete_presign_multipart_upload.py
 lakefs_sdk/models/config.py
@@ -261,6 +263,7 @@ test/test_comm_prefs_input.py
 test/test_commit.py
 test/test_commit_creation.py
 test/test_commit_list.py
+test/test_commit_overrides.py
 test/test_commit_record_creation.py
 test/test_commits_api.py
 test/test_complete_presign_multipart_upload.py

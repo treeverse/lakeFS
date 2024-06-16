@@ -13,6 +13,8 @@ import sys
 import unittest
 
 import lakefs_client
+from lakefs_client.model.commit_overrides import CommitOverrides
+globals()['CommitOverrides'] = CommitOverrides
 from lakefs_client.model.revert_creation import RevertCreation
 
 

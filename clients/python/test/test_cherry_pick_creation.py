@@ -41,6 +41,12 @@ class TestCherryPickCreation(unittest.TestCase):
             return CherryPickCreation(
                 ref = '', 
                 parent_number = 56, 
+                commit_overrides = lakefs_sdk.models.commit_overrides.CommitOverrides(
+                    message = '', 
+                    metadata = {
+                        'key' : ''
+                        }, 
+                    date = 56, ), 
                 force = True
             )
         else :

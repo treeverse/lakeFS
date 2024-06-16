@@ -3424,12 +3424,20 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body a
 		writeError(w, r, http.StatusUnauthorized, "user not found")
 		return
 	}
-	err = c.Catalog.Revert(ctx, repository, branch, catalog.RevertParams{
+	revertParams := catalog.RevertParams{
 		Reference:    body.Ref,
 		Committer:    user.Committer(),
 		ParentNumber: body.ParentNumber,
 		AllowEmpty:   swag.BoolValue(body.AllowEmpty),
-	}, graveler.WithForce(swag.BoolValue(body.Force)))
+	}
+	if body.CommitOverrides != nil {
+		revertParams.Overrides = graveler.CommitOverrides{
+			Message:  *body.CommitOverrides.Message,
+			Date:     body.CommitOverrides.Date,
+			Metadata: body.CommitOverrides.Metadata.AdditionalProperties,
+		}
+	}
+	err = c.Catalog.Revert(ctx, repository, branch, revertParams, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3464,11 +3472,19 @@ func (c *Controller) CherryPick(w http.ResponseWriter, r *http.Request, body api
 		writeError(w, r, http.StatusUnauthorized, "user not found")
 		return
 	}
-	newCommit, err := c.Catalog.CherryPick(ctx, repository, branch, catalog.CherryPickParams{
+	cherryPickParams := catalog.CherryPickParams{
 		Reference:    body.Ref,
 		Committer:    user.Committer(),
 		ParentNumber: body.ParentNumber,
-	}, graveler.WithForce(swag.BoolValue(body.Force)))
+	}
+	if body.CommitOverrides != nil {
+		cherryPickParams.Overrides = graveler.CommitOverrides{
+			Date:     body.CommitOverrides.Date,
+			Message:  *body.CommitOverrides.Message,
+			Metadata: body.CommitOverrides.Metadata.AdditionalProperties,
+		}
+	}
+	newCommit, err := c.Catalog.CherryPick(ctx, repository, branch, cherryPickParams, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
