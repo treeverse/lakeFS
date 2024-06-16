@@ -6,10 +6,14 @@ Handles authentication against the lakeFS server and wraps the underlying lakefs
 
 from __future__ import annotations
 
-from typing import Optional
+import base64
+import json
 from threading import Lock
+from typing import Optional
+from urllib.parse import urlparse, parse_qs
 
 import lakefs_sdk
+from lakefs_sdk import ExternalLoginInformation
 from lakefs_sdk.client import LakeFSClient
 
 from lakefs.config import ClientConfig
@@ -104,6 +108,70 @@ class Client:
         if self._server_conf is None:
             self._server_conf = ServerConfiguration(self)
         return self._server_conf.version
+
+
+def get_identity_token(session: 'boto3.Session') -> str:
+    """
+   Generate the identity token required for lakeFS authentication from an AWS session.
+
+   This function uses the STS client to generate a presigned URL for the `get_caller_identity` action, extracts the required values from the URL,
+   and creates a base64-encoded JSON object with these values.
+
+   :param session: A boto3 session object with the necessary AWS credentials and region information.
+   :return: A base64-encoded JSON string containing the required authentication information.
+   :raises ValueError: If the session does not have a region name set.
+   """
+
+    if session.region_name is None:
+        raise ValueError("Region name is not set in the session")
+
+    from botocore.client import Config
+    sts_client = session.client('sts', config=Config(signature_version='v4'))
+    presigned_url = sts_client.generate_presigned_url('get_caller_identity', Params={}, ExpiresIn=3600)
+
+    # Parse the URL to extract components
+    parsed_url = urlparse(presigned_url)
+    query_params = parse_qs(parsed_url.query)
+
+    # Extract values from query parameters
+    json_object = {
+        "method": "POST",
+        "host": parsed_url.hostname,
+        "region": session.region_name,
+        "action": query_params['Action'][0],
+        "date": query_params['X-Amz-Date'][0],
+        "expiration_duration": "3600",  # 1 hour in seconds
+        "access_key_id": query_params['X-Amz-Credential'][0].split('/')[0],
+        "signature": query_params['X-Amz-Signature'][0],
+        "signed_headers": query_params['X-Amz-SignedHeaders'],
+        "version": query_params['Version'][0],
+        "algorithm": query_params['X-Amz-Algorithm'][0],
+        "security_token": query_params.get('X-Amz-Security-Token', [None])[0]
+    }
+    json_string = json.dumps(json_object)
+    return base64.b64encode(json_string.encode('utf-8')).decode('utf-8')
+
+
+def from_aws_role(session: 'boto3.Session', ttl_seconds: int = 3600, **kwargs) -> Client:
+    """
+    Create a lakeFS client from an AWS role.
+    :param session: : The boto3 session.
+    :param ttl_seconds: The time-to-live for the generated token in seconds. The default value is 3600 seconds (1 hour).
+    :param kwargs: The arguments to pass to the client.
+    :return: A lakeFS client.
+    """
+
+    identity_token = get_identity_token(session)
+    external_login_information = ExternalLoginInformation(token_expiration_duration=ttl_seconds, identity_request={
+        "identity_token": identity_token
+    })
+    client = Client(**kwargs)
+
+    with api_exception_handler():
+        auth_token = client.sdk_client.auth_api.external_principal_login(external_login_information)
+
+    client.config.access_token = auth_token.token
+    return client
 
 
 def from_web_identity(code: str, state: str, redirect_uri: str, ttl_seconds: int = 3600, **kwargs) -> Client:

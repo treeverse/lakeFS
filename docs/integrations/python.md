@@ -48,6 +48,9 @@ In case no authentication parameters exist, it is also possible to explicitly cr
 
 Here's how to instantiate a client:
 
+{: .note }
+See [here](../reference/security/external-principals-aws.md#login-with-python) how to login with Python using your AWS role.
+
 ```python
 from lakefs.client import Client
 
