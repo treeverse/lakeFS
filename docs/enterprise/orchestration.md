@@ -22,8 +22,6 @@ lakeFS Enterprise solution consists of 2 main components:
 1. Access to download [dockerhub/fluffy](https://hub.docker.com/u/treeverse) Docker image, to login locally `docker login -u <USERNAME> -p <TOKEN>`. Please [contact us](mailto:support@treeverse.io) to get access to the Dockerhub image.
 2. [Docker Compose](https://docs.docker.com/compose/install/) installed version `2.23.1` or higher on your machine.
 
-
-
 The following docker-compose file will spin up lakeFS, Fluffy and postgres as a shared KV database. 
 
 ⚠️ Using a local postgres is not suitable for production use-cases.
@@ -33,11 +31,13 @@ The following docker-compose file will spin up lakeFS, Fluffy and postgres as a 
     <li><a href="#docker-compose-no-sso">NO SSO</a></li>
     <li><a href="#docker-compose-with-sso">With SSO</a></li>
   </ul> 
-  <div markdown="1" id="docker-compose-no-sso">
-    For simplicity, this example  does not use SSO and only supports basic authentication of access key and secret key.
+<div markdown="1" id="docker-compose-no-sso">
+
+For simplicity the example does not use SSO and only supports basic authentication of access key and secret key.
     
-    1. Create `docker-compose.yaml` file with the following content
-    2. Run `docker compose up` in the same directory as the `docker-compose.yaml` file.
+1. Create `docker-compose.yaml` file with the following content
+2. Run `docker compose up` in the same directory as the `docker-compose.yaml` file.
+3. In your browser go to [http://localhost:8080](http://localhost:8080) to access lakeFS UI.
 
 ```yaml
 version: "3"
@@ -101,13 +101,12 @@ configs:
         ui_config:
           login_cookie_names:
             - internal_auth_session
-
 ```
 
-  </div>
-    <div markdown="1" id="docker-compose-with-sso">
-    This setup uses OIDC as the SSO authentication method.  
-  </div>
+</div>
+<div markdown="1" id="docker-compose-with-sso">
+This setup uses OIDC as the SSO authentication method.  
+</div>
 </div>
 
 
