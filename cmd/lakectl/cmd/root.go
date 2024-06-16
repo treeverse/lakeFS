@@ -375,22 +375,17 @@ func preRunCmd(cmd *cobra.Command) {
 		return
 	}
 
-	switch {
-	case cfgErr == nil:
-		logging.ContextUnavailable().
-			WithField("file", viper.ConfigFileUsed()).
-			Debug("loaded configuration from file")
-	case errors.As(cfgErr, &viper.ConfigFileNotFoundError{}):
-		if cfgFile != "" {
-			// specific message in case the file isn't found
-			DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgErr)
-		}
-	// if the config file wasn't provided, try to run using the default values + env vars
-	case cfgErr != nil:
-		// other errors while reading the config file
+if  errors.As(cfgErr, &viper.ConfigFileNotFoundError{}) && cfgFile != "" {
+		// specific message in case the file isn't found
+		DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgErr)
+	}
+	if cfgErr != nil {
 		DieFmt("error reading configuration file: %v", cfgErr)
 	}
-
+	
+	logging.ContextUnavailable().
+		WithField("file", viper.ConfigFileUsed()).
+		Debug("loaded configuration from file")
 	err = viper.UnmarshalExact(&cfg, viper.DecodeHook(
 		mapstructure.ComposeDecodeHookFunc(
 			lakefsconfig.DecodeOnlyString,
