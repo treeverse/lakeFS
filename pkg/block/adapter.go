@@ -143,7 +143,7 @@ type Properties struct {
 	StorageClass *string
 }
 
-// Adapter abstract Storage Adapter for persistence of version controlled data
+// Adapter abstract Storage Adapter for persistence of version controlled data. The methods generally map to S3 API methods
 // - Generally some type of Object Storage
 // - Can also be block storage or even in-memory
 type BlockstoreMetadata struct {

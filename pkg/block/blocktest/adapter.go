@@ -20,12 +20,19 @@ import (
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
+const (
+	multipartNumberOfParts = 3
+	multipartPartSize      = 5 * 1024 * 1024 //generally the minimum size for multi-part upload
+)
+
 // AdapterTest Test suite of basic adapter functionality
 func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
 	t.Run("Adapter_PutGet", func(t *testing.T) { testAdapterPutGet(t, adapter, storageNamespace, externalPath) })
 	t.Run("Adapter_Copy", func(t *testing.T) { testAdapterCopy(t, adapter, storageNamespace) })
 	t.Run("Adapter_Remove", func(t *testing.T) { testAdapterRemove(t, adapter, storageNamespace) })
 	t.Run("Adapter_MultipartUpload", func(t *testing.T) { testAdapterMultipartUpload(t, adapter, storageNamespace) })
+	t.Run("Adapter_CopyPart", func(t *testing.T) { testAdapterCopyPart(t, adapter, storageNamespace) })
+	//t.Run("Adapter_CopyPartRange", func(t *testing.T) { testAdapterCopyPartRange(t, adapter, storageNamespace) })
 	t.Run("Adapter_Exists", func(t *testing.T) { testAdapterExists(t, adapter, storageNamespace) })
 	t.Run("Adapter_GetRange", func(t *testing.T) { testAdapterGetRange(t, adapter, storageNamespace) })
 	t.Run("Adapter_Walker", func(t *testing.T) { testAdapterWalker(t, adapter, storageNamespace) })
@@ -195,20 +202,6 @@ func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk b
 	return tree
 }
 
-func createMultipartFile() ([][]byte, []byte) {
-	const (
-		multipartNumberOfParts = 3
-		multipartPartSize      = 5 * 1024 * 1024
-	)
-	parts := make([][]byte, multipartNumberOfParts)
-	var partsConcat []byte
-	for i := 0; i < multipartNumberOfParts; i++ {
-		parts[i] = randstr.Bytes(multipartPartSize + i)
-		partsConcat = append(partsConcat, parts[i]...)
-	}
-	return parts, partsConcat
-}
-
 // Parameterized test of the Multipart Upload APIs. After successful upload we Get the result and compare to the original
 func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
@@ -229,25 +222,13 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 				Identifier:       c.path,
 				IdentifierType:   block.IdentifierTypeRelative,
 			}
-			// List parts on non-existing part
-			_, err := adapter.ListParts(ctx, obj, "invalidId", block.ListPartsOpts{})
-			if blockstoreType != block.BlockstoreTypeS3 {
-				require.ErrorIs(t, err, block.ErrOperationNotSupported)
-			} else {
-				require.NotNil(t, err)
-			}
+
+			verifyListInvalid(t, ctx, adapter, obj)
 
 			resp, err := adapter.CreateMultiPartUpload(ctx, obj, nil, block.CreateMultiPartUploadOpts{})
 			require.NoError(t, err)
 
-			multiParts := make([]block.MultipartPart, len(parts))
-			for i, content := range parts {
-				partNumber := i + 1
-				partResp, err := adapter.UploadPart(ctx, obj, int64(len(content)), bytes.NewReader(content), resp.UploadID, partNumber)
-				require.NoError(t, err)
-				multiParts[i].PartNumber = partNumber
-				multiParts[i].ETag = partResp.ETag
-			}
+			multiParts := uploadParts(t, ctx, adapter, obj, resp.UploadID, parts)
 
 			// List parts after upload
 			listResp, err := adapter.ListParts(ctx, obj, resp.UploadID, block.ListPartsOpts{})
@@ -290,15 +271,59 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 				require.NotNil(t, err)
 			}
 
-			reader, err := adapter.Get(ctx, obj)
-			require.NoError(t, err)
-
-			got, err := io.ReadAll(reader)
-			require.NoError(t, err)
-
-			require.Equal(t, full, got)
+			compareFileContents(t, ctx, adapter, full, obj)
 		})
 	}
+}
+
+// Test of the Multipart Copy API
+func testAdapterCopyPart(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	ctx := context.Background()
+	parts, full := createMultipartFile()
+	obj, objCopy := objPointers(storageNamespace)
+
+	verifyListInvalid(t, ctx, adapter, obj)
+
+	uploadMultiPart(t, ctx, adapter, obj, parts)
+
+	//Begin Multipart Copy
+	resp, err := adapter.CreateMultiPartUpload(ctx, objCopy, nil, block.CreateMultiPartUploadOpts{})
+	require.NoError(t, err)
+
+	multiParts := copyPart(t, ctx, adapter, obj, objCopy, resp.UploadID)
+
+	_, err = adapter.CompleteMultiPartUpload(ctx, objCopy, resp.UploadID, &block.MultipartUploadCompletion{
+		Part: multiParts,
+	})
+	require.NoError(t, err)
+
+	compareFileContents(t, ctx, adapter, full, objCopy)
+
+}
+
+// Test of the Multipart CopyRange API
+func testAdapterCopyPartRange(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	ctx := context.Background()
+	parts, full := createMultipartFile()
+	obj, objCopy := objPointers(storageNamespace)
+
+	verifyListInvalid(t, ctx, adapter, obj)
+
+	uploadMultiPart(t, ctx, adapter, obj, parts)
+
+	//Begin Multipart Copy
+	resp, err := adapter.CreateMultiPartUpload(ctx, objCopy, nil, block.CreateMultiPartUploadOpts{})
+	require.NoError(t, err)
+
+	multiParts := copyPartRange(t, ctx, adapter, obj, objCopy, resp.UploadID)
+
+	_, err = adapter.CompleteMultiPartUpload(ctx, objCopy, resp.UploadID, &block.MultipartUploadCompletion{
+		Part: multiParts,
+	})
+	require.NoError(t, err)
+
+	compareFileContents(t, ctx, adapter, full, objCopy)
+
 }
 
 // Parameterized test of the object Exists method of the Storage adapter
@@ -470,4 +495,121 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 			}
 		})
 	}
+}
+
+// create file contents
+func createMultipartFile() ([][]byte, []byte) {
+
+	parts := make([][]byte, multipartNumberOfParts)
+	var partsConcat []byte
+	for i := 0; i < multipartNumberOfParts; i++ {
+		parts[i] = randstr.Bytes(multipartPartSize + i)
+		partsConcat = append(partsConcat, parts[i]...)
+	}
+	return parts, partsConcat
+}
+
+func uploadMultiPart(t *testing.T, ctx context.Context, adapter block.Adapter, obj block.ObjectPointer, parts [][]byte) {
+	resp, err := adapter.CreateMultiPartUpload(ctx, obj, nil, block.CreateMultiPartUploadOpts{})
+	require.NoError(t, err)
+
+	multiParts := uploadParts(t, ctx, adapter, obj, resp.UploadID, parts)
+
+	_, err = adapter.CompleteMultiPartUpload(ctx, obj, resp.UploadID, &block.MultipartUploadCompletion{
+		Part: multiParts,
+	})
+	require.NoError(t, err)
+
+	//verify it was created: is this still needed?
+	ok, err := adapter.Exists(ctx, obj)
+	require.NoError(t, err)
+	require.Equal(t, true, ok)
+}
+
+// List parts on non-existing part
+func verifyListInvalid(t *testing.T, ctx context.Context, adapter block.Adapter, obj block.ObjectPointer) {
+	_, err := adapter.ListParts(ctx, obj, "invalidId", block.ListPartsOpts{})
+	if adapter.BlockstoreType() != block.BlockstoreTypeS3 {
+		require.ErrorIs(t, err, block.ErrOperationNotSupported)
+	} else {
+		require.NotNil(t, err)
+	}
+}
+
+// Upload parts after starting a multipart upload
+func uploadParts(t *testing.T, ctx context.Context, adapter block.Adapter, obj block.ObjectPointer, uploadID string, parts [][]byte) []block.MultipartPart {
+	multiParts := make([]block.MultipartPart, len(parts))
+	for i, content := range parts {
+		partNumber := i + 1
+		partResp, err := adapter.UploadPart(ctx, obj, int64(len(content)), bytes.NewReader(content), uploadID, partNumber)
+		require.NoError(t, err)
+		multiParts[i].PartNumber = partNumber
+		multiParts[i].ETag = partResp.ETag
+	}
+
+	return multiParts
+}
+
+// Copy parts after starting a multipart upload
+func copyPartRange(t *testing.T, ctx context.Context, adapter block.Adapter, obj, objCopy block.ObjectPointer, uploadID string) []block.MultipartPart {
+	multiParts := make([]block.MultipartPart, multipartNumberOfParts)
+	var startPosition int64 = 0
+	var endPosition int64 = multipartPartSize
+	for i := 0; i < multipartNumberOfParts; i++ {
+		partNumber := i + 1
+		partResp, err := adapter.UploadCopyPartRange(ctx, obj, objCopy, uploadID, partNumber, startPosition, endPosition)
+		require.NoError(t, err)
+		multiParts[i].PartNumber = partNumber
+		multiParts[i].ETag = partResp.ETag
+		startPosition = endPosition
+		endPosition += multipartPartSize
+	}
+
+	return multiParts
+}
+
+// Copy single part after starting a multipart upload
+func copyPart(t *testing.T, ctx context.Context, adapter block.Adapter, obj, objCopy block.ObjectPointer, uploadID string) []block.MultipartPart {
+	multiParts := make([]block.MultipartPart, 1)
+	partNumber := 1
+	partResp, err := adapter.UploadCopyPart(ctx, obj, objCopy, uploadID, partNumber)
+	require.NoError(t, err)
+	multiParts[0].PartNumber = partNumber
+	multiParts[0].ETag = partResp.ETag
+
+	return multiParts
+}
+
+// read the object and compare to expected contents
+func compareFileContents(t *testing.T, ctx context.Context, adapter block.Adapter, exp []byte, obj block.ObjectPointer) {
+	//first check exists
+	ok, err := adapter.Exists(ctx, obj)
+	require.NoError(t, err)
+	require.Equal(t, true, ok)
+
+	//then check size
+	reader, err := adapter.Get(ctx, obj)
+	require.NoError(t, err)
+	got, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	require.Equal(t, len(exp), len(got))
+
+	//then check contents
+	require.Equal(t, exp[0], got[0])
+	require.Equal(t, exp, got)
+}
+
+func objPointers(storageNamespace string) (block.ObjectPointer, block.ObjectPointer) {
+	var obj = block.ObjectPointer{
+		StorageNamespace: storageNamespace,
+		Identifier:       "abc",
+		IdentifierType:   block.IdentifierTypeRelative,
+	}
+
+	var objCopy = block.ObjectPointer{
+		StorageNamespace: storageNamespace,
+		Identifier:       "abcCopy",
+		IdentifierType:   block.IdentifierTypeRelative,
+	}
+	return obj, objCopy
 }
