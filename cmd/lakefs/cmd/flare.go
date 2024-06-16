@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -55,8 +56,20 @@ var flareCmd = &cobra.Command{
 			msg := fmt.Sprintf("failed to create flare directory at %s", flarePath)
 			printMsgAndExit(msg, err)
 		}
-
-		err = flr.ProcessConfig(cfg, flarePath, flareConfigFileName)
+		var ow flare.FlareOutputWriter = &flare.FileWriter{}
+		if packageContents {
+			ow, err = flare.NewZipWriter(filepath.Join(flarePath, zipOutputFileName))
+		}
+		defer func() {
+			e := ow.Close()
+			if e != nil {
+				printMsgAndExit("failed to write zip file", err)
+			}
+		}()
+		if err != nil {
+			printMsgAndExit("failed to create zip writer", err)
+		}
+		err = flr.ProcessConfig(cfg, flarePath, flareConfigFileName, ow.GetFileWriter)
 		if err != nil {
 			printMsgAndExit("failed to process config", err)
 		}
@@ -69,6 +82,7 @@ var flareCmd = &cobra.Command{
 				flarePath,
 				parsedStartLogDate,
 				parsedEndLogDate,
+				ow.GetFileWriter,
 			)
 			if err != nil {
 				printMsgAndExit("failed to process log file ", err)
@@ -76,16 +90,9 @@ var flareCmd = &cobra.Command{
 		}
 
 		if includeEnvVars {
-			err = flr.ProcessEnvVars(flarePath, envVarOutputFileName)
+			err = flr.ProcessEnvVars(flarePath, envVarOutputFileName, ow.GetFileWriter)
 			if err != nil {
 				printMsgAndExit("failed to process env vars ", err)
-			}
-		}
-
-		if packageContents {
-			err = flr.ZipFolder(flarePath, zipOutputFileName)
-			if err != nil {
-				printMsgAndExit("failed to package contents", err)
 			}
 		}
 	},

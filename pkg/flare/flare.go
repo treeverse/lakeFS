@@ -124,51 +124,43 @@ var dateExtractors = map[LogFormat]LogLineDateExtractor{
 }
 
 // ProcessConfig takes a config struct, marshals it to YAML and writes it out to outputPath
-func (f *Flare) ProcessConfig(cfg interface{}, outputPath, fileName string) (retErr error) {
+func (f *Flare) ProcessConfig(cfg interface{}, outputPath, fileName string, getWriterFunc GetFileWriterFunc) (retErr error) {
 	yamlCfg, err := yaml.Marshal(cfg)
 	if err != nil {
 		return err
 	}
 
 	configOutPath := filepath.Join(outputPath, fileName)
-	outputFile, err := os.Create(configOutPath)
+	w, err := getWriterFunc(configOutPath)
 	if err != nil {
 		return fmt.Errorf("%s: %w", configOutPath, err)
 	}
 	defer func() {
-		e := outputFile.Close()
+		e := w.Close()
 		if retErr == nil {
 			retErr = e
 		}
 	}()
-
-	err = os.WriteFile(configOutPath, yamlCfg, FilePremissions)
+	_, err = w.Write(yamlCfg)
 	return err
 }
 
 // ProcessEnvVars iterates over all defined env vars, filters them according to the defined prefixes,
 // redacts secrets, and writes them out to file.
-func (f *Flare) ProcessEnvVars(outPath, fileName string) (retErr error) {
+func (f *Flare) ProcessEnvVars(outPath, fileName string, getWriterFunc GetFileWriterFunc) (retErr error) {
 	outputFilePath := filepath.Join(outPath, fileName)
-	outputFile, err := os.Create(outputFilePath)
+	w, err := getWriterFunc(outputFilePath)
 	if err != nil {
 		return fmt.Errorf("%s: %w", outputFilePath, err)
 	}
 	defer func() {
-		e := outputFile.Close()
-		if retErr == nil {
-			retErr = e
-		}
-	}()
-	bw := bufio.NewWriter(outputFile)
-	defer func() {
-		e := bw.Flush()
+		e := w.Close()
 		if retErr == nil {
 			retErr = e
 		}
 	}()
 
-	err = f.processEnvVars(bw)
+	err = f.processEnvVars(w)
 	return err
 }
 
@@ -257,14 +249,14 @@ func SupportedLogFormat(format string) bool {
 // If inputPath is a directory, all files in the directory will be individually processed.
 // Processed files are read line-by-line. Each line is filtered according to the date range,
 // sanitized from secrets, and is written to the file in outputPath.
-func (f *Flare) ProcessLogFiles(inputPath, outputPath string, startDate, endDate *time.Time) (retErr error) {
+func (f *Flare) ProcessLogFiles(inputPath, outputPath string, startDate, endDate *time.Time, getWriterFunc GetFileWriterFunc) (retErr error) {
 	isDir, err := isDirectory(inputPath)
 	if err != nil {
 		return err
 	}
 
 	if !isDir {
-		return f.processLogFile(inputPath, outputPath, startDate, endDate)
+		return f.processLogFile(inputPath, outputPath, startDate, endDate, getWriterFunc)
 	} else {
 		files, err := os.ReadDir(inputPath)
 		if err != nil {
@@ -275,7 +267,7 @@ func (f *Flare) ProcessLogFiles(inputPath, outputPath string, startDate, endDate
 			if file.IsDir() {
 				continue
 			}
-			err = f.processLogFile(file.Name(), outputPath, startDate, endDate)
+			err = f.processLogFile(file.Name(), outputPath, startDate, endDate, getWriterFunc)
 			if err != nil {
 				return err
 			}
@@ -330,7 +322,7 @@ func (f *Flare) handleLogLine(line string, start, end *time.Time) (string, error
 	return redactedLine, nil
 }
 
-func (f *Flare) processLogFile(inputFileName, outputPath string, startDate, endDate *time.Time) (retErr error) {
+func (f *Flare) processLogFile(inputFileName, outputPath string, startDate, endDate *time.Time, getWriterFunc GetFileWriterFunc) (retErr error) {
 	skippedLines := 0
 	sourceFile, err := os.Open(inputFileName)
 	if err != nil {
@@ -339,20 +331,12 @@ func (f *Flare) processLogFile(inputFileName, outputPath string, startDate, endD
 	defer sourceFile.Close()
 
 	outputFileName := filepath.Join(outputPath, inputFileName)
-	outputFile, err := os.OpenFile(outputFileName, os.O_WRONLY|os.O_CREATE, FilePremissions)
+	w, err := getWriterFunc(outputFileName)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %w", outputFileName, err)
 	}
 	defer func() {
-		e := outputFile.Close()
-		if retErr == nil {
-			retErr = e
-		}
-	}()
-
-	bw := bufio.NewWriter(outputFile)
-	defer func() {
-		e := bw.Flush()
+		e := w.Close()
 		if retErr == nil {
 			retErr = e
 		}
@@ -372,7 +356,7 @@ func (f *Flare) processLogFile(inputFileName, outputPath string, startDate, endD
 		}
 
 		if pLine != "" {
-			if _, err := bw.WriteString(pLine); err != nil {
+			if _, err := w.Write([]byte(pLine)); err != nil {
 				return err
 			}
 		}
