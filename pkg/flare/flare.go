@@ -30,7 +30,7 @@ var defaultEnvVarPrefixes = []string{"LAKEFS_", "HTTP_", "HOSTNAME"}
 const (
 	DirPermissions  = 0700
 	FilePremissions = 0600
-	FlareUmask      = 002
+	FlareUmask      = 077
 )
 
 // LogFormat is a log file format supported by the flare package
@@ -161,7 +161,10 @@ func (f *Flare) ProcessEnvVars(outPath, fileName string, getWriterFunc GetFileWr
 	}()
 
 	err = f.processEnvVars(w)
-	return err
+	if err != nil {
+		return fmt.Errorf("%s: %w", outputFilePath, err)
+	}
+	return nil
 }
 
 func (f *Flare) processEnvVars(w io.Writer) error {
@@ -173,7 +176,7 @@ func (f *Flare) processEnvVars(w io.Writer) error {
 					return err
 				}
 				if _, err := w.Write([]byte(fmt.Sprintf("%s\n", re))); err != nil {
-					return err
+					return fmt.Errorf("failed to write to output: %w", err)
 				}
 			}
 		}
@@ -326,11 +329,11 @@ func (f *Flare) processLogFile(inputFileName, outputPath string, startDate, endD
 	skippedLines := 0
 	sourceFile, err := os.Open(inputFileName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open input log file %s: %w", inputFileName, err)
 	}
 	defer sourceFile.Close()
 
-	outputFileName := filepath.Join(outputPath, inputFileName)
+	outputFileName := filepath.Join(outputPath, filepath.Base(inputFileName))
 	w, err := getWriterFunc(outputFileName)
 	if err != nil {
 		return fmt.Errorf("%s: %w", outputFileName, err)
@@ -357,7 +360,7 @@ func (f *Flare) processLogFile(inputFileName, outputPath string, startDate, endD
 
 		if pLine != "" {
 			if _, err := w.Write([]byte(pLine)); err != nil {
-				return err
+				return fmt.Errorf("failed to write to output file %s: %w", outputFileName, err)
 			}
 		}
 	}
@@ -395,6 +398,10 @@ func redactSecrets(line string, secretReplacementValue string) (string, error) {
 func init() {
 	// remove the ini transformer because it has false positives with plain text log lines
 	config := scanner.NewConfigBuilderFrom(scanner.NewConfigWithDefaults()).RemoveTransformers("ini").Build()
+	// set zero threshold for entropy-based detection in the keyword based detector
+	// example: LAKEFS_AUTH_ENCRYPT_SECRET_KEY=123asdasd will be detected by the {secret, key} keywords regardless of the value
+	config.DetectorConfigs["keyword"] = []string{"0"}
+	fmt.Fprintf(os.Stderr, "Detectors: %s", strings.Join(config.Detectors, ","))
 	s, err := scanner.NewScannerFromConfig(config)
 	if err != nil {
 		secretScannerInitErr = err

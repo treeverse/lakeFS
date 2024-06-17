@@ -104,14 +104,9 @@ var flareCmd = &cobra.Command{
 	},
 }
 
-func printMsgAndExit(params ...any) {
-	fmt.Println("Error:", fmt.Sprint(params...))
-	os.Exit(1)
-}
-
 func preflightValidations(cfg *config.Config, flr *flare.Flare) (*time.Time, *time.Time) {
 	hasFileOutput := logging.HasLogFileOutput(cfg.Logging.Output)
-	if !hasFileOutput {
+	if !hasFileOutput && includeLogs {
 		printMsgAndExit("lakefs isn't configured to output logs to a file. ")
 	}
 
