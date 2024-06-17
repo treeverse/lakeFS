@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/araddon/dateparse"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -51,7 +52,7 @@ var flareCmd = &cobra.Command{
 		if err != nil {
 			printMsgAndExit("failed to create flare instance", err)
 		}
-		parsedStartLogDate, parsedEndLogDate := preflightValidations(cfg, flr)
+		parsedStartLogDate, parsedEndLogDate := preflightValidations(cfg)
 
 		flarePath := fmt.Sprintf(flareFilePath, outputPath, now)
 		err = os.MkdirAll(flarePath, flare.DirPermissions)
@@ -104,32 +105,33 @@ var flareCmd = &cobra.Command{
 	},
 }
 
-func preflightValidations(cfg *config.Config, flr *flare.Flare) (*time.Time, *time.Time) {
+func preflightValidations(cfg *config.Config) (*time.Time, *time.Time) {
 	hasFileOutput := logging.HasLogFileOutput(cfg.Logging.Output)
 	if !hasFileOutput && includeLogs {
 		printMsgAndExit("lakefs isn't configured to output logs to a file. ")
 	}
 
-	start, err := validateAndParseDateFlags(startLogDate, flr.LogDateLayout)
+	start, err := validateAndParseDateFlags(startLogDate)
 	if err != nil {
 		printMsgAndExit("failed parsing start date flag ", err)
 	}
-	end, err := validateAndParseDateFlags(endLogDate, flr.LogDateLayout)
+	end, err := validateAndParseDateFlags(endLogDate)
 	if err != nil {
 		printMsgAndExit("failed parsing end date flag ", err)
 	}
 	return start, end
 }
 
-func validateAndParseDateFlags(dateFlag, dateLayout string) (*time.Time, error) {
+func validateAndParseDateFlags(dateFlag string) (*time.Time, error) {
 	if dateFlag == "" {
 		return nil, nil
 	}
 
-	parsedDate, err := time.Parse(dateLayout, dateFlag)
+	parsedDate, err := dateparse.ParseAny(dateFlag)
 	if err != nil {
 		return nil, err
 	}
+
 	return &parsedDate, nil
 }
 
