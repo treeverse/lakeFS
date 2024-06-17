@@ -63,18 +63,10 @@ func TestS3UploadToReadOnlyRepoError(t *testing.T) {
 	defer deleteRepositoryIfAskedTo(ctx, readOnlyRepo)
 
 	minioClient := newMinioClient(t, credentials.NewStaticV4)
-	// create a file that's larger than any internal buffering minio does
-	const tenMBInBytes = 10 * 1024 * 1024
-	tmpFile, cleanup, tmpErr := MakeTmpFile(tenMBInBytes)
-	require.NoError(t, tmpErr)
-	defer func() {
-		cleanupErr := cleanup()
-		require.NoError(t, cleanupErr)
-	}()
+	const tenMibi = 10 * 1024 * 1024
+	reader := NewZeroReader(tenMibi)
 
-	reader := NewWrappedReader(tmpFile)
-
-	_, err := minioClient.PutObject(ctx, readOnlyRepo, gatewayTestPrefix+"/test", reader, tenMBInBytes, minio.PutObjectOptions{
+	_, err := minioClient.PutObject(ctx, readOnlyRepo, gatewayTestPrefix+"/test", reader, tenMibi, minio.PutObjectOptions{
 		// this prevents minio from reading the entire file before sending the request
 		SendContentMd5: false,
 	})
@@ -84,8 +76,8 @@ func TestS3UploadToReadOnlyRepoError(t *testing.T) {
 	// The read-only check should occur before we read the file.
 	// To ensure that, we're asserting that the file was not read entirely.
 	// (The minio client reads at least one chunk of the file before sending the request,
-	// so `numBytesRead` is probably not 0, but must be < 10MB.)
-	require.Less(t, reader.numBytesRead, tenMBInBytes)
+	// so `NumBytesRead` is probably not 0, but must be < 10MB.)
+	require.Less(t, reader.NumBytesRead, tenMibi)
 }
 
 func TestS3DeleteFromReadOnlyRepoError(t *testing.T) {
