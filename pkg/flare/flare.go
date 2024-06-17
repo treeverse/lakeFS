@@ -48,7 +48,7 @@ var (
 	secretScanner        secrets.Scanner
 	secretScannerInitErr error
 
-	plainTextLogDateRegex = regexp.MustCompile(`^[-_A-Z]+\s+(?<date>\[\d{4}(?:.\d{2}){2}(?:\s|T)(?:\d{2}.){2}\d{2}[\+-]?\d{2}:\d{2}\])`)
+	plainTextLogDateRegex = regexp.MustCompile(`^[-_A-Z]+\s+(?P<date>\[\d{4}(?:.\d{2}){2}(?:\s|T)(?:\d{2}.){2}\d{2}[\+-]?\d{2}:\d{2}\])`)
 	expectedSubmatches    = 2
 )
 
