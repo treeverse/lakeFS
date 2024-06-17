@@ -248,36 +248,37 @@ func SupportedLogFormat(format string) bool {
 	return v == LogFormatJSON || v == LogFormatPlainText
 }
 
-// ProcessLogFiles processes log files in inputPath. If the inputPath is a file, it processes the file.
-// If inputPath is a directory, all files in the directory will be individually processed.
+// ProcessLogFiles processes log files in inputPath.
+// Log files have a size limit and when rolling over to a new file, the current file is renamed with the cutoff time.Time before the extension.
 // Processed files are read line-by-line. Each line is filtered according to the date range,
 // sanitized from secrets, and is written to the file in outputPath.
 func (f *Flare) ProcessLogFiles(inputPath, outputPath string, startDate, endDate *time.Time, getWriterFunc GetFileWriterFunc) (retErr error) {
-	isDir, err := isDirectory(inputPath)
+	logDir, logFile := filepath.Split(inputPath)
+	filename, ext := getFilenameAndExt(logFile)
+
+	files, err := os.ReadDir(logDir)
 	if err != nil {
 		return err
 	}
 
-	if !isDir {
-		return f.processLogFile(inputPath, outputPath, startDate, endDate, getWriterFunc)
-	} else {
-		files, err := os.ReadDir(inputPath)
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		if !strings.HasPrefix(file.Name(), filename) || filepath.Ext(file.Name()) != ext {
+			continue
+		}
+		err = f.processLogFile(fmt.Sprintf("%s/%s", logDir, file.Name()), outputPath, startDate, endDate, getWriterFunc)
 		if err != nil {
 			return err
-		}
-
-		for _, file := range files {
-			if file.IsDir() {
-				continue
-			}
-			err = f.processLogFile(file.Name(), outputPath, startDate, endDate, getWriterFunc)
-			if err != nil {
-				return err
-			}
 		}
 	}
 
 	return nil
+}
+
+func getFilenameAndExt(in string) (string, string) {
+	return strings.TrimPrefix(filepath.Base(in), filepath.Ext(in)), filepath.Ext(in)
 }
 
 func extractDateFromPlainTextLine(line, logDateLayout string) (time.Time, error) {
@@ -367,15 +368,6 @@ func (f *Flare) processLogFile(inputFileName, outputPath string, startDate, endD
 
 	fmt.Printf("Skipped %d log lines\n", skippedLines)
 	return nil
-}
-
-func isDirectory(path string) (bool, error) {
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		return false, err
-	}
-
-	return fileInfo.IsDir(), err
 }
 
 func (f *Flare) redactSecrets(line string) (string, error) {
