@@ -6,11 +6,11 @@ import (
 	"crypto/md5" //nolint:gosec
 	"crypto/rand"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/testutil"
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
 )
 
