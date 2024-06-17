@@ -30,6 +30,7 @@ var (
 	outputPath           string = flareDefaultOutputPath
 	envVarOutputFileName string = flareDefaultEnvVarFileName
 	zipOutputFileName    string = flareDefaultZipFileName
+	outputStdout         bool   = false
 )
 
 var flareCmd = &cobra.Command{
@@ -59,6 +60,9 @@ var flareCmd = &cobra.Command{
 		var ow flare.FlareOutputWriter = &flare.FileWriter{}
 		if packageContents {
 			ow, err = flare.NewZipWriter(filepath.Join(flarePath, zipOutputFileName))
+		}
+		if outputStdout {
+			ow = &flare.StdoutWriter{}
 		}
 		defer func() {
 			e := ow.Close()
@@ -142,5 +146,6 @@ func init() {
 	flareCmd.Flags().StringVarP(&outputPath, "output", "o", flareDefaultOutputPath, "Output path relative to the current path")
 	flareCmd.Flags().StringVar(&envVarOutputFileName, "env-var-filename", flareDefaultEnvVarFileName, "The name of the file to which env vars will be written")
 	flareCmd.Flags().StringVar(&zipOutputFileName, "zip-filename", flareDefaultZipFileName, "The file name of the output zip archive")
+	flareCmd.Flags().BoolVar(&outputStdout, "stdout", false, "output to Stdout")
 	rootCmd.AddCommand(flareCmd)
 }

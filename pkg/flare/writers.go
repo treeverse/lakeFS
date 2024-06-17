@@ -63,3 +63,24 @@ func (fw *FileWriter) Close() error {
 	// noop
 	return nil
 }
+
+type StdoutWriter struct{}
+
+type StdoutWriterCloser struct {
+	io.Writer
+}
+
+func (swc StdoutWriterCloser) Close() error {
+	// noop
+	return nil
+}
+
+func (sw *StdoutWriter) GetFileWriter(name string) (io.WriteCloser, error) {
+	fmt.Fprintf(os.Stdout, "\n// ------------------ %s ------------------\n", name)
+	return StdoutWriterCloser{os.Stdout}, nil
+}
+
+func (sw *StdoutWriter) Close() error {
+	// noop
+	return nil
+}
