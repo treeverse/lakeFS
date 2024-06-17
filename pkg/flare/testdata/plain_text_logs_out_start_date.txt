@@ -1,4 +1,4 @@
-ERROR  [2024-06-06T12:48:51+03:00]pkg/cloud/aws/metadata.go:81 pkg/cloud/aws.(*MetadataProvider).GetMetadata.func1 Tried to to get AWS account ID        error="operation error STS: GetCallerIdentity, https response error StatusCode: 403, RequestID: e23faa15-ec8f-43ff-8180-595d30b9d7dd, api error ExpiredToken: The security token included in the request is expired"
+ERROR  [2024-06-06T12:48:51+03:00]pkg/cloud/aws/metadata.go:81 pkg/cloud/aws.(*MetadataProvider).GetMetadata.func1 Tried to to get AWS account ID        error="operation error STS: GetCallerIdentity, https response error StatusCode: 403, RequestID: e23faa15-ec8f-43ff-8180-595d30b9d7dd, api error ExpiredToken: <REDACTED>
 INFO   [2024-06-06T12:48:53+03:00]pkg/api/serve.go:37 pkg/api.Serve initialize OpenAPI server                     service=api_gateway
 INFO   [2024-06-06T12:48:53+03:00]pkg/gateway/handler.go:128 pkg/gateway.NewHandler initialized S3 Gateway handler                s3_bare_domain="[s3.local.lakefs.io]" s3_region=us-east-1
 INFO   [2024-06-06T12:48:53+03:00]cmd/lakefs/cmd/run.go:328 cmd/lakefs/cmd.glob..func8 starting HTTP server                          listen_address="0.0.0.0:8000"

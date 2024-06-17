@@ -401,7 +401,6 @@ func init() {
 	// set zero threshold for entropy-based detection in the keyword based detector
 	// example: LAKEFS_AUTH_ENCRYPT_SECRET_KEY=123asdasd will be detected by the {secret, key} keywords regardless of the value
 	config.DetectorConfigs["keyword"] = []string{"0"}
-	fmt.Fprintf(os.Stderr, "Detectors: %s", strings.Join(config.Detectors, ","))
 	s, err := scanner.NewScannerFromConfig(config)
 	if err != nil {
 		secretScannerInitErr = err
