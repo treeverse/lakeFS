@@ -30,7 +30,7 @@ For additional examples check out the [lakeFS Enterprise sample](https://github.
 <div class="tabs">
   <ul>
     <li><a href="#docker-compose-no-sso">NO SSO</a></li>
-    <li><a href="#docker-compose-with-sso">With SSO</a></li>
+    <li><a href="#docker-compose-with-sso">With SSO (OIDC)</a></li>
   </ul> 
 <div markdown="1" id="docker-compose-no-sso">
 
@@ -221,7 +221,45 @@ Test the OIDC configuration works - in your browser go to [http://localhost:8080
 </div>
 
 
+## Deploy lakeFS Enterprise (Kubernetes)
+
+
+The following examples will guide you through the installation of lakeFS Enterprise using our [Helm Chart](#lakefs-helm-chart).
+
+### Prerequisites
+
+1. A KV Database, like postgres, should be configured and shared by fluffy and lakeFS.
+1. Access to configure SSO IdP, like Azure AD Enterprise Application.
+1. A proxy server should be configured to route traffic between the 2 servers.
+
+### lakeFS Helm Chart Configuration
+
+In order to use lakeFS Enterprise and Fluffy, we provided out of the box setup, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts/tree/master/charts/lakefs).
+
+```bash
+# Add the lakeFS repository
+helm repo add lakefs https://charts.lakefs.io
+# Deploy lakeFS
+helm install <release-name> lakefs/lakefs -f <values.yaml>
+```
+
+Notes:
+* By default the chart is deployed with a Postgres pod for quick-start, make sure to replace that to a stable database by setting `useDevPostgres: false` in the chart values.
+* The encrypt secret key `secrets.authEncryptSecretKey` is shared between fluffy and lakeFS for authentication.
+* Fluffy docker image: replace the `fluffy.image.privateRegistry.secretToken` with real token to dockerhub for the fluffy docker image.
+* Check the [additional examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) we provide for each authentication method (oidc, adfs, ldap, rbac, IAM etc).
+* The Database configurations between fluffy and lakeFS should be the same since they connect to the same DB.
+
+### Deploy lakeFS Chart (For Testing)
+
+Same as the Docker Compose example, the following values file will deploy lakeFS with no SSO and local blockstore using dev postgres.
+
+```yaml
+
+```
 
 
 
+# migration
 
+[lakefs-migrate]: https://docs.lakefs.io/howto/deploy/upgrade.html
