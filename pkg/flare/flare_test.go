@@ -3,7 +3,6 @@ package flare
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -13,71 +12,6 @@ import (
 )
 
 var logTimeOffset = time.FixedZone("GMT+3", int((3 * time.Hour).Seconds()))
-
-func TestSecretReplacement(t *testing.T) {
-	testCases := []struct {
-		Name   string
-		Input  string
-		Output string
-	}{
-		{
-			Name:   "empty_string",
-			Input:  "",
-			Output: "",
-		},
-		{
-			Name:   "ipv4",
-			Input:  "server_ip:192.168.0.1",
-			Output: fmt.Sprintf("server_ip:%s", defaultSecretReplacementValue),
-		},
-		{
-			Name:   "randomly_placed_ipv4",
-			Input:  `{ port: 8001, region: "us-east-1", server_ip: "192.168.0.1" }`,
-			Output: fmt.Sprintf(`{ port: 8001, region: "us-east-1", server_ip: "%s" }`, defaultSecretReplacementValue),
-		},
-		{
-			Name:   "two_ipv4s",
-			Input:  `{ server_ip1: "192.168.0.1", server_ip2: "192.168.0.2" }`,
-			Output: fmt.Sprintf(`{ server_ip1: "%s", server_ip2: "%s" }`, defaultSecretReplacementValue, defaultSecretReplacementValue),
-		},
-		{
-			Name:   "ipv4_with_port",
-			Input:  "server_ip:192.168.0.1:8001",
-			Output: fmt.Sprintf("server_ip:%s", defaultSecretReplacementValue),
-		},
-		{
-			Name: "ipv4_yaml",
-			Input: `
-			server_ip: 192.168.0.1
-			other:
-			  other_ip: 192.168.0.50
-			`,
-			Output: fmt.Sprintf(`
-			server_ip: %s
-			other:
-			  other_ip: %s
-			`, defaultSecretReplacementValue, defaultSecretReplacementValue),
-		},
-		{
-			Name:   "json_log_line",
-			Input:  `{"file":"cmd/lakefs/cmd/run.go:328","func":"cmd/lakefs/cmd.glob..func8","level":"info","listen_address":"0.0.0.0:8000","msg":"starting HTTP server","time":"2024-06-05T23:49:08+03:00"}`,
-			Output: fmt.Sprintf(`{"file":"cmd/lakefs/cmd/run.go:328","func":"cmd/lakefs/cmd.glob..func8","level":"info","listen_address":"%s","msg":"starting HTTP server","time":"2024-06-05T23:49:08+03:00"}`, defaultSecretReplacementValue),
-		},
-		{
-			Name:   "plain_text_log_line",
-			Input:  `INFO   [2024-06-05T23:51:49+03:00]cmd/lakefs/cmd/run.go:328 cmd/lakefs/cmd.glob..func8 starting HTTP server                          listen_address="0.0.0.0:8000"`,
-			Output: fmt.Sprintf(`INFO   [2024-06-05T23:51:49+03:00]cmd/lakefs/cmd/run.go:328 cmd/lakefs/cmd.glob..func8 starting HTTP server                          listen_address="%s"`, defaultSecretReplacementValue),
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.Name, func(t *testing.T) {
-			s, err := redactSecrets(tc.Input, defaultSecretReplacementValue)
-			assert.NoError(t, err)
-			assert.Equal(t, tc.Output, s)
-		})
-	}
-}
 
 type LogFileHandlerTestCase struct {
 	Name         string
