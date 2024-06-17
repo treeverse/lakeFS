@@ -1935,6 +1935,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", graveler.ErrNotUnique))
 		return
 	}
+
 	sampleData := swag.BoolValue(body.SampleData)
 	c.LogAction(ctx, "create_repo", r, body.Name, "", "")
 	if sampleData {
@@ -1944,6 +1945,13 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	if err := c.validateStorageNamespace(body.StorageNamespace); err != nil {
 		writeError(w, r, http.StatusBadRequest, err)
 		return
+	}
+
+	if !c.Config.Installation.AllowInterRegionStorage {
+		if err := block.ValidateInterRegionStorage(r.Context(), c.BlockAdapter, body.StorageNamespace); err != nil {
+			writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
 	}
 
 	defaultBranch := swag.StringValue(body.DefaultBranch)

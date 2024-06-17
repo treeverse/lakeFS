@@ -71,17 +71,17 @@ func (c *ClientCache) SetStatsCollector(statsCollector stats.Collector) {
 
 func (c *ClientCache) DiscoverBucketRegion(b bool) {
 	if b {
-		c.s3RegionGetter = c.getBucketRegionFromAWS
+		c.s3RegionGetter = c.GetBucketRegionFromAWS
 	} else {
-		c.s3RegionGetter = c.getBucketRegionDefault
+		c.s3RegionGetter = c.GetBucketRegionDefault
 	}
 }
 
-func (c *ClientCache) getBucketRegionFromAWS(ctx context.Context, bucket string) (string, error) {
+func (c *ClientCache) GetBucketRegionFromAWS(ctx context.Context, bucket string) (string, error) {
 	return manager.GetBucketRegion(ctx, c.defaultClient, bucket)
 }
 
-func (c *ClientCache) getBucketRegionDefault(_ context.Context, _ string) (string, error) {
+func (c *ClientCache) GetBucketRegionDefault(_ context.Context, _ string) (string, error) {
 	return c.awsConfig.Region, nil
 }
 
