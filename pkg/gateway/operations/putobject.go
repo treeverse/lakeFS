@@ -241,6 +241,10 @@ func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	if o.HandleUnsupported(w, req, "torrent", "acl") {
 		return
 	}
+	if o.Repository.ReadOnly {
+		_ = o.EncodeError(w, req, nil, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrReadOnlyRepository))
+		return
+	}
 
 	// verify branch before we upload data - fail early
 	branchExists, err := o.Catalog.BranchExists(req.Context(), o.Repository.Name, o.Reference)

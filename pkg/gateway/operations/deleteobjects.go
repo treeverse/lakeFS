@@ -33,8 +33,12 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 		_ = o.EncodeError(w, req, nil, gerrors.ERRLakeFSNotSupported.ToAPIErr())
 		return
 	}
-
 	o.Incr("delete_objects", o.Principal, o.Repository.Name, "")
+	if o.Repository.ReadOnly {
+		_ = o.EncodeError(w, req, nil, gerrors.Codes.ToAPIErr(gerrors.ErrReadOnlyRepository))
+		return
+	}
+
 	decodedXML := &serde.Delete{}
 	err := DecodeXMLBody(req.Body, decodedXML)
 	if err != nil {
