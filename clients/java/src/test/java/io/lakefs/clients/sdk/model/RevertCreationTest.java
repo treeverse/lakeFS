@@ -18,6 +18,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.lakefs.clients.sdk.model.CommitOverrides;
 import java.io.IOException;
 import java.util.Arrays;
 import org.junit.jupiter.api.Disabled;
@@ -43,6 +44,14 @@ public class RevertCreationTest {
     @Test
     public void refTest() {
         // TODO: test ref
+    }
+
+    /**
+     * Test the property 'commitOverrides'
+     */
+    @Test
+    public void commitOverridesTest() {
+        // TODO: test commitOverrides
     }
 
     /**

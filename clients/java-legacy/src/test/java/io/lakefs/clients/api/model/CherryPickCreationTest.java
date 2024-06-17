@@ -18,6 +18,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.lakefs.clients.api.model.CommitOverrides;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
@@ -54,6 +55,14 @@ public class CherryPickCreationTest {
     @Test
     public void parentNumberTest() {
         // TODO: test parentNumber
+    }
+
+    /**
+     * Test the property 'commitOverrides'
+     */
+    @Test
+    public void commitOverridesTest() {
+        // TODO: test commitOverrides
     }
 
     /**

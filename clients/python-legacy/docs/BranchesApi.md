@@ -84,6 +84,12 @@ with lakefs_client.ApiClient(configuration) as api_client:
     cherry_pick_creation = CherryPickCreation(
         ref="ref_example",
         parent_number=1,
+        commit_overrides=CommitOverrides(
+            message="message_example",
+            metadata={
+                "key": "key_example",
+            },
+        ),
         force=False,
     ) # CherryPickCreation | 
 
@@ -915,6 +921,12 @@ with lakefs_client.ApiClient(configuration) as api_client:
     branch = "branch_example" # str | 
     revert_creation = RevertCreation(
         ref="ref_example",
+        commit_overrides=CommitOverrides(
+            message="message_example",
+            metadata={
+                "key": "key_example",
+            },
+        ),
         parent_number=1,
         force=False,
         allow_empty=False,

@@ -23,6 +23,7 @@ from lakefs_client.model.comm_prefs_input import CommPrefsInput
 from lakefs_client.model.commit import Commit
 from lakefs_client.model.commit_creation import CommitCreation
 from lakefs_client.model.commit_list import CommitList
+from lakefs_client.model.commit_overrides import CommitOverrides
 from lakefs_client.model.commit_record_creation import CommitRecordCreation
 from lakefs_client.model.complete_presign_multipart_upload import CompletePresignMultipartUpload
 from lakefs_client.model.config import Config
