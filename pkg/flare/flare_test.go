@@ -213,6 +213,28 @@ LAKEFS_AWS_SECRET_KEY=<REDACTED>
 LAKEFS_AWS_ACCESS_KEY_ID=<REDACTED>
 `,
 		},
+		{
+			Name: "low-entropy value",
+			EnvVars: []EnvVarKV{
+				{
+					Key:   "LAKEFS_AUTH_ENCRYPT_SECRET_KEY",
+					Value: "12e3wadasd",
+				},
+			},
+			Expected: `LAKEFS_AUTH_ENCRYPT_SECRET_KEY=<REDACTED>
+`,
+		},
+		{
+			Name: "high-entropy value",
+			EnvVars: []EnvVarKV{
+				{
+					Key:   "LAKEFS_AUTH_ENCRYPT_SECRET_KEY",
+					Value: "h8vkOauR6Ptt2cvM8WEVsaexZ1IsX55s",
+				},
+			},
+			Expected: `LAKEFS_AUTH_ENCRYPT_SECRET_KEY=<REDACTED>
+`,
+		},
 	}
 
 	flr, err := NewFlare(LogFormatPlainText)
