@@ -32,7 +32,7 @@ func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, external
 	t.Run("Adapter_Remove", func(t *testing.T) { testAdapterRemove(t, adapter, storageNamespace) })
 	t.Run("Adapter_MultipartUpload", func(t *testing.T) { testAdapterMultipartUpload(t, adapter, storageNamespace) })
 	t.Run("Adapter_CopyPart", func(t *testing.T) { testAdapterCopyPart(t, adapter, storageNamespace) })
-	//t.Run("Adapter_CopyPartRange", func(t *testing.T) { testAdapterCopyPartRange(t, adapter, storageNamespace) })
+	t.Run("Adapter_CopyPartRange", func(t *testing.T) { testAdapterCopyPartRange(t, adapter, storageNamespace) })
 	t.Run("Adapter_Exists", func(t *testing.T) { testAdapterExists(t, adapter, storageNamespace) })
 	t.Run("Adapter_GetRange", func(t *testing.T) { testAdapterGetRange(t, adapter, storageNamespace) })
 	t.Run("Adapter_Walker", func(t *testing.T) { testAdapterWalker(t, adapter, storageNamespace) })
@@ -205,7 +205,7 @@ func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk b
 // Parameterized test of the Multipart Upload APIs. After successful upload we Get the result and compare to the original
 func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
-	parts, full := createMultipartFile()
+	parts, full := createMultipartContents()
 
 	cases := []struct {
 		name string
@@ -271,7 +271,7 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 				require.NotNil(t, err)
 			}
 
-			compareFileContents(t, ctx, adapter, full, obj)
+			getAndCheckContents(t, ctx, adapter, full, obj)
 		})
 	}
 }
@@ -279,51 +279,41 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 // Test of the Multipart Copy API
 func testAdapterCopyPart(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
-	parts, full := createMultipartFile()
+	parts, full := createMultipartContents()
 	obj, objCopy := objPointers(storageNamespace)
-
 	verifyListInvalid(t, ctx, adapter, obj)
-
 	uploadMultiPart(t, ctx, adapter, obj, parts)
 
 	//Begin Multipart Copy
 	resp, err := adapter.CreateMultiPartUpload(ctx, objCopy, nil, block.CreateMultiPartUploadOpts{})
 	require.NoError(t, err)
-
 	multiParts := copyPart(t, ctx, adapter, obj, objCopy, resp.UploadID)
-
 	_, err = adapter.CompleteMultiPartUpload(ctx, objCopy, resp.UploadID, &block.MultipartUploadCompletion{
 		Part: multiParts,
 	})
 	require.NoError(t, err)
 
-	compareFileContents(t, ctx, adapter, full, objCopy)
-
+	getAndCheckContents(t, ctx, adapter, full, objCopy)
 }
 
 // Test of the Multipart CopyRange API
 func testAdapterCopyPartRange(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
-	parts, full := createMultipartFile()
+	parts, full := createMultipartContents()
 	obj, objCopy := objPointers(storageNamespace)
-
 	verifyListInvalid(t, ctx, adapter, obj)
-
 	uploadMultiPart(t, ctx, adapter, obj, parts)
 
 	//Begin Multipart Copy
 	resp, err := adapter.CreateMultiPartUpload(ctx, objCopy, nil, block.CreateMultiPartUploadOpts{})
 	require.NoError(t, err)
-
 	multiParts := copyPartRange(t, ctx, adapter, obj, objCopy, resp.UploadID)
-
 	_, err = adapter.CompleteMultiPartUpload(ctx, objCopy, resp.UploadID, &block.MultipartUploadCompletion{
 		Part: multiParts,
 	})
 	require.NoError(t, err)
 
-	compareFileContents(t, ctx, adapter, full, objCopy)
-
+	getAndCheckContents(t, ctx, adapter, full, objCopy)
 }
 
 // Parameterized test of the object Exists method of the Storage adapter
@@ -497,8 +487,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 	}
 }
 
-// create file contents
-func createMultipartFile() ([][]byte, []byte) {
+func createMultipartContents() ([][]byte, []byte) {
 
 	parts := make([][]byte, multipartNumberOfParts)
 	var partsConcat []byte
@@ -519,11 +508,6 @@ func uploadMultiPart(t *testing.T, ctx context.Context, adapter block.Adapter, o
 		Part: multiParts,
 	})
 	require.NoError(t, err)
-
-	//verify it was created: is this still needed?
-	ok, err := adapter.Exists(ctx, obj)
-	require.NoError(t, err)
-	require.Equal(t, true, ok)
 }
 
 // List parts on non-existing part
@@ -554,21 +538,20 @@ func uploadParts(t *testing.T, ctx context.Context, adapter block.Adapter, obj b
 func copyPartRange(t *testing.T, ctx context.Context, adapter block.Adapter, obj, objCopy block.ObjectPointer, uploadID string) []block.MultipartPart {
 	multiParts := make([]block.MultipartPart, multipartNumberOfParts)
 	var startPosition int64 = 0
-	var endPosition int64 = multipartPartSize
 	for i := 0; i < multipartNumberOfParts; i++ {
 		partNumber := i + 1
+		var endPosition = startPosition + multipartPartSize
 		partResp, err := adapter.UploadCopyPartRange(ctx, obj, objCopy, uploadID, partNumber, startPosition, endPosition)
 		require.NoError(t, err)
 		multiParts[i].PartNumber = partNumber
 		multiParts[i].ETag = partResp.ETag
-		startPosition = endPosition
-		endPosition += multipartPartSize
+		startPosition = endPosition + 1
 	}
 
 	return multiParts
 }
 
-// Copy single part after starting a multipart upload
+// Copy one and only part after starting a multipart upload
 func copyPart(t *testing.T, ctx context.Context, adapter block.Adapter, obj, objCopy block.ObjectPointer, uploadID string) []block.MultipartPart {
 	multiParts := make([]block.MultipartPart, 1)
 	partNumber := 1
@@ -580,23 +563,43 @@ func copyPart(t *testing.T, ctx context.Context, adapter block.Adapter, obj, obj
 	return multiParts
 }
 
-// read the object and compare to expected contents
-func compareFileContents(t *testing.T, ctx context.Context, adapter block.Adapter, exp []byte, obj block.ObjectPointer) {
+func getAndCheckContents(t *testing.T, ctx context.Context, adapter block.Adapter, exp []byte, obj block.ObjectPointer) {
 	//first check exists
 	ok, err := adapter.Exists(ctx, obj)
 	require.NoError(t, err)
 	require.Equal(t, true, ok)
 
-	//then check size
 	reader, err := adapter.Get(ctx, obj)
 	require.NoError(t, err)
 	got, err := io.ReadAll(reader)
 	require.NoError(t, err)
-	require.Equal(t, len(exp), len(got))
+	compareBigByteArrays(t, exp, got)
+}
 
-	//then check contents
-	require.Equal(t, exp[0], got[0])
-	require.Equal(t, exp, got)
+// compare two big bytearrays one slice at a time(so that we don't blow up the console on error)
+func compareBigByteArrays(t *testing.T, exp, actual []byte) {
+	require.Equal(t, len(exp), len(actual))
+
+	const sliceLen = 1000
+	sliceCount := len(exp) / sliceLen
+	if len(exp)%sliceLen > 0 {
+		sliceCount++
+	}
+
+	//fmt.Print("Slice:")
+	for i := 0; i < sliceCount; i++ {
+		//fmt.Print(i+1,"/",sliceCount,",")
+		var start = i * sliceLen
+		var end = (i + 1) * sliceLen
+		if end >= len(exp) {
+			end = len(exp) - 1
+		}
+
+		var expSlice = exp[start:end]
+		var actualSlice = actual[start:end]
+		require.Equal(t, len(expSlice), len(actualSlice))
+		require.Equal(t, expSlice, actualSlice)
+	}
 }
 
 func objPointers(storageNamespace string) (block.ObjectPointer, block.ObjectPointer) {
