@@ -48,7 +48,8 @@ var (
 	secretScanner        secrets.Scanner
 	secretScannerInitErr error
 
-	plainTextLogDateRegex = regexp.MustCompile(`\[\d{4}(.\d{2}){2}(\s|T)(\d{2}.){2}\d{2}[\+-]?\d{2}:\d{2}\]`)
+	plainTextLogDateRegex = regexp.MustCompile(`^[-_A-Z]+\s+(?<date>\[\d{4}(?:.\d{2}){2}(?:\s|T)(?:\d{2}.){2}\d{2}[\+-]?\d{2}:\d{2}\])`)
+	expectedSubmatches    = 2
 )
 
 type WithTime struct {
@@ -282,12 +283,12 @@ func getFilenameAndExt(in string) (string, string) {
 }
 
 func extractDateFromPlainTextLine(line, logDateLayout string) (time.Time, error) {
-	strDate := plainTextLogDateRegex.FindString(line)
-	if strDate == "" {
+	matches := plainTextLogDateRegex.FindStringSubmatch(line)
+	if len(matches) != expectedSubmatches {
 		return time.Time{}, ErrDateNotFound
 	}
 
-	strDate = strDate[1 : len(strDate)-1]
+	strDate := matches[1][1 : len(matches[1])-1]
 	date, err := time.Parse(logDateLayout, strDate)
 	if err != nil {
 		return time.Time{}, err
