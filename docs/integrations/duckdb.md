@@ -70,6 +70,26 @@ USING SAMPLE reservoir(50000 ROWS) REPEATABLE (100);
 COPY sampled_population TO 's3://example-repo/main/data/population/sample.parquet'; -- actual write happens here
 ```
 
+## Using DuckDB in Python with lakefs-spec
+
+Python users can use DuckDB by leveraging the [lakefs-spec](https://lakefs-spec.org/latest/) package. 
+
+**Note** This library is a third-party package and not maintained by the lakeFS developers; please file issues and bug reports directly
+in the [lakefs-spec](https://github.com/aai-institute/lakefs-spec) repository.
+{: .note}
+
+Using lakefs-spec, querying lakeFS could be done using [pre-signed URLs](../reference/security/presigned-url.html), allowing for efficient and secure I/O, where the data files are read directly from the underlying object store.
+
+```python
+
+import duckdb
+from fsspec import filesystem
+
+duckdb.register_filesystem(filesystem('lakefs'))
+
+duckdb.sql("SELECT * FROM 'lakefs://example-repo/main/data/population/sample.parquet'")
+```
+
 ## Using DuckDB in the lakeFS web UI
 
 The lakeFS web UI includes DuckDB in the Object viewer page. 
