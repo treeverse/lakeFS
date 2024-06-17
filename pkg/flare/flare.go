@@ -393,14 +393,8 @@ func redactSecrets(line string, secretReplacementValue string) (string, error) {
 
 //nolint:gochecknoinits
 func init() {
-	// Registering our custom IP detector with the secrets scanner
-	err := secrets.GetDetectorFactory().Register(DetectorName, NewIPDetector)
-	if err != nil {
-		secretScannerInitErr = err
-	}
-	// Adding our custom IP detector
-	// and removing the ini transformer because it has false positives with plain text log lines
-	config := scanner.NewConfigBuilderFrom(scanner.NewConfigWithDefaults()).AppendDetectors("ip").RemoveTransformers("ini").Build()
+	// remove the ini transformer because it has false positives with plain text log lines
+	config := scanner.NewConfigBuilderFrom(scanner.NewConfigWithDefaults()).RemoveTransformers("ini").Build()
 	s, err := scanner.NewScannerFromConfig(config)
 	if err != nil {
 		secretScannerInitErr = err
