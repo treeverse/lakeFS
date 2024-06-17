@@ -3063,7 +3063,7 @@ func TestGraveler_Revert(t *testing.T) {
 
 			got, err := g.Revert(context.Background(), repository, tt.revertArgs.branchID, tt.revertArgs.ref, tt.revertArgs.parentNumber, graveler.CommitParams{
 				AllowEmpty: tt.revertArgs.allowEmpty,
-			})
+			}, nil)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("unexpected err got = %v, wanted = %v", err, tt.expectedErr)
 			}

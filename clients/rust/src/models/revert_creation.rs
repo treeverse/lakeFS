@@ -15,6 +15,8 @@ pub struct RevertCreation {
     /// the commit to revert, given by a ref
     #[serde(rename = "ref")]
     pub r#ref: String,
+    #[serde(rename = "commit_overrides", skip_serializing_if = "Option::is_none")]
+    pub commit_overrides: Option<Box<models::CommitOverrides>>,
     /// when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.
     #[serde(rename = "parent_number")]
     pub parent_number: i32,
@@ -29,6 +31,7 @@ impl RevertCreation {
     pub fn new(r#ref: String, parent_number: i32) -> RevertCreation {
         RevertCreation {
             r#ref,
+            commit_overrides: None,
             parent_number,
             force: None,
             allow_empty: None,

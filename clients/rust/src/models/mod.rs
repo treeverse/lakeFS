@@ -26,6 +26,8 @@ pub mod commit_creation;
 pub use self::commit_creation::CommitCreation;
 pub mod commit_list;
 pub use self::commit_list::CommitList;
+pub mod commit_overrides;
+pub use self::commit_overrides::CommitOverrides;
 pub mod commit_record_creation;
 pub use self::commit_record_creation::CommitRecordCreation;
 pub mod complete_presign_multipart_upload;
