@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/flare"
@@ -34,9 +35,10 @@ var (
 )
 
 var flareCmd = &cobra.Command{
-	Use:   "flare",
-	Short: "collect configuration, environment variables, and logs for debugging and troubleshooting",
-	Args:  cobra.ExactArgs(0),
+	Use:    "flare",
+	Short:  "collect configuration, environment variables, and logs for debugging and troubleshooting",
+	Args:   cobra.ExactArgs(0),
+	PreRun: warnOutputFlags,
 	Run: func(cmd *cobra.Command, args []string) {
 		syscall.Umask(flare.FlareUmask)
 		now := time.Now().String()
@@ -134,6 +136,16 @@ func validateAndParseDateFlags(dateFlag, dateLayout string) (*time.Time, error) 
 		return nil, err
 	}
 	return &parsedDate, nil
+}
+
+func warnOutputFlags(cmd *cobra.Command, args []string) {
+	if outputStdout && packageContents {
+		fmt.Fprint(os.Stderr, text.FgHiYellow.Sprint("Warning: Stdout output is set. Package contents flag will be ignored.\n"))
+	}
+
+	if outputStdout && (cmd.Flags().Changed("output") || cmd.Flags().Changed("env-var-filename") || cmd.Flags().Changed("zip-filename")) {
+		fmt.Fprint(os.Stderr, text.FgHiYellow.Sprint("Warning: Stdout output is set. File output related flags will be ignored.\n"))
+	}
 }
 
 //nolint:gochecknoinits
