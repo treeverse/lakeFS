@@ -948,11 +948,6 @@ jobs:
       COSMOSDB_ACCOUNT: esti-e2e-tests
 
     steps:
-      - name: Azure log-in
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
       - name: Check-out code
         uses: actions/checkout@v4
 

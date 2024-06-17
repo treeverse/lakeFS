@@ -2,9 +2,6 @@
 title: Fluffy Server Configuration
 description: Configuration reference for Fluffy Server
 parent: lakeFS Enterprise
-grand_parent: Understanding lakeFS
-redirect_from:
-- /understand/fluffy-configuration.html
 ---
 
 # Fluffy Server Configuration

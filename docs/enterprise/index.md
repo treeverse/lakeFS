@@ -2,11 +2,8 @@
 title: lakeFS Enterprise
 description: lakeFS Enterprise is an enterprise-ready lakeFS solution providing additional features including RBAC, SSO and Support SLA.
 has_children: true
+nav_order: 110
 has_toc: false
-parent: Understanding lakeFS
-redirect_from:
-- /understand/lakefs-enterprise.html
-- /enterprise/index.html
 ---
 
 # lakeFS Enterprise
@@ -34,6 +31,6 @@ release info found in [Github releases](https://github.com/treeverse/lakeFS/rele
 2. Fluffy - Proprietary: In charge of the Enterprise features. Can be retrieved from
 [Treeverse Dockerhub](https://hub.docker.com/u/treeverse) using the granted token.
 
-You can learn nore about [lakeFS Enterprise architecture]({% link understand/enterprise/architecture.md %}), or 
-follow the examples in the [quickstart guide]({% link understand/enterprise/orchestration.md %}).
+You can learn nore about [lakeFS Enterprise architecture]({% link enterprise/architecture.md %}), or 
+follow the examples in the [quickstart guide]({% link enterprise/orchestration.md %}).
 
