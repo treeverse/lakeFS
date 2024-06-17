@@ -2,11 +2,12 @@ package block_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/testutil"
-	"testing"
 )
 
 func TestController_ValidateInterRegionStorage(t *testing.T) {
