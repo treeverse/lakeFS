@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/go-openapi/swag"
 	"io"
 	"math/rand"
 	"net/http"
@@ -52,6 +53,61 @@ func newMinioClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
 		t.Fatalf("minio.New: %s", err)
 	}
 	return client
+}
+
+func TestS3UploadToReadOnlyRepoError(t *testing.T) {
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3uploadobjectdestreadonly")
+	defer deleteRepositoryIfAskedTo(ctx, readOnlyRepo)
+
+	minioClient := newMinioClient(t, credentials.NewStaticV4)
+	const tenMibi = 10 * 1024 * 1024
+	reader := NewZeroReader(tenMibi)
+
+	_, err := minioClient.PutObject(ctx, readOnlyRepo, gatewayTestPrefix+"/test", reader, tenMibi, minio.PutObjectOptions{
+		// this prevents minio from reading the entire file before sending the request
+		SendContentMd5: false,
+	})
+	require.NotNil(t, err)
+	require.Contains(t, err.Error(), "read-only")
+
+	// The read-only check should occur before we read the file.
+	// To ensure that, we're asserting that the file was not read entirely.
+	// (The minio client reads at least one chunk of the file before sending the request,
+	// so `NumBytesRead` is probably not 0, but must be < 10MB.)
+	require.Less(t, reader.NumBytesRead, tenMibi)
+}
+
+func TestS3DeleteFromReadOnlyRepoError(t *testing.T) {
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3deleteobjectdestreadonly")
+	defer deleteRepositoryIfAskedTo(ctx, readOnlyRepo)
+
+	minioClient := newMinioClient(t, credentials.NewStaticV4)
+	content := "some random data"
+	contentReader := strings.NewReader(content)
+
+	path := gatewayTestPrefix + "test"
+	_, uploadErr := client.UploadObjectWithBodyWithResponse(ctx, readOnlyRepo, mainBranch, &apigen.UploadObjectParams{
+		Path:  path,
+		Force: swag.Bool(true),
+	}, "application/octet-stream", contentReader)
+	require.Nil(t, uploadErr)
+
+	t.Run("existing object", func(t *testing.T) {
+		err := minioClient.RemoveObject(ctx, readOnlyRepo, path, minio.RemoveObjectOptions{})
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "read-only")
+	})
+	t.Run("non existing object", func(t *testing.T) {
+		err := minioClient.RemoveObject(ctx, readOnlyRepo, path+"not-existing", minio.RemoveObjectOptions{})
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "read-only")
+	})
 }
 
 func TestS3UploadAndDownload(t *testing.T) {
@@ -574,6 +630,9 @@ func TestS3CopyObjectErrors(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
+	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3copyobjectdestreadonly")
+	defer deleteRepositoryIfAskedTo(ctx, readOnlyRepo)
+
 	requireBlockstoreType(t, block.BlockstoreTypeS3)
 	destPath := gatewayTestPrefix + "dest-file"
 
@@ -626,6 +685,20 @@ func TestS3CopyObjectErrors(t *testing.T) {
 			})
 		require.NotNil(t, err)
 		require.Contains(t, err.Error(), "NoSuchKey")
+	})
+
+	t.Run("readonly repo from non-existing source", func(t *testing.T) {
+		_, err := s3lakefsClient.CopyObject(ctx,
+			minio.CopyDestOptions{
+				Bucket: readOnlyRepo,
+				Object: destPath,
+			},
+			minio.CopySrcOptions{
+				Bucket: repo,
+				Object: "not-a-branch/data/not-found",
+			})
+		require.NotNil(t, err)
+		require.Contains(t, err.Error(), "read-only")
 	})
 }
 
