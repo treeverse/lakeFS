@@ -575,7 +575,7 @@ func TestGravelerRevert(t *testing.T) {
 			return commit3ID, nil
 		}).Times(1)
 
-		val, err := test.Sut.Revert(ctx, repository, branch1ID, graveler.Ref(commit2ID), 0, graveler.CommitParams{}, graveler.CommitOverrides{})
+		val, err := test.Sut.Revert(ctx, repository, branch1ID, graveler.Ref(commit2ID), 0, graveler.CommitParams{}, &graveler.CommitOverrides{})
 
 		require.NoError(t, err)
 		require.NotNil(t, val)
@@ -594,28 +594,82 @@ func TestGravelerRevert(t *testing.T) {
 			},
 		}
 
-		overrideDate := int64(13)
 		commitOverrides := graveler.CommitOverrides{
 			Message: "override message",
 			Metadata: map[string]string{
 				"originalKey": "overrideValue",
 				"newKey":      "newValue",
 			},
-			Date: &overrideDate,
 		}
 
 		setupSuccessfulRevertExpectations(test)
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
 			require.Equal(t, mr3ID, commit.MetaRangeID)
 			require.Equal(t, commitOverrides.Message, commit.Message)
-			require.Equal(t, time.Unix(*commitOverrides.Date, 0), commit.CreationDate)
-			for key, value := range commitOverrides.Metadata {
-				require.Equal(t, value, commit.Metadata[key])
-			}
+			require.Equal(t, commitOverrides.Metadata, commit.Metadata)
 			return commit3ID, nil
 		}).Times(1)
 
-		val, err := test.Sut.Revert(ctx, repository, branch1ID, graveler.Ref(commit2ID), 0, commitParams, commitOverrides)
+		val, err := test.Sut.Revert(ctx, repository, branch1ID, graveler.Ref(commit2ID), 0, commitParams, &commitOverrides)
+
+		require.NoError(t, err)
+		require.NotNil(t, val)
+		require.Equal(t, commit3ID, graveler.CommitID(val.Ref()))
+	})
+
+	t.Run("revert partially override commit fields", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		firstUpdateBranch(test)
+		emptyStagingTokenCombo(test, 2)
+
+		commitParams := graveler.CommitParams{
+			Message: "original message",
+			Metadata: map[string]string{
+				"originalKey": "originalValue",
+			},
+		}
+
+		commitOverrides := graveler.CommitOverrides{
+			Metadata: map[string]string{
+				"originalKey": "overrideValue",
+				"newKey":      "newValue",
+			},
+		}
+
+		setupSuccessfulRevertExpectations(test)
+		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
+			require.Equal(t, mr3ID, commit.MetaRangeID)
+			require.Equal(t, "original message", commit.Message)
+			require.Equal(t, commitOverrides.Metadata, commit.Metadata)
+			return commit3ID, nil
+		}).Times(1)
+
+		val, err := test.Sut.Revert(ctx, repository, branch1ID, graveler.Ref(commit2ID), 0, commitParams, &commitOverrides)
+
+		require.NoError(t, err)
+		require.NotNil(t, val)
+		require.Equal(t, commit3ID, graveler.CommitID(val.Ref()))
+	})
+
+	t.Run("revert with nil overrides", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		firstUpdateBranch(test)
+		emptyStagingTokenCombo(test, 2)
+
+		commitParams := graveler.CommitParams{
+			Message: "original message",
+			Metadata: map[string]string{
+				"originalKey": "originalValue",
+			},
+		}
+
+		setupSuccessfulRevertExpectations(test)
+		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
+			require.Equal(t, mr3ID, commit.MetaRangeID)
+			return commit3ID, nil
+		}).Times(1)
+
+		val, err := test.Sut.Revert(ctx, repository, branch1ID, graveler.Ref(commit2ID), 0, commitParams, nil)
 
 		require.NoError(t, err)
 		require.NotNil(t, val)
@@ -642,7 +696,7 @@ func TestGravelerRevert(t *testing.T) {
 				return err
 			}).Times(1)
 
-		val, err := test.Sut.Revert(ctx, repository, branch1ID, graveler.Ref(commit2ID), 0, graveler.CommitParams{}, graveler.CommitOverrides{})
+		val, err := test.Sut.Revert(ctx, repository, branch1ID, graveler.Ref(commit2ID), 0, graveler.CommitParams{}, &graveler.CommitOverrides{})
 
 		require.True(t, errors.Is(err, graveler.ErrDirtyBranch))
 		require.Equal(t, "", val.String())
@@ -714,7 +768,7 @@ func TestGravelerCherryPick(t *testing.T) {
 		}).Times(1)
 
 		parent := 1
-		val, err := test.Sut.CherryPick(ctx, repository, branch1ID, graveler.Ref(commit2ID), &parent, "tester", graveler.CommitOverrides{})
+		val, err := test.Sut.CherryPick(ctx, repository, branch1ID, graveler.Ref(commit2ID), &parent, "tester", &graveler.CommitOverrides{})
 
 		require.NoError(t, err)
 		require.NotNil(t, val)
@@ -725,10 +779,8 @@ func TestGravelerCherryPick(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
-		overrideDate := int64(13)
 		commitOverrides := graveler.CommitOverrides{
 			Message: "override message",
-			Date:    &overrideDate,
 			Metadata: map[string]string{
 				"overrideKey": "overrideValue",
 			},
@@ -738,14 +790,56 @@ func TestGravelerCherryPick(t *testing.T) {
 		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
 			require.Equal(t, mr3ID, commit.MetaRangeID)
 			require.Equal(t, commitOverrides.Message, commit.Message)
-			require.Equal(t, time.Unix(*commitOverrides.Date, 0), commit.CreationDate)
 			for k, v := range commitOverrides.Metadata {
 				require.Equal(t, v, commit.Metadata[k])
 			}
 			return commit3ID, nil
 		}).Times(1)
 		parent := 1
-		val, err := test.Sut.CherryPick(ctx, repository, branch1ID, graveler.Ref(commit2ID), &parent, "tester", commitOverrides)
+		val, err := test.Sut.CherryPick(ctx, repository, branch1ID, graveler.Ref(commit2ID), &parent, "tester", &commitOverrides)
+
+		require.NoError(t, err)
+		require.NotNil(t, val)
+		require.Equal(t, commit3ID, graveler.CommitID(val.Ref()))
+	})
+
+	t.Run("cherry-pick partially override commit fields", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		firstUpdateBranch(test)
+		emptyStagingTokenCombo(test, 2)
+		commitOverrides := graveler.CommitOverrides{
+			Metadata: map[string]string{
+				"overrideKey": "overrideValue",
+			},
+		}
+
+		setupCherryPickExpectations(test)
+		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
+			require.Equal(t, mr3ID, commit.MetaRangeID)
+			require.Equal(t, "", commit.Message)
+			require.Equal(t, commitOverrides.Metadata, commit.Metadata)
+			return commit3ID, nil
+		}).Times(1)
+		parent := 1
+		val, err := test.Sut.CherryPick(ctx, repository, branch1ID, graveler.Ref(commit2ID), &parent, "tester", &commitOverrides)
+
+		require.NoError(t, err)
+		require.NotNil(t, val)
+		require.Equal(t, commit3ID, graveler.CommitID(val.Ref()))
+	})
+
+	t.Run("cherry-pick with nil overrides", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+		firstUpdateBranch(test)
+		emptyStagingTokenCombo(test, 2)
+
+		setupCherryPickExpectations(test)
+		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, commit graveler.Commit) (graveler.CommitID, error) {
+			require.Equal(t, mr3ID, commit.MetaRangeID)
+			return commit3ID, nil
+		}).Times(1)
+		parent := 1
+		val, err := test.Sut.CherryPick(ctx, repository, branch1ID, graveler.Ref(commit2ID), &parent, "tester", nil)
 
 		require.NoError(t, err)
 		require.NotNil(t, val)

@@ -45,8 +45,7 @@ class TestCherryPickCreation(unittest.TestCase):
                     message = '', 
                     metadata = {
                         'key' : ''
-                        }, 
-                    date = 56, ), 
+                        }, ), 
                 force = True
             )
         else :

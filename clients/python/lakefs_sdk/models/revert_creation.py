@@ -31,11 +31,11 @@ class RevertCreation(BaseModel):
     RevertCreation
     """
     ref: StrictStr = Field(..., description="the commit to revert, given by a ref")
-    commit_overrides: Optional[CommitOverrides] = Field(None, alias="commitOverrides")
+    commit_overrides: Optional[CommitOverrides] = None
     parent_number: StrictInt = Field(..., description="when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.")
     force: Optional[StrictBool] = False
     allow_empty: Optional[StrictBool] = Field(False, description="allow empty commit (revert without changes)")
-    __properties = ["ref", "commitOverrides", "parent_number", "force", "allow_empty"]
+    __properties = ["ref", "commit_overrides", "parent_number", "force", "allow_empty"]
 
     class Config:
         """Pydantic configuration"""
@@ -63,7 +63,7 @@ class RevertCreation(BaseModel):
                           exclude_none=True)
         # override the default output from pydantic by calling `to_dict()` of commit_overrides
         if self.commit_overrides:
-            _dict['commitOverrides'] = self.commit_overrides.to_dict()
+            _dict['commit_overrides'] = self.commit_overrides.to_dict()
         return _dict
 
     @classmethod
@@ -77,7 +77,7 @@ class RevertCreation(BaseModel):
 
         _obj = RevertCreation.parse_obj({
             "ref": obj.get("ref"),
-            "commit_overrides": CommitOverrides.from_dict(obj.get("commitOverrides")) if obj.get("commitOverrides") is not None else None,
+            "commit_overrides": CommitOverrides.from_dict(obj.get("commit_overrides")) if obj.get("commit_overrides") is not None else None,
             "parent_number": obj.get("parent_number"),
             "force": obj.get("force") if obj.get("force") is not None else False,
             "allow_empty": obj.get("allow_empty") if obj.get("allow_empty") is not None else False

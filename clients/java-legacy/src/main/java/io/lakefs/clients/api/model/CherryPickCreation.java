@@ -38,7 +38,7 @@ public class CherryPickCreation {
   @SerializedName(SERIALIZED_NAME_PARENT_NUMBER)
   private Integer parentNumber;
 
-  public static final String SERIALIZED_NAME_COMMIT_OVERRIDES = "commitOverrides";
+  public static final String SERIALIZED_NAME_COMMIT_OVERRIDES = "commit_overrides";
   @SerializedName(SERIALIZED_NAME_COMMIT_OVERRIDES)
   private CommitOverrides commitOverrides;
 

@@ -34,7 +34,7 @@ public class RevertCreation {
   @SerializedName(SERIALIZED_NAME_REF)
   private String ref;
 
-  public static final String SERIALIZED_NAME_COMMIT_OVERRIDES = "commitOverrides";
+  public static final String SERIALIZED_NAME_COMMIT_OVERRIDES = "commit_overrides";
   @SerializedName(SERIALIZED_NAME_COMMIT_OVERRIDES)
   private CommitOverrides commitOverrides;
 

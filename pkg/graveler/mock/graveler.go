@@ -202,7 +202,7 @@ func (mr *MockVersionControllerMockRecorder) AddCommit(ctx, repository, commit i
 }
 
 // CherryPick mocks base method.
-func (m *MockVersionController) CherryPick(ctx context.Context, repository *graveler.RepositoryRecord, id graveler.BranchID, reference graveler.Ref, number *int, committer string, commitOverrides graveler.CommitOverrides, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
+func (m *MockVersionController) CherryPick(ctx context.Context, repository *graveler.RepositoryRecord, id graveler.BranchID, reference graveler.Ref, number *int, committer string, commitOverrides *graveler.CommitOverrides, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, repository, id, reference, number, committer, commitOverrides}
 	for _, a := range opts {
@@ -834,7 +834,7 @@ func (mr *MockVersionControllerMockRecorder) ResolveRawRef(ctx, repository, rawR
 }
 
 // Revert mocks base method.
-func (m *MockVersionController) Revert(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref, parentNumber int, commitParams graveler.CommitParams, commitOverrides graveler.CommitOverrides, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
+func (m *MockVersionController) Revert(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref, parentNumber int, commitParams graveler.CommitParams, commitOverrides *graveler.CommitOverrides, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, repository, branchID, ref, parentNumber, commitParams, commitOverrides}
 	for _, a := range opts {

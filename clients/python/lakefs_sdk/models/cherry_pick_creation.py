@@ -32,9 +32,9 @@ class CherryPickCreation(BaseModel):
     """
     ref: StrictStr = Field(..., description="the commit to cherry-pick, given by a ref")
     parent_number: Optional[StrictInt] = Field(None, description="When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff. The default branch is parent 1. ")
-    commit_overrides: Optional[CommitOverrides] = Field(None, alias="commitOverrides")
+    commit_overrides: Optional[CommitOverrides] = None
     force: Optional[StrictBool] = False
-    __properties = ["ref", "parent_number", "commitOverrides", "force"]
+    __properties = ["ref", "parent_number", "commit_overrides", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -62,7 +62,7 @@ class CherryPickCreation(BaseModel):
                           exclude_none=True)
         # override the default output from pydantic by calling `to_dict()` of commit_overrides
         if self.commit_overrides:
-            _dict['commitOverrides'] = self.commit_overrides.to_dict()
+            _dict['commit_overrides'] = self.commit_overrides.to_dict()
         return _dict
 
     @classmethod
@@ -77,7 +77,7 @@ class CherryPickCreation(BaseModel):
         _obj = CherryPickCreation.parse_obj({
             "ref": obj.get("ref"),
             "parent_number": obj.get("parent_number"),
-            "commit_overrides": CommitOverrides.from_dict(obj.get("commitOverrides")) if obj.get("commitOverrides") is not None else None,
+            "commit_overrides": CommitOverrides.from_dict(obj.get("commit_overrides")) if obj.get("commit_overrides") is not None else None,
             "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj

@@ -44,8 +44,7 @@ class TestRevertCreation(unittest.TestCase):
                     message = '', 
                     metadata = {
                         'key' : ''
-                        }, 
-                    date = 56, ), 
+                        }, ), 
                 parent_number = 56, 
                 force = True, 
                 allow_empty = True

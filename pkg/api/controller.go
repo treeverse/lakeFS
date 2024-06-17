@@ -3430,13 +3430,7 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body a
 		ParentNumber: body.ParentNumber,
 		AllowEmpty:   swag.BoolValue(body.AllowEmpty),
 	}
-	if body.CommitOverrides != nil {
-		revertParams.Overrides = graveler.CommitOverrides{
-			Message:  *body.CommitOverrides.Message,
-			Date:     body.CommitOverrides.Date,
-			Metadata: body.CommitOverrides.Metadata.AdditionalProperties,
-		}
-	}
+	revertParams.CommitOverrides = graveler.CommitOverridesFromAPI(body.CommitOverrides)
 	err = c.Catalog.Revert(ctx, repository, branch, revertParams, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -3477,13 +3471,7 @@ func (c *Controller) CherryPick(w http.ResponseWriter, r *http.Request, body api
 		Committer:    user.Committer(),
 		ParentNumber: body.ParentNumber,
 	}
-	if body.CommitOverrides != nil {
-		cherryPickParams.Overrides = graveler.CommitOverrides{
-			Date:     body.CommitOverrides.Date,
-			Message:  *body.CommitOverrides.Message,
-			Metadata: body.CommitOverrides.Metadata.AdditionalProperties,
-		}
-	}
+	cherryPickParams.CommitOverrides = graveler.CommitOverridesFromAPI(body.CommitOverrides)
 	newCommit, err := c.Catalog.CherryPick(ctx, repository, branch, cherryPickParams, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return

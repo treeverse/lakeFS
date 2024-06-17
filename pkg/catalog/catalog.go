@@ -156,14 +156,14 @@ type RevertParams struct {
 	ParentNumber int    // if reverting a merge commit, the change will be reversed relative to this parent number (1-based).
 	Committer    string
 	AllowEmpty   bool // allow empty commit (revert without changes)
-	Overrides    graveler.CommitOverrides
+	*graveler.CommitOverrides
 }
 
 type CherryPickParams struct {
 	Reference    string // the commit to pick
 	ParentNumber *int   // if a merge commit was picked, the change will be applied relative to this parent number (1-based).
 	Committer    string
-	Overrides    graveler.CommitOverrides
+	*graveler.CommitOverrides
 }
 
 type PathRecord struct {
@@ -1686,7 +1686,7 @@ func (c *Catalog) Revert(ctx context.Context, repositoryID string, branch string
 	if err != nil {
 		return err
 	}
-	_, err = c.Store.Revert(ctx, repository, branchID, reference, parentNumber, commitParams, params.Overrides, opts...)
+	_, err = c.Store.Revert(ctx, repository, branchID, reference, parentNumber, commitParams, params.CommitOverrides, opts...)
 	return err
 }
 
@@ -1708,7 +1708,7 @@ func (c *Catalog) CherryPick(ctx context.Context, repositoryID string, branch st
 		return nil, err
 	}
 
-	commitID, err := c.Store.CherryPick(ctx, repository, branchID, reference, parentNumber, params.Committer, params.Overrides, opts...)
+	commitID, err := c.Store.CherryPick(ctx, repository, branchID, reference, parentNumber, params.Committer, params.CommitOverrides, opts...)
 	if err != nil {
 		return nil, err
 	}

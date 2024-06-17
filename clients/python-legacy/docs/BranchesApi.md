@@ -89,7 +89,6 @@ with lakefs_client.ApiClient(configuration) as api_client:
             metadata={
                 "key": "key_example",
             },
-            date=1,
         ),
         force=False,
     ) # CherryPickCreation | 
@@ -927,7 +926,6 @@ with lakefs_client.ApiClient(configuration) as api_client:
             metadata={
                 "key": "key_example",
             },
-            date=1,
         ),
         parent_number=1,
         force=False,

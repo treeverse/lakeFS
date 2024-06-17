@@ -102,7 +102,7 @@ class CherryPickCreation(ModelNormal):
     attribute_map = {
         'ref': 'ref',  # noqa: E501
         'parent_number': 'parent_number',  # noqa: E501
-        'commit_overrides': 'commitOverrides',  # noqa: E501
+        'commit_overrides': 'commit_overrides',  # noqa: E501
         'force': 'force',  # noqa: E501
     }
 

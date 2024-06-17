@@ -61,7 +61,7 @@ public class CherryPickCreation {
   @SerializedName(SERIALIZED_NAME_PARENT_NUMBER)
   private Integer parentNumber;
 
-  public static final String SERIALIZED_NAME_COMMIT_OVERRIDES = "commitOverrides";
+  public static final String SERIALIZED_NAME_COMMIT_OVERRIDES = "commit_overrides";
   @SerializedName(SERIALIZED_NAME_COMMIT_OVERRIDES)
   private CommitOverrides commitOverrides;
 
@@ -255,7 +255,7 @@ public class CherryPickCreation {
     openapiFields = new HashSet<String>();
     openapiFields.add("ref");
     openapiFields.add("parent_number");
-    openapiFields.add("commitOverrides");
+    openapiFields.add("commit_overrides");
     openapiFields.add("force");
 
     // a set of required properties/fields (JSON key names)
@@ -286,9 +286,9 @@ public class CherryPickCreation {
       if (!jsonObj.get("ref").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `ref` to be a primitive type in the JSON string but got `%s`", jsonObj.get("ref").toString()));
       }
-      // validate the optional field `commitOverrides`
-      if (jsonObj.get("commitOverrides") != null && !jsonObj.get("commitOverrides").isJsonNull()) {
-        CommitOverrides.validateJsonElement(jsonObj.get("commitOverrides"));
+      // validate the optional field `commit_overrides`
+      if (jsonObj.get("commit_overrides") != null && !jsonObj.get("commit_overrides").isJsonNull()) {
+        CommitOverrides.validateJsonElement(jsonObj.get("commit_overrides"));
       }
   }
 

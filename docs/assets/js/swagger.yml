@@ -476,13 +476,9 @@ components:
           description: replace the commit message
         metadata:
           type: object
-          description: update the metadata of the commit record. New keys will be added to the original metadata, and existing keys will be overwritten.
+          description: replace the metadata of the commit
           additionalProperties:
             type: string
-        date:
-          description: set date to override creation date in the commit (Unix Epoch in seconds)
-          type: integer
-          format: int64
 
     RevertCreation:
       type: object
@@ -493,7 +489,7 @@ components:
         ref:
           type: string
           description: the commit to revert, given by a ref
-        commitOverrides:
+        commit_overrides:
           $ref: "#/components/schemas/CommitOverrides"
         parent_number:
           type: integer
@@ -519,7 +515,7 @@ components:
           description: |
             When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff.
             The default branch is parent 1.
-        commitOverrides:
+        commit_overrides:
           $ref: "#/components/schemas/CommitOverrides"
         force:
           type: boolean

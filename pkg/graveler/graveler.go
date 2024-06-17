@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rs/xid"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -471,11 +472,22 @@ type CommitParams struct {
 	AllowEmpty      bool
 }
 
+// CommitOverrides is intended to be used by operations
+// that create a new commit based on an existing one,
+// allowing users to provide information about the new commit.
 type CommitOverrides struct {
-	Message string
-	// Date (Unix Epoch in seconds) is used to override commits creation date
-	Date     *int64
+	Message  string
 	Metadata Metadata
+}
+
+func CommitOverridesFromAPI(overrides *apigen.CommitOverrides) *CommitOverrides {
+	if overrides == nil {
+		return nil
+	}
+	return &CommitOverrides{
+		Message:  *overrides.Message,
+		Metadata: overrides.Metadata.AdditionalProperties,
+	}
 }
 
 type GarbageCollectionRunMetadata struct {
@@ -604,10 +616,10 @@ type VersionController interface {
 	ResetPrefix(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, opts ...SetOptionsFunc) error
 
 	// Revert creates a reverse patch to the commit given as 'ref', and applies it as a new commit on the given branch.
-	Revert(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams, commitOverrides CommitOverrides, opts ...SetOptionsFunc) (CommitID, error)
+	Revert(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams, commitOverrides *CommitOverrides, opts ...SetOptionsFunc) (CommitID, error)
 
 	// CherryPick creates a patch to the commit given as 'ref', and applies it as a new commit on the given branch.
-	CherryPick(ctx context.Context, repository *RepositoryRecord, id BranchID, reference Ref, number *int, committer string, commitOverrides CommitOverrides, opts ...SetOptionsFunc) (CommitID, error)
+	CherryPick(ctx context.Context, repository *RepositoryRecord, id BranchID, reference Ref, number *int, committer string, commitOverrides *CommitOverrides, opts ...SetOptionsFunc) (CommitID, error)
 
 	// Merge merges 'source' into 'destination' and returns the commit id for the created merge commit.
 	Merge(ctx context.Context, repository *RepositoryRecord, destination BranchID, source Ref, commitParams CommitParams, strategy string, opts ...SetOptionsFunc) (CommitID, error)
@@ -2505,7 +2517,7 @@ type CommitIDAndSummary struct {
 // To revert C2, we merge C1 into the branch, with C2 as the merge base.
 // That is, try to apply the diff from C2 to C1 on the tip of the branch.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the revert is done.
-func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams, commitOverrides CommitOverrides, opts ...SetOptionsFunc) (CommitID, error) {
+func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber int, commitParams CommitParams, commitOverrides *CommitOverrides, opts ...SetOptionsFunc) (CommitID, error) {
 	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
@@ -2591,7 +2603,7 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 
 // CherryPick creates a new commit on the given branch, with the changes from the given commit.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the cherry-pick is done.
-func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber *int, committer string, commitOverrides CommitOverrides, opts ...SetOptionsFunc) (CommitID, error) {
+func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber *int, committer string, commitOverrides *CommitOverrides, opts ...SetOptionsFunc) (CommitID, error) {
 	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
@@ -2657,15 +2669,19 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 		commit.MetaRangeID = metaRangeID
 		commit.Parents = []CommitID{branch.CommitID}
 		commit.Generation = branchCommit.Generation + 1
-
 		commit.Metadata = commitRecord.Metadata
+
+		// important: apply overrides before adding our own metadata fields,
+		// because otherwise, the metadata will be potentially overwritten, removing
+		// the cherry-pick related keys.
+		applyCommitOverrides(&commit, commitOverrides)
+
 		if commit.Metadata == nil {
 			commit.Metadata = make(map[string]string)
 		}
 		commit.Metadata["cherry-pick-origin"] = string(commitRecord.CommitID)
 		commit.Metadata["cherry-pick-committer"] = commitRecord.Committer
 
-		applyCommitOverrides(&commit, commitOverrides)
 		commitID, err = g.RefManager.AddCommit(ctx, repository, commit)
 		if err != nil {
 			return nil, fmt.Errorf("add commit: %w", err)
@@ -2684,17 +2700,16 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 	return commitID, nil
 }
 
-func applyCommitOverrides(commit *Commit, commitOverrides CommitOverrides) {
+func applyCommitOverrides(commit *Commit, commitOverrides *CommitOverrides) {
+	if commitOverrides == nil {
+		return
+	}
 	if commitOverrides.Message != "" {
 		commit.Message = commitOverrides.Message
 	}
-	if commitOverrides.Date != nil {
-		commit.CreationDate = time.Unix(*commitOverrides.Date, 0)
-	}
+
 	if commitOverrides.Metadata != nil {
-		for k, v := range commitOverrides.Metadata {
-			commit.Metadata[k] = v
-		}
+		commit.Metadata = commitOverrides.Metadata
 	}
 }
 
