@@ -125,17 +125,22 @@ def _extract_region_from_endpoint(endpoint):
     parts = endpoint.split('.')
     if len(parts) == 4:
         return parts[1]
-    elif len(parts) > 4:
+    if len(parts) > 4:
         return parts[2]
-    else:
-        return DEFAULT_REGION
+    return DEFAULT_REGION
 
 
-def _get_identity_token(session: 'boto3.Session', lakeFSHost: str, additional_headers: dict[str,str], presignExperasion=60) -> str:
+def _get_identity_token(
+        session: 'boto3.Session',
+        lakefs_host: str,
+        additional_headers: dict[str, str] = None,
+        presign_expression=60
+) -> str:
     """
    Generate the identity token required for lakeFS authentication from an AWS session.
 
-   This function uses the STS client to generate a presigned URL for the `get_caller_identity` action, extracts the required values from the URL,
+   This function uses the STS client to generate a presigned URL for the `get_caller_identity` action,
+    extracts the required values from the URL,
    and creates a base64-encoded JSON object with these values.
 
    :param session: A boto3 session object with the necessary AWS credentials and region information.
@@ -143,8 +148,8 @@ def _get_identity_token(session: 'boto3.Session', lakeFSHost: str, additional_he
    :raises ValueError: If the session does not have a region name set.
    """
 
-    from botocore.client import Config
-    from botocore.signers import RequestSigner
+    from botocore.client import Config  # pylint: disable=import-outside-toplevel
+    from botocore.signers import RequestSigner  # pylint: disable=import-outside-toplevel
     sts_client = session.client('sts', config=Config(signature_version='v4'))
     endpoint = sts_client.meta.endpoint_url
     service_id = sts_client.meta.service_model.service_id
@@ -159,7 +164,7 @@ def _get_identity_token(session: 'boto3.Session', lakeFSHost: str, additional_he
     )
     if additional_headers is None:
         additional_headers = {
-            'X-LakeFS-Server-ID': lakeFSHost,
+            'X-LakeFS-Server-ID': lakefs_host,
         }
     params = {
         'method': 'POST',
@@ -172,7 +177,7 @@ def _get_identity_token(session: 'boto3.Session', lakeFSHost: str, additional_he
     presigned_url = signer.generate_presigned_url(
         params,
         region_name=region,
-        expires_in=presignExperasion,
+        expires_in=presign_expression,
         operation_name=''
     )
 
