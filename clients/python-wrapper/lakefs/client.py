@@ -20,6 +20,8 @@ from lakefs.config import ClientConfig
 from lakefs.exceptions import NotAuthorizedException, ServerException, api_exception_handler
 from lakefs.models import ServerStorageConfiguration
 
+DEFAULT_REGION = 'us-east-1'
+
 
 class ServerConfiguration:
     """
@@ -110,7 +112,26 @@ class Client:
         return self._server_conf.version
 
 
-def get_identity_token(session: 'boto3.Session') -> str:
+def _extract_region_from_endpoint(endpoint):
+    """
+    Extract the region name from an STS endpoint URL.
+    for example: https://sts.eu-central-1.amazonaws.com/ -> eu-central-1
+    and for example: https://sts.amazonaws.com/ -> DEFAULT_REGION
+
+    :param endpoint: The endpoint URL of the STS client.
+    :return: The region name extracted from the endpoint URL.
+    """
+
+    parts = endpoint.split('.')
+    if len(parts) == 4:
+        return parts[1]
+    elif len(parts) > 4:
+        return parts[2]
+    else:
+        return DEFAULT_REGION
+
+
+def _get_identity_token(session: 'boto3.Session', lakeFSHost: str, additional_headers: dict[str,str], presignExperasion=60) -> str:
     """
    Generate the identity token required for lakeFS authentication from an AWS session.
 
@@ -122,14 +143,39 @@ def get_identity_token(session: 'boto3.Session') -> str:
    :raises ValueError: If the session does not have a region name set.
    """
 
-    if session.region_name is None:
-        raise ValueError("Region name is not set in the session")
-
     from botocore.client import Config
+    from botocore.signers import RequestSigner
     sts_client = session.client('sts', config=Config(signature_version='v4'))
-    presigned_url = sts_client.generate_presigned_url('get_caller_identity', Params={}, ExpiresIn=3600)
+    endpoint = sts_client.meta.endpoint_url
+    service_id = sts_client.meta.service_model.service_id
+    region = _extract_region_from_endpoint(endpoint)
+    signer = RequestSigner(
+        service_id,
+        region,
+        'sts',
+        'v4',
+        session.get_credentials(),
+        session.events
+    )
+    if additional_headers is None:
+        additional_headers = {
+            'X-LakeFS-Server-ID': lakeFSHost,
+        }
+    params = {
+        'method': 'POST',
+        'url': endpoint,
+        'body': {},
+        'headers': additional_headers,
+        'context': {}
+    }
 
-    # Parse the URL to extract components
+    presigned_url = signer.generate_presigned_url(
+        params,
+        region_name=region,
+        expires_in=presignExperasion,
+        operation_name=''
+    )
+
     parsed_url = urlparse(presigned_url)
     query_params = parse_qs(parsed_url.query)
 
@@ -140,7 +186,7 @@ def get_identity_token(session: 'boto3.Session') -> str:
         "region": session.region_name,
         "action": query_params['Action'][0],
         "date": query_params['X-Amz-Date'][0],
-        "expiration_duration": "3600",  # 1 hour in seconds
+        "expiration_duration": query_params['X-Amz-Expires'][0],
         "access_key_id": query_params['X-Amz-Credential'][0].split('/')[0],
         "signature": query_params['X-Amz-Signature'][0],
         "signed_headers": query_params['X-Amz-SignedHeaders'],
@@ -148,6 +194,7 @@ def get_identity_token(session: 'boto3.Session') -> str:
         "algorithm": query_params['X-Amz-Algorithm'][0],
         "security_token": query_params.get('X-Amz-Security-Token', [None])[0]
     }
+
     json_string = json.dumps(json_object)
     return base64.b64encode(json_string.encode('utf-8')).decode('utf-8')
 
@@ -161,11 +208,11 @@ def from_aws_role(session: 'boto3.Session', ttl_seconds: int = 3600, **kwargs) -
     :return: A lakeFS client.
     """
 
-    identity_token = get_identity_token(session)
+    client = Client(**kwargs)
+    identity_token = _get_identity_token(session, client.config.host)
     external_login_information = ExternalLoginInformation(token_expiration_duration=ttl_seconds, identity_request={
         "identity_token": identity_token
     })
-    client = Client(**kwargs)
 
     with api_exception_handler():
         auth_token = client.sdk_client.auth_api.external_principal_login(external_login_information)
