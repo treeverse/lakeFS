@@ -712,7 +712,18 @@ extraManifests:
       config.yaml: my-data
 ```
 
-## Migrate from lakeFS Open Source to lakeFS Enterprise
+## Migrate from lakeFS Open Source to lakeFS Enterprise and upgrades
+
+For upgrading from lakeFS enterprise to a newer version see [lakefs migration]([lakefs-migrate]: https://docs.lakefs.io/howto/deploy/upgrade.html). 
+
+**To move from lakeFS Open Source to lakeFS Enterprise, follow the steps below:**
+
+1. Sanity Test: Install fresh lakeFS enterprise: Test the setup > login > Create repository etc.
+2. DB Migration: 
+Inside your current lakeFS deployment (old pre-upgrade version) install the new target lakefs version and run the command: `LAKEFS_AUTH_UI_CONFIG_RBAC=internal lakefs migrate up`  (note the LAKEFS_AUTH_UI_CONFIG_RBAC=internal environment variable).
+You should expect to see a log message saying Migration completed successfully.
+During this short db migration process please make sure not to make any policy / RBAC related changes.
+3. Upgrade your helm release to the new version, that’s it.
 
 ## Log Collection
 
@@ -724,8 +735,6 @@ There are 2 kinds of logs, regular logs like an API error or some event descript
 and audit_logs that are describing a user action (i.e create branch).
 The distinction between regular logs and audit_logs is in the boolean field log_audit.
 lakeFS and fluffy share the same configuration structure under logging.* section in the config.
-
-[lakefs-migrate]: https://docs.lakefs.io/howto/deploy/upgrade.html
 
 [lakefs-sso-enterprise-spec]: {% link reference/security/sso.md %}#sso-for-lakefs-enterprise
 [lakefs-sso-enterprise-spec-oidc]: {% link reference/security/sso.md %}#oidc
