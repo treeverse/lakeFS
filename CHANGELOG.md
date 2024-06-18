@@ -1,5 +1,20 @@
 # Changelog
 
+# v1.26.0
+
+:new: What's new:
+- Introduce support of GCS encryption for both CMEK and CSEK (#7809)
+- Support prefix parameter in lakectl diff command (#7832)
+- Enforce same-region storage for new repositories (#7847)
+- Add metrics to auth (#7840)
+- Allow changing commit data in cherry-pick and revert (#7865)
+- Prevent unnecessary operations on write actions to read-only repository in s3 gateway (#7844)
+- Return an informative error message when using 'api/v1' for S3 GW endpoint (#7828)
+
+:bug: Bugs fixed:
+- Make batch_size in kv.Scan effective for first Scan of iterator (#7875)
+- Fix lakectl local diff slowness (#7842)
+
 # v1.25.0
 
 :new: What's new:
