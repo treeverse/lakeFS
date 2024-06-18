@@ -13,7 +13,7 @@ import (
 
 const testStorageNamespace = "local://test"
 
-// Test Local Storage Adapter for basic storage functionality
+// TestLocalAdapter tests the Local Storage Adapter for basic storage functionality
 func TestLocalAdapter(t *testing.T) {
 	tmpDir := t.TempDir()
 	localPath := path.Join(tmpDir, "lakefs")
@@ -25,7 +25,7 @@ func TestLocalAdapter(t *testing.T) {
 	blocktest.AdapterTest(t, adapter, testStorageNamespace, externalPath)
 }
 
-// Test the namespace validity regex with various paths
+// TestAdapterNamespace tests the namespace validity regex with various paths
 func TestAdapterNamespace(t *testing.T) {
 	tmpDir := t.TempDir()
 	localPath := path.Join(tmpDir, "lakefs")
