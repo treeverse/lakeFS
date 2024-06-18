@@ -4,15 +4,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
-	"github.com/araddon/dateparse"
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/flare"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const (
@@ -24,10 +22,7 @@ const (
 )
 
 var (
-	startLogDate         string
-	endLogDate           string
 	packageContents      bool   = false
-	includeLogs          bool   = true
 	includeEnvVars       bool   = true
 	outputPath           string = flareDefaultOutputPath
 	envVarOutputFileName string = flareDefaultEnvVarFileName
@@ -42,17 +37,12 @@ var flareCmd = &cobra.Command{
 	PreRun: warnOutputFlags,
 	Run: func(cmd *cobra.Command, args []string) {
 		syscall.Umask(flare.FlareUmask)
-		now := time.Now().String()
+		now := strings.ReplaceAll(time.Now().String(), " ", "")
 		cfg := loadConfig()
-		logFormat := flare.LogFormat(cfg.Logging.Format)
-		if !flare.SupportedLogFormat(string(logFormat)) {
-			printMsgAndExit(fmt.Sprintf("unsupported log file format: %s ", cfg.Logging.Format))
-		}
-		flr, err := flare.NewFlare(logFormat)
+		flr, err := flare.NewFlare()
 		if err != nil {
 			printMsgAndExit("failed to create flare instance", err)
 		}
-		parsedStartLogDate, parsedEndLogDate := preflightValidations(cfg)
 
 		flarePath := fmt.Sprintf(flareFilePath, outputPath, now)
 		err = os.MkdirAll(flarePath, flare.DirPermissions)
@@ -83,23 +73,6 @@ var flareCmd = &cobra.Command{
 		}
 		printInfo("Done processing config")
 
-		if includeLogs {
-			printInfo("Processing logs...")
-			logFilePath := logging.GetLogFileOutputPath(cfg.Logging.Output)
-
-			err = flr.ProcessLogFiles(
-				logFilePath,
-				flarePath,
-				parsedStartLogDate,
-				parsedEndLogDate,
-				ow.GetFileWriter,
-			)
-			if err != nil {
-				printNonFatalError("failed to process logs ", err)
-			}
-			printInfo("Done processing logs")
-		}
-
 		if includeEnvVars {
 			printInfo("Processing env vars...")
 			err = flr.ProcessEnvVars(flarePath, envVarOutputFileName, ow.GetFileWriter)
@@ -109,36 +82,6 @@ var flareCmd = &cobra.Command{
 			printInfo("Done processing env vars")
 		}
 	},
-}
-
-func preflightValidations(cfg *config.Config) (*time.Time, *time.Time) {
-	hasFileOutput := logging.HasLogFileOutput(cfg.Logging.Output)
-	if !hasFileOutput && includeLogs {
-		printMsgAndExit("lakefs isn't configured to output logs to a file. ")
-	}
-
-	start, err := validateAndParseDateFlags(startLogDate)
-	if err != nil {
-		printMsgAndExit("failed parsing start date flag ", err)
-	}
-	end, err := validateAndParseDateFlags(endLogDate)
-	if err != nil {
-		printMsgAndExit("failed parsing end date flag ", err)
-	}
-	return start, end
-}
-
-func validateAndParseDateFlags(dateFlag string) (*time.Time, error) {
-	if dateFlag == "" {
-		return nil, nil
-	}
-
-	parsedDate, err := dateparse.ParseAny(dateFlag)
-	if err != nil {
-		return nil, err
-	}
-
-	return &parsedDate, nil
 }
 
 func warnOutputFlags(cmd *cobra.Command, args []string) {
@@ -153,10 +96,7 @@ func warnOutputFlags(cmd *cobra.Command, args []string) {
 
 //nolint:gochecknoinits
 func init() {
-	flareCmd.Flags().StringVarP(&startLogDate, "log-start-date", "s", "", "Start date of logs to include in the ISO 8601 format")
-	flareCmd.Flags().StringVarP(&endLogDate, "log-end-date", "e", "", "End date of logs to include in the ISO 8601 format")
 	flareCmd.Flags().BoolVarP(&packageContents, "package", "p", false, "Package generated artifacts into a .zip file. Default: false")
-	flareCmd.Flags().BoolVar(&includeLogs, "include-logs", true, "Collect logs. Default: true")
 	flareCmd.Flags().BoolVar(&includeEnvVars, "include-env-vars", true, "Collect environment variables. Default: true")
 	flareCmd.Flags().StringVarP(&outputPath, "output", "o", flareDefaultOutputPath, "Output path relative to the current path")
 	flareCmd.Flags().StringVar(&envVarOutputFileName, "env-var-filename", flareDefaultEnvVarFileName, "The name of the file to which env vars will be written")

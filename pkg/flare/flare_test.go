@@ -5,142 +5,11 @@ import (
 	"bytes"
 	"crypto/sha512"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
-
-var (
-	logTimeOffset = time.FixedZone("GMT+3", int((3 * time.Hour).Seconds()))
-)
-
-type LogFileHandlerTestCase struct {
-	Name         string
-	InFile       string
-	ExpectedFile string
-	StartDate    time.Time
-	EndDate      time.Time
-}
-
-func TestPlainTextLogFileHandler(t *testing.T) {
-	testCases := []LogFileHandlerTestCase{
-		{
-			Name:         "no filter",
-			InFile:       "testdata/plain_text_logs_in.txt",
-			ExpectedFile: "testdata/plain_text_logs_out_no_filter.txt",
-			StartDate:    time.Time{},
-			EndDate:      time.Time{},
-		},
-		{
-			Name:         "with start date",
-			InFile:       "testdata/plain_text_logs_in.txt",
-			ExpectedFile: "testdata/plain_text_logs_out_start_date.txt",
-			StartDate:    time.Date(2024, 06, 06, 00, 00, 00, 0, logTimeOffset),
-			EndDate:      time.Time{},
-		},
-		{
-			Name:         "with end date",
-			InFile:       "testdata/plain_text_logs_in.txt",
-			ExpectedFile: "testdata/plain_text_logs_out_end_date.txt",
-			StartDate:    time.Time{},
-			EndDate:      time.Date(2024, 06, 05, 23, 52, 00, 0, logTimeOffset),
-		},
-		{
-			Name:         "with start and end dates",
-			InFile:       "testdata/plain_text_logs_in.txt",
-			ExpectedFile: "testdata/plain_text_logs_out_start_and_end_date.txt",
-			StartDate:    time.Date(2024, 06, 06, 12, 48, 52, 0, logTimeOffset),
-			EndDate:      time.Date(2024, 06, 06, 12, 48, 54, 0, logTimeOffset),
-		},
-	}
-
-	testLogFileHandler(t, LogFormatPlainText, testCases)
-}
-
-func TestJSONLogFileHandler(t *testing.T) {
-	testCases := []LogFileHandlerTestCase{
-		{
-			Name:         "no filter",
-			InFile:       "testdata/json_logs_in.json",
-			ExpectedFile: "testdata/json_logs_out_no_filter.json",
-			StartDate:    time.Time{},
-			EndDate:      time.Time{},
-		},
-		{
-			Name:         "with start date",
-			InFile:       "testdata/json_logs_in.json",
-			ExpectedFile: "testdata/json_logs_out_start_date.json",
-			StartDate:    time.Date(2024, 06, 06, 00, 00, 00, 0, logTimeOffset),
-			EndDate:      time.Time{},
-		},
-		{
-			Name:         "with end date",
-			InFile:       "testdata/json_logs_in.json",
-			ExpectedFile: "testdata/json_logs_out_end_date.json",
-			StartDate:    time.Time{},
-			EndDate:      time.Date(2024, 06, 06, 00, 00, 00, 0, logTimeOffset),
-		},
-		{
-			Name:         "with start and end dates",
-			InFile:       "testdata/json_logs_in.json",
-			ExpectedFile: "testdata/json_logs_out_start_and_end_date.json",
-			StartDate:    time.Date(2024, 06, 06, 18, 29, 50, 0, logTimeOffset),
-			EndDate:      time.Date(2024, 06, 06, 18, 31, 45, 0, logTimeOffset),
-		},
-	}
-
-	testLogFileHandler(t, LogFormatJSON, testCases)
-}
-
-func testLogFileHandler(t *testing.T, logFormat LogFormat, testCases []LogFileHandlerTestCase) {
-	t.Helper()
-	flare, err := NewFlare(logFormat, WithSecretReplacerFunc(func(value string) string {
-		return "<REDACTED>"
-	}))
-	assert.NoError(t, err)
-	for _, tc := range testCases {
-		t.Run(tc.Name, func(t *testing.T) {
-			expected, err := os.ReadFile(tc.ExpectedFile)
-			assert.NoError(t, err)
-			expectedString := string(expected[:])
-			var start, end *time.Time
-			if !tc.StartDate.IsZero() {
-				start = &tc.StartDate
-			}
-			if !tc.EndDate.IsZero() {
-				end = &tc.EndDate
-			}
-			in, err := os.Open(tc.InFile)
-			assert.NoError(t, err)
-			defer in.Close()
-
-			sb := strings.Builder{}
-			scanner := bufio.NewScanner(in)
-			first := true
-
-			for scanner.Scan() {
-				line := scanner.Text()
-				pLine, err := flare.handleLogLine(line, start, end)
-				assert.NoError(t, err)
-
-				if pLine == "" {
-					continue
-				}
-
-				if !first {
-					sb.WriteString("\n")
-				}
-				sb.WriteString(pLine)
-				first = false
-			}
-
-			assert.Equal(t, expectedString, sb.String())
-		})
-	}
-}
 
 type EnvVarKV struct {
 	Key   string
@@ -254,7 +123,7 @@ LAKEFS_AWS_ACCESS_KEY_ID=<REDACTED>
 		},
 	}
 
-	flr, err := NewFlare(LogFormatPlainText, WithSecretReplacerFunc(func(value string) string {
+	flr, err := NewFlare(WithSecretReplacerFunc(func(value string) string {
 		return "<REDACTED>"
 	}))
 	assert.NoError(t, err)
@@ -305,7 +174,7 @@ func TestDefaultReplacerFunc(t *testing.T) {
 		},
 	}
 
-	flr, err := NewFlare(LogFormatPlainText)
+	flr, err := NewFlare()
 	assert.NoError(t, err)
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {

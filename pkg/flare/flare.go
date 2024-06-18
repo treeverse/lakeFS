@@ -3,16 +3,12 @@
 package flare
 
 import (
-	"archive/zip"
-	"bufio"
 	"crypto/sha512"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -45,9 +41,6 @@ var (
 
 	secretScanner        secrets.Scanner
 	secretScannerInitErr error
-
-	plainTextLogDateRegex = regexp.MustCompile(`^[-_A-Z]+\s+(?P<date>\[\d{4}(?:.\d{2}){2}(?:\s|T)(?:\d{2}.){2}\d{2}[\+-]?\d{2}:\d{2}\])`)
-	expectedSubmatches    = 2
 )
 
 type WithTime struct {
@@ -56,7 +49,6 @@ type WithTime struct {
 
 type Flare struct {
 	envVarPrefixes []string
-	logFormat      LogFormat
 	// LogDateLayout is the layout used by time.Parse to parse dates in log lines.
 	// The default value is time.RFC3339.
 	// This can be changed using the WithLogDateLayout option.
@@ -67,12 +59,12 @@ type Flare struct {
 func defaultSecretReplacer(value string) string {
 	hasher := sha512.New()
 	hasher.Write([]byte(value))
-	return string(hasher.Sum(nil))
+	return fmt.Sprintf("%x", hasher.Sum(nil))
 }
 
 type Option func(*Flare)
 
-func NewFlare(logFormat LogFormat, options ...Option) (*Flare, error) {
+func NewFlare(options ...Option) (*Flare, error) {
 	if secretScannerInitErr != nil {
 		return nil, fmt.Errorf("failed to init secrets scanner: %w", secretScannerInitErr)
 	}
@@ -80,7 +72,6 @@ func NewFlare(logFormat LogFormat, options ...Option) (*Flare, error) {
 		envVarPrefixes: defaultEnvVarPrefixes,
 		replacerFunc:   defaultSecretReplacer,
 		LogDateLayout:  time.RFC3339,
-		logFormat:      logFormat,
 	}
 
 	for _, opt := range options {
@@ -113,21 +104,6 @@ func WithSecretReplacerFunc(fn RedactedValueReplacer) Option {
 	return func(f *Flare) {
 		f.replacerFunc = fn
 	}
-}
-
-// WithLogDateLayout sets an alternate date layout for parsing dates in log lines.
-func WithLogDateLayout(l string) Option {
-	return func(f *Flare) {
-		f.LogDateLayout = l
-	}
-}
-
-// LogLineDateExtractor represents a function that extracts the date from a log line in a specific format.
-type LogLineDateExtractor func(line, logDateLayout string) (time.Time, error)
-
-var dateExtractors = map[LogFormat]LogLineDateExtractor{
-	LogFormatJSON:      extractDateFromJSONLine,
-	LogFormatPlainText: extractDateFromPlainTextLine,
 }
 
 // ProcessConfig takes a config struct, marshals it to YAML and writes it out to outputPath
@@ -189,191 +165,6 @@ func (f *Flare) processEnvVars(w io.Writer) error {
 		}
 	}
 
-	return nil
-}
-
-// ZipFolder zips the files created during the flare process into a single file
-// for sharing and writes to outputPath
-func (f *Flare) ZipFolder(inputPath, outputPath string) (retErr error) {
-	ex, err := os.Executable()
-	if err != nil {
-		return err
-	}
-
-	fl, err := os.Create(outputPath)
-	if err != nil {
-		return err
-	}
-	defer fl.Close()
-
-	w := zip.NewWriter(fl)
-	defer func() {
-		e := w.Close()
-		if retErr == nil {
-			retErr = e
-		}
-	}()
-
-	walker := func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
-		exPath := filepath.Dir(ex)
-		relPath, err := filepath.Rel(exPath, path)
-		if err != nil {
-			return err
-		}
-
-		file, err := os.Open(path)
-		if err != nil {
-			return fmt.Errorf("%s: %w", path, err)
-		}
-		defer file.Close()
-
-		f, err := w.Create(relPath)
-		if err != nil {
-			return fmt.Errorf("%s: %w", path, err)
-		}
-
-		_, err = io.Copy(f, file)
-		if err != nil {
-			return fmt.Errorf("%s: %w", path, err)
-		}
-
-		return nil
-	}
-	err = filepath.Walk(inputPath, walker)
-	return fmt.Errorf("%s: %w", outputPath, err)
-}
-
-// SupportedLogFormat checks that the string provided is one of the supported LogFormats
-func SupportedLogFormat(format string) bool {
-	v := LogFormat(format)
-	return v == LogFormatJSON || v == LogFormatPlainText
-}
-
-// ProcessLogFiles processes log files in inputPath.
-// Log files have a size limit and when rolling over to a new file, the current file is renamed with the cutoff time.Time before the extension.
-// Processed files are read line-by-line. Each line is filtered according to the date range,
-// sanitized from secrets, and is written to the file in outputPath.
-func (f *Flare) ProcessLogFiles(inputPath, outputPath string, startDate, endDate *time.Time, getWriterFunc GetFileWriterFunc) (retErr error) {
-	logDir, logFile := filepath.Split(inputPath)
-	filename, ext := getFilenameAndExt(logFile)
-
-	files, err := os.ReadDir(logDir)
-	if err != nil {
-		return err
-	}
-
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-		if !strings.HasPrefix(file.Name(), filename) || filepath.Ext(file.Name()) != ext {
-			continue
-		}
-		err = f.processLogFile(fmt.Sprintf("%s/%s", logDir, file.Name()), outputPath, startDate, endDate, getWriterFunc)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func getFilenameAndExt(in string) (string, string) {
-	return strings.TrimPrefix(filepath.Base(in), filepath.Ext(in)), filepath.Ext(in)
-}
-
-func extractDateFromPlainTextLine(line, logDateLayout string) (time.Time, error) {
-	matches := plainTextLogDateRegex.FindStringSubmatch(line)
-	if len(matches) != expectedSubmatches {
-		return time.Time{}, ErrDateNotFound
-	}
-
-	strDate := matches[1][1 : len(matches[1])-1]
-	date, err := time.Parse(logDateLayout, strDate)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return date, nil
-}
-
-func extractDateFromJSONLine(line, logDateLayout string) (time.Time, error) {
-	var t WithTime
-	err := json.Unmarshal([]byte(line), &t)
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	if t.Time.IsZero() {
-		return time.Time{}, ErrExtractDateFromJSONLogLine
-	}
-
-	return t.Time, nil
-}
-
-func (f *Flare) handleLogLine(line string, start, end *time.Time) (string, error) {
-	lineDate, err := dateExtractors[f.logFormat](line, f.LogDateLayout)
-	if err != nil {
-		return "", err
-	}
-	if !((start == nil || lineDate.Equal(*start) || lineDate.After(*start)) &&
-		(end == nil || lineDate.Equal(*end) || lineDate.Before(*end))) {
-		return "", nil
-	}
-
-	redactedLine, err := f.redactSecrets(line)
-	if err != nil {
-		return "", err
-	}
-	return redactedLine, nil
-}
-
-func (f *Flare) processLogFile(inputFileName, outputPath string, startDate, endDate *time.Time, getWriterFunc GetFileWriterFunc) (retErr error) {
-	skippedLines := 0
-	sourceFile, err := os.Open(inputFileName)
-	if err != nil {
-		return fmt.Errorf("failed to open input log file %s: %w", inputFileName, err)
-	}
-	defer sourceFile.Close()
-
-	outputFileName := filepath.Join(outputPath, filepath.Base(inputFileName))
-	w, err := getWriterFunc(outputFileName)
-	if err != nil {
-		return fmt.Errorf("%s: %w", outputFileName, err)
-	}
-	defer func() {
-		e := w.Close()
-		if retErr == nil {
-			retErr = e
-		}
-	}()
-
-	r := bufio.NewReader(sourceFile)
-
-	for {
-		line, err := r.ReadString('\n')
-		if line == "" && err == io.EOF {
-			break
-		}
-		pLine, err := f.handleLogLine(line, startDate, endDate)
-		if err != nil {
-			skippedLines += 1
-			fmt.Fprintf(os.Stderr, "failed to process log line: %s\n", err)
-		}
-
-		if pLine != "" {
-			if _, err := w.Write([]byte(pLine)); err != nil {
-				return fmt.Errorf("failed to write to output file %s: %w", outputFileName, err)
-			}
-		}
-	}
-
-	fmt.Printf("Skipped %d log lines\n", skippedLines)
 	return nil
 }
 
