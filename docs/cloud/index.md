@@ -15,6 +15,7 @@ nav_order: 105
 * [Managed Garbage Collection]({% link howto/garbage-collection/managed-gc.md %})
 * [Private-Link]({% link howto/private-link.md %})
 * [Transactional Mirroring]({% link howto/mirroring.md %})
+* [lakeFS Mount]({% link reference/mount.md %})
 * SOC 2 Type II Compliance
 
 ## How lakeFS Cloud interacts with your infrastructure

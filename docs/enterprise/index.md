@@ -18,6 +18,8 @@ It provides several benefits over the open-source version:
     * [SSO]({% link reference/security/sso.md %}) -  lets users sign in with existing credentials from a trusted provider, eliminating separate logins.
     * [STS Auth]({% link reference/security/sts-login.md %}) - offers temporary, secure logins using an Identity Provider, simplifying user access and enhancing security.
     * [Authenticate to lakeFS with AWS IAM Roles]({% link reference/security/external-principals-aws.md %}) - lets programs authenticate using AWS IAM roles instead of lakeFS credentials, granting access based on IAM policies.
+    * [lakeFS Mount]({% link reference/mount.md %})
+
 * Support SLA
 
 [Contact Sales](https://lakefs.io/contact-sales/) to get the token for Fluffy.
