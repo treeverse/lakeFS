@@ -177,31 +177,6 @@ func testAdapterRemove(t *testing.T, adapter block.Adapter, storageNamespace str
 	}
 }
 
-func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk block.QualifiedKey) []string {
-	t.Helper()
-	tree := make([]string, 0)
-
-	uri, err := url.Parse(qk.Format())
-	require.NoError(t, err)
-
-	w, err := adapter.GetWalker(uri)
-	require.NoError(t, err)
-
-	walker := store.NewWrapper(w, uri)
-	require.NoError(t, err)
-
-	err = walker.Walk(ctx, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
-		_, p, _ := strings.Cut(e.Address, uri.String())
-		tree = append(tree, p)
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("walking on '%s': %s", uri.String(), err)
-	}
-	sort.Strings(tree)
-	return tree
-}
-
 // Parameterized test of the Multipart Upload APIs. After successful upload we Get the result and compare to the original
 func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
@@ -281,7 +256,6 @@ func testAdapterCopyPart(t *testing.T, adapter block.Adapter, storageNamespace s
 	ctx := context.Background()
 	parts, full := createMultipartContents()
 	obj, objCopy := objPointers(storageNamespace)
-	verifyListInvalid(t, ctx, adapter, obj)
 	uploadMultiPart(t, ctx, adapter, obj, parts)
 
 	//Begin Multipart Copy
@@ -301,7 +275,6 @@ func testAdapterCopyPartRange(t *testing.T, adapter block.Adapter, storageNamesp
 	ctx := context.Background()
 	parts, full := createMultipartContents()
 	obj, objCopy := objPointers(storageNamespace)
-	verifyListInvalid(t, ctx, adapter, obj)
 	uploadMultiPart(t, ctx, adapter, obj, parts)
 
 	//Begin Multipart Copy
@@ -499,6 +472,7 @@ func createMultipartContents() ([][]byte, []byte) {
 }
 
 func uploadMultiPart(t *testing.T, ctx context.Context, adapter block.Adapter, obj block.ObjectPointer, parts [][]byte) {
+	t.Helper()
 	resp, err := adapter.CreateMultiPartUpload(ctx, obj, nil, block.CreateMultiPartUploadOpts{})
 	require.NoError(t, err)
 
@@ -512,6 +486,7 @@ func uploadMultiPart(t *testing.T, ctx context.Context, adapter block.Adapter, o
 
 // List parts on non-existing part
 func verifyListInvalid(t *testing.T, ctx context.Context, adapter block.Adapter, obj block.ObjectPointer) {
+	t.Helper()
 	_, err := adapter.ListParts(ctx, obj, "invalidId", block.ListPartsOpts{})
 	if adapter.BlockstoreType() != block.BlockstoreTypeS3 {
 		require.ErrorIs(t, err, block.ErrOperationNotSupported)
@@ -522,6 +497,7 @@ func verifyListInvalid(t *testing.T, ctx context.Context, adapter block.Adapter,
 
 // Upload parts after starting a multipart upload
 func uploadParts(t *testing.T, ctx context.Context, adapter block.Adapter, obj block.ObjectPointer, uploadID string, parts [][]byte) []block.MultipartPart {
+	t.Helper()
 	multiParts := make([]block.MultipartPart, len(parts))
 	for i, content := range parts {
 		partNumber := i + 1
@@ -536,6 +512,7 @@ func uploadParts(t *testing.T, ctx context.Context, adapter block.Adapter, obj b
 
 // Copy parts after starting a multipart upload
 func copyPartRange(t *testing.T, ctx context.Context, adapter block.Adapter, obj, objCopy block.ObjectPointer, uploadID string) []block.MultipartPart {
+	t.Helper()
 	multiParts := make([]block.MultipartPart, multipartNumberOfParts)
 	var startPosition int64 = 0
 	for i := 0; i < multipartNumberOfParts; i++ {
@@ -553,6 +530,7 @@ func copyPartRange(t *testing.T, ctx context.Context, adapter block.Adapter, obj
 
 // Copy one and only part after starting a multipart upload
 func copyPart(t *testing.T, ctx context.Context, adapter block.Adapter, obj, objCopy block.ObjectPointer, uploadID string) []block.MultipartPart {
+	t.Helper()
 	multiParts := make([]block.MultipartPart, 1)
 	partNumber := 1
 	partResp, err := adapter.UploadCopyPart(ctx, obj, objCopy, uploadID, partNumber)
@@ -564,6 +542,7 @@ func copyPart(t *testing.T, ctx context.Context, adapter block.Adapter, obj, obj
 }
 
 func getAndCheckContents(t *testing.T, ctx context.Context, adapter block.Adapter, exp []byte, obj block.ObjectPointer) {
+	t.Helper()
 	//first check exists
 	ok, err := adapter.Exists(ctx, obj)
 	require.NoError(t, err)
@@ -573,32 +552,27 @@ func getAndCheckContents(t *testing.T, ctx context.Context, adapter block.Adapte
 	require.NoError(t, err)
 	got, err := io.ReadAll(reader)
 	require.NoError(t, err)
-	compareBigByteArrays(t, exp, got)
+	requireEqualBigByteSlice(t, exp, got)
 }
 
 // compare two big bytearrays one slice at a time(so that we don't blow up the console on error)
-func compareBigByteArrays(t *testing.T, exp, actual []byte) {
+func requireEqualBigByteSlice(t *testing.T, exp, actual []byte) {
+	t.Helper()
 	require.Equal(t, len(exp), len(actual))
 
-	const sliceLen = 1000
+	const sliceLen = 100
 	sliceCount := len(exp) / sliceLen
 	if len(exp)%sliceLen > 0 {
 		sliceCount++
 	}
 
-	//fmt.Print("Slice:")
 	for i := 0; i < sliceCount; i++ {
-		//fmt.Print(i+1,"/",sliceCount,",")
 		var start = i * sliceLen
-		var end = (i + 1) * sliceLen
-		if end >= len(exp) {
-			end = len(exp) - 1
-		}
+		var end = min((i + 1) * sliceLen,len(exp) - 1)
 
 		var expSlice = exp[start:end]
 		var actualSlice = actual[start:end]
-		require.Equal(t, len(expSlice), len(actualSlice))
-		require.Equal(t, expSlice, actualSlice)
+		require.Equalf(t, expSlice, actualSlice,"Failed on slice "+strconv.Itoa(i+1)+"/"+strconv.Itoa(sliceCount));
 	}
 }
 
@@ -615,4 +589,29 @@ func objPointers(storageNamespace string) (block.ObjectPointer, block.ObjectPoin
 		IdentifierType:   block.IdentifierTypeRelative,
 	}
 	return obj, objCopy
+}
+
+func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk block.QualifiedKey) []string {
+	t.Helper()
+	tree := make([]string, 0)
+
+	uri, err := url.Parse(qk.Format())
+	require.NoError(t, err)
+
+	w, err := adapter.GetWalker(uri)
+	require.NoError(t, err)
+
+	walker := store.NewWrapper(w, uri)
+	require.NoError(t, err)
+
+	err = walker.Walk(ctx, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
+		_, p, _ := strings.Cut(e.Address, uri.String())
+		tree = append(tree, p)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walking on '%s': %s", uri.String(), err)
+	}
+	sort.Strings(tree)
+	return tree
 }
