@@ -588,9 +588,18 @@ useDevPostgres: true
 
 The lakeFS Helm chart supports multiple ways of configurintg the database that is the KV Store (DynamoDB, Postgres etc), the default is a dev Postgres container (set `useDevPostgres: false` to disable).
 The configuration structure used for the KV store is the same for both lakeFS and Fluffy.
-See [fluffy]({% link enterprise/fluffy-configuration.md %}) and [lakeFS]({% link reference/configuration.md %}) `database` configuration.
+See [fluffy]({% link enterprise/fluffy-configuration.md %}) and [lakeFS]({% link reference/configuration.md %}#database) `database` configuration.
 
 Essentially the database configuration structure between lakeFS and fluffy can be set via K8S Secret Kind, directly via `fluffyConfig` and `lakefsConfig` or via environment variables.
+
+
+<div class="tabs">
+  <ul>
+    <li><a href="#dynamodb-via-config">DynamoDB via config</a></li>
+    <li><a href="#postgres-via-secret-kind">Postgres via shared Secret kind</a></li>
+    <li><a href="#postgres-via-env-vars">Postgres via envrionment varialbles</a></li>
+  </ul> 
+<div markdown="1" id="dynamodb-via-config">
 
 #### DynamoDB via config (AWS)
 
@@ -613,6 +622,9 @@ fluffyConfig: |
         aws_profile: <profile>
         aws_region: <region>
 ```
+</div>
+<div markdown="1" id="postgres-via-secret-kind">
+
 
 #### Postgres via kind: Secret
 
@@ -631,6 +643,9 @@ fluffyConfig: |
   database:
     type: postgres
 ```
+</div>
+
+<div markdown="1" id="postgres-via-env-vars">
 
 #### Postgres via environment variables
 
@@ -651,6 +666,8 @@ fluffy:
     - name: FLUFFY_DATABASE_POSTGRES_CONNECTION_STRING
       value: '<postgres connection string>'
 ```
+</div>
+</div>
 
 ### Handling HTTP proxies, TLS certificates and other configurations (Advanced)
 
