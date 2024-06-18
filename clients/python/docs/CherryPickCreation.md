@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **ref** | **str** | the commit to cherry-pick, given by a ref | 
 **parent_number** | **int** | When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff. The default branch is parent 1.  | [optional] 
+**commit_overrides** | [**CommitOverrides**](CommitOverrides.md) |  | [optional] 
 **force** | **bool** |  | [optional] [default to False]
 
 ## Example

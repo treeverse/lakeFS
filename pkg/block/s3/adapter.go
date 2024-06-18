@@ -832,6 +832,14 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeS3
 }
 
+func (a *Adapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMetadata, error) {
+	region, err := a.clients.GetBucketRegionDefault(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	return &block.BlockstoreMetadata{Region: &region}, nil
+}
+
 func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeS3)
 	if a.disablePreSigned {
@@ -859,6 +867,15 @@ func resolveNamespace(obj block.ObjectPointer) (block.CommonQualifiedKey, error)
 
 func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
+}
+
+func (a *Adapter) GetRegion(ctx context.Context, storageNamespace string) (string, error) {
+	bucket, found := strings.CutPrefix(storageNamespace, fmt.Sprintf("%s://", block.BlockstoreTypeS3))
+	if !found {
+		return "", fmt.Errorf(`%w: "s3://" prefix not found %s`, block.ErrInvalidNamespace, storageNamespace)
+	}
+
+	return a.clients.GetBucketRegionFromAWS(ctx, bucket)
 }
 
 func (a *Adapter) RuntimeStats() map[string]string {

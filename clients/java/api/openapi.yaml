@@ -7497,8 +7497,27 @@ components:
       required:
       - type
       type: object
+    CommitOverrides:
+      example:
+        metadata:
+          key: metadata
+        message: message
+      properties:
+        message:
+          description: replace the commit message
+          type: string
+        metadata:
+          additionalProperties:
+            type: string
+          description: replace the metadata of the commit
+          type: object
+      type: object
     RevertCreation:
       example:
+        commit_overrides:
+          metadata:
+            key: metadata
+          message: message
         ref: ref
         parent_number: 0
         force: false
@@ -7507,6 +7526,8 @@ components:
         ref:
           description: "the commit to revert, given by a ref"
           type: string
+        commit_overrides:
+          $ref: '#/components/schemas/CommitOverrides'
         parent_number:
           description: "when reverting a merge commit, the parent number (starting\
             \ from 1) relative to which to perform the revert."
@@ -7524,6 +7545,10 @@ components:
       type: object
     CherryPickCreation:
       example:
+        commit_overrides:
+          metadata:
+            key: metadata
+          message: message
         ref: ref
         parent_number: 0
         force: false
@@ -7536,6 +7561,8 @@ components:
             When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff.
             The default branch is parent 1.
           type: integer
+        commit_overrides:
+          $ref: '#/components/schemas/CommitOverrides'
         force:
           default: false
           type: boolean

@@ -40,6 +40,11 @@ class TestRevertCreation(unittest.TestCase):
         if include_optional :
             return RevertCreation(
                 ref = '', 
+                commit_overrides = lakefs_sdk.models.commit_overrides.CommitOverrides(
+                    message = '', 
+                    metadata = {
+                        'key' : ''
+                        }, ), 
                 parent_number = 56, 
                 force = True, 
                 allow_empty = True

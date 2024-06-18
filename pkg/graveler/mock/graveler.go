@@ -202,9 +202,9 @@ func (mr *MockVersionControllerMockRecorder) AddCommit(ctx, repository, commit i
 }
 
 // CherryPick mocks base method.
-func (m *MockVersionController) CherryPick(ctx context.Context, repository *graveler.RepositoryRecord, id graveler.BranchID, reference graveler.Ref, number *int, committer string, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
+func (m *MockVersionController) CherryPick(ctx context.Context, repository *graveler.RepositoryRecord, id graveler.BranchID, reference graveler.Ref, number *int, committer string, commitOverrides *graveler.CommitOverrides, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, repository, id, reference, number, committer}
+	varargs := []interface{}{ctx, repository, id, reference, number, committer, commitOverrides}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
@@ -215,9 +215,9 @@ func (m *MockVersionController) CherryPick(ctx context.Context, repository *grav
 }
 
 // CherryPick indicates an expected call of CherryPick.
-func (mr *MockVersionControllerMockRecorder) CherryPick(ctx, repository, id, reference, number, committer interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) CherryPick(ctx, repository, id, reference, number, committer, commitOverrides interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, repository, id, reference, number, committer}, opts...)
+	varargs := append([]interface{}{ctx, repository, id, reference, number, committer, commitOverrides}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CherryPick", reflect.TypeOf((*MockVersionController)(nil).CherryPick), varargs...)
 }
 
@@ -834,9 +834,9 @@ func (mr *MockVersionControllerMockRecorder) ResolveRawRef(ctx, repository, rawR
 }
 
 // Revert mocks base method.
-func (m *MockVersionController) Revert(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref, parentNumber int, commitParams graveler.CommitParams, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
+func (m *MockVersionController) Revert(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, ref graveler.Ref, parentNumber int, commitParams graveler.CommitParams, commitOverrides *graveler.CommitOverrides, opts ...graveler.SetOptionsFunc) (graveler.CommitID, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, repository, branchID, ref, parentNumber, commitParams}
+	varargs := []interface{}{ctx, repository, branchID, ref, parentNumber, commitParams, commitOverrides}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
@@ -847,9 +847,9 @@ func (m *MockVersionController) Revert(ctx context.Context, repository *graveler
 }
 
 // Revert indicates an expected call of Revert.
-func (mr *MockVersionControllerMockRecorder) Revert(ctx, repository, branchID, ref, parentNumber, commitParams interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) Revert(ctx, repository, branchID, ref, parentNumber, commitParams, commitOverrides interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, repository, branchID, ref, parentNumber, commitParams}, opts...)
+	varargs := append([]interface{}{ctx, repository, branchID, ref, parentNumber, commitParams, commitOverrides}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Revert", reflect.TypeOf((*MockVersionController)(nil).Revert), varargs...)
 }
 

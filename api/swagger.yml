@@ -468,6 +468,18 @@ components:
           type: boolean
           default: false
 
+    CommitOverrides:
+      type: object
+      properties:
+        message:
+          type: string
+          description: replace the commit message
+        metadata:
+          type: object
+          description: replace the metadata of the commit
+          additionalProperties:
+            type: string
+
     RevertCreation:
       type: object
       required:
@@ -477,6 +489,8 @@ components:
         ref:
           type: string
           description: the commit to revert, given by a ref
+        commit_overrides:
+          $ref: "#/components/schemas/CommitOverrides"
         parent_number:
           type: integer
           description: when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.
@@ -501,6 +515,8 @@ components:
           description: |
             When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff.
             The default branch is parent 1.
+        commit_overrides:
+          $ref: "#/components/schemas/CommitOverrides"
         force:
           type: boolean
           default: false

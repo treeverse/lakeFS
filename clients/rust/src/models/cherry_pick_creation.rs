@@ -18,6 +18,8 @@ pub struct CherryPickCreation {
     /// When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff. The default branch is parent 1. 
     #[serde(rename = "parent_number", skip_serializing_if = "Option::is_none")]
     pub parent_number: Option<i32>,
+    #[serde(rename = "commit_overrides", skip_serializing_if = "Option::is_none")]
+    pub commit_overrides: Option<Box<models::CommitOverrides>>,
     #[serde(rename = "force", skip_serializing_if = "Option::is_none")]
     pub force: Option<bool>,
 }
@@ -27,6 +29,7 @@ impl CherryPickCreation {
         CherryPickCreation {
             r#ref,
             parent_number: None,
+            commit_overrides: None,
             force: None,
         }
     }

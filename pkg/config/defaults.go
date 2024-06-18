@@ -34,6 +34,7 @@ func setDefaults(cfgType string) {
 		viper.SetDefault("auth.encrypt.secret_key", DefaultAuthSecret)
 		viper.SetDefault(BlockstoreTypeKey, "local")
 	}
+	viper.SetDefault("installation.allow_inter_region_storage", true)
 
 	viper.SetDefault("blockstore.signing.secret_key", DefaultSigningSecretKey)
 	viper.SetDefault("listen_address", DefaultListenAddress)

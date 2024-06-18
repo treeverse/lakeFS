@@ -19,6 +19,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.lakefs.clients.sdk.model.CommitOverrides;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -59,6 +60,10 @@ public class CherryPickCreation {
   public static final String SERIALIZED_NAME_PARENT_NUMBER = "parent_number";
   @SerializedName(SERIALIZED_NAME_PARENT_NUMBER)
   private Integer parentNumber;
+
+  public static final String SERIALIZED_NAME_COMMIT_OVERRIDES = "commit_overrides";
+  @SerializedName(SERIALIZED_NAME_COMMIT_OVERRIDES)
+  private CommitOverrides commitOverrides;
 
   public static final String SERIALIZED_NAME_FORCE = "force";
   @SerializedName(SERIALIZED_NAME_FORCE)
@@ -106,6 +111,27 @@ public class CherryPickCreation {
 
   public void setParentNumber(Integer parentNumber) {
     this.parentNumber = parentNumber;
+  }
+
+
+  public CherryPickCreation commitOverrides(CommitOverrides commitOverrides) {
+    
+    this.commitOverrides = commitOverrides;
+    return this;
+  }
+
+   /**
+   * Get commitOverrides
+   * @return commitOverrides
+  **/
+  @javax.annotation.Nullable
+  public CommitOverrides getCommitOverrides() {
+    return commitOverrides;
+  }
+
+
+  public void setCommitOverrides(CommitOverrides commitOverrides) {
+    this.commitOverrides = commitOverrides;
   }
 
 
@@ -186,13 +212,14 @@ public class CherryPickCreation {
     CherryPickCreation cherryPickCreation = (CherryPickCreation) o;
     return Objects.equals(this.ref, cherryPickCreation.ref) &&
         Objects.equals(this.parentNumber, cherryPickCreation.parentNumber) &&
+        Objects.equals(this.commitOverrides, cherryPickCreation.commitOverrides) &&
         Objects.equals(this.force, cherryPickCreation.force)&&
         Objects.equals(this.additionalProperties, cherryPickCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(ref, parentNumber, force, additionalProperties);
+    return Objects.hash(ref, parentNumber, commitOverrides, force, additionalProperties);
   }
 
   @Override
@@ -201,6 +228,7 @@ public class CherryPickCreation {
     sb.append("class CherryPickCreation {\n");
     sb.append("    ref: ").append(toIndentedString(ref)).append("\n");
     sb.append("    parentNumber: ").append(toIndentedString(parentNumber)).append("\n");
+    sb.append("    commitOverrides: ").append(toIndentedString(commitOverrides)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
@@ -227,6 +255,7 @@ public class CherryPickCreation {
     openapiFields = new HashSet<String>();
     openapiFields.add("ref");
     openapiFields.add("parent_number");
+    openapiFields.add("commit_overrides");
     openapiFields.add("force");
 
     // a set of required properties/fields (JSON key names)
@@ -256,6 +285,10 @@ public class CherryPickCreation {
         JsonObject jsonObj = jsonElement.getAsJsonObject();
       if (!jsonObj.get("ref").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `ref` to be a primitive type in the JSON string but got `%s`", jsonObj.get("ref").toString()));
+      }
+      // validate the optional field `commit_overrides`
+      if (jsonObj.get("commit_overrides") != null && !jsonObj.get("commit_overrides").isJsonNull()) {
+        CommitOverrides.validateJsonElement(jsonObj.get("commit_overrides"));
       }
   }
 

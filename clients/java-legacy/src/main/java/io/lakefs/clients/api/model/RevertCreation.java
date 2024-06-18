@@ -20,6 +20,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.lakefs.clients.api.model.CommitOverrides;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
@@ -32,6 +33,10 @@ public class RevertCreation {
   public static final String SERIALIZED_NAME_REF = "ref";
   @SerializedName(SERIALIZED_NAME_REF)
   private String ref;
+
+  public static final String SERIALIZED_NAME_COMMIT_OVERRIDES = "commit_overrides";
+  @SerializedName(SERIALIZED_NAME_COMMIT_OVERRIDES)
+  private CommitOverrides commitOverrides;
 
   public static final String SERIALIZED_NAME_PARENT_NUMBER = "parent_number";
   @SerializedName(SERIALIZED_NAME_PARENT_NUMBER)
@@ -66,6 +71,29 @@ public class RevertCreation {
 
   public void setRef(String ref) {
     this.ref = ref;
+  }
+
+
+  public RevertCreation commitOverrides(CommitOverrides commitOverrides) {
+    
+    this.commitOverrides = commitOverrides;
+    return this;
+  }
+
+   /**
+   * Get commitOverrides
+   * @return commitOverrides
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public CommitOverrides getCommitOverrides() {
+    return commitOverrides;
+  }
+
+
+  public void setCommitOverrides(CommitOverrides commitOverrides) {
+    this.commitOverrides = commitOverrides;
   }
 
 
@@ -148,6 +176,7 @@ public class RevertCreation {
     }
     RevertCreation revertCreation = (RevertCreation) o;
     return Objects.equals(this.ref, revertCreation.ref) &&
+        Objects.equals(this.commitOverrides, revertCreation.commitOverrides) &&
         Objects.equals(this.parentNumber, revertCreation.parentNumber) &&
         Objects.equals(this.force, revertCreation.force) &&
         Objects.equals(this.allowEmpty, revertCreation.allowEmpty);
@@ -155,7 +184,7 @@ public class RevertCreation {
 
   @Override
   public int hashCode() {
-    return Objects.hash(ref, parentNumber, force, allowEmpty);
+    return Objects.hash(ref, commitOverrides, parentNumber, force, allowEmpty);
   }
 
   @Override
@@ -163,6 +192,7 @@ public class RevertCreation {
     StringBuilder sb = new StringBuilder();
     sb.append("class RevertCreation {\n");
     sb.append("    ref: ").append(toIndentedString(ref)).append("\n");
+    sb.append("    commitOverrides: ").append(toIndentedString(commitOverrides)).append("\n");
     sb.append("    parentNumber: ").append(toIndentedString(parentNumber)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    allowEmpty: ").append(toIndentedString(allowEmpty)).append("\n");

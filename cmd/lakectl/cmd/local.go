@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/fileutil"
+	"github.com/treeverse/lakefs/pkg/git"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
@@ -131,6 +132,16 @@ func warnOnCaseInsensitiveDirectory(path string) {
 var localCmd = &cobra.Command{
 	Use:   "local",
 	Short: "Sync local directories with lakeFS paths",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		preRunCmd(cmd)
+
+		_, localPath := getSyncArgs(args, false, false)
+		cmdSuffix := ""
+		if git.IsRepository(localPath) {
+			cmdSuffix = "git"
+		}
+		sendStats(cmd, cmdSuffix)
+	},
 }
 
 //nolint:gochecknoinits

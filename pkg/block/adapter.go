@@ -143,6 +143,10 @@ type Properties struct {
 	StorageClass *string
 }
 
+type BlockstoreMetadata struct {
+	Region *string
+}
+
 type Adapter interface {
 	Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error
 	Get(ctx context.Context, obj ObjectPointer) (io.ReadCloser, error)
@@ -154,11 +158,13 @@ type Adapter interface {
 	// Config.*.PreSignedExpiry if an auth token is about to expire.
 	GetPreSignedURL(ctx context.Context, obj ObjectPointer, mode PreSignMode) (string, time.Time, error)
 	GetPresignUploadPartURL(ctx context.Context, obj ObjectPointer, uploadID string, partNumber int) (string, error)
+
 	Exists(ctx context.Context, obj ObjectPointer) (bool, error)
 	GetRange(ctx context.Context, obj ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error)
 	GetProperties(ctx context.Context, obj ObjectPointer) (Properties, error)
 	Remove(ctx context.Context, obj ObjectPointer) error
 	Copy(ctx context.Context, sourceObj, destinationObj ObjectPointer) error
+
 	CreateMultiPartUpload(ctx context.Context, obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (*CreateMultiPartUploadResponse, error)
 	UploadPart(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*UploadPartResponse, error)
 	ListParts(ctx context.Context, obj ObjectPointer, uploadID string, opts ListPartsOpts) (*ListPartsResponse, error)
@@ -166,8 +172,13 @@ type Adapter interface {
 	UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*UploadPartResponse, error)
 	AbortMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string) error
 	CompleteMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string, multipartList *MultipartUploadCompletion) (*CompleteMultiPartUploadResponse, error)
+
 	BlockstoreType() string
+	BlockstoreMetadata(ctx context.Context) (*BlockstoreMetadata, error)
 	GetStorageNamespaceInfo() StorageNamespaceInfo
 	ResolveNamespace(storageNamespace, key string, identifierType IdentifierType) (QualifiedKey, error)
+
+	GetRegion(ctx context.Context, storageNamespace string) (string, error)
+
 	RuntimeStats() map[string]string
 }

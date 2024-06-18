@@ -24,6 +24,7 @@ try:
     from pydantic.v1 import BaseModel, Field, StrictBool, StrictInt, StrictStr
 except ImportError:
     from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr
+from lakefs_sdk.models.commit_overrides import CommitOverrides
 
 class CherryPickCreation(BaseModel):
     """
@@ -31,8 +32,9 @@ class CherryPickCreation(BaseModel):
     """
     ref: StrictStr = Field(..., description="the commit to cherry-pick, given by a ref")
     parent_number: Optional[StrictInt] = Field(None, description="When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff. The default branch is parent 1. ")
+    commit_overrides: Optional[CommitOverrides] = None
     force: Optional[StrictBool] = False
-    __properties = ["ref", "parent_number", "force"]
+    __properties = ["ref", "parent_number", "commit_overrides", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -58,6 +60,9 @@ class CherryPickCreation(BaseModel):
                           exclude={
                           },
                           exclude_none=True)
+        # override the default output from pydantic by calling `to_dict()` of commit_overrides
+        if self.commit_overrides:
+            _dict['commit_overrides'] = self.commit_overrides.to_dict()
         return _dict
 
     @classmethod
@@ -72,6 +77,7 @@ class CherryPickCreation(BaseModel):
         _obj = CherryPickCreation.parse_obj({
             "ref": obj.get("ref"),
             "parent_number": obj.get("parent_number"),
+            "commit_overrides": CommitOverrides.from_dict(obj.get("commit_overrides")) if obj.get("commit_overrides") is not None else None,
             "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj

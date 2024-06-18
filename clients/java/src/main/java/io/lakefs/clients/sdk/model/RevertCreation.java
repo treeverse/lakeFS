@@ -19,6 +19,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.lakefs.clients.sdk.model.CommitOverrides;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -56,6 +57,10 @@ public class RevertCreation {
   @SerializedName(SERIALIZED_NAME_REF)
   private String ref;
 
+  public static final String SERIALIZED_NAME_COMMIT_OVERRIDES = "commit_overrides";
+  @SerializedName(SERIALIZED_NAME_COMMIT_OVERRIDES)
+  private CommitOverrides commitOverrides;
+
   public static final String SERIALIZED_NAME_PARENT_NUMBER = "parent_number";
   @SerializedName(SERIALIZED_NAME_PARENT_NUMBER)
   private Integer parentNumber;
@@ -89,6 +94,27 @@ public class RevertCreation {
 
   public void setRef(String ref) {
     this.ref = ref;
+  }
+
+
+  public RevertCreation commitOverrides(CommitOverrides commitOverrides) {
+    
+    this.commitOverrides = commitOverrides;
+    return this;
+  }
+
+   /**
+   * Get commitOverrides
+   * @return commitOverrides
+  **/
+  @javax.annotation.Nullable
+  public CommitOverrides getCommitOverrides() {
+    return commitOverrides;
+  }
+
+
+  public void setCommitOverrides(CommitOverrides commitOverrides) {
+    this.commitOverrides = commitOverrides;
   }
 
 
@@ -210,6 +236,7 @@ public class RevertCreation {
     }
     RevertCreation revertCreation = (RevertCreation) o;
     return Objects.equals(this.ref, revertCreation.ref) &&
+        Objects.equals(this.commitOverrides, revertCreation.commitOverrides) &&
         Objects.equals(this.parentNumber, revertCreation.parentNumber) &&
         Objects.equals(this.force, revertCreation.force) &&
         Objects.equals(this.allowEmpty, revertCreation.allowEmpty)&&
@@ -218,7 +245,7 @@ public class RevertCreation {
 
   @Override
   public int hashCode() {
-    return Objects.hash(ref, parentNumber, force, allowEmpty, additionalProperties);
+    return Objects.hash(ref, commitOverrides, parentNumber, force, allowEmpty, additionalProperties);
   }
 
   @Override
@@ -226,6 +253,7 @@ public class RevertCreation {
     StringBuilder sb = new StringBuilder();
     sb.append("class RevertCreation {\n");
     sb.append("    ref: ").append(toIndentedString(ref)).append("\n");
+    sb.append("    commitOverrides: ").append(toIndentedString(commitOverrides)).append("\n");
     sb.append("    parentNumber: ").append(toIndentedString(parentNumber)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    allowEmpty: ").append(toIndentedString(allowEmpty)).append("\n");
@@ -253,6 +281,7 @@ public class RevertCreation {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
     openapiFields.add("ref");
+    openapiFields.add("commit_overrides");
     openapiFields.add("parent_number");
     openapiFields.add("force");
     openapiFields.add("allow_empty");
@@ -285,6 +314,10 @@ public class RevertCreation {
         JsonObject jsonObj = jsonElement.getAsJsonObject();
       if (!jsonObj.get("ref").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `ref` to be a primitive type in the JSON string but got `%s`", jsonObj.get("ref").toString()));
+      }
+      // validate the optional field `commit_overrides`
+      if (jsonObj.get("commit_overrides") != null && !jsonObj.get("commit_overrides").isJsonNull()) {
+        CommitOverrides.validateJsonElement(jsonObj.get("commit_overrides"));
       }
   }
 

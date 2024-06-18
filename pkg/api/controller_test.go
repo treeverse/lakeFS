@@ -39,7 +39,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
-	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -4576,7 +4575,7 @@ func TestController_PrepareGarbageCollectionCommitted(t *testing.T) {
 }
 
 func TestController_ClientDisconnect(t *testing.T) {
-	handler, deps := setupHandlerWithWalkerFactory(t, store.NewFactory(nil))
+	handler, deps := setupHandler(t)
 
 	// setup lakefs
 	server := setupServer(t, handler)

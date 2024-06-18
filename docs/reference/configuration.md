@@ -305,6 +305,7 @@ An object describing the local (on-disk) cache of metadata from permanent storag
 * `installation.user_name` `(string : )` - When specified, an initial admin user will be created when the server is first run. Works only when `database.type` is set to local. Requires `installation.access_key_id` and `installation.secret_access_key`. 
 * `installation.access_key_id` `(string : )` - Admin's initial access key id (used once in the initial setup process)
 * `installation.secret_access_key` `(string : )` - Admin's initial secret access key (used once in the initial setup process)
+* `installation.allow_inter_region_storage` `(bool : true)` - Allow storage in a different region than the one the server is running in.
 
 ### usage_report
 

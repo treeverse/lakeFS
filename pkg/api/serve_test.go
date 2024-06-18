@@ -127,7 +127,7 @@ func createUserWithDefaultGroup(t testing.TB, clt apigen.ClientWithResponsesInte
 	}
 }
 
-func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) (http.Handler, *dependencies) {
+func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	t.Helper()
 	ctx := context.Background()
 
@@ -143,6 +143,7 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	cfg, err := config.NewConfig("")
 	testutil.MustDo(t, "config", err)
 	kvStore := kvtest.GetStore(ctx, t)
+	factory := store.NewFactory(nil)
 	actionsStore := actions.NewActionsKVStore(kvStore)
 	idGen := &actions.DecreasingIDGenerator{}
 	authService := auth.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
@@ -199,10 +200,6 @@ func setupHandlerWithWalkerFactory(t testing.TB, factory catalog.WalkerFactory) 
 	}
 }
 
-func setupHandler(t testing.TB) (http.Handler, *dependencies) {
-	return setupHandlerWithWalkerFactory(t, store.NewFactory(nil))
-}
-
 func setupClientByEndpoint(t testing.TB, endpointURL string, accessKeyID, secretAccessKey string, opts ...apigen.ClientOption) apigen.ClientWithResponsesInterface {
 	t.Helper()
 
@@ -244,12 +241,7 @@ func shouldUseServerTimeout() bool {
 
 func setupClientWithAdmin(t testing.TB) (apigen.ClientWithResponsesInterface, *dependencies) {
 	t.Helper()
-	return setupClientWithAdminAndWalkerFactory(t, store.NewFactory(nil))
-}
-
-func setupClientWithAdminAndWalkerFactory(t testing.TB, factory catalog.WalkerFactory) (apigen.ClientWithResponsesInterface, *dependencies) {
-	t.Helper()
-	handler, deps := setupHandlerWithWalkerFactory(t, factory)
+	handler, deps := setupHandler(t)
 	server := setupServer(t, handler)
 	deps.server = server
 	clt := setupClientByEndpoint(t, server.URL, "", "")
