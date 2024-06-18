@@ -10,13 +10,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/local"
 )
 
-func TestSortedQueue(t *testing.T) {
+func TestStringHeap(t *testing.T) {
 	// Some items and their priorities.
 	items := []string{"imported/0000/1", "imported../00000", "imported/00010/1"}
 
 	// Create a priority queue, put the items in it, and
 	// establish the priority queue (heap) invariants.
-	pq := local.SortedQueue{}
+	pq := local.StringHeap{}
 	heap.Init(&pq)
 
 	for _, item := range items {

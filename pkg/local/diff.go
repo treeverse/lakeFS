@@ -191,7 +191,7 @@ func Undo(c Changes) Changes {
 // does not take into consideration the directory hierarchy. Instead, object paths include the entire path relative to the root and as a result
 // the directory or "path separator" is also taken into account when providing the listing in a lexicographical order.
 func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error) error) error {
-	var dirQueue SortedQueue
+	var stringHeap StringHeap
 
 	err := filepath.Walk(root, func(p string, info fs.FileInfo, err error) error {
 		if err != nil {
@@ -202,20 +202,19 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 		}
 		if info.IsDir() {
 			// TODO: We don't return dir results for the listing, how will this effect directory markers, and can we even support directory markers?
-			// Save encountered directories in a sorted queue and compare them with the first appearance of an file in that level
-			heap.Push(&dirQueue, p+path.Separator) // add path separator to dir name and sort it later
+			// Save encountered directories in a min heap and compare them with the first appearance of a file in that level
+			heap.Push(&stringHeap, p+path.Separator) // add path separator to dir name and sort it later
 			return filepath.SkipDir
 		}
 
-		heap.Init(&dirQueue)
-		for dirQueue.Len() > 0 {
-			dir := heap.Pop(&dirQueue).(string)
+		for stringHeap.Len() > 0 {
+			dir := stringHeap.Peek().(string)
 			if p > dir {
+				heap.Pop(&stringHeap) // remove from queue
 				if err = WalkS3(dir, callbackFunc); err != nil {
 					return err
 				}
-			} else { // Put it back in its place
-				heap.Push(&dirQueue, dir)
+			} else {
 				break
 			}
 		}
@@ -230,8 +229,8 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 	}
 
 	// Finally, finished walking over FS, handle remaining dirs
-	for dirQueue.Len() > 0 {
-		dir := heap.Pop(&dirQueue).(string)
+	for stringHeap.Len() > 0 {
+		dir := heap.Pop(&stringHeap).(string)
 		if err = WalkS3(dir, callbackFunc); err != nil {
 			return err
 		}

@@ -1,28 +1,33 @@
 package local
 
-// A SortedQueue implements heap.Interface and holds strings.
-type SortedQueue []string
+// A StringHeap is a min-heap of strings
+type StringHeap []string
 
-func (pq *SortedQueue) Len() int { return len(*pq) }
+func (pq *StringHeap) Len() int { return len(*pq) }
 
-func (pq *SortedQueue) Less(i, j int) bool {
-	// We want Pop to give us the smallest
+func (pq *StringHeap) Less(i, j int) bool {
+	// We want Pop to give us the smallest string
 	return (*pq)[i] < (*pq)[j]
 }
 
-func (pq *SortedQueue) Swap(i, j int) {
+func (pq *StringHeap) Swap(i, j int) {
 	(*pq)[i], (*pq)[j] = (*pq)[j], (*pq)[i]
 }
 
-func (pq *SortedQueue) Push(x any) {
-	item := x.(string)
-	*pq = append(*pq, item)
+func (pq *StringHeap) Push(x any) {
+	*pq = append(*pq, x.(string))
 }
 
-func (pq *SortedQueue) Pop() any {
+func (pq *StringHeap) Pop() any {
 	old := *pq
 	n := len(old)
-	item := old[n-1]
+	x := old[n-1]
 	*pq = old[0 : n-1]
-	return item
+	return x
+}
+
+// Peek - according to heap documentation (https://pkg.go.dev/container/heap) "The minimum element in the tree is the root, at index 0."
+func (pq *StringHeap) Peek() any {
+	x := (*pq)[0]
+	return x
 }
