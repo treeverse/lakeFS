@@ -187,7 +187,7 @@ func TestDefaultReplacerFunc(t *testing.T) {
 				hasher.Write([]byte(kv.Value))
 				expected = append(expected, EnvVarKV{
 					Key:   kv.Key,
-					Value: string(hasher.Sum(nil)),
+					Value: fmt.Sprintf("%x", hasher.Sum(nil)),
 				})
 			}
 			flr.processEnvVars(bw)
