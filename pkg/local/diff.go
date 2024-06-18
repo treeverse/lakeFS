@@ -209,13 +209,12 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 
 		for stringHeap.Len() > 0 {
 			dir := stringHeap.Peek().(string)
-			if p > dir {
-				heap.Pop(&stringHeap) // remove from queue
-				if err = WalkS3(dir, callbackFunc); err != nil {
-					return err
-				}
-			} else {
+			if p < dir { // file should be processed before dir
 				break
+			}
+			heap.Pop(&stringHeap) // remove from queue
+			if err = WalkS3(dir, callbackFunc); err != nil {
+				return err
 			}
 		}
 		// Process the file after we finished processing all the dirs that precede it
