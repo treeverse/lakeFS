@@ -1,6 +1,0 @@
-{"file":"pkg/block/factory/build.go:32","func":"pkg/block/factory.BuildBlockAdapter","level":"info","msg":"initialize blockstore adapter","time":"2024-06-06T18:20:45+03:00","type":"s3"}
-{"file":"pkg/block/factory/build.go:112","func":"pkg/block/factory.buildS3Adapter","level":"info","msg":"initialized blockstore adapter","time":"2024-06-06T18:29:45+03:00","type":"s3"}
-{"file":"pkg/block/factory/build.go:32","func":"pkg/block/factory.BuildBlockAdapter","level":"info","msg":"initialize blockstore adapter","time":"2024-06-06T18:30:45+03:00","type":"s3"}
-{"file":"pkg/block/factory/build.go:112","func":"pkg/block/factory.buildS3Adapter","level":"info","msg":"initialized blockstore adapter","time":"2024-06-06T18:30:45+03:00","type":"s3"}
-{"file":"pkg/api/serve.go:37","func":"pkg/api.Serve","level":"info","msg":"initialize OpenAPI server","service":"api_gateway","time":"2024-06-06T18:31:45+03:00"}
-{"file":"cmd/lakefs/cmd/run.go:328","func":"cmd/lakefs/cmd.glob..func8","level":"info","listen_address":"0.0.0.0:8000","msg":"starting HTTP server","time":"2024-06-06T18:29:45+03:00"}

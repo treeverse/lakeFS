@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -14,7 +13,7 @@ import (
 )
 
 const (
-	flareFilePath              = "%s/flare/%s/"
+	flareOutputDirPrefix       = "%s/flare/%s/"
 	flareConfigFileName        = "lakefs-config.yaml"
 	flareDefaultEnvVarFileName = "lakefs-env.txt"
 	flareDefaultZipFileName    = "lakefs-flare.zip"
@@ -36,7 +35,7 @@ var flareCmd = &cobra.Command{
 	Args:   cobra.ExactArgs(0),
 	PreRun: warnOutputFlags,
 	Run: func(cmd *cobra.Command, args []string) {
-		syscall.Umask(flare.FlareUmask)
+		flare.SetBaselinePermissions(flare.FlareUmask)
 		now := strings.ReplaceAll(time.Now().String(), " ", "")
 		cfg := loadConfig()
 		flr, err := flare.NewFlare()
@@ -44,7 +43,7 @@ var flareCmd = &cobra.Command{
 			printMsgAndExit("failed to create flare instance", err)
 		}
 
-		flarePath := fmt.Sprintf(flareFilePath, outputPath, now)
+		flarePath := fmt.Sprintf(flareOutputDirPrefix, outputPath, now)
 		err = os.MkdirAll(flarePath, flare.DirPermissions)
 		if err != nil {
 			msg := fmt.Sprintf("failed to create flare directory at %s", flarePath)
