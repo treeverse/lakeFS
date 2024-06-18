@@ -1,6 +1,6 @@
 # Changelog
 
-# v1.26.0
+# v1.26.1
 
 :new: What's new:
 - Introduce support of GCS encryption for both CMEK and CSEK (#7809)
