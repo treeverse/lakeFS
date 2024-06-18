@@ -76,12 +76,15 @@ var flareCmd = &cobra.Command{
 		if err != nil {
 			printMsgAndExit("failed to create zip writer", err)
 		}
+		printInfo("Processing config...")
 		err = flr.ProcessConfig(cfg, flarePath, flareConfigFileName, ow.GetFileWriter)
 		if err != nil {
-			printMsgAndExit("failed to process config", err)
+			printNonFatalError("failed to process config ", err)
 		}
+		printInfo("Done processing config")
 
 		if includeLogs {
+			printInfo("Processing logs...")
 			logFilePath := logging.GetLogFileOutputPath(cfg.Logging.Output)
 
 			err = flr.ProcessLogFiles(
@@ -92,15 +95,18 @@ var flareCmd = &cobra.Command{
 				ow.GetFileWriter,
 			)
 			if err != nil {
-				printMsgAndExit("failed to process log file ", err)
+				printNonFatalError("failed to process logs ", err)
 			}
+			printInfo("Done processing logs")
 		}
 
 		if includeEnvVars {
+			printInfo("Processing env vars...")
 			err = flr.ProcessEnvVars(flarePath, envVarOutputFileName, ow.GetFileWriter)
 			if err != nil {
-				printMsgAndExit("failed to process env vars ", err)
+				printNonFatalError("failed to process env vars ", err)
 			}
+			printInfo("Done processing env vars")
 		}
 	},
 }
