@@ -5,6 +5,7 @@ package flare
 import (
 	"archive/zip"
 	"bufio"
+	"crypto/sha512"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,11 +21,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// defaults
-const (
-	defaultSecretReplacementValue = "<REDACTED>"
-)
-
 var defaultEnvVarPrefixes = []string{"LAKEFS_", "HTTP_", "HOSTNAME"}
 
 const (
@@ -32,6 +28,8 @@ const (
 	FilePremissions = 0600
 	FlareUmask      = 077
 )
+
+type RedactedValueReplacer func(value string) string
 
 // LogFormat is a log file format supported by the flare package
 type LogFormat string
@@ -57,13 +55,19 @@ type WithTime struct {
 }
 
 type Flare struct {
-	envVarPrefixes         []string
-	secretReplacementValue string
-	logFormat              LogFormat
+	envVarPrefixes []string
+	logFormat      LogFormat
 	// LogDateLayout is the layout used by time.Parse to parse dates in log lines.
 	// The default value is time.RFC3339.
 	// This can be changed using the WithLogDateLayout option.
 	LogDateLayout string
+	replacerFunc  RedactedValueReplacer
+}
+
+func defaultSecretReplacer(value string) string {
+	sha_512 := sha512.New()
+	sha_512.Write([]byte(value))
+	return string(sha_512.Sum(nil))
 }
 
 type Option func(*Flare)
@@ -73,10 +77,10 @@ func NewFlare(logFormat LogFormat, options ...Option) (*Flare, error) {
 		return nil, fmt.Errorf("failed to init secrets scanner: %w", secretScannerInitErr)
 	}
 	flare := &Flare{
-		envVarPrefixes:         defaultEnvVarPrefixes,
-		secretReplacementValue: defaultSecretReplacementValue,
-		LogDateLayout:          time.RFC3339,
-		logFormat:              logFormat,
+		envVarPrefixes: defaultEnvVarPrefixes,
+		replacerFunc:   defaultSecretReplacer,
+		LogDateLayout:  time.RFC3339,
+		logFormat:      logFormat,
 	}
 
 	for _, opt := range options {
@@ -102,10 +106,12 @@ func WithAdditionalEnvVarPrefix(envVar string) Option {
 	}
 }
 
-// WithSecretReplacementValue replaces the default secret replacement value of "<REDACTED>".
-func WithSecretReplacementValue(v string) Option {
+// WithSecretReplacerFunc replaces the default secret replacement func with a function that takes the raw value and returns the redacted value
+// The default secret replacement func replaces the secret with a SHA512 hash of the secret value.
+// This allows comparison of values without exposing the secret values.
+func WithSecretReplacerFunc(fn RedactedValueReplacer) Option {
 	return func(f *Flare) {
-		f.secretReplacementValue = v
+		f.replacerFunc = fn
 	}
 }
 
@@ -372,17 +378,17 @@ func (f *Flare) processLogFile(inputFileName, outputPath string, startDate, endD
 }
 
 func (f *Flare) redactSecrets(line string) (string, error) {
-	return redactSecrets(line, f.secretReplacementValue)
+	return redactSecrets(line, f.replacerFunc)
 }
 
-func redactSecrets(line string, secretReplacementValue string) (string, error) {
+func redactSecrets(line string, replacerFunc RedactedValueReplacer) (string, error) {
 	detectedSecrets, err := secretScanner.Scan(line)
 	if err != nil {
 		return "", err
 	}
 
 	for _, secret := range detectedSecrets {
-		line = strings.Replace(line, secret.Value, secretReplacementValue, 1)
+		line = strings.Replace(line, secret.Value, replacerFunc(secret.Value), 1)
 	}
 	return line, nil
 }
