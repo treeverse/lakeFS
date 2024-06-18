@@ -314,11 +314,11 @@ func TestDefaultReplacerFunc(t *testing.T) {
 			bw := bufio.NewWriter(b)
 			for _, kv := range tc.EnvVars {
 				t.Setenv(kv.Key, kv.Value)
-				sha_512 := sha512.New()
-				sha_512.Write([]byte(kv.Value))
+				hasher := sha512.New()
+				hasher.Write([]byte(kv.Value))
 				expected = append(expected, EnvVarKV{
 					Key:   kv.Key,
-					Value: string(sha_512.Sum(nil)),
+					Value: string(hasher.Sum(nil)),
 				})
 			}
 			flr.processEnvVars(bw)

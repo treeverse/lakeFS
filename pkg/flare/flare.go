@@ -65,9 +65,9 @@ type Flare struct {
 }
 
 func defaultSecretReplacer(value string) string {
-	sha_512 := sha512.New()
-	sha_512.Write([]byte(value))
-	return string(sha_512.Sum(nil))
+	hasher := sha512.New()
+	hasher.Write([]byte(value))
+	return string(hasher.Sum(nil))
 }
 
 type Option func(*Flare)
