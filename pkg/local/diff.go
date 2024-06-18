@@ -1,19 +1,17 @@
 package local
 
 import (
+	"container/heap"
 	"context"
 	"fmt"
+	"io/fs"
 	"net/http"
-	"net/url"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
-	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/local"
-	"github.com/treeverse/lakefs/pkg/block/params"
+	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -188,6 +186,57 @@ func Undo(c Changes) Changes {
 	return reversed
 }
 
+// WalkS3 - walk like an Egyptian... ¯\_(ツ)¯\_
+// This walker function simulates the way object listing is performed by S3. Contrary to how a standard FS walk function behaves, S3
+// does not take into consideration the directory hierarchy. Instead, object paths include the entire path relative to the root and as a result
+// the directory or "path separator" is also taken into account when providing the listing in a lexicographical order.
+func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error) error) error {
+	var stringHeap StringHeap
+
+	err := filepath.Walk(root, func(p string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if p == root {
+			return nil
+		}
+		if info.IsDir() {
+			// TODO: We don't return dir results for the listing, how will this effect directory markers, and can we even support directory markers?
+			// Save encountered directories in a min heap and compare them with the first appearance of a file in that level
+			heap.Push(&stringHeap, p+path.Separator) // add path separator to dir name and sort it later
+			return filepath.SkipDir
+		}
+
+		for stringHeap.Len() > 0 {
+			dir := stringHeap.Peek().(string)
+			if p < dir { // file should be processed before dir
+				break
+			}
+			heap.Pop(&stringHeap) // remove from queue
+			if err = WalkS3(dir, callbackFunc); err != nil {
+				return err
+			}
+		}
+		// Process the file after we finished processing all the dirs that precede it
+		if err = callbackFunc(p, info, err); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	// Finally, finished walking over FS, handle remaining dirs
+	for stringHeap.Len() > 0 {
+		dir := heap.Pop(&stringHeap).(string)
+		if err = WalkS3(dir, callbackFunc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // DiffLocalWithHead Checks changes between a local directory and the head it is pointing to. The diff check assumes the remote
 // is an immutable set so any changes found resulted from changes in the local directory
 // left is an object channel which contains results from a remote source. rightPath is the local directory to diff with
@@ -198,25 +247,14 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Change
 		currentRemoteFile apigen.ObjectStats
 		hasMore           bool
 	)
-	absPath, err := filepath.Abs(rightPath)
-	if err != nil {
-		return nil, err
-	}
-	uri := url.URL{Scheme: "local", Path: absPath}
-	reader := local.NewLocalWalker(params.Local{
-		ImportEnabled:           false,
-		ImportHidden:            true,
-		AllowedExternalPrefixes: []string{absPath},
-	})
-	err = reader.Walk(context.Background(), &uri, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
-		info, err := os.Stat(e.FullKey)
+	err := WalkS3(rightPath, func(p string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() || diffShouldIgnore(info.Name()) {
+		if diffShouldIgnore(info.Name()) {
 			return nil
 		}
-		localPath := e.RelativeKey
+		localPath := strings.TrimPrefix(p, rightPath)
 		localPath = strings.TrimPrefix(localPath, string(filepath.Separator))
 		localPath = filepath.ToSlash(localPath) // normalize to use "/" always
 
@@ -288,18 +326,18 @@ func ListRemote(ctx context.Context, client apigen.ClientWithResponsesInterface,
 			return fmt.Errorf("list remote failed. HTTP %d: %w", listResp.StatusCode(), ErrRemoteFailure)
 		}
 		for _, o := range listResp.JSON200.Results {
-			path := strings.TrimPrefix(o.Path, loc.GetPath())
+			p := strings.TrimPrefix(o.Path, loc.GetPath())
 			// skip directory markers
-			if path == "" || (strings.HasSuffix(path, uri.PathSeparator) && swag.Int64Value(o.SizeBytes) == 0) {
+			if p == "" || (strings.HasSuffix(p, uri.PathSeparator) && swag.Int64Value(o.SizeBytes) == 0) {
 				continue
 			}
-			path = strings.TrimPrefix(path, uri.PathSeparator)
+			p = strings.TrimPrefix(p, uri.PathSeparator)
 			objects <- apigen.ObjectStats{
 				Checksum:        o.Checksum,
 				ContentType:     o.ContentType,
 				Metadata:        o.Metadata,
 				Mtime:           o.Mtime,
-				Path:            path,
+				Path:            p,
 				PathType:        o.PathType,
 				PhysicalAddress: o.PhysicalAddress,
 				SizeBytes:       o.SizeBytes,

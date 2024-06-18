@@ -557,13 +557,8 @@ func TestLakectlFsUpload(t *testing.T) {
 	})
 	t.Run("single_file_with_recursive", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/ro_1k.0"
-		sanitizedResult := runCmd(t, Lakectl()+" fs upload --recursive -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
-		require.Contains(t, sanitizedResult, "diff 'local://files/ro_1k/' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
-		require.Contains(t, sanitizedResult, "upload .")
-		require.Contains(t, sanitizedResult, "Upload Summary:")
-		require.Contains(t, sanitizedResult, "Downloaded: 0")
-		require.Contains(t, sanitizedResult, "Uploaded: 1")
-		require.Contains(t, sanitizedResult, "Removed: 0")
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload --recursive -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "lakectl_fs_upload", vars)
+
 	})
 	t.Run("dir", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/"
@@ -588,6 +583,10 @@ func TestLakectlFsUpload(t *testing.T) {
 	t.Run("dir_without_recursive", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/"
 		RunCmdAndVerifyFailure(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "target path is not a valid URI\nError executing command.\n", vars)
+	})
+	t.Run("dir_without_recursive_to_file", func(t *testing.T) {
+		vars["FILE_PATH"] = "data/ro/1.txt"
+		RunCmdAndVerifyFailureContainsText(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "read files/: is a directory", vars)
 	})
 }
 
