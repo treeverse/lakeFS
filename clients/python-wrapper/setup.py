@@ -40,5 +40,8 @@ setup(
     include_package_data=True,
     license="Apache 2.0",
     long_description=long_description,
-    long_description_content_type='text/markdown'
+    long_description_content_type='text/markdown',
+    extras_require={
+        'aws-iam': ["boto3 >= 1.26.0"],
+    },
 )
