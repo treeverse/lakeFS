@@ -144,8 +144,13 @@ In order to generate a lakeFS client with the assumed role, initiate a boto3 ses
 ```python
 import lakefs
 import boto3    
-session = boto3.Session(profile_name='my-profile', region_name='us-west-2')
-myclient = lakefs.client.from_aws_role(session=session, ttl_seconds = 7200)
+session = boto3.Session()
+myclient = lakefs.client.from_aws_role(session=session, ttl_seconds = 7200, host="<lakefs-host>")
+
+# list repositories
+repos = lakefs.repositories(client=myclient)
+for r in repos:
+    print(r)
 ```
 
 

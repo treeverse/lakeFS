@@ -134,7 +134,7 @@ def _get_identity_token(
         session: 'boto3.Session',
         lakefs_host: str,
         additional_headers: dict[str, str] = None,
-        presign_expression=60
+        presign_expiry=60
 ) -> str:
     """
    Generate the identity token required for lakeFS authentication from an AWS session.
@@ -181,14 +181,13 @@ def _get_identity_token(
     presigned_url = signer.generate_presigned_url(
         params,
         region_name=region,
-        expires_in=presign_expression,
+        expires_in=presign_expiry,
         operation_name=''
     )
     parsed_url = urlparse(presigned_url)
     query_params = parse_qs(parsed_url.query)
 
     # Extract values from query parameters
-    print(query_params)
     json_object = {
         "method": "POST",
         "host": parsed_url.hostname,
@@ -208,18 +207,25 @@ def _get_identity_token(
     return base64.b64encode(json_string.encode('utf-8')).decode('utf-8')
 
 
-def from_aws_role(session: 'boto3.Session', ttl_seconds: int = 3600, **kwargs) -> Client:
+def from_aws_role(
+        session: 'boto3.Session',
+        ttl_seconds: int = 3600,
+        presigned_ttl: int = 60,
+        additional_headers: dict[str, str] = None,
+        **kwargs) -> Client:
     """
     Create a lakeFS client from an AWS role.
     :param session: : The boto3 session.
-    :param ttl_seconds: The time-to-live for the generated token in seconds. The default value is 3600 seconds (1 hour).
+    :param ttl_seconds: The time-to-live for the generated lakeFS token in seconds. The default value is 3600 seconds (1 hour).
+    :param presigned_ttl: The time-to-live for the presigned URL in seconds. The default value is 60 seconds.
     :param kwargs: The arguments to pass to the client.
     :return: A lakeFS client.
     """
 
     client = Client(**kwargs)
     lakefs_host = urlparse(client.config.host).hostname
-    identity_token = _get_identity_token(session, lakefs_host)
+    identity_token = _get_identity_token(session, lakefs_host, presign_expiry=presigned_ttl,
+                                         additional_headers=additional_headers)
     external_login_information = ExternalLoginInformation(token_expiration_duration=ttl_seconds, identity_request={
         "identity_token": identity_token
     })
