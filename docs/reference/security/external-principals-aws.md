@@ -55,13 +55,13 @@ It's also important to note that Amazon does NOT appear to include any sort of a
 {: .note}
 > Note: lakeFS Helm chart supports the configuration since version `1.2.11` - see usage [values.yaml example](https://github.com/treeverse/charts/blob/master/examples/lakefs/enterprise/values-external-aws.yaml).
 
-* in lakeFS `auth.authentication_api.external_principals_enabled` must be set to `true` in the configuration file, other configuration (`auth.authentication_api.*`) can be found at at [configuration reference]({% link reference/configuration.md %})
+* in lakeFS `auth.authentication_api.external_principals_enabled` must be set to `true` in the configuration file, other configuration (`auth.authentication_api.*`) can be found at [configuration reference]({% link reference/configuration.md %})
 
 For the full list of the Fluffy server configuration, see [Fluffy Configuration]({% link enterprise/fluffy-configuration.md %}) under `auth.external.aws_auth`
 
 
 {: .note}
-> By default lakeFS clients will add the parameter `X-LakeFS-Server-ID: <lakefs.ingress.domain>` to the initial [login request][login-api] for STS.
+> By default, lakeFS clients will add the parameter `X-LakeFS-Server-ID: <lakefs.ingress.domain>` to the initial [login request][login-api] for STS.
 
 
 **Example configuration with required headers:**
@@ -81,7 +81,7 @@ Configuration for `fluffy.yaml`:
 
 ```yaml
 # fluffy address for lakefs auth.authentication_api.endpoint
-# used by lakeFS to login and get the token
+# used by lakeFS to log in and get the token
 listen_address: <fluffy-sso>
 auth:
   # fluffy address for lakeFS auth.api.endpoint 
@@ -98,9 +98,9 @@ auth:
 
 ## Administration of IAM Roles in lakeFS
 
-Administration referes to the management of the IAM roles that are allowed to authenticate to lakeFS.
+Administration refers to the management of the IAM roles that are allowed to authenticate to lakeFS.
 Operations such as attaching and detaching IAM roles to a user, listing the roles attached to a user, and listing the users attached to a role. 
-Currently this is done through the lakeFS [External Principals API][external-principal-admin] and generated clients.
+Currently, this is done through the lakeFS [External Principals API][external-principal-admin] and generated clients.
 
 Example of attaching an IAM roles to a user:
 
@@ -115,7 +115,7 @@ auth_api = lakefs.AuthApi(api)
 auth_api.create_user_external_principal(user_id=username, principal_id='arn:aws:sts::<id>:assumed-role/<role A>/<optional session name>')
 auth_api.create_user_external_principal(user_id=username, principal_id='arn:aws:sts::<id>:assumed-role/<role B>')
 # list the roles attached to the user
-resp = auth_api.list_user_external_principals(user_id=args.user)
+resp = auth_api.list_user_external_principals(user_id=username)
 for p in resp.results:
     # do something
 ```
@@ -148,10 +148,10 @@ In order to generate a lakeFS client with the assumed role, initiate a boto3 ses
 import lakefs
 import boto3    
 session = boto3.Session()
-myclient = lakefs.client.from_aws_role(session=session, ttl_seconds = 7200, host="<lakefs-host>")
+my_client = lakefs.client.from_aws_role(session=session, ttl_seconds=7200, host="<lakefs-host>")
 
 # list repositories
-repos = lakefs.repositories(client=myclient)
+repos = lakefs.repositories(client=my_client)
 for r in repos:
     print(r)
 ```
