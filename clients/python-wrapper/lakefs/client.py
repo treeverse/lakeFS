@@ -10,7 +10,7 @@ import base64
 import json
 from threading import Lock
 from typing import Optional
-from urllib.parse import urlparse, parse_qs, urlencode
+from urllib.parse import urlparse, parse_qs
 
 import lakefs_sdk
 from lakefs_sdk import ExternalLoginInformation
@@ -216,7 +216,7 @@ def from_aws_role(
     """
     Create a lakeFS client from an AWS role.
     :param session: : The boto3 session.
-    :param ttl_seconds: The time-to-live for the generated lakeFS token in seconds. The default value is 3600 seconds (1 hour).
+    :param ttl_seconds: The time-to-live for the generated lakeFS token in seconds. The default value is 3600 seconds.
     :param presigned_ttl: The time-to-live for the presigned URL in seconds. The default value is 60 seconds.
     :param kwargs: The arguments to pass to the client.
     :return: A lakeFS client.
