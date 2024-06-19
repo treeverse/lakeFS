@@ -714,7 +714,7 @@ extraManifests:
 
 ## Migrate from lakeFS Open Source to lakeFS Enterprise and upgrades
 
-For upgrading from lakeFS enterprise to a newer version see [lakefs migration]([lakefs-migrate]: https://docs.lakefs.io/howto/deploy/upgrade.html). 
+For upgrading from lakeFS enterprise to a newer version see [lakefs migration](https://docs.lakefs.io/howto/deploy/upgrade.html). 
 
 **To move from lakeFS Open Source to lakeFS Enterprise, follow the steps below:**
 
@@ -723,7 +723,7 @@ For upgrading from lakeFS enterprise to a newer version see [lakefs migration]([
 Inside your current lakeFS deployment (old pre-upgrade version) install the new target lakefs version and run the command: `LAKEFS_AUTH_UI_CONFIG_RBAC=internal lakefs migrate up`  (note the LAKEFS_AUTH_UI_CONFIG_RBAC=internal environment variable).
 You should expect to see a log message saying Migration completed successfully.
 During this short db migration process please make sure not to make any policy / RBAC related changes.
-3. Upgrade your helm release to the new version, that’s it.
+1. Upgrade your helm release to the new version, that’s it.
 
 ## Log Collection
 
