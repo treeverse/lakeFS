@@ -133,8 +133,8 @@ def _extract_region_from_endpoint(endpoint):
 def _get_identity_token(
         session: 'boto3.Session',
         lakefs_host: str,
-        additional_headers: dict[str, str] = None,
-        presign_expiry=60
+        additional_headers: dict[str, str],
+        presign_expiry
 ) -> str:
     """
    Generate the identity token required for lakeFS authentication from an AWS session.
@@ -218,6 +218,7 @@ def from_aws_role(
     :param session: : The boto3 session.
     :param ttl_seconds: The time-to-live for the generated lakeFS token in seconds. The default value is 3600 seconds.
     :param presigned_ttl: The time-to-live for the presigned URL in seconds. The default value is 60 seconds.
+    :param additional_headers: Additional headers to include in the presigned URL.
     :param kwargs: The arguments to pass to the client.
     :return: A lakeFS client.
     """
