@@ -6,7 +6,7 @@ parent: lakeFS Enterprise
 
 # Run lakeFS Enterprise
 
-{% include toc.html %}
+{% include toc_2-3.html %}
 
 ## Overview
 
