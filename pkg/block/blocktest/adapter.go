@@ -20,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
+// AdapterTest Test suite of basic adapter functionality
 func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
 	t.Run("Adapter_PutGet", func(t *testing.T) { testAdapterPutGet(t, adapter, storageNamespace, externalPath) })
 	t.Run("Adapter_Copy", func(t *testing.T) { testAdapterCopy(t, adapter, storageNamespace) })
@@ -30,6 +31,7 @@ func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, external
 	t.Run("Adapter_Walker", func(t *testing.T) { testAdapterWalker(t, adapter, storageNamespace) })
 }
 
+// Parameterized test to first Put object via Storage Adapter then Get it and check that the contents match
 func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
 	ctx := context.Background()
 	const contents = "test_file"
@@ -69,6 +71,7 @@ func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, ex
 	}
 }
 
+// Test to Copy an object via Storage Adapter, then check that the contents of the copied object matches the original
 func testAdapterCopy(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
 	contents := "foo bar baz quux"
@@ -93,6 +96,7 @@ func testAdapterCopy(t *testing.T, adapter block.Adapter, storageNamespace strin
 	require.Equal(t, contents, string(got))
 }
 
+// Parameterized test to test valid and invalid cases for Removing an object via the adaptor
 func testAdapterRemove(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
 	const content = "Content used for testing"
@@ -205,6 +209,7 @@ func createMultipartFile() ([][]byte, []byte) {
 	return parts, partsConcat
 }
 
+// Parameterized test of the Multipart Upload APIs. After successful upload we Get the result and compare to the original
 func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
 	parts, full := createMultipartFile()
@@ -296,6 +301,7 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 	}
 }
 
+// Parameterized test of the object Exists method of the Storage adapter
 func testAdapterExists(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	// TODO (niro): Test abs paths
 	const contents = "exists"
@@ -338,6 +344,7 @@ func testAdapterExists(t *testing.T, adapter block.Adapter, storageNamespace str
 	}
 }
 
+// Parameterized test of the GetRange functionality
 func testAdapterGetRange(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
 	part1 := "this is the first part "
@@ -381,6 +388,7 @@ func testAdapterGetRange(t *testing.T, adapter block.Adapter, storageNamespace s
 	}
 }
 
+// Parameterized test to GetWalker from the Storage Adapter and check that it works
 func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
 	const (
