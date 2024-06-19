@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v0.7.0
+:new: What's new:
+
+- AWS role Authentication: Initiate lakeFS Python client sessions securely using your AWS Role. (#7874) 
+
 ## v0.6.2
 
 :new: What's new:
