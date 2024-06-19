@@ -128,6 +128,16 @@ Currently, the login operation is supported out of the box in [lakeFS Hadoop Fil
 and in [python](#login-with-python), for other use cases you can use the login endpoint to authenticate to lakeFS but, you will have to build the request input.
 
 ## Login with python
+
+### prerequisites
+
+lakeFS requires additional python packages to be installed in order to generate a lakeFS client with the assumed role.
+To install the required packages, run the following command:
+
+```sh
+  pip install lakefs[aws-iam]
+```
+
 In order to generate a lakeFS client with the assumed role, initiate a boto3 session with the desired role and call the `get_caller_identity` method to get the caller identity:
 
 
