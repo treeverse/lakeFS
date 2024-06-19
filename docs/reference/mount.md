@@ -183,16 +183,16 @@ lakeFS Mount uses a lazy prefetch strategy. Files are not downloaded at mount ti
 
 When using lakeFS Mount, the volume of data accessed by the local machine influences the scale limitations more than the total size of the dataset under the mounted prefix. This is because lakeFS Mount uses a lazy downloading approach, meaning it only downloads the accessed files. lakeFS Mount listing capability is limited to performing efficiently for prefixes containing fewer than 8000 objects, but we are working to increase this limit.
 
+##### Recommended Configuration
+
+Ensure your **cache size** is large enough to accommodate the volume of files being accessed.
+
 ### How does lakeFS Mount integrate with a Git repository?
 
 It is perfectly safe to mount a lakeFS path within a Git repository, lakeFS Mount will add a virtual `.gitignore` file to the mounted directory to avoid the case of adding to the git repository the mounted objects from lakeFS (i.e running `git add -A`).
 
 The .gitignore file will also instruct Git to ignore all files except `.everest/source` and in its absence, it will try to find a `.everest/source` file in the destination folder, and read the lakeFS URI from there. 
 Since `.everest/source` is in source control, it will mount the same lakeFS commit every time!
-
-##### Recommended Configuration
-
-Ensure your **cache size** is large enough to accommodate the volume of files being accessed.
 
 ### I’m already using lakectl local for working with lakeFS data locally, why should I use lakeFS Mount?
 
