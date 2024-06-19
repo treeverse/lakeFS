@@ -170,6 +170,7 @@ object LakeFSContext {
           new java.sql.Timestamp(TimeUnit.SECONDS.toMillis(entry.getLastModified.seconds)),
           entry.size,
           new String(v.rangeID),
+          entry.metadata,
           entry.addressType.toString()
         )
       }
@@ -180,6 +181,7 @@ object LakeFSContext {
       .add(StructField("last_modified", TimestampType))
       .add(StructField("size", LongType))
       .add(StructField("range_id", StringType))
+      .add(StructField("user_metadata", MapType(StringType, StringType)))
       .add(StructField("address_type", StringType))
     spark.createDataFrame(rdd, schema)
   }
@@ -207,9 +209,6 @@ object LakeFSContext {
       repoName: String,
       commitID: String = ""
   ): DataFrame = {
-    val inputFormatClass =
-      if (StringUtils.isNotBlank(commitID)) classOf[LakeFSCommitInputFormat]
-      else classOf[LakeFSAllRangesInputFormat]
     newDF(spark, LakeFSJobParams.forCommit(repoName, commitID))
   }
 }
