@@ -55,8 +55,8 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
 
     return (
         <ListGroup.Item>
-            <div className="clearfix">
-                <div className="float-start">
+            <div className="d-flex align-items-center">
+                <div className="float-start mr-2">
                     <h6>
                         <Link href={{
                             pathname: '/repositories/:repoId/objects',
@@ -65,13 +65,13 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
                         }}>
                             {branch.id}
                         </Link>
-
-                        {isDefault &&
-                        <>
-                            {' '}
-                            <Badge variant="info">Default</Badge>
-                        </>}
                     </h6>
+                </div>
+                {isDefault &&
+                    <>
+                        {' '}
+                        <Badge variant="info">Default</Badge>
+                    </>}     
                 </div>
 
 
