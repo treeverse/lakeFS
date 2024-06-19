@@ -120,11 +120,41 @@ for p in resp.results:
     # do something
 ```
 
+
 ## Get lakeFS API Token
 
 The login to lakeFS is done by calling the [login API][login-api] with the `GetCallerIdentity` request signed by the client.
-Currently, the login operation is supported out of the box in [lakeFS Hadoop FileSystem][lakefs-hadoopfs] version 0.2.4, see [Spark usage][lakefs-spark].
-Other clients (i.e HTTP, Python etc) can use the login endpoint to authenticate to lakeFS but, you will have to build the request input.
+Currently, the login operation is supported out of the box in:
+- [lakeFS Hadoop FileSystem][lakefs-hadoopfs] version 0.2.4, see [Spark usage][lakefs-spark]
+- [python](#login-with-python)
+
+For other use cases authenticate to lakeFS via login endpoint, this will require building the request input.
+
+## Login with python
+
+### prerequisites
+
+lakeFS requires additional python packages to be installed in order to generate a lakeFS client with the assumed role.
+To install the required packages, run the following command:
+
+```sh
+  pip install lakefs[aws-iam]
+```
+
+In order to generate a lakeFS client with the assumed role, initiate a boto3 session with the desired role and call the `get_caller_identity` method to get the caller identity:
+
+
+```python
+import lakefs
+import boto3    
+session = boto3.Session()
+myclient = lakefs.client.from_aws_role(session=session, ttl_seconds = 7200, host="<lakefs-host>")
+
+# list repositories
+repos = lakefs.repositories(client=myclient)
+for r in repos:
+    print(r)
+```
 
 
 [external-principal-admin]:  {% link reference/cli.md %}#external
