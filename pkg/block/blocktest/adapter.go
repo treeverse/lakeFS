@@ -31,6 +31,7 @@ func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, external
 	t.Run("Adapter_Copy", func(t *testing.T) { testAdapterCopy(t, adapter, storageNamespace) })
 	t.Run("Adapter_Remove", func(t *testing.T) { testAdapterRemove(t, adapter, storageNamespace) })
 	t.Run("Adapter_MultipartUpload", func(t *testing.T) { testAdapterMultipartUpload(t, adapter, storageNamespace) })
+	t.Run("Adapter_AbortMultiPartUpload", func(t *testing.T) { testAdapterAbortMultipartUpload(t, adapter, storageNamespace) })
 	t.Run("Adapter_CopyPart", func(t *testing.T) { testAdapterCopyPart(t, adapter, storageNamespace) })
 	t.Run("Adapter_CopyPartRange", func(t *testing.T) { testAdapterCopyPartRange(t, adapter, storageNamespace) })
 	t.Run("Adapter_Exists", func(t *testing.T) { testAdapterExists(t, adapter, storageNamespace) })
@@ -198,7 +199,7 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 				IdentifierType:   block.IdentifierTypeRelative,
 			}
 
-			verifyListInvalid(t, ctx, adapter, obj)
+			verifyListInvalid(t, ctx, adapter, obj, "invalidId")
 
 			resp, err := adapter.CreateMultiPartUpload(ctx, obj, nil, block.CreateMultiPartUploadOpts{})
 			require.NoError(t, err)
@@ -238,17 +239,42 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 			})
 			require.NoError(t, err)
 
-			// List parts after complete should fail
-			_, err = adapter.ListParts(ctx, obj, resp.UploadID, block.ListPartsOpts{})
-			if blockstoreType != block.BlockstoreTypeS3 {
-				require.ErrorIs(t, err, block.ErrOperationNotSupported)
-			} else {
-				require.NotNil(t, err)
-			}
+			verifyListInvalid(t, ctx, adapter, obj, resp.UploadID)
 
 			getAndCheckContents(t, ctx, adapter, full, obj)
 		})
 	}
+}
+
+// Test aborting a multipart upload
+func testAdapterAbortMultipartUpload(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	ctx := context.Background()
+	parts, _ := createMultipartContents()
+	obj, _ := objPointers(storageNamespace)
+	uploadId := "foobar"
+
+	err := adapter.AbortMultiPartUpload(ctx, obj, uploadId)
+	require.ErrorContains(t, err, "404")
+
+	resp, err := adapter.CreateMultiPartUpload(ctx, obj, nil, block.CreateMultiPartUploadOpts{})
+	require.NoError(t, err)
+	uploadId = resp.UploadID
+
+	multiParts := uploadParts(t, ctx, adapter, obj, uploadId, parts)
+
+	listResp, err := adapter.ListParts(ctx, obj, uploadId, block.ListPartsOpts{})
+	require.Equal(t, 3, len(listResp.Parts))
+
+	err = adapter.AbortMultiPartUpload(ctx, obj, uploadId)
+	require.NoError(t, err)
+
+	//verify no parts to list
+	verifyListInvalid(t, ctx, adapter, obj, uploadId)
+
+	_, err = adapter.CompleteMultiPartUpload(ctx, obj, resp.UploadID, &block.MultipartUploadCompletion{
+		Part: multiParts,
+	})
+	require.ErrorContains(t, err, "404")
 }
 
 // Test of the Multipart Copy API
@@ -485,9 +511,9 @@ func uploadMultiPart(t *testing.T, ctx context.Context, adapter block.Adapter, o
 }
 
 // List parts on non-existing part
-func verifyListInvalid(t *testing.T, ctx context.Context, adapter block.Adapter, obj block.ObjectPointer) {
+func verifyListInvalid(t *testing.T, ctx context.Context, adapter block.Adapter, obj block.ObjectPointer, uploadId string) {
 	t.Helper()
-	_, err := adapter.ListParts(ctx, obj, "invalidId", block.ListPartsOpts{})
+	_, err := adapter.ListParts(ctx, obj, uploadId, block.ListPartsOpts{})
 	if adapter.BlockstoreType() != block.BlockstoreTypeS3 {
 		require.ErrorIs(t, err, block.ErrOperationNotSupported)
 	} else {
@@ -568,11 +594,11 @@ func requireEqualBigByteSlice(t *testing.T, exp, actual []byte) {
 
 	for i := 0; i < sliceCount; i++ {
 		var start = i * sliceLen
-		var end = min((i + 1) * sliceLen,len(exp) - 1)
+		var end = min((i+1)*sliceLen, len(exp)-1)
 
 		var expSlice = exp[start:end]
 		var actualSlice = actual[start:end]
-		require.Equalf(t, expSlice, actualSlice,"Failed on slice "+strconv.Itoa(i+1)+"/"+strconv.Itoa(sliceCount));
+		require.Equalf(t, expSlice, actualSlice, "Failed on slice "+strconv.Itoa(i+1)+"/"+strconv.Itoa(sliceCount))
 	}
 }
 
