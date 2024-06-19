@@ -10,7 +10,7 @@ import base64
 import json
 from threading import Lock
 from typing import Optional
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, urlencode
 
 import lakefs_sdk
 from lakefs_sdk import ExternalLoginInformation
@@ -151,6 +151,7 @@ def _get_identity_token(
     # this method should only be called when installing the aws-iam additional requirement
     from botocore.client import Config  # pylint: disable=import-outside-toplevel, import-error
     from botocore.signers import RequestSigner  # pylint: disable=import-outside-toplevel, import-error
+
     sts_client = session.client('sts', config=Config(signature_version='v4'))
     endpoint = sts_client.meta.endpoint_url
     service_id = sts_client.meta.service_model.service_id
@@ -164,13 +165,14 @@ def _get_identity_token(
         session.get_credentials(),
         session.events
     )
+    endpoint_with_params = f"{endpoint}/?Action=GetCallerIdentity&Version=2011-06-15"
     if additional_headers is None:
         additional_headers = {
             'X-LakeFS-Server-ID': lakefs_host,
         }
     params = {
         'method': 'POST',
-        'url': endpoint,
+        'url': endpoint_with_params,
         'body': {},
         'headers': additional_headers,
         'context': {}
@@ -182,21 +184,21 @@ def _get_identity_token(
         expires_in=presign_expression,
         operation_name=''
     )
-
     parsed_url = urlparse(presigned_url)
     query_params = parse_qs(parsed_url.query)
 
     # Extract values from query parameters
+    print(query_params)
     json_object = {
         "method": "POST",
         "host": parsed_url.hostname,
-        "region": session.region_name,
+        "region": region,
         "action": query_params['Action'][0],
         "date": query_params['X-Amz-Date'][0],
         "expiration_duration": query_params['X-Amz-Expires'][0],
         "access_key_id": query_params['X-Amz-Credential'][0].split('/')[0],
         "signature": query_params['X-Amz-Signature'][0],
-        "signed_headers": query_params['X-Amz-SignedHeaders'],
+        "signed_headers": query_params.get('X-Amz-SignedHeaders', [''])[0].split(';'),
         "version": query_params['Version'][0],
         "algorithm": query_params['X-Amz-Algorithm'][0],
         "security_token": query_params.get('X-Amz-Security-Token', [None])[0]
@@ -216,7 +218,8 @@ def from_aws_role(session: 'boto3.Session', ttl_seconds: int = 3600, **kwargs) -
     """
 
     client = Client(**kwargs)
-    identity_token = _get_identity_token(session, client.config.host)
+    lakefs_host = urlparse(client.config.host).hostname
+    identity_token = _get_identity_token(session, lakefs_host)
     external_login_information = ExternalLoginInformation(token_expiration_duration=ttl_seconds, identity_request={
         "identity_token": identity_token
     })
