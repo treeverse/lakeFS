@@ -167,9 +167,9 @@ You can use lakeFS’s existing [Role-Based Access Control mechanism](../referen
 
 ### Does data pass through the lakeFS server when using lakeFS Mount?
 
-lakeFS Mount leverages  pre-signed URLs to read data directly from the underlying object store, meaning data doesn’t  pass through the lakeFS server. By default, presign is disabled. To enable it, use:
+lakeFS Mount leverages  pre-signed URLs to read data directly from the underlying object store, meaning data doesn’t  pass through the lakeFS server. By default, presign is enabled. To disable it, use:
 ```shell
-everest mount <lakefs_uri> <mount_directory> --presign
+everest mount <lakefs_uri> <mount_directory> --presign=false
 ```
 
 ### What happens if a lakeFS branch is updated after I mount it?
@@ -182,6 +182,13 @@ lakeFS Mount uses a lazy prefetch strategy. Files are not downloaded at mount ti
 ### What are the scale limitations of lakeFS Mount, and what are the recommended configurations for dealing with large datasets?
 
 When using lakeFS Mount, the volume of data accessed by the local machine influences the scale limitations more than the total size of the dataset under the mounted prefix. This is because lakeFS Mount uses a lazy downloading approach, meaning it only downloads the accessed files. lakeFS Mount listing capability is limited to performing efficiently for prefixes containing fewer than 8000 objects, but we are working to increase this limit.
+
+### How does lakeFS Mount integrate with a Git repository?
+
+It is perfectly safe to mount a lakeFS path within a Git repository, lakeFS Mount will add a virtual `.gitignore` file to the mounted directory to avoid the case of adding to the git repository the mounted objects from lakeFS (i.e running `git add -A`).
+
+The .gitignore file will also instruct Git to ignore all files except `.everest/source` and in its absence, it will try to find a `.everest/source` file in the destination folder, and read the lakeFS URI from there. 
+Since `.everest/source` is in source control, it will mount the same lakeFS commit every time!
 
 ##### Recommended Configuration
 
