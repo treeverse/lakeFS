@@ -148,8 +148,9 @@ def _get_identity_token(
    :raises ValueError: If the session does not have a region name set.
    """
 
-    from botocore.client import Config  # pylint: disable=import-outside-toplevel
-    from botocore.signers import RequestSigner  # pylint: disable=import-outside-toplevel
+    # this method should only be called when installing the aws-iam additional requirement
+    from botocore.client import Config  # pylint: disable=import-outside-toplevel, import-error
+    from botocore.signers import RequestSigner  # pylint: disable=import-outside-toplevel, import-error
     sts_client = session.client('sts', config=Config(signature_version='v4'))
     endpoint = sts_client.meta.endpoint_url
     service_id = sts_client.meta.service_model.service_id
