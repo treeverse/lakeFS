@@ -870,10 +870,12 @@ func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType 
 }
 
 func (a *Adapter) GetRegion(ctx context.Context, storageNamespace string) (string, error) {
-	bucket, found := strings.CutPrefix(storageNamespace, fmt.Sprintf("%s://", block.BlockstoreTypeS3))
+	namespace, found := strings.CutPrefix(storageNamespace, fmt.Sprintf("%s://", block.BlockstoreTypeS3))
 	if !found {
 		return "", fmt.Errorf(`%w: "s3://" prefix not found %s`, block.ErrInvalidNamespace, storageNamespace)
 	}
+
+	bucket, _, _ := strings.Cut(namespace, "/")
 
 	return a.clients.GetBucketRegionFromAWS(ctx, bucket)
 }
