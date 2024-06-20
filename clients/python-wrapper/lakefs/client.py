@@ -10,6 +10,7 @@ import base64
 import json
 from threading import Lock
 from typing import Optional
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse, parse_qs
 
 import lakefs_sdk
@@ -19,6 +20,9 @@ from lakefs_sdk.client import LakeFSClient
 from lakefs.config import ClientConfig
 from lakefs.exceptions import NotAuthorizedException, ServerException, api_exception_handler
 from lakefs.models import ServerStorageConfiguration
+
+if TYPE_CHECKING:
+    import boto3
 
 DEFAULT_REGION = 'us-east-1'
 
@@ -131,7 +135,7 @@ def _extract_region_from_endpoint(endpoint):
 
 
 def _get_identity_token(
-        session: 'boto3.Session',
+        session: boto3.Session,
         lakefs_host: str,
         additional_headers: dict[str, str],
         presign_expiry
@@ -208,7 +212,7 @@ def _get_identity_token(
 
 
 def from_aws_role(
-        session: 'boto3.Session',
+        session: boto3.Session,
         ttl_seconds: int = 3600,
         presigned_ttl: int = 60,
         additional_headers: dict[str, str] = None,
