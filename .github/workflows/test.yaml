@@ -26,7 +26,7 @@ jobs:
       - name: Generate code
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
-        run:
+        run: |
           make gen
           scripts/verify_clients_untracked_files.sh
       - name: Checks validator
