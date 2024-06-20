@@ -31,6 +31,7 @@ import Alert from "react-bootstrap/Alert";
 import {Link} from "../../../lib/components/nav";
 import {useRouter} from "../../../lib/hooks/router";
 import {RepoError} from "./error";
+import { Col, Row } from "react-bootstrap";
 
 const ImportBranchName = 'import-from-inventory';
 
@@ -55,9 +56,9 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
 
     return (
         <ListGroup.Item>
-            <div className="clearfix">
-                <div className="float-start">
-                    <h6>
+            <Row className="d-flex align-items-center justify-content-between">
+                <Col className="flex-grow-1">
+                    <h6 style={{marginBottom: 0}}>
                         <Link href={{
                             pathname: '/repositories/:repoId/objects',
                             params: {repoId: repo.id},
@@ -65,17 +66,18 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
                         }}>
                             {branch.id}
                         </Link>
-
+                        
                         {isDefault &&
-                        <>
-                            {' '}
-                            <Badge variant="info">Default</Badge>
-                        </>}
+                            <>
+                                {' '}
+                                <Badge variant="info">Default</Badge>
+                            </>
+                        }     
                     </h6>
-                </div>
+                </Col>
 
 
-                <div className="float-end">
+                <Col md="3" className="d-flex justify-content-end">
                     {!isDefault &&
                     <ButtonGroup className="commit-actions">
                         <ConfirmationButton
@@ -108,8 +110,8 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
                         <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}/${branch.id}`} tooltip="Copy URI to clipboard" icon={<LinkIcon/>}/>
                         <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${branch.id}`} tooltip="Copy S3 URI to clipboard" icon={<PackageIcon/>}/>
                     </ButtonGroup>
-                </div>
-            </div>
+                </Col>
+            </Row>
         </ListGroup.Item>
     );
 };
