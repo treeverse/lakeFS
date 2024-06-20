@@ -190,6 +190,10 @@ func init() {
 	config := scanner.NewConfigBuilderFrom(scanner.NewConfigWithDefaults()).RemoveTransformers("ini").Build()
 	// set zero threshold for entropy-based detection in the keyword based detector
 	// example: LAKEFS_AUTH_ENCRYPT_SECRET_KEY=123asdasd will be detected by the {secret, key} keywords regardless of the value
+	// The value here is the threshold of the result of calculating the Shannon entropy of the string
+	// This can be a value between 0 and log2(len(string))
+	// A value of 0 means that we will detect the secret even if all characters are the same
+	// Essentially, this means that we redact secrets based on keywords detected in the key with no requirements on the value
 	config.DetectorConfigs["keyword"] = []string{"0"}
 	s, err := scanner.NewScannerFromConfig(config)
 	if err != nil {
