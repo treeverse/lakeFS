@@ -872,7 +872,7 @@ func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType 
 func (a *Adapter) GetRegion(ctx context.Context, storageNamespace string) (string, error) {
 	namespaceUrl, err := url.Parse(storageNamespace)
 	if err != nil {
-		return "", fmt.Errorf(`invalid namespace %s: %w`, storageNamespace, block.ErrInvalidNamespace)
+		return "", fmt.Errorf(`%w: %s isn't a valid url'`, block.ErrInvalidNamespace, storageNamespace)
 	}
 
 	return a.clients.GetBucketRegionFromAWS(ctx, namespaceUrl.Host)
