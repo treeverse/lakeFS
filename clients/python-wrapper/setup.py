@@ -42,6 +42,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     extras_require={
-        'aws-iam': ["boto3 >= 1.26.0"],
+        "all": ["boto3 >= 1.26.0"],
+        "aws-iam": ["boto3 >= 1.26.0"],
     },
 )
