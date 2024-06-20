@@ -56,6 +56,9 @@ jobs:
         working-directory: ./clients/python-wrapper
         run: pip install -r requirements.txt pylint pytest pytest-md pytest-emoji
 
+      - name: Generate Documentation
+        run: make python-wrapper-gen-docs
+        
       - name: Validate Documentation
         run: make validate-python-wrapper
 
