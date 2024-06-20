@@ -409,7 +409,7 @@ class ObjectWriter(LakeFSIOBase):
 
         open_kwargs = {
             "encoding": "utf-8" if 'b' not in mode else None,
-            "mode": 'wb+' if 'b' in mode else 'w+',
+            "mode": 'b+',  # Always write to file in binary mode (bug in urllib3 < 2.0,
             "max_size": _WRITER_BUFFER_SIZE,
         }
         self._fd = tempfile.SpooledTemporaryFile(**open_kwargs)  # pylint: disable=consider-using-with
@@ -464,14 +464,7 @@ class ObjectWriter(LakeFSIOBase):
         :return: The number of bytes written to buffer
         :raise ValueError: if writer is closed
         """
-        binary_mode = 'b' in self._mode
-        if binary_mode and isinstance(s, str):
-            contents = s.encode('utf-8')
-        elif not binary_mode and isinstance(s, bytes):
-            contents = s.decode('utf-8')
-        else:
-            contents = s
-
+        contents = s.encode('utf-8') if isinstance(s, str) else s
         count = self._fd.write(contents)
         self._pos += count
         return count

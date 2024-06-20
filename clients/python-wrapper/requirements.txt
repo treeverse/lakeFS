@@ -1,5 +1,5 @@
 aenum~=3.1.15
-lakefs-sdk>=1.20.0, < 2
+lakefs-sdk>=1.25.0, < 2
 python-dateutil~=2.8.2
 PyYAML~=6.0.1
 six~=1.16.0
@@ -13,3 +13,4 @@ pandas~=2.1.4
 pyarrow~=14.0.1
 pillow~=10.2.0
 setuptools~=68.2.2
+boto3>=1.26.0
