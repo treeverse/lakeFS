@@ -38,9 +38,6 @@ const (
 var (
 	ErrExtractDateFromJSONLogLine = errors.New("failed to extract date from log line")
 	ErrDateNotFound               = errors.New("date not found in log line")
-
-	secretScanner        secrets.Scanner
-	secretScannerInitErr error
 )
 
 type WithTime struct {
@@ -54,6 +51,7 @@ type Flare struct {
 	// This can be changed using the WithLogDateLayout option.
 	LogDateLayout string
 	replacerFunc  RedactedValueReplacer
+	scanner       secrets.Scanner
 }
 
 func defaultSecretReplacer(value string) string {
@@ -65,13 +63,24 @@ func defaultSecretReplacer(value string) string {
 type Option func(*Flare)
 
 func NewFlare(options ...Option) (*Flare, error) {
-	if secretScannerInitErr != nil {
-		return nil, fmt.Errorf("failed to init secrets scanner: %w", secretScannerInitErr)
+	// remove the ini transformer because it has false positives with plain text log lines
+	config := scanner.NewConfigBuilderFrom(scanner.NewConfigWithDefaults()).RemoveTransformers("ini").Build()
+	// set zero threshold for entropy-based detection in the keyword based detector
+	// example: LAKEFS_AUTH_ENCRYPT_SECRET_KEY=123asdasd will be detected by the {secret, key} keywords regardless of the value
+	// The value here is the threshold of the result of calculating the Shannon entropy of the string
+	// This can be a value between 0 and log2(len(string))
+	// A value of 0 means that we will detect the secret even if all characters are the same
+	// Essentially, this means that we redact secrets based on keywords detected in the key with no requirements on the value
+	config.DetectorConfigs["keyword"] = []string{"0"}
+	s, err := scanner.NewScannerFromConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init secrets scanner: %w", err)
 	}
 	flare := &Flare{
 		envVarPrefixes: defaultEnvVarPrefixes,
 		replacerFunc:   defaultSecretReplacer,
 		LogDateLayout:  time.RFC3339,
+		scanner:        s,
 	}
 
 	for _, opt := range options {
@@ -169,11 +178,11 @@ func (f *Flare) processEnvVars(w io.Writer) error {
 }
 
 func (f *Flare) redactSecrets(line string) (string, error) {
-	return redactSecrets(line, f.replacerFunc)
+	return redactSecrets(line, f.replacerFunc, f.scanner)
 }
 
-func redactSecrets(line string, replacerFunc RedactedValueReplacer) (string, error) {
-	detectedSecrets, err := secretScanner.Scan(line)
+func redactSecrets(line string, replacerFunc RedactedValueReplacer, scanner secrets.Scanner) (string, error) {
+	detectedSecrets, err := scanner.Scan(line)
 	if err != nil {
 		return "", err
 	}
@@ -182,22 +191,4 @@ func redactSecrets(line string, replacerFunc RedactedValueReplacer) (string, err
 		line = strings.Replace(line, secret.Value, replacerFunc(secret.Value), 1)
 	}
 	return line, nil
-}
-
-//nolint:gochecknoinits
-func init() {
-	// remove the ini transformer because it has false positives with plain text log lines
-	config := scanner.NewConfigBuilderFrom(scanner.NewConfigWithDefaults()).RemoveTransformers("ini").Build()
-	// set zero threshold for entropy-based detection in the keyword based detector
-	// example: LAKEFS_AUTH_ENCRYPT_SECRET_KEY=123asdasd will be detected by the {secret, key} keywords regardless of the value
-	// The value here is the threshold of the result of calculating the Shannon entropy of the string
-	// This can be a value between 0 and log2(len(string))
-	// A value of 0 means that we will detect the secret even if all characters are the same
-	// Essentially, this means that we redact secrets based on keywords detected in the key with no requirements on the value
-	config.DetectorConfigs["keyword"] = []string{"0"}
-	s, err := scanner.NewScannerFromConfig(config)
-	if err != nil {
-		secretScannerInitErr = err
-	}
-	secretScanner = s
 }
