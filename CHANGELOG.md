@@ -1,5 +1,11 @@
 # Changelog
 
+# v1.27.0
+
+:bug: Bugs fixed:
+- CosmosDB iterator to use dynamic batch size after the first list (#7892)
+- Fix S3 bucket validation for inter-region storage (#7896)
+
 # v1.26.1
 
 :new: What's new:
