@@ -357,3 +357,6 @@ help:  ## Show Help menu
 
 # helpers
 gen: gen-ui gen-api gen-code clients gen-docs
+
+validate-clients-untracked-files:
+	scripts/verify_clients_untracked_files.sh	
