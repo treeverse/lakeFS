@@ -26,7 +26,7 @@ io.lakefs:lakefs-spark-client_2.12:${CLIENT_VERSION}
 Replace `<version>` below with the latest version available. See [available versions](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client_2.12).
 
 ```
-CLIENT_VERSION=0.11.0
+CLIENT_VERSION=0.14.0
 spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v1 \
     --conf spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
     --conf spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \
@@ -42,7 +42,7 @@ spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v
 Replace `<version>` below with the latest version available. See [available versions](https://mvnrepository.com/artifact/io.lakefs/lakefs-spark-client_2.12).
 
 ```
-CLIENT_VERSION=0.11.0
+CLIENT_VERSION=0.14.0
 spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v1 \
     --conf spark.hadoop.fs.s3a.access.key=<S3_ACCESS_KEY> \
 	--conf spark.hadoop.fs.s3a.secret.key=<S3_SECRET_KEY> \

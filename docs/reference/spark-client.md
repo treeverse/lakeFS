@@ -31,18 +31,18 @@ can work for other Spark versions and higher Hadoop versions.
 Start Spark Shell / PySpark with the `--packages` flag, for instance:
 
 ```bash
-spark-shell --packages io.lakefs:lakefs-spark-client_2.12:0.13.0
+spark-shell --packages io.lakefs:lakefs-spark-client_2.12:0.14.0
 ```
 
 Alternatively use the assembled jar (an "Überjar") on S3, from
-`s3://treeverse-clients-us-east/lakefs-spark-client/0.13.0/lakefs-spark-client-assembly-0.13.0.jar`
+`s3://treeverse-clients-us-east/lakefs-spark-client/0.14.0/lakefs-spark-client-assembly-0.14.0.jar`
 by passing its path to `--jars`.
 The assembled jar is larger but shades several common libraries.  Use it if Spark
 complains about bad classes or missing methods.
 </div>
 <div markdown="1" id="databricks">
 Include this assembled jar (an "Überjar") from S3, from
-`s3://treeverse-clients-us-east/lakefs-spark-client/0.13.0/lakefs-spark-client-assembly-0.13.0.jar`.
+`s3://treeverse-clients-us-east/lakefs-spark-client/0.14.0/lakefs-spark-client-assembly-0.14.0.jar`.
 </div>
 </div>
 

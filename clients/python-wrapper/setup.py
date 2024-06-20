@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 NAME = "lakefs"
-VERSION = "0.6.2"
+VERSION = "0.7.0"
 # To install the library, run the following
 #
 # python setup.py install
@@ -40,5 +40,9 @@ setup(
     include_package_data=True,
     license="Apache 2.0",
     long_description=long_description,
-    long_description_content_type='text/markdown'
+    long_description_content_type='text/markdown',
+    extras_require={
+        "all": ["boto3 >= 1.26.0"],
+        "aws-iam": ["boto3 >= 1.26.0"],
+    },
 )
