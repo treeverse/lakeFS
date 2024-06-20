@@ -7523,6 +7523,11 @@ components:
       required:
       - type
       type: object
+    TestObject:
+      properties:
+        testProp:
+          type: string
+      type: object
     CommitOverrides:
       example:
         metadata:

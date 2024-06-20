@@ -113,6 +113,7 @@ docs/StsAuthRequest.md
 docs/TagCreation.md
 docs/TagsApi.md
 docs/TaskInfo.md
+docs/TestObject.md
 docs/UnderlyingObjectProperties.md
 docs/UpdateToken.md
 docs/UploadPart.md
@@ -241,6 +242,7 @@ lakefs_client/model/storage_uri.py
 lakefs_client/model/sts_auth_request.py
 lakefs_client/model/tag_creation.py
 lakefs_client/model/task_info.py
+lakefs_client/model/test_object.py
 lakefs_client/model/underlying_object_properties.py
 lakefs_client/model/update_token.py
 lakefs_client/model/upload_part.py
@@ -368,6 +370,7 @@ test/test_sts_auth_request.py
 test/test_tag_creation.py
 test/test_tags_api.py
 test/test_task_info.py
+test/test_test_object.py
 test/test_underlying_object_properties.py
 test/test_update_token.py
 test/test_upload_part.py

@@ -104,6 +104,7 @@ from lakefs_client.model.storage_uri import StorageURI
 from lakefs_client.model.sts_auth_request import StsAuthRequest
 from lakefs_client.model.tag_creation import TagCreation
 from lakefs_client.model.task_info import TaskInfo
+from lakefs_client.model.test_object import TestObject
 from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties
 from lakefs_client.model.update_token import UpdateToken
 from lakefs_client.model.upload_part import UploadPart

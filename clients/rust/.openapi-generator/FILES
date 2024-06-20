@@ -110,6 +110,7 @@ docs/StsAuthRequest.md
 docs/TagCreation.md
 docs/TagsApi.md
 docs/TaskInfo.md
+docs/TestObject.md
 docs/UnderlyingObjectProperties.md
 docs/UpdateToken.md
 docs/UploadPart.md
@@ -230,6 +231,7 @@ src/models/storage_uri.rs
 src/models/sts_auth_request.rs
 src/models/tag_creation.rs
 src/models/task_info.rs
+src/models/test_object.rs
 src/models/underlying_object_properties.rs
 src/models/update_token.rs
 src/models/upload_part.rs

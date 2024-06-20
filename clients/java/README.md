@@ -371,6 +371,7 @@ Class | Method | HTTP request | Description
  - [StsAuthRequest](docs/StsAuthRequest.md)
  - [TagCreation](docs/TagCreation.md)
  - [TaskInfo](docs/TaskInfo.md)
+ - [TestObject](docs/TestObject.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)
  - [UpdateToken](docs/UpdateToken.md)
  - [UploadPart](docs/UploadPart.md)
