@@ -13,7 +13,7 @@ parent: lakeFS Enterprise
 lakeFS Enterprise solution consists of 2 main components:
 1. lakeFS - Open Source: [treeverse/lakeFS](https://hub.docker.com/r/treeverse/lakefs),
    release info found in [Github releases](https://github.com/treeverse/lakeFS/releases).
-2. Fluffy - Proprietary: In charge of the Enterprise features. Can be retrieved from [Treeverse Dockerhub](https://hub.docker.com/u/treeverse) using the granted token, please [contact support](mailto:support@treeverse.io) to get access to the Dockerhub image.
+2. Fluffy - Proprietary: Includes Enterprise features. Please [contact support](mailto:support@treeverse.io) to obtain a token for retrieving its image from [Treeverse Dockerhub](https://hub.docker.com/u/treeverse). 
 
 ## Quickstart with Docker Compose
 
@@ -127,7 +127,7 @@ FLUFFY_AUTH_LOGOUT_REDIRECT_URL=https://my-sso.com/logout
 LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
 ```
 
-Next, create `docker-compose.yaml` file with the following content.
+Next, create a `docker-compose.yaml` file with the following content.
 
 ```yaml
 version: "3"
@@ -240,7 +240,7 @@ helm install <release-name> lakefs/lakefs -f <values.yaml>
 Notes:
 * By default the chart is deployed with a Postgres pod for quick-start, make sure to replace that to a stable database by setting `useDevPostgres: false` in the chart values.
 * The encrypt secret key `secrets.authEncryptSecretKey` is shared between fluffy and lakeFS for authentication.
-* Fluffy docker image: replace the `fluffy.image.privateRegistry.secretToken` with real token to dockerhub for the fluffy docker image.
+* Fluffy docker image: replace the `fluffy.image.privateRegistry.secretToken` with the token you recieved to dockerhub to fetch the fluffy docker image.
 * Check the [additional examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) we provide for each authentication method (oidc, adfs, ldap, rbac, IAM etc).
 * The Database configurations between fluffy and lakeFS should be the same since they connect to the same DB.
 
