@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.14.0 - 2024-06-20
+* Expose user metadata for commit (#7886)
+
 ## v0.13.0 - 2024-01-21
 * Shade scalapb for use in current DataBricks LTS releases (#7289). :bricks:
 
