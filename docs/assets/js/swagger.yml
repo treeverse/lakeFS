@@ -468,6 +468,12 @@ components:
           type: boolean
           default: false
 
+    TestObject:
+      type: object
+      properties:
+        testProp:
+          type: string 
+
     CommitOverrides:
       type: object
       properties:

@@ -180,6 +180,8 @@ pub mod tag_creation;
 pub use self::tag_creation::TagCreation;
 pub mod task_info;
 pub use self::task_info::TaskInfo;
+pub mod test_object;
+pub use self::test_object::TestObject;
 pub mod underlying_object_properties;
 pub use self::underlying_object_properties::UnderlyingObjectProperties;
 pub mod update_token;
