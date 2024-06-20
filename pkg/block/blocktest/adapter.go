@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/require"
@@ -34,6 +35,7 @@ func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, external
 	t.Run("Adapter_Exists", func(t *testing.T) { testAdapterExists(t, adapter, storageNamespace) })
 	t.Run("Adapter_GetRange", func(t *testing.T) { testAdapterGetRange(t, adapter, storageNamespace) })
 	t.Run("Adapter_Walker", func(t *testing.T) { testAdapterWalker(t, adapter, storageNamespace) })
+	t.Run("Adapter_GetPreSignedURL", func(t *testing.T) { testGetPreSignedURL(t, adapter, storageNamespace) })
 }
 
 // Parameterized test to first Put object via Storage Adapter then Get it and check that the contents match
@@ -344,6 +346,19 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 			}
 		})
 	}
+}
+
+// Test request for a presigned URL for temporary access
+func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	ctx := context.Background()
+	obj, _ := objPointers(storageNamespace)
+	expectedExpiry := time.Now().Add(block.DefaultPreSignExpiryDuration)
+
+	preSignedURL, exp, err := adapter.GetPreSignedURL(ctx, obj, block.PreSignModeRead)
+	require.NoError(t, err)
+	require.LessOrEqual(t, exp.Sub(expectedExpiry).Seconds(), 1.0)
+	_, err = url.Parse(preSignedURL)
+	require.NoError(t, err)
 }
 
 func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk block.QualifiedKey) []string {
