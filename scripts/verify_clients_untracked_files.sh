@@ -1,21 +1,11 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
-# `--porcelain` gives the output in an easy-to-parse format for scripts
-git_status_output=$(git status clients/ --porcelain)
+echo "Checking for untracked files in 'clients/'..."
 
-untracked_files_found=false
-
-while IFS= read -r line; do
-    if [[ $line == \?\?* ]]; then
-        untracked_files_found=true
-	break
-    fi
-done <<< "$git_status_output"
-
-if $untracked_files_found; then
-    cat << EOF 
+if git status --porcelain clients/ | grep -E '^\?\?'; then
+    cat << EOF
 Error: Untracked files found in the 'clients/' directory.
 
 The 'clients/' directory contains auto-generated code that must be tracked in Git. Untracked files suggest new files were created and need to be added.
@@ -39,5 +29,6 @@ To resolve this:
 EOF
     exit 1
 else
+    echo "No untracked files found." 
     exit 0
 fi
