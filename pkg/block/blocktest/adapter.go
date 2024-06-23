@@ -355,6 +355,13 @@ func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace s
 	expectedExpiry := time.Now().Add(block.DefaultPreSignExpiryDuration)
 
 	preSignedURL, exp, err := adapter.GetPreSignedURL(ctx, obj, block.PreSignModeRead)
+	if adapter.BlockstoreType() == block.BlockstoreTypeGS {
+		require.ErrorContains(t, err, "no credentials found")
+		return
+	} else if adapter.BlockstoreType() == block.BlockstoreTypeLocal {
+		require.ErrorContains(t, err, "operation not supported")
+		return
+	}
 	require.NoError(t, err)
 	require.LessOrEqual(t, exp.Sub(expectedExpiry).Seconds(), 1.0)
 	_, err = url.Parse(preSignedURL)

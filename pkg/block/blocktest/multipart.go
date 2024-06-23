@@ -89,7 +89,11 @@ func testAdapterAbortMultipartUpload(t *testing.T, adapter block.Adapter, storag
 
 	err := adapter.AbortMultiPartUpload(ctx, obj, uploadID)
 	if err != nil {
-		require.ErrorContains(t, err, "404")
+		if adapter.BlockstoreType() == block.BlockstoreTypeLocal {
+			require.ErrorContains(t, err, "invalid upload id")
+		} else {
+			require.ErrorContains(t, err, "404")
+		}
 	}
 
 	resp, err := adapter.CreateMultiPartUpload(ctx, obj, nil, block.CreateMultiPartUploadOpts{})
@@ -113,7 +117,11 @@ func testAdapterAbortMultipartUpload(t *testing.T, adapter block.Adapter, storag
 		Part: multiParts,
 	})
 	if err != nil {
-		require.ErrorContains(t, err, "404")
+		if adapter.BlockstoreType() == block.BlockstoreTypeGS {
+			require.ErrorContains(t, err, "part")
+		} else {
+			require.ErrorContains(t, err, "404")
+		}
 	}
 }
 
@@ -127,7 +135,11 @@ func testAdapterCopyPart(t *testing.T, adapter block.Adapter, storageNamespace s
 	// Begin Multipart Copy
 	resp, err := adapter.CreateMultiPartUpload(ctx, objCopy, nil, block.CreateMultiPartUploadOpts{})
 	require.NoError(t, err)
-	multiParts := copyPart(t, ctx, adapter, obj, objCopy, resp.UploadID)
+	multiParts, err := copyPart(t, ctx, adapter, obj, objCopy, resp.UploadID)
+	if adapter.BlockstoreType() == block.BlockstoreTypeAzure {
+		require.ErrorContains(t, err, "not implemented")
+		return
+	}
 	_, err = adapter.CompleteMultiPartUpload(ctx, objCopy, resp.UploadID, &block.MultipartUploadCompletion{
 		Part: multiParts,
 	})
@@ -147,6 +159,12 @@ func testAdapterCopyPartRange(t *testing.T, adapter block.Adapter, storageNamesp
 	resp, err := adapter.CreateMultiPartUpload(ctx, objCopy, nil, block.CreateMultiPartUploadOpts{})
 	require.NoError(t, err)
 	multiParts := copyPartRange(t, ctx, adapter, obj, objCopy, resp.UploadID)
+	if adapter.BlockstoreType() == block.BlockstoreTypeAzure {
+		// not implemented in Azure
+		require.Nil(t, multiParts)
+		return
+	}
+
 	_, err = adapter.CompleteMultiPartUpload(ctx, objCopy, resp.UploadID, &block.MultipartUploadCompletion{
 		Part: multiParts,
 	})
@@ -213,6 +231,10 @@ func copyPartRange(t *testing.T, ctx context.Context, adapter block.Adapter, obj
 		partNumber := i + 1
 		var endPosition = startPosition + multipartPartSize
 		partResp, err := adapter.UploadCopyPartRange(ctx, obj, objCopy, uploadID, partNumber, startPosition, endPosition)
+		if adapter.BlockstoreType() == block.BlockstoreTypeAzure {
+			require.ErrorContains(t, err, "not implemented")
+			return nil
+		}
 		require.NoError(t, err)
 		multiParts[i].PartNumber = partNumber
 		multiParts[i].ETag = partResp.ETag
@@ -223,16 +245,18 @@ func copyPartRange(t *testing.T, ctx context.Context, adapter block.Adapter, obj
 }
 
 // Copy one and only part after starting a multipart upload
-func copyPart(t *testing.T, ctx context.Context, adapter block.Adapter, obj, objCopy block.ObjectPointer, uploadID string) []block.MultipartPart {
+func copyPart(t *testing.T, ctx context.Context, adapter block.Adapter, obj, objCopy block.ObjectPointer, uploadID string) ([]block.MultipartPart, error) {
 	t.Helper()
 	multiParts := make([]block.MultipartPart, 1)
 	partNumber := 1
 	partResp, err := adapter.UploadCopyPart(ctx, obj, objCopy, uploadID, partNumber)
-	require.NoError(t, err)
+	if err != nil {
+		return nil, err
+	}
 	multiParts[0].PartNumber = partNumber
 	multiParts[0].ETag = partResp.ETag
 
-	return multiParts
+	return multiParts, nil
 }
 
 func getAndCheckContents(t *testing.T, ctx context.Context, adapter block.Adapter, exp []byte, obj block.ObjectPointer) {
