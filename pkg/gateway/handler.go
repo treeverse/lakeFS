@@ -118,10 +118,11 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 
 	h = EnrichWithOperation(sc,
 		DurationHandler(
-			AuthenticationHandler(authService, EnrichWithParts(bareDomains,
-				EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
-					OperationLookupHandler(
-						h))))))
+			httputil.ClientTraceHandler("s3gw",
+				AuthenticationHandler(authService, EnrichWithParts(bareDomains,
+					EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
+						OperationLookupHandler(
+							h)))))))
 	logging.ContextUnavailable().WithFields(logging.Fields{
 		"s3_bare_domain": bareDomains,
 		"s3_region":      region,
