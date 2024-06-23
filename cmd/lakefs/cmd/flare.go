@@ -11,6 +11,7 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/flare"
 )
 
@@ -20,6 +21,7 @@ const (
 	flareDefaultEnvVarFileName = "lakefs-env.txt"
 	flareDefaultZipFileName    = "lakefs-flare.zip"
 	flareDefaultOutputPath     = "."
+	envVarAppPrefix            = "LAKEFS_"
 )
 
 var (
@@ -42,7 +44,8 @@ var flareCmd = &cobra.Command{
 		}
 		now := strings.ReplaceAll(time.Now().String(), " ", "")
 		cfg := loadConfig()
-		flr, err := flare.NewFlare()
+		envVarBlacklist := addAppEnvVarPrefix(config.GetSecureStringKeyPaths(cfg))
+		flr, err := flare.NewFlare(flare.WithEnvVarBlacklist(envVarBlacklist))
 		if err != nil {
 			printMsgAndExit("failed to create flare instance", err)
 		}
@@ -95,6 +98,14 @@ func warnOutputFlags(cmd *cobra.Command, args []string) {
 	if outputStdout && (cmd.Flags().Changed("output") || cmd.Flags().Changed("env-var-filename") || cmd.Flags().Changed("zip-filename")) {
 		fmt.Fprint(os.Stderr, text.FgHiYellow.Sprint("Warning: Stdout output is set. File output related flags will be ignored.\n"))
 	}
+}
+
+func addAppEnvVarPrefix(keys []string) []string {
+	prefixedKeys := make([]string, 0, len(keys))
+	for _, k := range keys {
+		prefixedKeys = append(prefixedKeys, fmt.Sprintf("%s%s", envVarAppPrefix, k))
+	}
+	return prefixedKeys
 }
 
 //nolint:gochecknoinits

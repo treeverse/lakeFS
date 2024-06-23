@@ -141,6 +141,75 @@ LAKEFS_AWS_ACCESS_KEY_ID=<REDACTED>
 	}
 }
 
+func TestEnvVarBlacklist(t *testing.T) {
+	testCases := []struct {
+		Name      string
+		Blacklist []string
+		EnvVars   []EnvVarKV
+		Expected  string
+	}{
+		{
+			Name:      "empty blacklist",
+			Blacklist: []string{},
+			EnvVars: []EnvVarKV{
+				{
+					Key:   "LAKEFS_TEST_ENV_VAR",
+					Value: "test",
+				},
+			},
+			Expected: `LAKEFS_TEST_ENV_VAR=test
+`,
+		},
+		{
+			Name:      "single blacklisted",
+			Blacklist: []string{"LAKEFS_TEST"},
+			EnvVars: []EnvVarKV{
+				{
+					Key:   "LAKEFS_TEST",
+					Value: "test",
+				},
+			},
+			Expected: `LAKEFS_TEST=<REDACTED>
+`,
+		},
+		{
+			Name:      "Blacklisted and non-blacklisted",
+			Blacklist: []string{"LAKEFS_TEST"},
+			EnvVars: []EnvVarKV{
+				{
+					Key:   "LAKEFS_TEST",
+					Value: "test",
+				},
+				{
+					Key:   "LAKEFS_TEST_OTHER",
+					Value: "test2",
+				},
+			},
+			Expected: `LAKEFS_TEST=<REDACTED>
+LAKEFS_TEST_OTHER=test2
+`,
+		},
+	}
+
+	replacerFunc := func(value string) string {
+		return "<REDACTED>"
+	}
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			flr, err := NewFlare(WithEnvVarBlacklist(tc.Blacklist), WithSecretReplacerFunc(replacerFunc))
+			assert.NoError(t, err)
+			b := new(bytes.Buffer)
+			bw := bufio.NewWriter(b)
+			for _, kv := range tc.EnvVars {
+				t.Setenv(kv.Key, kv.Value)
+			}
+			flr.processEnvVars(bw)
+			bw.Flush()
+			assert.Equal(t, tc.Expected, b.String())
+		})
+	}
+}
+
 func TestDefaultReplacerFunc(t *testing.T) {
 	testCases := []struct {
 		Name    string

@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -45,7 +46,8 @@ type WithTime struct {
 }
 
 type Flare struct {
-	envVarPrefixes []string
+	envVarPrefixes  []string
+	envVarBlacklist *regexp.Regexp
 	// LogDateLayout is the layout used by time.Parse to parse dates in log lines.
 	// The default value is time.RFC3339.
 	// This can be changed using the WithLogDateLayout option.
@@ -77,10 +79,11 @@ func NewFlare(options ...Option) (*Flare, error) {
 		return nil, fmt.Errorf("failed to init secrets scanner: %w", err)
 	}
 	flare := &Flare{
-		envVarPrefixes: defaultEnvVarPrefixes,
-		replacerFunc:   defaultSecretReplacer,
-		LogDateLayout:  time.RFC3339,
-		scanner:        s,
+		envVarPrefixes:  defaultEnvVarPrefixes,
+		envVarBlacklist: nil,
+		replacerFunc:    defaultSecretReplacer,
+		LogDateLayout:   time.RFC3339,
+		scanner:         s,
 	}
 
 	for _, opt := range options {
@@ -103,6 +106,15 @@ func WithEnvVarPrefixes(prefixes []string) Option {
 func WithAdditionalEnvVarPrefix(envVar string) Option {
 	return func(f *Flare) {
 		f.envVarPrefixes = append(f.envVarPrefixes, envVar)
+	}
+}
+
+// WithEnvVarBlacklist adds a list of environment variable keys that will be explicitly redacted.
+func WithEnvVarBlacklist(blacklist []string) Option {
+	return func(f *Flare) {
+		if len(blacklist) != 0 {
+			f.envVarBlacklist = regexp.MustCompile(fmt.Sprintf(`^(?:%s)=`, strings.Join(blacklist, "|")))
+		}
 	}
 }
 
@@ -163,9 +175,17 @@ func (f *Flare) processEnvVars(w io.Writer) error {
 	for _, e := range os.Environ() {
 		for _, p := range f.envVarPrefixes {
 			if strings.HasPrefix(e, p) {
-				re, err := f.redactSecrets(e)
-				if err != nil {
-					return err
+				var re string
+				var err error
+				if f.inEnvVarBlacklist(e) {
+					kv := strings.Split(e, "=")
+					redactedVal := f.replacerFunc(kv[1])
+					re = strings.Join([]string{kv[0], redactedVal}, "=")
+				} else {
+					re, err = f.redactSecrets(e)
+					if err != nil {
+						return err
+					}
 				}
 				if _, err := w.Write([]byte(fmt.Sprintf("%s\n", re))); err != nil {
 					return fmt.Errorf("failed to write to output: %w", err)
@@ -175,6 +195,13 @@ func (f *Flare) processEnvVars(w io.Writer) error {
 	}
 
 	return nil
+}
+
+func (f *Flare) inEnvVarBlacklist(ev string) bool {
+	if f.envVarBlacklist == nil {
+		return false
+	}
+	return f.envVarBlacklist.Match([]byte(ev))
 }
 
 func (f *Flare) redactSecrets(line string) (string, error) {
