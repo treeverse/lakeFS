@@ -1,6 +1,7 @@
 package auth
 
-//go:generate go run github.com/treeverse/lakefs/tools/wrapgen --package auth --output ./wrapper.gen.go --interface Service ./service.go
+//go:generate go run github.com/treeverse/lakefs/tools/wrapgen --package auth --output ./service_inviter_wrapper.gen.go --interface ServiceAndInviter ./service.go
+//go:generate go run github.com/treeverse/lakefs/tools/wrapgen --package auth --output ./service_wrapper.gen.go --interface Service ./service.go
 
 // Must run goimports after wrapgen: it adds unused imports.
 //go:generate go run golang.org/x/tools/cmd/goimports@latest -w ./wrapper.gen.go
@@ -91,6 +92,11 @@ type ExternalPrincipalsService interface {
 	DeleteUserExternalPrincipal(ctx context.Context, userID, principalID string) error
 	GetExternalPrincipal(ctx context.Context, principalID string) (*model.ExternalPrincipal, error)
 	ListUserExternalPrincipals(ctx context.Context, userID string, params *model.PaginationParams) ([]*model.ExternalPrincipal, *model.Paginator, error)
+}
+
+type ServiceAndInviter interface {
+	Service
+	EmailInviter
 }
 
 type Service interface {

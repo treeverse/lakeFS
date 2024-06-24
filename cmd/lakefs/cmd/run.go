@@ -129,7 +129,7 @@ var runCmd = &cobra.Command{
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}
-			authService = apiService
+			authService = auth.NewMonitoredAuthServiceAndInviter(apiService)
 			if !cfg.Auth.API.SkipHealthCheck {
 				if err := apiService.CheckHealth(ctx, logger, cfg.Auth.API.HealthCheckTimeout); err != nil {
 					logger.WithError(err).Fatal("Auth API health check failed")
@@ -142,8 +142,8 @@ var runCmd = &cobra.Command{
 				authparams.ServiceCache(cfg.Auth.Cache),
 				logger.WithField("service", "auth_service"),
 			)
+			authService = auth.NewMonitoredAuthService(authService)
 		}
-		authService = auth.NewMonitoredAuthService(authService)
 
 		// initialize authentication service
 		var authenticationService authentication.Service
