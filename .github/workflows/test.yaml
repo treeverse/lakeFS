@@ -26,7 +26,9 @@ jobs:
       - name: Generate code
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
-        run: make gen
+        run: |
+          make gen
+          make validate-clients-untracked-files
       - name: Checks validator
         env:
           GOLANGCI_LINT_FLAGS: --out-format github-actions
