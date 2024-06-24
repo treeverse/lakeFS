@@ -265,7 +265,11 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
           break
         }
         // check if the file name contains exported, actions or ranges in it and exclude it
-        if (file.getPath.getName.contains("exported") || file.getPath.getName.contains("actions") || file.getPath.getName.contains("ranges")) {
+        if (
+          file.getPath.getName.contains("exported") || file.getPath.getName.contains(
+            "actions"
+          ) || file.getPath.getName.contains("ranges")
+        ) {
           logger.debug(s"Skipping file blacklist ${file.getPath}")
           logger.warn(s"Skipping file blacklist ${file.getPath}")
           break
