@@ -261,6 +261,19 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
       breakable {
         if (file.getPath.getName == DummyFileName) {
           logger.debug(s"Skipping dummy file ${file.getPath}")
+          logger.warn(s"Skipping dummy file ${file.getPath}")
+          break
+        }
+        // check if the file name contains exported, actions or ranges in it and exclude it
+        if (file.getPath.getName.contains("exported") || file.getPath.getName.contains("actions") || file.getPath.getName.contains("ranges")) {
+          logger.debug(s"Skipping file blacklist ${file.getPath}")
+          logger.warn(s"Skipping file blacklist ${file.getPath}")
+          break
+        }
+        // check if the file name ends with a / and exclude it
+        if (file.getPath.getName.endsWith("/")) {
+          logger.debug(s"Skipping file dir ${file.getPath}")
+          logger.warn(s"Skipping file dir ${file.getPath}")
           break
         }
         splits += new GravelerSplit(
