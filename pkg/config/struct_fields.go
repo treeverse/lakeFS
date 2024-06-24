@@ -111,16 +111,8 @@ func getSecureStringKeys(value reflect.Value, separator, tag, squashValue string
 		var (
 			fieldName string
 			squash    bool
-			ok        bool
 		)
-		if fieldName, ok = fieldType.Tag.Lookup(tag); ok {
-			if strings.HasSuffix(fieldName, squashValue) {
-				squash = true
-				fieldName = strings.TrimSuffix(fieldName, squashValue)
-			}
-		} else {
-			fieldName = strings.ToLower(fieldType.Name)
-		}
+		fieldName, squash = parseTag(fieldType, tag, squashValue)
 
 		if !squash {
 			prefix = append(prefix, fieldName)
@@ -133,4 +125,14 @@ func getSecureStringKeys(value reflect.Value, separator, tag, squashValue string
 			prefix = prefix[:len(prefix)-1]
 		}
 	}
+}
+
+func parseTag(field reflect.StructField, tag, squashValue string) (string, bool) {
+	if tagValue, ok := field.Tag.Lookup(tag); ok {
+		if strings.HasSuffix(tagValue, squashValue) {
+			return strings.TrimSuffix(tagValue, squashValue), true
+		}
+		return tagValue, false
+	}
+	return strings.ToLower(field.Name), false
 }
