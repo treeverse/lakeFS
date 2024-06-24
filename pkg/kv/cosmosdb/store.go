@@ -141,10 +141,6 @@ func getOrCreateContainer(ctx context.Context, dbClient *azcosmos.DatabaseClient
 			throughputProperties = azcosmos.NewManualThroughputProperties(params.Throughput)
 		}
 		opts = &azcosmos.CreateContainerOptions{ThroughputProperties: &throughputProperties}
-		opts = &azcosmos.ClientOptions{
-			ClientOptions:                azcore.ClientOptions{},
-			EnableContentResponseOnWrite: false,
-		}
 	}
 
 	_, err := dbClient.CreateContainer(ctx,
