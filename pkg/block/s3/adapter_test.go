@@ -5,11 +5,13 @@ import (
 	"net/url"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block/blocktest"
 	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/block/s3"
+	"github.com/treeverse/lakefs/pkg/osinfo"
 )
 
 func getS3BlockAdapter(t *testing.T) *s3.Adapter {
@@ -23,7 +25,10 @@ func getS3BlockAdapter(t *testing.T) *s3.Adapter {
 			SecretAccessKey: minioTestSecretAccessKey,
 		},
 	}
-	adapter, err := s3.NewAdapter(context.Background(), s3params)
+	tf := &osinfo.MockTimeFactory{
+		NowTime: time.Unix(osinfo.MockNowDefault, 0),
+	}
+	adapter, err := s3.NewAdapter(context.Background(), s3params, tf)
 	if err != nil {
 		t.Fatal("cannot create s3 adapter: ", err)
 	}

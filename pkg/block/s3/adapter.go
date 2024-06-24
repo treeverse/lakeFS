@@ -25,6 +25,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/osinfo"
 	"github.com/treeverse/lakefs/pkg/stats"
 )
 
@@ -43,6 +44,7 @@ type Adapter struct {
 	disablePreSigned             bool
 	disablePreSignedUI           bool
 	disablePreSignedMultipart    bool
+	timeFactory                  osinfo.TimeFactory
 }
 
 func WithStatsCollector(s stats.Collector) func(a *Adapter) {
@@ -101,7 +103,7 @@ func WithServerSideEncryptionKmsKeyID(s string) func(a *Adapter) {
 
 type AdapterOption func(a *Adapter)
 
-func NewAdapter(ctx context.Context, params params.S3, opts ...AdapterOption) (*Adapter, error) {
+func NewAdapter(ctx context.Context, params params.S3, tFactory osinfo.TimeFactory, opts ...AdapterOption) (*Adapter, error) {
 	cfg, err := LoadConfig(ctx, params)
 	if err != nil {
 		return nil, err
@@ -114,6 +116,7 @@ func NewAdapter(ctx context.Context, params params.S3, opts ...AdapterOption) (*
 		clients:             NewClientCache(cfg, params),
 		preSignedExpiry:     block.DefaultPreSignExpiryDuration,
 		sessionExpiryWindow: sessionExpiryWindow,
+		timeFactory:         tFactory,
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -378,7 +381,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		return "", time.Time{}, block.ErrOperationNotSupported
 	}
 
-	expiry := time.Now().Add(a.preSignedExpiry)
+	expiry := a.timeFactory.Now().Add(a.preSignedExpiry)
 
 	log := a.log(ctx).WithFields(logging.Fields{
 		"operation":  "GetPreSignedURL",

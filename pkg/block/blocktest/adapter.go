@@ -16,11 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
-)
-
-const (
-	multipartNumberOfParts = 3
-	multipartPartSize      = 5 * 1024 * 1024 // generally the minimum size for multi-part upload
+	"github.com/treeverse/lakefs/pkg/osinfo"
 )
 
 // AdapterTest Test suite of basic adapter functionality
@@ -352,9 +348,9 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
 	obj, _ := objPointers(storageNamespace)
-	expectedExpiry := time.Now().Add(block.DefaultPreSignExpiryDuration)
 
 	preSignedURL, exp, err := adapter.GetPreSignedURL(ctx, obj, block.PreSignModeRead)
+
 	if adapter.BlockstoreType() == block.BlockstoreTypeGS {
 		require.ErrorContains(t, err, "no credentials found")
 		return
@@ -363,9 +359,19 @@ func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace s
 		return
 	}
 	require.NoError(t, err)
-	require.LessOrEqual(t, exp.Sub(expectedExpiry).Seconds(), 1.0)
+	expectedExpiry := expectedURLExp(adapter)
+	require.Equal(t, expectedExpiry, exp)
 	_, err = url.Parse(preSignedURL)
 	require.NoError(t, err)
+}
+
+func expectedURLExp(adapter block.Adapter) time.Time {
+	if adapter.BlockstoreType() == block.BlockstoreTypeAzure {
+		// we didn't implement expiry for Azure yet
+		return time.Time{}
+	} else {
+		return time.Unix(osinfo.MockNowDefault, 0).Add(block.DefaultPreSignExpiryDuration)
+	}
 }
 
 func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk block.QualifiedKey) []string {

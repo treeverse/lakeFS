@@ -12,6 +12,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 )
 
+const (
+	multipartNumberOfParts = 3
+	multipartPartSize      = 5 * 1024 * 1024 // generally the minimum size for multi-part upload
+)
+
 // Parameterized test of the Multipart Upload APIs. After successful upload we Get the result and compare to the original
 func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
