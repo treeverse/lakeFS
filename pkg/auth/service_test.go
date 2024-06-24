@@ -1022,7 +1022,7 @@ func TestAPIAuthService_DeleteUser(t *testing.T) {
 				},
 			}
 			ctx := context.Background()
-			mockClient.EXPECT().DeleteUserWithResponse(ctx, tt.userName).Return(response, nil)
+			mockClient.EXPECT().DeleteUserWithResponse(gomock.Any(), tt.userName).Return(response, nil)
 			err := s.DeleteUser(ctx, tt.userName)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("DeleteUser: expected err: %v got: %v", tt.expectedErr, err)
