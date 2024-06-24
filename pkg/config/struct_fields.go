@@ -81,3 +81,58 @@ func structFieldsFunc(value reflect.Value, tag, squashValue string, prefix []str
 		}
 	}
 }
+
+func GetSecureStringKeyPaths(value interface{}) []string {
+	keys := []string{}
+	getSecureStringKeys(reflect.ValueOf(value), "_", "mapstructure", ",squash", nil, func(key string) {
+		keys = append(keys, strings.ToUpper(key))
+	})
+	return keys
+}
+
+func getSecureStringKeys(value reflect.Value, separator, tag, squashValue string, prefix []string, cb func(key string)) {
+	for value.Kind() == reflect.Ptr {
+		if value.IsZero() {
+			return
+		}
+		value = value.Elem()
+	}
+
+	if value.Kind() != reflect.Struct {
+		if value.Type() == reflect.TypeOf((*SecureString)(nil)).Elem() {
+			key := strings.Join(prefix, separator)
+			cb(key)
+		}
+		return
+	}
+
+	for i := 0; i < value.NumField(); i++ {
+		fieldType := value.Type().Field(i)
+		var (
+			fieldName string
+			squash    bool
+		)
+		fieldName, squash = parseTag(fieldType, tag, squashValue)
+
+		if !squash {
+			prefix = append(prefix, fieldName)
+		}
+		fieldValue := value.Field(i)
+
+		getSecureStringKeys(fieldValue, separator, tag, squashValue, prefix, cb)
+
+		if !squash {
+			prefix = prefix[:len(prefix)-1]
+		}
+	}
+}
+
+func parseTag(field reflect.StructField, tag, squashValue string) (string, bool) {
+	if tagValue, ok := field.Tag.Lookup(tag); ok {
+		if strings.HasSuffix(tagValue, squashValue) {
+			return strings.TrimSuffix(tagValue, squashValue), true
+		}
+		return tagValue, false
+	}
+	return strings.ToLower(field.Name), false
+}
