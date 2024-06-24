@@ -22,8 +22,9 @@ lakeFS Enterprise solution consists of 2 main components:
 1. Access to download [dockerhub/fluffy](https://hub.docker.com/u/treeverse) Docker image, to login locally `docker login -u <USERNAME> -p <TOKEN>`. Please [contact us](mailto:support@treeverse.io) to get access to the Dockerhub image.
 2. [Docker Compose](https://docs.docker.com/compose/install/) installed version `2.23.1` or higher on your machine.
 
-The following docker-compose file will spin up lakeFS, Fluffy and postgres as a shared KV database. 
-For additional examples check out the [lakeFS Enterprise sample](https://github.com/treeverse/lakeFS-samples/tree/main/02_lakefs_enterprise) for all-in-one setup including storage and spark.
+The following docker-compose files will spin up lakeFS, Fluffy and postgres as a shared KV database. 
+We provide two docker compose examples. 
+The first example (without SSO) is recommended for an easy start and the second example uses OIDC as the SSO authentication method.
 
 ⚠️ Using a local postgres is not suitable for production use-cases.
 
@@ -226,6 +227,8 @@ Test the OIDC configuration works - in your browser go to [http://localhost:8080
 </div>
 </div>
 
+For additional examples check out the [lakeFS Enterprise sample](https://github.com/treeverse/lakeFS-samples/tree/main/02_lakefs_enterprise) for all-in-one setup including storage and spark.
+
 ## lakeFS Helm Chart
 
 In order to use lakeFS Enterprise and Fluffy, we provided out of the box setup, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts/tree/master/charts/lakefs).
@@ -411,7 +414,8 @@ useDevPostgres: true
 ### SAML (Azure AD)
 
 The following example will walk you through the deployment of lakeFS Enterprise with SAML integration using Azure AD as the IDP. 
-Even though Azure Entra supports OIDC, the following example is using SAML on purpose.
+The following example uses SAML, a common setup, although Azure Entra also supports OIDC.
+
 
 **Note:** Active Directory Federation Services (AD FS) can be configured the same using SAML.
 {: .note }
