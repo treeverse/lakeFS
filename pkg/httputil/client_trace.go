@@ -9,7 +9,7 @@ import (
 )
 
 var connectionGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
-	Name: "out_conns",
+	Name: "out_in_use_conns",
 	Help: "A gauge of in-use TCP connections",
 }, []string{"service"})
 
