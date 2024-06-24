@@ -1267,7 +1267,6 @@ func userIDToInt(userID string) (int64, error) {
 }
 
 func (a *APIAuthService) getFirstUser(ctx context.Context, userKey userKey, params *ListUsersParams) (*model.User, error) {
-	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	return a.cache.GetUser(userKey, func() (*model.User, error) {
 		// fetch at least two users to make sure we don't have duplicates
 		if params.Amount == nil {
