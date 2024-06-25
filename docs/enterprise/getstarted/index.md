@@ -1,8 +1,12 @@
 ---
-title: Run lakeFS Enterprise
-description: Start using lakeFS-enterprise
+title: Install and Get Started
+description: Methods for getting started with lakeFS Enterprise
 parent: lakeFS Enterprise
+has_children: true
+nav_order: 200
 ---
+
+
 
 # Run lakeFS Enterprise
 
@@ -13,7 +17,7 @@ parent: lakeFS Enterprise
 lakeFS Enterprise solution consists of 2 main components:
 1. lakeFS - Open Source: [treeverse/lakeFS](https://hub.docker.com/r/treeverse/lakefs),
    release info found in [Github releases](https://github.com/treeverse/lakeFS/releases).
-2. Fluffy - Proprietary: Includes Enterprise features. Please [contact support](mailto:support@treeverse.io) to obtain a token for retrieving its image from [Treeverse Dockerhub](https://hub.docker.com/u/treeverse). 
+2. Fluffy - Proprietary: Includes Enterprise features. Please [contact support](mailto:support@treeverse.io) to obtain a token for retrieving its image from [Treeverse Dockerhub](https://hub.docker.com/u/treeverse).
 
 ## Quickstart with Docker Compose
 
@@ -22,8 +26,8 @@ lakeFS Enterprise solution consists of 2 main components:
 1. Access to download [dockerhub/fluffy](https://hub.docker.com/u/treeverse) Docker image, to login locally `docker login -u <USERNAME> -p <TOKEN>`. Please [contact us](mailto:support@treeverse.io) to get access to the Dockerhub image.
 2. [Docker Compose](https://docs.docker.com/compose/install/) installed version `2.23.1` or higher on your machine.
 
-The following docker-compose files will spin up lakeFS, Fluffy and postgres as a shared KV database. 
-We provide two docker compose examples. 
+The following docker-compose files will spin up lakeFS, Fluffy and postgres as a shared KV database.
+We provide two docker compose examples.
 The first example (without SSO) is recommended for an easy start and the second example uses OIDC as the SSO authentication method.
 
 ⚠️ Using a local postgres is not suitable for production use-cases.
@@ -33,13 +37,13 @@ The first example (without SSO) is recommended for an easy start and the second 
     <li><a href="#docker-compose-no-sso">No SSO
     </a></li>
     <li><a href="#docker-compose-with-sso">With SSO (OIDC)</a></li>
-  </ul> 
+  </ul>
 <div markdown="1" id="docker-compose-no-sso">
 
 ### Docker Compose without SSO
 
 For simplicity the example does not use SSO and only supports basic authentication of access key and secret key.
-    
+
 1. Create `docker-compose.yaml` file with the following content
 2. Run `docker compose up` in the same directory as the `docker-compose.yaml` file.
 3. In your browser go to <http://localhost:8080> to access lakeFS UI.
@@ -115,7 +119,7 @@ configs:
 
 This setup uses OIDC as the SSO authentication method thus requiring a valid OIDC configuration.
 
-Create a `.env` file in the same directory as the `docker-compose.yaml` with the required configurations, docker compose will automatically use that. 
+Create a `.env` file in the same directory as the `docker-compose.yaml` with the required configurations, docker compose will automatically use that.
 
 ```
 FLUFFY_AUTH_OIDC_CLIENT_ID=
@@ -209,7 +213,7 @@ configs:
             - internal_auth_session
             - oidc_auth_session
         oidc:
-          # friendly_name_claim_name: "name"        
+          # friendly_name_claim_name: "name"
           default_initial_groups:
             - Admins
 
@@ -257,7 +261,7 @@ The following values will deploy fluffy and lakeFS without SSO, using local bloc
 1. In your browser go to the Ingress host to access lakeFS UI.
 
 ```yaml
-lakefsConfig: | 
+lakefsConfig: |
   logging:
       level: "DEBUG"
   blockstore:
@@ -268,7 +272,7 @@ ingress:
   annotations: {}
   hosts:
     - host: <lakefs.acme.com>
-      paths: 
+      paths:
        - /
 fluffy:
   enabled: true
@@ -301,16 +305,16 @@ The following examples will guide you through the installation of lakeFS Enterpr
 1. Access to configure SSO IdP, like Azure AD Enterprise Application.
 1. A proxy server should be configured to route traffic between the 2 servers (in K8S that is Ingress).
 1. Token for [dockerhub/fluffy](https://hub.docker.com/u/treeverse) Docker image. Please [contact us](mailto:support@treeverse.io) to get access to the Dockerhub image.
-    
+
 ### Deploy lakeFS Enterprise with SSO
 
 
-Authentication in lakeFS Enterprise is handled by the Fluffy sso service which runs side-by-side with lakeFS. 
+Authentication in lakeFS Enterprise is handled by the Fluffy sso service which runs side-by-side with lakeFS.
 The following examples are based on our [Helm Chart](#lakefs-helm-chart).
 
 For details on configuring the supported identity providers with Fluffy in-depth configuration see [SSO][lakefs-sso-enterprise-spec].
 
-**Note:** Full Fluffy configuration can be found [here]({% link enterprise/fluffy-configuration.md %}).
+**Note:** Full Fluffy configuration can be found [here][fluffy-configuration].
 {: .note }
 
 * OpenID Connect
@@ -326,7 +330,7 @@ If you're using an authentication provider that is not listed please [contact us
     <li><a href="#oidc">OpenID Connect</a></li>
     <li><a href="#saml">SAML (Azure AD)</a></li>
     <li><a href="#ldap">LDAP</a></li>
-  </ul> 
+  </ul>
   <div markdown="1" id="oidc">
 ### OpenID Connect
 
@@ -338,7 +342,7 @@ As an example, the following `values` file will run lakeFS Enterprise with OIDC 
 
 1. Create `values.yaml` file and replace the placeholders with your OIDC provider details, token and ingress host.
 2. Run `helm install lakefs lakefs/lakefs -f values.yaml` in the desired K8S namespace.
-   
+
 ```yaml
 lakefsConfig: |
   logging:
@@ -363,7 +367,7 @@ ingress:
   hosts:
     # the ingress that will be created for lakeFS
     - host: <lakefs.acme.com>
-      paths: 
+      paths:
        - /
 
 ##################################################
@@ -413,7 +417,7 @@ useDevPostgres: true
   <div markdown="1" id="saml">
 ### SAML (Azure AD)
 
-The following example will walk you through the deployment of lakeFS Enterprise with SAML integration using Azure AD as the IDP. 
+The following example will walk you through the deployment of lakeFS Enterprise with SAML integration using Azure AD as the IDP.
 The following example uses SAML, a common setup, although Azure Entra also supports OIDC.
 
 
@@ -437,15 +441,15 @@ The following example uses SAML, a common setup, although Azure Entra also suppo
 {: .note }
 
 1. Configure SAML application in your IDP (i.e Azure AD) and replace the required parameters into the `values.yaml` below.
-2. To generate certificates keypair use: `openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.acme.com" - 
+2. To generate certificates keypair use: `openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.acme.com" -
 3. Run `helm install lakefs lakefs/lakefs -f values.yaml` in the desired K8S namespace.
 4. In your browser go to [https://lakefs.acme.com](https://lakefs.acme.com) to access lakeFS UI.
- 
+
 ```yaml
 secrets:
   authEncryptSecretKey: "some random secret string"
 
-lakefsConfig: | 
+lakefsConfig: |
   logging:
       level: "DEBUG"
   blockstore:
@@ -469,7 +473,7 @@ ingress:
   annotations: {}
   hosts:
     - host: <lakefs.acme.com>
-      paths: 
+      paths:
        - /
 
 fluffy:
@@ -484,7 +488,7 @@ fluffy:
     logging:
       format: "json"
       level: "DEBUG"
-    auth:  
+    auth:
       # redirect after logout
       logout_redirect_url: https://<lakefs.acme.com>
       saml:
@@ -550,7 +554,7 @@ ingress:
   ingressClassName: <class-name>
   hosts:
     - host: <lakefs.acme.com>
-      paths: 
+      paths:
        - /
 
 fluffy:
@@ -564,7 +568,7 @@ fluffy:
       level: "INFO"
     auth:
       post_login_redirect_url: /
-      ldap: 
+      ldap:
         server_endpoint: 'ldaps://ldap.company.com:636'
         bind_dn: uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com
         username_attribute: uid
@@ -588,11 +592,11 @@ useDevPostgres: true
   </div>
 </div>
 
-### Configuring lakeFS KV store in the Helm Chart 
+### Configuring lakeFS KV store in the Helm Chart
 
 The lakeFS Helm chart supports multiple ways of configurintg the database that is the KV Store (DynamoDB, Postgres etc), the default is a dev Postgres container (set `useDevPostgres: false` to disable).
 The configuration structure used for the KV store is the same for both lakeFS and Fluffy.
-See [fluffy]({% link enterprise/fluffy-configuration.md %}) and [lakeFS]({% link reference/configuration.md %}#database) `database` configuration.
+See [fluffy][fluffy-configuration] and [lakeFS]({% link reference/configuration.md %}#database) `database` configuration.
 
 Essentially the database configuration structure between lakeFS and fluffy can be set via K8S Secret Kind, directly via `fluffyConfig` and `lakefsConfig` or via environment variables.
 
@@ -602,7 +606,7 @@ Essentially the database configuration structure between lakeFS and fluffy can b
     <li><a href="#dynamodb-via-config">DynamoDB via config</a></li>
     <li><a href="#postgres-via-secret-kind">Postgres via shared Secret kind</a></li>
     <li><a href="#postgres-via-env-vars">Postgres via envrionment varialbles</a></li>
-  </ul> 
+  </ul>
 <div markdown="1" id="dynamodb-via-config">
 
 #### DynamoDB via config (AWS)
@@ -688,10 +692,10 @@ ingress:
       secretName: somesecret
   hosts:
     - host: lakefs.acme.com
-      paths: 
+      paths:
        - /
 
-# configure proxy for lakeFS 
+# configure proxy for lakeFS
 extraEnvVars:
   - name: HTTP_PROXY
     value: 'http://my.company.proxy:8081'
@@ -718,7 +722,7 @@ extraManifests:
 
 ## Migrate from lakeFS Open Source to lakeFS Enterprise and upgrades
 
-For upgrading from lakeFS enterprise to a newer version see [lakefs migration](https://docs.lakefs.io/howto/deploy/upgrade.html). 
+For upgrading from lakeFS enterprise to a newer version see [lakefs migration](https://docs.lakefs.io/howto/deploy/upgrade.html).
 
 **To move from lakeFS Open Source to lakeFS Enterprise, follow the steps below:**
 
@@ -749,3 +753,4 @@ lakeFS and fluffy share the same configuration structure under logging.* section
 [lakefs-sso-enterprise-spec-oidc]: {% link reference/security/sso.md %}#oidc
 [lakefs-sso-enterprise-spec-saml]: {% link reference/security/sso.md %}#adfs
 [lakefs-sso-enterprise-spec-ldap]: {% link reference/security/sso.md %}#ldap
+[fluffy-configuration]: {% link enterprise/configuration.md %}#fluffy-server-configuration
