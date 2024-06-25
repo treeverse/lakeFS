@@ -16,15 +16,24 @@ var (
 		}, []string{"operation", "success"})
 )
 
+func ObserveDuration(operation string, duration time.Duration, success bool) {
+	status := "failure"
+	if success {
+		status = "success"
+	}
+	authDurationSecs.WithLabelValues(operation, status).Observe(duration.Seconds())
+}
+
+func NewMonitoredAuthServiceAndInviter(service ServiceAndInviter) *MonitoredServiceAndInviter {
+	return &MonitoredServiceAndInviter{
+		Wrapped: service,
+		Observe: ObserveDuration,
+	}
+}
+
 func NewMonitoredAuthService(service Service) *MonitoredService {
 	return &MonitoredService{
 		Wrapped: service,
-		Observe: func(op string, duration time.Duration, success bool) {
-			status := "failure"
-			if success {
-				status = "success"
-			}
-			authDurationSecs.WithLabelValues(op, status).Observe(duration.Seconds())
-		},
+		Observe: ObserveDuration,
 	}
 }

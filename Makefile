@@ -294,7 +294,8 @@ validate-permissions-gen: gen-code
 
 .PHONY: validate-wrapper
 validate-wrapper: gen-code
-	git diff --quiet -- pkg/auth/wrapper.gen.go || (echo "Modification verification failed! pkg/auth/wrapper.gen.go"; false)
+	git diff --quiet -- pkg/auth/service_wrapper.gen.go || (echo "Modification verification failed! pkg/auth/service_wrapper.gen.go"; false)
+	git diff --quiet -- pkg/auth/service_inviter_wrapper.gen.go || (echo "Modification verification failed! pkg/auth/service_inviter_wrapper.gen.go"; false)
 
 .PHONY: validate-wrapgen-testcode
 validate-wrapgen-testcode: gen-code
