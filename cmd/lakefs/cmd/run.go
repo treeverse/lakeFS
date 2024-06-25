@@ -66,7 +66,7 @@ func checkAuthModeSupport(cfg *config.Config) error {
 	return nil
 }
 
-func GetAuthService(ctx context.Context, cfg *config.Config, logger logging.Logger, kvStore kv.Store) auth.Service {
+func NewAuthService(ctx context.Context, cfg *config.Config, logger logging.Logger, kvStore kv.Store) auth.Service {
 	if err := checkAuthModeSupport(cfg); err != nil {
 		logger.WithError(err).Fatal("Unsupported auth mode")
 	}
@@ -143,7 +143,7 @@ var runCmd = &cobra.Command{
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
-		authService := GetAuthService(ctx, cfg, logger, kvStore)
+		authService := NewAuthService(ctx, cfg, logger, kvStore)
 		// initialize authentication service
 		var authenticationService authentication.Service
 		if cfg.IsAuthenticationTypeAPI() {
