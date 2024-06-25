@@ -66,6 +66,38 @@ func checkAuthModeSupport(cfg *config.Config) error {
 	return nil
 }
 
+func NewAuthService(ctx context.Context, cfg *config.Config, logger logging.Logger, kvStore kv.Store) auth.Service {
+	if err := checkAuthModeSupport(cfg); err != nil {
+		logger.WithError(err).Fatal("Unsupported auth mode")
+	}
+	if cfg.IsAuthTypeAPI() {
+		apiService, err := auth.NewAPIAuthService(
+			cfg.Auth.API.Endpoint,
+			cfg.Auth.API.Token.SecureValue(),
+			cfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled,
+			crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
+			authparams.ServiceCache(cfg.Auth.Cache),
+			logger.WithField("service", "auth_api"),
+		)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create authentication service")
+		}
+		if !cfg.Auth.API.SkipHealthCheck {
+			if err := apiService.CheckHealth(ctx, logger, cfg.Auth.API.HealthCheckTimeout); err != nil {
+				logger.WithError(err).Fatal("Auth API health check failed")
+			}
+		}
+		return auth.NewMonitoredAuthServiceAndInviter(apiService)
+	}
+	authService := auth.NewAuthService(
+		kvStore,
+		crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
+		authparams.ServiceCache(cfg.Auth.Cache),
+		logger.WithField("service", "auth_service"),
+	)
+	return auth.NewMonitoredAuthService(authService)
+}
+
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run lakeFS",
@@ -111,40 +143,7 @@ var runCmd = &cobra.Command{
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
-		// initialize authorization service
-		var authService auth.Service
-
-		if err := checkAuthModeSupport(cfg); err != nil {
-			logger.WithError(err).Fatal("Unsupported auth mode")
-		}
-		if cfg.IsAuthTypeAPI() {
-			apiService, err := auth.NewAPIAuthService(
-				cfg.Auth.API.Endpoint,
-				cfg.Auth.API.Token.SecureValue(),
-				cfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled,
-				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
-				authparams.ServiceCache(cfg.Auth.Cache),
-				logger.WithField("service", "auth_api"),
-			)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to create authentication service")
-			}
-			authService = apiService
-			if !cfg.Auth.API.SkipHealthCheck {
-				if err := apiService.CheckHealth(ctx, logger, cfg.Auth.API.HealthCheckTimeout); err != nil {
-					logger.WithError(err).Fatal("Auth API health check failed")
-				}
-			}
-		} else {
-			authService = auth.NewAuthService(
-				kvStore,
-				crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
-				authparams.ServiceCache(cfg.Auth.Cache),
-				logger.WithField("service", "auth_service"),
-			)
-		}
-		authService = auth.NewMonitoredAuthService(authService)
-
+		authService := NewAuthService(ctx, cfg, logger, kvStore)
 		// initialize authentication service
 		var authenticationService authentication.Service
 		if cfg.IsAuthenticationTypeAPI() {
