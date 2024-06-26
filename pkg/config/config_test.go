@@ -116,7 +116,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 		testutil.Must(t, err)
 		metricsAdapter, ok := adapter.(*block.MetricsAdapter)
 		if !ok {
-			t.Fatalf("expected a metrics block adapter, got something else instead")
+			t.Fatalf("got a %T when expecting a MetricsAdapter", adapter)
 		}
 		if _, ok := metricsAdapter.InnerAdapter().(*local.Adapter); !ok {
 			t.Fatalf("got %T expected a local block adapter", metricsAdapter.InnerAdapter())
