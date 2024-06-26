@@ -117,5 +117,27 @@ Include this assembled jar (an "Überjar") from S3, from
     */
    ```
 
+1. Search by user metadata:
+
+   ```scala
+   import io.treeverse.clients.LakeFSContext
+
+   val namespace = "s3://bucket/repo/path/"
+   val df = LakeFSContext.newDF(spark, namespace)
+
+   val key = "SomeKey"
+   val searchedValue = "val3"
+   df.select("key", "user_metadata")
+   	.filter(_.getMap[String, String](1).toMap.get(s"X-Amz-Meta-${key}").getOrElse("") == searchedValue)
+   	.show()
+   /* output example:
+      +---------+-----------------------------------------------------+
+      |key      |user_metadata                                        |
+      +---------+-----------------------------------------------------+
+      |file1.txt|{X-Amz-Meta-SomeKey -> val3, X-Amz-Meta-Tag -> blue} |
+      |file8.txt|{X-Amz-Meta-SomeKey -> val3, X-Amz-Meta-Tag -> green}|
+      +---------+-----------------------------------------------------+
+    */
+   ```
 
 [s3a-assumed-role]:  https://hadoop.apache.org/docs/stable/hadoop-aws/tools/hadoop-aws/assumed_roles.html#Configuring_Assumed_Roles
