@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 **checksum** | **str** |  | 
 **mtime** | **int** | Unix Epoch in seconds | 
 **physical_address_expiry** | **int** | If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*.  | [optional] 
-**size_bytes** | **int** |  | [optional] 
+**size_bytes** | **int** | The number of bytes in the object.  lakeFS always populates this field when returning ObjectStats.  This field is optional _for the client_ to supply, for instance on upload.  | [optional] 
 **metadata** | [**ObjectUserMetadata**](ObjectUserMetadata.md) |  | [optional] 
 **content_type** | **str** | Object media type | [optional] 
 **any string name** | **bool, date, datetime, dict, float, int, list, str, none_type** | any string name can be used but the value must be the correct type | [optional]

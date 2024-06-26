@@ -252,7 +252,7 @@ public class ObjectStats {
   }
 
    /**
-   * Get sizeBytes
+   * The number of bytes in the object.  lakeFS always populates this field when returning ObjectStats.  This field is optional _for the client_ to supply, for instance on upload. 
    * @return sizeBytes
   **/
   @javax.annotation.Nullable

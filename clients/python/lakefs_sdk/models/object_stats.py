@@ -34,7 +34,7 @@ class ObjectStats(BaseModel):
     physical_address: StrictStr = Field(..., description="The location of the object on the underlying object store. Formatted as a native URI with the object store type as scheme (\"s3://...\", \"gs://...\", etc.) Or, in the case of presign=true, will be an HTTP URL to be consumed via regular HTTP GET ")
     physical_address_expiry: Optional[StrictInt] = Field(None, description="If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. ")
     checksum: StrictStr = Field(...)
-    size_bytes: Optional[StrictInt] = None
+    size_bytes: Optional[StrictInt] = Field(None, description="The number of bytes in the object.  lakeFS always populates this field when returning ObjectStats.  This field is optional _for the client_ to supply, for instance on upload. ")
     mtime: StrictInt = Field(..., description="Unix Epoch in seconds")
     metadata: Optional[Dict[str, StrictStr]] = None
     content_type: Optional[StrictStr] = Field(None, description="Object media type")
