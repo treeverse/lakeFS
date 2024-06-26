@@ -92,15 +92,7 @@ func testAdapterAbortMultipartUpload(t *testing.T, adapter block.Adapter, storag
 	obj, _ := objPointers(storageNamespace)
 	uploadID := "foobar"
 
-	err := adapter.AbortMultiPartUpload(ctx, obj, uploadID)
-	if err != nil {
-		if adapter.BlockstoreType() == block.BlockstoreTypeLocal {
-			require.ErrorContains(t, err, "invalid upload id")
-		} else {
-			require.ErrorContains(t, err, "404")
-		}
-	}
-
+	//Start an upload
 	resp, err := adapter.CreateMultiPartUpload(ctx, obj, nil, block.CreateMultiPartUploadOpts{})
 	require.NoError(t, err)
 	uploadID = resp.UploadID
@@ -112,22 +104,29 @@ func testAdapterAbortMultipartUpload(t *testing.T, adapter block.Adapter, storag
 		require.Equal(t, multipartNumberOfParts, len(listResp.Parts))
 	}
 
+	//Test abort
 	err = adapter.AbortMultiPartUpload(ctx, obj, uploadID)
 	require.NoError(t, err)
 
 	// verify no parts to list
 	verifyListInvalid(t, ctx, adapter, obj, uploadID)
 
+	// verify that I can't complete after Abort was called
 	_, err = adapter.CompleteMultiPartUpload(ctx, obj, resp.UploadID, &block.MultipartUploadCompletion{
 		Part: multiParts,
 	})
-	if err != nil {
-		if adapter.BlockstoreType() == block.BlockstoreTypeGS {
-			require.ErrorContains(t, err, "part")
-		} else {
-			require.ErrorContains(t, err, "404")
-		}
-	}
+	require.NotNil(t, err)
+}
+
+// Test aborting a multipart upload that doesn't exist
+func testAdapterAbortNonexistentMultipart(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	ctx := context.Background()
+	obj, _ := objPointers(storageNamespace)
+	uploadID := "foobar"
+
+	// Test invalid Abort
+	err := adapter.AbortMultiPartUpload(ctx, obj, uploadID)
+	require.NotNil(t, err) // invalid about should return some error
 }
 
 // Test of the Multipart Copy API
@@ -201,7 +200,7 @@ func uploadMultiPart(t *testing.T, ctx context.Context, adapter block.Adapter, o
 	require.NoError(t, err)
 }
 
-// List parts on non-existing part
+// List parts when there are none
 func verifyListInvalid(t *testing.T, ctx context.Context, adapter block.Adapter, obj block.ObjectPointer, uploadID string) {
 	t.Helper()
 	_, err := adapter.ListParts(ctx, obj, uploadID, block.ListPartsOpts{})
@@ -264,12 +263,13 @@ func copyPart(t *testing.T, ctx context.Context, adapter block.Adapter, obj, obj
 	return multiParts, nil
 }
 
+// getAndCheckContents GETs the Object from the Store, then compares its contents to the exp byte array
 func getAndCheckContents(t *testing.T, ctx context.Context, adapter block.Adapter, exp []byte, obj block.ObjectPointer) {
 	t.Helper()
 	// first check exists
 	ok, err := adapter.Exists(ctx, obj)
 	require.NoError(t, err)
-	require.Equal(t, true, ok)
+	require.True(t, ok)
 
 	reader, err := adapter.Get(ctx, obj)
 	require.NoError(t, err)
