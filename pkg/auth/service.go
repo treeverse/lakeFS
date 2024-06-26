@@ -1217,6 +1217,7 @@ type APIAuthService struct {
 }
 
 func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
 		Email:    swag.String(email),
 		Invite:   swag.Bool(true),
@@ -1238,6 +1239,7 @@ func (a *APIAuthService) Cache() Cache {
 }
 
 func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (string, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.CreateUserWithResponse(ctx, CreateUserJSONRequestBody{
 		Email:        user.Email,
 		FriendlyName: user.FriendlyName,
@@ -1257,6 +1259,7 @@ func (a *APIAuthService) CreateUser(ctx context.Context, user *model.User) (stri
 }
 
 func (a *APIAuthService) DeleteUser(ctx context.Context, username string) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.DeleteUserWithResponse(ctx, username)
 	if err != nil {
 		a.logger.WithError(err).WithField("username", username).Error("failed to delete user")
@@ -1309,6 +1312,7 @@ func (a *APIAuthService) getFirstUser(ctx context.Context, userKey userKey, para
 }
 
 func (a *APIAuthService) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	intID, err := userIDToInt(userID)
 	if err != nil {
 		return nil, fmt.Errorf("userID as int64: %w", err)
@@ -1317,6 +1321,7 @@ func (a *APIAuthService) GetUserByID(ctx context.Context, userID string) (*model
 }
 
 func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.User, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	return a.cache.GetUser(userKey{username: username}, func() (*model.User, error) {
 		resp, err := a.apiClient.GetUserWithResponse(ctx, username)
 		if err != nil {
@@ -1339,10 +1344,12 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 }
 
 func (a *APIAuthService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	return a.getFirstUser(ctx, userKey{email: email}, &ListUsersParams{Email: swag.String(email)})
 }
 
 func (a *APIAuthService) GetUserByExternalID(ctx context.Context, externalID string) (*model.User, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	return a.getFirstUser(ctx, userKey{externalID: externalID}, &ListUsersParams{ExternalId: swag.String(externalID)})
 }
 
@@ -1354,6 +1361,7 @@ func toPagination(paginator Pagination) *model.Paginator {
 }
 
 func (a *APIAuthService) ListUsers(ctx context.Context, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	paginationPrefix := PaginationPrefix(params.Prefix)
 	paginationAfter := PaginationAfter(params.After)
 	paginationAmount := PaginationAmount(params.Amount)
@@ -1386,6 +1394,7 @@ func (a *APIAuthService) ListUsers(ctx context.Context, params *model.Pagination
 }
 
 func (a *APIAuthService) UpdateUserFriendlyName(ctx context.Context, userID string, friendlyName string) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.UpdateUserFriendlyNameWithResponse(ctx, userID, UpdateUserFriendlyNameJSONRequestBody{
 		FriendlyName: friendlyName,
 	})
@@ -1397,6 +1406,7 @@ func (a *APIAuthService) UpdateUserFriendlyName(ctx context.Context, userID stri
 }
 
 func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) (*model.Group, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.CreateGroupWithResponse(ctx, CreateGroupJSONRequestBody{
 		Id: group.DisplayName,
 	})
@@ -1451,6 +1461,7 @@ func paginationAmount(amount int) *PaginationAmount {
 }
 
 func (a *APIAuthService) DeleteGroup(ctx context.Context, groupID string) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.DeleteGroupWithResponse(ctx, groupID)
 	if err != nil {
 		a.logger.WithError(err).WithField("group", groupID).Error("failed to delete group")
@@ -1460,6 +1471,7 @@ func (a *APIAuthService) DeleteGroup(ctx context.Context, groupID string) error 
 }
 
 func (a *APIAuthService) GetGroup(ctx context.Context, groupID string) (*model.Group, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.GetGroupWithResponse(ctx, groupID)
 	if err != nil {
 		a.logger.WithError(err).WithField("group", groupID).Error("failed to get group")
@@ -1477,6 +1489,7 @@ func (a *APIAuthService) GetGroup(ctx context.Context, groupID string) (*model.G
 }
 
 func (a *APIAuthService) ListGroups(ctx context.Context, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.ListGroupsWithResponse(ctx, &ListGroupsParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
@@ -1502,6 +1515,7 @@ func (a *APIAuthService) ListGroups(ctx context.Context, params *model.Paginatio
 }
 
 func (a *APIAuthService) AddUserToGroup(ctx context.Context, username, groupID string) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.AddGroupMembershipWithResponse(ctx, groupID, username)
 	if err != nil {
 		a.logger.WithError(err).WithField("group", groupID).WithField("username", username).Error("failed to add user to group")
@@ -1511,6 +1525,7 @@ func (a *APIAuthService) AddUserToGroup(ctx context.Context, username, groupID s
 }
 
 func (a *APIAuthService) RemoveUserFromGroup(ctx context.Context, username, groupID string) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.DeleteGroupMembershipWithResponse(ctx, groupID, username)
 	if err != nil {
 		a.logger.WithError(err).WithField("group", groupID).WithField("username", username).Error("failed to remove user from group")
@@ -1520,6 +1535,7 @@ func (a *APIAuthService) RemoveUserFromGroup(ctx context.Context, username, grou
 }
 
 func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.ListUserGroupsWithResponse(ctx, username, &ListUserGroupsParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
@@ -1544,6 +1560,7 @@ func (a *APIAuthService) ListUserGroups(ctx context.Context, username string, pa
 }
 
 func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupID string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.ListGroupMembersWithResponse(ctx, groupID, &ListGroupMembersParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
@@ -1570,6 +1587,7 @@ func (a *APIAuthService) ListGroupUsers(ctx context.Context, groupID string, par
 }
 
 func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy, update bool) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
 		return err
 	}
@@ -1630,6 +1648,7 @@ func serializePolicyToModalPolicy(p Policy) *model.Policy {
 }
 
 func (a *APIAuthService) GetPolicy(ctx context.Context, policyDisplayName string) (*model.Policy, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.GetPolicyWithResponse(ctx, policyDisplayName)
 	if err != nil {
 		a.logger.WithError(err).WithField("policy", policyDisplayName).Error("failed to get policy")
@@ -1643,6 +1662,7 @@ func (a *APIAuthService) GetPolicy(ctx context.Context, policyDisplayName string
 }
 
 func (a *APIAuthService) DeletePolicy(ctx context.Context, policyDisplayName string) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.DeletePolicyWithResponse(ctx, policyDisplayName)
 	if err != nil {
 		a.logger.WithError(err).WithField("policy", policyDisplayName).Error("failed to delete policy")
@@ -1652,6 +1672,7 @@ func (a *APIAuthService) DeletePolicy(ctx context.Context, policyDisplayName str
 }
 
 func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.ListPoliciesWithResponse(ctx, &ListPoliciesParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
@@ -1673,6 +1694,7 @@ func (a *APIAuthService) ListPolicies(ctx context.Context, params *model.Paginat
 }
 
 func (a *APIAuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.CreateCredentialsWithResponse(ctx, username, &CreateCredentialsParams{})
 	if err != nil {
 		a.logger.WithError(err).WithField("username", username).Error("failed to create credentials")
@@ -1693,6 +1715,7 @@ func (a *APIAuthService) CreateCredentials(ctx context.Context, username string)
 }
 
 func (a *APIAuthService) AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.CreateCredentialsWithResponse(ctx, username, &CreateCredentialsParams{
 		AccessKey: &accessKeyID,
 		SecretKey: &secretAccessKey,
@@ -1716,6 +1739,7 @@ func (a *APIAuthService) AddCredentials(ctx context.Context, username, accessKey
 }
 
 func (a *APIAuthService) DeleteCredentials(ctx context.Context, username, accessKeyID string) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.DeleteCredentialsWithResponse(ctx, username, accessKeyID)
 	if err != nil {
 		a.logger.WithError(err).WithField("username", username).Error("failed to delete credentials")
@@ -1725,6 +1749,7 @@ func (a *APIAuthService) DeleteCredentials(ctx context.Context, username, access
 }
 
 func (a *APIAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.GetCredentialsForUserWithResponse(ctx, username, accessKeyID)
 	if err != nil {
 		a.logger.WithError(err).WithField("username", username).Error("failed to get credentials")
@@ -1744,6 +1769,7 @@ func (a *APIAuthService) GetCredentialsForUser(ctx context.Context, username, ac
 }
 
 func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	return a.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
 		resp, err := a.apiClient.GetCredentialsWithResponse(ctx, accessKeyID)
 		if err != nil {
@@ -1778,6 +1804,7 @@ func (a *APIAuthService) GetCredentials(ctx context.Context, accessKeyID string)
 }
 
 func (a *APIAuthService) ListUserCredentials(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.ListUserCredentialsWithResponse(ctx, username, &ListUserCredentialsParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
@@ -1806,6 +1833,7 @@ func (a *APIAuthService) ListUserCredentials(ctx context.Context, username strin
 }
 
 func (a *APIAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayName, username string) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.AttachPolicyToUserWithResponse(ctx, username, policyDisplayName)
 	if err != nil {
 		a.logger.WithError(err).WithField("username", username).Error("failed to attach policy to user")
@@ -1815,6 +1843,7 @@ func (a *APIAuthService) AttachPolicyToUser(ctx context.Context, policyDisplayNa
 }
 
 func (a *APIAuthService) DetachPolicyFromUser(ctx context.Context, policyDisplayName, username string) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.DetachPolicyFromUserWithResponse(ctx, username, policyDisplayName)
 	if err != nil {
 		a.logger.WithError(err).WithField("username", username).Error("failed to detach policy from user")
@@ -1846,6 +1875,7 @@ func (a *APIAuthService) listUserPolicies(ctx context.Context, username string, 
 }
 
 func (a *APIAuthService) ListUserPolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	return a.listUserPolicies(ctx, username, params, false)
 }
 
@@ -1870,6 +1900,7 @@ func (a *APIAuthService) listAllEffectivePolicies(ctx context.Context, username 
 }
 
 func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	if params.Amount == -1 {
 		// read through the cache when requesting the full list
 		policies, err := a.cache.GetUserPolicies(username, func() ([]*model.Policy, error) {
@@ -1884,6 +1915,7 @@ func (a *APIAuthService) ListEffectivePolicies(ctx context.Context, username str
 }
 
 func (a *APIAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayName, groupID string) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.AttachPolicyToGroupWithResponse(ctx, groupID, policyDisplayName)
 	if err != nil {
 		a.logger.WithError(err).
@@ -1895,6 +1927,7 @@ func (a *APIAuthService) AttachPolicyToGroup(ctx context.Context, policyDisplayN
 }
 
 func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDisplayName, groupID string) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.DetachPolicyFromGroupWithResponse(ctx, groupID, policyDisplayName)
 	if err != nil {
 		a.logger.WithError(err).
@@ -1906,6 +1939,7 @@ func (a *APIAuthService) DetachPolicyFromGroup(ctx context.Context, policyDispla
 }
 
 func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupID string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.ListGroupPoliciesWithResponse(ctx, groupID, &ListGroupPoliciesParams{
 		Prefix: paginationPrefix(params.Prefix),
 		After:  paginationAfter(params.After),
@@ -1927,6 +1961,7 @@ func (a *APIAuthService) ListGroupPolicies(ctx context.Context, groupID string, 
 }
 
 func (a *APIAuthService) Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	policies, _, err := a.ListEffectivePolicies(ctx, req.Username, &model.PaginationParams{
 		After:  "", // all
 		Amount: -1, // all
@@ -1949,6 +1984,7 @@ func (a *APIAuthService) Authorize(ctx context.Context, req *AuthorizationReques
 }
 
 func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	res, err := a.apiClient.ClaimTokenIdWithResponse(ctx, ClaimTokenIdJSONRequestBody{
 		ExpiresAt: expiresAt,
 		TokenId:   tokenID,
@@ -1964,7 +2000,8 @@ func (a *APIAuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, e
 }
 
 func (a *APIAuthService) CheckHealth(ctx context.Context, logger logging.Logger, timeout time.Duration) error {
-	logger.Info("perform health check, this can take up to ", timeout)
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
+	logger.Info("Performing health check, this can take up to ", timeout)
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxInterval = healthCheckMaxInterval
 	bo.InitialInterval = healthCheckInitialInterval
@@ -2000,6 +2037,7 @@ func (a *APIAuthService) IsExternalPrincipalsEnabled(ctx context.Context) bool {
 }
 
 func (a *APIAuthService) CreateUserExternalPrincipal(ctx context.Context, userID, principalID string) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	if !a.IsExternalPrincipalsEnabled(ctx) {
 		return fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
@@ -2015,6 +2053,7 @@ func (a *APIAuthService) CreateUserExternalPrincipal(ctx context.Context, userID
 }
 
 func (a *APIAuthService) DeleteUserExternalPrincipal(ctx context.Context, userID, principalID string) error {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	if !a.IsExternalPrincipalsEnabled(ctx) {
 		return fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
@@ -2028,6 +2067,7 @@ func (a *APIAuthService) DeleteUserExternalPrincipal(ctx context.Context, userID
 }
 
 func (a *APIAuthService) GetExternalPrincipal(ctx context.Context, principalID string) (*model.ExternalPrincipal, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	if !a.IsExternalPrincipalsEnabled(ctx) {
 		return nil, fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
@@ -2047,6 +2087,7 @@ func (a *APIAuthService) GetExternalPrincipal(ctx context.Context, principalID s
 }
 
 func (a *APIAuthService) ListUserExternalPrincipals(ctx context.Context, userID string, params *model.PaginationParams) ([]*model.ExternalPrincipal, *model.Paginator, error) {
+	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	if !a.IsExternalPrincipalsEnabled(ctx) {
 		return nil, nil, fmt.Errorf("external principals disabled: %w", ErrInvalidRequest)
 	}
