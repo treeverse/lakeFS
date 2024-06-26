@@ -119,8 +119,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 			t.Fatalf("expected a metrics block adapter, got something else instead")
 		}
 		if _, ok := metricsAdapter.InnerAdapter().(*local.Adapter); !ok {
-			t.Fatalf("expected an gs block adapter, got something else instead")
-		}
+			t.Fatalf("got %T expected a local block adapter", metricsAdapter.InnerAdapter())
 	})
 
 	t.Run("s3 block adapter", func(t *testing.T) {
