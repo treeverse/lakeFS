@@ -135,7 +135,7 @@ For other use cases authenticate to lakeFS via login endpoint, this will require
 ### prerequisites
 
 1. lakeFS should be [configured](#server-configuration) to allow external principals to authenticate and the used IAM role should be [attached](#administration-of-iam-roles-in-lakefs) to the relevant lakeFS user
-2. lakeFS requires additional python packages to be installed in order to generate a lakeFS client with the assumed role.
+2. The Python SDK requires additional packages to be installed in order to generate a lakeFS client with the assumed role.
 To install the required packages, run the following command:
 
 ```sh
