@@ -24,6 +24,7 @@ pub struct ObjectStats {
     pub physical_address_expiry: Option<i64>,
     #[serde(rename = "checksum")]
     pub checksum: String,
+    /// The number of bytes in the object.  lakeFS always populates this field when returning ObjectStats.  This field is optional _for the client_ to supply, for instance on upload. 
     #[serde(rename = "size_bytes", skip_serializing_if = "Option::is_none")]
     pub size_bytes: Option<i64>,
     /// Unix Epoch in seconds
