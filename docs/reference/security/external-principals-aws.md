@@ -134,14 +134,15 @@ For other use cases authenticate to lakeFS via login endpoint, this will require
 
 ### prerequisites
 
-lakeFS requires additional python packages to be installed in order to generate a lakeFS client with the assumed role.
+1. lakeFS should be [configured](#server-configuration) to allow external principals to authenticate and the used IAM role should be [attached](#administration-of-iam-roles-in-lakefs) to the relevant lakeFS user
+2. The Python SDK requires additional packages to be installed in order to generate a lakeFS client with the assumed role.
 To install the required packages, run the following command:
 
 ```sh
   pip install lakefs[aws-iam]
 ```
 
-In order to generate a lakeFS client with the assumed role, initiate a boto3 session with the desired role and call the `get_caller_identity` method to get the caller identity:
+In order to generate a lakeFS client with the assumed role, initiate a boto3 session with the desired role and call `lakefs.client.frow_aws_role`:
 
 
 ```python
