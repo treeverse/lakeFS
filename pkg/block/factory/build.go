@@ -15,7 +15,6 @@ import (
 	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 	"github.com/treeverse/lakefs/pkg/block/transient"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"github.com/treeverse/lakefs/pkg/osinfo"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
@@ -106,8 +105,7 @@ func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params 
 	if params.ServerSideEncryptionKmsKeyID != "" {
 		opts = append(opts, s3a.WithServerSideEncryptionKmsKeyID(params.ServerSideEncryptionKmsKeyID))
 	}
-	tf := &osinfo.SystemTimeFactory{}
-	adapter, err := s3a.NewAdapter(ctx, params, tf, opts...)
+	adapter, err := s3a.NewAdapter(ctx, params, opts...)
 	if err != nil {
 		return nil, err
 	}

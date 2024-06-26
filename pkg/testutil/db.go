@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,7 +18,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/mem"
 	"github.com/treeverse/lakefs/pkg/block/params"
 	blocks3 "github.com/treeverse/lakefs/pkg/block/s3"
-	"github.com/treeverse/lakefs/pkg/osinfo"
 )
 
 const (
@@ -177,10 +175,7 @@ func NewBlockAdapterByType(t testing.TB, blockstoreType string) block.Adapter {
 			s3Params.Credentials.AccessKeyID = awsKey
 			s3Params.Credentials.SecretAccessKey = awsSecret
 		}
-		tf := &osinfo.MockTimeFactory{
-			NowTime: time.Unix(osinfo.MockNowDefault, 0),
-		}
-		blockAdapter, err := blocks3.NewAdapter(ctx, s3Params, tf)
+		blockAdapter, err := blocks3.NewAdapter(ctx, s3Params)
 		if err != nil {
 			t.Fatal("Failed to create S3 block adapter", err)
 		}

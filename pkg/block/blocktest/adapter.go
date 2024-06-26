@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/ingest/store"
-	"github.com/treeverse/lakefs/pkg/osinfo"
 )
 
 // AdapterTest Test suite of basic adapter functionality
@@ -370,7 +369,7 @@ func expectedURLExp(adapter block.Adapter) time.Time {
 		// we didn't implement expiry for Azure yet
 		return time.Time{}
 	} else {
-		return time.Unix(osinfo.MockNowDefault, 0).Add(block.DefaultPreSignExpiryDuration)
+		return NowMockDefault().Add(block.DefaultPreSignExpiryDuration)
 	}
 }
 
@@ -397,4 +396,8 @@ func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk b
 	}
 	sort.Strings(tree)
 	return tree
+}
+
+func NowMockDefault() time.Time {
+	return time.Date(2024, time.January, 0, 0, 0, 0, 0, time.UTC)
 }

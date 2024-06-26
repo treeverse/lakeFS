@@ -5,16 +5,14 @@ import (
 	"net/url"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block/blocktest"
 	"github.com/treeverse/lakefs/pkg/block/params"
-	"github.com/treeverse/lakefs/pkg/block/s3"
-	"github.com/treeverse/lakefs/pkg/osinfo"
+	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 )
 
-func getS3BlockAdapter(t *testing.T) *s3.Adapter {
+func getS3BlockAdapter(t *testing.T) *s3a.Adapter {
 	s3params := params.S3{
 		Region:               "us-east-1",
 		Endpoint:             blockURL,
@@ -25,10 +23,8 @@ func getS3BlockAdapter(t *testing.T) *s3.Adapter {
 			SecretAccessKey: minioTestSecretAccessKey,
 		},
 	}
-	tf := &osinfo.MockTimeFactory{
-		NowTime: time.Unix(osinfo.MockNowDefault, 0),
-	}
-	adapter, err := s3.NewAdapter(context.Background(), s3params, tf)
+
+	adapter, err := s3a.NewAdapter(context.Background(), s3params, s3a.WithNowFactory(blocktest.NowMockDefault))
 	if err != nil {
 		t.Fatal("cannot create s3 adapter: ", err)
 	}
