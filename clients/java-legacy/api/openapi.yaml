@@ -7282,6 +7282,10 @@ components:
         checksum:
           type: string
         size_bytes:
+          description: |
+            The number of bytes in the object.  lakeFS always populates this
+            field when returning ObjectStats.  This field is optional _for
+            the client_ to supply, for instance on upload.
           format: int64
           type: integer
         mtime:
