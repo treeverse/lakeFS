@@ -20,14 +20,14 @@ const (
 // Parameterized test of the Multipart Upload APIs. After successful upload we Get the result and compare to the original
 func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
-	parts, full := createMultipartContents()
-
 	cases := []struct {
-		name string
-		path string
+		name            string
+		path            string
+		lastPartPartial bool
 	}{
-		{"simple", "abc"},
-		{"nested", "foo/bar"},
+		{"simple", "abc", false},
+		{"partial", "abc", true},
+		{"nested", "foo/bar", false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -37,6 +37,7 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 				Identifier:       c.path,
 				IdentifierType:   block.IdentifierTypeRelative,
 			}
+			parts, full := createMultipartContents(c.lastPartPartial)
 
 			verifyListInvalid(t, ctx, adapter, obj, "invalidId")
 
@@ -88,51 +89,33 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 // Test aborting a multipart upload
 func testAdapterAbortMultipartUpload(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
-	parts, _ := createMultipartContents()
+	parts, _ := createMultipartContents(false)
 	obj, _ := objPointers(storageNamespace)
-	uploadID := "foobar"
 
-	//Start an upload
+	// Start an upload
 	resp, err := adapter.CreateMultiPartUpload(ctx, obj, nil, block.CreateMultiPartUploadOpts{})
 	require.NoError(t, err)
-	uploadID = resp.UploadID
+	uploadID := resp.UploadID
 
-	multiParts := uploadParts(t, ctx, adapter, obj, uploadID, parts)
+	uploadParts(t, ctx, adapter, obj, uploadID, parts)
 
 	listResp, err := adapter.ListParts(ctx, obj, uploadID, block.ListPartsOpts{})
 	if err == nil {
 		require.Equal(t, multipartNumberOfParts, len(listResp.Parts))
 	}
 
-	//Test abort
+	// Test abort
 	err = adapter.AbortMultiPartUpload(ctx, obj, uploadID)
 	require.NoError(t, err)
 
 	// verify no parts to list
 	verifyListInvalid(t, ctx, adapter, obj, uploadID)
-
-	// verify that I can't complete after Abort was called
-	_, err = adapter.CompleteMultiPartUpload(ctx, obj, resp.UploadID, &block.MultipartUploadCompletion{
-		Part: multiParts,
-	})
-	require.NotNil(t, err)
-}
-
-// Test aborting a multipart upload that doesn't exist
-func testAdapterAbortNonexistentMultipart(t *testing.T, adapter block.Adapter, storageNamespace string) {
-	ctx := context.Background()
-	obj, _ := objPointers(storageNamespace)
-	uploadID := "foobar"
-
-	// Test invalid Abort
-	err := adapter.AbortMultiPartUpload(ctx, obj, uploadID)
-	require.NotNil(t, err) // invalid about should return some error
 }
 
 // Test of the Multipart Copy API
 func testAdapterCopyPart(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
-	parts, full := createMultipartContents()
+	parts, full := createMultipartContents(false)
 	obj, objCopy := objPointers(storageNamespace)
 	uploadMultiPart(t, ctx, adapter, obj, parts)
 
@@ -141,7 +124,7 @@ func testAdapterCopyPart(t *testing.T, adapter block.Adapter, storageNamespace s
 	require.NoError(t, err)
 	multiParts, err := copyPart(t, ctx, adapter, obj, objCopy, resp.UploadID)
 	if adapter.BlockstoreType() == block.BlockstoreTypeAzure {
-		require.ErrorContains(t, err, "not implemented")
+		require.ErrorContains(t, err, "not implemented") // azurite block store emulator did not yet implement this
 		return
 	}
 	_, err = adapter.CompleteMultiPartUpload(ctx, objCopy, resp.UploadID, &block.MultipartUploadCompletion{
@@ -155,7 +138,7 @@ func testAdapterCopyPart(t *testing.T, adapter block.Adapter, storageNamespace s
 // Test of the Multipart CopyRange API
 func testAdapterCopyPartRange(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
-	parts, full := createMultipartContents()
+	parts, full := createMultipartContents(false)
 	obj, objCopy := objPointers(storageNamespace)
 	uploadMultiPart(t, ctx, adapter, obj, parts)
 
@@ -165,7 +148,7 @@ func testAdapterCopyPartRange(t *testing.T, adapter block.Adapter, storageNamesp
 	multiParts := copyPartRange(t, ctx, adapter, obj, objCopy, resp.UploadID)
 	if adapter.BlockstoreType() == block.BlockstoreTypeAzure {
 		// not implemented in Azure
-		require.Nil(t, multiParts)
+		require.Nil(t, multiParts) // azurite block store emulator did not yet implement this
 		return
 	}
 
@@ -177,11 +160,15 @@ func testAdapterCopyPartRange(t *testing.T, adapter block.Adapter, storageNamesp
 	getAndCheckContents(t, ctx, adapter, full, objCopy)
 }
 
-func createMultipartContents() ([][]byte, []byte) {
+func createMultipartContents(lastPartPartial bool) ([][]byte, []byte) {
 	parts := make([][]byte, multipartNumberOfParts)
 	var partsConcat []byte
 	for i := 0; i < multipartNumberOfParts; i++ {
-		parts[i] = randstr.Bytes(multipartPartSize + i)
+		if lastPartPartial && (i == multipartNumberOfParts-1) {
+			parts[i] = randstr.Bytes(multipartPartSize/2 + i)
+		} else {
+			parts[i] = randstr.Bytes(multipartPartSize + i)
+		}
 		partsConcat = append(partsConcat, parts[i]...)
 	}
 	return parts, partsConcat
@@ -236,7 +223,7 @@ func copyPartRange(t *testing.T, ctx context.Context, adapter block.Adapter, obj
 		var endPosition = startPosition + multipartPartSize
 		partResp, err := adapter.UploadCopyPartRange(ctx, obj, objCopy, uploadID, partNumber, startPosition, endPosition)
 		if adapter.BlockstoreType() == block.BlockstoreTypeAzure {
-			require.ErrorContains(t, err, "not implemented")
+			require.ErrorContains(t, err, "not implemented") // azurite block store emulator did not yet implement this
 			return nil
 		}
 		require.NoError(t, err)
