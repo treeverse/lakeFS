@@ -102,7 +102,7 @@ Include this assembled jar (an "Überjar") from S3, from
     */
    ```
 
-2. Run SQL queries on your metadata:
+1. Run SQL queries on your metadata:
 
    ```scala
    df.createOrReplaceTempView("files")
@@ -117,7 +117,7 @@ Include this assembled jar (an "Überjar") from S3, from
     */
    ```
 
-3. Search by user metadata:
+1. Search by user metadata:
 
    ```scala
    import io.treeverse.clients.LakeFSContext
