@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -39,9 +37,7 @@ var flareCmd = &cobra.Command{
 	Args:   cobra.ExactArgs(0),
 	PreRun: warnOutputFlags,
 	Run: func(cmd *cobra.Command, args []string) {
-		if runtime.GOOS != "windows" {
-			syscall.Umask(flare.FlareUmask)
-		}
+		flare.SetBaselinePermissions(flare.FlareUmask)
 		now := strings.ReplaceAll(time.Now().String(), " ", "")
 		cfg := loadConfig()
 		envVarBlacklist := addAppEnvVarPrefix(config.GetSecureStringKeyPaths(cfg))
