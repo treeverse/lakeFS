@@ -1,5 +1,13 @@
 # Changelog
 
+# v1.28.0
+
+:new: What's new:
+- Add `flare` command (#7854)
+
+:bug: Bugs fixed:
+- Enforce MonitoredAuthService to implement EmailInviter when required (#7916)
+
 # v1.27.0
 
 :bug: Bugs fixed:
