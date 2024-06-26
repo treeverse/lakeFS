@@ -26,6 +26,15 @@ const (
 )
 
 func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
+	adapter, err := buildBlockAdapter(ctx, statsCollector, c)
+	if err != nil {
+		return nil, err
+	}
+
+	return block.NewMetricsAdapter(adapter), nil
+}
+
+func buildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
 	blockstore := c.BlockstoreType()
 	logging.FromContext(ctx).
 		WithField("type", blockstore).

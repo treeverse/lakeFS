@@ -5,6 +5,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
 var (
@@ -31,6 +32,7 @@ type StoreMetricsWrapper struct {
 func (s *StoreMetricsWrapper) Get(ctx context.Context, partitionKey, key []byte) (*ValueWithPredicate, error) {
 	const operation = "Get"
 	timer := prometheus.NewTimer(requestDuration.WithLabelValues(s.StoreType, operation))
+	ctx = httputil.SetClientTrace(ctx, s.StoreType)
 	defer timer.ObserveDuration()
 	res, err := s.Store.Get(ctx, partitionKey, key)
 	if err != nil {
@@ -42,6 +44,7 @@ func (s *StoreMetricsWrapper) Get(ctx context.Context, partitionKey, key []byte)
 func (s *StoreMetricsWrapper) Set(ctx context.Context, partitionKey, key, value []byte) error {
 	const operation = "Set"
 	timer := prometheus.NewTimer(requestDuration.WithLabelValues(s.StoreType, operation))
+	ctx = httputil.SetClientTrace(ctx, s.StoreType)
 	defer timer.ObserveDuration()
 	err := s.Store.Set(ctx, partitionKey, key, value)
 	if err != nil {
@@ -53,6 +56,7 @@ func (s *StoreMetricsWrapper) Set(ctx context.Context, partitionKey, key, value 
 func (s *StoreMetricsWrapper) SetIf(ctx context.Context, partitionKey, key, value []byte, valuePredicate Predicate) error {
 	const operation = "SetIf"
 	timer := prometheus.NewTimer(requestDuration.WithLabelValues(s.StoreType, operation))
+	ctx = httputil.SetClientTrace(ctx, s.StoreType)
 	defer timer.ObserveDuration()
 	err := s.Store.SetIf(ctx, partitionKey, key, value, valuePredicate)
 	if err != nil {
@@ -64,6 +68,7 @@ func (s *StoreMetricsWrapper) SetIf(ctx context.Context, partitionKey, key, valu
 func (s *StoreMetricsWrapper) Delete(ctx context.Context, partitionKey, key []byte) error {
 	const operation = "Delete"
 	timer := prometheus.NewTimer(requestDuration.WithLabelValues(s.StoreType, operation))
+	ctx = httputil.SetClientTrace(ctx, s.StoreType)
 	defer timer.ObserveDuration()
 	err := s.Store.Delete(ctx, partitionKey, key)
 	if err != nil {
@@ -75,6 +80,7 @@ func (s *StoreMetricsWrapper) Delete(ctx context.Context, partitionKey, key []by
 func (s *StoreMetricsWrapper) Scan(ctx context.Context, partitionKey []byte, options ScanOptions) (EntriesIterator, error) {
 	const operation = "Scan"
 	timer := prometheus.NewTimer(requestDuration.WithLabelValues(s.StoreType, operation))
+	ctx = httputil.SetClientTrace(ctx, s.StoreType)
 	defer timer.ObserveDuration()
 	res, err := s.Store.Scan(ctx, partitionKey, options)
 	if err != nil {

@@ -150,6 +150,9 @@ type BlockstoreMetadata struct {
 type Adapter interface {
 	Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error
 	Get(ctx context.Context, obj ObjectPointer) (io.ReadCloser, error)
+
+	// GetWalker is never called on the server side.
+	// TODO(itaiad200): Remove it from this interface.
 	GetWalker(uri *url.URL) (Walker, error)
 
 	// GetPreSignedURL returns a pre-signed URL for accessing obj with mode, and the

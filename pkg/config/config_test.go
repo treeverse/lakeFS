@@ -12,6 +12,7 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/go-test/deep"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/block/gs"
 	"github.com/treeverse/lakefs/pkg/block/local"
@@ -113,8 +114,12 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 		testutil.Must(t, err)
 		adapter, err := factory.BuildBlockAdapter(ctx, nil, c)
 		testutil.Must(t, err)
-		if _, ok := adapter.(*local.Adapter); !ok {
-			t.Fatalf("expected a local block adapter, got something else instead")
+		metricsAdapter, ok := adapter.(*block.MetricsAdapter)
+		if !ok {
+			t.Fatalf("got a %T when expecting a MetricsAdapter", adapter)
+		}
+		if _, ok := metricsAdapter.InnerAdapter().(*local.Adapter); !ok {
+			t.Fatalf("got %T expected a local block adapter", metricsAdapter.InnerAdapter())
 		}
 	})
 
@@ -134,7 +139,12 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 		testutil.Must(t, err)
 		adapter, err := factory.BuildBlockAdapter(ctx, nil, c)
 		testutil.Must(t, err)
-		if _, ok := adapter.(*gs.Adapter); !ok {
+
+		metricsAdapter, ok := adapter.(*block.MetricsAdapter)
+		if !ok {
+			t.Fatalf("expected a metrics block adapter, got something else instead")
+		}
+		if _, ok := metricsAdapter.InnerAdapter().(*gs.Adapter); !ok {
 			t.Fatalf("expected an gs block adapter, got something else instead")
 		}
 	})
