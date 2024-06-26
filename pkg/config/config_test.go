@@ -120,6 +120,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 		}
 		if _, ok := metricsAdapter.InnerAdapter().(*local.Adapter); !ok {
 			t.Fatalf("got %T expected a local block adapter", metricsAdapter.InnerAdapter())
+		}
 	})
 
 	t.Run("s3 block adapter", func(t *testing.T) {
