@@ -190,7 +190,7 @@ func Undo(c Changes) Changes {
 // This walker function simulates the way object listing is performed by S3. Contrary to how a standard FS walk function behaves, S3
 // does not take into consideration the directory hierarchy. Instead, object paths include the entire path relative to the root and as a result
 // the directory or "path separator" is also taken into account when providing the listing in a lexicographical order.
-func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error) error) error {
+func WalkS3(root string, includeFolders bool, callbackFunc func(p string, info fs.FileInfo, err error) error) error {
 	var stringHeap StringHeap
 
 	err := filepath.Walk(root, func(p string, info fs.FileInfo, err error) error {
@@ -201,7 +201,11 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 			return nil
 		}
 		if info.IsDir() {
-			// TODO: We don't return dir results for the listing, how will this effect directory markers, and can we even support directory markers?
+			if includeFolders {
+				if err = callbackFunc(p, info, err); err != nil {
+					return err
+				}
+			}
 			// Save encountered directories in a min heap and compare them with the first appearance of a file in that level
 			heap.Push(&stringHeap, p+path.Separator) // add path separator to dir name and sort it later
 			return filepath.SkipDir
@@ -213,7 +217,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 				break
 			}
 			heap.Pop(&stringHeap) // remove from queue
-			if err = WalkS3(dir, callbackFunc); err != nil {
+			if err = WalkS3(dir, includeFolders, callbackFunc); err != nil {
 				return err
 			}
 		}
@@ -230,7 +234,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 	// Finally, finished walking over FS, handle remaining dirs
 	for stringHeap.Len() > 0 {
 		dir := heap.Pop(&stringHeap).(string)
-		if err = WalkS3(dir, callbackFunc); err != nil {
+		if err = WalkS3(dir, includeFolders, callbackFunc); err != nil {
 			return err
 		}
 	}
@@ -240,14 +244,15 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 // DiffLocalWithHead Checks changes between a local directory and the head it is pointing to. The diff check assumes the remote
 // is an immutable set so any changes found resulted from changes in the local directory
 // left is an object channel which contains results from a remote source. rightPath is the local directory to diff with
-func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Changes, error) {
+func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, includeFolders bool) (Changes, error) {
 	// left should be the base commit
 	changes := make([]*Change, 0)
+
 	var (
 		currentRemoteFile apigen.ObjectStats
 		hasMore           bool
 	)
-	err := WalkS3(rightPath, func(p string, info fs.FileInfo, err error) error {
+	err := WalkS3(rightPath, includeFolders, func(p string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

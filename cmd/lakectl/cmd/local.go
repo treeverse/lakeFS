@@ -67,7 +67,9 @@ func localDiff(ctx context.Context, client apigen.ClientWithResponsesInterface, 
 		return local.ListRemote(ctx, client, remote, currentRemoteState)
 	})
 
-	changes, err := local.DiffLocalWithHead(currentRemoteState, path)
+	includeFolders := false // TODO: get this flag from the installation configuration
+
+	changes, err := local.DiffLocalWithHead(currentRemoteState, path, includeFolders)
 	if err != nil {
 		DieErr(err)
 	}

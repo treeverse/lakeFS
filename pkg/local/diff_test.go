@@ -22,10 +22,11 @@ const (
 
 func TestDiffLocal(t *testing.T) {
 	cases := []struct {
-		Name       string
-		LocalPath  string
-		RemoteList []apigen.ObjectStats
-		Expected   []*local.Change
+		Name           string
+		IncludeFolders bool
+		LocalPath      string
+		RemoteList     []apigen.ObjectStats
+		Expected       []*local.Change
 	}{
 		{
 			Name:      "t1_no_diff",
@@ -38,6 +39,35 @@ func TestDiffLocal(t *testing.T) {
 				}, {
 					Path:      "sub/f.txt",
 					SizeBytes: swag.Int64(3),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "sub/folder/f.txt",
+					SizeBytes: swag.Int64(6),
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			Expected: []*local.Change{},
+		},
+		{
+			Name:           "t1_no_diff_include_folders",
+			IncludeFolders: true,
+			LocalPath:      "testdata/localdiff/t1",
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      ".hidden-file",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "sub",
+					SizeBytes: swag.Int64(128),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "sub/f.txt",
+					SizeBytes: swag.Int64(3),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "sub/folder",
+					SizeBytes: swag.Int64(96),
 					Mtime:     diffTestCorrectTime,
 				}, {
 					Path:      "sub/folder/f.txt",
@@ -149,18 +179,48 @@ func TestDiffLocal(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:           "t1_folder_added",
+			IncludeFolders: true,
+			LocalPath:      "testdata/localdiff/t1",
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      ".hidden-file",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "sub",
+					SizeBytes: swag.Int64(128),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "sub/f.txt",
+					SizeBytes: swag.Int64(3),
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: "sub/folder",
+					Type: local.ChangeTypeAdded,
+				},
+				{
+					Path: "sub/folder/f.txt",
+					Type: local.ChangeTypeAdded,
+				},
+			},
+		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.Name, func(t *testing.T) {
-			fixTime(t, tt.LocalPath)
+			fixTime(t, tt.LocalPath, tt.IncludeFolders)
 			left := tt.RemoteList
 			sort.SliceStable(left, func(i, j int) bool {
 				return left[i].Path < left[j].Path
 			})
 			lc := make(chan apigen.ObjectStats, len(left))
 			makeChan(lc, left)
-			changes, err := local.DiffLocalWithHead(lc, tt.LocalPath)
+			changes, err := local.DiffLocalWithHead(lc, tt.LocalPath, tt.IncludeFolders)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -182,9 +242,9 @@ func makeChan[T any](c chan<- T, l []T) {
 	close(c)
 }
 
-func fixTime(t *testing.T, localPath string) {
+func fixTime(t *testing.T, localPath string, includeFolders bool) {
 	err := filepath.WalkDir(localPath, func(path string, d fs.DirEntry, err error) error {
-		if !d.IsDir() {
+		if !d.IsDir() || includeFolders {
 			return os.Chtimes(path, time.Now(), time.Unix(diffTestCorrectTime, 0))
 		}
 		return nil
@@ -256,8 +316,9 @@ func setupFiles(t testing.TB, fileList []string) string {
 
 func TestWalkS3(t *testing.T) {
 	cases := []struct {
-		Name     string
-		FileList []string
+		Name           string
+		IncludeFolders bool
+		FileList       []string
 	}{
 		{
 			Name:     "reverse order",
@@ -284,7 +345,7 @@ func TestWalkS3(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			dir := setupFiles(t, tt.FileList)
 			var walkOrder []string
-			err := local.WalkS3(dir, func(p string, info fs.FileInfo, err error) error {
+			err := local.WalkS3(dir, tt.IncludeFolders, func(p string, info fs.FileInfo, err error) error {
 				walkOrder = append(walkOrder, strings.TrimPrefix(p, dir))
 				return nil
 			})
@@ -313,7 +374,7 @@ func FuzzWalkS3(f *testing.F) {
 
 		dir := setupFiles(t, files)
 		var walkOrder []string
-		err := local.WalkS3(dir, func(p string, info fs.FileInfo, err error) error {
+		err := local.WalkS3(dir, false, func(p string, info fs.FileInfo, err error) error {
 			walkOrder = append(walkOrder, strings.TrimPrefix(p, dir))
 			return nil
 		})
