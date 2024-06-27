@@ -146,7 +146,7 @@ Authentication in lakeFS Enterprise is handled by a secondary service which runs
 * OpenID Connect
 * LDAP
 
-If you're using an authentication provider that is not listed please [contact us](support@treeverse.io) for further assistance.
+If you're using an authentication provider that is not listed please [contact us](https://lakefs.io/contact-us/) for further assistance.
 
 <div class="tabs">
   <ul>
