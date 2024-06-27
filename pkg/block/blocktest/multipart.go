@@ -255,13 +255,13 @@ func getAndCheckContents(t *testing.T, ctx context.Context, adapter block.Adapte
 	t.Helper()
 	// first check exists
 	ok, err := adapter.Exists(ctx, obj)
-	require.NoError(t, err)
-	require.True(t, ok)
+	require.NoError(t, err, "Exists failed")
+	require.True(t, ok, "Returned Non-OK Status")
 
 	reader, err := adapter.Get(ctx, obj)
-	require.NoError(t, err)
+	require.NoError(t, err, "Get Object failed")
 	got, err := io.ReadAll(reader)
-	require.NoError(t, err)
+	require.NoError(t, err, "ReadAll returned error")
 	requireEqualBigByteSlice(t, exp, got)
 }
 

@@ -354,7 +354,7 @@ func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace s
 		require.ErrorContains(t, err, "no credentials found")
 		return
 	} else if adapter.BlockstoreType() == block.BlockstoreTypeLocal {
-		require.ErrorContains(t, err, "operation not supported")
+		require.ErrorIs(t, err, block.ErrOperationNotSupported)
 		return
 	}
 	require.NoError(t, err)
@@ -378,13 +378,12 @@ func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk b
 	tree := make([]string, 0)
 
 	uri, err := url.Parse(qk.Format())
-	require.NoError(t, err)
+	require.NoError(t, err, "URL Parse Error")
 
 	w, err := adapter.GetWalker(uri)
-	require.NoError(t, err)
+	require.NoError(t, err, "GetWalker failed")
 
 	walker := store.NewWrapper(w, uri)
-	require.NoError(t, err)
 
 	err = walker.Walk(ctx, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
 		_, p, _ := strings.Cut(e.Address, uri.String())
