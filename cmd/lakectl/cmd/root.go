@@ -94,6 +94,14 @@ type Configuration struct {
 		// setting FixSparkPlaceholder to true will change spark placeholder with the actual location. for more information see https://github.com/treeverse/lakeFS/issues/2213
 		FixSparkPlaceholder bool `mapstructure:"fix_spark_placeholder"`
 	}
+	// Experimental - Use caution when enabling experimental features. It should only be used after consulting with the lakeFS team!
+	Experimental struct {
+		Local struct {
+			UnixPerm struct {
+				Enabled bool `mapstructure:"enabled"`
+			} `mapstructure:"unix_permissions"`
+		} `mapstructure:"local"`
+	} `mapstructure:"experimental"`
 }
 
 type versionInfo struct {
@@ -527,8 +535,8 @@ func initConfig() {
 
 	// Inform viper of all expected fields.
 	// Otherwise, it fails to deserialize from the environment.
-	var cfg Configuration
-	keys := lakefsconfig.GetStructKeys(reflect.TypeOf(cfg), "mapstructure", "squash")
+	var conf Configuration
+	keys := lakefsconfig.GetStructKeys(reflect.TypeOf(conf), "mapstructure", "squash")
 	for _, key := range keys {
 		viper.SetDefault(key, nil)
 	}
@@ -540,6 +548,7 @@ func initConfig() {
 	viper.SetDefault("server.retries.max_attempts", defaultMaxAttempts)
 	viper.SetDefault("server.retries.max_wait_interval", defaultMaxRetryInterval)
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
+	viper.SetDefault("experimental.local.unix_permissions.enabled", false)
 
 	cfgErr = viper.ReadInConfig()
 }

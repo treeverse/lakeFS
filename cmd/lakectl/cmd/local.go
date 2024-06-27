@@ -46,7 +46,8 @@ const localSummaryTemplate = `
 
 var (
 	localDefaultArgsRange = cobra.RangeArgs(localDefaultMinArgs, localDefaultMaxArgs)
-	ErrUnknownOperation   = errors.New("unknown operation")
+
+	ErrUnknownOperation = errors.New("unknown operation")
 )
 
 func withGitIgnoreFlag(cmd *cobra.Command) {
