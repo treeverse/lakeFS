@@ -60,15 +60,18 @@ type SyncManager struct {
 	progressBar *ProgressPool
 	flags       SyncFlags
 	tasks       Tasks
+	// includePerm - Experimental: preserve Unix file permissions
+	includePerm bool
 }
 
-func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, httpClient *http.Client, flags SyncFlags) *SyncManager {
+func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, httpClient *http.Client, flags SyncFlags, includePerm bool) *SyncManager {
 	return &SyncManager{
 		ctx:         ctx,
 		client:      client,
 		httpClient:  httpClient,
 		progressBar: NewProgressPool(),
 		flags:       flags,
+		includePerm: includePerm,
 	}
 }
 
