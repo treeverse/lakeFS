@@ -20,7 +20,7 @@ Currently, there are two methods to create lakeFS ContainerOps:
 
 ### Function-based ContainerOps
 
-To implement a [function-based component](https://www.kubeflow.org/docs/components/pipelines/sdk/python-function-components/) that invokes lakeFS operations,
+To implement a [function-based component](https://www.kubeflow.org/docs/components/pipelines/legacy-v1/sdk/python-function-components/) that invokes lakeFS operations,
 you should use the [Python OpenAPI client](python.md) lakeFS provides. See the example below that demonstrates how to make the client's package available to your ContainerOp.
 
 #### Example operations
