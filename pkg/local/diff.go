@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -190,8 +191,9 @@ func Undo(c Changes) Changes {
 // This walker function simulates the way object listing is performed by S3. Contrary to how a standard FS walk function behaves, S3
 // does not take into consideration the directory hierarchy. Instead, object paths include the entire path relative to the root and as a result
 // the directory or "path separator" is also taken into account when providing the listing in a lexicographical order.
-func WalkS3(root string, includeFolders bool, callbackFunc func(p string, info fs.FileInfo, err error) error) error {
+func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error) error) error {
 	var stringHeap StringHeap
+	var dirsInfo = make(map[string]os.FileInfo)
 
 	err := filepath.Walk(root, func(p string, info fs.FileInfo, err error) error {
 		if err != nil {
@@ -200,14 +202,12 @@ func WalkS3(root string, includeFolders bool, callbackFunc func(p string, info f
 		if p == root {
 			return nil
 		}
+
 		if info.IsDir() {
-			if includeFolders {
-				if err = callbackFunc(p, info, err); err != nil {
-					return err
-				}
-			}
 			// Save encountered directories in a min heap and compare them with the first appearance of a file in that level
-			heap.Push(&stringHeap, p+path.Separator) // add path separator to dir name and sort it later
+			dir := p + path.Separator
+			dirsInfo[dir] = info        // save dir info for processing it later
+			heap.Push(&stringHeap, dir) // add path separator to dir name and sort it later
 			return filepath.SkipDir
 		}
 
@@ -217,10 +217,16 @@ func WalkS3(root string, includeFolders bool, callbackFunc func(p string, info f
 				break
 			}
 			heap.Pop(&stringHeap) // remove from queue
-			if err = WalkS3(dir, includeFolders, callbackFunc); err != nil {
+
+			if err = callbackFunc(dir, dirsInfo[dir], err); err != nil {
+				return err
+			}
+
+			if err = WalkS3(dir, callbackFunc); err != nil {
 				return err
 			}
 		}
+
 		// Process the file after we finished processing all the dirs that precede it
 		if err = callbackFunc(p, info, err); err != nil {
 			return err
@@ -234,7 +240,12 @@ func WalkS3(root string, includeFolders bool, callbackFunc func(p string, info f
 	// Finally, finished walking over FS, handle remaining dirs
 	for stringHeap.Len() > 0 {
 		dir := heap.Pop(&stringHeap).(string)
-		if err = WalkS3(dir, includeFolders, callbackFunc); err != nil {
+
+		if err = callbackFunc(dir, dirsInfo[dir], err); err != nil {
+			return err
+		}
+
+		if err = WalkS3(dir, callbackFunc); err != nil {
 			return err
 		}
 	}
@@ -252,11 +263,11 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 		currentRemoteFile apigen.ObjectStats
 		hasMore           bool
 	)
-	err := WalkS3(rightPath, includeFolders, func(p string, info fs.FileInfo, err error) error {
+	err := WalkS3(rightPath, func(p string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if diffShouldIgnore(info.Name()) {
+		if diffShouldIgnore(info, includeFolders) {
 			return nil
 		}
 		localPath := strings.TrimPrefix(p, rightPath)
@@ -354,11 +365,15 @@ func ListRemote(ctx context.Context, client apigen.ClientWithResponsesInterface,
 	return nil
 }
 
-func diffShouldIgnore(name string) bool {
-	switch name {
-	case IndexFileName, ".DS_Store":
-		return true
-	default:
-		return false
+func diffShouldIgnore(info fs.FileInfo, includeFolders bool) bool {
+	if info.IsDir() {
+		return !includeFolders
+	} else {
+		switch info.Name() {
+		case IndexFileName, ".DS_Store":
+			return true
+		default:
+			return false
+		}
 	}
 }

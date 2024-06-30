@@ -58,7 +58,7 @@ func TestDiffLocal(t *testing.T) {
 					SizeBytes: swag.Int64(64),
 					Mtime:     diffTestCorrectTime,
 				}, {
-					Path:      "sub",
+					Path:      "sub/",
 					SizeBytes: swag.Int64(128),
 					Mtime:     diffTestCorrectTime,
 				}, {
@@ -66,7 +66,7 @@ func TestDiffLocal(t *testing.T) {
 					SizeBytes: swag.Int64(3),
 					Mtime:     diffTestCorrectTime,
 				}, {
-					Path:      "sub/folder",
+					Path:      "sub/folder/",
 					SizeBytes: swag.Int64(96),
 					Mtime:     diffTestCorrectTime,
 				}, {
@@ -189,7 +189,7 @@ func TestDiffLocal(t *testing.T) {
 					SizeBytes: swag.Int64(64),
 					Mtime:     diffTestCorrectTime,
 				}, {
-					Path:      "sub",
+					Path:      "sub/",
 					SizeBytes: swag.Int64(128),
 					Mtime:     diffTestCorrectTime,
 				}, {
@@ -200,7 +200,7 @@ func TestDiffLocal(t *testing.T) {
 			},
 			Expected: []*local.Change{
 				{
-					Path: "sub/folder",
+					Path: "sub/folder/",
 					Type: local.ChangeTypeAdded,
 				},
 				{
@@ -316,9 +316,8 @@ func setupFiles(t testing.TB, fileList []string) string {
 
 func TestWalkS3(t *testing.T) {
 	cases := []struct {
-		Name           string
-		IncludeFolders bool
-		FileList       []string
+		Name     string
+		FileList []string
 	}{
 		{
 			Name:     "reverse order",
@@ -345,7 +344,7 @@ func TestWalkS3(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			dir := setupFiles(t, tt.FileList)
 			var walkOrder []string
-			err := local.WalkS3(dir, tt.IncludeFolders, func(p string, info fs.FileInfo, err error) error {
+			err := local.WalkS3(dir, func(p string, info fs.FileInfo, err error) error {
 				walkOrder = append(walkOrder, strings.TrimPrefix(p, dir))
 				return nil
 			})
@@ -374,7 +373,7 @@ func FuzzWalkS3(f *testing.F) {
 
 		dir := setupFiles(t, files)
 		var walkOrder []string
-		err := local.WalkS3(dir, false, func(p string, info fs.FileInfo, err error) error {
+		err := local.WalkS3(dir, func(p string, info fs.FileInfo, err error) error {
 			walkOrder = append(walkOrder, strings.TrimPrefix(p, dir))
 			return nil
 		})
