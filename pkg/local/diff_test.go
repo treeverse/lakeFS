@@ -60,7 +60,7 @@ func TestDiffLocal(t *testing.T) {
 					Mtime:     diffTestCorrectTime,
 				}, {
 					Path:      "sub/",
-					SizeBytes: swag.Int64(128),
+					SizeBytes: swag.Int64(4096),
 					Mtime:     diffTestCorrectTime,
 				}, {
 					Path:      "sub/f.txt",
@@ -68,7 +68,7 @@ func TestDiffLocal(t *testing.T) {
 					Mtime:     diffTestCorrectTime,
 				}, {
 					Path:      "sub/folder/",
-					SizeBytes: swag.Int64(96),
+					SizeBytes: swag.Int64(4096),
 					Mtime:     diffTestCorrectTime,
 				}, {
 					Path:      "sub/folder/f.txt",
@@ -191,7 +191,7 @@ func TestDiffLocal(t *testing.T) {
 					Mtime:     diffTestCorrectTime,
 				}, {
 					Path:      "sub/",
-					SizeBytes: swag.Int64(128),
+					SizeBytes: swag.Int64(4096),
 					Mtime:     diffTestCorrectTime,
 				}, {
 					Path:      "sub/f.txt",
