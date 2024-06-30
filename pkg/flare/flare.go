@@ -171,6 +171,12 @@ func (f *Flare) ProcessEnvVars(outPath, fileName string, getWriterFunc GetFileWr
 	return nil
 }
 
+// SetBaselinePermissions sets the Umask for all files created by flare for posix operating systems
+// on Windows this is a noop as permissions are set according to the parent directory
+func SetBaselinePermissions(mask int) {
+	setBaselinePermissions(mask)
+}
+
 func (f *Flare) processEnvVars(w io.Writer) error {
 	for _, e := range os.Environ() {
 		for _, p := range f.envVarPrefixes {

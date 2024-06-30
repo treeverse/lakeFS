@@ -2,6 +2,6 @@ package flare
 
 import "syscall"
 
-func SetBaselinePermissions(mask int) {
+func setBaselinePermissions(mask int) {
 	syscall.Umask(mask)
 }
