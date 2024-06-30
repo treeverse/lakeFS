@@ -119,7 +119,7 @@ func NewProgressPool() *ProgressPool {
 	pw := progress.NewWriter()
 	pw.SetAutoStop(false) // important
 	pw.SetTrackerLength(progressTrackerLength)
-	pw.SetMessageWidth(progressTrackerWidth)
+	pw.SetMessageLength(progressTrackerWidth)
 	pw.SetSortBy(progress.SortByValue)
 	pw.SetStyle(progress.StyleDefault)
 	pw.SetTrackerPosition(progress.PositionRight)
