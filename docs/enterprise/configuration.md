@@ -1,8 +1,13 @@
 ---
-title: Fluffy Server Configuration
-description: Configuration reference for Fluffy Server
+title: lakeFS Enterprise Configuration reference
+description: a configuration reference for lakeFS Enterprise
+nav_order: 110
 parent: lakeFS Enterprise
 ---
+
+TODO: add an intro
+
+# lakeFS Configuration
 
 # Fluffy Server Configuration
 
