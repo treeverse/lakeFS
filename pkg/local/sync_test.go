@@ -1,3 +1,6 @@
+// Until https://github.com/jedib0t/go-pretty/issues/322 is resolved
+//go:build !race
+
 package local_test
 
 import (
