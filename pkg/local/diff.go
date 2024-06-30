@@ -295,6 +295,8 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 				}
 				if localBytes != swag.Int64Value(currentRemoteFile.SizeBytes) || localMtime != remoteMtime {
 					// we made a change!
+					// TODO: this is for debugging only! remove this!
+					// debugPath := fmt.Sprintf("%s [%d <> %d]", localPath, localBytes, swag.Int64Value(currentRemoteFile.SizeBytes))
 					changes = append(changes, &Change{ChangeSourceLocal, localPath, ChangeTypeModified})
 				}
 				currentRemoteFile.Path = ""
