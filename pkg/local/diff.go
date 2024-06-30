@@ -255,7 +255,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 // DiffLocalWithHead Checks changes between a local directory and the head it is pointing to. The diff check assumes the remote
 // is an immutable set so any changes found resulted from changes in the local directory
 // left is an object channel which contains results from a remote source. rightPath is the local directory to diff with
-func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, includeFolders bool) (Changes, error) {
+func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, includeDirs bool) (Changes, error) {
 	// left should be the base commit
 	changes := make([]*Change, 0)
 
@@ -267,7 +267,7 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 		if err != nil {
 			return err
 		}
-		if diffShouldIgnore(info, includeFolders) {
+		if diffShouldIgnore(info, includeDirs) {
 			return nil
 		}
 		localPath := strings.TrimPrefix(p, rightPath)
@@ -365,9 +365,9 @@ func ListRemote(ctx context.Context, client apigen.ClientWithResponsesInterface,
 	return nil
 }
 
-func diffShouldIgnore(info fs.FileInfo, includeFolders bool) bool {
+func diffShouldIgnore(info fs.FileInfo, includeDirs bool) bool {
 	if info.IsDir() {
-		return !includeFolders
+		return !includeDirs
 	} else {
 		switch info.Name() {
 		case IndexFileName, ".DS_Store":

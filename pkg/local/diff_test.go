@@ -242,9 +242,9 @@ func makeChan[T any](c chan<- T, l []T) {
 	close(c)
 }
 
-func fixTime(t *testing.T, localPath string, includeFolders bool) {
+func fixTime(t *testing.T, localPath string, includeDirs bool) {
 	err := filepath.WalkDir(localPath, func(path string, d fs.DirEntry, err error) error {
-		if !d.IsDir() || includeFolders {
+		if !d.IsDir() || includeDirs {
 			return os.Chtimes(path, time.Now(), time.Unix(diffTestCorrectTime, 0))
 		}
 		return nil
