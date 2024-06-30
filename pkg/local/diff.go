@@ -293,7 +293,11 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 				if err != nil {
 					return err
 				}
-				if localBytes != swag.Int64Value(currentRemoteFile.SizeBytes) || localMtime != remoteMtime {
+
+				// dirs might have different sizes on different operating systems
+				sizeChanged := !info.IsDir() && localBytes != swag.Int64Value(currentRemoteFile.SizeBytes)
+				mtimeChanged := localMtime != remoteMtime
+				if sizeChanged || mtimeChanged {
 					// we made a change!
 					changes = append(changes, &Change{ChangeSourceLocal, localPath, ChangeTypeModified})
 				}
