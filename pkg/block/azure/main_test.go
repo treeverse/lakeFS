@@ -54,7 +54,7 @@ func createDNSResolver() {
 
 func runAzurite(dockerPool *dockertest.Pool) (string, func()) {
 	ctx := context.Background()
-	resource, err := dockerPool.Run("mcr.microsoft.com/azure-storage/azurite", "3.26.0", []string{
+	resource, err := dockerPool.Run("mcr.microsoft.com/azure-storage/azurite", "3.31.0", []string{
 		fmt.Sprintf("AZURITE_ACCOUNTS=%s:%s", accountName, accountKey),
 	})
 	if err != nil {
@@ -99,6 +99,7 @@ func runAzurite(dockerPool *dockertest.Pool) (string, func()) {
 	return url, closer
 }
 
+// Runs a container with mock Azure Blob Storage for use in package tests
 func TestMain(m *testing.M) {
 	var err error
 	pool, err = dockertest.NewPool("")

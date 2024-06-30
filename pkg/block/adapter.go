@@ -147,6 +147,9 @@ type BlockstoreMetadata struct {
 	Region *string
 }
 
+// Adapter abstract Storage Adapter for persistence of version controlled data. The methods generally map to S3 API methods
+// - Generally some type of Object Storage
+// - Can also be block storage or even in-memory
 type Adapter interface {
 	Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error
 	Get(ctx context.Context, obj ObjectPointer) (io.ReadCloser, error)
