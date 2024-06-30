@@ -19,10 +19,12 @@ For example:
 GET http://foo.example.com/some/location
 ```
 
-In this case, there's no way for lakeFS to determine whether this is a virtual-host request where the endpoint url is `example.com`, the bucket name is `foo` and the path is `/some/location`,
-or a path-based request where the endpoint is `foo.example.com`, the bucket name is `some` and the path is `location`.
-
-This requires an extra step: Defining an explicit set of DNS record for lakeFS S3 gateway.
+There are two ways to interpret the URL above:
+- as a virtual-host URL where the endpoint URL is `example.com`, the bucket name is `foo`, and the path is `/some/location`
+- as a path-based URL where the endpoint is `foo.example.com`, the bucket name is `some` and the path is `location`
+ 
+By default, lakeFS reads URLs as path-based. To read the URL as a virtual-host request, lakeFS requires additional configuration which includes 
+defining an explicit set of DNS records for the lakeFS S3 gateway.
 
 ## Adding an explicit S3 domain name to the S3 Gateway configuration
 
