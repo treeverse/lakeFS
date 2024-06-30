@@ -1,6 +1,7 @@
 package local_test
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -314,6 +315,30 @@ func setupFiles(t testing.TB, fileList []string) string {
 	return dir
 }
 
+func getSortedFilesAndDirs(fileList []string) []string {
+	res := make([]string, 0)
+	visited := make(map[string]bool)
+
+	sort.Strings(fileList)
+
+	for _, file := range fileList {
+		subDirs := strings.Split(file, "/")
+		path := ""
+		for _, subDir := range subDirs[:len(subDirs)-1] {
+			path = fmt.Sprintf("%s%s/", path, subDir)
+			if _, ok := visited[path]; !ok {
+				// add the sub-directory
+				res = append(res, path)
+				visited[path] = true
+			}
+		}
+		// add the file
+		res = append(res, file)
+	}
+
+	return res
+}
+
 func TestWalkS3(t *testing.T) {
 	cases := []struct {
 		Name     string
@@ -348,9 +373,10 @@ func TestWalkS3(t *testing.T) {
 				walkOrder = append(walkOrder, strings.TrimPrefix(p, dir))
 				return nil
 			})
+
 			require.NoError(t, err)
-			sort.Strings(tt.FileList)
-			require.Equal(t, tt.FileList, walkOrder)
+			sortedFilesAndDirs := getSortedFilesAndDirs(tt.FileList)
+			require.Equal(t, sortedFilesAndDirs, walkOrder)
 		})
 	}
 }
@@ -378,12 +404,14 @@ func FuzzWalkS3(f *testing.F) {
 			return nil
 		})
 		require.NoError(t, err)
-		sort.Strings(files)
-		if len(files) == 0 {
+
+		sortedFilesAndDirs := getSortedFilesAndDirs(files)
+		if len(sortedFilesAndDirs) == 0 {
 			// require.Equal doesn't understand empty slices;
 			// our code represents empty slices as nil.
-			files = nil
+			sortedFilesAndDirs = nil
 		}
-		require.Equal(t, files, walkOrder)
+
+		require.Equal(t, sortedFilesAndDirs, walkOrder)
 	})
 }
