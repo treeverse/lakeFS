@@ -1,5 +1,5 @@
 package flare
 
-func SetBaselinePermissions(_ int) {
+func setBaselinePermissions(_ int) {
 	return
 }
