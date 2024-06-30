@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block/blocktest"
 	"github.com/treeverse/lakefs/pkg/block/params"
-	"github.com/treeverse/lakefs/pkg/block/s3"
+	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 )
 
-func getS3BlockAdapter(t *testing.T) *s3.Adapter {
+func getS3BlockAdapter(t *testing.T) *s3a.Adapter {
 	s3params := params.S3{
 		Region:               "us-east-1",
 		Endpoint:             blockURL,
@@ -23,13 +23,15 @@ func getS3BlockAdapter(t *testing.T) *s3.Adapter {
 			SecretAccessKey: minioTestSecretAccessKey,
 		},
 	}
-	adapter, err := s3.NewAdapter(context.Background(), s3params)
+
+	adapter, err := s3a.NewAdapter(context.Background(), s3params, s3a.WithNowFactory(blocktest.NowMockDefault))
 	if err != nil {
 		t.Fatal("cannot create s3 adapter: ", err)
 	}
 	return adapter
 }
 
+// TestS3Adapter tests basic functionality of the S3 block adapter(backed by MinIO)
 func TestS3Adapter(t *testing.T) {
 	basePath, err := url.JoinPath("s3://", bucketName)
 	require.NoError(t, err)
@@ -42,6 +44,7 @@ func TestS3Adapter(t *testing.T) {
 	blocktest.AdapterTest(t, adapter, localPath, externalPath)
 }
 
+// TestAdapterNamespace tests the namespace validity regex with various paths
 func TestAdapterNamespace(t *testing.T) {
 	adapter := getS3BlockAdapter(t)
 	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo().ValidityRegex)

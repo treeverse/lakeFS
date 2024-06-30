@@ -30,6 +30,7 @@ func newClient(port string) (*minio.Client, error) {
 	return minio.New(fmt.Sprintf("%s:%s", minioTestEndpoint, port), &minio.Options{Creds: creds})
 }
 
+// TestMain spins up a MinIO Container and add a bucket for use in package tests
 func TestMain(m *testing.M) {
 	var err error
 	pool, err = dockertest.NewPool("")
