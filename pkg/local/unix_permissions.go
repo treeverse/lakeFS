@@ -44,6 +44,21 @@ func getUmask() int {
 	return umask
 }
 
+func getUnixOwnership(info os.FileInfo) unixOwnership {
+	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+		return unixOwnership{
+			UID: int(stat.Uid),
+			GID: int(stat.Gid),
+		}
+	} else {
+		// we are not in linux, this won't work anyway in windows, but maybe you want to log warnings
+		return unixOwnership{
+			UID: os.Getuid(),
+			GID: os.Getgid(),
+		}
+	}
+}
+
 func getDefaultPermissions(isDir bool) UnixPermissions {
 	getOwnershipMutex.Lock()
 	defer getOwnershipMutex.Unlock()
@@ -77,4 +92,17 @@ func getUnixPermissionFromStats(stats apigen.ObjectStats) (*UnixPermissions, err
 	}
 
 	return &permissions, nil
+}
+
+func isPermissionsChanged(local os.FileInfo, remoteFileStats apigen.ObjectStats) bool {
+	localOwnership := getUnixOwnership(local)
+
+	remote, err := getUnixPermissionFromStats(remoteFileStats)
+	if err != nil {
+		return true
+	}
+
+	return local.Mode().Perm() != remote.Mode.Perm() ||
+		localOwnership.UID != remote.unixOwnership.UID ||
+		localOwnership.GID != remote.unixOwnership.GID
 }

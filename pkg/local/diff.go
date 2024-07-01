@@ -265,7 +265,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 // DiffLocalWithHead Checks changes between a local directory and the head it is pointing to. The diff check assumes the remote
 // is an immutable set so any changes found resulted from changes in the local directory
 // left is an object channel which contains results from a remote source. rightPath is the local directory to diff with
-func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, includeDirs bool) (Changes, error) {
+func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, includeUnixPermissions bool) (Changes, error) {
 	// left should be the base commit
 	changes := make([]*Change, 0)
 
@@ -277,9 +277,12 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 		if err != nil {
 			return err
 		}
+
+		includeDirs := includeUnixPermissions
 		if !includeInDiff(info, includeDirs) {
 			return nil
 		}
+
 		localPath := strings.TrimPrefix(p, rightPath)
 		localPath = strings.TrimPrefix(localPath, string(filepath.Separator))
 		localPath = filepath.ToSlash(localPath) // normalize to use "/" always
@@ -307,7 +310,8 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 				// dirs might have different sizes on different operating systems
 				sizeChanged := !info.IsDir() && localBytes != swag.Int64Value(currentRemoteFile.SizeBytes)
 				mtimeChanged := localMtime != remoteMtime
-				if sizeChanged || mtimeChanged {
+				permissionsChanged := includeUnixPermissions && isPermissionsChanged(info, currentRemoteFile)
+				if sizeChanged || mtimeChanged || permissionsChanged {
 					// we made a change!
 					changes = append(changes, &Change{ChangeSourceLocal, localPath, ChangeTypeModified})
 				}
