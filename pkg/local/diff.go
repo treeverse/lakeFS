@@ -267,7 +267,7 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 		if err != nil {
 			return err
 		}
-		if diffShouldIgnore(info, includeDirs) {
+		if !includeInDiff(info, includeDirs) {
 			return nil
 		}
 		localPath := strings.TrimPrefix(p, rightPath)
@@ -369,15 +369,15 @@ func ListRemote(ctx context.Context, client apigen.ClientWithResponsesInterface,
 	return nil
 }
 
-func diffShouldIgnore(info fs.FileInfo, includeDirs bool) bool {
+func includeInDiff(info fs.FileInfo, includeDirs bool) bool {
 	if info.IsDir() {
-		return !includeDirs
+		return includeDirs
 	} else {
 		switch info.Name() {
 		case IndexFileName, ".DS_Store":
-			return true
-		default:
 			return false
+		default:
+			return true
 		}
 	}
 }
