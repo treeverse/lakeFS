@@ -29,7 +29,7 @@ func getTestClient(t *testing.T, endpoint string) *apigen.ClientWithResponses {
 	httpClient := &http.Client{
 		Transport: transport,
 	}
-	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(string(defaultAdminAccessKeyID), string(defaultAdminSecretAccessKey))
+	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(defaultAdminAccessKeyID, defaultAdminSecretAccessKey)
 	require.NoError(t, err)
 
 	serverEndpoint, err := apiutil.NormalizeLakeFSEndpoint(endpoint)
@@ -70,7 +70,7 @@ func TestUncommittedOutsideOfPrefix(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				w.Header().Set("X-Content-Type-Options", "nosniff")
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(res)
+				require.NoError(t, json.NewEncoder(w).Encode(res))
 			}),
 			expectedResult: false,
 		},
@@ -88,7 +88,7 @@ func TestUncommittedOutsideOfPrefix(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				w.Header().Set("X-Content-Type-Options", "nosniff")
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(res)
+				require.NoError(t, json.NewEncoder(w).Encode(res))
 			}),
 			expectedResult: true,
 		},
@@ -122,7 +122,7 @@ func TestUncommittedOutsideOfPrefix(t *testing.T) {
 					w.WriteHeader(http.StatusNotFound)
 				}
 				require.NotNil(t, res, "Unexpected request")
-				json.NewEncoder(w).Encode(res)
+				require.NoError(t, json.NewEncoder(w).Encode(res))
 			}),
 			expectedResult: false,
 		},
@@ -162,7 +162,7 @@ func TestUncommittedOutsideOfPrefix(t *testing.T) {
 				}
 
 				require.NotNil(t, res, "Unexpected request")
-				json.NewEncoder(w).Encode(res)
+				require.NoError(t, json.NewEncoder(w).Encode(res))
 			}),
 			expectedResult: true,
 		},
@@ -198,7 +198,7 @@ func TestUncommittedOutsideOfPrefix(t *testing.T) {
 				}
 
 				require.NotNil(t, res, "Unexpected request")
-				json.NewEncoder(w).Encode(res)
+				require.NoError(t, json.NewEncoder(w).Encode(res))
 			}),
 			expectedResult: true,
 		},
