@@ -167,9 +167,9 @@ You can use lakeFS’s existing [Role-Based Access Control mechanism](../referen
 
 ### Does data pass through the lakeFS server when using lakeFS Mount?
 
-lakeFS Mount leverages  pre-signed URLs to read data directly from the underlying object store, meaning data doesn’t  pass through the lakeFS server. By default, presign is disabled. To enable it, use:
+lakeFS Mount leverages  pre-signed URLs to read data directly from the underlying object store, meaning data doesn’t  pass through the lakeFS server. By default, presign is enabled. To disable it, use:
 ```shell
-everest mount <lakefs_uri> <mount_directory> --presign
+everest mount <lakefs_uri> <mount_directory> --presign=false
 ```
 
 ### What happens if a lakeFS branch is updated after I mount it?
@@ -186,6 +186,15 @@ When using lakeFS Mount, the volume of data accessed by the local machine influe
 ##### Recommended Configuration
 
 Ensure your **cache size** is large enough to accommodate the volume of files being accessed.
+
+### How does lakeFS Mount integrate with a Git repository?
+
+It is perfectly safe to mount a lakeFS path within a Git repository.
+lakeFS Mount prevents git from adding mounted objects to the git repository (i.e when running `git add -A`) by adding a virtual `.gitignore` file to the mounted directory.
+
+
+The .gitignore file will also instruct Git to ignore all files except `.everest/source` and in its absence, it will try to find a `.everest/source` file in the destination folder, and read the lakeFS URI from there. 
+Since `.everest/source` is in source control, it will mount the same lakeFS commit every time!
 
 ### I’m already using lakectl local for working with lakeFS data locally, why should I use lakeFS Mount?
 
