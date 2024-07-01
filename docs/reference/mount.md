@@ -189,7 +189,9 @@ Ensure your **cache size** is large enough to accommodate the volume of files be
 
 ### How does lakeFS Mount integrate with a Git repository?
 
-It is perfectly safe to mount a lakeFS path within a Git repository, lakeFS Mount will add a virtual `.gitignore` file to the mounted directory to avoid the case of adding to the git repository the mounted objects from lakeFS (i.e running `git add -A`).
+It is perfectly safe to mount a lakeFS path within a Git repository.
+lakeFS Mount prevents git from adding mounted objects to the git repository (i.e when running `git add -A`) by adding a virtual `.gitignore` file to the mounted directory.
+
 
 The .gitignore file will also instruct Git to ignore all files except `.everest/source` and in its absence, it will try to find a `.everest/source` file in the destination folder, and read the lakeFS URI from there. 
 Since `.everest/source` is in source control, it will mount the same lakeFS commit every time!
