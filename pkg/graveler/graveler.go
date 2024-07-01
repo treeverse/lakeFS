@@ -14,7 +14,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rs/xid"
-	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -478,16 +477,6 @@ type CommitParams struct {
 type CommitOverrides struct {
 	Message  string
 	Metadata Metadata
-}
-
-func CommitOverridesFromAPI(overrides *apigen.CommitOverrides) *CommitOverrides {
-	if overrides == nil {
-		return nil
-	}
-	return &CommitOverrides{
-		Message:  *overrides.Message,
-		Metadata: overrides.Metadata.AdditionalProperties,
-	}
 }
 
 type GarbageCollectionRunMetadata struct {
