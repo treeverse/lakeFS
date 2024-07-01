@@ -1,6 +1,7 @@
 package local_test
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -22,10 +23,11 @@ const (
 
 func TestDiffLocal(t *testing.T) {
 	cases := []struct {
-		Name       string
-		LocalPath  string
-		RemoteList []apigen.ObjectStats
-		Expected   []*local.Change
+		Name           string
+		IncludeFolders bool
+		LocalPath      string
+		RemoteList     []apigen.ObjectStats
+		Expected       []*local.Change
 	}{
 		{
 			Name:      "t1_no_diff",
@@ -38,6 +40,35 @@ func TestDiffLocal(t *testing.T) {
 				}, {
 					Path:      "sub/f.txt",
 					SizeBytes: swag.Int64(3),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "sub/folder/f.txt",
+					SizeBytes: swag.Int64(6),
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			Expected: []*local.Change{},
+		},
+		{
+			Name:           "t1_no_diff_include_folders",
+			IncludeFolders: true,
+			LocalPath:      "testdata/localdiff/t1",
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      ".hidden-file",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "sub/",
+					SizeBytes: swag.Int64(1),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "sub/f.txt",
+					SizeBytes: swag.Int64(3),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "sub/folder/",
+					SizeBytes: swag.Int64(1),
 					Mtime:     diffTestCorrectTime,
 				}, {
 					Path:      "sub/folder/f.txt",
@@ -149,18 +180,48 @@ func TestDiffLocal(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:           "t1_folder_added",
+			IncludeFolders: true,
+			LocalPath:      "testdata/localdiff/t1",
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      ".hidden-file",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "sub/",
+					SizeBytes: swag.Int64(1),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "sub/f.txt",
+					SizeBytes: swag.Int64(3),
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: "sub/folder/",
+					Type: local.ChangeTypeAdded,
+				},
+				{
+					Path: "sub/folder/f.txt",
+					Type: local.ChangeTypeAdded,
+				},
+			},
+		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.Name, func(t *testing.T) {
-			fixTime(t, tt.LocalPath)
+			fixTime(t, tt.LocalPath, tt.IncludeFolders)
 			left := tt.RemoteList
 			sort.SliceStable(left, func(i, j int) bool {
 				return left[i].Path < left[j].Path
 			})
 			lc := make(chan apigen.ObjectStats, len(left))
 			makeChan(lc, left)
-			changes, err := local.DiffLocalWithHead(lc, tt.LocalPath)
+			changes, err := local.DiffLocalWithHead(lc, tt.LocalPath, tt.IncludeFolders)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -182,9 +243,9 @@ func makeChan[T any](c chan<- T, l []T) {
 	close(c)
 }
 
-func fixTime(t *testing.T, localPath string) {
+func fixTime(t *testing.T, localPath string, includeDirs bool) {
 	err := filepath.WalkDir(localPath, func(path string, d fs.DirEntry, err error) error {
-		if !d.IsDir() {
+		if !d.IsDir() || includeDirs {
 			return os.Chtimes(path, time.Now(), time.Unix(diffTestCorrectTime, 0))
 		}
 		return nil
@@ -254,6 +315,30 @@ func setupFiles(t testing.TB, fileList []string) string {
 	return dir
 }
 
+func getSortedFilesAndDirs(fileList []string) []string {
+	res := make([]string, 0)
+	visited := make(map[string]bool)
+
+	sort.Strings(fileList)
+
+	for _, file := range fileList {
+		subDirs := strings.Split(file, "/")
+		path := ""
+		for _, subDir := range subDirs[:len(subDirs)-1] {
+			path = fmt.Sprintf("%s%s/", path, subDir)
+			if _, ok := visited[path]; !ok {
+				// add the sub-directory
+				res = append(res, path)
+				visited[path] = true
+			}
+		}
+		// add the file
+		res = append(res, file)
+	}
+
+	return res
+}
+
 func TestWalkS3(t *testing.T) {
 	cases := []struct {
 		Name     string
@@ -288,9 +373,10 @@ func TestWalkS3(t *testing.T) {
 				walkOrder = append(walkOrder, strings.TrimPrefix(p, dir))
 				return nil
 			})
+
 			require.NoError(t, err)
-			sort.Strings(tt.FileList)
-			require.Equal(t, tt.FileList, walkOrder)
+			sortedFilesAndDirs := getSortedFilesAndDirs(tt.FileList)
+			require.Equal(t, sortedFilesAndDirs, walkOrder)
 		})
 	}
 }
@@ -318,12 +404,14 @@ func FuzzWalkS3(f *testing.F) {
 			return nil
 		})
 		require.NoError(t, err)
-		sort.Strings(files)
-		if len(files) == 0 {
+
+		sortedFilesAndDirs := getSortedFilesAndDirs(files)
+		if len(sortedFilesAndDirs) == 0 {
 			// require.Equal doesn't understand empty slices;
 			// our code represents empty slices as nil.
-			files = nil
+			sortedFilesAndDirs = nil
 		}
-		require.Equal(t, files, walkOrder)
+
+		require.Equal(t, sortedFilesAndDirs, walkOrder)
 	})
 }
