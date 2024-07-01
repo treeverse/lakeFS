@@ -218,7 +218,12 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 			}
 			heap.Pop(&stringHeap) // remove from queue
 
-			if err = callbackFunc(dir, dirsInfo[dir], err); err != nil {
+			fileInfo := dirsInfo[dir]
+			if fileInfo == nil {
+				return fmt.Errorf("fileInfo not found in dirsInfo: %s", dir)
+			}
+
+			if err = callbackFunc(dir, fileInfo, err); err != nil {
 				return err
 			}
 
@@ -241,7 +246,12 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 	for stringHeap.Len() > 0 {
 		dir := heap.Pop(&stringHeap).(string)
 
-		if err = callbackFunc(dir, dirsInfo[dir], err); err != nil {
+		fileInfo := dirsInfo[dir]
+		if fileInfo == nil {
+			return fmt.Errorf("fileInfo not found in dirsInfo: %s", dir)
+		}
+
+		if err = callbackFunc(dir, fileInfo, err); err != nil {
 			return err
 		}
 
