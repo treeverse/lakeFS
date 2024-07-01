@@ -191,13 +191,13 @@ func Undo(c Changes) Changes {
 // This walker function simulates the way object listing is performed by S3. Contrary to how a standard FS walk function behaves, S3
 // does not take into consideration the directory hierarchy. Instead, object paths include the entire path relative to the root and as a result
 // the directory or "path separator" is also taken into account when providing the listing in a lexicographical order.
-func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error) error) error {
+func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo) error) error {
 	var stringHeap StringHeap
 	var dirsInfo = make(map[string]os.FileInfo)
 
-	err := filepath.Walk(root, func(p string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return err
+	fpWalkErr := filepath.Walk(root, func(p string, info fs.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
 		}
 		if p == root {
 			return nil
@@ -223,23 +223,24 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 				return fmt.Errorf("fileInfo not found in dirsInfo [%s]: %w", dir, ErrNotFound)
 			}
 
-			if err = callbackFunc(dir, fileInfo, err); err != nil {
+			if err := callbackFunc(dir, fileInfo); err != nil {
 				return err
 			}
 
-			if err = WalkS3(dir, callbackFunc); err != nil {
+			if err := WalkS3(dir, callbackFunc); err != nil {
 				return err
 			}
 		}
 
 		// Process the file after we finished processing all the dirs that precede it
-		if err = callbackFunc(p, info, err); err != nil {
+		if err := callbackFunc(p, info); err != nil {
 			return err
 		}
+
 		return nil
 	})
-	if err != nil {
-		return err
+	if fpWalkErr != nil {
+		return fpWalkErr
 	}
 
 	// Finally, finished walking over FS, handle remaining dirs
@@ -251,11 +252,11 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 			return fmt.Errorf("fileInfo not found in dirsInfo [%s]: %w", dir, ErrNotFound)
 		}
 
-		if err = callbackFunc(dir, fileInfo, err); err != nil {
+		if err := callbackFunc(dir, fileInfo); err != nil {
 			return err
 		}
 
-		if err = WalkS3(dir, callbackFunc); err != nil {
+		if err := WalkS3(dir, callbackFunc); err != nil {
 			return err
 		}
 	}
@@ -273,10 +274,7 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 		currentRemoteFile apigen.ObjectStats
 		hasMore           bool
 	)
-	err := WalkS3(rightPath, func(p string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
+	err := WalkS3(rightPath, func(p string, info fs.FileInfo) error {
 		if !includeInDiff(info, includeDirs) {
 			return nil
 		}
