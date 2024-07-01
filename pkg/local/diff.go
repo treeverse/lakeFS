@@ -220,7 +220,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 
 			fileInfo := dirsInfo[dir]
 			if fileInfo == nil {
-				return fmt.Errorf("fileInfo not found in dirsInfo: %s", dir)
+				return fmt.Errorf("fileInfo not found in dirsInfo [%s]: %w", dir, ErrNotFound)
 			}
 
 			if err = callbackFunc(dir, fileInfo, err); err != nil {
@@ -248,7 +248,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 
 		fileInfo := dirsInfo[dir]
 		if fileInfo == nil {
-			return fmt.Errorf("fileInfo not found in dirsInfo: %s", dir)
+			return fmt.Errorf("fileInfo not found in dirsInfo [%s]: %w", dir, ErrNotFound)
 		}
 
 		if err = callbackFunc(dir, fileInfo, err); err != nil {
