@@ -25,8 +25,9 @@ import (
 )
 
 const (
-	DefaultDirectoryMask   = 0o040777
-	ClientMtimeMetadataKey = apiutil.LakeFSMetadataPrefix + "client-mtime"
+	// DefaultDirectoryPermissions Octal representation of default folder permissions
+	DefaultDirectoryPermissions = 0o040777
+	ClientMtimeMetadataKey      = apiutil.LakeFSMetadataPrefix + "client-mtime"
 )
 
 type SyncFlags struct {
@@ -95,11 +96,11 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	if err := wg.Wait(); err != nil {
 		return err
 	}
-	if !s.includePerm { // TODO (niro): Probably need to take care of pruning in deleteLocal flow
-		_, err := fileutil.PruneEmptyDirectories(rootPath)
-		return err
+	if s.includePerm { // TODO (niro): Probably need to take care of pruning in deleteLocal flow
+		return nil // Do not prune directories in this case to preserve directories and permissions
 	}
-	return nil
+	_, err := fileutil.PruneEmptyDirectories(rootPath)
+	return err
 }
 
 func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
@@ -139,14 +140,82 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 	return nil
 }
 
+func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, destination string, objStat apigen.ObjectStats) error {
+	sizeBytes := swag.Int64Value(objStat.SizeBytes)
+	f, err := os.Create(destination)
+	if err != nil {
+		// Sometimes we get a file that is actually a directory marker (Spark loves writing those).
+		// If we already have the directory, we can skip it.
+		if errors.Is(err, syscall.EISDIR) && sizeBytes == 0 {
+			return nil // no further action required!
+		}
+		return fmt.Errorf("could not create file '%s': %w", destination, err)
+	}
+	defer func() {
+		err = f.Close()
+	}()
+
+	if sizeBytes == 0 { // if size is empty just create file
+		spinner := s.progressBar.AddSpinner("download " + path)
+		atomic.AddUint64(&s.tasks.Downloaded, 1)
+		defer spinner.Done()
+	} else {
+		var body io.Reader
+		if s.flags.Presign {
+			resp, err := s.httpClient.Get(objStat.PhysicalAddress)
+			if err != nil {
+				return err
+			}
+			defer func() {
+				_ = resp.Body.Close()
+			}()
+			if resp.StatusCode != http.StatusOK {
+				return fmt.Errorf("%s (pre-signed GET: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
+			}
+			body = resp.Body
+		} else {
+			resp, err := s.client.GetObject(ctx, remote.Repository, remote.Ref, &apigen.GetObjectParams{
+				Path: filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
+			})
+			if err != nil {
+				return err
+			}
+			defer func() {
+				_ = resp.Body.Close()
+			}()
+			if resp.StatusCode != http.StatusOK {
+				return fmt.Errorf("%s (GetObject: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
+			}
+			body = resp.Body
+		}
+
+		b := s.progressBar.AddReader(fmt.Sprintf("download %s", path), sizeBytes)
+		barReader := b.Reader(body)
+		defer func() {
+			if err != nil {
+				b.Error()
+			} else {
+				atomic.AddUint64(&s.tasks.Downloaded, 1)
+				b.Done()
+			}
+		}()
+
+		_, err = io.Copy(f, barReader)
+		if err != nil {
+			return fmt.Errorf("could not write file '%s': %w", destination, err)
+		}
+	}
+	return nil
+}
+
 func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, path string) error {
 	if err := fileutil.VerifyRelPath(strings.TrimPrefix(path, uri.PathSeparator), rootPath); err != nil {
 		return err
 	}
 	destination := fmt.Sprintf("%s%c%s", rootPath, os.PathSeparator, path)
 	destinationDirectory := filepath.Dir(destination)
-	isDir := strings.HasSuffix(path, uri.PathSeparator)
-	if err := os.MkdirAll(destinationDirectory, os.FileMode(DefaultDirectoryMask)); err != nil {
+
+	if err := os.MkdirAll(destinationDirectory, os.FileMode(DefaultDirectoryPermissions)); err != nil {
 		return err
 	}
 	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
@@ -162,17 +231,18 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 		_ = json.Unmarshal(statResp.Body, &httpErr)
 		return fmt.Errorf("(stat: HTTP %d, message: %s): %w", statResp.StatusCode(), httpErr.Message, ErrDownloadingFile)
 	}
-	ObjStat := *statResp.JSON200
+	objStat := *statResp.JSON200
 	// get mtime
-	mtimeSecs, err := getMtimeFromStats(ObjStat)
+	mtimeSecs, err := getMtimeFromStats(objStat)
 	if err != nil {
 		return err
 	}
 	lastModified := time.Unix(mtimeSecs, 0)
 
 	var unixPerm *UnixPermissions
+	isDir := strings.HasSuffix(path, uri.PathSeparator)
 	if s.includePerm {
-		if unixPerm, err = getUnixPermissionFromStats(ObjStat); err != nil {
+		if unixPerm, err = getUnixPermissionFromStats(objStat); err != nil {
 			return err
 		}
 	} else if isDir {
@@ -181,70 +251,8 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	}
 
 	if !isDir {
-		sizeBytes := swag.Int64Value(ObjStat.SizeBytes)
-		f, err := os.Create(destination)
-		if err != nil {
-			// Sometimes we get a file that is actually a directory marker (Spark loves writing those).
-			// If we already have the directory, we can skip it.
-			if errors.Is(err, syscall.EISDIR) && sizeBytes == 0 {
-				return nil // no further action required!
-			}
-			return fmt.Errorf("could not create file '%s': %w", destination, err)
-		}
-		defer func() {
-			err = f.Close()
-		}()
-
-		if sizeBytes == 0 { // if size is empty just create file
-			spinner := s.progressBar.AddSpinner("download " + path)
-			atomic.AddUint64(&s.tasks.Downloaded, 1)
-			defer spinner.Done()
-		} else { // Download file
-			// make request
-			var body io.Reader
-			if s.flags.Presign {
-				resp, err := s.httpClient.Get(ObjStat.PhysicalAddress)
-				if err != nil {
-					return err
-				}
-				defer func() {
-					_ = resp.Body.Close()
-				}()
-				if resp.StatusCode != http.StatusOK {
-					return fmt.Errorf("%s (pre-signed GET: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
-				}
-				body = resp.Body
-			} else {
-				resp, err := s.client.GetObject(ctx, remote.Repository, remote.Ref, &apigen.GetObjectParams{
-					Path: filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
-				})
-				if err != nil {
-					return err
-				}
-				defer func() {
-					_ = resp.Body.Close()
-				}()
-				if resp.StatusCode != http.StatusOK {
-					return fmt.Errorf("%s (GetObject: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
-				}
-				body = resp.Body
-			}
-
-			b := s.progressBar.AddReader(fmt.Sprintf("download %s", path), sizeBytes)
-			barReader := b.Reader(body)
-			defer func() {
-				if err != nil {
-					b.Error()
-				} else {
-					atomic.AddUint64(&s.tasks.Downloaded, 1)
-					b.Done()
-				}
-			}()
-			_, err = io.Copy(f, barReader)
-
-			if err != nil {
-				return fmt.Errorf("could not write file '%s': %w", destination, err)
-			}
+		if err = s.downloadFile(ctx, remote, path, destination, objStat); err != nil {
+			return err
 		}
 	}
 	// set mtime to the server returned one

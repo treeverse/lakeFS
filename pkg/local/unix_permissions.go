@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -12,15 +13,17 @@ import (
 )
 
 const (
-	DefaultFileMask            = 0o100666
+	// DefaultFilePermissions Octal representation of default file permissions
+	DefaultFilePermissions     = 0o100666
 	UnixPermissionsMetadataKey = apiutil.LakeFSMetadataPrefix + "unix-permissions"
 )
 
 var (
-	// umask - internal, init only once. Use only via GetUmask call
+	// umask - internal, init only once. Use only via getDefaultPermissions call
 	umask = -1
 	// defaultOwnership - internal, init only once. Use only via getDefaultPermissions call
-	defaultOwnership *unixOwnership
+	defaultOwnership  *unixOwnership
+	getOwnershipMutex sync.Mutex
 )
 
 type unixOwnership struct {
@@ -33,7 +36,7 @@ type UnixPermissions struct {
 	Mode os.FileMode
 }
 
-func GetUmask() int {
+func getUmask() int {
 	if umask < 0 {
 		umask = syscall.Umask(0)
 		syscall.Umask(umask)
@@ -42,9 +45,11 @@ func GetUmask() int {
 }
 
 func getDefaultPermissions(isDir bool) UnixPermissions {
-	mode := DefaultFileMask - GetUmask()
+	getOwnershipMutex.Lock()
+	defer getOwnershipMutex.Unlock()
+	mode := DefaultFilePermissions - getUmask()
 	if isDir {
-		mode = DefaultDirectoryMask - GetUmask()
+		mode = DefaultDirectoryPermissions - getUmask()
 	}
 	if defaultOwnership == nil {
 		defaultOwnership = &unixOwnership{

@@ -94,6 +94,9 @@ func TestSyncManager_download(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
+		umask := syscall.Umask(0)
+		syscall.Umask(umask)
+
 		t.Run(tt.Name, func(t *testing.T) {
 			// We must create the test at the user home dir otherwise we will file to chown
 			home, err := os.UserHomeDir()
@@ -172,9 +175,9 @@ func TestSyncManager_download(t *testing.T) {
 			// Check perm
 			expectedUser := os.Getuid()
 			expectedGroup := os.Getgid()
-			expectedMode := local.DefaultFileMask - local.GetUmask()
+			expectedMode := local.DefaultFilePermissions - umask
 			if stat.IsDir() {
-				expectedMode = local.DefaultDirectoryMask - local.GetUmask()
+				expectedMode = local.DefaultDirectoryPermissions - umask
 			}
 
 			if tt.UnixPerm {
