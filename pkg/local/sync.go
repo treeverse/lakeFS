@@ -25,8 +25,9 @@ import (
 )
 
 const (
-	DefaultDirectoryMask   = 0o755
-	ClientMtimeMetadataKey = apiutil.LakeFSMetadataPrefix + "client-mtime"
+	// DefaultDirectoryPermissions Octal representation of default folder permissions
+	DefaultDirectoryPermissions = 0o040777
+	ClientMtimeMetadataKey      = apiutil.LakeFSMetadataPrefix + "client-mtime"
 )
 
 type SyncFlags struct {
@@ -95,6 +96,9 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	if err := wg.Wait(); err != nil {
 		return err
 	}
+	if s.includePerm { // TODO (niro): Probably need to take care of pruning in deleteLocal flow
+		return nil // Do not prune directories in this case to preserve directories and permissions
+	}
 	_, err := fileutil.PruneEmptyDirectories(rootPath)
 	return err
 }
@@ -136,41 +140,8 @@ func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.UR
 	return nil
 }
 
-func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, path string) error {
-	if err := fileutil.VerifyRelPath(strings.TrimPrefix(path, uri.PathSeparator), rootPath); err != nil {
-		return err
-	}
-	destination := filepath.Join(rootPath, path)
-	destinationDirectory := filepath.Dir(destination)
-	if err := os.MkdirAll(destinationDirectory, DefaultDirectoryMask); err != nil {
-		return err
-	}
-	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
-		Path:         filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
-		Presign:      swag.Bool(s.flags.Presign),
-		UserMetadata: swag.Bool(true),
-	})
-	if err != nil {
-		return err
-	}
-	if statResp.StatusCode() != http.StatusOK {
-		httpErr := apigen.Error{Message: "no content"}
-		_ = json.Unmarshal(statResp.Body, &httpErr)
-		return fmt.Errorf("(stat: HTTP %d, message: %s): %w", statResp.StatusCode(), httpErr.Message, ErrDownloadingFile)
-	}
-	// get mtime
-	mtimeSecs, err := getMtimeFromStats(*statResp.JSON200)
-	if err != nil {
-		return err
-	}
-
-	if strings.HasSuffix(path, uri.PathSeparator) {
-		// Directory marker - skip
-		return nil
-	}
-
-	lastModified := time.Unix(mtimeSecs, 0)
-	sizeBytes := swag.Int64Value(statResp.JSON200.SizeBytes)
+func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, destination string, objStat apigen.ObjectStats) error {
+	sizeBytes := swag.Int64Value(objStat.SizeBytes)
 	f, err := os.Create(destination)
 	if err != nil {
 		// Sometimes we get a file that is actually a directory marker (Spark loves writing those).
@@ -188,11 +159,10 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 		spinner := s.progressBar.AddSpinner("download " + path)
 		atomic.AddUint64(&s.tasks.Downloaded, 1)
 		defer spinner.Done()
-	} else { // Download file
-		// make request
+	} else {
 		var body io.Reader
 		if s.flags.Presign {
-			resp, err := s.httpClient.Get(statResp.JSON200.PhysicalAddress)
+			resp, err := s.httpClient.Get(objStat.PhysicalAddress)
 			if err != nil {
 				return err
 			}
@@ -229,15 +199,75 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 				b.Done()
 			}
 		}()
-		_, err = io.Copy(f, barReader)
 
+		_, err = io.Copy(f, barReader)
 		if err != nil {
 			return fmt.Errorf("could not write file '%s': %w", destination, err)
 		}
 	}
+	return nil
+}
 
+func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, path string) error {
+	if err := fileutil.VerifyRelPath(strings.TrimPrefix(path, uri.PathSeparator), rootPath); err != nil {
+		return err
+	}
+	destination := fmt.Sprintf("%s%c%s", rootPath, os.PathSeparator, path)
+	destinationDirectory := filepath.Dir(destination)
+
+	if err := os.MkdirAll(destinationDirectory, os.FileMode(DefaultDirectoryPermissions)); err != nil {
+		return err
+	}
+	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
+		Path:         filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
+		Presign:      swag.Bool(s.flags.Presign),
+		UserMetadata: swag.Bool(true),
+	})
+	if err != nil {
+		return err
+	}
+	if statResp.StatusCode() != http.StatusOK {
+		httpErr := apigen.Error{Message: "no content"}
+		_ = json.Unmarshal(statResp.Body, &httpErr)
+		return fmt.Errorf("(stat: HTTP %d, message: %s): %w", statResp.StatusCode(), httpErr.Message, ErrDownloadingFile)
+	}
+	objStat := *statResp.JSON200
+	// get mtime
+	mtimeSecs, err := getMtimeFromStats(objStat)
+	if err != nil {
+		return err
+	}
+	lastModified := time.Unix(mtimeSecs, 0)
+
+	var unixPerm *UnixPermissions
+	isDir := strings.HasSuffix(path, uri.PathSeparator)
+	if s.includePerm { // Optimization - fail on to get permissions from metadata before having to download the entire file
+		if unixPerm, err = getUnixPermissionFromStats(objStat); err != nil {
+			return err
+		}
+	} else if isDir {
+		// Directory marker - skip
+		return nil
+	}
+
+	if !isDir {
+		if err = s.downloadFile(ctx, remote, path, destination, objStat); err != nil {
+			return err
+		}
+	}
 	// set mtime to the server returned one
 	err = os.Chtimes(destination, time.Now(), lastModified) // Explicit to catch in deferred func
+	if err != nil {
+		return err
+	}
+
+	// change ownership and permissions
+	if s.includePerm {
+		if err = os.Chown(destination, unixPerm.UID, unixPerm.GID); err != nil {
+			return err
+		}
+		err = syscall.Chmod(destination, uint32(unixPerm.Mode))
+	}
 	return err
 }
 
