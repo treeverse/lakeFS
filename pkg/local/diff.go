@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -192,6 +193,7 @@ func Undo(c Changes) Changes {
 // the directory or "path separator" is also taken into account when providing the listing in a lexicographical order.
 func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error) error) error {
 	var stringHeap StringHeap
+	var dirsInfo = make(map[string]os.FileInfo)
 
 	err := filepath.Walk(root, func(p string, info fs.FileInfo, err error) error {
 		if err != nil {
@@ -200,10 +202,12 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 		if p == root {
 			return nil
 		}
+
 		if info.IsDir() {
-			// TODO: We don't return dir results for the listing, how will this effect directory markers, and can we even support directory markers?
 			// Save encountered directories in a min heap and compare them with the first appearance of a file in that level
-			heap.Push(&stringHeap, p+path.Separator) // add path separator to dir name and sort it later
+			dir := p + path.Separator
+			dirsInfo[dir] = info        // save dir info for processing it later
+			heap.Push(&stringHeap, dir) // add path separator to dir name and sort it later
 			return filepath.SkipDir
 		}
 
@@ -213,10 +217,21 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 				break
 			}
 			heap.Pop(&stringHeap) // remove from queue
+
+			fileInfo := dirsInfo[dir]
+			if fileInfo == nil {
+				return fmt.Errorf("fileInfo not found in dirsInfo [%s]: %w", dir, ErrNotFound)
+			}
+
+			if err = callbackFunc(dir, fileInfo, err); err != nil {
+				return err
+			}
+
 			if err = WalkS3(dir, callbackFunc); err != nil {
 				return err
 			}
 		}
+
 		// Process the file after we finished processing all the dirs that precede it
 		if err = callbackFunc(p, info, err); err != nil {
 			return err
@@ -230,6 +245,16 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 	// Finally, finished walking over FS, handle remaining dirs
 	for stringHeap.Len() > 0 {
 		dir := heap.Pop(&stringHeap).(string)
+
+		fileInfo := dirsInfo[dir]
+		if fileInfo == nil {
+			return fmt.Errorf("fileInfo not found in dirsInfo [%s]: %w", dir, ErrNotFound)
+		}
+
+		if err = callbackFunc(dir, fileInfo, err); err != nil {
+			return err
+		}
+
 		if err = WalkS3(dir, callbackFunc); err != nil {
 			return err
 		}
@@ -240,9 +265,10 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 // DiffLocalWithHead Checks changes between a local directory and the head it is pointing to. The diff check assumes the remote
 // is an immutable set so any changes found resulted from changes in the local directory
 // left is an object channel which contains results from a remote source. rightPath is the local directory to diff with
-func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Changes, error) {
+func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, includeDirs bool) (Changes, error) {
 	// left should be the base commit
 	changes := make([]*Change, 0)
+
 	var (
 		currentRemoteFile apigen.ObjectStats
 		hasMore           bool
@@ -251,7 +277,7 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Change
 		if err != nil {
 			return err
 		}
-		if diffShouldIgnore(info.Name()) {
+		if !includeInDiff(info, includeDirs) {
 			return nil
 		}
 		localPath := strings.TrimPrefix(p, rightPath)
@@ -277,7 +303,11 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string) (Change
 				if err != nil {
 					return err
 				}
-				if localBytes != swag.Int64Value(currentRemoteFile.SizeBytes) || localMtime != remoteMtime {
+
+				// dirs might have different sizes on different operating systems
+				sizeChanged := !info.IsDir() && localBytes != swag.Int64Value(currentRemoteFile.SizeBytes)
+				mtimeChanged := localMtime != remoteMtime
+				if sizeChanged || mtimeChanged {
 					// we made a change!
 					changes = append(changes, &Change{ChangeSourceLocal, localPath, ChangeTypeModified})
 				}
@@ -349,11 +379,15 @@ func ListRemote(ctx context.Context, client apigen.ClientWithResponsesInterface,
 	return nil
 }
 
-func diffShouldIgnore(name string) bool {
-	switch name {
-	case IndexFileName, ".DS_Store":
-		return true
-	default:
-		return false
+func includeInDiff(info fs.FileInfo, includeDirs bool) bool {
+	if info.IsDir() {
+		return includeDirs
+	} else {
+		switch info.Name() {
+		case IndexFileName, ".DS_Store":
+			return false
+		default:
+			return true
+		}
 	}
 }
