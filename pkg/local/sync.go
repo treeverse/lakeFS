@@ -241,7 +241,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 
 	var unixPerm *UnixPermissions
 	isDir := strings.HasSuffix(path, uri.PathSeparator)
-	if s.includePerm {
+	if s.includePerm { // Optimization - fail on to get permissions from metadata before having to download the entire file
 		if unixPerm, err = getUnixPermissionFromStats(objStat); err != nil {
 			return err
 		}
