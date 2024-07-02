@@ -312,8 +312,11 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 				mtimeChanged := localMtime != remoteMtime
 				permissionsChanged := includeUnixPermissions && isPermissionsChanged(info, currentRemoteFile)
 				if sizeChanged || mtimeChanged || permissionsChanged {
+					// TODO: this is only temp, for debugging! should be removed!
+					uo := getUnixOwnership(info)
+					change := fmt.Sprintf("%s [local: %s %d %d]", localPath, info.Mode().Perm(), uo.UID, uo.GID)
 					// we made a change!
-					changes = append(changes, &Change{ChangeSourceLocal, localPath, ChangeTypeModified})
+					changes = append(changes, &Change{ChangeSourceLocal, change, ChangeTypeModified})
 				}
 				currentRemoteFile.Path = ""
 				return nil
