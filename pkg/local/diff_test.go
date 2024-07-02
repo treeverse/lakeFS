@@ -215,6 +215,39 @@ func TestDiffLocal(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:                   "t1_unix_permissions_modified",
+			IncludeUnixPermissions: true,
+			LocalPath:              "testdata/localdiff/t1/sub",
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "f.txt",
+					SizeBytes: swag.Int64(3),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(501, 20, 755),
+				}, {
+					Path:      "folder/",
+					SizeBytes: swag.Int64(1),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(501, 20, 644),
+				}, {
+					Path:      "folder/f.txt",
+					SizeBytes: swag.Int64(6),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(501, 20, 420),
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: "f.txt",
+					Type: local.ChangeTypeModified,
+				},
+				{
+					Path: "folder/",
+					Type: local.ChangeTypeModified,
+				},
+			},
+		},
 	}
 
 	for _, tt := range cases {
