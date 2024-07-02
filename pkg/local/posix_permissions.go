@@ -15,27 +15,27 @@ import (
 
 const (
 	// DefaultFilePermissions Octal representation of default file permissions
-	DefaultFilePermissions     = 0o100666
-	UnixPermissionsMetadataKey = apiutil.LakeFSMetadataPrefix + "unix-permissions"
+	DefaultFilePermissions      = 0o100666
+	POSIXPermissionsMetadataKey = apiutil.LakeFSMetadataPrefix + "posix-permissions"
 )
 
 var (
 	// umask - internal, init only once. Use only via GetDefaultPermissions call
 	umask = -1
 	// defaultOwnership - internal, init only once. Use only via GetDefaultPermissions call
-	defaultOwnership  *unixOwnership
+	defaultOwnership  *POSIXOwnership
 	getOwnershipMutex sync.Mutex
 
 	ErrUnsupportedFS = errors.New("unsupported filesystem")
 )
 
-type unixOwnership struct {
+type POSIXOwnership struct {
 	UID int
 	GID int
 }
 
-type UnixPermissions struct {
-	unixOwnership
+type POSIXPermissions struct {
+	POSIXOwnership
 	Mode os.FileMode
 }
 
@@ -48,7 +48,7 @@ func getUmask() int {
 }
 
 // GetDefaultPermissions - returns default permissions as defined by file system. Public for testing purposes
-func GetDefaultPermissions(isDir bool) UnixPermissions {
+func GetDefaultPermissions(isDir bool) POSIXPermissions {
 	getOwnershipMutex.Lock()
 	defer getOwnershipMutex.Unlock()
 	mode := DefaultFilePermissions - getUmask()
@@ -56,25 +56,25 @@ func GetDefaultPermissions(isDir bool) UnixPermissions {
 		mode = DefaultDirectoryPermissions - getUmask()
 	}
 	if defaultOwnership == nil {
-		defaultOwnership = &unixOwnership{
+		defaultOwnership = &POSIXOwnership{
 			UID: os.Getuid(),
 			GID: os.Getgid(),
 		}
 	}
-	return UnixPermissions{
-		unixOwnership: *defaultOwnership,
-		Mode:          os.FileMode(mode),
+	return POSIXPermissions{
+		POSIXOwnership: *defaultOwnership,
+		Mode:           os.FileMode(mode),
 	}
 }
 
-// getUnixPermissionFromStats - Get unix mode and ownership from object metadata, fallback to default permissions in case metadata doesn't exist
-func getUnixPermissionFromStats(stats apigen.ObjectStats) (*UnixPermissions, error) {
+// getPermissionFromStats - Get POSIX mode and ownership from object metadata, fallback to default permissions in case metadata doesn't exist
+func getPermissionFromStats(stats apigen.ObjectStats) (*POSIXPermissions, error) {
 	permissions := GetDefaultPermissions(strings.HasSuffix(stats.Path, uri.PathSeparator))
 	if stats.Metadata != nil {
-		unixPermissions, ok := stats.Metadata.Get(UnixPermissionsMetadataKey)
+		posixPermissions, ok := stats.Metadata.Get(POSIXPermissionsMetadataKey)
 		if ok {
 			// Unmarshal struct
-			if err := json.Unmarshal([]byte(unixPermissions), &permissions); err != nil {
+			if err := json.Unmarshal([]byte(posixPermissions), &permissions); err != nil {
 				return nil, err
 			}
 		}
@@ -83,8 +83,8 @@ func getUnixPermissionFromStats(stats apigen.ObjectStats) (*UnixPermissions, err
 	return &permissions, nil
 }
 
-func getUnixPermissionFromFileInfo(info os.FileInfo) (*UnixPermissions, error) {
-	p := UnixPermissions{}
+func getPermissionFromFileInfo(info os.FileInfo) (*POSIXPermissions, error) {
+	p := POSIXPermissions{}
 	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
 		p.UID = int(stat.Uid)
 		p.GID = int(stat.Gid)
@@ -96,15 +96,15 @@ func getUnixPermissionFromFileInfo(info os.FileInfo) (*UnixPermissions, error) {
 }
 
 func isPermissionsChanged(localFileInfo os.FileInfo, remoteFileStats apigen.ObjectStats) bool {
-	local, err := getUnixPermissionFromFileInfo(localFileInfo)
+	local, err := getPermissionFromFileInfo(localFileInfo)
 	if err != nil {
 		return true
 	}
 
-	remote, err := getUnixPermissionFromStats(remoteFileStats)
+	remote, err := getPermissionFromStats(remoteFileStats)
 	if err != nil {
 		return true
 	}
 
-	return local.Mode != remote.Mode || local.unixOwnership != remote.unixOwnership
+	return local.Mode != remote.Mode || local.POSIXOwnership != remote.POSIXOwnership
 }

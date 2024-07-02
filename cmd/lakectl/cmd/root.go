@@ -97,9 +97,9 @@ type Configuration struct {
 	// Experimental - Use caution when enabling experimental features. It should only be used after consulting with the lakeFS team!
 	Experimental struct {
 		Local struct {
-			UnixPerm struct {
+			POSIXPerm struct {
 				Enabled bool `mapstructure:"enabled"`
-			} `mapstructure:"unix_permissions"`
+			} `mapstructure:"posix_permissions"`
 		} `mapstructure:"local"`
 	} `mapstructure:"experimental"`
 }
@@ -548,7 +548,7 @@ func initConfig() {
 	viper.SetDefault("server.retries.max_attempts", defaultMaxAttempts)
 	viper.SetDefault("server.retries.max_wait_interval", defaultMaxRetryInterval)
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
-	viper.SetDefault("experimental.local.unix_permissions.enabled", false)
+	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
 
 	cfgErr = viper.ReadInConfig()
 }

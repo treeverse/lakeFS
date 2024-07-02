@@ -67,9 +67,9 @@ func localDiff(ctx context.Context, client apigen.ClientWithResponsesInterface, 
 		return local.ListRemote(ctx, client, remote, currentRemoteState)
 	})
 
-	includeUnixPermissions := cfg.Experimental.Local.UnixPerm.Enabled
+	includePOSIXPermissions := cfg.Experimental.Local.POSIXPerm.Enabled
 
-	changes, err := local.DiffLocalWithHead(currentRemoteState, path, includeUnixPermissions, includeUnixPermissions)
+	changes, err := local.DiffLocalWithHead(currentRemoteState, path, includePOSIXPermissions, includePOSIXPermissions)
 	if err != nil {
 		DieErr(err)
 	}
