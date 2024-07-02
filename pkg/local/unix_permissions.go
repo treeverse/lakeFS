@@ -20,9 +20,9 @@ const (
 )
 
 var (
-	// umask - internal, init only once. Use only via getDefaultPermissions call
+	// umask - internal, init only once. Use only via GetDefaultPermissions call
 	umask = -1
-	// defaultOwnership - internal, init only once. Use only via getDefaultPermissions call
+	// defaultOwnership - internal, init only once. Use only via GetDefaultPermissions call
 	defaultOwnership  *unixOwnership
 	getOwnershipMutex sync.Mutex
 
@@ -47,7 +47,8 @@ func getUmask() int {
 	return umask
 }
 
-func getDefaultPermissions(isDir bool) UnixPermissions {
+// GetDefaultPermissions - returns default permissions as defined by file system. Public for testing purposes
+func GetDefaultPermissions(isDir bool) UnixPermissions {
 	getOwnershipMutex.Lock()
 	defer getOwnershipMutex.Unlock()
 	mode := DefaultFilePermissions - getUmask()
@@ -68,7 +69,7 @@ func getDefaultPermissions(isDir bool) UnixPermissions {
 
 // getUnixPermissionFromStats - Get unix mode and ownership from object metadata, fallback to default permissions in case metadata doesn't exist
 func getUnixPermissionFromStats(stats apigen.ObjectStats) (*UnixPermissions, error) {
-	permissions := getDefaultPermissions(strings.HasSuffix(stats.Path, uri.PathSeparator))
+	permissions := GetDefaultPermissions(strings.HasSuffix(stats.Path, uri.PathSeparator))
 	if stats.Metadata != nil {
 		unixPermissions, ok := stats.Metadata.Get(UnixPermissionsMetadataKey)
 		if ok {
@@ -82,7 +83,7 @@ func getUnixPermissionFromStats(stats apigen.ObjectStats) (*UnixPermissions, err
 	return &permissions, nil
 }
 
-func getUnixPermissionFromUserInfo(info os.FileInfo) (*UnixPermissions, error) {
+func getUnixPermissionFromFileInfo(info os.FileInfo) (*UnixPermissions, error) {
 	p := UnixPermissions{}
 	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
 		p.UID = int(stat.Uid)
@@ -95,7 +96,7 @@ func getUnixPermissionFromUserInfo(info os.FileInfo) (*UnixPermissions, error) {
 }
 
 func isPermissionsChanged(localFileInfo os.FileInfo, remoteFileStats apigen.ObjectStats) bool {
-	local, err := getUnixPermissionFromUserInfo(localFileInfo)
+	local, err := getUnixPermissionFromFileInfo(localFileInfo)
 	if err != nil {
 		return true
 	}

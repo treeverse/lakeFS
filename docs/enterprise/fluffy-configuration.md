@@ -34,7 +34,7 @@ This reference uses `.` to denote the nesting of values.
 * `logging.trace_request_headers` `(bool : false)` - If set to `true` and logging level is set to `TRACE`, logs request headers.
 * `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
 * `database` - Configuration section for the Fluffy key-value store database. The database must be shared between lakeFS & Fluffy
-  + `database.type` `(string ["postgres"|"dynamodb"|"local"] : )` - Fluffy database type
+  + `database.type` `(string ["postgres"|"dynamodb"|"cosmosdb"|"local"] : )` - Fluffy database type
   + `database.postgres` - Configuration section when using `database.type="postgres"`
     + `database.postgres.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
     + `database.postgres.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
@@ -54,11 +54,21 @@ This reference uses `.` to denote the nesting of values.
     + **Note:** `endpoint` `aws_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials.
       {: .note }
     + `database.dynamodb.health_check_interval` `(duration : 0s)` - Interval to run health check for the DynamoDB instance (won't run if equal to 0).
-  + `database.local` - Configuration section when using `database.type="local"`
-    + `database.local.path` `(string : "~/fluffy/metadata")` - Local path on the filesystem to store embedded KV metadata
-    + `database.local.sync_writes` `(bool: true)` - Ensure each write is written to the disk. Disable to increase performance
-    + `database.local.prefetch_size` `(int: 256)` - How many items to prefetch when iterating over embedded KV records
-    + `database.local.enable_logging` `(bool: false)` - Enable trace logging for local driver
+  + `database.cosmosdb` - Configuration section when using `database.type="cosmosdb"`
+    + `database.cosmosdb.key` `(string : "")` - If specified, will
+        be used to authenticate to the CosmosDB account. Otherwise, Azure SDK
+        default authentication (with env vars) will be used.
+    + `database.cosmosdb.endpoint` `(string : "")` - CosmosDB account endpoint, e.g. `https://<account>.documents.azure.com/`.
+    + `database.cosmosdb.database` `(string : "")` - CosmosDB database name.
+    + `database.cosmosdb.container` `(string : "")` - CosmosDB container name.
+    + `database.cosmosdb.throughput` `(int32 : )` - CosmosDB container's RU/s. If not set - the default CosmosDB container throughput is used.
+    + `database.cosmosdb.autoscale` `(bool : false)` - If set, CosmosDB container throughput is autoscaled (See CosmosDB docs for minimum throughput requirement). Otherwise, uses "Manual" mode ([Docs](https://learn.microsoft.com/en-us/azure/cosmos-db/provision-throughput-autoscale)).
+
+      + `database.local` - Configuration section when using `database.type="local"`
+        + `database.local.path` `(string : "~/fluffy/metadata")` - Local path on the filesystem to store embedded KV metadata
+        + `database.local.sync_writes` `(bool: true)` - Ensure each write is written to the disk. Disable to increase performance
+        + `database.local.prefetch_size` `(int: 256)` - How many items to prefetch when iterating over embedded KV records
+        + `database.local.enable_logging` `(bool: false)` - Enable trace logging for local driver
 * `auth` - Configuration section for the Fluffy authentication services, like SAML or OIDC.
   + `auth.encrypt.secret_key` `(string : required)` - Same value given to lakeFS. A random (cryptographically safe) generated string that is used for encryption and HMAC signing
   + `auth.logout_redirect_url` `(string : "/auth/login")` - The address to redirect to after a successful logout, e.g. login.
