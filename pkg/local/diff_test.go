@@ -58,27 +58,27 @@ func TestDiffLocal(t *testing.T) {
 					Path:      ".hidden-file",
 					SizeBytes: swag.Int64(64),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(501, 20, 420),
+					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), 420),
 				}, {
 					Path:      "sub/",
 					SizeBytes: swag.Int64(1),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(501, 20, 493),
+					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), 493),
 				}, {
 					Path:      "sub/f.txt",
 					SizeBytes: swag.Int64(3),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(501, 20, 420),
+					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), 420),
 				}, {
 					Path:      "sub/folder/",
 					SizeBytes: swag.Int64(1),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(501, 20, 493),
+					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), 493),
 				}, {
 					Path:      "sub/folder/f.txt",
 					SizeBytes: swag.Int64(6),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(501, 20, 420),
+					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), 420),
 				},
 			},
 			Expected: []*local.Change{},
@@ -224,17 +224,17 @@ func TestDiffLocal(t *testing.T) {
 					Path:      "f.txt",
 					SizeBytes: swag.Int64(3),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(501, 20, 755),
+					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), 755),
 				}, {
 					Path:      "folder/",
 					SizeBytes: swag.Int64(1),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(501, 20, 644),
+					Metadata:  getPermissionsMetadata(os.Getuid()+1, os.Getgid(), 493),
 				}, {
 					Path:      "folder/f.txt",
 					SizeBytes: swag.Int64(6),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(501, 20, 420),
+					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), 420),
 				},
 			},
 			Expected: []*local.Change{
@@ -253,16 +253,20 @@ func TestDiffLocal(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.Name, func(t *testing.T) {
 			fixTime(t, tt.LocalPath, tt.IncludeUnixPermissions)
+			fixUnixPermissions(t, tt.LocalPath)
+
 			left := tt.RemoteList
 			sort.SliceStable(left, func(i, j int) bool {
 				return left[i].Path < left[j].Path
 			})
 			lc := make(chan apigen.ObjectStats, len(left))
 			makeChan(lc, left)
+
 			changes, err := local.DiffLocalWithHead(lc, tt.LocalPath, tt.IncludeUnixPermissions)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if len(changes) != len(tt.Expected) {
 				t.Fatalf("expected %d changes, got %d\n\n%v", len(tt.Expected), len(changes), changes)
 			}
@@ -295,6 +299,13 @@ func fixTime(t *testing.T, localPath string, includeDirs bool) {
 			return os.Chtimes(path, time.Now(), time.Unix(diffTestCorrectTime, 0))
 		}
 		return nil
+	})
+	require.NoError(t, err)
+}
+
+func fixUnixPermissions(t *testing.T, localPath string) {
+	err := filepath.WalkDir(localPath, func(path string, d fs.DirEntry, err error) error {
+		return os.Chown(path, os.Getuid(), os.Getgid())
 	})
 	require.NoError(t, err)
 }

@@ -102,7 +102,5 @@ func isPermissionsChanged(local os.FileInfo, remoteFileStats apigen.ObjectStats)
 		return true
 	}
 
-	return local.Mode().Perm() != remote.Mode.Perm() ||
-		localOwnership.UID != remote.unixOwnership.UID ||
-		localOwnership.GID != remote.unixOwnership.GID
+	return local.Mode().Perm() != remote.Mode.Perm() || localOwnership != remote.unixOwnership
 }
