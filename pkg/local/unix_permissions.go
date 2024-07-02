@@ -2,6 +2,7 @@ package local
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"strings"
 	"sync"
@@ -24,6 +25,8 @@ var (
 	// defaultOwnership - internal, init only once. Use only via getDefaultPermissions call
 	defaultOwnership  *unixOwnership
 	getOwnershipMutex sync.Mutex
+
+	ErrUnsupportedFS = errors.New("unsupported filesystem")
 )
 
 type unixOwnership struct {
@@ -42,21 +45,6 @@ func getUmask() int {
 		syscall.Umask(umask)
 	}
 	return umask
-}
-
-func getUnixOwnership(info os.FileInfo) unixOwnership {
-	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-		return unixOwnership{
-			UID: int(stat.Uid),
-			GID: int(stat.Gid),
-		}
-	} else {
-		// we are not in linux, this won't work anyway in windows, but maybe you want to log warnings
-		return unixOwnership{
-			UID: os.Getuid(),
-			GID: os.Getgid(),
-		}
-	}
 }
 
 func getDefaultPermissions(isDir bool) UnixPermissions {
@@ -94,13 +82,28 @@ func getUnixPermissionFromStats(stats apigen.ObjectStats) (*UnixPermissions, err
 	return &permissions, nil
 }
 
-func isPermissionsChanged(local os.FileInfo, remoteFileStats apigen.ObjectStats) bool {
-	localOwnership := getUnixOwnership(local)
+func getUnixPermissionFromUserInfo(info os.FileInfo) (*UnixPermissions, error) {
+	p := UnixPermissions{}
+	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+		p.UID = int(stat.Uid)
+		p.GID = int(stat.Gid)
+		p.Mode = os.FileMode(stat.Mode)
+	} else {
+		return nil, ErrUnsupportedFS
+	}
+	return &p, nil
+}
+
+func isPermissionsChanged(localFileInfo os.FileInfo, remoteFileStats apigen.ObjectStats) bool {
+	local, err := getUnixPermissionFromUserInfo(localFileInfo)
+	if err != nil {
+		return true
+	}
 
 	remote, err := getUnixPermissionFromStats(remoteFileStats)
 	if err != nil {
 		return true
 	}
 
-	return local.Mode().Perm() != remote.Mode.Perm() || localOwnership != remote.unixOwnership
+	return local.Mode != remote.Mode || local.unixOwnership != remote.unixOwnership
 }

@@ -19,6 +19,8 @@ import (
 
 const (
 	diffTestCorrectTime = 1691570412
+	filePermModeFile    = 33188
+	localPermModeFolder = 16877
 )
 
 func TestDiffLocal(t *testing.T) {
@@ -58,27 +60,27 @@ func TestDiffLocal(t *testing.T) {
 					Path:      ".hidden-file",
 					SizeBytes: swag.Int64(64),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), 420),
+					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), filePermModeFile),
 				}, {
 					Path:      "sub/",
 					SizeBytes: swag.Int64(1),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), 493),
+					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), localPermModeFolder),
 				}, {
 					Path:      "sub/f.txt",
 					SizeBytes: swag.Int64(3),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), 420),
+					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), filePermModeFile),
 				}, {
 					Path:      "sub/folder/",
 					SizeBytes: swag.Int64(1),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), 493),
+					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), localPermModeFolder),
 				}, {
 					Path:      "sub/folder/f.txt",
 					SizeBytes: swag.Int64(6),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), 420),
+					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), filePermModeFile),
 				},
 			},
 			Expected: []*local.Change{},
@@ -229,12 +231,12 @@ func TestDiffLocal(t *testing.T) {
 					Path:      "folder/",
 					SizeBytes: swag.Int64(1),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(os.Getuid()+1, os.Getgid(), 493),
+					Metadata:  getPermissionsMetadata(os.Getuid()+1, os.Getgid(), localPermModeFolder),
 				}, {
 					Path:      "folder/f.txt",
 					SizeBytes: swag.Int64(6),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), 420),
+					Metadata:  getPermissionsMetadata(os.Getuid(), os.Getgid(), filePermModeFile),
 				},
 			},
 			Expected: []*local.Change{
