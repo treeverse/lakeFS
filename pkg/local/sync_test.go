@@ -31,11 +31,11 @@ func TestSyncManager_download(t *testing.T) {
 	ctx := context.Background()
 
 	testCases := []struct {
-		Name     string
-		Contents []byte
-		Metadata map[string]string
-		Path     string
-		UnixPerm bool
+		Name            string
+		Contents        []byte
+		Metadata        map[string]string
+		Path            string
+		UnixPermEnabled bool
 	}{
 		{
 			Name:     "basic download",
@@ -60,11 +60,11 @@ func TestSyncManager_download(t *testing.T) {
 			Path: "my_object",
 		},
 		{
-			Name:     "download file unix perm enabled no metadata",
-			Contents: []byte("foobar\n"),
-			Metadata: map[string]string{},
-			Path:     "my_object",
-			UnixPerm: true,
+			Name:            "download file unix perm enabled no metadata",
+			Contents:        []byte("foobar\n"),
+			Metadata:        map[string]string{},
+			Path:            "my_object",
+			UnixPermEnabled: true,
 		},
 		{
 			Name:     "download file unix perm enabled with metadata",
@@ -72,15 +72,15 @@ func TestSyncManager_download(t *testing.T) {
 			Metadata: map[string]string{
 				local.UnixPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d, \"GID\": %d, \"Mode\":%d}", currentUID, currentGID, 0o100755),
 			},
-			Path:     "my_object",
-			UnixPerm: true,
+			Path:            "my_object",
+			UnixPermEnabled: true,
 		},
 		{
-			Name:     "download folder unix perm no metadata",
-			Contents: nil,
-			Metadata: map[string]string{},
-			Path:     "folder1/",
-			UnixPerm: true,
+			Name:            "download folder unix perm no metadata",
+			Contents:        nil,
+			Metadata:        map[string]string{},
+			Path:            "folder1/",
+			UnixPermEnabled: true,
 		},
 		{
 			Name:     "download folder unix perm with metadata",
@@ -88,8 +88,8 @@ func TestSyncManager_download(t *testing.T) {
 			Metadata: map[string]string{
 				local.UnixPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d, \"GID\": %d, \"Mode\":%d}", currentUID, currentGID, 0o40770),
 			},
-			Path:     "folder2/",
-			UnixPerm: true,
+			Path:            "folder2/",
+			UnixPermEnabled: true,
 		},
 	}
 
@@ -140,7 +140,7 @@ func TestSyncManager_download(t *testing.T) {
 				Parallelism:      1,
 				Presign:          false,
 				PresignMultipart: false,
-			}, tt.UnixPerm)
+			}, tt.UnixPermEnabled)
 			u := &uri.URI{
 				Repository: "repo",
 				Ref:        "main",
@@ -180,7 +180,7 @@ func TestSyncManager_download(t *testing.T) {
 				expectedMode = local.DefaultDirectoryPermissions - umask
 			}
 
-			if tt.UnixPerm {
+			if tt.UnixPermEnabled {
 				if value, ok := tt.Metadata[local.UnixPermissionsMetadataKey]; ok {
 					unixPerm := &local.UnixPermissions{}
 					require.NoError(t, json.Unmarshal([]byte(value), &unixPerm))
@@ -199,6 +199,131 @@ func TestSyncManager_download(t *testing.T) {
 			} else {
 				t.Fatal("failed to get stat")
 			}
+		})
+	}
+}
+
+func TestSyncManager_upload(t *testing.T) {
+	ctx := context.Background()
+
+	testCases := []struct {
+		Name            string
+		Path            string
+		Permissions     *local.UnixPermissions
+		UnixPermEnabled bool
+		Mtime           int64
+	}{
+		{
+			Name:  "basic upload",
+			Path:  "my_object",
+			Mtime: time.Now().Unix(),
+		},
+		{
+			Name:  "download with client mtime",
+			Mtime: time.Now().Add(24 * time.Hour).Unix(),
+			Path:  "my_object",
+		},
+		{
+			Name:        "download file unix perm metadata disabled",
+			Permissions: &local.UnixPermissions{Mode: local.DefaultDirectoryPermissions},
+			Path:        "my_object",
+		},
+		{
+			Name:            "download file unix perm enabled no metadata",
+			Path:            "my_object",
+			UnixPermEnabled: true,
+		},
+		{
+			Name:            "download file unix perm enabled with metadata",
+			Path:            "my_object",
+			UnixPermEnabled: true,
+			Permissions:     &local.UnixPermissions{Mode: os.FileMode(0o100755)},
+		},
+		{
+			Name:            "download folder unix perm no metadata",
+			Path:            "folder1/",
+			UnixPermEnabled: true,
+		},
+		{
+			Name:            "download folder unix perm with metadata",
+			Path:            "folder2/",
+			UnixPermEnabled: true,
+			Permissions:     &local.UnixPermissions{Mode: os.FileMode(0o40770)},
+		},
+	}
+
+	for _, tt := range testCases {
+		umask := syscall.Umask(0)
+		syscall.Umask(umask)
+
+		t.Run(tt.Name, func(t *testing.T) {
+			// We must create the test at the user home dir otherwise we will file to chown
+			home, err := os.UserHomeDir()
+			require.NoError(t, err)
+			testFolderPath := filepath.Join(home, fmt.Sprintf("sync_manager_test_%s", xid.New().String()))
+			require.NoError(t, os.MkdirAll(testFolderPath, os.ModePerm))
+			defer func() {
+				_ = os.RemoveAll(testFolderPath)
+			}()
+			mode := os.FileMode(local.DefaultFilePermissions)
+			if tt.Permissions != nil {
+				mode = tt.Permissions.Mode
+			}
+			localPath := fmt.Sprintf("%s%c%s", testFolderPath, os.PathSeparator, tt.Path) // Have to build manually due to Clean
+			isDir := strings.HasSuffix(localPath, uri.PathSeparator)
+			if isDir {
+				require.NoError(t, os.Mkdir(localPath, mode))
+			} else {
+				require.NoError(t, os.WriteFile(localPath, []byte("foobar\n"), mode))
+			}
+			require.NoError(t, os.Chtimes(localPath, time.Now(), time.Unix(tt.Mtime, 0)))
+
+			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch {
+				case strings.HasSuffix(r.URL.Path, "/objects"):
+					// Check Chown
+					perm := local.UnixPermissions{}
+					data := []byte(r.Header.Get(apiutil.LakeFSHeaderInternalPrefix + "unix-permissions"))
+					if len(data) > 0 {
+						require.NoError(t, json.Unmarshal(data, &perm))
+					} else {
+						perm = local.GetDefaultPermissions(isDir)
+					}
+					expectedPerm := perm
+					if tt.UnixPermEnabled && tt.Permissions != nil {
+						expectedPerm.Mode = tt.Permissions.Mode
+					}
+					require.Equal(t, expectedPerm, perm)
+
+					// Check Mtime
+					require.Equal(t, fmt.Sprintf("%d", tt.Mtime), r.Header.Get(apiutil.LakeFSHeaderInternalPrefix+"client-mtime"))
+				default:
+					t.Fatal("Unexpected request")
+				}
+				w.WriteHeader(http.StatusOK)
+			})
+			server := httptest.NewServer(h)
+			defer server.Close()
+
+			testClient := getTestClient(t, server.URL)
+			s := local.NewSyncManager(ctx, testClient, server.Client(), local.SyncFlags{
+				Parallelism:      1,
+				Presign:          false,
+				PresignMultipart: false,
+			}, tt.UnixPermEnabled)
+			u := &uri.URI{
+				Repository: "repo",
+				Ref:        "main",
+				Path:       nil,
+			}
+			changes := make(chan *local.Change, 2)
+			changes <- &local.Change{
+				Source: local.ChangeSourceLocal,
+				Path:   tt.Path,
+				Type:   local.ChangeTypeAdded,
+			}
+			close(changes)
+			require.NoError(t, s.Sync(testFolderPath, u, changes))
 		})
 	}
 }
