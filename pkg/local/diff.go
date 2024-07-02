@@ -265,7 +265,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 // DiffLocalWithHead Checks changes between a local directory and the head it is pointing to. The diff check assumes the remote
 // is an immutable set so any changes found resulted from changes in the local directory
 // left is an object channel which contains results from a remote source. rightPath is the local directory to diff with
-func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, includeUnixPermissions bool) (Changes, error) {
+func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, includeDirs, includeUnixPermissions bool) (Changes, error) {
 	// left should be the base commit
 	changes := make([]*Change, 0)
 
@@ -278,7 +278,7 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 			return err
 		}
 
-		if !includeInDiff(info, includeUnixPermissions) {
+		if !includeInDiff(info, includeDirs) {
 			return nil
 		}
 

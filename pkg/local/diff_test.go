@@ -267,7 +267,7 @@ func TestDiffLocal(t *testing.T) {
 			lc := make(chan apigen.ObjectStats, len(left))
 			makeChan(lc, left)
 
-			changes, err := local.DiffLocalWithHead(lc, tt.LocalPath, tt.IncludeUnixPermissions)
+			changes, err := local.DiffLocalWithHead(lc, tt.LocalPath, tt.IncludeUnixPermissions, tt.IncludeUnixPermissions)
 			if err != nil {
 				t.Fatal(err)
 			}
