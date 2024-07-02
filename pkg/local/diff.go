@@ -191,7 +191,7 @@ func Undo(c Changes) Changes {
 // This walker function simulates the way object listing is performed by S3. Contrary to how a standard FS walk function behaves, S3
 // does not take into consideration the directory hierarchy. Instead, object paths include the entire path relative to the root and as a result
 // the directory or "path separator" is also taken into account when providing the listing in a lexicographical order.
-func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo) error) error {
+func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error) error) error {
 	var stringHeap StringHeap
 	var dirsInfo = make(map[string]os.FileInfo)
 
@@ -223,7 +223,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo) error) er
 				return fmt.Errorf("fileInfo not found in dirsInfo [%s]: %w", dir, ErrNotFound)
 			}
 
-			if err := callbackFunc(dir, fileInfo); err != nil {
+			if err := callbackFunc(dir, fileInfo, nil); err != nil {
 				return err
 			}
 
@@ -233,7 +233,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo) error) er
 		}
 
 		// Process the file after we finished processing all the dirs that precede it
-		if err := callbackFunc(p, info); err != nil {
+		if err := callbackFunc(p, info, nil); err != nil {
 			return err
 		}
 
@@ -252,7 +252,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo) error) er
 			return fmt.Errorf("fileInfo not found in dirsInfo [%s]: %w", dir, ErrNotFound)
 		}
 
-		if err := callbackFunc(dir, fileInfo); err != nil {
+		if err := callbackFunc(dir, fileInfo, nil); err != nil {
 			return err
 		}
 
@@ -274,7 +274,11 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 		currentRemoteFile apigen.ObjectStats
 		hasMore           bool
 	)
-	err := WalkS3(rightPath, func(p string, info fs.FileInfo) error {
+	err := WalkS3(rightPath, func(p string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
 		if !includeInDiff(info, includeDirs) {
 			return nil
 		}

@@ -369,7 +369,7 @@ func TestWalkS3(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			dir := setupFiles(t, tt.FileList)
 			var walkOrder []string
-			err := local.WalkS3(dir, func(p string, info fs.FileInfo) error {
+			err := local.WalkS3(dir, func(p string, info fs.FileInfo, err error) error {
 				walkOrder = append(walkOrder, strings.TrimPrefix(p, dir))
 				return nil
 			})
@@ -399,7 +399,7 @@ func FuzzWalkS3(f *testing.F) {
 
 		dir := setupFiles(t, files)
 		var walkOrder []string
-		err := local.WalkS3(dir, func(p string, info fs.FileInfo) error {
+		err := local.WalkS3(dir, func(p string, info fs.FileInfo, err error) error {
 			walkOrder = append(walkOrder, strings.TrimPrefix(p, dir))
 			return nil
 		})
