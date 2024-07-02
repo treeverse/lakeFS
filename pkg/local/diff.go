@@ -339,7 +339,7 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 }
 
 // ListRemote - Lists objects from a remote uri and inserts them into the objects channel
-func ListRemote(ctx context.Context, client apigen.ClientWithResponsesInterface, loc *uri.URI, objects chan<- apigen.ObjectStats) error {
+func ListRemote(ctx context.Context, client apigen.ClientWithResponsesInterface, loc *uri.URI, objects chan<- apigen.ObjectStats, includeDirs bool) error {
 	hasMore := true
 	var after string
 	defer func() {
@@ -362,7 +362,7 @@ func ListRemote(ctx context.Context, client apigen.ClientWithResponsesInterface,
 		for _, o := range listResp.JSON200.Results {
 			p := strings.TrimPrefix(o.Path, loc.GetPath())
 			// skip directory markers
-			if p == "" || (strings.HasSuffix(p, uri.PathSeparator) && swag.Int64Value(o.SizeBytes) == 0) {
+			if !includeDirs && (p == "" || (strings.HasSuffix(p, uri.PathSeparator) && swag.Int64Value(o.SizeBytes) == 0)) {
 				continue
 			}
 			p = strings.TrimPrefix(p, uri.PathSeparator)
