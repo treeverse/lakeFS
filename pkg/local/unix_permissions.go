@@ -83,7 +83,7 @@ func getUnixPermissionFromStats(stats apigen.ObjectStats) (*UnixPermissions, err
 	return &permissions, nil
 }
 
-func getPermissions(info os.FileInfo) (*UnixPermissions, error) {
+func getUnixPermissionFromFileInfo(info os.FileInfo) (*UnixPermissions, error) {
 	p := UnixPermissions{}
 	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
 		p.UID = int(stat.Uid)

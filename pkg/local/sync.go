@@ -311,7 +311,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		if strings.HasSuffix(path, uri.PathSeparator) { // Create a 0 byte reader for directories
 			reader = bytes.NewReader([]byte{})
 		}
-		permissions, err := getPermissions(fileStat)
+		permissions, err := getUnixPermissionFromFileInfo(fileStat)
 		if err != nil {
 			return err
 		}
