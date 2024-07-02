@@ -195,9 +195,9 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 	var stringHeap StringHeap
 	var dirsInfo = make(map[string]os.FileInfo)
 
-	err := filepath.Walk(root, func(p string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return err
+	fpWalkErr := filepath.Walk(root, func(p string, info fs.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return callbackFunc(p, nil, walkErr)
 		}
 		if p == root {
 			return nil
@@ -223,23 +223,24 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 				return fmt.Errorf("fileInfo not found in dirsInfo [%s]: %w", dir, ErrNotFound)
 			}
 
-			if err = callbackFunc(dir, fileInfo, err); err != nil {
+			if err := callbackFunc(dir, fileInfo, nil); err != nil {
 				return err
 			}
 
-			if err = WalkS3(dir, callbackFunc); err != nil {
+			if err := WalkS3(dir, callbackFunc); err != nil {
 				return err
 			}
 		}
 
 		// Process the file after we finished processing all the dirs that precede it
-		if err = callbackFunc(p, info, err); err != nil {
+		if err := callbackFunc(p, info, nil); err != nil {
 			return err
 		}
+
 		return nil
 	})
-	if err != nil {
-		return err
+	if fpWalkErr != nil {
+		return fpWalkErr
 	}
 
 	// Finally, finished walking over FS, handle remaining dirs
@@ -251,11 +252,11 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 			return fmt.Errorf("fileInfo not found in dirsInfo [%s]: %w", dir, ErrNotFound)
 		}
 
-		if err = callbackFunc(dir, fileInfo, err); err != nil {
+		if err := callbackFunc(dir, fileInfo, nil); err != nil {
 			return err
 		}
 
-		if err = WalkS3(dir, callbackFunc); err != nil {
+		if err := WalkS3(dir, callbackFunc); err != nil {
 			return err
 		}
 	}
@@ -277,6 +278,7 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 		if err != nil {
 			return err
 		}
+
 		if !includeInDiff(info, includeDirs) {
 			return nil
 		}
