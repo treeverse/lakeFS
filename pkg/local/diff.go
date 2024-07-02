@@ -278,8 +278,7 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 			return err
 		}
 
-		includeDirs := includeUnixPermissions
-		if !includeInDiff(info, includeDirs) {
+		if !includeInDiff(info, includeUnixPermissions) {
 			return nil
 		}
 
