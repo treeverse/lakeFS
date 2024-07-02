@@ -52,41 +52,41 @@ func TestSyncManager_download(t *testing.T) {
 			Path: "my_object",
 		},
 		{
-			Name:     "download file unix perm metadata disabled",
+			Name:     "download file POSIX perm metadata disabled",
 			Contents: []byte("foobar\n"),
 			Metadata: map[string]string{
-				local.UnixPermissionsMetadataKey: "{\"UID\":0,\"GID\":0,\"Mode\":775}",
+				local.POSIXPermissionsMetadataKey: "{\"UID\":0,\"GID\":0,\"Mode\":775}",
 			},
 			Path: "my_object",
 		},
 		{
-			Name:            "download file unix perm enabled no metadata",
+			Name:            "download file POSIX perm enabled no metadata",
 			Contents:        []byte("foobar\n"),
 			Metadata:        map[string]string{},
 			Path:            "my_object",
 			UnixPermEnabled: true,
 		},
 		{
-			Name:     "download file unix perm enabled with metadata",
+			Name:     "download file POSIX perm enabled with metadata",
 			Contents: []byte("foobar\n"),
 			Metadata: map[string]string{
-				local.UnixPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d, \"GID\": %d, \"Mode\":%d}", currentUID, currentGID, 0o100755),
+				local.POSIXPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d, \"GID\": %d, \"Mode\":%d}", currentUID, currentGID, 0o100755),
 			},
 			Path:            "my_object",
 			UnixPermEnabled: true,
 		},
 		{
-			Name:            "download folder unix perm no metadata",
+			Name:            "download folder POSIX perm no metadata",
 			Contents:        nil,
 			Metadata:        map[string]string{},
 			Path:            "folder1/",
 			UnixPermEnabled: true,
 		},
 		{
-			Name:     "download folder unix perm with metadata",
+			Name:     "download folder POSIX perm with metadata",
 			Contents: nil,
 			Metadata: map[string]string{
-				local.UnixPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d, \"GID\": %d, \"Mode\":%d}", currentUID, currentGID, 0o40770),
+				local.POSIXPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d, \"GID\": %d, \"Mode\":%d}", currentUID, currentGID, 0o40770),
 			},
 			Path:            "folder2/",
 			UnixPermEnabled: true,
@@ -181,12 +181,12 @@ func TestSyncManager_download(t *testing.T) {
 			}
 
 			if tt.UnixPermEnabled {
-				if value, ok := tt.Metadata[local.UnixPermissionsMetadataKey]; ok {
-					unixPerm := &local.UnixPermissions{}
-					require.NoError(t, json.Unmarshal([]byte(value), &unixPerm))
-					expectedUser = unixPerm.UID
-					expectedGroup = unixPerm.GID
-					expectedMode = int(unixPerm.Mode)
+				if value, ok := tt.Metadata[local.POSIXPermissionsMetadataKey]; ok {
+					perm := &local.POSIXPermissions{}
+					require.NoError(t, json.Unmarshal([]byte(value), &perm))
+					expectedUser = perm.UID
+					expectedGroup = perm.GID
+					expectedMode = int(perm.Mode)
 				}
 			}
 
@@ -209,7 +209,7 @@ func TestSyncManager_upload(t *testing.T) {
 	testCases := []struct {
 		Name            string
 		Path            string
-		Permissions     *local.UnixPermissions
+		Permissions     *local.POSIXPermissions
 		UnixPermEnabled bool
 		Mtime           int64
 	}{
@@ -224,31 +224,31 @@ func TestSyncManager_upload(t *testing.T) {
 			Path:  "my_object",
 		},
 		{
-			Name:        "download file unix perm metadata disabled",
-			Permissions: &local.UnixPermissions{Mode: local.DefaultDirectoryPermissions},
+			Name:        "download file POSIX perm metadata disabled",
+			Permissions: &local.POSIXPermissions{Mode: local.DefaultDirectoryPermissions},
 			Path:        "my_object",
 		},
 		{
-			Name:            "download file unix perm enabled no metadata",
+			Name:            "download file POSIX perm enabled no metadata",
 			Path:            "my_object",
 			UnixPermEnabled: true,
 		},
 		{
-			Name:            "download file unix perm enabled with metadata",
+			Name:            "download file POSIX perm enabled with metadata",
 			Path:            "my_object",
 			UnixPermEnabled: true,
-			Permissions:     &local.UnixPermissions{Mode: os.FileMode(0o100755)},
+			Permissions:     &local.POSIXPermissions{Mode: os.FileMode(0o100755)},
 		},
 		{
-			Name:            "download folder unix perm no metadata",
+			Name:            "download folder POSIX perm no metadata",
 			Path:            "folder1/",
 			UnixPermEnabled: true,
 		},
 		{
-			Name:            "download folder unix perm with metadata",
+			Name:            "download folder POSIX perm with metadata",
 			Path:            "folder2/",
 			UnixPermEnabled: true,
-			Permissions:     &local.UnixPermissions{Mode: os.FileMode(0o40770)},
+			Permissions:     &local.POSIXPermissions{Mode: os.FileMode(0o40770)},
 		},
 	}
 
@@ -282,8 +282,8 @@ func TestSyncManager_upload(t *testing.T) {
 				switch {
 				case strings.HasSuffix(r.URL.Path, "/objects"):
 					// Check Chown
-					perm := local.UnixPermissions{}
-					data := []byte(r.Header.Get(apiutil.LakeFSHeaderInternalPrefix + "unix-permissions"))
+					perm := local.POSIXPermissions{}
+					data := []byte(r.Header.Get(apiutil.LakeFSHeaderInternalPrefix + "POSIX-permissions"))
 					if len(data) > 0 {
 						require.NoError(t, json.Unmarshal(data, &perm))
 					} else {

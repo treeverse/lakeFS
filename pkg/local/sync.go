@@ -240,10 +240,10 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	}
 	lastModified := time.Unix(mtimeSecs, 0)
 
-	var unixPerm *UnixPermissions
+	var perm *POSIXPermissions
 	isDir := strings.HasSuffix(path, uri.PathSeparator)
 	if s.includePerm { // Optimization - fail on to get permissions from metadata before having to download the entire file
-		if unixPerm, err = getUnixPermissionFromStats(objStat); err != nil {
+		if perm, err = getPermissionFromStats(objStat); err != nil {
 			return err
 		}
 	} else if isDir {
@@ -264,10 +264,10 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 
 	// change ownership and permissions
 	if s.includePerm {
-		if err = os.Chown(destination, unixPerm.UID, unixPerm.GID); err != nil {
+		if err = os.Chown(destination, perm.UID, perm.GID); err != nil {
 			return err
 		}
-		err = syscall.Chmod(destination, uint32(unixPerm.Mode))
+		err = syscall.Chmod(destination, uint32(perm.Mode))
 	}
 	return err
 }
@@ -311,7 +311,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		if strings.HasSuffix(path, uri.PathSeparator) { // Create a 0 byte reader for directories
 			reader = bytes.NewReader([]byte{})
 		}
-		permissions, err := getUnixPermissionFromFileInfo(fileStat)
+		permissions, err := getPermissionFromFileInfo(fileStat)
 		if err != nil {
 			return err
 		}
@@ -319,7 +319,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		if err != nil {
 			return err
 		}
-		metadata[UnixPermissionsMetadataKey] = string(data)
+		metadata[POSIXPermissionsMetadataKey] = string(data)
 	}
 
 	readerWrapper := fileWrapper{

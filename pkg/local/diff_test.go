@@ -286,7 +286,7 @@ func TestDiffLocal(t *testing.T) {
 func getPermissionsMetadata(uid, gid, mode int) *apigen.ObjectUserMetadata {
 	return &apigen.ObjectUserMetadata{
 		AdditionalProperties: map[string]string{
-			local.UnixPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d,\"GID\":%d,\"Mode\":%d}", uid, gid, mode),
+			local.POSIXPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d,\"GID\":%d,\"Mode\":%d}", uid, gid, mode),
 		},
 	}
 }
