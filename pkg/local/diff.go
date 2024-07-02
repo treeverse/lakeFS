@@ -197,7 +197,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 
 	fpWalkErr := filepath.Walk(root, func(p string, info fs.FileInfo, walkErr error) error {
 		if walkErr != nil {
-			return walkErr
+			return callbackFunc(p, nil, walkErr)
 		}
 		if p == root {
 			return nil
