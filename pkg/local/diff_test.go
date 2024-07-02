@@ -19,15 +19,20 @@ import (
 
 const (
 	diffTestCorrectTime = 1691570412
+	filePermModeFile    = 0o100644
+	localPermModeFolder = 0o40755
 )
 
 func TestDiffLocal(t *testing.T) {
+	osUid := os.Getuid()
+	osGid := os.Getgid()
+
 	cases := []struct {
-		Name           string
-		IncludeFolders bool
-		LocalPath      string
-		RemoteList     []apigen.ObjectStats
-		Expected       []*local.Change
+		Name                   string
+		IncludeUnixPermissions bool
+		LocalPath              string
+		RemoteList             []apigen.ObjectStats
+		Expected               []*local.Change
 	}{
 		{
 			Name:      "t1_no_diff",
@@ -50,30 +55,35 @@ func TestDiffLocal(t *testing.T) {
 			Expected: []*local.Change{},
 		},
 		{
-			Name:           "t1_no_diff_include_folders",
-			IncludeFolders: true,
-			LocalPath:      "testdata/localdiff/t1",
+			Name:                   "t1_no_diff_include_folders",
+			IncludeUnixPermissions: true,
+			LocalPath:              "testdata/localdiff/t1",
 			RemoteList: []apigen.ObjectStats{
 				{
 					Path:      ".hidden-file",
 					SizeBytes: swag.Int64(64),
 					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid, osGid, filePermModeFile),
 				}, {
 					Path:      "sub/",
 					SizeBytes: swag.Int64(1),
 					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid, osGid, localPermModeFolder),
 				}, {
 					Path:      "sub/f.txt",
 					SizeBytes: swag.Int64(3),
 					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid, osGid, filePermModeFile),
 				}, {
 					Path:      "sub/folder/",
 					SizeBytes: swag.Int64(1),
 					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid, osGid, localPermModeFolder),
 				}, {
 					Path:      "sub/folder/f.txt",
 					SizeBytes: swag.Int64(6),
 					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid, osGid, filePermModeFile),
 				},
 			},
 			Expected: []*local.Change{},
@@ -181,9 +191,9 @@ func TestDiffLocal(t *testing.T) {
 			},
 		},
 		{
-			Name:           "t1_folder_added",
-			IncludeFolders: true,
-			LocalPath:      "testdata/localdiff/t1",
+			Name:                   "t1_folder_added",
+			IncludeUnixPermissions: true,
+			LocalPath:              "testdata/localdiff/t1",
 			RemoteList: []apigen.ObjectStats{
 				{
 					Path:      ".hidden-file",
@@ -210,21 +220,58 @@ func TestDiffLocal(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:                   "t1_unix_permissions_modified",
+			IncludeUnixPermissions: true,
+			LocalPath:              "testdata/localdiff/t1/sub",
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "f.txt",
+					SizeBytes: swag.Int64(3),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid, osGid, 755),
+				}, {
+					Path:      "folder/",
+					SizeBytes: swag.Int64(1),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid+1, osGid, localPermModeFolder),
+				}, {
+					Path:      "folder/f.txt",
+					SizeBytes: swag.Int64(6),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid, osGid, filePermModeFile),
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: "f.txt",
+					Type: local.ChangeTypeModified,
+				},
+				{
+					Path: "folder/",
+					Type: local.ChangeTypeModified,
+				},
+			},
+		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.Name, func(t *testing.T) {
-			fixTime(t, tt.LocalPath, tt.IncludeFolders)
+			fixTime(t, tt.LocalPath, tt.IncludeUnixPermissions)
+			fixUnixPermissions(t, tt.LocalPath)
+
 			left := tt.RemoteList
 			sort.SliceStable(left, func(i, j int) bool {
 				return left[i].Path < left[j].Path
 			})
 			lc := make(chan apigen.ObjectStats, len(left))
 			makeChan(lc, left)
-			changes, err := local.DiffLocalWithHead(lc, tt.LocalPath, tt.IncludeFolders)
+
+			changes, err := local.DiffLocalWithHead(lc, tt.LocalPath, tt.IncludeUnixPermissions, tt.IncludeUnixPermissions)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if len(changes) != len(tt.Expected) {
 				t.Fatalf("expected %d changes, got %d\n\n%v", len(tt.Expected), len(changes), changes)
 			}
@@ -233,6 +280,14 @@ func TestDiffLocal(t *testing.T) {
 				require.Equal(t, c.Type, tt.Expected[i].Type, "wrong type")
 			}
 		})
+	}
+}
+
+func getPermissionsMetadata(uid, gid, mode int) *apigen.ObjectUserMetadata {
+	return &apigen.ObjectUserMetadata{
+		AdditionalProperties: map[string]string{
+			local.UnixPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d,\"GID\":%d,\"Mode\":%d}", uid, gid, mode),
+		},
 	}
 }
 
@@ -249,6 +304,13 @@ func fixTime(t *testing.T, localPath string, includeDirs bool) {
 			return os.Chtimes(path, time.Now(), time.Unix(diffTestCorrectTime, 0))
 		}
 		return nil
+	})
+	require.NoError(t, err)
+}
+
+func fixUnixPermissions(t *testing.T, localPath string) {
+	err := filepath.WalkDir(localPath, func(path string, d fs.DirEntry, err error) error {
+		return os.Chown(path, os.Getuid(), os.Getgid())
 	})
 	require.NoError(t, err)
 }
