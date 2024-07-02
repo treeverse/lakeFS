@@ -94,3 +94,17 @@ func getPermissionFromFileInfo(info os.FileInfo) (*POSIXPermissions, error) {
 	}
 	return &p, nil
 }
+
+func isPermissionsChanged(localFileInfo os.FileInfo, remoteFileStats apigen.ObjectStats) bool {
+	local, err := getPermissionFromFileInfo(localFileInfo)
+	if err != nil {
+		return true
+	}
+
+	remote, err := getPermissionFromStats(remoteFileStats)
+	if err != nil {
+		return true
+	}
+
+	return local.Mode != remote.Mode || local.POSIXOwnership != remote.POSIXOwnership
+}

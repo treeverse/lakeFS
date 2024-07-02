@@ -15,7 +15,7 @@ next:  ["Import data into your installation", "/howto/import.html"]
 {: .tip }
 > The instructions given here are for a self-managed deployment of lakeFS on GCP. 
 > 
-> For a hosted lakeFS service with guaranteed SLAs, please [contact us](support@treeverse.io) for details of lakeFS Cloud on GCP.
+> For a hosted lakeFS service with guaranteed SLAs, please [contact us](https://lakefs.io/contact-us/) for details of lakeFS Cloud on GCP.
 
 When you deploy lakeFS on GCP these are the options available to use: 
 
