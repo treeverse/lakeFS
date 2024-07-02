@@ -84,7 +84,7 @@ func localDiff(ctx context.Context, client apigen.ClientWithResponsesInterface, 
 // needsDirectoryMarkers returns true if cfg requires directory markers.
 func needsDirectoryMarkers() bool {
 	// POSIX permissions support applies to directories and requires directory markers.
-	return cfg.Experimental.Local.UnixPerm.Enabled
+	return cfg.Experimental.Local.POSIXPerm.Enabled
 }
 
 func localHandleSyncInterrupt(ctx context.Context, idx *local.Index, operation string) context.Context {

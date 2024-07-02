@@ -52,16 +52,16 @@ func TestLakectlUnixPerm(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			expectedVal := swag.StringValue(tt.EnvVal)
 			if len(expectedVal) > 0 {
-				t.Setenv("LAKECTL_EXPERIMENTAL_LOCAL_UNIX_PERMISSIONS_ENABLED", expectedVal)
+				t.Setenv("LAKECTL_EXPERIMENTAL_LOCAL_POSIX_PERMISSIONS_ENABLED", expectedVal)
 			}
 
 			rootCmd.SetArgs([]string{"--version"})
 			require.NoError(t, rootCmd.Execute())
 
 			if expectedVal == "true" {
-				require.True(t, cfg.Experimental.Local.UnixPerm.Enabled)
+				require.True(t, cfg.Experimental.Local.POSIXPerm.Enabled)
 			} else {
-				require.False(t, cfg.Experimental.Local.UnixPerm.Enabled)
+				require.False(t, cfg.Experimental.Local.POSIXPerm.Enabled)
 			}
 		})
 	}
