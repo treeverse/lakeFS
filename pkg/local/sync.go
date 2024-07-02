@@ -1,6 +1,7 @@
 package local
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -304,18 +305,35 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	metadata := map[string]string{
 		ClientMtimeMetadataKey: strconv.FormatInt(fileStat.ModTime().Unix(), 10),
 	}
-	reader := fileWrapper{
+
+	reader := b.Reader(f)
+	if s.includePerm {
+		if strings.HasSuffix(path, uri.PathSeparator) { // Create a 0 byte reader for directories
+			reader = bytes.NewReader([]byte{})
+		}
+		permissions, err := getUnixPermissionFromFileInfo(fileStat)
+		if err != nil {
+			return err
+		}
+		data, err := json.Marshal(permissions)
+		if err != nil {
+			return err
+		}
+		metadata[UnixPermissionsMetadataKey] = string(data)
+	}
+
+	readerWrapper := fileWrapper{
 		file:   f,
-		reader: b.Reader(f),
+		reader: reader,
 	}
 	if s.flags.Presign {
 		_, err = helpers.ClientUploadPreSign(
-			ctx, s.client, s.httpClient, remote.Repository, remote.Ref, dest, metadata, "", reader, s.flags.PresignMultipart)
+			ctx, s.client, s.httpClient, remote.Repository, remote.Ref, dest, metadata, "", readerWrapper, s.flags.PresignMultipart)
 		return err
 	}
 	// not pre-signed
 	_, err = helpers.ClientUpload(
-		ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", reader)
+		ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", readerWrapper)
 	return err
 }
 
