@@ -19,8 +19,8 @@ import (
 
 const (
 	diffTestCorrectTime = 1691570412
-	filePermModeFile    = 33188
-	localPermModeFolder = 16877
+	filePermModeFile    = 0o100644
+	localPermModeFolder = 0o40755
 )
 
 func TestDiffLocal(t *testing.T) {
