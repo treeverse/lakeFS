@@ -98,7 +98,7 @@ In this case, the local directory/remote path might be in an inconsistent state,
 
 1. Clone remote repository to local path:
     ```shell
-    niro@niro-ThinkPad /tmp/test-perm
+    user@host /tmp/test-perm
       % LAKECTL_EXPERIMENTAL_LOCAL_POSIX_PERMISSIONS_ENABLED=true lakectl local clone lakefs://quickstart/dev/     
     download data/lakes.source.md            ... done! [531B in 0s]
     download images/quickstart-step-02-bran~ ... done! [3.09KB in 0s]
@@ -153,7 +153,7 @@ In this case, the local directory/remote path might be in an inconsistent state,
 
 2. The first time we clone objects without permissions, all the files will appear as modified (note the added directory markers):
     ```shell
-    niro@niro-ThinkPad /tmp/test-perm
+    user@host /tmp/test-perm
       % LAKECTL_EXPERIMENTAL_LOCAL_POSIX_PERMISSIONS_ENABLED=true lakectl local status                                                                                                                   !10245
     
     diff 'local:///tmp/test-perm' <--> 'lakefs://quickstart/8fa0d994afedbc00e0a44725e8a8d64695e638d4ba683756f5d2411eb7aa8fdf/'...
@@ -211,7 +211,7 @@ In this case, the local directory/remote path might be in an inconsistent state,
 3. Let's commit the changes so that the remote path will be updated with the file permissions:
 
     ```shell
-    niro@niro-ThinkPad /tmp/test-perm
+    user@host /tmp/test-perm
       % LAKECTL_EXPERIMENTAL_LOCAL_POSIX_PERMISSIONS_ENABLED=true lakectl local commit -m "Add file permissions"                                                                                         !10246
     
     Getting branch: dev
@@ -285,10 +285,10 @@ In this case, the local directory/remote path might be in an inconsistent state,
 6. Updating a file's mode will result in a diff:
     
     ```shell
-    niro@niro-ThinkPad /tmp/test-perm
+    user@host /tmp/test-perm
       % chmod 770 lakes.parquet                                                                                                                                                                          !10247
     
-    niro@niro-ThinkPad /tmp/test-perm
+    user@host /tmp/test-perm
       % LAKECTL_EXPERIMENTAL_LOCAL_POSIX_PERMISSIONS_ENABLED=true lakectl local status                                                                                                                   !10248
     
     diff 'local:///tmp/test-perm' <--> 'lakefs://quickstart/7f1f0984030c43ab388a649fe97c3c1564421118099ccc8c47f74645776e73f2/'...
