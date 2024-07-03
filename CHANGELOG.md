@@ -1,5 +1,11 @@
 # Changelog
 
+# v1.28.1
+
+:new: What's new:
+
+- Metric for open connections (#7913)
+
 # v1.28.0
 
 :new: What's new:
