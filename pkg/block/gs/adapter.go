@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
 
@@ -26,10 +25,7 @@ const (
 )
 
 var (
-	ErrMismatchPartETag    = errors.New("mismatch part ETag")
-	ErrMismatchPartName    = errors.New("mismatch part name")
 	ErrMaxMultipartObjects = errors.New("maximum multipart object reached")
-	ErrPartListMismatch    = errors.New("multipart part list mismatch")
 	ErrMissingTargetAttrs  = errors.New("missing target attributes")
 )
 
@@ -502,21 +498,14 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 		"key":           obj.Identifier,
 	})
 
-	// list bucket parts and validate request match
-	bucketParts, err := a.listMultipartUploadParts(ctx, bucketName, uploadID)
-	if err != nil {
-		return nil, err
-	}
-	// validate bucketParts match the request multipartList
-	err = a.validateMultipartUploadParts(uploadID, multipartList, bucketParts)
-	if err != nil {
-		return nil, err
+	if len(multipartList.Part) > MaxMultipartObjects {
+		return nil, fmt.Errorf("listing bucket '%s' upload '%s': %w", bucketName, uploadID, ErrMaxMultipartObjects)
 	}
 
 	// prepare names
-	parts := make([]string, len(bucketParts))
-	for i, part := range bucketParts {
-		parts[i] = part.Name
+	parts := make([]string, len(multipartList.Part))
+	for i := 0; i < len(parts); i++ {
+		parts[i] = formatMultipartFilename(uploadID, i+1)
 	}
 
 	// compose target object
@@ -537,49 +526,6 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 		ETag:          targetAttrs.Etag,
 		ContentLength: targetAttrs.Size,
 	}, nil
-}
-
-func (a *Adapter) validateMultipartUploadParts(uploadID string, multipartList *block.MultipartUploadCompletion, bucketParts []*storage.ObjectAttrs) error {
-	if len(multipartList.Part) != len(bucketParts) {
-		return fmt.Errorf("part list mismatch - expected %d parts, got %d: %w", len(bucketParts), len(multipartList.Part), ErrPartListMismatch)
-	}
-	for i, p := range multipartList.Part {
-		objName := formatMultipartFilename(uploadID, p.PartNumber)
-		if objName != bucketParts[i].Name {
-			return fmt.Errorf("invalid part at position %d: %w", i, ErrMismatchPartName)
-		}
-		if p.ETag != bucketParts[i].Etag {
-			return fmt.Errorf("invalid part at position %d: %w", i, ErrMismatchPartETag)
-		}
-	}
-	return nil
-}
-
-func (a *Adapter) listMultipartUploadParts(ctx context.Context, bucketName string, uploadID string) ([]*storage.ObjectAttrs, error) {
-	bucket := a.client.Bucket(bucketName)
-	var bucketParts []*storage.ObjectAttrs
-	it := bucket.Objects(ctx, &storage.Query{
-		Delimiter: delimiter,
-		Prefix:    uploadID + partSuffix,
-	})
-	for {
-		attrs, err := it.Next()
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("listing bucket '%s' upload '%s': %w", bucketName, uploadID, err)
-		}
-		bucketParts = append(bucketParts, attrs)
-		if len(bucketParts) > MaxMultipartObjects {
-			return nil, fmt.Errorf("listing bucket '%s' upload '%s': %w", bucketName, uploadID, ErrMaxMultipartObjects)
-		}
-	}
-	// sort by name - assume natual sort order
-	sort.Slice(bucketParts, func(i, j int) bool {
-		return bucketParts[i].Name < bucketParts[j].Name
-	})
-	return bucketParts, nil
 }
 
 func (a *Adapter) composeMultipartUploadParts(ctx context.Context, bucketName string, uploadID string, parts []string) (*storage.ObjectAttrs, error) {
