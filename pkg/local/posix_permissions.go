@@ -68,8 +68,13 @@ func GetDefaultPermissions(isDir bool) POSIXPermissions {
 }
 
 // getPermissionFromStats - Get POSIX mode and ownership from object metadata, fallback to default permissions in case metadata doesn't exist
-func getPermissionFromStats(stats apigen.ObjectStats) (*POSIXPermissions, error) {
-	permissions := GetDefaultPermissions(strings.HasSuffix(stats.Path, uri.PathSeparator))
+// and withDefault is true
+func getPermissionFromStats(stats apigen.ObjectStats, withDefault bool) (*POSIXPermissions, error) {
+	permissions := POSIXPermissions{}
+	if withDefault {
+		permissions = GetDefaultPermissions(strings.HasSuffix(stats.Path, uri.PathSeparator))
+	}
+
 	if stats.Metadata != nil {
 		posixPermissions, ok := stats.Metadata.Get(POSIXPermissionsMetadataKey)
 		if ok {
@@ -101,7 +106,7 @@ func isPermissionsChanged(localFileInfo os.FileInfo, remoteFileStats apigen.Obje
 		return true
 	}
 
-	remote, err := getPermissionFromStats(remoteFileStats)
+	remote, err := getPermissionFromStats(remoteFileStats, false)
 	if err != nil {
 		return true
 	}

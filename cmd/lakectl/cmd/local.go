@@ -62,12 +62,11 @@ func withForceFlag(cmd *cobra.Command, usage string) {
 func localDiff(ctx context.Context, client apigen.ClientWithResponsesInterface, remote *uri.URI, path string) local.Changes {
 	fmt.Printf("\ndiff 'local://%s' <--> '%s'...\n", path, remote)
 	currentRemoteState := make(chan apigen.ObjectStats, maxDiffPageSize)
+	includePOSIXPermissions := cfg.Experimental.Local.POSIXPerm.Enabled
 	var wg errgroup.Group
 	wg.Go(func() error {
-		return local.ListRemote(ctx, client, remote, currentRemoteState)
+		return local.ListRemote(ctx, client, remote, currentRemoteState, includePOSIXPermissions)
 	})
-
-	includePOSIXPermissions := cfg.Experimental.Local.POSIXPerm.Enabled
 
 	changes, err := local.DiffLocalWithHead(currentRemoteState, path, includePOSIXPermissions, includePOSIXPermissions)
 	if err != nil {
