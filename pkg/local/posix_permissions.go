@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"syscall"
 
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -37,14 +36,6 @@ type POSIXOwnership struct {
 type POSIXPermissions struct {
 	POSIXOwnership
 	Mode os.FileMode
-}
-
-func getUmask() int {
-	if umask < 0 {
-		umask = syscall.Umask(0)
-		syscall.Umask(umask)
-	}
-	return umask
 }
 
 // GetDefaultPermissions - returns default permissions as defined by file system. Public for testing purposes
@@ -89,15 +80,7 @@ func getPermissionFromStats(stats apigen.ObjectStats, withDefault bool) (*POSIXP
 }
 
 func getPermissionFromFileInfo(info os.FileInfo) (*POSIXPermissions, error) {
-	p := POSIXPermissions{}
-	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-		p.UID = int(stat.Uid)
-		p.GID = int(stat.Gid)
-		p.Mode = os.FileMode(stat.Mode)
-	} else {
-		return nil, ErrUnsupportedFS
-	}
-	return &p, nil
+	return permissionsFromFileInfo(info)
 }
 
 func isPermissionsChanged(localFileInfo os.FileInfo, remoteFileStats apigen.ObjectStats) bool {
