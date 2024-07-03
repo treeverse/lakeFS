@@ -213,7 +213,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	if err := fileutil.VerifyRelPath(strings.TrimPrefix(path, uri.PathSeparator), rootPath); err != nil {
 		return err
 	}
-	destination := fmt.Sprintf("%s%c%s", rootPath, os.PathSeparator, path)
+	destination := filepath.ToSlash(fmt.Sprintf("%s%s%s", rootPath, uri.PathSeparator, path))
 	destinationDirectory := filepath.Dir(destination)
 
 	if err := os.MkdirAll(destinationDirectory, os.FileMode(DefaultDirectoryPermissions)); err != nil {
@@ -243,7 +243,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	var perm *POSIXPermissions
 	isDir := strings.HasSuffix(path, uri.PathSeparator)
 	if s.includePerm { // Optimization - fail on to get permissions from metadata before having to download the entire file
-		if perm, err = getPermissionFromStats(objStat); err != nil {
+		if perm, err = getPermissionFromStats(objStat, true); err != nil {
 			return err
 		}
 	} else if isDir {
@@ -277,7 +277,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	if err := fileutil.VerifySafeFilename(source); err != nil {
 		return err
 	}
-	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), path))
+	dest := strings.TrimPrefix(filepath.ToSlash(fmt.Sprintf("%s%s%s", remote.GetPath(), uri.PathSeparator, path)), uri.PathSeparator)
 
 	f, err := os.Open(source)
 	if err != nil {

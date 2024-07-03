@@ -8,6 +8,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -17,15 +18,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/local"
 )
 
-const (
-	diffTestCorrectTime = 1691570412
-	filePermModeFile    = 0o100644
-	localPermModeFolder = 0o40755
-)
+const diffTestCorrectTime = 1691570412
 
 func TestDiffLocal(t *testing.T) {
 	osUid := os.Getuid()
 	osGid := os.Getgid()
+	umask := syscall.Umask(0)
+	syscall.Umask(umask)
 
 	cases := []struct {
 		Name                   string
@@ -63,27 +62,27 @@ func TestDiffLocal(t *testing.T) {
 					Path:      ".hidden-file",
 					SizeBytes: swag.Int64(64),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(osUid, osGid, filePermModeFile),
+					Metadata:  getPermissionsMetadata(osUid, osGid, local.DefaultFilePermissions-umask),
 				}, {
 					Path:      "sub/",
 					SizeBytes: swag.Int64(1),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(osUid, osGid, localPermModeFolder),
+					Metadata:  getPermissionsMetadata(osUid, osGid, local.DefaultDirectoryPermissions-umask),
 				}, {
 					Path:      "sub/f.txt",
 					SizeBytes: swag.Int64(3),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(osUid, osGid, filePermModeFile),
+					Metadata:  getPermissionsMetadata(osUid, osGid, local.DefaultFilePermissions-umask),
 				}, {
 					Path:      "sub/folder/",
 					SizeBytes: swag.Int64(1),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(osUid, osGid, localPermModeFolder),
+					Metadata:  getPermissionsMetadata(osUid, osGid, local.DefaultDirectoryPermissions-umask),
 				}, {
 					Path:      "sub/folder/f.txt",
 					SizeBytes: swag.Int64(6),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(osUid, osGid, filePermModeFile),
+					Metadata:  getPermissionsMetadata(osUid, osGid, local.DefaultFilePermissions-umask),
 				},
 			},
 			Expected: []*local.Change{},
@@ -110,7 +109,8 @@ func TestDiffLocal(t *testing.T) {
 				{
 					Path: "sub/f.txt",
 					Type: local.ChangeTypeModified,
-				}, {
+				},
+				{
 					Path: "sub/folder/f.txt",
 					Type: local.ChangeTypeModified,
 				},
@@ -124,7 +124,8 @@ func TestDiffLocal(t *testing.T) {
 					Path:      ".hidden-file",
 					SizeBytes: swag.Int64(64),
 					Mtime:     diffTestCorrectTime,
-				}, {
+				},
+				{
 					Path:      "sub/folder/f.txt",
 					SizeBytes: swag.Int64(6),
 					Mtime:     diffTestCorrectTime,
@@ -211,6 +212,18 @@ func TestDiffLocal(t *testing.T) {
 			},
 			Expected: []*local.Change{
 				{
+					Path: ".hidden-file",
+					Type: local.ChangeTypeModified,
+				},
+				{
+					Path: "sub/",
+					Type: local.ChangeTypeModified,
+				},
+				{
+					Path: "sub/f.txt",
+					Type: local.ChangeTypeModified,
+				},
+				{
 					Path: "sub/folder/",
 					Type: local.ChangeTypeAdded,
 				},
@@ -234,12 +247,12 @@ func TestDiffLocal(t *testing.T) {
 					Path:      "folder/",
 					SizeBytes: swag.Int64(1),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(osUid+1, osGid, localPermModeFolder),
+					Metadata:  getPermissionsMetadata(osUid+1, osGid, local.DefaultDirectoryPermissions-umask),
 				}, {
 					Path:      "folder/f.txt",
 					SizeBytes: swag.Int64(6),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(osUid, osGid, filePermModeFile),
+					Metadata:  getPermissionsMetadata(osUid, osGid, local.DefaultFilePermissions-umask),
 				},
 			},
 			Expected: []*local.Change{
@@ -310,7 +323,11 @@ func fixTime(t *testing.T, localPath string, includeDirs bool) {
 
 func fixUnixPermissions(t *testing.T, localPath string) {
 	err := filepath.WalkDir(localPath, func(path string, d fs.DirEntry, err error) error {
-		return os.Chown(path, os.Getuid(), os.Getgid())
+		perm := local.GetDefaultPermissions(d.IsDir())
+		if err = os.Chown(path, os.Getuid(), os.Getgid()); err != nil {
+			return err
+		}
+		return os.Chmod(path, perm.Mode)
 	})
 	require.NoError(t, err)
 }
