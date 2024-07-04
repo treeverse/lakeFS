@@ -1,7 +1,7 @@
 # Changelog
 
 ## v0.14.1 - 2024-07-04
-* Bug fix when using repository listing params (#7955)
+* When scanning across all commits, correctly handle lakeFS storage namespaces that do not end in `/` (#7955)
   
 ## v0.14.0 - 2024-06-20
 * Expose user metadata for commit (#7886)
