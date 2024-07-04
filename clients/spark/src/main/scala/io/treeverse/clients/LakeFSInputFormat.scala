@@ -243,12 +243,12 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
     if (StringUtils.isBlank(storageNamespace)) {
       storageNamespace = apiClient.getStorageNamespace(repoName, StorageClientType.HadoopFS)
     }
-    val namespaceURI = URI.create(storageNamespace)
+    val namespaceURI =
+      URI.create(if (storageNamespace.endsWith("/")) storageNamespace else storageNamespace + "/")
     val fs = fileSystemGetter(namespaceURI, conf)
     fs.getStatus(new Path(namespaceURI)) // Will throw an exception if namespace doesn't exist
 
-    val metadataURI =
-      namespaceURI.resolve(if (storageNamespace.endsWith("/")) "_lakefs" else "/_lakefs")
+    val metadataURI = namespaceURI.resolve("_lakefs")
     val metadataPath = new Path(metadataURI)
     if (!fs.exists(metadataPath)) {
       return ListBuffer.empty[InputSplit].asJava
