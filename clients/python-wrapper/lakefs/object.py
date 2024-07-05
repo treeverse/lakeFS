@@ -409,7 +409,7 @@ class ObjectWriter(LakeFSIOBase):
 
         open_kwargs = {
             "encoding": "utf-8" if 'b' not in mode else None,
-            "mode": 'b+',  # Always write to file in binary mode (bug in urllib3 < 2.0,
+            "mode": 'wb+',  # Always write to file in binary mode (bug in urllib3 < 2.0,
             "max_size": _WRITER_BUFFER_SIZE,
         }
         self._fd = tempfile.SpooledTemporaryFile(**open_kwargs)  # pylint: disable=consider-using-with
