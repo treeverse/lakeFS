@@ -276,13 +276,16 @@ func TestLakectlLocal_clone(t *testing.T) {
 		require.Contains(t, res, "download with-diff.txt")
 		require.Contains(t, res, "download no-diff.txt")
 
-		// the following commit "initializes" the posix permissions for the remote repo
-		runCmd(t, lakectl+" local commit "+dataDir+" --allow-empty-message -m \" \"", false, false, vars)
+		commitMessage := "'initialize' posix permissions for the remote repo"
+		runCmd(t, lakectl+" local commit "+dataDir+" -m \""+commitMessage+"\"", false, false, vars)
+
+		sanitizedResult := runCmd(t, lakectl+" local status "+dataDir, false, false, vars)
+		require.Contains(t, sanitizedResult, "No diff found")
 
 		err = os.Chmod(filepath.Join(dataDir, "with-diff.txt"), 0755)
 		require.NoError(t, err)
 
-		sanitizedResult := runCmd(t, lakectl+" local status "+dataDir, false, false, vars)
+		sanitizedResult = runCmd(t, lakectl+" local status "+dataDir, false, false, vars)
 
 		require.Contains(t, sanitizedResult, "with-diff.txt")
 		require.NotContains(t, sanitizedResult, "no-diff.txt")
