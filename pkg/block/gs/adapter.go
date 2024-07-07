@@ -612,8 +612,7 @@ func (a *Adapter) listMultipartUploadParts(ctx context.Context, bucketName strin
 func (a *Adapter) composeMultipartUploadParts(ctx context.Context, bucketName string, uploadID string, parts []string) (*storage.ObjectAttrs, error) {
 	// compose target from all parts
 	bucket := a.client.Bucket(bucketName)
-	var targetAttrs *storage.ObjectAttrs
-	err := ComposeAll(uploadID, parts, func(target string, parts []string) error {
+	targetAttrs, err := ComposeAll(uploadID, parts, func(target string, parts []string) (*storage.ObjectAttrs, error) {
 		objs := make([]*storage.ObjectHandle, len(parts))
 		for i := range parts {
 			h := storageObjectHandle{bucket.Object(parts[i])}
@@ -624,11 +623,9 @@ func (a *Adapter) composeMultipartUploadParts(ctx context.Context, bucketName st
 		composer := h.withWriteHandle(a).newComposer(a, objs...)
 		attrs, err := composer.Run(ctx)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		if target == uploadID {
-			targetAttrs = attrs
-		}
+
 		// delete parts
 		for _, o := range objs {
 			if err := o.Delete(ctx); err != nil {
@@ -638,15 +635,12 @@ func (a *Adapter) composeMultipartUploadParts(ctx context.Context, bucketName st
 				}).Warn("Failed to delete multipart upload part while compose")
 			}
 		}
-		return nil
+		return attrs, nil
 	})
 	if err == nil && targetAttrs == nil {
 		return nil, ErrMissingTargetAttrs
 	}
-	if err != nil {
-		return nil, err
-	}
-	return targetAttrs, nil
+	return targetAttrs, err
 }
 
 func (a *Adapter) Close() error {
