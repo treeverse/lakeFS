@@ -274,11 +274,8 @@ func TestLakectlLocal_clone(t *testing.T) {
 		require.Contains(t, res, "download with-diff.txt")
 		require.Contains(t, res, "download no-diff.txt")
 
-		//res = runCmd(t, lakectl+" local pull "+dataDir, false, false, vars)
 		res = runCmd(t, lakectl+" local commit "+dataDir+" --allow-empty-message -m \" \"", false, false, vars)
 		res = runCmd(t, lakectl+" local commit "+dataDir+" --allow-empty-message -m \" \"", false, false, vars)
-		//runCmd(t, lakectl+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
-		//res = runCmd(t, lakectl+" local pull "+dataDir, false, false, vars)
 
 		err = os.Chmod(filepath.Join(dataDir, "with-diff.txt"), 0755)
 		require.NoError(t, err)
