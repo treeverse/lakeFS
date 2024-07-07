@@ -255,6 +255,41 @@ func TestLakectlLocal_clone(t *testing.T) {
 		require.Contains(t, sanitizedResult, vars["PREFIX"]+"test2.txt")
 		require.NotContains(t, sanitizedResult, vars["PREFIX"]+"nodiff.txt")
 	})
+
+	t.Run("diff with posix permissions", func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+		vars["LOCAL_DIR"] = dataDir
+		vars["PREFIX"] = "posix"
+
+		lakectl := LakectlWithPosixPerms()
+		RunCmdAndVerifyContainsText(t, lakectl+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX}/ to ${LOCAL_DIR}.", vars)
+		localVerifyDirContents(t, dataDir, []string{})
+
+		// Add new files to path
+		localCreateTestData(t, vars, []string{
+			vars["PREFIX"] + uri.PathSeparator + "with-diff.txt",
+			vars["PREFIX"] + uri.PathSeparator + "no-diff.txt",
+		})
+
+		res := runCmd(t, lakectl+" local pull "+dataDir, false, false, vars)
+		require.Contains(t, res, "download with-diff.txt")
+		require.Contains(t, res, "download no-diff.txt")
+
+		commitMessage := "'initialize' posix permissions for the remote repo"
+		runCmd(t, lakectl+" local commit "+dataDir+" -m \""+commitMessage+"\"", false, false, vars)
+
+		sanitizedResult := runCmd(t, lakectl+" local status "+dataDir, false, false, vars)
+		require.Contains(t, sanitizedResult, "No diff found")
+
+		err = os.Chmod(filepath.Join(dataDir, "with-diff.txt"), 0755)
+		require.NoError(t, err)
+
+		sanitizedResult = runCmd(t, lakectl+" local status "+dataDir, false, false, vars)
+
+		require.Contains(t, sanitizedResult, "with-diff.txt")
+		require.NotContains(t, sanitizedResult, "no-diff.txt")
+	})
 }
 
 func TestLakectlLocal_pull(t *testing.T) {
