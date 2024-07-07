@@ -41,9 +41,14 @@ func lakectlLocation() string {
 }
 
 func LakectlWithParams(accessKeyID, secretAccessKey, endPointURL string) string {
+	return LakectlWithParamsWithPosixPerms(accessKeyID, secretAccessKey, endPointURL, false)
+}
+
+func LakectlWithParamsWithPosixPerms(accessKeyID, secretAccessKey, endPointURL string, withPosixPerms bool) string {
 	lakectlCmdline := "LAKECTL_CREDENTIALS_ACCESS_KEY_ID=" + accessKeyID +
 		" LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=" + secretAccessKey +
 		" LAKECTL_SERVER_ENDPOINT_URL=" + endPointURL +
+		" LAKECTL_EXPERIMENTAL_LOCAL_POSIX_PERMISSIONS_ENABLED=" + strconv.FormatBool(withPosixPerms) +
 		" " + lakectlLocation()
 
 	return lakectlCmdline
@@ -51,6 +56,10 @@ func LakectlWithParams(accessKeyID, secretAccessKey, endPointURL string) string 
 
 func Lakectl() string {
 	return LakectlWithParams(viper.GetString("access_key_id"), viper.GetString("secret_access_key"), viper.GetString("endpoint_url"))
+}
+
+func LakectlWithPosixPerms() string {
+	return LakectlWithParamsWithPosixPerms(viper.GetString("access_key_id"), viper.GetString("secret_access_key"), viper.GetString("endpoint_url"), true)
 }
 
 func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, error) {
