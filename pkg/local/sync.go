@@ -277,7 +277,8 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	if err := fileutil.VerifySafeFilename(source); err != nil {
 		return err
 	}
-	dest := strings.TrimPrefix(filepath.ToSlash(fmt.Sprintf("%s%s%s", remote.GetPath(), uri.PathSeparator, path)), uri.PathSeparator)
+	remotePath := strings.TrimRight(remote.GetPath(), uri.PathSeparator)
+	dest := strings.TrimPrefix(filepath.ToSlash(fmt.Sprintf("%s%s%s", remotePath, uri.PathSeparator, path)), uri.PathSeparator)
 
 	f, err := os.Open(source)
 	if err != nil {

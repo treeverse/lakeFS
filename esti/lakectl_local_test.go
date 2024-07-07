@@ -267,15 +267,17 @@ func TestLakectlLocal_clone(t *testing.T) {
 		localVerifyDirContents(t, dataDir, []string{})
 
 		// Add new files to path
-		localCreateTestData(t, vars, []string{vars["PREFIX"] + uri.PathSeparator + "with-diff.txt"})
-		localCreateTestData(t, vars, []string{vars["PREFIX"] + uri.PathSeparator + "no-diff.txt"})
+		localCreateTestData(t, vars, []string{
+			vars["PREFIX"] + uri.PathSeparator + "with-diff.txt",
+			vars["PREFIX"] + uri.PathSeparator + "no-diff.txt",
+		})
 
 		res := runCmd(t, lakectl+" local pull "+dataDir, false, false, vars)
 		require.Contains(t, res, "download with-diff.txt")
 		require.Contains(t, res, "download no-diff.txt")
 
-		res = runCmd(t, lakectl+" local commit "+dataDir+" --allow-empty-message -m \" \"", false, false, vars)
-		res = runCmd(t, lakectl+" local commit "+dataDir+" --allow-empty-message -m \" \"", false, false, vars)
+		// the following commit "initializes" the posix permissions for the remote repo
+		runCmd(t, lakectl+" local commit "+dataDir+" --allow-empty-message -m \" \"", false, false, vars)
 
 		err = os.Chmod(filepath.Join(dataDir, "with-diff.txt"), 0755)
 		require.NoError(t, err)
