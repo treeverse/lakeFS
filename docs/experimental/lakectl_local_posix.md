@@ -44,7 +44,7 @@ By default, this feature is disabled. Enabling file permission tracking is done 
    ```
 
 It is also possible to enable this feature via the corresponding environment variable:  
-`LAKECTL_EXPERIMENTAL_LOCAL_POSIX_PERMISSIONS_ENABLED`
+`LAKECTL_EXPERIMENTAL_LOCAL_UNIX_PERMISSIONS_ENABLED`
 
 ## Usage
 
