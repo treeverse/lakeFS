@@ -1,5 +1,10 @@
 # Changelog
 
+# v1.28.2
+
+:bug: Bugs fixed:
+- Spark client panics when reading DataFrame from entire repository / storageNamespace (#7955)
+
 # v1.28.1
 
 :new: What's new:
