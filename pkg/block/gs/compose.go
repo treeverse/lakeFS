@@ -2,9 +2,9 @@ package gs
 
 import (
 	"fmt"
-	"sync"
 
 	"cloud.google.com/go/storage"
+	"golang.org/x/sync/errgroup"
 )
 
 const MaxPartsInCompose = 32
@@ -12,7 +12,8 @@ const MaxPartsInCompose = 32
 type ComposeFunc func(target string, parts []string) (*storage.ObjectAttrs, error)
 
 func ComposeAll(target string, parts []string, composeFunc ComposeFunc) (*storage.ObjectAttrs, error) {
-	var wg sync.WaitGroup
+	group := errgroup.Group{}
+
 	for layer := 1; len(parts) > MaxPartsInCompose; layer++ {
 		var nextParts []string
 		for i := 0; i < len(parts); i += MaxPartsInCompose {
@@ -25,24 +26,19 @@ func ComposeAll(target string, parts []string, composeFunc ComposeFunc) (*storag
 				nextParts = append(nextParts, chunk...)
 			} else {
 				targetName := fmt.Sprintf("%s_%d", chunk[0], layer)
-				wg.Add(1)
-				go composeChunkConcurrent(targetName, chunk, composeFunc, &wg)
+				group.Go(func() error {
+					_, err := composeFunc(targetName, chunk)
+					return err
+				})
 				nextParts = append(nextParts, targetName)
 			}
 		}
 		parts = nextParts
 	}
-	wg.Wait()
 
-	// no compose the chunks we made
-	return composeFunc(target, parts)
-}
-
-func composeChunkConcurrent(target string, parts []string, composeFunc ComposeFunc, wg *sync.WaitGroup) {
-	// ctx context.Context, a *Adapter, target string, parts []string, bucketName string, bucket *storage.BucketHandle, wg *sync.WaitGroup) {
-	_, err := composeFunc(target, parts)
-	if err != nil {
-		fmt.Println("Compose error: ", err)
+	// wait for 1st round of composes to complete
+	if err := group.Wait(); err != nil {
+		return nil, err
 	}
-	wg.Done()
+	return composeFunc(target, parts) // 2nd round of composes
 }
