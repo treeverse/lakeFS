@@ -497,6 +497,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 		"qualified_key": key,
 		"key":           obj.Identifier,
 	})
+	lg.Debug("started multipart upload")
 
 	parts, err := a.getPartNames(bucketName, uploadID, multipartList)
 	if err != nil {
