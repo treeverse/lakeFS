@@ -83,13 +83,13 @@ Running this script requires that `kubectl` be installed on the machine it is be
 
 At the top of the script you'll find the `Variables` block. It is important to change these values according to how lakeFS is deployed in your cluster.  
 
-`NAMESPACE` - The K8s namespace where lakeFS and fluffy are deployed
-`LAKEFS_DEPLOYMENT` - The name of the lakeFS K8s deployment
-`FLUFFY_DEPLOYMENT` - The name of the fluffy K8s deployment
-`LAKEFS_LOGS_FILE_NAME` - The name of the local file where lakeFS logs will be saved
-`FLUFFY_LOGS_FILE_NAME` - The name of the local file where fluffy logs will be saved
-`LAKEFS_FLARE_FILE` - The name of the local file where the lakeFS `flare` result will be saved
-`FLUFFY_FLARE_FILE` - The name of the local file where the fluffy `flare` result will be saved
+`NAMESPACE` - The K8s namespace where lakeFS and fluffy are deployed  
+`LAKEFS_DEPLOYMENT` - The name of the lakeFS K8s deployment  
+`FLUFFY_DEPLOYMENT` - The name of the fluffy K8s deployment  
+`LAKEFS_LOGS_FILE_NAME` - The name of the local file where lakeFS logs will be saved  
+`FLUFFY_LOGS_FILE_NAME` - The name of the local file where fluffy logs will be saved  
+`LAKEFS_FLARE_FILE` - The name of the local file where the lakeFS `flare` result will be saved  
+`FLUFFY_FLARE_FILE` - The name of the local file where the fluffy `flare` result will be saved  
 
 ```shell
 #!/bin/bash
