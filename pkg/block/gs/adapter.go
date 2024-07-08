@@ -546,8 +546,8 @@ func (a *Adapter) composeMultipartUploadParts(ctx context.Context, bucketName st
 			objs[i] = h.withReadHandle(ctx, a).ObjectHandle
 		}
 		// compose target from parts
-		h := storageObjectHandle{bucket.Object(target)}
-		composer := h.withWriteHandle(a).newComposer(a, objs...)
+		targetHandle := storageObjectHandle{bucket.Object(target)}
+		composer := targetHandle.withWriteHandle(a).newComposer(a, objs...)
 		attrs, err := composer.Run(ctx)
 		if err != nil {
 			return nil, err
