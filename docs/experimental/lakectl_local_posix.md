@@ -23,7 +23,7 @@ This experimental feature is used to:
 ## Configuration 
 
 By default, this feature is disabled. Enabling file permission tracking is done via the configuration variable 
-`experimental.local.posix_permissions_enabled` which can be added to the lakectl.yaml file:
+`experimental.local.posix_permissions.enabled` which can be added to the lakectl.yaml file:
 
    ```yaml
    credentials:
