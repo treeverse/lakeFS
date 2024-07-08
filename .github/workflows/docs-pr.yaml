@@ -14,6 +14,8 @@ jobs:
   preview:
     name: Docs PR - Publish preview and check links
     runs-on: ubuntu-22.04
+    permissions:
+          pull-requests: write
     steps:
       - name: Check-out
         uses: actions/checkout@v4

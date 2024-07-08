@@ -42,7 +42,7 @@ For simplicity the example does not use SSO and only supports basic authenticati
     
 1. Create `docker-compose.yaml` file with the following content
 2. Run `docker compose up` in the same directory as the `docker-compose.yaml` file.
-3. In your browser go to [http://localhost:8080](http://localhost:8080) to access lakeFS UI.
+3. In your browser go to <http://localhost:8080> to access lakeFS UI.
 
 ```yaml
 version: "3"
@@ -222,7 +222,7 @@ configs:
             - http://localhost:8080/oidc/login
 ```
 
-Test the OIDC configuration works - in your browser go to [http://localhost:8080](http://localhost:8080) to access lakeFS UI.
+Test the OIDC configuration works - in your browser go to <http://localhost:8080> to access lakeFS UI.
 
 </div>
 </div>
