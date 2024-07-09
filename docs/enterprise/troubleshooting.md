@@ -74,7 +74,6 @@ Aside from the specific secret type listed above, `flare` also has the ability t
 
 Redacted secrets are replaced by a `SHA512` hash of the value. This allows comparing them (e.g., between lakeFS and fluffy) without exposing the actual values.
 
-Although we've taken great care to clean the information `flare` collects of secrets, the process isn't perfect. We recommend manually reviewing the `flare`'s output before sharing them.
 
 ## Usage - Collect and Send Flare
 
