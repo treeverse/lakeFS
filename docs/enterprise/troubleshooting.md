@@ -51,7 +51,7 @@ Both lakeFS and fluffy allow configuration to be supplied in multiple ways: conf
 
 ### Environment Variables
 
-When troubleshooting, it's important to get a view of the environment in which lakeFS/fluffy are running. This is especially true for container-based deployment environments, like K8s, where env vars are used extensively. The `flare` command collects environment variables with the following prefixes:
+When troubleshooting, it's important to get a view of the environment in which lakeFS/fluffy are running. This is especially true for container-based deployment environments, like Kubernetes, where env vars are used extensively. The `flare` command collects environment variables with the following prefixes:
 
 - `LAKEFS_`
 - `FLUFFY_`
@@ -76,20 +76,24 @@ Redacted secrets are replaced by a `SHA512` hash of the value. This allows compa
 
 Although we've taken great care to clean the information `flare` collects of secrets, the process isn't perfect. We recommend manually reviewing the `flare`'s output before sharing them.
 
-## Example Script
+## Usage - Collect and Send Flare
 
 The following script is intended to be run locally and assumes that lakeFS and fluffy are deployed to a K8s cluster, since this is the recommended setup.  
 Running this script requires that `kubectl` be installed on the machine it is being run from and that `kubectl` is configured with the correct context and credentials to access the cluster. Aside from running the `flare` command on both lakeFS and fluffy, this script also fetches the logs from all running pods of lakeFS and fluffy.
+
+### Step 1 - Set Script Variables
 
 At the top of the script you'll find the `Variables` block. It is important to change these values according to how lakeFS is deployed in your cluster.  
 
 `NAMESPACE` - The K8s namespace where lakeFS and fluffy are deployed  
 `LAKEFS_DEPLOYMENT` - The name of the lakeFS K8s deployment  
 `FLUFFY_DEPLOYMENT` - The name of the fluffy K8s deployment  
-`LAKEFS_LOGS_FILE_NAME` - The name of the local file where lakeFS logs will be saved  
-`FLUFFY_LOGS_FILE_NAME` - The name of the local file where fluffy logs will be saved  
+`LAKEFS_LOGS_OUTPUT_FILE` - The name of the local file where lakeFS logs will be saved  
+`FLUFFY_LOGS_OUTPUT_FILE` - The name of the local file where fluffy logs will be saved  
 `LAKEFS_FLARE_FILE` - The name of the local file where the lakeFS `flare` result will be saved  
 `FLUFFY_FLARE_FILE` - The name of the local file where the fluffy `flare` result will be saved  
+
+### Step 2 - Execute the Script
 
 ```shell
 #!/bin/bash
@@ -101,8 +105,8 @@ NC='\033[0m'
 NAMESPACE=lakefs-prod
 LAKEFS_DEPLOYMENT=lakefs-server
 FLUFFY_DEPLOYMENT=lakefs-fluffy
-LAKEFS_LOGS_FILE_NAME=lakefs.log
-FLUFFY_LOGS_FILE_NAME=fluffy.log
+LAKEFS_LOGS_OUTPUT_FILE=lakefs.log
+FLUFFY_LOGS_OUTPUT_FILE=fluffy.log
 LAKEFS_FLARE_FILE=lakefs.flare
 FLUFFY_FLARE_FILE=fluffy.flare
 
@@ -114,9 +118,29 @@ then
     exit 1
 fi
 
-$KUBECTLCMD get pods -o name -n $NAMESPACE | grep pod/$LAKEFS_DEPLOYMENT | xargs -I {} $KUBECTLCMD logs -n $NAMESPACE --all-containers=true --prefix --ignore-errors --timestamps {} > $LAKEFS_LOGS_FILE_NAME
-$KUBECTLCMD get pods -o name -n $NAMESPACE | grep pod/$FLUFFY_DEPLOYMENT | xargs -I {} $KUBECTLCMD logs -n $NAMESPACE --all-containers=true --prefix --ignore-errors --timestamps {} > $FLUFFY_LOGS_FILE_NAME
+$KUBECTLCMD get pods -o name -n $NAMESPACE | grep pod/$LAKEFS_DEPLOYMENT | xargs -I {} $KUBECTLCMD logs -n $NAMESPACE --all-containers=true --prefix --ignore-errors --timestamps {} > $LAKEFS_LOGS_OUTPUT_FILE
+$KUBECTLCMD get pods -o name -n $NAMESPACE | grep pod/$FLUFFY_DEPLOYMENT | xargs -I {} $KUBECTLCMD logs -n $NAMESPACE --all-containers=true --prefix --ignore-errors --timestamps {} > $FLUFFY_LOGS_OUTPUT_FILE
 
 $KUBECTLCMD exec deployment/$LAKEFS_DEPLOYMENT -- ./lakefs flare --stdout > $LAKEFS_FLARE_FILE
 $KUBECTLCMD exec deployment/$FLUFFY_DEPLOYMENT -- ./lakefs flare --stdout > $FLUFFY_FLARE_FILE
 ```
+
+### Step 3 - Inspect the Output Files
+
+After executing the script you should have four files: lakeFS/fluffy logs and lakeFS/fluffy flare output. Before sharing these files, please review them to make sure all secrets were correctly redacted and that all the collected information is shareable.
+
+### Step 4 - Zip Output Files and Attach to HubSpot Ticket
+
+Once you're done inspecting the files, you can zip them into a single file and attach it to a HubSpot issue.
+
+#### New Ticket
+
+When filing a new ticket, you can attach the zip file using the file upload input at the bottom of the new ticket form.
+
+![new ticket](../assets/img/flare_new_ticket.png)
+
+#### Existing Ticket
+
+To add a file to an existing ticket, click the ticket subject in the support portal. On the ticket details attach a file as a new response. You can also add text to the response, if you'd like to add further details.
+
+![existing ticket](../assets/img/flare_existing_ticket.png)
