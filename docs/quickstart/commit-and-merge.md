@@ -14,9 +14,7 @@ _In the previous step we branched our data from `main` into a new `denmark-lakes
 Having make the change to the datafile in the `denmark-lakes` branch, we now want to commit it. There are various options for interacting with the lakeFS API, including the web interface, [a Python client](https://pydocs.lakefs.io/), and `lakectl` which is what we'll use here. Run the following from a terminal window:
 
 ```bash
-docker exec lakefs \
-    lakectl commit lakefs://quickstart/denmark-lakes \
-	    -m "Create a dataset of just the lakes in Denmark"
+docker exec lakefs lakectl commit lakefs://quickstart/denmark-lakes -m "Create a dataset of just the lakes in Denmark"
 ```
 
 You will get confirmation of the commit including its hash.
@@ -37,10 +35,7 @@ With our change committed, it's now time to merge it to back to the `main` branc
 As above, we'll use `lakectl` to do this too. The syntax just requires us to specify the source and target of the merge. Run this from a terminal window.
 
 ```bash
-docker exec lakefs \
-	lakectl merge \
-		lakefs://quickstart/denmark-lakes \
-		lakefs://quickstart/main
+docker exec lakefs lakectl merge lakefs://quickstart/denmark-lakes lakefs://quickstart/main
 ```
 
 We can confirm that this has worked by returning to the same object view of `lakes.parquet` as before and clicking on **Execute** to rerun the same query. You'll see that the country row counts have changed, and only Denmark is left in the data: 

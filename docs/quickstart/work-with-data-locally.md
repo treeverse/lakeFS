@@ -22,37 +22,31 @@ container and edit an image dataset used for ML model development.
 1. In lakeFS create a new branch called `my-experiment`. You can do this through the UI or with `lakectl`:
 
     ```bash
-    docker exec lakefs \
-        lakectl branch create \
-            lakefs://quickstart/my-experiment \
-            --source lakefs://quickstart/main
+    docker exec lakefs lakectl branch create lakefs://quickstart/my-experiment --source lakefs://quickstart/main
     ```
 
 2. Clone images from your quickstart repository into a local directory named `my_local_dir` within your container:   
 
     ```bash
-    docker exec lakefs \
-        lakectl local clone lakefs://quickstart/my-experiment/images my_local_dir
+    docker exec lakefs lakectl local clone lakefs://quickstart/my-experiment/images my_local_dir
     ```
 
 3. Verify that `my_local_dir` is linked to the correct path in your lakeFS remote: 
   
     ```bash
-    docker exec lakefs \
-        lakectl local list
+    docker exec lakefs lakectl local list
     ```
 
    You should see confirmation that my_local_dir is tracking the desired lakeFS path.:    
    
    ```bash
-       my_local_dir	lakefs://quickstart/my-experiment/images/	8614575b5488b47a094163bd17a12ed0b82e0bcbfd22ed1856151c671f1faa53
+       my_local_dir	lakefs://quickstart/my-experiment/images/8614575b5488b47a094163bd17a12ed0b82e0bcbfd22ed1856151c671f1faa53
    ```
 
 4. Verify that your local environment is up-to-date with its remote path:
     
    ```bash
-    docker exec lakefs \
-        lakectl local status my_local_dir
+    docker exec lakefs lakectl local status my_local_dir
     ```
     You should get a confirmation message like this showing that there is no difference between your local environment and the lakeFS remote:
 
@@ -75,14 +69,12 @@ container and edit an image dataset used for ML model development.
 
 2. Clean the dataset by removing images larger than 225 KB:
     ```bash  
-    docker exec lakefs \
-        find my_local_dir -type f -size +225k -delete
+    docker exec lakefs find my_local_dir -type f -size +225k -delete
     ```
    
 3. Check the status of your local changes compared to the lakeFS remote path:
     ```bash
-    docker exec lakefs \
-        lakectl local status my_local_dir
+    docker exec lakefs lakectl local status my_local_dir
     ```
    
     You should get a confirmation message like this, showing the modifications you made locally: 
@@ -108,9 +100,7 @@ the improved dataset is shared and versioned.
 1. Commit your local changes to lakeFS: 
 
     ```bash
-    docker exec lakefs \
-        lakectl local commit \
-            -m 'Deleted images larger than 225KB in size and changed the Axolotl image' my_local_dir
+    docker exec lakefs lakectl local commit -m 'Deleted images larger than 225KB in size and changed the Axolotl image' my_local_dir
     ```
     
     In your branch, you should see the commit including your local changes:
