@@ -77,7 +77,7 @@ Redacted secrets are replaced by a `SHA512` hash of the value. This allows compa
 
 ## Usage - Collect and Send Flare
 
-The following script is intended to be run locally and assumes that lakeFS and fluffy are deployed to a K8s cluster, since this is the recommended setup.  
+The following script is intended to be run locally and assumes that lakeFS and fluffy are deployed to a Kubernetes cluster, since this is the recommended setup.  
 Running this script requires that `kubectl` be installed on the machine it is being run from and that `kubectl` is configured with the correct context and credentials to access the cluster. Aside from running the `flare` command on both lakeFS and fluffy, this script also fetches the logs from all running pods of lakeFS and fluffy.
 
 ### Step 1 - Set Script Variables
