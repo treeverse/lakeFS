@@ -501,22 +501,11 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 		"qualified_key": key,
 		"key":           obj.Identifier,
 	})
+	lg.Debug("started multipart upload")
 
-	// list bucket parts and validate request match
-	bucketParts, err := a.listMultipartUploadParts(ctx, bucketName, uploadID)
+	parts, err := a.getPartNamesWithValidation(ctx, bucketName, uploadID, multipartList)
 	if err != nil {
 		return nil, err
-	}
-	// validate bucketParts match the request multipartList
-	err = a.validateMultipartUploadParts(uploadID, multipartList, bucketParts)
-	if err != nil {
-		return nil, err
-	}
-
-	// prepare names
-	parts := make([]string, len(bucketParts))
-	for i, part := range bucketParts {
-		parts[i] = part.Name
 	}
 
 	// compose target object
@@ -539,6 +528,26 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	}, nil
 }
 
+func (a *Adapter) getPartNamesWithValidation(ctx context.Context, bucketName, uploadID string, multipartList *block.MultipartUploadCompletion) ([]string, error) {
+	// list bucket parts and validate request match
+	bucketParts, err := a.listMultipartUploadParts(ctx, bucketName, uploadID)
+	if err != nil {
+		return nil, err
+	}
+	// validate bucketParts match the request multipartList
+	err = a.validateMultipartUploadParts(uploadID, multipartList, bucketParts)
+	if err != nil {
+		return nil, err
+	}
+
+	// prepare names
+	parts := make([]string, len(bucketParts))
+	for i, part := range bucketParts {
+		parts[i] = part.Name
+	}
+	return parts, nil
+}
+
 func (a *Adapter) validateMultipartUploadParts(uploadID string, multipartList *block.MultipartUploadCompletion, bucketParts []*storage.ObjectAttrs) error {
 	if len(multipartList.Part) != len(bucketParts) {
 		return fmt.Errorf("part list mismatch - expected %d parts, got %d: %w", len(bucketParts), len(multipartList.Part), ErrPartListMismatch)
@@ -558,10 +567,15 @@ func (a *Adapter) validateMultipartUploadParts(uploadID string, multipartList *b
 func (a *Adapter) listMultipartUploadParts(ctx context.Context, bucketName string, uploadID string) ([]*storage.ObjectAttrs, error) {
 	bucket := a.client.Bucket(bucketName)
 	var bucketParts []*storage.ObjectAttrs
-	it := bucket.Objects(ctx, &storage.Query{
+	query := &storage.Query{
 		Delimiter: delimiter,
 		Prefix:    uploadID + partSuffix,
-	})
+	}
+	err := query.SetAttrSelection([]string{"Name", "Etag"})
+	if err != nil {
+		return nil, err
+	}
+	it := bucket.Objects(ctx, query)
 	for {
 		attrs, err := it.Next()
 		if errors.Is(err, iterator.Done) {
@@ -570,6 +584,12 @@ func (a *Adapter) listMultipartUploadParts(ctx context.Context, bucketName strin
 		if err != nil {
 			return nil, fmt.Errorf("listing bucket '%s' upload '%s': %w", bucketName, uploadID, err)
 		}
+
+		// filter out invalid part names
+		if !a.isPartName(attrs.Name) {
+			continue
+		}
+
 		bucketParts = append(bucketParts, attrs)
 		if len(bucketParts) > MaxMultipartObjects {
 			return nil, fmt.Errorf("listing bucket '%s' upload '%s': %w", bucketName, uploadID, ErrMaxMultipartObjects)
@@ -582,26 +602,32 @@ func (a *Adapter) listMultipartUploadParts(ctx context.Context, bucketName strin
 	return bucketParts, nil
 }
 
+// isPartName checks it's a valid part name, as opposed to an already merged group of parts
+func (a *Adapter) isPartName(name string) bool {
+	if len(name) < len(partSuffix)+5 {
+		return false
+	}
+	suffixSubstring := name[len(name)-5-len(partSuffix) : len(name)-5]
+	return partSuffix == suffixSubstring
+}
+
 func (a *Adapter) composeMultipartUploadParts(ctx context.Context, bucketName string, uploadID string, parts []string) (*storage.ObjectAttrs, error) {
 	// compose target from all parts
 	bucket := a.client.Bucket(bucketName)
-	var targetAttrs *storage.ObjectAttrs
-	err := ComposeAll(uploadID, parts, func(target string, parts []string) error {
+	targetAttrs, err := ComposeAll(uploadID, parts, func(target string, parts []string) (*storage.ObjectAttrs, error) {
 		objs := make([]*storage.ObjectHandle, len(parts))
 		for i := range parts {
 			h := storageObjectHandle{bucket.Object(parts[i])}
 			objs[i] = h.withReadHandle(ctx, a).ObjectHandle
 		}
 		// compose target from parts
-		h := storageObjectHandle{bucket.Object(target)}
-		composer := h.withWriteHandle(a).newComposer(a, objs...)
+		targetHandle := storageObjectHandle{bucket.Object(target)}
+		composer := targetHandle.withWriteHandle(a).newComposer(a, objs...)
 		attrs, err := composer.Run(ctx)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		if target == uploadID {
-			targetAttrs = attrs
-		}
+
 		// delete parts
 		for _, o := range objs {
 			if err := o.Delete(ctx); err != nil {
@@ -611,15 +637,12 @@ func (a *Adapter) composeMultipartUploadParts(ctx context.Context, bucketName st
 				}).Warn("Failed to delete multipart upload part while compose")
 			}
 		}
-		return nil
+		return attrs, nil
 	})
 	if err == nil && targetAttrs == nil {
 		return nil, ErrMissingTargetAttrs
 	}
-	if err != nil {
-		return nil, err
-	}
-	return targetAttrs, nil
+	return targetAttrs, err
 }
 
 func (a *Adapter) Close() error {

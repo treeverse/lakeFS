@@ -17,6 +17,14 @@ const (
 	multipartPartSize      = 5 * 1024 * 1024 // generally the minimum size for multi-part upload
 )
 
+// AdapterMultipartTest Test suite of adapter multipart functionality
+func AdapterMultipartTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
+	t.Run("Adapter_MultipartUpload", func(t *testing.T) { testAdapterMultipartUpload(t, adapter, storageNamespace) })
+	t.Run("Adapter_AbortMultiPartUpload", func(t *testing.T) { testAdapterAbortMultipartUpload(t, adapter, storageNamespace) })
+	t.Run("Adapter_CopyPart", func(t *testing.T) { testAdapterCopyPart(t, adapter, storageNamespace) })
+	t.Run("Adapter_CopyPartRange", func(t *testing.T) { testAdapterCopyPartRange(t, adapter, storageNamespace) })
+}
+
 // Parameterized test of the Multipart Upload APIs. After successful upload we Get the result and compare to the original
 func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
