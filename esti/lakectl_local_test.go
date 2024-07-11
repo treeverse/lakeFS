@@ -334,18 +334,16 @@ func TestLakectlLocal_posix_permissions(t *testing.T) {
 		res := runCmd(t, lakectl+" local commit "+dataDir+" -m \""+commitMessage+"\"", false, false, vars)
 		require.Contains(t, res, "upload empty_local_folder")
 
-		// add and remove a dummy file locally, to prevent an empty commit
-		localCreateTestData(t, vars, []string{vars["PREFIX"] + uri.PathSeparator + "some-file.txt"})
-		runCmd(t, lakectl+" local pull "+dataDir, false, false, vars)
-		err = os.Remove(filepath.Join(dataDir, "some-file.txt"))
-		require.NoError(t, err)
-
 		// remove the empty folder locally, and validate it's removed from the remote repo
 		err = os.Remove(localDirPath)
 		require.NoError(t, err)
 		commitMessage = "remove empty folder"
 		res = runCmd(t, lakectl+" local commit "+dataDir+" -m \""+commitMessage+"\"", false, false, vars)
 		require.Contains(t, res, "delete remote path: empty_local_folder/")
+
+		res = runCmd(t, lakectl+" local status "+dataDir, false, false, vars)
+		require.Contains(t, res, "No diff found")
+		require.NotContains(t, res, "empty_local_folder")
 	})
 }
 
