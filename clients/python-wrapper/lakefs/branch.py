@@ -249,7 +249,7 @@ class Branch(_BaseBranch):
             # We show the error in case both are provided only after showing the deprecation warning, in order
             # for the user to have the most contextual clarity.
             if reference is not None:
-                raise ValueError("`reference_id` and `reference` cannot both be provided. "
+                raise ValueError("`reference_id` and `reference` both provided "
                                  "Use only the `reference` argument.")
 
         # Handle reference_id as a deprecated alias to reference.
