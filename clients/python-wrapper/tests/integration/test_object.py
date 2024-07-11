@@ -458,3 +458,28 @@ def test_writer_gif(setup_repo, datafiles):
 
     assert obj.exists()
     image.close()
+
+
+@pytest.mark.parametrize("w_mode", get_args(WriteModes))
+def test_large_file_object_write(setup_repo, w_mode):
+    clt, repo = setup_repo
+    stored_obj = StoredObject(
+        repository_id=repo.properties.id,
+        reference_id="main",
+        path="test_binary_mode",
+        client=clt,
+    )
+
+    writer = ObjectWriter(stored_obj, mode=w_mode)
+
+    # Create file of size greater than _WRITER_BUFFER_SIZE (32 MB)
+    # set in SpooledTemporaryFile to force disk write
+    binary_data = b"\x00" * (32 * 1024 * 1024 + 1)
+
+    writer._fd.write(binary_data)
+    writer._fd.seek(0)
+
+    read_data = writer._fd.read()
+    assert read_data == binary_data, "Written and read data do not match"
+
+    writer.close()
