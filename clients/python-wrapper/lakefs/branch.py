@@ -4,6 +4,7 @@ Module containing lakeFS branch implementation
 
 from __future__ import annotations
 
+import sys
 import uuid
 import warnings
 from contextlib import contextmanager
@@ -23,6 +24,9 @@ from lakefs.exceptions import (
     TransactionException
 )
 
+# Unless stated otherwise by passing `-W <something>` to Python, we display `DeprecationWarning`s by default.
+if not sys.warnoptions:
+    warnings.simplefilter('always', DeprecationWarning)
 
 class _BaseBranch(Reference):
 
