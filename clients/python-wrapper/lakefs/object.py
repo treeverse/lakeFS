@@ -408,7 +408,7 @@ class ObjectWriter(LakeFSIOBase):
         self.metadata = metadata
 
         open_kwargs = {
-            "encoding": "utf-8" if 'b' not in mode else None,
+            "encoding": None,  # Must be none for binary write modes. "utf-8" otherwise
             "mode": 'wb+',  # Always write to file in binary mode (bug in urllib3 < 2.0,
             "max_size": _WRITER_BUFFER_SIZE,
         }
