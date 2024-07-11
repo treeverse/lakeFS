@@ -24,9 +24,13 @@ from lakefs.exceptions import (
     TransactionException
 )
 
-# Unless stated otherwise by passing `-W <something>` to Python, we display `DeprecationWarning`s by default.
-if not sys.warnoptions:
-    warnings.simplefilter('always', DeprecationWarning)
+
+class LakeFSDeprecationWarning(Warning):
+    """
+    This implementation is a replacement for the standard `DeprecationWarning` class,
+    because the `DeprecationWarning` class is ignored by default by the `warnings` module.
+    """
+
 
 class _BaseBranch(Reference):
 
@@ -248,7 +252,7 @@ class Branch(_BaseBranch):
 
         if reference_id is not None:
             warnings.warn(
-                "reference_id is deprecated, please use the `reference` argument.", DeprecationWarning
+                "reference_id is deprecated, please use the `reference` argument.", LakeFSDeprecationWarning
             )
             # We show the error in case both are provided only after showing the deprecation warning, in order
             # for the user to have the most contextual clarity.
