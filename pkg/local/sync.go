@@ -370,7 +370,7 @@ func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change 
 	}()
 	dest := filepath.ToSlash(filepath.Join(remote.GetPath(), change.Path))
 	if strings.HasSuffix(change.Path, uri.PathSeparator) { // handle directory marker
-		dest = dest + uri.PathSeparator
+		dest += uri.PathSeparator
 	}
 	resp, err := s.client.DeleteObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.DeleteObjectParams{
 		Path: dest,
