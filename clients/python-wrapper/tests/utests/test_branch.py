@@ -116,7 +116,7 @@ def test_branch_revert(monkeypatch):
     branch = get_test_branch()
     ref_id = "ab1234"
     expected_parent = 0
-    with monkeypatch.context():
+    with (monkeypatch.context()):
         def monkey_revert_branch(repo_name, branch_name, revert_branch_creation, *_):
             assert repo_name == branch.repo_id
             assert branch_name == branch.id
@@ -157,9 +157,9 @@ def test_branch_revert(monkeypatch):
             branch.revert(None)
 
         # both are passed, prefer ``reference_id``
-        with pytest.warns(DeprecationWarning, match="reference_id is deprecated.*"):
+        with pytest.raises(ValueError, match="`reference_id` and `reference` both provided.*"), \
+                pytest.warns(DeprecationWarning, match="reference_id is deprecated.*"):
             # this is not a high-quality test, but it would throw if the revert API
             # was called with reference "hello" due to the monkey-patching above
             # always returning "ab1234" as ref ID.
-            c = branch.revert(ref_id, reference_id="hello")
-            assert c.id == ref_id
+            branch.revert(ref_id, reference_id="hello")
