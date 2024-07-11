@@ -4,7 +4,6 @@ Module containing lakeFS branch implementation
 
 from __future__ import annotations
 
-import sys
 import uuid
 import warnings
 from contextlib import contextmanager
