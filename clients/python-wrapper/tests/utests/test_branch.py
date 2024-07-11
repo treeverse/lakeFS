@@ -157,7 +157,7 @@ def test_branch_revert(monkeypatch):
             branch.revert(None)
 
         # both are passed, prefer ``reference_id``
-        with pytest.raises(ValueError, match="`reference_id` and `reference` cannot both be provided.*"), \
+        with pytest.raises(ValueError, match="`reference_id` and `reference` both provided.*"), \
                 pytest.warns(DeprecationWarning, match="reference_id is deprecated.*"):
             # this is not a high-quality test, but it would throw if the revert API
             # was called with reference "hello" due to the monkey-patching above
