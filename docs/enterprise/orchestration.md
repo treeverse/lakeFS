@@ -743,7 +743,7 @@ The distinction between regular logs and audit_logs is in the boolean field log_
 lakeFS and fluffy share the same configuration structure under logging.* section in the config.
 
 {: .warning }
-> The log entries marked with log_audit = true are currently available in the open-source version of lakeFS. However, please be aware that these log entries are intended to be deprecated in future releases.
+> The log entries marked with `log_audit = true` are currently available in both the open-source version of lakeFS and lakeFS Enterprise. However, please be aware that these log entries are deprecated in the open source version and will be removed in future releases.
 
 [lakefs-sso-enterprise-spec]: {% link reference/security/sso.md %}#sso-for-lakefs-enterprise
 [lakefs-sso-enterprise-spec-oidc]: {% link reference/security/sso.md %}#oidc
