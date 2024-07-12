@@ -473,7 +473,10 @@ def test_large_file_object_write(setup_repo, w_mode):
     writer = ObjectWriter(stored_obj, mode=w_mode)
 
     # Create file of size greater than _WRITER_BUFFER_SIZE (32 MB)
-    # set in SpooledTemporaryFile to force disk write
+    # set in SpooledTemporaryFile (in python-wrapper/lakefs/object.py)
+    # to force disk write
+    #
+    # TODO(arielshaqed/n-o-z): set a smaller spool size.
     binary_data = b"\x00" * (32 * 1024 * 1024 + 1)
 
     writer._fd.write(binary_data)
