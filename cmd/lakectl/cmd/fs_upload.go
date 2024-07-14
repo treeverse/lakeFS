@@ -33,12 +33,7 @@ var fsUploadCmd = &cobra.Command{
 		ctx, stop := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 		defer stop()
 
-		stat, err := os.Stat(source)
-		if err != nil {
-			Die("failed to stat source", 1)
-		}
-
-		if !recursive || !stat.IsDir() { // Ignore recursive if source is a file and not a directory
+		if !recursive || isFileOrStdin(source) {
 			if strings.HasSuffix(remotePath, uri.PathSeparator) {
 				Die("target path is not a valid URI", 1)
 			}
@@ -83,6 +78,17 @@ var fsUploadCmd = &cobra.Command{
 			Tasks:     s.Summary(),
 		})
 	},
+}
+
+func isFileOrStdin(source string) bool {
+	if source == StdinFileName {
+		return true
+	}
+	stat, err := os.Stat(source)
+	if err != nil {
+		Die("failed to stat source", 1)
+	}
+	return !stat.IsDir()
 }
 
 func upload(ctx context.Context, client apigen.ClientWithResponsesInterface, sourcePathname string, destURI *uri.URI, contentType string, syncFlags local.SyncFlags) (*apigen.ObjectStats, error) {
