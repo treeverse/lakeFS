@@ -26,8 +26,10 @@ from lakefs.exceptions import (
 
 class LakeFSDeprecationWarning(Warning):
     """
-    This implementation is a replacement for the standard `DeprecationWarning` class,
-    because the `DeprecationWarning` class is ignored by default by the `warnings` module.
+    Warning about use of a deprecated lakeFS or client feature. Unlike
+    `DeprecationWarning`, this class is displayed by default. See
+    `default warning filter <https://docs.python.org/3/library/warnings.html#default-warning-filter>`_
+    for how to disable it.
     """
 
 
