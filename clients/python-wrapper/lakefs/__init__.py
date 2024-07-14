@@ -17,6 +17,7 @@ from lakefs.models import (
 from lakefs.tag import Tag
 from lakefs.branch import Branch
 from lakefs.object import StoredObject, WriteableObject, ObjectReader
+from lakefs.branch import LakeFSDeprecationWarning
 
 
 def repository(repository_id: str, *args, **kwargs) -> Repository:
