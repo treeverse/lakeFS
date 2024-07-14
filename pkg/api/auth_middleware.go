@@ -195,11 +195,16 @@ func checkSecurityRequirements(r *http.Request,
 }
 
 func enhanceWithFriendlyName(ctx context.Context, user *model.User, friendlyName string, persistFriendlyName bool, authService auth.Service, logger logging.Logger) *model.User {
+	log := logger.WithFields(logging.Fields{"friendly_name": friendlyName, "persist_friendly_name": persistFriendlyName})
+	if user == nil {
+		log.Error("user is nil")
+		return nil
+	}
 	if swag.StringValue(user.FriendlyName) != friendlyName {
 		user.FriendlyName = swag.String(friendlyName)
 		if persistFriendlyName {
 			if err := authService.UpdateUserFriendlyName(ctx, user.Username, friendlyName); err != nil {
-				logger.WithError(err).Error("failed to update user friendly name")
+				log.WithError(err).Error("failed to update user friendly name")
 			}
 		}
 	}
@@ -374,7 +379,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 	}
 	// The user was just created.
 	// Regardless of the value of PersistFriendlyName, we don't need to update their friendly name if we got here.
-	return enhanceWithFriendlyName(ctx, user, friendlyName, false, authService, logger), nil
+	return enhanceWithFriendlyName(ctx, &u, friendlyName, false, authService, logger), nil
 }
 
 func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
