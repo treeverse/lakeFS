@@ -195,7 +195,7 @@ func checkSecurityRequirements(r *http.Request,
 }
 
 func enhanceWithFriendlyName(ctx context.Context, user *model.User, friendlyName string, persistFriendlyName bool, authService auth.Service, logger logging.Logger) *model.User {
-	log := logger.WithFields(logging.Fields{"friendly_name": friendlyName, "persit_friendly_name": persistFriendlyName})
+	log := logger.WithFields(logging.Fields{"friendly_name": friendlyName, "persist_friendly_name": persistFriendlyName})
 	if user == nil {
 		log.Warning("user is nil")
 		return nil
