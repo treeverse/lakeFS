@@ -117,9 +117,7 @@ func TestLakectlPreSignUpload(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath+" --pre-sign", false, "lakectl_fs_upload", vars)
 	})
 	t.Run("upload from stdin", func(t *testing.T) {
-		filePath = "ro_1k.2"
-		vars["FILE_PATH"] = filePath
-		RunCmdAndVerifySuccess(t, "echo sample | "+Lakectl()+" fs upload -s - lakefs://"+repoName+"/"+mainBranch+"/"+filePath+" --pre-sign", false, "sample", vars)
+		RunCmdAndVerifySuccessWithFile(t, "cat files/ro_1k | "+Lakectl()+" fs upload -s - lakefs://"+repoName+"/"+mainBranch+"/"+filePath+" --pre-sign", false, "lakectl_fs_upload", vars)
 	})
 }
 
