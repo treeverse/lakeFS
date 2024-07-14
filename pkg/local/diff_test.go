@@ -30,6 +30,8 @@ func TestDiffLocal(t *testing.T) {
 		Name                   string
 		IncludeUnixPermissions bool
 		LocalPath              string
+		InitLocalPath          func() string
+		CleanLocalPath         func(localPath string)
 		RemoteList             []apigen.ObjectStats
 		Expected               []*local.Change
 	}{
@@ -266,10 +268,86 @@ func TestDiffLocal(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:                   "t1_empty_folder_removed",
+			IncludeUnixPermissions: true,
+			LocalPath:              "testdata/localdiff/t1/sub/folder",
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "empty-folder/",
+					SizeBytes: swag.Int64(1),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid+1, osGid, local.DefaultDirectoryPermissions-umask),
+				}, {
+					Path:      "f.txt",
+					SizeBytes: swag.Int64(6),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid, osGid, local.DefaultFilePermissions-umask),
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: "empty-folder/",
+					Type: local.ChangeTypeRemoved,
+				},
+			},
+		},
+		{
+			Name:                   "t1_empty_folder_ignored",
+			IncludeUnixPermissions: false,
+			LocalPath:              "testdata/localdiff/t1/sub/folder",
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "empty-folder/",
+					SizeBytes: swag.Int64(1),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid+1, osGid, local.DefaultDirectoryPermissions-umask),
+				}, {
+					Path:      "f.txt",
+					SizeBytes: swag.Int64(6),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid, osGid, local.DefaultFilePermissions-umask),
+				},
+			},
+			Expected: []*local.Change{},
+		},
+		{
+			Name:                   "empty_folder_added",
+			IncludeUnixPermissions: true,
+			InitLocalPath: func() string {
+				return createTempEmptyFolder(t)
+			},
+			CleanLocalPath: func(localPath string) {
+				_ = os.RemoveAll(localPath)
+			},
+			RemoteList: []apigen.ObjectStats{},
+			Expected: []*local.Change{
+				{
+					Path: "empty-folder/",
+					Type: local.ChangeTypeAdded,
+				},
+			},
+		},
+		{
+			Name:                   "empty_folder_ignored",
+			IncludeUnixPermissions: false,
+			InitLocalPath: func() string {
+				return createTempEmptyFolder(t)
+			},
+			CleanLocalPath: func(localPath string) {
+				_ = os.RemoveAll(localPath)
+			},
+			RemoteList: []apigen.ObjectStats{},
+			Expected:   []*local.Change{},
+		},
 	}
 
 	for _, tt := range cases {
 		t.Run(tt.Name, func(t *testing.T) {
+			if tt.InitLocalPath != nil {
+				tt.LocalPath = tt.InitLocalPath()
+			}
+
 			fixTime(t, tt.LocalPath, tt.IncludeUnixPermissions)
 			fixUnixPermissions(t, tt.LocalPath)
 
@@ -281,6 +359,11 @@ func TestDiffLocal(t *testing.T) {
 			makeChan(lc, left)
 
 			changes, err := local.DiffLocalWithHead(lc, tt.LocalPath, tt.IncludeUnixPermissions, tt.IncludeUnixPermissions)
+
+			if tt.CleanLocalPath != nil {
+				tt.CleanLocalPath(tt.LocalPath)
+			}
+
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -294,6 +377,13 @@ func TestDiffLocal(t *testing.T) {
 			}
 		})
 	}
+}
+
+func createTempEmptyFolder(t *testing.T) string {
+	dataDir, err := os.MkdirTemp("", "")
+	require.NoError(t, err)
+	_ = os.Mkdir(filepath.Join(dataDir, "empty-folder"), 0755)
+	return dataDir
 }
 
 func getPermissionsMetadata(uid, gid, mode int) *apigen.ObjectUserMetadata {

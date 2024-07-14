@@ -279,7 +279,7 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 			return err
 		}
 
-		if !includeInDiff(info, includeDirs) {
+		if !includeLocalFileInDiff(info, includeDirs) {
 			return nil
 		}
 
@@ -299,7 +299,9 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 			}
 			switch {
 			case currentRemoteFile.Path < localPath: // We removed a file locally
-				changes = append(changes, &Change{ChangeSourceLocal, currentRemoteFile.Path, ChangeTypeRemoved})
+				if includeRemoteFileInDiff(currentRemoteFile, includeDirs) {
+					changes = append(changes, &Change{ChangeSourceLocal, currentRemoteFile.Path, ChangeTypeRemoved})
+				}
 				currentRemoteFile.Path = ""
 			case currentRemoteFile.Path == localPath:
 				remoteMtime, err := getMtimeFromStats(currentRemoteFile)
@@ -383,7 +385,7 @@ func ListRemote(ctx context.Context, client apigen.ClientWithResponsesInterface,
 	return nil
 }
 
-func includeInDiff(info fs.FileInfo, includeDirs bool) bool {
+func includeLocalFileInDiff(info fs.FileInfo, includeDirs bool) bool {
 	if info.IsDir() {
 		return includeDirs
 	} else {
@@ -394,4 +396,8 @@ func includeInDiff(info fs.FileInfo, includeDirs bool) bool {
 			return true
 		}
 	}
+}
+
+func includeRemoteFileInDiff(currentRemoteFile apigen.ObjectStats, includeDirs bool) bool {
+	return includeDirs || !strings.HasSuffix(currentRemoteFile.Path, uri.PathSeparator)
 }

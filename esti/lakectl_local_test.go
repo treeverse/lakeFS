@@ -255,12 +255,37 @@ func TestLakectlLocal_clone(t *testing.T) {
 		require.Contains(t, sanitizedResult, vars["PREFIX"]+"test2.txt")
 		require.NotContains(t, sanitizedResult, vars["PREFIX"]+"nodiff.txt")
 	})
+}
+
+func TestLakectlLocal_posix_permissions(t *testing.T) {
+	tmpDir := t.TempDir()
+	fd, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+	}
+
+	// No repo
+	vars["LOCAL_DIR"] = tmpDir
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_clone_non_empty", vars)
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	// Bad ref
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/bad_ref/ "+tmpDir, false, "lakectl_local_commit_not_found", vars)
 
 	t.Run("diff with posix permissions", func(t *testing.T) {
 		dataDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 		vars["LOCAL_DIR"] = dataDir
-		vars["PREFIX"] = "posix"
+		vars["PREFIX"] = "posix-diff"
 
 		lakectl := LakectlWithPosixPerms()
 		RunCmdAndVerifyContainsText(t, lakectl+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX}/ to ${LOCAL_DIR}.", vars)
@@ -289,6 +314,36 @@ func TestLakectlLocal_clone(t *testing.T) {
 
 		require.Contains(t, sanitizedResult, "with-diff.txt")
 		require.NotContains(t, sanitizedResult, "no-diff.txt")
+	})
+
+	t.Run("sync folders deletion", func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+		vars["LOCAL_DIR"] = dataDir
+		vars["PREFIX"] = "posix-folder-deletion"
+
+		lakectl := LakectlWithPosixPerms()
+		RunCmdAndVerifyContainsText(t, lakectl+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX}/ to ${LOCAL_DIR}.", vars)
+		localVerifyDirContents(t, dataDir, []string{})
+
+		// upload a new empty folder
+		localDirPath := filepath.Join(dataDir, "empty_local_folder")
+		err = os.Mkdir(localDirPath, fileutil.DefaultDirectoryMask)
+		require.NoError(t, err)
+		commitMessage := "add empty folder"
+		res := runCmd(t, lakectl+" local commit "+dataDir+" -m \""+commitMessage+"\"", false, false, vars)
+		require.Contains(t, res, "upload empty_local_folder")
+
+		// remove the empty folder locally, and validate it's removed from the remote repo
+		err = os.Remove(localDirPath)
+		require.NoError(t, err)
+		commitMessage = "remove empty folder"
+		res = runCmd(t, lakectl+" local commit "+dataDir+" -m \""+commitMessage+"\"", false, false, vars)
+		require.Contains(t, res, "delete remote path: empty_local_folder/")
+
+		res = runCmd(t, lakectl+" local status "+dataDir, false, false, vars)
+		require.Contains(t, res, "No diff found")
+		require.NotContains(t, res, "empty_local_folder")
 	})
 }
 
