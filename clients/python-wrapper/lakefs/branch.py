@@ -4,7 +4,6 @@ Module containing lakeFS branch implementation
 
 from __future__ import annotations
 
-import sys
 import uuid
 import warnings
 from contextlib import contextmanager
@@ -24,9 +23,15 @@ from lakefs.exceptions import (
     TransactionException
 )
 
-# Unless stated otherwise by passing `-W <something>` to Python, we display `DeprecationWarning`s by default.
-if not sys.warnoptions:
-    warnings.simplefilter('always', DeprecationWarning)
+
+class LakeFSDeprecationWarning(Warning):
+    """
+    Warning about use of a deprecated lakeFS or client feature. Unlike
+    `DeprecationWarning`, this class is displayed by default. See
+    `default warning filter <https://docs.python.org/3/library/warnings.html#default-warning-filter>`_
+    for how to disable it.
+    """
+
 
 class _BaseBranch(Reference):
 
@@ -248,7 +253,7 @@ class Branch(_BaseBranch):
 
         if reference_id is not None:
             warnings.warn(
-                "reference_id is deprecated, please use the `reference` argument.", DeprecationWarning
+                "reference_id is deprecated, please use the `reference` argument.", LakeFSDeprecationWarning
             )
             # We show the error in case both are provided only after showing the deprecation warning, in order
             # for the user to have the most contextual clarity.
