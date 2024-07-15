@@ -4,9 +4,9 @@ description: Quickstart guides for lakeFS Enterprise
 parent: Get Started
 grand_parent: lakeFS Enterprise
 nav_order: 201
-has_toc: true
 ---
 
+{% include toc.html %}
 
 ## Docker Quickstart
 
