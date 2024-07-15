@@ -38,4 +38,3 @@ With lakeFS Enterprise you’ll receive access to the security package containin
 
 
 You can learn more about the [lakeFS Enterprise architecture]({% link enterprise/architecture.md %}), or follow the examples in the [Quickstart guide]({% link enterprise/getstarted/quickstart.md %}).
-s
