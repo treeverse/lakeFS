@@ -15,11 +15,9 @@ lakeFS Enterprise offers multiple installation methods each designed for differe
 * Your desired speed to get started
 * Your familiarity with Kubernetes
 * Is it a testing or production install
-* When you plan to test lakeFS Enterprise SSO support
+* When you plan to test lakeFS Enterprise SSO support: If you can postpone the evaluation of the SSO integration, we suggest doing so to speed up overall testing. The SSO integration requires additional configurations and is best addressed later.
 
-If you can postpone the evaluation of the SSO integration, we suggest doing so to speed up overall testing. The SSO integration requires additional configurations and is best addressed later.
-
-### Quickstart Install
+### Quickstart
 
 Use the quickstart options to quickly evaluate lakeFS Enterprise. There are two quickstart methods:
 * [Docker Quickstart](quickstart.md#docker-quickstart)
