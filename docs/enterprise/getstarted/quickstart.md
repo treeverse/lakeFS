@@ -8,8 +8,9 @@ nav_order: 201
 
 # Quickstart
 
+{% include toc.html %}
 
-## Quickstart with Docker Compose
+## Docker Quickstart
 
 ### Prerequisites
 
@@ -223,9 +224,8 @@ Test the OIDC configuration works - in your browser go to <http://localhost:8080
 
 For additional examples check out the [lakeFS Enterprise sample](https://github.com/treeverse/lakeFS-samples/tree/main/02_lakefs_enterprise) for all-in-one setup including storage and spark.
 
-c
 
-## Quickstart with the Kubernetes Helm Chart
+## Kubernetes Helm Chart Quickstart
 
 This examples contains no dependencies and it's the quickest way to start with lakeFS enterprise via Helm on any K8S cluster.
 The following values will deploy fluffy and lakeFS without SSO, using local blockstore and a dev postgres container.

@@ -21,8 +21,8 @@ If you can postpone the evaluation of the SSO integration, we suggest doing so t
 ### Quickstart Install
 
 Use the quickstart options to quickly evaluate lakeFS Enterprise. There are two quickstart methods:
-* Docker Quickstart Install {: .d-inline-block }SSO supported{: .label .label-green }
-* Kubernetes Helm-based Quickstart Install
+* [Docker Quickstart]({% link enterprise/getstarted/quickstart.md#docker-quickstart %}) {: .d-inline-block }SSO supported{: .label .label-green }
+* [Kubernetes Helm-based Quickstart]({% link enterprise/getstarted/quickstart.md#kubernetes-helm-chart-quickstart %})
 
 **Note**
 Quickstart installations are not suitable for production systems.
@@ -32,4 +32,3 @@ Quickstart installations are not suitable for production systems.
 {: .d-inline-block }SSO supported{: .label .label-green }
 
 For a production setup, use a Helm-based deployment on a Kubernetes cluster. This can be done on AWS, Azure, GCP, or on-premises.
-
