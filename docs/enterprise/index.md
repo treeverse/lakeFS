@@ -37,4 +37,6 @@ With lakeFS Enterprise you’ll receive access to the security package containin
 2. [Transactional Mirroring]({% link howto/mirroring.md %}) - allows replicating lakeFS repositories into consistent read-only copies in remote locations.
 
 
+
+
 You can learn more about the [lakeFS Enterprise architecture]({% link enterprise/architecture.md %}), or follow the examples in the [Quickstart guide]({% link enterprise/getstarted/quickstart.md %}).
