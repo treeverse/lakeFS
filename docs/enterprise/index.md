@@ -32,5 +32,5 @@ release info found in [Github releases](https://github.com/treeverse/lakeFS/rele
 2. Fluffy - Proprietary: In charge of the Enterprise features. Can be retrieved from
 [Treeverse Dockerhub](https://hub.docker.com/u/treeverse) using the granted token.
 
-You can learn more about [lakeFS Enterprise architecture](enterprise/architecture.md), or
+You can learn more about [lakeFS Enterprise architecture]({% link enterprise/architecture.md %}), or
 follow the examples in the [quickstart guide]({% link enterprise/getstarted/quickstart.md %}).
