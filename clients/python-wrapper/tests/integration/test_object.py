@@ -11,10 +11,16 @@ import yaml
 import pytest
 from PIL import Image
 
+from lakefs.exceptions import NotFoundException, ObjectExistsException
+from lakefs.object import (
+    ObjectWriter,
+    ReadModes,
+    StoredObject,
+    WriteableObject,
+    WriteModes,
+)
 from tests.integration.conftest import TEST_DATA
 from tests.utests.common import expect_exception_context
-from lakefs.exceptions import ObjectExistsException, NotFoundException
-from lakefs.object import WriteableObject, WriteModes, ReadModes
 
 
 @pytest.mark.parametrize("pre_sign", (True, False), indirect=True)

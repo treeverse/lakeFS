@@ -408,7 +408,8 @@ class ObjectWriter(LakeFSIOBase):
         self.metadata = metadata
 
         open_kwargs = {
-            # TODO: Once the upstream urllib3 < 2.0 is out of support, pass the specified writemode and conditional encoding (None, utf-8).
+            # TODO: Once the upstream urllib3 < 2.0 is out of support,
+            # pass the specified write mode and conditional encoding (None, utf-8).
             "encoding": None,  # Must be none for binary write modes. "utf-8" otherwise
             "mode": 'wb+',  # Always write to file in binary mode (bug in urllib3 < 2.0,
             "max_size": _WRITER_BUFFER_SIZE,
