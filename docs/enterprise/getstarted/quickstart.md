@@ -16,11 +16,13 @@ Before you get started, make sure to [contact us](https://lakefs.io/contact-sale
 downloading *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse).
 
 lakeFS Enterprise comes with three quickstart options:
-1. [lakeFS Enterprise Sample](#lakefs-enterprise-sample): The quickest way to get started and try lakeFS Enterprise in a containerized environment.
-2. [Docker-based Quickstart](#docker-quickstart): Integrates with your storage
-3. [Kubernetes Helm-based quickstart](#kubernetes-helm-chart-quickstart): Integrates with your storage
+1. [lakeFS Enterprise Sample](#lakefs-enterprise-sample)
+2. [Docker-based Quickstart](#docker-quickstart)
+3. [Kubernetes Helm-based quickstart](#kubernetes-helm-chart-quickstart)
 
 ## lakeFS Enterprise Sample
+
+This is the quickest way to get started and see the value of lakeFS Enterprise features in a containerized environment.
 
 By running the [lakeFS Enterprise Sample](https://github.com/treeverse/lakeFS-samples/tree/main/02_lakefs_enterprise), you will be getting a ready to use environment in which
 you can try lakeFS out without investing time in integrating lakeFS with your environment. After running the sample you will have the following containers up and running:
@@ -31,6 +33,8 @@ you can try lakeFS out without investing time in integrating lakeFS with your en
 * Jupyter notebooks setup: Includes [notebooks](https://github.com/treeverse/lakeFS-samples/tree/main/00_notebooks) that demonstrate lakeFS Enterprise capabilities
 * Apache Spark: this is useful for interacting with data you'll manage with lakeFS
 
+Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/rbac-demo.ipynb) notebook to see lakeFS Enterprise [Role-Based Access Control](({% link reference/security/access-control-lists.md %})) capabilities in action.
+
 ## Docker Quickstart
 
 ### Prerequisites
@@ -39,7 +43,7 @@ you can try lakeFS out without investing time in integrating lakeFS with your en
 2. Access to download *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy.
 3. With the token you've been granted, login locally to Docker Hub with `docker login -u externallakefs -p <TOKEN>`.
 
-The quickstart docker-compose files below will spin up the following containers:
+The quickstart docker-compose files below create a lakeFS server that's connected to a local storage and spin up the following containers:
 * lakeFS
 * Fluffy
 * Postgres: used by lakeFS and Fluffy as a shared KV store
@@ -62,11 +66,11 @@ If you can postpone the evaluation of the SSO integration, we suggest starting w
   </ul>
 <div markdown="1" id="docker-compose-no-sso">
 
-For simplicity the example does not use SSO and only supports basic authentication of access key and secret key.
+### Instructions
 
-1. Create `docker-compose.yaml` file with the following content
+1. Create a `docker-compose.yaml` file with the following content
 2. Run `docker compose up` in the same directory as the `docker-compose.yaml` file.
-3. In your browser go to <http://localhost:8080> to access lakeFS UI.
+3. In your browser, go to <http://localhost:8080> to access lakeFS UI.
 
 ```yaml
 version: "3"
@@ -135,11 +139,12 @@ configs:
 </div>
 <div markdown="1" id="docker-compose-with-sso">
 
+### Instructions
+
 This setup uses OIDC as the SSO authentication method thus requiring a valid OIDC configuration.
+1. Create a `.env` file with the required configurations, docker compose will automatically use that.
 
-Create a `.env` file in the same directory as the `docker-compose.yaml` with the required configurations, docker compose will automatically use that.
-
-```
+```shell
 FLUFFY_AUTH_OIDC_CLIENT_ID=
 FLUFFY_AUTH_OIDC_CLIENT_SECRET=
 # The name of the query parameter that is used to pass the client ID to the logout endpoint of the SSO provider, i.e client_id
@@ -149,8 +154,12 @@ FLUFFY_AUTH_LOGOUT_REDIRECT_URL=https://my-sso.com/logout
 # Optional: display a friendly name in the lakeFS UI by specifying which claim from the provider to show (i.e name, nickname, email etc)
 LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
 ```
-
-Next, create a `docker-compose.yaml` file with the following content.
+2. Create a `docker-compose.yaml` in the same directory as the `.env` file with the following content.
+3. Run `docker compose up` in the same directory as the `docker-compose.yaml` file.
+4. Validate the OIDC configuration:
+** In your browser, go to <http://localhost:8080> to access lakeFS UI
+** Complete the Setup process
+** logout and try to login again, you will be redirected to the OIDC login page. Try to login. 
 
 ```yaml
 version: "3"
@@ -244,7 +253,6 @@ configs:
             - http://localhost:8080/oidc/login
 ```
 
-Test the OIDC configuration works - in your browser go to <http://localhost:8080> to access lakeFS UI.
 
 </div>
 </div>
