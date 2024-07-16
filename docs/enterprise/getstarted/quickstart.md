@@ -60,13 +60,11 @@ If you can postpone the evaluation of the SSO integration, we suggest starting w
 
 <div class="tabs">
   <ul>
-    <li><a href="#docker-compose-no-sso">No SSO
+    <li><a href="#docker-compose-no-sso">Recommended (SSO Disabled)
     </a></li>
-    <li><a href="#docker-compose-with-sso">With SSO (OIDC)</a></li>
+    <li><a href="#docker-compose-with-sso">Advanced (SSO Enabled)</a></li>
   </ul>
 <div markdown="1" id="docker-compose-no-sso">
-
-### Docker Compose without SSO
 
 For simplicity the example does not use SSO and only supports basic authentication of access key and secret key.
 
@@ -140,8 +138,6 @@ configs:
 
 </div>
 <div markdown="1" id="docker-compose-with-sso">
-
-### Docker Compose with SSO (OIDC)
 
 This setup uses OIDC as the SSO authentication method thus requiring a valid OIDC configuration.
 
