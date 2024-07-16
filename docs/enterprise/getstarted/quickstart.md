@@ -15,7 +15,6 @@ The lakeFS Enterprise software consists of two components:
 Before you get started, make sure to [contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy. You will be granted with a token that enables
 downloading *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse).
 
-<br>
 lakeFS Enterprise comes with three quickstart options:
 1. [lakeFS Enterprise Sample](#lakefs-enterprise-sample)
 2. [Docker-based Quickstart](#docker-quickstart)
@@ -44,7 +43,6 @@ Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/0
 2. Access to download *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy.
 3. With the token you've been granted, login locally to Docker Hub with `docker login -u externallakefs -p <TOKEN>`.
 
-<br>
 The quickstart docker-compose files below create a lakeFS server that's connected to a [local blockstore](../../howto/deploy/onprem.md#local-blockstore) and spin up the following containers:
 * lakeFS
 * Fluffy
@@ -60,7 +58,6 @@ You can choose from the the following options:
 
 If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later.
 
-<br>
 <div class="tabs">
   <ul>
     <li><a href="#docker-compose-no-sso">Recommended (SSO Disabled)
@@ -305,3 +302,4 @@ fluffy:
 # useDevPostgres is true by default and will override any other db configuration, set false for configuring your own db
 useDevPostgres: true
 ```
+
