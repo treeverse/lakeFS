@@ -150,7 +150,7 @@ This setup uses OIDC as the SSO authentication method thus requiring a valid OID
   * Complete the Setup process
   * logout and try to login again, you will be redirected to the OIDC login page. Try to login.
 
-```shell .env
+```shell
 FLUFFY_AUTH_OIDC_CLIENT_ID=
 FLUFFY_AUTH_OIDC_CLIENT_SECRET=
 # The name of the query parameter that is used to pass the client ID to the logout endpoint of the SSO provider, i.e client_id
@@ -161,7 +161,7 @@ FLUFFY_AUTH_LOGOUT_REDIRECT_URL=https://my-sso.com/logout
 LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
 ```
 
-```yaml docker-compose.yaml
+```yaml
 version: "3"
 services:
   lakefs:
@@ -256,9 +256,6 @@ configs:
 
 </div>
 </div>
-
-For additional examples check out the [lakeFS Enterprise sample](https://github.com/treeverse/lakeFS-samples/tree/main/02_lakefs_enterprise) for all-in-one setup including storage and spark.
-
 
 ## Kubernetes Helm Chart Quickstart
 
