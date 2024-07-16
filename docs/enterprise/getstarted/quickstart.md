@@ -6,20 +6,57 @@ grand_parent: lakeFS Enterprise
 nav_order: 201
 ---
 
+# Quickstart
+
+The lakeFS Enterprise software consists of two components:
+1. lakeFS Open Source: [treeverse/lakeFS](https://hub.docker.com/r/treeverse/lakefs). See [Github releases](https://github.com/treeverse/lakeFS/releases) for release info.
+2. A proprietary component called **Fluffy** which includes lakeFS' Enterprise features.
+
+Before you get started, make sure to [contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy. You will be granted with a token that enables
+downloading **dockerhub/fluffy** from [Docker Hub](https://hub.docker.com/u/treeverse).
+
+lakeFS Enterprise comes with three quickstart options:
+1. lakeFS Enterprise Sample: The quickest way to get started and try lakeFS Enterprise in a containerized environment.
+2. Docker-based quickstart: Integrates with your environment
+3. Kubernetes Helm-based quickstart: Integrates with your environment
+
 {% include toc.html %}
+
+## lakeFS Enterprise Sample
+
+By running our [lakeFS Enterprise Sample](https://github.com/treeverse/lakeFS-samples/tree/main/02_lakefs_enterprise), you will be getting a ready to use environment in which
+you can try lakeFS out without investing time in integrating lakeFS with your environment. After running the sample you will have the following containers up and running:
+* lakeFS
+* Fluffy
+* Postgres: used by lakeFS and Fluffy as a shared KV store
+* MinIO container: used as the storage connected to lakFS
+* Jupyter notebooks setup including [notebooks](https://github.com/treeverse/lakeFS-samples/tree/main/00_notebooks) that demonstrate lakeFS Enterprise capabilities
+* An Apache Spark setup: this is useful for interacting with data you'll manage with lakeFS
 
 ## Docker Quickstart
 
 ### Prerequisites
+{: .no_toc}
 
-1. Access to download [dockerhub/fluffy](https://hub.docker.com/u/treeverse) Docker image, to login locally `docker login -u <USERNAME> -p <TOKEN>`. Please [contact us](mailto:support@treeverse.io) to get access to the Dockerhub image.
-2. [Docker Compose](https://docs.docker.com/compose/install/) installed version `2.23.1` or higher on your machine.
+1. You have installed [Docker Compose](https://docs.docker.com/compose/install/) version `2.23.1` or higher on your machine.
+2. Access to download **dockerhub/fluffy** from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy.
+3. With the token you've been granted, login locally to Docker Hub with `docker login -u externallakefs -p <TOKEN>`.
 
-The following docker-compose files will spin up lakeFS, Fluffy and postgres as a shared KV database.
-We provide two docker compose examples.
-The first example (without SSO) is recommended for an easy start and the second example uses OIDC as the SSO authentication method.
+By using the following docker-compose files, you will spin up the following containers:
+* lakeFS
+* Fluffy
+* Postgres: used by lakeFS and Fluffy as a shared KV store
 
+**Note**
 ⚠️ Using a local postgres is not suitable for production use-cases.
+{: .note }
+
+Below there are two docker-compose files you can choose from. Both create a fully functional lakeFS Enterprise setup, but the
+first disables lakeFS Enterprise SSO support, and the second enables SSO support and is integrating with OIDC.
+
+**Note**
+If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later.
+{: .note }
 
 <div class="tabs">
   <ul>

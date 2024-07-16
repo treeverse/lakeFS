@@ -9,6 +9,11 @@ nav_order: 200
 
 # Get Started with lakeFS Enterprise
 
+## Get a 30-day Free Trial License
+
+To start your 30-day free trial, please [contact us](https://lakefs.io/contact-sales/). You will be granted with a token that
+allows downloading and using lakeFS Enterprise paid features.
+
 ## Install lakeFS Enterprise
 
 lakeFS Enterprise offers multiple installation methods each designed for different use case. When selecting an installation type we recommend to consider the following:
