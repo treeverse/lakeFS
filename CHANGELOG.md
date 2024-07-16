@@ -7,7 +7,7 @@
 - Fail `revert` operation in the Python wrapper in case both `reference` and `reference_id` args are provided (#7983)
 - Show deprecation warnings from the Python wrapper by default (#7987)
 - Fix lakectl upload from standard input (#7984)
-- Fix enhanceWithFriendlyName panic (#7989)
+- Resolve panic caused by nil parameter in enhanceWithFriendlyName function (#7989)
 
 # v1.28.2
 
