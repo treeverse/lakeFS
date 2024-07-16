@@ -8,12 +8,9 @@ parent: lakeFS Enterprise
 
 # Architecture
 
-lakeFS Enterprise solution consists of 2 main components:
-1. lakeFS - Open Source: [treeverse/lakeFS](https://hub.docker.com/r/treeverse/lakefs),
-release info found in [Github releases](https://github.com/treeverse/lakeFS/releases).
-2. Fluffy - Proprietary: In charge of the Enterprise features. Can be retrieved from
-[Treeverse Dockerhub](https://hub.docker.com/u/treeverse) using the granted token.
-
+The lakeFS Enterprise software consists of two components:
+1. lakeFS Open Source: [treeverse/lakeFS](https://hub.docker.com/r/treeverse/lakefs). See [Github releases](https://github.com/treeverse/lakeFS/releases) for release info.
+2. A proprietary component called **Fluffy** which includes lakeFS' Enterprise features.
 
 ![img.png](../assets/img/enterprise/enterprise-arch.png)
 

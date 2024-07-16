@@ -33,7 +33,7 @@ you can try lakeFS out without investing time in integrating lakeFS with your en
 * Jupyter notebooks setup: Includes [notebooks](https://github.com/treeverse/lakeFS-samples/tree/main/00_notebooks) that demonstrate lakeFS Enterprise capabilities
 * Apache Spark: this is useful for interacting with data you'll manage with lakeFS
 
-Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/rbac-demo.ipynb) notebook to see lakeFS Enterprise [Role-Based Access Control](({% link reference/security/access-control-lists.md %})) capabilities in action.
+Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/rbac-demo.ipynb) notebook to see lakeFS Enterprise [Role-Based Access Control]({% link reference/security/access-control-lists.md %}) capabilities in action.
 
 ## Docker Quickstart
 
@@ -159,7 +159,7 @@ LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
 4. Validate the OIDC configuration:
 ** In your browser, go to <http://localhost:8080> to access lakeFS UI
 ** Complete the Setup process
-** logout and try to login again, you will be redirected to the OIDC login page. Try to login. 
+** logout and try to login again, you will be redirected to the OIDC login page. Try to login.
 
 ```yaml
 version: "3"
