@@ -12,14 +12,17 @@ The lakeFS Enterprise software consists of two components:
 1. lakeFS Open Source: [treeverse/lakeFS](https://hub.docker.com/r/treeverse/lakefs). See [Github releases](https://github.com/treeverse/lakeFS/releases) for release info.
 2. A proprietary component called **Fluffy** which includes lakeFS' Enterprise features.
 
-Before you get started, make sure to [contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy. You will be granted with a token that enables
-downloading *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse).
+Before you get started, make sure to [contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy. You will be granted with a token that enables downloading *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse).
 
 <br>
 lakeFS Enterprise comes with three quickstart options:
 1. [lakeFS Enterprise Sample](#lakefs-enterprise-sample)
 2. [Docker-based Quickstart](#docker-quickstart)
 3. [Kubernetes Helm-based quickstart](#kubernetes-helm-chart-quickstart)
+
+**Note**
+⚠️ lakeFS Enterprise Quickstarts are not suitable for production use-cases.
+{: .note }
 
 ## lakeFS Enterprise Sample
 
@@ -31,7 +34,7 @@ you can try lakeFS out without investing time in integrating lakeFS with your en
 * Fluffy
 * Postgres: used by lakeFS and Fluffy as a shared KV store
 * MinIO container: used as the storage connected to lakFS
-* Jupyter notebooks setup: Includes [notebooks](https://github.com/treeverse/lakeFS-samples/tree/main/00_notebooks) that demonstrate lakeFS Enterprise capabilities
+* Jupyter notebooks setup: Pre-populated with [notebooks](https://github.com/treeverse/lakeFS-samples/tree/main/00_notebooks) that demonstrate lakeFS Enterprise' capabilities
 * Apache Spark: this is useful for interacting with data you'll manage with lakeFS
 
 Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/rbac-demo.ipynb) notebook to see lakeFS Enterprise [Role-Based Access Control]({% link reference/security/access-control-lists.md %}) capabilities in action.
@@ -50,15 +53,13 @@ The quickstart docker-compose files below create a lakeFS server that's connecte
 * Fluffy
 * Postgres: used by lakeFS and Fluffy as a shared KV store
 
-**Note**
-⚠️ Using a local Postgres DB instance is not suitable for production use-cases.
-{: .note }
-
 You can choose from the the following options:
 1. Recommended: A fully functional lakeFS Enterprise setup without SSO support
 2. Advanced: A fully functional lakeFS Enterprise setup including SSO support with OIDC integration configured
 
+**Note**
 If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later.
+{: .note }
 
 <br>
 <div class="tabs">
@@ -147,7 +148,7 @@ This setup uses OIDC as the SSO authentication method thus requiring a valid OID
 4. Validate the OIDC configuration:
   * In your browser, go to <http://localhost:8080> to access lakeFS UI
   * Complete the Setup process, and login with your Admin credentials
-  * logout and try to login again, you will be redirected to the OIDC login page.
+  * Logout and try to login again, you will be redirected to the OIDC login page.
 
 `.env`
 
@@ -264,14 +265,15 @@ configs:
 
 (ISAN) In order to use lakeFS Enterprise and Fluffy, we provided out of the box setup, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts/tree/master/charts/lakefs).
 
-The example helm chart below creates a fully functional lakeFS Enterprise setup without SSO support. The created setup is connected to a [local blockstore](../../howto/deploy/onprem.md#local-blockstore), and it spins up the following pods:
+The example helm chart below creates a fully functional lakeFS Enterprise setup without SSO support. The created setup is connected to a [local blockstore](../../howto/deploy/onprem.md#local-blockstore), and spins up the following pods:
 * lakeFS
 * Fluffy
 * Postgres: used by lakeFS and Fluffy as a shared KV store
 
-**Notes:**
-* Using a dev Postgres DB instance is not suitable for production use-cases.
-* If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later.
+**Note**
+If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later. To
+try lakeFS Enterprise SSO capability on a Kubernetes cluster, checkout the [production deployment guide](install.md).
+{: .note }
 
 ### Prerequisites
 1. You have a Kubernetes cluster running in one of the platforms [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details).
