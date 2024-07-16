@@ -13,50 +13,46 @@ The lakeFS Enterprise software consists of two components:
 2. A proprietary component called **Fluffy** which includes lakeFS' Enterprise features.
 
 Before you get started, make sure to [contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy. You will be granted with a token that enables
-downloading **dockerhub/fluffy** from [Docker Hub](https://hub.docker.com/u/treeverse).
+downloading *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse).
 
 lakeFS Enterprise comes with three quickstart options:
-1. lakeFS Enterprise Sample: The quickest way to get started and try lakeFS Enterprise in a containerized environment.
-2. Docker-based quickstart: Integrates with your environment
-3. Kubernetes Helm-based quickstart: Integrates with your environment
-
-{% include toc.html %}
+1. [lakeFS Enterprise Sample](#lakefs-enterprise-sample): The quickest way to get started and try lakeFS Enterprise in a containerized environment.
+2. [Docker-based Quickstart](#docker-quickstart): Integrates with your storage
+3. [Kubernetes Helm-based quickstart](#kubernetes-helm-chart-quickstart): Integrates with your storage
 
 ## lakeFS Enterprise Sample
 
-By running our [lakeFS Enterprise Sample](https://github.com/treeverse/lakeFS-samples/tree/main/02_lakefs_enterprise), you will be getting a ready to use environment in which
+By running the [lakeFS Enterprise Sample](https://github.com/treeverse/lakeFS-samples/tree/main/02_lakefs_enterprise), you will be getting a ready to use environment in which
 you can try lakeFS out without investing time in integrating lakeFS with your environment. After running the sample you will have the following containers up and running:
 * lakeFS
 * Fluffy
 * Postgres: used by lakeFS and Fluffy as a shared KV store
 * MinIO container: used as the storage connected to lakFS
-* Jupyter notebooks setup including [notebooks](https://github.com/treeverse/lakeFS-samples/tree/main/00_notebooks) that demonstrate lakeFS Enterprise capabilities
-* An Apache Spark setup: this is useful for interacting with data you'll manage with lakeFS
+* Jupyter notebooks setup: Includes [notebooks](https://github.com/treeverse/lakeFS-samples/tree/main/00_notebooks) that demonstrate lakeFS Enterprise capabilities
+* Apache Spark: this is useful for interacting with data you'll manage with lakeFS
 
 ## Docker Quickstart
 
 ### Prerequisites
-{: .no_toc}
 
 1. You have installed [Docker Compose](https://docs.docker.com/compose/install/) version `2.23.1` or higher on your machine.
-2. Access to download **dockerhub/fluffy** from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy.
+2. Access to download *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy.
 3. With the token you've been granted, login locally to Docker Hub with `docker login -u externallakefs -p <TOKEN>`.
 
-By using the following docker-compose files, you will spin up the following containers:
+The quickstart docker-compose files below will spin up the following containers:
 * lakeFS
 * Fluffy
 * Postgres: used by lakeFS and Fluffy as a shared KV store
 
 **Note**
-⚠️ Using a local postgres is not suitable for production use-cases.
+⚠️ Using a local Postgres DB instance is not suitable for production use-cases.
 {: .note }
 
-Below there are two docker-compose files you can choose from. Both create a fully functional lakeFS Enterprise setup, but the
-first disables lakeFS Enterprise SSO support, and the second enables SSO support and is integrating with OIDC.
+Below there are two docker-compose files that you can choose from:
+1. Recommended: A fully functional lakeFS Enterprise setup without SSO support
+2. Advanced: A fully functional lakeFS Enterprise setup including SSO support with OIDC integration configured
 
-**Note**
 If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later.
-{: .note }
 
 <div class="tabs">
   <ul>

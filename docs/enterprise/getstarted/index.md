@@ -9,10 +9,10 @@ nav_order: 200
 
 # Get Started with lakeFS Enterprise
 
-## Get a 30-day Free Trial License
+## Get a Trial License
 
 To start your 30-day free trial, please [contact us](https://lakefs.io/contact-sales/). You will be granted with a token that
-allows downloading and using lakeFS Enterprise paid features.
+allows downloading a Docker image that includes lakeFS Enterprise paid features.
 
 ## Install lakeFS Enterprise
 
@@ -24,7 +24,7 @@ lakeFS Enterprise offers multiple installation methods each designed for differe
 
 ### Quickstart
 
-Use the quickstart options to quickly evaluate lakeFS Enterprise. There are two quickstart methods:
+Use the [quickstart](quickstart.md) options to quickly evaluate lakeFS Enterprise. There are two quickstart methods:
 * [Docker Quickstart](quickstart.md#docker-quickstart)
 {: .d-inline-block }
 SSO supported
