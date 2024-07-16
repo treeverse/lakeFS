@@ -45,7 +45,7 @@ Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/0
 3. With the token you've been granted, login locally to Docker Hub with `docker login -u externallakefs -p <TOKEN>`.
 
 <br>
-The quickstart docker-compose files below create a lakeFS server that's connected to a [local storage]({% link howto/deploy/onprem.md#local-blockstore %}) and spin up the following containers:
+The quickstart docker-compose files below create a lakeFS server that's connected to a [local blockstore](../../howto/deploy/onprem.md#local-blockstore) and spin up the following containers:
 * lakeFS
 * Fluffy
 * Postgres: used by lakeFS and Fluffy as a shared KV store
@@ -145,9 +145,15 @@ configs:
 ### Instructions
 
 This setup uses OIDC as the SSO authentication method thus requiring a valid OIDC configuration.
-1. Create a `.env` file with the required configurations, docker compose will automatically use that.
+1. Create a `docker-compose.yaml` with the content below.
+2. Create a `.env` file with the configurations below in the same directory as the `docker-compose.yaml`, docker compose will automatically use that.
+3. Run `docker compose up` in the same directory as the `docker-compose.yaml` file.
+4. Validate the OIDC configuration:
+  * In your browser, go to <http://localhost:8080> to access lakeFS UI
+  * Complete the Setup process
+  * logout and try to login again, you will be redirected to the OIDC login page. Try to login.
 
-```shell
+```shell .env
 FLUFFY_AUTH_OIDC_CLIENT_ID=
 FLUFFY_AUTH_OIDC_CLIENT_SECRET=
 # The name of the query parameter that is used to pass the client ID to the logout endpoint of the SSO provider, i.e client_id
@@ -157,14 +163,8 @@ FLUFFY_AUTH_LOGOUT_REDIRECT_URL=https://my-sso.com/logout
 # Optional: display a friendly name in the lakeFS UI by specifying which claim from the provider to show (i.e name, nickname, email etc)
 LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
 ```
-2. Create a `docker-compose.yaml` in the same directory as the `.env` file with the following content.
-3. Run `docker compose up` in the same directory as the `docker-compose.yaml` file.
-4. Validate the OIDC configuration:
-** In your browser, go to <http://localhost:8080> to access lakeFS UI
-** Complete the Setup process
-** logout and try to login again, you will be redirected to the OIDC login page. Try to login.
 
-```yaml
+```yaml docker-compose.yaml
 version: "3"
 services:
   lakefs:
