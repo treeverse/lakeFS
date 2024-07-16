@@ -150,7 +150,7 @@ This setup uses OIDC as the SSO authentication method thus requiring a valid OID
   * Complete the Setup process
   * logout and try to login again, you will be redirected to the OIDC login page. Try to login.
 
-```shell
+```
 FLUFFY_AUTH_OIDC_CLIENT_ID=
 FLUFFY_AUTH_OIDC_CLIENT_SECRET=
 # The name of the query parameter that is used to pass the client ID to the logout endpoint of the SSO provider, i.e client_id
