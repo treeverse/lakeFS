@@ -18,36 +18,7 @@ allows downloading a Docker image that includes lakeFS Enterprise paid features.
 
 lakeFS Enterprise comes with two installation methods:
 1. [Quickstart](quickstart.md)
-2. [Production deployment]
+2. [Production deployment](install.md)
 
-Ch
-
-lakeFS Enterprise offers quickstart and p
-two installation methods each designed for different use case
-
-
-lakeFS Enterprise offers multiple installation methods each designed for different use case. When selecting an installation type we recommend to consider the following:
-* Your desired speed to get started
-* Your familiarity with Kubernetes
-* Is it a testing or production install
-* When you plan to test lakeFS Enterprise SSO support: If you can postpone the evaluation of the SSO integration, we suggest doing so to speed up overall testing. The SSO integration requires additional configurations and is best addressed later.
-
-### Quickstart
-
-Use the [quickstart](quickstart.md) options to quickly evaluate lakeFS Enterprise. There are two quickstart methods:
-* [Docker Quickstart](quickstart.md#docker-quickstart)
-{: .d-inline-block }
-SSO supported
-{: .label .label-green }
-* [Kubernetes Helm-based Quickstart](quickstart.md#kubernetes-helm-chart-quickstart)
-
-**Note**
-Quickstart installations are not suitable for production systems.
-{: .note }
-
-### Production Deployment
-{: .d-inline-block }
-SSO supported
-{: .label .label-green }
-
-For a production setup, use a Helm-based deployment on a Kubernetes cluster. This can be done on AWS, Azure, GCP, or on-premises.
+## Take a Product Tour
+?
