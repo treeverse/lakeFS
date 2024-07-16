@@ -43,7 +43,7 @@ Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/0
 2. Access to download *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy.
 3. With the token you've been granted, login locally to Docker Hub with `docker login -u externallakefs -p <TOKEN>`.
 
-The quickstart docker-compose files below create a lakeFS server that's connected to a local storage and spin up the following containers:
+The quickstart docker-compose files below create a lakeFS server that's connected to a [local storage]({% link howto/deploy/onprem.md#local-blockstore %}) and spin up the following containers:
 * lakeFS
 * Fluffy
 * Postgres: used by lakeFS and Fluffy as a shared KV store
