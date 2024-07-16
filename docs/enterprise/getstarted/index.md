@@ -16,9 +16,7 @@ allows downloading a Docker image that includes lakeFS Enterprise paid features.
 
 ## Install lakeFS Enterprise
 
-lakeFS Enterprise comes with two installation methods:
-1. [Quickstart](quickstart.md)
-2. [Production deployment](install.md)
+lakeFS Enterprise offers two installation methods:
+* [Quickstart](quickstart.md): The fastest way to get started with lakeFS Enterprise. Intended for testing and evaluation.
+* [Production deployment](install.md): Run lakeFS Enterprise on a Kubernetes cluster on AWS, Azure, GCP, or on-prem.
 
-## Take a Product Tour
-?

@@ -272,7 +272,7 @@ The values below create a fully functional lakeFS Enterprise setup without SSO s
 
 **Note**
 If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later. To
-try lakeFS Enterprise SSO capability on a Kubernetes cluster, checkout the [production deployment guide](install.md).
+try lakeFS Enterprise SSO capability on a Kubernetes cluster, check out the [production deployment guide](install.md).
 {: .note }
 
 ### Prerequisites
