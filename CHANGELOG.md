@@ -1,5 +1,14 @@
 # Changelog
 
+# v1.29.0
+
+:bug: Bugs fixed:
+- GCS Multipart Upload Performance Fix (#7822) (#7953)
+- Fail `revert` operation in the Python wrapper in case both `reference` and `reference_id` args are provided (#7983)
+- Show deprecation warnings from the Python wrapper by default (#7987)
+- Fix lakectl upload from standard input (#7984)
+- Resolve panic caused by nil parameter in enhanceWithFriendlyName function (#7989)
+
 # v1.28.2
 
 :bug: Bugs fixed:
