@@ -73,7 +73,7 @@ If you can postpone the evaluation of the SSO integration, we suggest starting w
 2. Run `docker compose up` in the same directory as the `docker-compose.yaml` file.
 3. In your browser, go to <http://localhost:8080> to access lakeFS UI.
 
-```yaml  docker-compose.yaml
+```yaml
 version: "3"
 services:
   lakefs:
@@ -149,7 +149,9 @@ This setup uses OIDC as the SSO authentication method thus requiring a valid OID
   * Complete the Setup process, and login with your Admin credentials
   * logout and try to login again, you will be redirected to the OIDC login page.
 
-```  .env
+`.env`
+
+```
 FLUFFY_AUTH_OIDC_CLIENT_ID=
 FLUFFY_AUTH_OIDC_CLIENT_SECRET=
 # The name of the query parameter that is used to pass the client ID to the logout endpoint of the SSO provider, i.e client_id
@@ -160,7 +162,9 @@ FLUFFY_AUTH_LOGOUT_REDIRECT_URL=https://my-sso.com/logout
 LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
 ```
 
-```yaml docker-compose.yaml
+`docker-compose.yaml`
+
+```yaml
 version: "3"
 services:
   lakefs:
