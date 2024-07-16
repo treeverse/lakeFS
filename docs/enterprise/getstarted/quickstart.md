@@ -15,14 +15,12 @@ The lakeFS Enterprise software consists of two components:
 Before you get started, make sure to [contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy. You will be granted with a token that enables downloading *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse).
 
 <br>
-lakeFS Enterprise comes with three quickstart options:
-1. [lakeFS Enterprise Sample](#lakefs-enterprise-sample)
-2. [Docker-based Quickstart](#docker-quickstart)
-3. [Kubernetes Helm-based quickstart](#kubernetes-helm-chart-quickstart)
-
+lakeFS Enterprise comes with three quickstart options that enable spinning up lakeFS Enterprise quickly for testing and evaluation.
 **Note**
-⚠️ lakeFS Enterprise Quickstarts are not suitable for production use-cases.
+⚠️ lakeFS Enterprise Quickstart options are not suitable for production use-cases.
 {: .note }
+
+{% include toc.html %}
 
 ## lakeFS Enterprise Sample
 
@@ -42,6 +40,7 @@ Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/0
 ## Docker Quickstart
 
 ### Prerequisites
+{: .no_toc}
 
 1. You have installed [Docker Compose](https://docs.docker.com/compose/install/) version `2.23.1` or higher on your machine.
 2. Access to download *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy.
@@ -276,12 +275,14 @@ try lakeFS Enterprise SSO capability on a Kubernetes cluster, check out the [pro
 {: .note }
 
 ### Prerequisites
+{: .no_toc}
 
 1. You have a Kubernetes cluster running in one of the platforms [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details).
 2. [Helm](https://helm.sh/docs/intro/install/) is installed
 3. Replace the `fluffy.image.privateRegistry.secretToken` with the token Docker Hub token you recieved.
 
 ### Instructions
+{: .no_toc}
 
 1. Add the lakeFS Helm repository with `helm repo add lakefs https://charts.lakefs.io`
 1. Create a `values.yaml` file with the following content and make sure to replace `<fluffy-docker-registry-token>`, `<lakefs.acme.com>` and `<ingress-class-name>`.
