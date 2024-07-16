@@ -146,8 +146,8 @@ This setup uses OIDC as the SSO authentication method thus requiring a valid OID
 3. Run `docker compose up` in the same directory as the `docker-compose.yaml` file.
 4. Validate the OIDC configuration:
   * In your browser, go to <http://localhost:8080> to access lakeFS UI
-  * Complete the Setup process
-  * logout and try to login again, you will be redirected to the OIDC login page. Try to login.
+  * Complete the Setup process, and login with your Admin credentials
+  * logout and try to login again, you will be redirected to the OIDC login page.
 
 ```  .env
 FLUFFY_AUTH_OIDC_CLIENT_ID=
@@ -258,8 +258,24 @@ configs:
 
 ## Kubernetes Helm Chart Quickstart
 
-This examples contains no dependencies and it's the quickest way to start with lakeFS enterprise via Helm on any K8S cluster.
-The following values will deploy fluffy and lakeFS without SSO, using local blockstore and a dev postgres container.
+(ISAN) In order to use lakeFS Enterprise and Fluffy, we provided out of the box setup, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts/tree/master/charts/lakefs).
+
+The example helm chart below creates a fully functional lakeFS Enterprise setup without SSO support. The created setup is connected to a [local blockstore](../../howto/deploy/onprem.md#local-blockstore), and it spins up the following pods:
+* lakeFS
+* Fluffy
+* Postgres: used by lakeFS and Fluffy as a shared KV store
+
+**Notes:**
+* Using a dev Postgres DB instance is not suitable for production use-cases.
+* If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later.
+
+### Prerequisites
+1. You have a Kubernetes cluster running in one of the platforms [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details).
+2. Helm chart is installed - (ISAN)version?
+3. Add the lakeFS helm repository with `helm repo add lakefs https://charts.lakefs.io`
+4. Replace the `fluffy.image.privateRegistry.secretToken` with the token Docker Hub token you recieved.
+
+### Instructions
 
 1. Create a `values.yaml` file with the following content and make sure to replace `<fluffy-docker-registry-token>`, `<lakefs.acme.com>` and `<ingress-class-name>`.
 1. In the desired K8S namespace run `helm install lakefs lakefs/lakefs -f values.yaml`
@@ -298,4 +314,3 @@ fluffy:
 # useDevPostgres is true by default and will override any other db configuration, set false for configuring your own db
 useDevPostgres: true
 ```
-
