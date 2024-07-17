@@ -39,6 +39,10 @@ The guide includes example configurations, follow the steps below and adjust the
 
 Create `values.yaml` file for your deployment configuration. Update the file by following the next sections of this guide.
 
+1. Add the lakeFS Helm repository with `helm repo add lakefs https://charts.lakefs.io`
+1. Create a `values.yaml` file with the following content and make sure to replace `<fluffy-docker-registry-token>`, `<lakefs.acme.com>` and `<ingress-class-name>`.
+1. Replace the `fluffy.image.privateRegistry.secretToken` with the token Docker Hub token you received.
+
 ### Authentication Configuration
 
 Authentication in lakeFS Enterprise is handled by the Fluffy SSO service which runs side-by-side to lakeFS. This section explains
@@ -302,13 +306,15 @@ useDevPostgres: true
   </div>
 </div>
 
+See [additional examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) we provide for each authentication method (oidc, adfs, ldap, rbac, IAM etc).
+
 ### Database Configuration
 
 In this section, you will learn how to configure lakeFS Enterprise to work with the KV Database you created (see [prerequisites](#prerequisites).
 
 Notes:
 * By default, the lakeFS Helm chart comes with `useDevPostgres: true`, you should change it to `useDevPostgres: false` for Fluffy to work with your KV Database and be suitable for production needs.
-* The configuration structure used for the KV database is the same for both lakeFS and Fluffy.
+* The KV database is shared between lakeFS and Fluffy, and therefore both services must use the same configuration.
 * See [fluffy][fluffy-configuration] and [lakeFS]({% link reference/configuration.md %}#database) `database` configuration.
 
 The database configuration structure between lakeFS and fluffy can be set directly via `fluffyConfig`, via K8S Secret Kind, and `lakefsConfig` or via environment variables.
@@ -385,7 +391,7 @@ fluffy:
 </div>
 </div>
 
-### Handling HTTP proxies, TLS certificates and other configurations (Advanced)
+### Advanced Configurations
 
 The following example demonstrates a scenario where you need to configure an HTTP proxy for lakeFS and Fluffy, TLS certificates for the Ingress and extending the K8S manifests without forking the Helm chart.
 
@@ -428,28 +434,13 @@ extraManifests:
       config.yaml: my-data
 ```
 
+### Apply your configuration
 
-#### KV store Configuration
-
-#### Install the chart
-Run `helm install lakefs lakefs/lakefs -f values.yaml` in the desired K8S namespace.
-2. Run `helm install lakefs lakefs/lakefs -f values.yaml` in the desired K8S namespace.
+After populating your values.yaml file with the relevant configuration, In the desired K8S namespace run `helm install lakefs lakefs/lakefs -f values.yaml`
 
 #### Access the lakeFS UI
-In your browser go to https://lakefs.acme.com to access lakeFS UI.
 
-
-1. Add the lakeFS Helm repository with `helm repo add lakefs https://charts.lakefs.io`
-1. Create a `values.yaml` file with the following content and make sure to replace `<fluffy-docker-registry-token>`, `<lakefs.acme.com>` and `<ingress-class-name>`.
-1. Replace the `fluffy.image.privateRegistry.secretToken` with the token Docker Hub token you received.
-1. In the desired K8S namespace run `helm install lakefs lakefs/lakefs -f values.yaml`
-1. In your browser go to the Ingress host to access lakeFS UI.
-
-Notes:
-* By default the chart is deployed with a Postgres pod for quick-start, make sure to replace that to a stable database by setting `useDevPostgres: false` in the chart values.
-* The encrypt secret key `secrets.authEncryptSecretKey` is shared between fluffy and lakeFS for authentication.
-* Check the [additional examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) we provide for each authentication method (oidc, adfs, ldap, rbac, IAM etc).
-* The Database configurations between fluffy and lakeFS should be the same since they connect to the same DB.
+In your browser go to the to the Ingress host to access lakeFS UI.
 
 ## Log Collection
 
