@@ -12,7 +12,7 @@ nav_order: 200
 ## Request a Trial License
 
 To start a 30-day free trial, please [contact us](https://lakefs.io/contact-sales/). You will be granted with a token that
-allows downloading a Docker image that includes lakeFS Enterprise paid features.
+allows downloading a Docker image that includes lakeFS Enterprise features.
 
 ## Install lakeFS Enterprise
 

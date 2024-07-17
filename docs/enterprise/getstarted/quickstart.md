@@ -8,15 +8,10 @@ nav_order: 201
 
 # Quickstart
 
+Follow these quickstarts to try out lakeFS Enterprise.
+
 {: .note }
-> ⚠️ lakeFS Enterprise Quickstart options are not suitable for production use-cases.
-
-The lakeFS Enterprise software consists of two components:
-1. lakeFS Open Source: [treeverse/lakeFS](https://hub.docker.com/r/treeverse/lakefs). See [Github releases](https://github.com/treeverse/lakeFS/releases) for release info.
-2. A proprietary component called **Fluffy** which includes lakeFS' Enterprise features.
-
-Before you get started, make sure to [contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy. You will be granted with a token that enables downloading *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse).
-
+> ⚠️ lakeFS Enterprise Quickstarts are not suitable for production use-cases.
 {% include toc.html %}
 
 ## lakeFS Enterprise Sample
@@ -26,7 +21,7 @@ This is the quickest way to get started and see the value of lakeFS Enterprise f
 By running the [lakeFS Enterprise Sample](https://github.com/treeverse/lakeFS-samples/tree/main/02_lakefs_enterprise), you will be getting a ready to use environment in which
 you can try lakeFS out without investing time in integrating lakeFS with your environment. After running the sample you will have the following containers up and running:
 * lakeFS
-* Fluffy
+* Fluffy (includes lakeFS Enterprise features)
 * Postgres: used by lakeFS and Fluffy as a shared KV store
 * MinIO container: used as the storage connected to lakFS
 * Jupyter notebooks setup: Pre-populated with [notebooks](https://github.com/treeverse/lakeFS-samples/tree/main/00_notebooks) that demonstrate lakeFS Enterprise' capabilities
@@ -46,7 +41,7 @@ Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/0
 <br>
 The quickstart docker-compose files below create a lakeFS server that's connected to a [local blockstore](../../howto/deploy/onprem.md#local-blockstore) and spin up the following containers:
 * lakeFS
-* Fluffy
+* Fluffy (includes lakeFS Enterprise features)
 * Postgres: used by lakeFS and Fluffy as a shared KV store
 
 You can choose from the the following options:
@@ -262,7 +257,7 @@ In order to use lakeFS Enterprise and Fluffy, we provided out of the box setup, 
 
 The values below create a fully functional lakeFS Enterprise setup without SSO support. The created setup is connected to a [local blockstore](../../howto/deploy/onprem.md#local-blockstore), and spins up the following pods:
 * lakeFS
-* Fluffy
+* Fluffy (includes lakeFS Enterprise features)
 * Postgres: used by lakeFS and Fluffy as a shared KV store
 
 
