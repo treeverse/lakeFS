@@ -459,5 +459,5 @@ lakeFS and fluffy share the same configuration structure under logging.* section
 [lakefs-sso-enterprise-spec-saml]: {% link reference/security/sso.md %}#adfs
 [lakefs-sso-enterprise-spec-ldap]: {% link reference/security/sso.md %}#ldap
 [fluffy-configuration]: {% link enterprise/configuration.md %}#fluffy-server-configuration
-[lakefs-enterprise-architecture]{% link enterprise/architecture.md %}
+[lakefs-enterprise-architecture]: {% link enterprise/architecture.md %}
 
