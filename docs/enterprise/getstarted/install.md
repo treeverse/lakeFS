@@ -35,13 +35,11 @@ The guide includes example configurations, follow the steps below and adjust the
 1. Access to configure your SSO IdP [supported by lakeFS Enterprise][lakefs-sso-enterprise-spec].
 1. A proxy server configured to route traffic between the lakeFS and Fluffy servers, see Reverse Proxy in [lakeFS Enterprise architecture][lakefs-enterprise-architecture].
 
-### Create a values.yaml file
+### Add the lakeFS Helm Chart
 
-Create `values.yaml` file for your deployment configuration. Update the file by following the next sections of this guide.
-
-1. Add the lakeFS Helm repository with `helm repo add lakefs https://charts.lakefs.io`
-1. Create a `values.yaml` file with the following content and make sure to replace `<fluffy-docker-registry-token>`, `<lakefs.acme.com>` and `<ingress-class-name>`.
-1. Replace the `fluffy.image.privateRegistry.secretToken` with the token Docker Hub token you received.
+* Add the lakeFS Helm repository with `helm repo add lakefs https://charts.lakefs.io`
+* The chart contains a values.yaml file you can customize to suit your needs as you follow this guide. Use `helm show values lakefs/lakefs` to see the default values.
+* While customizing your values.yaml file, note to configure `fluffy.image.privateRegistry.secretToken` with the token Docker Hub token you received.
 
 ### Authentication Configuration
 
