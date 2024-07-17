@@ -5,13 +5,15 @@ nav_order: 215
 parent: lakeFS Enterprise
 ---
 
-TODO: add an intro
-
-# lakeFS Configuration
-
-# Fluffy Server Configuration
+Working with lakeFS Enteprise involve configuring both lakeFS and Fluffy. You can find the extended configuration references for both components below.
 
 {% include toc.html %}
+
+## lakeFS Configuration
+
+See the full [lakeFS Server Configuration]({% link ../reference/configuration.md %})
+
+## Fluffy Server Configuration
 
 Configuring Fluffy using a YAML configuration file and/or environment variables.
 The configuration file's location can be set with the '--config' flag. If not specified, the first file found in the following order will be used:
