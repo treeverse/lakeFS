@@ -25,7 +25,7 @@ The configuration file's location can be set with the '--config' flag. If not sp
 Configuration items can be controlled by environment variables, see [below](#using-environment-variables).
 
 
-## Reference
+### Reference
 
 This reference uses `.` to denote the nesting of values.
 
@@ -134,7 +134,7 @@ This reference uses `.` to denote the nesting of values.
       + `auth.external.aws_auth.http_client.skip_verify` `(bool : false)` - Skip SSL verification with AWS STS.
       {: .ref-list }
 
-## Using Environment Variables
+### Using Environment Variables
 
 All the configuration variables can be set or overridden using environment variables.
 To set an environment variable, prepend `FLUFFY_` to its name, convert it to upper case, and replace `.` with `_`:
