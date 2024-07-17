@@ -14,11 +14,8 @@ The lakeFS Enterprise software consists of two components:
 
 Before you get started, make sure to [contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy. You will be granted with a token that enables downloading *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse).
 
-<br>
-lakeFS Enterprise comes with three quickstart options that enable spinning up lakeFS Enterprise quickly for testing and evaluation.
-**Note**
-⚠️ lakeFS Enterprise Quickstart options are not suitable for production use-cases.
 {: .note }
+> ⚠️ lakeFS Enterprise Quickstart options are not suitable for production use-cases.
 
 {% include toc.html %}
 
@@ -56,9 +53,8 @@ You can choose from the the following options:
 1. Recommended: A fully functional lakeFS Enterprise setup without SSO support
 2. Advanced: A fully functional lakeFS Enterprise setup including SSO support with OIDC integration configured
 
-**Note**
-If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later.
 {: .note }
+> If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later.
 
 <br>
 <div class="tabs">
@@ -269,10 +265,10 @@ The values below create a fully functional lakeFS Enterprise setup without SSO s
 * Fluffy
 * Postgres: used by lakeFS and Fluffy as a shared KV store
 
-**Note**
-If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later. To
-try lakeFS Enterprise SSO capability on a Kubernetes cluster, check out the [production deployment guide](install.md).
+
 {: .note }
+> If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later. To
+> try lakeFS Enterprise SSO capability on a Kubernetes cluster, check out the [production deployment guide](install.md).
 
 ### Prerequisites
 {: .no_toc}
