@@ -10,7 +10,7 @@ nav_order: 202
 
 For production deployments of lakeFS Enterprise, follow this guide.
 
-{% include toc.html %}
+{% include toc_2-3.html %}
 
 ## lakeFS Enterprise Architecture
 
