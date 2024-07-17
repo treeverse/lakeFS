@@ -5,7 +5,9 @@ nav_order: 215
 parent: lakeFS Enterprise
 ---
 
-Working with lakeFS Enteprise involve configuring both lakeFS and Fluffy. You can find the extended configuration references for both components below.
+# lakeFS Enterprise Configuration Reference
+
+Working with lakeFS Enterprise involve configuring both lakeFS and Fluffy. You can find the extended configuration references for both components below.
 
 {% include toc.html %}
 
