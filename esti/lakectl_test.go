@@ -884,6 +884,10 @@ func TestLakectlAbuse(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, f.Close())
 
+	const (
+		abuseAmount      = 1000
+		abuseParallelism = 3
+	)
 	tests := []struct {
 		Cmd            string
 		Amount         int
@@ -894,30 +898,34 @@ func TestLakectlAbuse(t *testing.T) {
 			Amount: 10,
 		},
 		{
-			Cmd:    "create-branches",
-			Amount: 1000,
+			Cmd:            "create-branches",
+			Amount:         abuseAmount,
+			AdditionalArgs: fmt.Sprintf("--parallelism %d", abuseParallelism),
 		},
 		{
-			Cmd:    "link-same-object",
-			Amount: 1000,
+			Cmd:            "link-same-object",
+			Amount:         abuseAmount,
+			AdditionalArgs: fmt.Sprintf("--parallelism %d", abuseParallelism),
 		},
 		{
-			Cmd:    "list",
-			Amount: 1000,
+			Cmd:            "list",
+			Amount:         abuseAmount,
+			AdditionalArgs: fmt.Sprintf("--parallelism %d", abuseParallelism),
 		},
 		{
 			Cmd:            "random-read",
-			Amount:         1000,
-			AdditionalArgs: "--from-file " + f.Name(),
+			Amount:         abuseAmount,
+			AdditionalArgs: fmt.Sprintf("--parallelism %d --from-file %s", abuseParallelism, f.Name()),
 		},
 		{
 			Cmd:            "random-delete",
-			Amount:         1000,
-			AdditionalArgs: "--from-file " + f.Name(),
+			Amount:         abuseAmount,
+			AdditionalArgs: fmt.Sprintf("--parallelism %d --from-file %s", abuseParallelism, f.Name()),
 		},
 		{
-			Cmd:    "random-write",
-			Amount: 1000,
+			Cmd:            "random-write",
+			Amount:         abuseAmount,
+			AdditionalArgs: fmt.Sprintf("--parallelism %d", abuseParallelism),
 		},
 	}
 	for _, tt := range tests {
