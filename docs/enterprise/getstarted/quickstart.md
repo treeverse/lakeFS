@@ -8,14 +8,14 @@ nav_order: 201
 
 # Quickstart
 
+{: .note }
+> ⚠️ lakeFS Enterprise Quickstart options are not suitable for production use-cases.
+
 The lakeFS Enterprise software consists of two components:
 1. lakeFS Open Source: [treeverse/lakeFS](https://hub.docker.com/r/treeverse/lakefs). See [Github releases](https://github.com/treeverse/lakeFS/releases) for release info.
 2. A proprietary component called **Fluffy** which includes lakeFS' Enterprise features.
 
 Before you get started, make sure to [contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy. You will be granted with a token that enables downloading *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse).
-
-{: .note }
-> ⚠️ lakeFS Enterprise Quickstart options are not suitable for production use-cases.
 
 {% include toc.html %}
 
@@ -275,7 +275,8 @@ The values below create a fully functional lakeFS Enterprise setup without SSO s
 
 1. You have a Kubernetes cluster running in one of the platforms [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details).
 2. [Helm](https://helm.sh/docs/intro/install/) is installed
-3. Replace the `fluffy.image.privateRegistry.secretToken` with the token Docker Hub token you recieved.
+3. Access to download *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy.
+4. Replace the `fluffy.image.privateRegistry.secretToken` with the token Docker Hub token you recieved.
 
 ### Instructions
 {: .no_toc}
