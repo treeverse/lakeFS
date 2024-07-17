@@ -26,7 +26,6 @@ The guide includes example configurations, follow the steps below and adjust the
 * Your SSO IdP and protocol
 
 ### Prerequisites
-{: .no_toc}
 
 1. You have a Kubernetes cluster running in one of the platforms [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details).
 1. [Helm](https://helm.sh/docs/intro/install/) is installed
@@ -144,7 +143,7 @@ You can use this example configuration to configure Active Directory Federation 
 {: .note }
 > The full SAML configurations explained [here][lakefs-sso-enterprise-spec-saml].
 
-### Azure App Configuration
+#### Azure App Configuration
 {: .no_toc}
 
 1. Create an Enterprise Application with SAML toolkit - see [Azure quickstart](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/add-application-portal)
@@ -156,7 +155,7 @@ You can use this example configuration to configure Active Directory Federation 
    1. Sign on URL: lakefs-url/sso/login-saml (e.g. https://lakefs.acme.com/sso/login-saml)
    1. Relay State (Optional): /
 
-### SAML Configuration
+#### SAML Configuration
 {: .no_toc}
 
 1. Configure SAML application in your IdP (i.e Azure AD) and replace the required parameters into the `values.yaml` below.
@@ -432,11 +431,11 @@ extraManifests:
       config.yaml: my-data
 ```
 
-### Apply your configuration
+### Install the lakeFS Helm Chart
 
 After populating your values.yaml file with the relevant configuration, In the desired K8S namespace run `helm install lakefs lakefs/lakefs -f values.yaml`
 
-#### Access the lakeFS UI
+### Access the lakeFS UI
 
 In your browser go to the to the Ingress host to access lakeFS UI.
 
