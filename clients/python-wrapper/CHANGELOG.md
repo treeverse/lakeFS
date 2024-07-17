@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v0.7.1
+
+:bug: Bugs fixed
+
+- Show deprecation warnings from wrapper by default (#7982)
+- Fix file creation mode which affected some large (>32MiB) uploads (#7928)
+
 ## v0.7.0
 :new: What's new:
 
