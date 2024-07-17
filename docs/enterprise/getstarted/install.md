@@ -10,48 +10,44 @@ nav_order: 202
 
 For production deployments of lakeFS Enterprise, follow this guide.
 
+{% include toc.html %}
+
 ## lakeFS Enterprise Architecture
 
-We recommend to review the [lakeFS Enterprise architecture]({% link enterprise/architecture.md %}) to understand the components you will be deploying.
-
-{% include toc.html %}
+We recommend to review the [lakeFS Enterprise architecture][lakefs-enterprise-architecture] to understand the components you will be deploying.
 
 ## Deploy lakeFS Enterprise on Kubernetes
 
-You will be using the [lakeFS Helm chart configuration](https://github.com/treeverse/charts/tree/master/charts/lakefs) for your deployment.
-The guide is using our [Helm Chart](#lakefs-helm-chart) to deploy a fully functional lakeFS Enterprise setup the deployment, and it includes example configurations.
+The guide is using the [lakeFS Helm Chart](https://github.com/treeverse/charts/tree/master/charts/lakefs) to deploy a fully functional lakeFS Enterprise.
 
-You should adjust the example configurations according to:
-* The platform you run on: this impacts the lakeFS configurations
+The guide includes example configurations, follow the steps below and adjust the example configurations according to:
+* The platform you run on: among the platform [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details)
 * Type of KV store you use
-* Your SSO IDP and protocol
+* Your SSO IdP and protocol
 
 ### Prerequisites
 {: .no_toc}
 
 1. You have a Kubernetes cluster running in one of the platforms [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details).
 1. [Helm](https://helm.sh/docs/intro/install/) is installed
-1. Access to download *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy.
-1. A KV Database, like Postgres, should be configured and shared by Fluffy and lakeFS. The available options are dependent in your [deployment platform](../../howto/deploy/index.md#deployment-and-setup-details).
-1. Access to configure SSO IdP [supported by lakeFS Enterprise][lakefs-sso-enterprise-spec].
-1. A proxy server should be configured to route traffic between the lakeFS and Fluffy servers. (in K8S that is Ingress).
-
+1. Access to download *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to lakeFS Enterprise features.
+1. A KV Database that will be shared by lakeFS and Fluffy. The available options are dependent in your [deployment platform](../../howto/deploy/index.md#deployment-and-setup-details).
+1. Access to configure your SSO IdP [supported by lakeFS Enterprise][lakefs-sso-enterprise-spec].
+1. A proxy server configured to route traffic between the lakeFS and Fluffy servers, see Reverse Proxy in [lakeFS Enterprise architecture][lakefs-enterprise-architecture].
 
 ### Create a values.yaml file
-{: .no_toc}
 
-Create `values.yaml` file for your authentication configuration, token and ingress host. Update the file by following the next sections of this guide.
+Create `values.yaml` file for your deployment configuration. Update the file by following the next sections of this guide.
 
 ### Authentication Configuration
-{: .no_toc}
 
-Authentication in lakeFS Enterprise is handled by the Fluffy SSO service which runs side-by-side with lakeFS.
+Authentication in lakeFS Enterprise is handled by the Fluffy SSO service which runs side-by-side to lakeFS. This section explains
+what Fluffy configurations are required for configuring the SSO service. See [this][fluffy-configuration] configuration reference for additional Fluffy configurations.
 
-See [SSO for lakeFS Enterprise][lakefs-sso-enterprise-spec] for configuration details of the supported identity providers and protocols, and
-[Fluffy configuration reference][fluffy-configuration] for additional options.
+See [SSO for lakeFS Enterprise][lakefs-sso-enterprise-spec] for the supported identity providers and protocols.
 
-The examples below include example configuration for each of the supported SSO protocols. Note the IDP-specific details you'll need to
-replace with your IDP details.
+The examples below include example configuration for each of the supported SSO protocols. Note the IdP-specific details you'll need to
+replace with your IdP details.
 
 <div class="tabs">
   <ul>
@@ -139,8 +135,9 @@ useDevPostgres: true
   </div>
   <div markdown="1" id="saml">
 
-The following `values` file will run lakeFS Enterprise with SAML using Azure AD as the IDP. The example uses Azure AD over SAML
-which is a common setup, although Azure AD also supports OIDC. You can use this example to configure Active Directory Federation Services (AD FS) with SAML.
+The following `values` file will run lakeFS Enterprise with SAML using Azure AD as the IdP.
+<br>
+You can use this example configuration to configure Active Directory Federation Services (AD FS) with SAML.
 
 {: .note }
 > The full SAML configurations explained [here][lakefs-sso-enterprise-spec-saml].
@@ -160,7 +157,7 @@ which is a common setup, although Azure AD also supports OIDC. You can use this 
 ### SAML Configuration
 {: .no_toc}
 
-1. Configure SAML application in your IDP (i.e Azure AD) and replace the required parameters into the `values.yaml` below.
+1. Configure SAML application in your IdP (i.e Azure AD) and replace the required parameters into the `values.yaml` below.
 2. To generate certificates keypair use: `openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.acme.com" -
 
 ```yaml
@@ -242,6 +239,8 @@ fluffy:
   </div>
   <div markdown="1" id="ldap">
 
+The following `values` file will run lakeFS Enterprise with LDAP.
+
 > The full LDAP configurations explained [here][lakefs-sso-enterprise-spec-ldap].
 {: .note }
 
@@ -303,7 +302,7 @@ useDevPostgres: true
   </div>
 </div>
 
-### Configuring lakeFS KV store in the Helm Chart
+### Step 3: Database Configuration
 
 The lakeFS Helm chart supports multiple ways of configurintg the database that is the KV Store (DynamoDB, Postgres etc), the default is a dev Postgres container (set `useDevPostgres: false` to disable).
 The configuration structure used for the KV store is the same for both lakeFS and Fluffy.
@@ -432,11 +431,9 @@ extraManifests:
 ```
 
 
-#### Step 3: KV store Configuration
-{: .no_toc}
+#### KV store Configuration
 
-#### Step 4: Install the chart
-{: .no_toc}
+#### Install the chart
 Run `helm install lakefs lakefs/lakefs -f values.yaml` in the desired K8S namespace.
 2. Run `helm install lakefs lakefs/lakefs -f values.yaml` in the desired K8S namespace.
 
@@ -476,4 +473,5 @@ lakeFS and fluffy share the same configuration structure under logging.* section
 [lakefs-sso-enterprise-spec-saml]: {% link reference/security/sso.md %}#adfs
 [lakefs-sso-enterprise-spec-ldap]: {% link reference/security/sso.md %}#ldap
 [fluffy-configuration]: {% link enterprise/configuration.md %}#fluffy-server-configuration
+[lakefs-enterprise-architecture]{% link enterprise/architecture.md %}
 
