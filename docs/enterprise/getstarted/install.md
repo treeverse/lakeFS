@@ -302,24 +302,26 @@ useDevPostgres: true
   </div>
 </div>
 
-### Step 3: Database Configuration
+### Database Configuration
 
-The lakeFS Helm chart supports multiple ways of configurintg the database that is the KV Store (DynamoDB, Postgres etc), the default is a dev Postgres container (set `useDevPostgres: false` to disable).
-The configuration structure used for the KV store is the same for both lakeFS and Fluffy.
-See [fluffy][fluffy-configuration] and [lakeFS]({% link reference/configuration.md %}#database) `database` configuration.
+In this section, you will learn how to configure lakeFS Enterprise to work with the KV Database you created (see [prerequisites](#prerequisites).
 
-Essentially the database configuration structure between lakeFS and fluffy can be set via K8S Secret Kind, directly via `fluffyConfig` and `lakefsConfig` or via environment variables.
+Notes:
+* By default, the lakeFS Helm chart comes with `useDevPostgres: true`, you should change it to `useDevPostgres: false` for Fluffy to work with your KV Database and be suitable for production needs.
+* The configuration structure used for the KV database is the same for both lakeFS and Fluffy.
+* See [fluffy][fluffy-configuration] and [lakeFS]({% link reference/configuration.md %}#database) `database` configuration.
 
+The database configuration structure between lakeFS and fluffy can be set directly via `fluffyConfig`, via K8S Secret Kind, and `lakefsConfig` or via environment variables.
 
 <div class="tabs">
   <ul>
-    <li><a href="#dynamodb-via-config">DynamoDB via config</a></li>
+    <li><a href="#via-fluffy-config">Via fluffyConfig</a></li>
     <li><a href="#postgres-via-secret-kind">Postgres via shared Secret kind</a></li>
-    <li><a href="#postgres-via-env-vars">Postgres via envrionment varialbles</a></li>
+    <li><a href="#postgres-via-env-vars">Postgres via environment variables</a></li>
   </ul>
-<div markdown="1" id="dynamodb-via-config">
+<div markdown="1" id="via-fluffy-config">
 
-#### DynamoDB via config (AWS)
+This example uses DynamoDB as KV Database.
 
 ```yaml
 
@@ -344,9 +346,7 @@ fluffyConfig: |
 <div markdown="1" id="postgres-via-secret-kind">
 
 
-#### Postgres via kind: Secret
-
-The chart will create a `kind: Secret` holding the database connection string, and the lakeFS and Fluffy will use it.
+This example uses Postgres as KV Database. The chart will create a `kind: Secret` holding the database connection string, and the lakeFS and Fluffy will use it.
 
 ```yaml
 useDevPostgres: false
@@ -365,9 +365,7 @@ fluffyConfig: |
 
 <div markdown="1" id="postgres-via-env-vars">
 
-#### Postgres via environment variables
-
-lakeFS is configured via `lakefsConfig` and Fluffy via environment with the same database configuration.
+This example uses Postgres as KV Database. lakeFS is configured via `lakefsConfig` and Fluffy via environment with the same database configuration.
 
 ```yaml
 useDevPostgres: false
