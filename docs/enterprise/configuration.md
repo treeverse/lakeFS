@@ -11,7 +11,7 @@ Working with lakeFS Enteprise involve configuring both lakeFS and Fluffy. You ca
 
 ## lakeFS Configuration
 
-See the full [lakeFS Server Configuration]({% link ../reference/configuration.md %})
+See the full [lakeFS Server Configuration]({% link reference/configuration.md %})
 
 ## Fluffy Server Configuration
 
