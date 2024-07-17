@@ -276,13 +276,12 @@ The values below create a fully functional lakeFS Enterprise setup without SSO s
 1. You have a Kubernetes cluster running in one of the platforms [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details).
 2. [Helm](https://helm.sh/docs/intro/install/) is installed
 3. Access to download *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy.
-4. Replace the `fluffy.image.privateRegistry.secretToken` with the token Docker Hub token you recieved.
 
 ### Instructions
 {: .no_toc}
 
 1. Add the lakeFS Helm repository with `helm repo add lakefs https://charts.lakefs.io`
-1. Create a `values.yaml` file with the following content and make sure to replace `<fluffy-docker-registry-token>`, `<lakefs.acme.com>` and `<ingress-class-name>`.
+1. Create a `values.yaml` file with the following content and make sure to replace `<fluffy-docker-registry-token>` with the token Docker Hub token you recieved, `<lakefs.acme.com>` and `<ingress-class-name>`.
 1. In the desired K8S namespace run `helm install lakefs lakefs/lakefs -f values.yaml`
 1. In your browser go to the Ingress host to access lakeFS UI.
 

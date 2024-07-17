@@ -8,73 +8,63 @@ nav_order: 202
 
 # Install
 
-## lakeFS Helm Chart
+For production deployments of lakeFS Enterprise, follow this guide.
 
-In order to use lakeFS Enterprise and Fluffy, we provided out of the box setup, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts/tree/master/charts/lakefs).
+## lakeFS Enterprise Architecture
 
-```bash
-# Add the lakeFS repository
-helm repo add lakefs https://charts.lakefs.io
-# Deploy lakeFS
-helm install <release-name> lakefs/lakefs -f <values.yaml>
-```
+We recommend to review the [lakeFS Enterprise architecture]({% link enterprise/architecture.md %}) to understand the components you will be deploying.
 
-Notes:
-* By default the chart is deployed with a Postgres pod for quick-start, make sure to replace that to a stable database by setting `useDevPostgres: false` in the chart values.
-* The encrypt secret key `secrets.authEncryptSecretKey` is shared between fluffy and lakeFS for authentication.
-* Fluffy docker image: replace the `fluffy.image.privateRegistry.secretToken` with the token you recieved to dockerhub to fetch the fluffy docker image.
-* Check the [additional examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) we provide for each authentication method (oidc, adfs, ldap, rbac, IAM etc).
-* The Database configurations between fluffy and lakeFS should be the same since they connect to the same DB.
+{% include toc.html %}
 
+## Deploy lakeFS Enterprise on Kubernetes
 
-## Deploy lakeFS Enterprise (Kubernetes)
+You will be using the [lakeFS Helm chart configuration](https://github.com/treeverse/charts/tree/master/charts/lakefs) for your deployment.
+The guide is using our [Helm Chart](#lakefs-helm-chart) to deploy a fully functional lakeFS Enterprise setup the deployment, and it includes example configurations.
 
-
-The following examples will guide you through the installation of lakeFS Enterprise using our [Helm Chart](#lakefs-helm-chart).
+You should adjust the example configurations according to:
+* The platform you run on: this impacts the lakeFS configurations
+* Type of KV store you use
+* Your SSO IDP and protocol
 
 ### Prerequisites
+{: .no_toc}
 
-1. A KV Database, like postgres, should be configured and shared by fluffy and lakeFS.
-1. Access to configure SSO IdP, like Azure AD Enterprise Application.
-1. A proxy server should be configured to route traffic between the 2 servers (in K8S that is Ingress).
-1. Token for [dockerhub/fluffy](https://hub.docker.com/u/treeverse) Docker image. Please [contact us](mailto:support@treeverse.io) to get access to the Dockerhub image.
+1. You have a Kubernetes cluster running in one of the platforms [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details).
+1. [Helm](https://helm.sh/docs/intro/install/) is installed
+1. Access to download *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy.
+1. A KV Database, like Postgres, should be configured and shared by Fluffy and lakeFS. The available options are dependent in your [deployment platform](../../howto/deploy/index.md#deployment-and-setup-details).
+1. Access to configure SSO IdP [supported by lakeFS Enterprise][lakefs-sso-enterprise-spec].
+1. A proxy server should be configured to route traffic between the lakeFS and Fluffy servers. (in K8S that is Ingress).
 
-### Deploy lakeFS Enterprise with SSO
 
+### Create a values.yaml file
+{: .no_toc}
 
-Authentication in lakeFS Enterprise is handled by the Fluffy sso service which runs side-by-side with lakeFS.
-The following examples are based on our [Helm Chart](#lakefs-helm-chart).
+Create `values.yaml` file for your authentication configuration, token and ingress host. Update the file by following the next sections of this guide.
 
-For details on configuring the supported identity providers with Fluffy in-depth configuration see [SSO][lakefs-sso-enterprise-spec].
+### Authentication Configuration
+{: .no_toc}
 
-**Note:** Full Fluffy configuration can be found [here][fluffy-configuration].
-{: .note }
+Authentication in lakeFS Enterprise is handled by the Fluffy SSO service which runs side-by-side with lakeFS.
 
-* OpenID Connect
-* SAML
-* Active Directory Federation Services (AD FS) (using SAML)
-* LDAP
+See [SSO for lakeFS Enterprise][lakefs-sso-enterprise-spec] for configuration details of the supported identity providers and protocols, and
+[Fluffy configuration reference][fluffy-configuration] for additional options.
 
-If you're using an authentication provider that is not listed please [contact us](support@treeverse.io) for further assistance.
-
+The examples below include example configuration for each of the supported SSO protocols. Note the IDP-specific details you'll need to
+replace with your IDP details.
 
 <div class="tabs">
   <ul>
     <li><a href="#oidc">OpenID Connect</a></li>
-    <li><a href="#saml">SAML (Azure AD)</a></li>
+    <li><a href="#saml">SAML (with Azure AD)</a></li>
     <li><a href="#ldap">LDAP</a></li>
   </ul>
   <div markdown="1" id="oidc">
-### OpenID Connect
 
-As an example, the following `values` file will run lakeFS Enterprise with OIDC integration.
+The following `values` file will run lakeFS Enterprise with OIDC integration.
 
-
-**Note:** Full OIDC configurations explained [here][lakefs-sso-enterprise-spec-oidc].
 {: .note }
-
-1. Create `values.yaml` file and replace the placeholders with your OIDC provider details, token and ingress host.
-2. Run `helm install lakefs lakefs/lakefs -f values.yaml` in the desired K8S namespace.
+> The full OIDC configurations explained [here][lakefs-sso-enterprise-spec-oidc].
 
 ```yaml
 lakefsConfig: |
@@ -148,16 +138,15 @@ useDevPostgres: true
 
   </div>
   <div markdown="1" id="saml">
-### SAML (Azure AD)
 
-The following example will walk you through the deployment of lakeFS Enterprise with SAML integration using Azure AD as the IDP.
-The following example uses SAML, a common setup, although Azure Entra also supports OIDC.
+The following `values` file will run lakeFS Enterprise with SAML using Azure AD as the IDP. The example uses Azure AD over SAML
+which is a common setup, although Azure AD also supports OIDC. You can use this example to configure Active Directory Federation Services (AD FS) with SAML.
 
-
-**Note:** Active Directory Federation Services (AD FS) can be configured the same using SAML.
 {: .note }
+> The full SAML configurations explained [here][lakefs-sso-enterprise-spec-saml].
 
 ### Azure App Configuration
+{: .no_toc}
 
 1. Create an Enterprise Application with SAML toolkit - see [Azure quickstart](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/add-application-portal)
 1. Add users: **App > Users and groups**: Attach users and roles from their existing AD users
@@ -168,15 +157,11 @@ The following example uses SAML, a common setup, although Azure Entra also suppo
    1. Sign on URL: lakefs-url/sso/login-saml (e.g. https://lakefs.acme.com/sso/login-saml)
    1. Relay State (Optional): /
 
-### Deploy lakeFS Chart
-
-**Note:** Full SAML configurations explained [here][lakefs-sso-enterprise-spec-saml].
-{: .note }
+### SAML Configuration
+{: .no_toc}
 
 1. Configure SAML application in your IDP (i.e Azure AD) and replace the required parameters into the `values.yaml` below.
 2. To generate certificates keypair use: `openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.acme.com" -
-3. Run `helm install lakefs lakefs/lakefs -f values.yaml` in the desired K8S namespace.
-4. In your browser go to [https://lakefs.acme.com](https://lakefs.acme.com) to access lakeFS UI.
 
 ```yaml
 secrets:
@@ -257,15 +242,8 @@ fluffy:
   </div>
   <div markdown="1" id="ldap">
 
-### LDAP `values.yaml` file for helm deployments
-{:.no_toc}
-
-**Note:** Full LDAP configurations explained [here][lakefs-sso-enterprise-spec-ldap].
+> The full LDAP configurations explained [here][lakefs-sso-enterprise-spec-ldap].
 {: .note }
-
-1. Create `values.yaml` file and replace the placeholders with your LDAP provider details, token and ingress host.
-2. Run `helm install lakefs lakefs/lakefs -f values.yaml` in the desired K8S namespace.
-3. In your browser go to [https://lakefs.acme.com](https://lakefs.acme.com) to access lakeFS UI with a valid LDAP user name and password.
 
 ```yaml
 lakefsConfig: |
@@ -452,6 +430,31 @@ extraManifests:
     data:
       config.yaml: my-data
 ```
+
+
+#### Step 3: KV store Configuration
+{: .no_toc}
+
+#### Step 4: Install the chart
+{: .no_toc}
+Run `helm install lakefs lakefs/lakefs -f values.yaml` in the desired K8S namespace.
+2. Run `helm install lakefs lakefs/lakefs -f values.yaml` in the desired K8S namespace.
+
+#### Access the lakeFS UI
+In your browser go to https://lakefs.acme.com to access lakeFS UI.
+
+
+1. Add the lakeFS Helm repository with `helm repo add lakefs https://charts.lakefs.io`
+1. Create a `values.yaml` file with the following content and make sure to replace `<fluffy-docker-registry-token>`, `<lakefs.acme.com>` and `<ingress-class-name>`.
+1. Replace the `fluffy.image.privateRegistry.secretToken` with the token Docker Hub token you received.
+1. In the desired K8S namespace run `helm install lakefs lakefs/lakefs -f values.yaml`
+1. In your browser go to the Ingress host to access lakeFS UI.
+
+Notes:
+* By default the chart is deployed with a Postgres pod for quick-start, make sure to replace that to a stable database by setting `useDevPostgres: false` in the chart values.
+* The encrypt secret key `secrets.authEncryptSecretKey` is shared between fluffy and lakeFS for authentication.
+* Check the [additional examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) we provide for each authentication method (oidc, adfs, ldap, rbac, IAM etc).
+* The Database configurations between fluffy and lakeFS should be the same since they connect to the same DB.
 
 ## Log Collection
 
