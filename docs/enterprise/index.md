@@ -2,37 +2,40 @@
 title: lakeFS Enterprise
 description: lakeFS Enterprise is an enterprise-ready lakeFS solution providing additional features including RBAC, SSO and Support SLA.
 has_children: true
-nav_order: 110
 has_toc: false
+nav_order: 110
 ---
 
 # lakeFS Enterprise
 
-LakeFS Enterprise is a commercially-supported version of the open-source lakeFS project, 
-offering additional features and functionalities targeted for businesses. 
-It provides several benefits over the open-source version:
+## What is lakeFS Enterprise?
 
-* Security - Advanced Authorization
-    * [RBAC]({% link reference/security/rbac.md %}) -  implements role-based access control to manage user permissions. It allows for fine-grained control by associating permissions with users and groups, granting them specific actions on specific resources. This ensures data security and compliance within an organization.
-* Security - Advanced Authentication
-    * [SSO]({% link reference/security/sso.md %}) -  lets users sign in with existing credentials from a trusted provider, eliminating separate logins.
-    * [STS Auth]({% link reference/security/sts-login.md %}) - offers temporary, secure logins using an Identity Provider, simplifying user access and enhancing security.
-    * [Authenticate to lakeFS with AWS IAM Roles]({% link reference/security/external-principals-aws.md %}) - lets programs authenticate using AWS IAM roles instead of lakeFS credentials, granting access based on IAM policies.
-    * [lakeFS Mount]({% link reference/mount.md %})
+lakeFS Enterprise is a commercially-supported version of lakeFS, offering additional features and functionalities that meet the needs of organizations from a production-grade system.
 
-* Support SLA
+## Why did we build lakeFS Enterprise?
 
-[Contact Sales](https://lakefs.io/contact-sales/) to get the token for Fluffy.
-{: .note}
+lakeFS Enterprise was built for organizations that require the support, security standards and features required of a production-grade system and
+are not using public clouds, hence they cannot use [lakeFS Cloud]({% link cloud/index.md %}).
 
-## Overview
+## What is the value of using lakeFS Enterprise?
 
-lakeFS Enterprise solution consists of 2 main components:
-1. lakeFS - Open Source: [treeverse/lakeFS](https://hub.docker.com/r/treeverse/lakefs), 
-release info found in [Github releases](https://github.com/treeverse/lakeFS/releases). 
-2. Fluffy - Proprietary: In charge of the Enterprise features. Can be retrieved from
-[Treeverse Dockerhub](https://hub.docker.com/u/treeverse) using the granted token.
+1. Support: the lakeFS team is committed to supporting you under an SLA for both issues and product enhancements.
+2. Security: Full support for a suite of security features and additional lakeFS functionality.
 
-You can learn nore about [lakeFS Enterprise architecture]({% link enterprise/architecture.md %}), or 
-follow the examples in the [quickstart guide]({% link enterprise/orchestration.md %}).
+## What security features does lakeFS Enterprise provide?
 
+With lakeFS Enterprise you’ll receive access to the security package containing the following features:
+1. A rich [Role-Based Access Control]({% link reference/security/access-control-lists.md %}) permission system that allows for fine-grained control by associating permissions with users and groups, granting them specific actions on specific resources. This ensures data security and compliance within an organization.
+2. To easily manage users and groups, lakeFS Enterprise provides SSO integration (including support for SAML, OIDC, ADFS, Okta, and Azure AD), supporting existing credentials from a trusted provider, eliminating separate logins.
+3. lakeFS Enterprise supports [SCIM]({% link howto/scim.md %}) for automatically provisioning and deprovisioning users and group memberships to allow organizations to maintain a single source of truth for their user database.
+4. [STS Auth]({% link reference/security/sts-login.md %}) offers temporary, secure logins using an Identity Provider, simplifying user access and enhancing security.
+5. [Authentication with AWS IAM Roles]({% link reference/security/external-principals-aws.md %}) allows authentication using AWS IAM roles instead of lakeFS credentials, removing the need to maintain static credentials for lakeFS Enterprise users running on AWS.
+6. [Auditing]({% link reference/auditing.md %}) provides a detailed action log of events happening within lakeFS, including who performed which action, on which resource - and when.
+
+## What additional functionality does lakeFS Enterprise provide?
+
+1. [lakeFS Mount]({% link reference/mount.md %}) allows users to virtually mount a remote lakeFS repository onto a local directory. Once mounted, users can access the data as if it resides on their local filesystem, using any tool, library, or framework that reads from a local filesystem.
+2. [Transactional Mirroring]({% link howto/mirroring.md %}) - allows replicating lakeFS repositories into consistent read-only copies in remote locations.
+
+<br>
+You can learn more about the [lakeFS Enterprise architecture]({% link enterprise/architecture.md %}), or follow the examples in the [Quickstart guide]({% link enterprise/getstarted/quickstart.md %}).

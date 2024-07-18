@@ -1,10 +1,16 @@
 ---
-title: Enterprise Architecture
-description: Understand  lakeFS Enterprise Architecture
+title: Architecture
+description: lakeFS Enterprise architecture explained
+nav_order: 220
 parent: lakeFS Enterprise
 ---
 
+
 # Architecture
+
+The lakeFS Enterprise software consists of two components:
+1. lakeFS Open Source: [treeverse/lakeFS](https://hub.docker.com/r/treeverse/lakefs). See [Github releases](https://github.com/treeverse/lakeFS/releases) for release info.
+2. A proprietary component called **Fluffy** which includes lakeFS' Enterprise features.
 
 ![img.png](../assets/img/enterprise/enterprise-arch.png)
 
