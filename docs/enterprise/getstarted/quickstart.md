@@ -16,10 +16,11 @@ Follow these quickstarts to try out lakeFS Enterprise.
 
 ## lakeFS Enterprise Sample
 
-This is the quickest way to get started and see the value of lakeFS Enterprise features in a containerized environment.
+The lakeFS Enterprise Sample is the quickest way to experience the value of lakeFS Enterprise features in a containerized environment. This Docker-based setup is ideal if you want
+to easily interact with lakeFS without the hassle of integration and experiment with lakeFS without writing code.
 
-By running the [lakeFS Enterprise Sample](https://github.com/treeverse/lakeFS-samples/tree/main/02_lakefs_enterprise), you will be getting a ready to use environment in which
-you can try lakeFS out without investing time in integrating lakeFS with your environment. After running the sample you will have the following containers up and running:
+By running the [lakeFS Enterprise Sample](https://github.com/treeverse/lakeFS-samples/tree/main/02_lakefs_enterprise), you will be getting a ready-to-use environment including
+the following containers:
 * lakeFS
 * Fluffy (includes lakeFS Enterprise features)
 * Postgres: used by lakeFS and Fluffy as a shared KV store

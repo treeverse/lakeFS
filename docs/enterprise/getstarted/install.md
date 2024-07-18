@@ -158,7 +158,7 @@ You can use this example configuration to configure Active Directory Federation 
    1. Entity ID: Add 2 ID’s, lakefs-url + lakefs-url/saml/metadata (e.g. https://lakefs.acme.com and https://lakefs.acme.com/saml/metadata)
    1. Reply URL: lakefs-url/saml (e.g. https://lakefs.acme.com/saml)
    1. Sign on URL: lakefs-url/sso/login-saml (e.g. https://lakefs.acme.com/sso/login-saml)
-   1. Relay State (Optional): /
+   1. Relay State (Optional, controls where to redirect after login): /
 
 #### SAML Configuration
 {: .no_toc}
