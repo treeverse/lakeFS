@@ -55,10 +55,11 @@ type GlueClient struct {
 }
 
 var glueFunctions = map[string]func(client *GlueClient) lua.Function{
-	"get_table":    getTable,
-	"create_table": createTable,
-	"update_table": updateTable,
-	"delete_table": deleteTable,
+	"get_table":       getTable,
+	"create_table":    createTable,
+	"update_table":    updateTable,
+	"delete_table":    deleteTable,
+	"create_database": createDatabase,
 }
 
 func (c *GlueClient) client() *glue.Client {
@@ -221,5 +222,23 @@ func getTable(c *GlueClient) lua.Function {
 		util.DeepPush(l, itemMap)
 		l.PushBoolean(true)
 		return 2
+	}
+}
+
+func createDatabase(c *GlueClient) lua.Function {
+	return func(l *lua.State) int {
+		client := c.client()
+		database := lua.CheckString(l, 1)
+		// AWS API call
+		_, err := client.CreateDatabase(c.ctx, &glue.CreateDatabaseInput{
+			DatabaseInput: &types.DatabaseInput{
+				Name: aws.String(database),
+			},
+		})
+		if err != nil {
+			lua.Errorf(l, "%s", err.Error())
+			panic("unreachable")
+		}
+		return 0
 	}
 }
