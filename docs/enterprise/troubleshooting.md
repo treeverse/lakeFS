@@ -1,5 +1,5 @@
 ---
-title: Troubleshooting
+title: Troubleshooting lakeFS Enterprise
 description: Guidance on troubleshooting a lakeFS Enterprise deployment
 nav_order: 210
 parent: lakeFS Enterprise
