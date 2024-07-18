@@ -31,8 +31,13 @@ The guide includes example configurations, follow the steps below and adjust the
 1. [Helm](https://helm.sh/docs/intro/install/) is installed
 1. Access to download *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to lakeFS Enterprise features.
 1. A KV Database that will be shared by lakeFS and Fluffy. The available options are dependent in your [deployment platform](../../howto/deploy/index.md#deployment-and-setup-details).
-1. Access to configure your SSO IdP [supported by lakeFS Enterprise][lakefs-sso-enterprise-spec].
 1. A proxy server configured to route traffic between the lakeFS and Fluffy servers, see Reverse Proxy in [lakeFS Enterprise architecture][lakefs-enterprise-architecture].
+
+#### Optional
+1. Access to configure your SSO IdP [supported by lakeFS Enterprise][lakefs-sso-enterprise-spec].
+
+{: .note }
+> You can install lakeFS Enterprise without configuring SSO and still benefit from all other lakeFS Enterprise features.
 
 ### Add the lakeFS Helm Chart
 
@@ -150,7 +155,7 @@ You can use this example configuration to configure Active Directory Federation 
 1. Add users: **App > Users and groups**: Attach users and roles from their existing AD users
    list - only attached users will be able to login to lakeFS.
 1. Configure SAML: App >  Single sign-on > SAML:
-   1. Entity ID: Add 2 ID’s, lakefs-url + lakefs-url/saml/metadata (e.g. https://lakefs.acme.com)
+   1. Entity ID: Add 2 ID’s, lakefs-url + lakefs-url/saml/metadata (e.g. https://lakefs.acme.com and https://lakefs.acme.com/saml/metadata)
    1. Reply URL: lakefs-url/saml (e.g. https://lakefs.acme.com/saml)
    1. Sign on URL: lakefs-url/sso/login-saml (e.g. https://lakefs.acme.com/sso/login-saml)
    1. Relay State (Optional): /
@@ -318,10 +323,32 @@ The database configuration structure between lakeFS and fluffy can be set direct
 
 <div class="tabs">
   <ul>
+    <li><a href="#postgres-via-env-vars">Postgres via environment variables</a></li>
     <li><a href="#via-fluffy-config">Via fluffyConfig</a></li>
     <li><a href="#postgres-via-secret-kind">Postgres via shared Secret kind</a></li>
-    <li><a href="#postgres-via-env-vars">Postgres via environment variables</a></li>
   </ul>
+<div markdown="1" id="postgres-via-env-vars">
+
+This example uses Postgres as KV Database. lakeFS is configured via `lakefsConfig` and Fluffy via environment with the same database configuration.
+
+```yaml
+useDevPostgres: false
+lakefsConfig: |
+  database:
+    type: postgres
+    postgres:
+      connection_string: <postgres connection string>
+
+fluffy:
+  extraEnvVars:
+    - name: FLUFFY_DATABASE_TYPE
+      value: postgres
+    - name: FLUFFY_DATABASE_POSTGRES_CONNECTION_STRING
+      value: '<postgres connection string>'
+```
+</div>
+</div>
+
 <div markdown="1" id="via-fluffy-config">
 
 This example uses DynamoDB as KV Database.
@@ -364,28 +391,6 @@ fluffyConfig: |
   database:
     type: postgres
 ```
-</div>
-
-<div markdown="1" id="postgres-via-env-vars">
-
-This example uses Postgres as KV Database. lakeFS is configured via `lakefsConfig` and Fluffy via environment with the same database configuration.
-
-```yaml
-useDevPostgres: false
-lakefsConfig: |
-  database:
-    type: postgres
-    postgres:
-      connection_string: <postgres connection string>
-
-fluffy:
-  extraEnvVars:
-    - name: FLUFFY_DATABASE_TYPE
-      value: postgres
-    - name: FLUFFY_DATABASE_POSTGRES_CONNECTION_STRING
-      value: '<postgres connection string>'
-```
-</div>
 </div>
 
 ### Advanced Configurations
