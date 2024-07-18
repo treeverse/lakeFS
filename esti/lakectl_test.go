@@ -861,6 +861,7 @@ func TestLakectlBranchProtection(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch-protect list lakefs://"+repoName, false, "lakectl_branch_protection_list.term", vars)
 }
 
+// TestLakectlAbuse runs a series of abuse commands to test the functionality of lakectl abuse (not in order to test how lakeFS handles abuse)
 func TestLakectlAbuse(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
