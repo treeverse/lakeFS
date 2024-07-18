@@ -230,11 +230,14 @@ func createDatabase(c *GlueClient) lua.Function {
 	return func(l *lua.State) int {
 		client := c.client()
 		database := lua.CheckString(l, 1)
-		// AWS API call
+		description := "Created by lakeFS Action"
+		if !l.IsNone(2) {
+			description = lua.CheckString(l, 2)
+		} // AWS API call
 		_, err := client.CreateDatabase(c.ctx, &glue.CreateDatabaseInput{
 			DatabaseInput: &types.DatabaseInput{
 				Name:        aws.String(database),
-				Description: aws.String("Created by lakeFS Action"),
+				Description: aws.String(description),
 			},
 		})
 		if err != nil {
