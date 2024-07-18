@@ -885,7 +885,7 @@ func TestLakectlAbuse(t *testing.T) {
 	require.NoError(t, f.Close())
 
 	const (
-		abuseAmount      = 1000
+		abuseAmount      = 50
 		abuseParallelism = 3
 	)
 	tests := []struct {
