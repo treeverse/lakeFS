@@ -1,12 +1,21 @@
 ---
-title: Fluffy Server Configuration
-description: Configuration reference for Fluffy Server
+title: Configuration Reference
+description: a configuration reference for lakeFS Enterprise
+nav_order: 215
 parent: lakeFS Enterprise
 ---
 
-# Fluffy Server Configuration
+# lakeFS Enterprise Configuration Reference
+
+Working with lakeFS Enterprise involve configuring both lakeFS and Fluffy. You can find the extended configuration references for both components below.
 
 {% include toc.html %}
+
+## lakeFS Configuration
+
+See the full [lakeFS Server Configuration]({% link reference/configuration.md %})
+
+## Fluffy Server Configuration
 
 Configuring Fluffy using a YAML configuration file and/or environment variables.
 The configuration file's location can be set with the '--config' flag. If not specified, the first file found in the following order will be used:
@@ -18,7 +27,7 @@ The configuration file's location can be set with the '--config' flag. If not sp
 Configuration items can be controlled by environment variables, see [below](#using-environment-variables).
 
 
-## Reference
+### Reference
 
 This reference uses `.` to denote the nesting of values.
 
@@ -127,7 +136,7 @@ This reference uses `.` to denote the nesting of values.
       + `auth.external.aws_auth.http_client.skip_verify` `(bool : false)` - Skip SSL verification with AWS STS.
       {: .ref-list }
 
-## Using Environment Variables
+### Using Environment Variables
 
 All the configuration variables can be set or overridden using environment variables.
 To set an environment variable, prepend `FLUFFY_` to its name, convert it to upper case, and replace `.` with `_`:
