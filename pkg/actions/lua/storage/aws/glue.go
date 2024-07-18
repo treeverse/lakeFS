@@ -60,6 +60,7 @@ var glueFunctions = map[string]func(client *GlueClient) lua.Function{
 	"update_table":    updateTable,
 	"delete_table":    deleteTable,
 	"create_database": createDatabase,
+	"delete_database": deleteDatabase,
 }
 
 func (c *GlueClient) client() *glue.Client {
@@ -232,8 +233,24 @@ func createDatabase(c *GlueClient) lua.Function {
 		// AWS API call
 		_, err := client.CreateDatabase(c.ctx, &glue.CreateDatabaseInput{
 			DatabaseInput: &types.DatabaseInput{
-				Name: aws.String(database),
+				Name:        aws.String(database),
+				Description: aws.String("Created by lakeFS Action"),
 			},
+		})
+		if err != nil {
+			lua.Errorf(l, "%s", err.Error())
+			panic("unreachable")
+		}
+		return 0
+	}
+}
+
+func deleteDatabase(c *GlueClient) lua.Function {
+	return func(l *lua.State) int {
+		client := c.client()
+		database := lua.CheckString(l, 1)
+		_, err := client.DeleteDatabase(c.ctx, &glue.DeleteDatabaseInput{
+			Name: aws.String(database),
 		})
 		if err != nil {
 			lua.Errorf(l, "%s", err.Error())
