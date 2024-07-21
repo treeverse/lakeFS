@@ -229,16 +229,25 @@ func getTable(c *GlueClient) lua.Function {
 func createDatabase(c *GlueClient) lua.Function {
 	return func(l *lua.State) int {
 		client := c.client()
-		database := lua.CheckString(l, 1)
-		description := "Created by lakeFS Action"
+		database := aws.String(lua.CheckString(l, 1))
+		var description *string
 		if !l.IsNone(2) {
-			description = lua.CheckString(l, 2)
-		} // AWS API call
+			description = aws.String(lua.CheckString(l, 2))
+		}
+
+		// check if catalog ID provided
+		var catalogID *string
+		if !l.IsNone(3) {
+			catalogID = aws.String(lua.CheckString(l, 3))
+		}
+
+		// AWS API call
 		_, err := client.CreateDatabase(c.ctx, &glue.CreateDatabaseInput{
 			DatabaseInput: &types.DatabaseInput{
-				Name:        aws.String(database),
-				Description: aws.String(description),
+				Name:        database,
+				Description: description,
 			},
+			CatalogId: catalogID,
 		})
 		if err != nil {
 			lua.Errorf(l, "%s", err.Error())
@@ -251,9 +260,17 @@ func createDatabase(c *GlueClient) lua.Function {
 func deleteDatabase(c *GlueClient) lua.Function {
 	return func(l *lua.State) int {
 		client := c.client()
-		database := lua.CheckString(l, 1)
+		database := aws.String(lua.CheckString(l, 1))
+
+		// check if catalog ID provided
+		var catalogID *string
+		if !l.IsNone(2) {
+			catalogID = aws.String(lua.CheckString(l, 2))
+		}
+
 		_, err := client.DeleteDatabase(c.ctx, &glue.DeleteDatabaseInput{
-			Name: aws.String(database),
+			Name:      database,
+			CatalogId: catalogID,
 		})
 		if err != nil {
 			lua.Errorf(l, "%s", err.Error())
