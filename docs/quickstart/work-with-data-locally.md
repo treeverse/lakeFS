@@ -48,7 +48,7 @@ Prerequisites:
 everest mount lakefs://quickstart/my-experiment/images my_local_dir
 ```
 
-Once complete, `my_local_directory` should be mounted with the specified path.
+Once complete, `my_local_dir` should be mounted with the specified path.
 
 3. Verify that `my_local_dir` is linked to the correct path in your lakeFS remote:
 
@@ -60,7 +60,7 @@ ls -l my_local_dir
 4. To unmount the directory, simply run:
 
 ```bash
-everest umount ./my_local_directory
+everest umount ./my_local_dir
 ```
 
 Which will unmount the path and terminate the local mount-server.
@@ -68,7 +68,7 @@ Which will unmount the path and terminate the local mount-server.
 
 ## lakectl local
 
-Alternatively, we can use [lakectl local](../howto/local-checkouts.md) to bring a subset of our lakeFS data to a local directory within the lakeFS
+Alternatively, we can use [lakectl local](../howto/local-checkouts.md#sync-a-local-directory-with-lakefs) to bring a subset of our lakeFS data to a local directory within the lakeFS
 container and edit an image dataset used for ML model development. Unlike lakeFS Mount, using `lakectl local` requires copying data to/from lakeFS and your local machine.
 
 
@@ -169,7 +169,7 @@ the improved dataset is shared and versioned.
         
     <img width="75%" src="{{ site.baseurl }}/assets/img/quickstart/lakectl-local-02.png" alt="A comparison between a branch that includes local changes to the main branch" class="quickstart"/>
 
-### Bonus Challenge
+## Bonus Challenge
 {: .no_toc }
 
 And so with that, this quickstart for lakeFS draws to a close. If you're simply having _too much fun_ to stop then here's an exercise for you.
@@ -181,7 +181,7 @@ object          2023-03-21 17:33:51 +0000 UTC    20.9 kB         denmark-lakes.p
 object          2023-03-21 14:45:38 +0000 UTC    916.4 kB        lakes.parquet
 ```
 
-### Finishing Up
+# Finishing Up
 {: .no_toc }
 
 Once you've finished the quickstart, shut down your local environment with the following command:

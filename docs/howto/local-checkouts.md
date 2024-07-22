@@ -94,7 +94,7 @@ for image_path in glob.glob('./my_local_dir/*.png'):
 When done, simply run:
 
 ```bash
-everest umount ./my_local_directory
+everest umount ./my_local_dir
 ```
 
 This will unmount the lakeFS Mount, cleaning up background tasks
