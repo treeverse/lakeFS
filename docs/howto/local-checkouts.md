@@ -71,6 +71,8 @@ ls -l ./my_local_dir/
 
 Which should return the listing of the mounted path.
 
+lakeFS Mount allows quite a bit of tuning to ensure optimal performance. [Read more](../reference/mount.html) about how lakeFS Mount works and how to configure it.
+{: .note }
 
 ### Reading from a mount
 
@@ -96,10 +98,6 @@ everest umount ./my_local_directory
 ```
 
 This will unmount the lakeFS Mount, cleaning up background tasks
-
-### Learn more about lakeFS Mount
-
-lakeFS Mount allows quite a bit of tuning to ensure optimal performance. [Read more](../reference/mount.html) about how lakeFS Mount works and how to configure it.
 
 
 ## **lakectl local**: Sync lakeFS data with a local directory   
