@@ -79,7 +79,7 @@ end
 
 -- create a standard AWS Glue table input (i.e not Apache Iceberg), add input values to base input and configure the rest
 local function build_glue_create_table_input(base_input, descriptor, symlink_location, columns, partitions, action_info,
-    options)
+                                             options)
     local input = utils.deepcopy(base_input)
     local opts = options or {}
     input.Name = opts.table_name or get_full_table_name(descriptor, action_info)
@@ -104,6 +104,7 @@ end
     - debug(boolean)
     - export_base_uri(string): override the default prefix in S3 for symlink location i.e s3://other-bucket/path/
     - create_nonexistant_db(boolean): if the db doesn't exist, creates it
+    - create_db_input(table): parameters for creating the database
 ]]
 local function export_glue(glue, db, table_src_path, create_table_input, action_info, options)
     local opts = options or {}
@@ -130,7 +131,7 @@ local function export_glue(glue, db, table_src_path, create_table_input, action_
 
     local create_db = opts.create_nonexistant_db or false
     if create_db then
-        dbopts={error_on_already_exists=false}
+        dbopts = { error_on_already_exists = false, create_db_input = opts.create_db_input }
         glue.create_database(db, dbopts)
     end
 
@@ -150,6 +151,6 @@ local function export_glue(glue, db, table_src_path, create_table_input, action_
 end
 
 return {
-    get_full_table_name=get_full_table_name,
+    get_full_table_name = get_full_table_name,
     export_glue = export_glue
 }
