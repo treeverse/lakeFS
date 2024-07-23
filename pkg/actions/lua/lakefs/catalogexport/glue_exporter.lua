@@ -131,7 +131,8 @@ local function export_glue(glue, db, table_src_path, create_table_input, action_
 
     local create_db = opts.create_nonexistant_db or false
     if create_db then
-        dbopts = { error_on_already_exists = false, create_db_input = opts.create_db_input }
+        local json_db_input = json.marshal(opts.create_database_input)
+        local dbopts = { error_on_already_exists = false, create_db_input = json_db_input }
         glue.create_database(db, dbopts)
     end
 
