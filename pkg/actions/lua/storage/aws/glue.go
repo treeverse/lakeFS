@@ -230,26 +230,37 @@ func createDatabase(c *GlueClient) lua.Function {
 	return func(l *lua.State) int {
 		client := c.client()
 		database := aws.String(lua.CheckString(l, 1))
-		var description *string
+
+		var createDBInput *glue.CreateDatabaseInput
+		errorOnAlreadyExists := true
 		if !l.IsNone(2) {
-			description = aws.String(lua.CheckString(l, 2))
+			lua.CheckType(l, 2, lua.TypeTable)
+			l.Field(2, "error_on_already_exists") // -2
+			l.Field(2, "create_db_input")         // -1
+			errorOnAlreadyExists = l.ToBoolean(-2)
+			createDBInputJSON := lua.CheckString(l, -1)
+
+			err := json.Unmarshal([]byte(createDBInputJSON), &createDBInput)
+			if err != nil {
+				lua.Errorf(l, "%s", err.Error())
+				panic("unreachable")
+			}
 		}
 
-		// check if catalog ID provided
-		var catalogID *string
-		if !l.IsNone(3) {
-			catalogID = aws.String(lua.CheckString(l, 3))
+		if createDBInput == nil {
+			createDBInput = &glue.CreateDatabaseInput{}
 		}
+		if createDBInput.DatabaseInput == nil {
+			createDBInput.DatabaseInput = &types.DatabaseInput{}
+		}
+		createDBInput.DatabaseInput.Name = database
 
 		// AWS API call
-		_, err := client.CreateDatabase(c.ctx, &glue.CreateDatabaseInput{
-			DatabaseInput: &types.DatabaseInput{
-				Name:        database,
-				Description: description,
-			},
-			CatalogId: catalogID,
-		})
+		_, err := client.CreateDatabase(c.ctx, createDBInput)
 		if err != nil {
+			if !errorOnAlreadyExists {
+				return 0
+			}
 			lua.Errorf(l, "%s", err.Error())
 			panic("unreachable")
 		}

@@ -130,7 +130,8 @@ local function export_glue(glue, db, table_src_path, create_table_input, action_
 
     local create_db = opts.create_nonexistant_db or false
     if create_db then
-        glue.create_database(db) -- may fail if db doesn't exist
+        dbopts={error_on_already_exists=false}
+        glue.create_database(db, dbopts)
     end
 
     -- finallize create glue table input
