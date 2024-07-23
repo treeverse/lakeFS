@@ -235,15 +235,15 @@ func createDatabase(c *GlueClient) lua.Function {
 		errorOnAlreadyExists := true
 		if !l.IsNone(2) {
 			lua.CheckType(l, 2, lua.TypeTable)
+			l.Field(2, "error_on_already_exists")
+			l.Field(2, "create_db_input")
 
 			// get flag
-			l.Field(2, "error_on_already_exists")
-			if !l.IsNil(-1) {
-				errorOnAlreadyExists = l.ToBoolean(-1)
+			if !l.IsNil(-2) {
+				errorOnAlreadyExists = l.ToBoolean(-2)
 			}
 
 			// get dbInput
-			l.Field(2, "create_db_input")
 			if !l.IsNil(-1) {
 				createDBInputJSON := lua.CheckString(l, -1)
 
