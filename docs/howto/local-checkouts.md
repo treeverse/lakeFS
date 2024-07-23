@@ -8,11 +8,12 @@ parent: How-To
 
 lakeFS is a scalable data version control system designed to scale to billions of objects. The larger the data, the less
 feasible it becomes to consume it from a single machine. lakeFS addresses this challenge by enabling efficient management
-of large-scale data stored remotely. In addition to its capability to manage large datasets, lakeFS offers the flexibility
-to perform partial checkouts when necessary for working with specific portions of the data locally. 
+of large-scale data stored remotely. 
 
-This page explains `lakectl local`, a command that lets you clone specific portions of lakeFS' data to your local environment, 
-and to keep remote and local locations in sync. 
+In addition to its capability to manage large datasets, lakeFS offers the flexibility
+to work with versioned data by exposing it as a local filesystem directory.  
+
+This page explains [lakeFS Mount](../reference/mount.html) and `lakectl local`: two common ways of exposing lakeFS data locally, with different performance characteristics.  
 
 {% include toc.html %} 
 
@@ -39,10 +40,70 @@ storage, resulting in cost savings.
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/afgQnmesLZM"></iframe>
 
-## **lakectl local**: The way to work with lakeFS data locally  
+## **lakeFS Mount**: Efficiently expose lakeFS Data as a local directory
 
-The _local_ command of lakeFS' CLI _lakectl_ enables working with lakeFS data locally.
-It allows cloning lakeFS data into a directory on any machine, syncing local directories with remote lakeFS locations, 
+⚠️ lakeFS Mount is currently in preview. There is no installation required, please [contact us](https://info.lakefs.io/thanks-lakefs-mounts) to get access.
+{: .note }
+
+#### Prerequisites:
+
+- A working lakeFS Server running either [lakeFS Enterprise](../enterprise) or [lakeFS Cloud](../cloud)
+- You’ve installed the [`lakectl`](../reference/cli.html) command line utility: this is the official lakeFS command line interface, on top of which lakeFS Mount is built.
+- lakectl is configured properly to access your lakeFS server as detailed in the configuration instructions
+
+### Mounting a lakeFS reference as a local directory
+
+lakeFS Mount works by exposing a virtual mountpoint on the host computer. 
+
+This "acts" as a local directory, allowing applications to read write and interact with data as it is all local to the machine, while lakeFS Mount optimizes this behind the scenes by lazily fetching data as requested, caching accessed objects and efficiently managing metadata to ensure best in class performance. [Read more about how lakeFS Mount optimizes performance](../reference/mount.html)
+
+Mounting a reference is a single command:
+
+```bash
+everest mount lakefs://example-repo/example-branch/path/to/data/ ./my_local_dir
+```
+
+Once executed, the `my_local_dir` directory should appear to have the contents of the remote path we provided. We can verify this:
+
+```bash
+ls -l ./my_local_dir/
+```
+
+Which should return the listing of the mounted path.
+
+lakeFS Mount allows quite a bit of tuning to ensure optimal performance. [Read more](../reference/mount.html) about how lakeFS Mount works and how to configure it.
+{: .note }
+
+### Reading from a mount
+
+Reading from a lakeFS Mount requires no special tools, integrations or SDKs! Simply point your code to the directory and read from it as if it was in fact local:
+
+
+```python
+#!/usr/bin/env python
+import glob
+
+for image_path in glob.glob('./my_local_dir/*.png'):
+    with open(image_path, 'rb') as f:
+        process(f)
+
+```
+
+### Unmounting
+
+When done, simply run:
+
+```bash
+everest umount ./my_local_dir
+```
+
+This will unmount the lakeFS Mount, cleaning up background tasks
+
+
+## **lakectl local**: Sync lakeFS data with a local directory   
+
+The _local_ command of lakeFS' CLI _lakectl_ enables working with lakeFS data locally by copying the data onto the host machine.
+It allows syncing local directories with remote lakeFS locations, 
 and to [seamlessly integrate lakeFS with Git](#example-using-lakectl-local-in-tandem-with-git).
 
 Here are the available _lakectl local_ commands: 

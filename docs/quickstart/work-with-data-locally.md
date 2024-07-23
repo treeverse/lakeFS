@@ -14,10 +14,66 @@ locally is machine learning model development. Machine learning model developmen
 process, experiments need to be conducted with speed, tracking ease, and reproducibility. Localizing model data during development 
 accelerates the process by enabling interactive and offline development and reducing data access latency.
 
-We're going to use [lakectl local](../howto/local-checkouts.md) to bring a subset of our lakeFS data to a local directory within the lakeFS
-container and edit an image dataset used for ML model development.
+lakeFS provides 2 ways to expose versioned data locally
 
-## Cloning a Subset of lakeFS Data into a Local Directory
+{% include toc.html %}
+
+## lakeFS Mount
+
+lakeFS Mount is available (in preview) for [lakeFS Enterprise](../enterprise/index.html) and [lakeFS Cloud](../cloud/index.html) customers. <br/> 
+You can try it out by [signing up for the preview](https://info.lakefs.io/thanks-lakefs-mounts)
+{: .note }
+
+### Getting started with lakeFS Mount
+
+Prerequisites:
+
+- A working lakeFS Server running either lakeFS Enterprise or lakeFS Cloud
+- You’ve installed the lakectl command line utility: this is the official lakeFS command line interface, on top of which lakeFS Mount is built.
+- lakectl is configured properly to access your lakeFS server as detailed in the configuration instructions
+
+### Mounting a path to a local directory:
+
+1. In lakeFS create a new branch called `my-experiment`. You can do this through the UI or with `lakectl`:
+
+    ```bash
+    docker exec lakefs \
+        lakectl branch create \
+            lakefs://quickstart/my-experiment \
+            --source lakefs://quickstart/main
+    ```
+
+2. Mount images from your quickstart repository into a local directory named `my_local_dir`
+```bash
+everest mount lakefs://quickstart/my-experiment/images my_local_dir
+```
+
+Once complete, `my_local_dir` should be mounted with the specified path.
+
+3. Verify that `my_local_dir` is linked to the correct path in your lakeFS remote:
+
+```bash
+ls -l my_local_dir
+```
+
+
+4. To unmount the directory, simply run:
+
+```bash
+everest umount ./my_local_dir
+```
+
+Which will unmount the path and terminate the local mount-server.
+
+
+## lakectl local
+
+Alternatively, we can use [lakectl local](../howto/local-checkouts.md#sync-a-local-directory-with-lakefs) to bring a subset of our lakeFS data to a local directory within the lakeFS
+container and edit an image dataset used for ML model development. Unlike lakeFS Mount, using `lakectl local` requires copying data to/from lakeFS and your local machine.
+
+
+### Cloning a Subset of lakeFS Data into a Local Directory
+{: .no_toc }
 
 1. In lakeFS create a new branch called `my-experiment`. You can do this through the UI or with `lakectl`:
 
@@ -57,7 +113,8 @@ container and edit an image dataset used for ML model development.
    No diff found.
    ```    
 
-## Making Changes to Data Locally
+### Making Changes to Data Locally
+{: .no_toc }
 
 1. Download a new image of an Axolotl and add it to the dataset cloned into `my_local_dir`:  
 
@@ -92,7 +149,8 @@ container and edit an image dataset used for ML model development.
     ╚════════╩══════════╩═════════════════════╝
     ```
 
-## Pushing Local Changes to lakeFS
+### Pushing Local Changes to lakeFS
+{: .no_toc }
 
 Once we are done with editing the image dataset in our local environment, we will push our changes to the lakeFS remote so that 
 the improved dataset is shared and versioned.
@@ -112,6 +170,7 @@ the improved dataset is shared and versioned.
     <img width="75%" src="{{ site.baseurl }}/assets/img/quickstart/lakectl-local-02.png" alt="A comparison between a branch that includes local changes to the main branch" class="quickstart"/>
 
 ## Bonus Challenge
+{: .no_toc }
 
 And so with that, this quickstart for lakeFS draws to a close. If you're simply having _too much fun_ to stop then here's an exercise for you.
 
@@ -123,6 +182,7 @@ object          2023-03-21 14:45:38 +0000 UTC    916.4 kB        lakes.parquet
 ```
 
 # Finishing Up
+{: .no_toc }
 
 Once you've finished the quickstart, shut down your local environment with the following command:
 
