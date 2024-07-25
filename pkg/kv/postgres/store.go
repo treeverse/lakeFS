@@ -327,11 +327,11 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		ctx:          ctx,
 		partitionKey: partitionKey,
 		startKey:     options.KeyStart,
-		limit:        s.Params.ScanPageSize,
+		limit:        firstScanLimit,
 		store:        s,
 		includeStart: true,
 	}
-	it.runQuery(firstScanLimit)
+	it.runQuery(it.limit)
 	if it.err != nil {
 		return nil, it.err
 	}
@@ -355,6 +355,7 @@ func (e *EntriesIterator) Next() bool {
 		key := e.entries[e.currEntryIdx].Key
 		e.startKey = key
 		e.includeStart = false
+		e.doubleAndCapLimit()
 		e.runQuery(e.limit)
 		if e.err != nil || len(e.entries) == 0 {
 			return false
@@ -364,10 +365,22 @@ func (e *EntriesIterator) Next() bool {
 	return true
 }
 
+// DoubleAndCapLimit doubles the limit up to the maximum allowed by the store
+// this is to avoid
+// 1. limit being too small and causing multiple queries on one sid
+// 2. limit being too large and causing a single query to be too slow
+func (e *EntriesIterator) doubleAndCapLimit() {
+	e.limit *= 2
+	if e.limit > e.store.Params.ScanPageSize {
+		e.limit = e.store.Params.ScanPageSize
+	}
+}
+
 func (e *EntriesIterator) SeekGE(key []byte) {
 	if !e.isInRange(key) {
 		e.startKey = key
 		e.includeStart = true
+		e.doubleAndCapLimit()
 		e.runQuery(e.limit)
 		return
 	}
