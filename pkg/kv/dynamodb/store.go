@@ -390,12 +390,12 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		startKey:     options.KeyStart,
 		scanCtx:      ctx,
 		store:        s,
-		limit:        int(s.params.ScanLimit),
+		limit:        int(firstScanLimit),
 	}
 
 	// Setting the limit just for the first scan to avoid issues like
 	// https://github.com/treeverse/lakeFS/issues/7864
-	it.runQuery(int(firstScanLimit))
+	it.runQuery(it.limit)
 	if it.err != nil {
 		err := it.err
 		if s.isSlowDownErr(it.err) {
@@ -456,6 +456,7 @@ func (e *EntriesIterator) Next() bool {
 			return false
 		}
 		e.exclusiveStartKey = e.queryResult.LastEvaluatedKey
+		e.doubleAndCapLimit()
 		e.runQuery(e.limit)
 		if e.err != nil {
 			return false
@@ -472,6 +473,17 @@ func (e *EntriesIterator) Next() bool {
 	}
 	e.currEntryIdx++
 	return true
+}
+
+// doubleAndCapLimit doubles the limit up to the maximum allowed by the store
+// this is done to avoid:
+// 1. limit being too small and causing multiple queries on one side
+// 2. limit being too large and causing a single query consuming too much capacity
+func (e *EntriesIterator) doubleAndCapLimit() {
+	e.limit *= 2
+	if e.limit > int(e.store.params.ScanLimit) {
+		e.limit = int(e.store.params.ScanLimit)
+	}
 }
 
 func (e *EntriesIterator) Entry() *kv.Entry {

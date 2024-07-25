@@ -454,6 +454,7 @@ func (e *EntriesIterator) Next() bool {
 
 // handleBatchSizeChange handles running query after the first query ran with limited batch size.
 // The reason we switch the batch size is to avoid issues like https://github.com/treeverse/lakeFS/issues/7864
+// as opposed to the exponential backoff approach in dynamoDB here we use a dynamic page size and let Cosmos DB manage paging.
 func (e *EntriesIterator) handleBatchSizeChange() error {
 	e.startKey = e.entry.Key
 	e.batchSize = dynamicPageSize
