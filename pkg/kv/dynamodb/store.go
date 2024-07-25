@@ -528,7 +528,7 @@ func (e *EntriesIterator) runQuery(limit int) {
 		WithField("exclusive_start_key", e.exclusiveStartKey).
 		WithField("start_key", e.startKey).
 		WithContext(e.scanCtx).
-		Trace("Performing DynamoDB scan")
+		Trace("Performing DynamoDB query")
 	queryResult, err := e.store.svc.Query(e.scanCtx, queryInput)
 	const operation = "Query"
 	if err != nil {
