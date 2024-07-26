@@ -522,7 +522,13 @@ func (e *EntriesIterator) runQuery(limit int) {
 	}
 
 	queryInput.Limit = aws.Int32(int32(limit))
-
+	e.store.logger.
+		WithField("partition_key", e.partitionKey).
+		WithField("limit", limit).
+		WithField("exclusive_start_key", e.exclusiveStartKey).
+		WithField("start_key", e.startKey).
+		WithContext(e.scanCtx).
+		Trace("Performing DynamoDB query")
 	queryResult, err := e.store.svc.Query(e.scanCtx, queryInput)
 	const operation = "Query"
 	if err != nil {
