@@ -168,9 +168,45 @@ local aws = require("aws")
 local glue = aws.glue_client("ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "REGION")
 ```
 
+### `aws/glue.create_database(database, options)`
+
+Create a new Database in Glue Catalog.
+
+Parameters:
+
+- `database`: Glue Database name.
+- `options(table/optional)`:
+    - `error_on_already_exists(boolean)`: Should the call fail with an error if a DB with this name already exists
+    - `create_db_input(string)`: a JSON that is passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
+
+Example:
+
+```lua
+local opts = {
+    error_on_already_exists = false,
+    create_db_input = "{\"DatabaseInput\":{\"Description\" : \"Created via LakeFS Action\"}}"
+}
+glue.create_database(db, opts)
+```
+
+### `aws/glue.delete_database(database, catalog_id)`
+
+Delete an existing Database in Glue Catalog.
+
+Parameters:
+
+- `database`: Glue Database name.
+- `catalog_id(string/optional)`: Glue Catalog ID
+
+Example:
+
+```lua
+glue.delete_database(db, "461129977393")
+```
+
 ### `aws/glue.get_table(database, table [, catalog_id)`
 
-Describe a table from the Glue catalog.
+Describe a table from the Glue Catalog.
 
 Example:
 
