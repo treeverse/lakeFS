@@ -49,8 +49,6 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         storageState: COMMON_STORAGE_STATE_PATH,
-        headless: false,
-        video: "on",
       },
       testMatch: "test/e2e/common/**/quickstart.spec.ts",
       testIgnore: "test/e2e/common/setup.spec.ts",
