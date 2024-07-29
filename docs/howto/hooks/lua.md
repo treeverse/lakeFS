@@ -176,7 +176,7 @@ Parameters:
 
 - `database`: Glue Database name.
 - `options(table/optional)`:
-    - `error_on_already_exists(boolean)`: Should the call fail with an error if a DB with this name already exists
+    - `error_on_already_exists(boolean)`: Whether the call fail with an error if a DB with this name already exists
     - `create_db_input(string)`: a JSON that is passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
 
 Example:
@@ -739,16 +739,16 @@ Parameters:
 - `glue`: AWS glue client
 - `db(string)`: glue database name
 - `table_src_path(string)`: path to table spec (e.g. _lakefs_tables/my_table.yaml)
-- `create_table_input(Table)`: Input equal mapping to [table_input](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html#API_CreateTable_RequestSyntax) in AWS, the same as we use for `glue.create_table`.
+- `create_table_input(table)`: Input equal mapping to [table_input](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html#API_CreateTable_RequestSyntax) in AWS, the same as we use for `glue.create_table`.
 should contain inputs describing the data format (e.g. InputFormat, OutputFormat, SerdeInfo) since the exporter is agnostic to this. 
 by default this function will configure table location and schema.
-- `action_info(Table)`: the global action object.
-- `options(Table)`:
+- `action_info(table)`: the global action object.
+- `options(table)`:
   - `table_name(string)`: Override default glue table name
   - `debug(boolean`
   - `export_base_uri(string)`: Override the default prefix in S3 for symlink location e.g. s3://other-bucket/path/
   - `create_db(string)`: Whether to create the database. Options include {`yes`, `no`, `if_not_exist`}
-  - `create_db_input(string)`: a JSON that is passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
+  - `create_db_input(table)`: a table that is converted to JSON and passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
 
 When creating a glue table, the final table input will consist of the `create_table_input` input parameter and lakeFS computed defaults that will override it:
 

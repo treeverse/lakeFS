@@ -79,7 +79,7 @@ end
 
 -- create a standard AWS Glue table input (i.e not Apache Iceberg), add input values to base input and configure the rest
 local function build_glue_create_table_input(base_input, descriptor, symlink_location, columns, partitions, action_info,
-                                             options)
+    options)
     local input = utils.deepcopy(base_input)
     local opts = options or {}
     input.Name = opts.table_name or get_full_table_name(descriptor, action_info)
