@@ -582,6 +582,10 @@ func (c *Config) IsExternalPrincipalsEnabled() bool {
 	return c.IsAuthTypeAPI() && c.Auth.AuthenticationAPI.ExternalPrincipalsEnabled
 }
 
+func (c *Config) IsCloud() bool {
+	return c.IsAuthTypeAPI() && !c.IsAuthUISimplified()
+}
+
 func (c *Config) UISnippets() []apiparams.CodeSnippet {
 	snippets := make([]apiparams.CodeSnippet, 0, len(c.UI.Snippets))
 	for _, item := range c.UI.Snippets {
