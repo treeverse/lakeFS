@@ -75,7 +75,7 @@ export class RepositoryPage {
     await this.page.getByRole("button", { name }).click();
   }
 
-  async gototObjectsTab(): Promise<void> {
+  async gotoObjectsTab(): Promise<void> {
     await this.page.getByRole("link", { name: "Objects" }).click();
   }
 

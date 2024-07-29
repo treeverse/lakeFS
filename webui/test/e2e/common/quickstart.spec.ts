@@ -48,7 +48,7 @@ test.describe("Quickstart", () => {
     const repositoryPage = new RepositoryPage(page);
     await repositoryPage.createBranch(NEW_BRANCH_NAME);
 
-    await repositoryPage.gototObjectsTab();
+    await repositoryPage.gotoObjectsTab();
     await repositoryPage.clickObject(PARQUET_OBJECT_NAME);
     await expect(page.getByText("Loading...")).not.toBeVisible();
 
