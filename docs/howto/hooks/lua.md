@@ -747,6 +747,8 @@ by default this function will configure table location and schema.
   - `table_name(string)`: Override default glue table name
   - `debug(boolean`
   - `export_base_uri(string)`: Override the default prefix in S3 for symlink location e.g. s3://other-bucket/path/
+  - `create_db(string)`: Whether to create the database. Options include {`yes`, `no`, `if_not_exist`}
+  - `create_db_input(string)`: a JSON that is passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
 
 When creating a glue table, the final table input will consist of the `create_table_input` input parameter and lakeFS computed defaults that will override it:
 
