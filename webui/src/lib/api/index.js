@@ -71,10 +71,7 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
             cache.delete('user');
             throw new AuthenticationError('Authentication Error', response.status);
         }
-        if (errorMessage === '') {
-            throw new AuthorizationError("Insufficient Permissions", response.status);
-        }
-        throw new AuthorizationError(errorMessage, response.status);
+        throw new AuthorizationError(errorMessage || 'Insufficient Permissions', response.status);
     }
 
     return response;
