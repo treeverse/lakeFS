@@ -99,7 +99,6 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 				loggingFields["sent_bytes"] = writer.ResponseSize
 				loggingFields["client"] = client
 				loggingFields[logging.LogAudit] = true
-
 			}
 
 			logLevel := strings.ToLower(middlewareLogLevel)
