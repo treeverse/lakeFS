@@ -117,16 +117,18 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 
 	h = loggingMiddleware(h)
 
-	h = EnrichWithOperation(sc,
-		DurationHandler(
-			AuthenticationHandler(authService, EnrichWithParts(bareDomains,
-				EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
-					OperationLookupHandler(
-						h))))))
-	logging.ContextUnavailable().WithFields(logging.Fields{
-		"s3_bare_domain": bareDomains,
-		"s3_region":      region,
-	}).Info("initialized S3 Gateway handler")
+	if isCloud {
+		h = EnrichWithOperation(sc,
+			DurationHandler(
+				AuthenticationHandler(authService, EnrichWithParts(bareDomains,
+					EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
+						OperationLookupHandler(
+							h))))))
+		logging.ContextUnavailable().WithFields(logging.Fields{
+			"s3_bare_domain": bareDomains,
+			"s3_region":      region,
+		}).Info("initialized S3 Gateway handler")
+	}
 	return h
 }
 
