@@ -99,10 +99,14 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				writeError(w, r, http.StatusBadRequest, err)
 				return
 			}
-			_, err = checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
+			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
 			if err != nil {
 				writeError(w, r, http.StatusUnauthorized, err)
 				return
+			}
+			if user != nil {
+				ctx := r.Context()
+				r = r.WithContext(auth.WithUser(ctx, user))
 			}
 			next.ServeHTTP(w, r)
 		})
