@@ -176,25 +176,6 @@ With lakeFS, you can achieve this by tying data quality tests to commit and merg
 
 👉🏻 [Read more](./understand/use_cases/cicd_for_data.html)
 
-## Downloads
+## Next Step
 
-{: .note}
-lakeFS is also available as a fully-managed hosted service on [lakeFS Cloud](https://lakefs.cloud/)
-
-### Binary Releases
-
-Binary packages are available for Linux/macOS/Windows on [GitHub Releases](https://github.com/treeverse/lakeFS/releases){: target="_blank" }
-
-Or using [Homebrew](https://brew.sh/) for Linux/macOS:
-
-```sh
-# add repository
-brew tap treeverse/lakefs
-
-# installing lakefs/lakectl
-brew install lakefs
-```
-
-### Docker Images
-
-The official Docker images are available at [https://hub.docker.com/r/treeverse/lakefs](https://hub.docker.com/r/treeverse/lakefs){: target="_blank" }
+Try lakeFS on the [cloud](https://lakefs.cloud/) or [run it locally](https://docs.lakefs.io/quickstart/)
