@@ -21,29 +21,29 @@ redirect_from:
 > STS Login is available in lakeFS Cloud and lakeFS Enterprise. currently only tested on lakeFS Enterprise.
 
 Secure Token Service (STS) authentication in lakeFS enables users to authenticate to lakeFS using temporary credentials obtained from an Identity Provider (IdP) via the OpenID Connect (OIDC) Authentication workflow.
-This document outlines the process, from setting up the STS authentication flow to using temporary credentials to interact with lakeFS through the [high-level Python SDK](../../integrations/python.md).
+This document outlines the process of setting up the STS authentication flow and using the temporary credentials to interact with lakeFS through the [high-level Python SDK](../../integrations/python.md).
 
 
 
 ## Login
 
-From the Python SDK call `from_web_identity` to initiate a client session with temporary credentials:
+Initiate a client session with temporary credentials using the [high-level Python SDK](../../integrations/python.md):
 
 ```python
 import lakefs
-myclient = lakefs.client.from_web_identity(code = '<CODE_FROM_IDP>', state = '<STATE_FROM_IDP>' , redirect_uri = '<URI_USED_FOR_REDIRECT_FROM_IDP>', ttl_seconds = 7200)
+
+my_client = lakefs.client.from_web_identity(code = '<CODE_FROM_IDP>', state = '<STATE_FROM_IDP>' , redirect_uri = '<URI_USED_FOR_REDIRECT_FROM_IDP>', ttl_seconds = 7200)
 ```
 
 ## Setup
 
 ### Prerequisites
-Asure you have a way to generate the code, redirect_uri and state values that are required to initiate a new client session using the STS login feature.
-For a reference implementation, see the [Sample implementation](#sample-implementation-to-generate-the-code-redirect_uri-and-state) section.
+Ensure you have a way to generate the code, redirect_uri, and state values that are required to initiate a new client session using the STS login feature.
+For a reference implementation, see the [sample implementation](#sample-implementation-to-generate-the-code-redirect_uri-and-state) section.
 
 ### Configuration
 
 To enable STS authentication, configure your lakeFS instance with the endpoint of the external Authentication Service.
-
 
 ```yaml
 
@@ -54,16 +54,19 @@ auth:
 
 ```
 
-- `auth.authentication_api.endpoint` `(string: https://external.authentication-service/api/v1)` - URL to external Authentication Service described at [authentication.yml](https://github.com/treeverse/lakeFS/blob/master/api/authentication.yml)
+The endpoint value should point to the external Authentication Service described at [authentication.yml](https://github.com/treeverse/lakeFS/blob/master/api/authentication.yml).    
+Make sure to replace <url-to-remote-authenticator-endpoint> with the actual URL of your Authentication Service.
 
-Ensure you replace <url-to-remote-authenticator-endpoint> with the actual URL of your Authentication Service.
 
+### Sample implementation to generate the code, redirect_uri, and state
+The following code snippet demonstrates how to generate the values that are required to initiate a new client session using the STS login feature.
 
-### Sample implementation to generate the code, redirect_uri and state
+{: .note}
+> Replace `<your-authorize-endpoint>` with the path to your IdP authorize endpoint.  
+> *Examples:*  
+> Auth0: The authorize endpoint will be `https://<your-auth0-domain>/authorize`  
+> Entra ID: The authorize endpoint will be `https://<your-entra-domain>/oauth2/v2.0/authorize`
 
-The following code snippet demonstrates how to generate the code, redirect_uri and state values that are required to initiate a new client session using the STS login feature.
-replace `<Your-auth-client-id>` with your auth client id and `<path-to-your-idp-authorize>` with the path to your IdP authorize endpoint.
-e.g in case of Auth0, the authorize endpoint is `https://<your-auth0-domain>/authorize` in case of entra the authorize endpoint is `https://<your-entra-domain>/oauth2/v2.0/authorize`
 ```javascript
 import crypto from 'crypto';
 
@@ -71,12 +74,11 @@ import express from 'express';
 import axios from 'axios';
 import url from 'url';
 import jsonwebtoken from 'jsonwebtoken';
+
 const app = express();
-
-
-const authClientId = '<Your-auth-client-id>'
 // the local script will will spin up the server and the IdP provider will return to this endpoint the response.
 const callback = "http://localhost:8080/oidc/callback"
+const authorizeEndpoint = "<your-authorize-endpoint>"
 
 // step 1 
 // Create a code_verifier, which is a cryptographically-random, Base64-encoded key that will eventually be sent to Auth0 to request tokens.
@@ -99,7 +101,7 @@ var challenge = base64URLEncode(sha256(verifier));
 console.log(`challenge: ${challenge}`);
 
 
-const authorizeURL = `https://<path-to-your-idp-authorize>?response_type=code&code_challenge=${challenge}&code_challenge_method=S256&client_id=${auth0ClientId}&redirect_uri=${callback}&scope=openid&state=${verifier}`
+const authorizeURL = `${authorizeEndpoint}?response_type=code&code_challenge=${challenge}&code_challenge_method=S256&client_id=${auth0ClientId}&redirect_uri=${callback}&scope=openid&state=${verifier}`
 
 console.log(`authorizeURL: ${authorizeURL}`)
 
@@ -128,9 +130,6 @@ app.listen(PORT, () => {
 
 
 ## Architecture
-
-{: .note}
-> The architecture documentation begins at the stage [after the generation of the code by the Idp](#prerequisites).
 
 The STS authentication flow involves several components that facilitate secure communication between the lakeFS client, lakeFS server, the remote authenticator, and the IdP.
 
