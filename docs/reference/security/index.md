@@ -30,8 +30,8 @@ Learn more about some of the featured that help keep lakeFS Secure:
 - [Short Lived Token (STS like)]({% link reference/security/sts-login.md %})
 - [Login to lakeFS with AWS IAM]({% link reference/security/external-principals-aws.md %})
 
-### SOC 2 Compliance ###
-lakeFS Cloud is SOC 2 compliant, demonstrating our commitment to stringent security standards.
+### SOC2 Compliance ###
+lakeFS Cloud is SOC2 compliant, demonstrating our commitment to stringent security standards.
 
 ### More questions? Contact us ###
 If you have additional questions regarding lakeFS Security, [talk to an expert](https://meetings.hubspot.com/iddo-avneri/lakefs-security-questions).
