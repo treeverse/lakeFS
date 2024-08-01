@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-
 	"github.com/Shopify/go-lua"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -233,7 +232,7 @@ func createDatabase(c *GlueClient) lua.Function {
 
 		var createDBInput *glue.CreateDatabaseInput
 		errorOnAlreadyExists := true
-		if !l.IsNone(2) {
+		if !l.IsNoneOrNil(2) {
 			lua.CheckType(l, 2, lua.TypeTable)
 			l.Field(2, "error_on_already_exists")
 			l.Field(2, "create_db_input")
@@ -266,7 +265,7 @@ func createDatabase(c *GlueClient) lua.Function {
 		// AWS API call
 		_, err := client.CreateDatabase(c.ctx, createDBInput)
 		if err != nil {
-			if !errorOnAlreadyExists {
+			if !errorOnAlreadyExists && isAlreadyExistsErr(err) {
 				return 0
 			}
 			lua.Errorf(l, "%s", err.Error())
@@ -274,6 +273,11 @@ func createDatabase(c *GlueClient) lua.Function {
 		}
 		return 0
 	}
+}
+
+func isAlreadyExistsErr(err error) bool {
+	var errExists *types.AlreadyExistsException
+	return errors.As(err, &errExists)
 }
 
 func deleteDatabase(c *GlueClient) lua.Function {
