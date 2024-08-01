@@ -124,11 +124,11 @@ Being able to look at data as it was at a given point is particularly useful in 
 
     ML experimentation is iterative, requiring the ability to reproduce specific results. With lakeFS, you can version all aspects of an ML experiment, including the data. This enables:
     
-        **Data Lineage**: Track the transformation of data from raw datasets to the final version used in experiments, ensuring transparency and traceability.
+    **Data Lineage**: Track the transformation of data from raw datasets to the final version used in experiments, ensuring transparency and traceability.
     
-        **Zero-Copy Branching**: Minimize storage use by creating lightweight branches of your data, allowing for easy experimentation across different versions.
+    **Zero-Copy Branching**: Minimize storage use by creating lightweight branches of your data, allowing for easy experimentation across different versions.
         
-        **Easy Integration**: Seamlessly integrate with ML tools like MLFlow, linking experiments directly to the exact data versions used, making reproducibility straightforward.
+    **Easy Integration**: Seamlessly integrate with ML tools like MLFlow, linking experiments directly to the exact data versions used, making reproducibility straightforward.
     
     lakeFS enhances your ML workflow by ensuring that all versions of data are easily accessible, traceable, and reproducible.
 
