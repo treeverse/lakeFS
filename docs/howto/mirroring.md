@@ -32,33 +32,31 @@ Unlike conventional mirroring, data isn't simply copied between regions - lakeFS
 
 ## Uses cases
 
-### Disaster recovery
+### Disaster Recovery
 
 Typically, object stores provide a replication/batch copy API to allow for disaster recovery: as new objects are written, they are asynchronously copied to other geo locations. 
 
-In the case of regional failure, users can rely on the other geolocations which should contain relatively-up-to-date state.
+In the case of regional failure, users can rely on other geolocations which should contain relatively up-to-date states.
 
-The problem is reasoning about what managed to arrive by the time of disaster and what hasn't:
-* have all the necessary files for a given dataset arrived?
-* in cases there are dependencies between datasets, are all dependencies also up to date?
-* what is currently in-flight or haven't even started replicating yet?
+The problem is determining what objects arrived at the time of the disaster and what objects did not arrive. Some questions to consider while triaging a disaster:
 
-Reasoning about these is non-trivial, especially in the face of a regional disaster, however ensuring business continuity might require that we have these answers.
+* Have all the necessary files for a given dataset arrived?
+* In cases where there are dependencies between datasets, are all dependencies also up-to-date?
+* What is currently in-flight? What hasn't started replicating yet?
 
-Using lakeFS mirroring makes it much easier to answer: we are guaranteed that the latest commit that exists in the replica is in a consistent state and is fully usable, even if it isn't the absolute latest commit - it still reflects a known, consistent, point in time.
-
+In the event of a regional disaster, business continuity might require we have answers to these questions. The lakeFS approach to mirroring makes it easier to arrive at answers. The latest commit that exists in the replica will be a) in a consistent state and b) fully usable. In a situation where the replica doesn’t contain the absolute latest commit, the replica will still reflect a known, consistent, point-in-time.
 
 ### Data Locality
 
-For certain workloads, it might be cheaper to have data available in multiple regions: Expensive hardware such as GPUs might fluctuate in price, so we'd want to pick the region that currently offers the best pricing. The difference could easily offset to cost of the replicated data.
+For certain workloads, it might be cheaper to have data available in multiple regions. For example, expensive hardware such as GPUs might fluctuate in price, so we'd want to pick the region that currently offers the best pricing. The difference could easily offset the cost of the replicated data.
 
-The challenge is reproducibility - Say we have an ML training job that reads image files from a path in the object store. Which files existed at the time of training?
+The challenge is reproducibility. Say we have an ML training job that reads image files from a path in the object store. Which files existed at the time of the training?
 
-If data is constantly flowing between regions, this might be harder to answer than we think. And even if we know - how can we recreate that exact state if we want to run the process again (for example, to rebuild that model for troubleshooting).
+If data is constantly flowing between regions, this might be harder to answer than we think. And even if we know, how can we recreate that exact state if we want to run the process again (for example, rebuilding that model for troubleshooting)?
 
-Using consistent commits solves this problem - with lakeFS mirroring, it is guaranteed that a commit ID, regardless of location, will always contain the exact same data.
+Using consistent commits solves this problem. With lakeFS mirroring, it is guaranteed that a commit ID, regardless of location, will always contain the exact same data.
 
-We can train our model in region A, and a month later feed the same commit ID into another region - and get back the same results.
+Coming back to the ML training job example, we can train our model in region A, and a month later feed the same commit ID into another region, and get back the same results.
 
 
 ## Setting up mirroring
@@ -70,7 +68,7 @@ For AWS S3, please refer to the [AWS S3 replication documentation](https://docs.
 
 After setting the replication rule, new objects will be replicated to the destination bucket. 
 
-In order to replicate the existing objects, we'd need to manually copy them - however, we can use [S3 batch jobs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-batch-replication-batch.html) to do this.
+In order to replicate the existing objects, we need to manually copy them. However, we can use [S3 batch jobs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-batch-replication-batch.html) to do this.
 
 
 ### Creating a lakeFS user with a "replicator" policy
@@ -213,7 +211,7 @@ Deletions from garbage collection should be replicated from the source:
 
 ## RBAC
 
-These are the required RBAC permissions for working with the new cross-region replication feature:
+These are the required RBAC permissions for working with the new cross-region replication feature.
 
 Creating a Mirror:
 
