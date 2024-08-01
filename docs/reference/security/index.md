@@ -16,7 +16,7 @@ At lakeFS, we understand the critical nature of data security. Thousands of orga
 
 **Data Stays in Place**: The data you version control remains within your existing object storage. lakeFS creates metadata for your data without moving it. New data is stored in the bucket you designate within your object storage.
 
-**lakeFS Servers Stores only Metadata**: the lakeFS Server (also in the case of lakeFS Cloud) only stores the metadata used for version control operations (diff, merge). It does not store any of your actual data, and if configured correctly, doesn't even access it directly.
+**lakeFS Servers Stores only Metadata**: The lakeFS Server (also in the case of lakeFS Cloud) only stores the metadata used for version control operations (diff, merge). It does not store any of your actual data, and if configured correctly, doesn't even access it directly.
 
 **Minimal Permissions**: lakeFS requires minimal permissions to manage your data. We can even [version data we cannot directly access](https://lakefs.io/blog/pre-signed-urls/) by utilizing presigned URLs.
 
