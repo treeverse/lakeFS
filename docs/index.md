@@ -47,7 +47,7 @@ lakeFS is an open source project that supports managing data in AWS S3, Azure Bl
 For more details and a full list see [the integrations pages](./integrations/).
 
 <p class="center">
-    <img src="{{ site.baseurl }}/assets/what_is.png"/>
+    <img src="{{ site.baseurl }}/assets/img/lakeFSArchitecture.png"/>
 </p>
 
 {: .pb-5 }
