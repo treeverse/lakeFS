@@ -27,6 +27,8 @@ This functionality is currently in limited support and is a Read-Only file syste
 
 {% include toc.html %}
 
+<iframe width="420" height="315" src="https://www.youtube.com/embed/BgKuoa8LAaU"></iframe>
+
 ## Use Cases
 
 * **Simplified Data Loading**: With lakeFS Mount, there's no need to write custom data loaders or use special SDKs. You can use your existing tools to read files directly from the filesystem.
