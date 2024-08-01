@@ -16,7 +16,7 @@ At lakeFS, we understand the critical nature of data security. Thousands of orga
 
 **Data Stays in Place**: The data you version control remains within your existing object storage. lakeFS creates metadata for your data without moving it. New data is stored in the bucket you designate within your object storage.
 
-**lakeFS Servers Stores only Metadata**: The lakeFS Server (also in the case of lakeFS Cloud) only stores the metadata used for version control operations (diff, merge). It does not store any of your actual data.
+**lakeFS Servers Stores only Metadata**: The lakeFS Server (also in the case of lakeFS Cloud) only stores the metadata used for version control operations (i.e. diff, merge). It does not store any of your actual data.
 
 **Minimal Permissions**: lakeFS requires minimal permissions to manage your data. We can even [version data we cannot directly access](https://lakefs.io/blog/pre-signed-urls/) by utilizing presigned URLs.
 
@@ -29,6 +29,9 @@ Learn more about some of the featured that help keep lakeFS Secure:
 - [Single Sign On (SSO)]({% link reference/security/sso.md %})
 - [Short Lived Token (STS like)]({% link reference/security/sts-login.md %})
 - [Login to lakeFS with AWS IAM]({% link reference/security/external-principals-aws.md %})
+
+### SOC 2 Compliance ###
+lakeFS Cloud is SOC 2 compliant, demonstrating our commitment to stringent security standards.
 
 ### More questions? Contact us ###
 If you have additional questions regarding lakeFS Security, [talk to an expert](https://meetings.hubspot.com/iddo-avneri/lakefs-security-questions).
