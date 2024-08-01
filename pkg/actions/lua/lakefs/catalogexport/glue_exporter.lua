@@ -103,8 +103,8 @@ end
     - table_name(string): override default glue table name
     - debug(boolean)
     - export_base_uri(string): override the default prefix in S3 for symlink location i.e s3://other-bucket/path/
-    - create_db(string): {no, yes, if_not_exist}
-    - create_db_input(table): parameters for creating the database
+    - create_db_input(table): parameters for creating the database. If nil, then the DB must already exisst
+    - error_on_db_exists(boolean): should the export fail if we try to create the db but find it already exists. False by default
 ]]
 local function export_glue(glue, db, table_src_path, create_table_input, action_info, options)
     local opts = options or {}
@@ -129,11 +129,9 @@ local function export_glue(glue, db, table_src_path, create_table_input, action_
         error("table " .. descriptor.type .. " in path " .. table_src_path .. " not supported")
     end
 
-    local create_db = opts.create_db or "no"
-    if create_db == "yes" or create_db == "if_not_exist" then
+    if opts.create_db_input ~= nil then
         local json_db_input = json.marshal(opts.create_db_input)
-        local disallow_exists = create_db=="yes"
-        local dbopts = { error_on_already_exists = disallow_exists, create_db_input = json_db_input }
+        local dbopts = { error_on_already_exists = opts.error_on_db_exists, create_db_input = json_db_input }
         glue.create_database(db, dbopts)
     end
 
