@@ -20,7 +20,7 @@ aws s3 ls s3://<storage_namespace>/
 ```
 
 lakeFS stores the actual user data under the `data/` prefix. The `_lakefs/` prefix is used to store commit metadata which includes [range and meta-range](../understand/how/versioning-internals.md) files and internal lakeFS data.
-Since lakeFS manages immutable data, objects are not saved using their logical name. This means that when you upload a csv file called allstar_games_stats.csv to branch main, lakeFS will generate a random physical
+Since lakeFS manages immutable data, objects are not saved using their logical name - these might get overwritten, violating the immutability guarantee. This means that when you upload a csv file called `allstar_games_stats.csv` to branch main, lakeFS will generate a random physical
 address under the `data/` prefix and upload it to there.  
 Mapping from a path to an object changes as you upload, commit, and merge on lakeFS. When updating an object, lakeFS will create a new physical address for that version preserving the different version of that object.
 lakeFS will link between the objects logical address and physical address and store that relation under the given commit metadata (range and meta-range)
