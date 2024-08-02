@@ -22,6 +22,8 @@ relevant Go files.
 
 `lakectl` is available for Linux, macOS, and Windows. You can also [run it using Docker](#running-lakectl-from-docker).
 
+<iframe width="420" height="315" src="https://www.youtube.com/embed/8nO7RT411nA"></iframe>
+
 [Download lakectl](https://github.com/treeverse/lakeFS/releases){: .btn .btn-green target="_blank"}
 
 Or using [Homebrew](https://brew.sh/) for Linux/macOS:
