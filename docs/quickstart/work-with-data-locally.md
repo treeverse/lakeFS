@@ -24,6 +24,8 @@ lakeFS Mount is available (in preview) for [lakeFS Enterprise](../enterprise/ind
 You can try it out by [signing up for the preview](https://info.lakefs.io/thanks-lakefs-mounts)
 {: .note }
 
+<iframe width="420" height="315" src="https://www.youtube.com/embed/BgKuoa8LAaU"></iframe>
+
 ### Getting started with lakeFS Mount
 
 Prerequisites:
