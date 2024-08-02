@@ -37,5 +37,26 @@ With lakeFS Enterprise you’ll receive access to the security package containin
 1. [lakeFS Mount]({% link reference/mount.md %}) allows users to virtually mount a remote lakeFS repository onto a local directory. Once mounted, users can access the data as if it resides on their local filesystem, using any tool, library, or framework that reads from a local filesystem.
 2. [Transactional Mirroring]({% link howto/mirroring.md %}) - allows replicating lakeFS repositories into consistent read-only copies in remote locations.
 
+| Feature                                   | OSS       | Enterprise     |
+|------------------------------------------------|-----------|-----------|
+| **Format-agnostic data version control**       | ✅         | ✅         |
+| **Cloud-agnostic**                             | ✅         | ✅         |
+| **Zero Clone copy for isolated environment**   | ✅         | ✅         |
+| **Atomic Data Promotion (via merges)**         | ✅         | ✅         |
+| **Data stays in one place**                    | ✅         | ✅         |
+| **Configurable Garbage Collection**            | ✅         | ✅         |
+| **Data CI/CD using lakeFS hooks**              | ✅         | ✅         |
+| **Integrates with your data stack**            | ✅         | ✅         |
+| **[Role Based Access Control (RBAC)](https://docs.lakefs.io/reference/security/rbac.html)** |            | ✅         |
+| **[Single Sign On (SSO)](https://docs.lakefs.io/reference/security/sso.html)**                       |            | ✅         |
+| **[SCIM Support](https://docs.lakefs.io/howto/scim.html)**                               |            | ✅         |
+| **[IAM Roles](https://docs.lakefs.io/reference/security/external-principals-aws.html)**                                  |            | ✅         |
+| **[Mount Capability](https://docs.lakefs.io/reference/mount.html)**                           |            | ✅         |
+| **[Audit Logs](https://docs.lakefs.io/reference/auditing.html)**                                 |            | ✅         |
+| **[Transactional Mirroring (cross-region)](https://docs.lakefs.io/howto/mirroring.html)**     |            | ✅         |
+| **Support SLA**                                |            | ✅         |
+
+
+
 <br>
 You can learn more about the [lakeFS Enterprise architecture]({% link enterprise/architecture.md %}), or follow the examples in the [Quickstart guide]({% link enterprise/getstarted/quickstart.md %}).
