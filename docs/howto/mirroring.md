@@ -8,9 +8,6 @@ description: Mirroring allows replicating commits between lakeFS installations i
 {: .d-inline-block }
 lakeFS Cloud
 {: .label .label-green }
- {: .d-inline-block }
-Public Preview
-{: .label .label-green }
 
 {: .note}
 > Mirroring is only available for [lakeFS Cloud]({% link cloud/index.md %}).
