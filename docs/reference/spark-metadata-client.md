@@ -1,13 +1,13 @@
 ---
-title: Spark Client
-description: The lakeFS Spark client performs operations on lakeFS committed metadata stored in the object store. 
+title: Spark Metadata Client
+description: The lakeFS Spark client performs operations on lakeFS committed Metadata stored in the object store. 
 parent: Reference
 ---
 
 
 # lakeFS Spark Metadata Client
 
-Utilize the power of Spark to interact with the metadata on lakeFS. Possible use cases include:
+Utilize the power of Spark to interact with the Metadata on lakeFS. Possible use cases include:
 
 * Creating a DataFrame for listing the objects in a specific commit or branch.
 * Computing changes between two commits.
@@ -16,10 +16,10 @@ Utilize the power of Spark to interact with the metadata on lakeFS. Possible use
 
 ## Getting Started
 
-Please note that Spark 2 is no longer supported with the lakeFS metadata client.
+Please note that Spark 2 is no longer supported with the lakeFS Metadata client.
 {: .note }
 
-The Spark metadata client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but
+The Spark Metadata client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but
 can work for other Spark versions and higher Hadoop versions.
 
 <div class="tabs">
@@ -48,12 +48,12 @@ Include this assembled jar (an "Überjar") from S3, from
 
 ## Configuration
 
-1. To read metadata from lakeFS, the client should be configured with your lakeFS endpoint and credentials, using the following Hadoop configurations:
+1. To read Metadata from lakeFS, the client should be configured with your lakeFS endpoint and credentials, using the following Hadoop configurations:
 
    | Configuration                        | Description                                                  |
    |--------------------------------------|--------------------------------------------------------------|
    | `spark.hadoop.lakefs.api.url`        | lakeFS API endpoint, e.g: `http://lakefs.example.com/api/v1` |
-   | `spark.hadoop.lakefs.api.access_key` | The access key to use for fetching metadata from lakeFS      |
+   | `spark.hadoop.lakefs.api.access_key` | The access key to use for fetching Metadata from lakeFS      |
    | `spark.hadoop.lakefs.api.secret_key` | Corresponding lakeFS secret key                              |
 
 1. The client will also directly interact with your storage using Hadoop FileSystem.
@@ -102,7 +102,7 @@ Include this assembled jar (an "Überjar") from S3, from
     */
    ```
 
-1. Run SQL queries on your metadata:
+1. Run SQL queries on your Metadata:
 
    ```scala
    df.createOrReplaceTempView("files")
@@ -117,7 +117,7 @@ Include this assembled jar (an "Überjar") from S3, from
     */
    ```
 
-1. Search by user metadata:
+1. Search by user Metadata:
 
    ```scala
    import io.treeverse.clients.LakeFSContext
@@ -127,12 +127,12 @@ Include this assembled jar (an "Überjar") from S3, from
 
    val key = "SomeKey"
    val searchedValue = "val3"
-   df.select("key", "user_metadata")
+   df.select("key", "user_Metadata")
    	.filter(_.getMap[String, String](1).toMap.get(s"X-Amz-Meta-${key}").getOrElse("") == searchedValue)
    	.show()
    /* output example:
       +---------+-----------------------------------------------------+
-      |key      |user_metadata                                        |
+      |key      |user_Metadata                                        |
       +---------+-----------------------------------------------------+
       |file1.txt|{X-Amz-Meta-SomeKey -> val3, X-Amz-Meta-Tag -> blue} |
       |file8.txt|{X-Amz-Meta-SomeKey -> val3, X-Amz-Meta-Tag -> green}|
