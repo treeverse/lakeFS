@@ -10,6 +10,8 @@ redirect_from:
 # Authenticate to lakeFS with AWS IAM Roles
 
 {: .d-inline-block }
+<a style="color: white;" href="#iam-roles-for-lakefs-cloud">lakeFS Cloud</a>
+{: .label .label-green }
 <a style="color: white;" href="#sso-for-lakefs-enterprise">lakeFS Enterprise</a>
 {: .label .label-purple }
 
