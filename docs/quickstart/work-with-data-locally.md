@@ -75,6 +75,8 @@ container and edit an image dataset used for ML model development. Unlike lakeFS
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/afgQnmesLZM"></iframe>
 
+Reference Guide: [lakeFS lakectl local for machine learning](https://lakefs.io/blog/guide-lakectl-local-machine-learning/) 
+
 ### Cloning a Subset of lakeFS Data into a Local Directory
 {: .no_toc }
 
