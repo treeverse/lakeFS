@@ -6,11 +6,11 @@ description: Understand the data structure in lakeFS
 
 # How Does lakeFS Store Your Data
 lakeFS being a data versioning engine, requires the ability to save multiple versions of the same object. As a result, lakeFS stores objects in the object store
-in an unconventional way.
+in way that allows it to version the data in an efficient way.
 This might cause confusion when trying to understand where our data is actually being stored. This page will try to shed a light on this subject.
 
 ## lakeFS Repository Namespace Structure
-lakeFS stores repository data and metadata under the repository's namespace.
+lakeFS stores repository data and metadata under the repository's namespace. The lakeFS repository namespace is a dedicated path under the object store used by lakeFS to manage a repository.
 Listing a repository storage namespace in the object store will provide the following output:
 
 ```shell
@@ -26,7 +26,8 @@ Mapping from a path to an object changes as you upload, commit, and merge on lak
 lakeFS will link between the object's logical address and its physical address - and store that relation under the given commit metadata (range and meta-range)
 
 lakeFS uses its object store immutably i.e. anything uploaded is never changed or overridden (Refer to [GC](../howto/garbage-collection/index.md) for explanation on how and when lakeFS actually deletes data from the storage).  
-To find data, lakeFS uses the logical address e.g. `lakefs://my-repo/main/allstar_games_stats.csv`, indicating a repository and branch. Graveler, the objects and versioning component, searches in several places in the following order:
+To find data, lakeFS uses the logical address e.g. `lakefs://my-repo/main/allstar_games_stats.csv`, indicating a repository and branch.
+Using the [KV metadata store](../understand/how/versioning-internals.md#representing-references-and-uncommitted-metadata), lakeFS will first try to find any uncommitted version of the object in the given branch. If no uncommitted version exist, it will take the latest committed version from the branch head (which is the top commit of the branch)
 
 1. In the KV metadata store under the current staging token of branch main. This will return any uncommitted changes for the given object
 2. Read it from the branch's head meta-range and range (which are saved under the `_lakefs` prefix in the object store. This will return the metadata for the object as it was stored in the latest commit for branch main.  
@@ -61,4 +62,4 @@ Content-Type: application/octet-stream
 
 This can be done using any lakeFS reference type.
 
-Read more about how lakeFS stores your in this [great blog post](https://lakefs.io/blog/where-is-my-data/)
+To learn more about the internals of lakeFS and how it stores your data, follow [this blog post](https://lakefs.io/blog/where-is-my-data/)
