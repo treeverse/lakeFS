@@ -22,6 +22,8 @@ that exports Delta Lake tables from lakeFS, and subsequently registers them in U
 {: .note}
 > Currently, Unity Catalog export feature exclusively supports AWS S3 and Azure ADLS Gen2 as the underlying storage solution. It's planned to [support other cloud providers soon](https://github.com/treeverse/lakeFS/issues/7199).
 
+Reference Guide: [lakeFS + Unity Catalog Integration: Step-by-Step Tutorial](https://lakefs.io/blog/lakefs-unity-catalog-integration-tutorial/) 
+
 ## Prerequisites
 
 Before starting, ensure you have the following:
