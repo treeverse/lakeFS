@@ -165,7 +165,7 @@ lakeFS Mount supports Linux and MacOS. Windows support is on the roadmap.
 
 ### How can I control access to my data when using lakeFS Mount?
 
-You can use lakeFS’s existing [Role-Based Access Control mechanism](../reference/security/rbac.md), which includes repository and path-level policies. lakeFS Mount translates filesystem operations into lakeFS API operations and authorizes them based on these policies.
+You can use lakeFS’s existing [Role-Based Access Control mechanism](../security/rbac.md), which includes repository and path-level policies. lakeFS Mount translates filesystem operations into lakeFS API operations and authorizes them based on these policies.
 
 ### Does data pass through the lakeFS server when using lakeFS Mount?
 

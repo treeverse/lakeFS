@@ -1,20 +1,21 @@
 ---
 title: Login to lakeFS with AWS IAM Roles
 description: This section covers how to authenticate to lakeFS using AWS IAM.
-grand_parent: Reference
 parent: Security
 redirect_from:
   - /reference/external-principals-aws.html
 ---
 
 # Authenticate to lakeFS with AWS IAM Roles
-
 {: .d-inline-block }
-<a style="color: white;" href="#sso-for-lakefs-enterprise">lakeFS Enterprise</a>
+lakeFS Cloud
+{: .label .label-green }
+
+lakeFS Enterprise
 {: .label .label-purple }
 
 {: .note}
-> External principals API is available for lakeFS Enterprise. If you're using the open-source version you can check the [pluggable APIs](https://docs.lakefs.io/reference/security/rbac.html#pluggable-authentication-and-authorization).
+> External principals API is available for lakeFS Enterprise. If you're using the open-source version you can check the [pluggable APIs](https://docs.lakefs.io/security/rbac.html#pluggable-authentication-and-authorization).
 
 {% include toc.html %}
 
