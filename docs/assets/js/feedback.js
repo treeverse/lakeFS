@@ -17,6 +17,20 @@ $(() => {
         })
         setTimeout(close, 10000);
     }
-    $(".page-helpful-btn").on("click", (e) => showThankYou(e.target))
+
+    const sendFeedbackEvent = (elm) => {
+        if (window.dataLayer === undefined) return; // GA4 is not loaded on this page
+        const isHelpful = elm.id.substr("page-helpful-".length) === "yes";
+        window.dataLayer.push("event", "click_docs_feedback", {
+            "page_title": window.document.title,
+            "reaction": isHelpful ? "thumbs_up" : "thumbs_down",
+        });
+    }
+
+    $(".page-helpful-btn").on("click", (e) => {
+        const elm = e.target;
+        sendFeedbackEvent(elm);
+        showThankYou(elm);
+    });
     $('#is-helpful-ty').on("click", (e) => $(e.target).prop("tagName") === 'A')
 })
