@@ -13,6 +13,9 @@ redirect_from:
 lakeFS Cloud
 {: .label .label-green }
 
+lakeFS Enterprise
+{: .label .label-purple }
+
 {: .note}
 > Auditing is only available for [lakeFS Cloud]({% link cloud/index.md %}).
 
