@@ -30,7 +30,7 @@ To find data, lakeFS uses the logical address e.g. `lakefs://my-repo/main/allsta
 
 1. In the KV metadata store under the current staging token of branch main. This will return any uncommitted changes for the given object
 2. Read it from the branch's head meta-range and range (which are saved under the `_lakefs` prefix in the object store. This will return the metadata for the object as it was stored in the latest commit for branch main.  
-The physical path returned will be in the form of `s3://<storage_namespace>/data/gp0n1l7d77pn0cke6jjg/cg6p50nd77pn0cke6jk0. The same object in lakeFS might have several physical addresses, one for each version where it exists.
+The physical path returned will be in the form of `s3://<storage_namespace>/data/gp0n1l7d77pn0cke6jjg/cg6p50nd77pn0cke6jk0`. The same object in lakeFS might have several physical addresses, one for each version where it exists.
 
 ## Finding an object's location on your object store
 One way to determine the physical location of an object is using the `lakectl fs stat` command:
