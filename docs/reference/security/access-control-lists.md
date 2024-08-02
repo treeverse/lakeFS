@@ -11,7 +11,7 @@ redirect_from:
 # Access Control Lists (ACLs)
 
 {: .note .warning}
-> ACLS are deprecated and will be removed in future versions of lakeFS.
+> ACLS are [moving out of core lakeFS](https://lakefs.io/blog/why-moving-acls-out-of-core-lakefs/).
 > 
 > For a more robust authorization solution, please see [Role-Based Access Control](./rbac.html), available in [lakeFS Cloud]({% link cloud/index.md %}) and [lakeFS Enterprise]({% link enterprise/index.md %}). 
 
