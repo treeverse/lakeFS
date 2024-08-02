@@ -1,5 +1,5 @@
 ---
-title: Access Control Lists (ACLs)
+title: Access Control Lists (ACLs) -Deprecated-
 description: Access control lists (ACLs) are one of the resource-based options that you can use to manage access to your repositories and objects. There are limits to managing permissions using ACLs.
 grand_parent: Reference
 parent: Security
@@ -11,7 +11,7 @@ redirect_from:
 # Access Control Lists (ACLs)
 
 {: .note .warning}
-> ACLS are deprecated and will be removed in future versions of lakeFS.
+> ACLS are [moving out of core lakeFS](https://lakefs.io/blog/why-moving-acls-out-of-core-lakefs/).
 > 
 > For a more robust authorization solution, please see [Role-Based Access Control](./rbac.html), available in [lakeFS Cloud]({% link cloud/index.md %}) and [lakeFS Enterprise]({% link enterprise/index.md %}). 
 
