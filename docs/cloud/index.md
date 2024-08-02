@@ -49,6 +49,31 @@ Using lakeFS cloud is not just a secure and managed way of using lakeFS OSS; it 
 1. [lakeFS Cross Cloud](https://info.lakefs.io/cross-cloud) - Allows central management of repositories that span across multiple cloud providers including Azure, AWS, GCP and on-prem environments.
 1. [Transactional Mirroring]({% link howto/mirroring.md %}) - allows replicating lakeFS repositories into consistent read-only copies in remote locations.
 
+
+| Feature                                   | OSS       | Cloud     |
+|------------------------------------------------|-----------|-----------|
+| **Format-agnostic data version control**       | ✅         | ✅         |
+| **Cloud-agnostic**                             | ✅         | ✅         |
+| **Zero Clone copy for isolated environment**   | ✅         | ✅         |
+| **Atomic Data Promotion (via merges)**         | ✅         | ✅         |
+| **Data stays in one place**                    | ✅         | ✅         |
+| **Configurable Garbage Collection**            | ✅         | ✅         |
+| **Data CI/CD using lakeFS hooks**              | ✅         | ✅         |
+| **Integrates with your data stack**            | ✅         | ✅         |
+| **[Role Based Access Control (RBAC)](https://docs.lakefs.io/reference/security/rbac.html)** |            | ✅         |
+| **[Single Sign On (SSO)](https://docs.lakefs.io/reference/security/sso.html)**                       |            | ✅         |
+| **[SCIM Support](https://docs.lakefs.io/howto/scim.html)**                               |            | ✅         |
+| **[IAM Roles](https://docs.lakefs.io/reference/security/external-principals-aws.html)**                                  |            | ✅         |
+| **[Mount Capability](https://docs.lakefs.io/reference/mount.html)**                           |            | ✅         |
+| **[Audit Logs](https://docs.lakefs.io/reference/auditing.html)**                                 |            | ✅         |
+| **[Transactional Mirroring (cross-region)](https://docs.lakefs.io/howto/mirroring.html)**     |            | ✅         |
+| **Managed Service (auto updates, scaling)**    |            | ✅         |
+| **[Managed Garbage Collection](https://docs.lakefs.io/howto/garbage-collection/managed-gc.html)**                 |            | ✅         |
+| **[SOC2 Compliant](https://docs.lakefs.io/reference/security/)**                             |            | ✅         |
+| **Support SLA**                                |            | ✅         |
+
+
+
 ## How lakeFS Cloud interacts with your infrastructure
 
 Treeverse hosts and manages a dedicated lakeFS instance that interfaces with data held in your object store, such as S3.
