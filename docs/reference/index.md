@@ -28,13 +28,13 @@ nav_order: 20
 
 ## Security
 
-- [Authentication]({% link reference/security/authentication.md %})
-- [Remote Authenticator]({% link reference/security/remote-authenticator.md %})
-- [Role-Based Access Control (RBAC)]({% link reference/security/rbac.md %})
-- [Presigned URL]({% link reference/security/presigned-url.md %})
-- [Access Control Lists (ACLs)]({% link reference/security/access-control-lists.md %})
-- [Single Sign On (SSO)]({% link reference/security/sso.md %})
-- [Login to lakeFS with AWS IAM]({% link reference/security/external-principals-aws.md %})
+- [Authentication]({% link security/authentication.md %})
+- [Remote Authenticator]({% link security/remote-authenticator.md %})
+- [Role-Based Access Control (RBAC)]({% link security/rbac.md %})
+- [Presigned URL]({% link security/presigned-url.md %})
+- [Access Control Lists (ACLs)]({% link security/access-control-lists.md %})
+- [Single Sign On (SSO)]({% link security/sso.md %})
+- [Login to lakeFS with AWS IAM]({% link security/external-principals-aws.md %})
   
 ## Other Reference Documentation
 

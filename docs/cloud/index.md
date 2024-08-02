@@ -30,12 +30,12 @@ The main advantages of using lakeFS Cloud, the lakeFS managed service are:
 ## Which security features does lakeFS Cloud provide?
 
 1. lakeFS Cloud is [SOC2 Type II](https://www.itgovernance.co.uk/soc-reporting) compliant. [Contact us](https://lakefs.io/contact-sales/) to get the certification.
-1. lakeFS Cloud version controls your data, **without accessing it**, using pre-signed URLs! Read more [here]({% link reference/security/presigned-url.md %}).
-1. When using lakeFS Cloud, you are provided with a rich [Role-Based Access Control]({% link reference/security/rbac.md %}) functionality that allows for fine-grained control by associating permissions with users and groups, granting them specific actions on specific resources. This ensures data security and compliance within an organization.
-1. To easily manage users and groups, lakeFS Cloud provides [SSO]({% link reference/security/sso.md %}) integration (including support for SAML, OIDC, AD FS, Okta, and Azure AD), supporting existing credentials from a trusted provider, eliminating separate logins.
+1. lakeFS Cloud version controls your data, **without accessing it**, using pre-signed URLs! Read more [here]({% link security/presigned-url.md %}).
+1. When using lakeFS Cloud, you are provided with a rich [Role-Based Access Control]({% link security/rbac.md %}) functionality that allows for fine-grained control by associating permissions with users and groups, granting them specific actions on specific resources. This ensures data security and compliance within an organization.
+1. To easily manage users and groups, lakeFS Cloud provides [SSO]({% link security/sso.md %}) integration (including support for SAML, OIDC, AD FS, Okta, and Azure AD), supporting existing credentials from a trusted provider, eliminating separate logins.
 1. lakeFS Cloud supports [SCIM]({% link howto/scim.md %}) for automatically provisioning and deprovisioning users and group memberships to allow organizations to maintain a single source of truth for their user database.
-1. [STS Auth]({% link reference/security/sts-login.md %}) offers temporary, secure logins using an Identity Provider, simplifying user access and enhancing security.
-1. [Authentication with AWS IAM Roles]({% link reference/security/external-principals-aws.md %}) allows authentication using AWS IAM roles instead of lakeFS credentials, removing the need to maintain static credentials for lakeFS Enterprise users running on AWS.
+1. [STS Auth]({% link security/sts-login.md %}) offers temporary, secure logins using an Identity Provider, simplifying user access and enhancing security.
+1. [Authentication with AWS IAM Roles]({% link security/external-principals-aws.md %}) allows authentication using AWS IAM roles instead of lakeFS credentials, removing the need to maintain static credentials for lakeFS Enterprise users running on AWS.
 1. [Auditing]({% link reference/auditing.md %}) provides a detailed action log of events happening within lakeFS, including who performed which action, on which resource - and when.
 1. [Private-Link]({% link howto/private-link.md %}) support to ensure network security by only allowing access to your lakeFS Cloud installation from your cloud accounts
 
@@ -60,16 +60,16 @@ Using lakeFS cloud is not just a secure and managed way of using lakeFS OSS; it 
 | **Configurable Garbage Collection**            | ✅         | ✅         |
 | **Data CI/CD using lakeFS hooks**              | ✅         | ✅         |
 | **Integrates with your data stack**            | ✅         | ✅         |
-| **[Role Based Access Control (RBAC)](https://docs.lakefs.io/reference/security/rbac.html)** |            | ✅         |
-| **[Single Sign On (SSO)](https://docs.lakefs.io/reference/security/sso.html)**                       |            | ✅         |
+| **[Role Based Access Control (RBAC)](https://docs.lakefs.io/security/rbac.html)** |            | ✅         |
+| **[Single Sign On (SSO)](https://docs.lakefs.io/security/sso.html)**                       |            | ✅         |
 | **[SCIM Support](https://docs.lakefs.io/howto/scim.html)**                               |            | ✅         |
-| **[IAM Roles](https://docs.lakefs.io/reference/security/external-principals-aws.html)**                                  |            | ✅         |
+| **[IAM Roles](https://docs.lakefs.io/security/external-principals-aws.html)**                                  |            | ✅         |
 | **[Mount Capability](https://docs.lakefs.io/reference/mount.html)**                           |            | ✅         |
 | **[Audit Logs](https://docs.lakefs.io/reference/auditing.html)**                                 |            | ✅         |
 | **[Transactional Mirroring (cross-region)](https://docs.lakefs.io/howto/mirroring.html)**     |            | ✅         |
 | **Managed Service (auto updates, scaling)**    |            | ✅         |
 | **[Managed Garbage Collection](https://docs.lakefs.io/howto/garbage-collection/managed-gc.html)**                 |            | ✅         |
-| **[SOC2 Compliant](https://docs.lakefs.io/reference/security/)**                             |            | ✅         |
+| **[SOC2 Compliant](https://docs.lakefs.io/security/)**                             |            | ✅         |
 | **Support SLA**                                |            | ✅         |
 
 

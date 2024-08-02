@@ -73,7 +73,7 @@ In order to replicate the existing objects, we'd need to manually copy them - ho
 ### Creating a lakeFS user with a "replicator" policy
 
 On our source lakeFS installation, under **Administration** create a new user that will be used by the replication subsystem.
-The user should have the following [RBAC policy](../reference/security/rbac.html) attached:
+The user should have the following [RBAC policy](../security/rbac.html) attached:
 
 ```json
 {

@@ -125,7 +125,7 @@ This reference uses `.` to denote the nesting of values.
     + `auth.cache.ttl` `(duration : 20s)` - Cache items time to live expiry.
     + `auth.cache.jitter` `(duration : 3s)` - Cache items time to live jitter.
   + `auth.external` - Configuration section for the external authentication methods
-    + `auth.external.aws_auth` - Configuration section for authenticating to lakeFS using AWS presign get-caller-identity request: [External Principals AWS Auth]({% link reference/security/external-principals-aws.md %})
+    + `auth.external.aws_auth` - Configuration section for authenticating to lakeFS using AWS presign get-caller-identity request: [External Principals AWS Auth]({% link security/external-principals-aws.md %})
       + `auth.external.aws_auth.enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
       + `auth.external.aws_auth.get_caller_identity_max_age` `(duration : 15m)` - The maximum age in seconds for the GetCallerIdentity request to be valid, the max is 15 minutes enforced by AWS, smaller TTL can be set.
       + `auth.authentication_api.external_principals_enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.

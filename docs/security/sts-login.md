@@ -1,33 +1,30 @@
 ---
 title: Short-lived token (STS like) Authentication for lakeFS
 description: Authenticate with lakeFS using Secure Token Service (STS) by leveraging a remote authenticator. This feature enables integration with Identity Providers (IdPs) for secure and efficient user authentication.
-grand_parent: Reference
 parent: Security
 redirect_from:
   - /reference/remote-authenticator.html
 ---
 
 # Short-lived token (STS like)
-
 {: .d-inline-block }
-<a style="color: white;" href="#sso-for-lakefs-cloud">lakeFS Cloud</a>
+lakeFS Cloud
 {: .label .label-green }
 
-{: .d-inline-block }
-<a style="color: white;" href="#sso-for-lakefs-enterprise">lakeFS Enterprise</a>
+lakeFS Enterprise
 {: .label .label-purple }
 
 {: .note}
 > STS Login is available in lakeFS Cloud and lakeFS Enterprise. currently only tested on lakeFS Enterprise.
 
 Secure Token Service (STS) authentication in lakeFS enables users to authenticate to lakeFS using temporary credentials obtained from an Identity Provider (IdP) via the OpenID Connect (OIDC) Authentication workflow.
-This document outlines the process of setting up the STS authentication flow and using the temporary credentials to interact with lakeFS through the [high-level Python SDK](../../integrations/python.md).
+This document outlines the process of setting up the STS authentication flow and using the temporary credentials to interact with lakeFS through the [high-level Python SDK](../integrations/python.md).
 
 
 
 ## Login
 
-Initiate a client session with temporary credentials using the [high-level Python SDK](../../integrations/python.md):
+Initiate a client session with temporary credentials using the [high-level Python SDK](../integrations/python.md):
 
 ```python
 import lakefs
