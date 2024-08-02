@@ -1,7 +1,6 @@
 ---
 title: Authentication 
 description: This section covers Authentication of your lakeFS server.
-grand_parent: Reference
 parent: Security
 redirect_from:
   - /reference/authentication.html
@@ -97,7 +96,7 @@ The friendly name stored in KV is updated with each successful login, if the inc
 
 ## User permissions
 
-Authorization is managed via [lakeFS groups and policies]({% link reference/security/rbac.md %}}).
+Authorization is managed via [lakeFS groups and policies]({% link security/rbac.md %}}).
 
 By default, an externally managed user is assigned to the lakeFS groups configured in the _default_initial_groups_ property above.
 For a user to be assigned to other groups, add the _initial_groups_ claim to their **ID token** claims. The claim should contain a

@@ -391,4 +391,4 @@ lakeFS can authenticate with your AWS account using an AWS user, using an access
 [understand-repository]:  {% link understand/model.md %}#repository
 [integration-hadoopfs]:  {% link integrations/spark.md %}#lakefs-hadoop-filesystem
 [understand-commits]:  {% link understand/how/versioning-internals.md %}#constructing-a-consistent-view-of-the-keyspace-ie-a-commit
-[presigned-url]:  {% link reference/security/presigned-url.md %}#
+[presigned-url]:  {% link security/presigned-url.md %}#

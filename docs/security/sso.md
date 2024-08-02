@@ -1,7 +1,6 @@
 ---
 title: Single Sign On (SSO)
 description: How to configure Single Sign On (SSO) for lakeFS Cloud and lakeFS Enterprise.
-grand_parent: Reference
 parent: Security
 redirect_from:
   - /cloud/sso.html
@@ -9,7 +8,6 @@ redirect_from:
 ---
 
 # Single Sign On (SSO)
-
 {: .d-inline-block }
 <a style="color: white;" href="#sso-for-lakefs-cloud">lakeFS Cloud</a>
 {: .label .label-green }
@@ -19,7 +17,7 @@ redirect_from:
 {: .label .label-purple }
 
 {: .note}
-> SSO is available for lakeFS Cloud and lakeFS Enterprise. If you're using the open-source version of lakeFS you can read more about the [authentication options available]({% link reference/security/authentication.md %}). 
+> SSO is available for lakeFS Cloud and lakeFS Enterprise. If you're using the open-source version of lakeFS you can read more about the [authentication options available]({% link security/authentication.md %}). 
 
 ## SSO for lakeFS Cloud
 
@@ -346,4 +344,4 @@ Notes:
 * Update the `ingress` configuration with other optional fields if used
 * Fluffy docker image: replace the `fluffy.image.privateRegistry.secretToken` with real token to dockerhub for the fluffy docker image.
 
-[rbac-preconfigured]:  {% link reference/security/rbac.md %}#preconfigured-groups
+[rbac-preconfigured]:  {% link security/rbac.md %}#preconfigured-groups
