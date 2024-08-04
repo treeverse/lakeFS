@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
 	"github.com/Shopify/go-lua"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/glue"
 	"github.com/aws/aws-sdk-go-v2/service/glue/types"
+	"github.com/mitchellh/mapstructure"
 	"github.com/treeverse/lakefs/pkg/actions/lua/util"
 )
 
@@ -225,47 +227,48 @@ func getTable(c *GlueClient) lua.Function {
 	}
 }
 
+type glueCreateDatabaseOpts struct {
+	CreateDBInput        *glue.CreateDatabaseInput `json:"create_db_input" mapstructure:"create_db_input"`
+	ErrorOnAlreadyExists bool                      `json:"error_on_already_exists" mapstructure:"error_on_already_exists"`
+}
+
 func createDatabase(c *GlueClient) lua.Function {
 	return func(l *lua.State) int {
 		client := c.client()
-		database := aws.String(lua.CheckString(l, 1))
+		database := lua.CheckString(l, 1)
 
-		var createDBInput *glue.CreateDatabaseInput
-		errorOnAlreadyExists := true
+		createDBOpts := &glueCreateDatabaseOpts{
+			CreateDBInput: &glue.CreateDatabaseInput{
+				DatabaseInput: &types.DatabaseInput{
+					Name: aws.String(database),
+				},
+			},
+			ErrorOnAlreadyExists: true,
+		}
+		// decode opts if provided and override defaults
 		if !l.IsNoneOrNil(2) {
-			lua.CheckType(l, 2, lua.TypeTable)
-			l.Field(2, "error_on_already_exists")
-			l.Field(2, "create_db_input")
-
-			// get flag
-			if !l.IsNil(-2) {
-				errorOnAlreadyExists = l.ToBoolean(-2)
+			var t interface{}
+			t, err := util.PullTable(l, 2)
+			if err != nil {
+				lua.Errorf(l, "PullTable: %s", err.Error())
+				panic("unreachable")
 			}
-
-			// get dbInput
-			if !l.IsNil(-1) {
-				createDBInputJSON := lua.CheckString(l, -1)
-
-				err := json.Unmarshal([]byte(createDBInputJSON), &createDBInput)
-				if err != nil {
-					lua.Errorf(l, "%s", err.Error())
-					panic("unreachable")
-				}
+			err = mapstructure.Decode(t, createDBOpts)
+			if err != nil {
+				lua.Errorf(l, "DecodeTable: %s", err.Error())
+				panic("unreachable")
 			}
 		}
 
-		if createDBInput == nil {
-			createDBInput = &glue.CreateDatabaseInput{}
+		if *createDBOpts.CreateDBInput.DatabaseInput.Name != database {
+			lua.Errorf(l, "database name in input (%s) doesn't match database name parameter (%s)", *createDBOpts.CreateDBInput.DatabaseInput.Name, database)
+			panic("unreachable")
 		}
-		if createDBInput.DatabaseInput == nil {
-			createDBInput.DatabaseInput = &types.DatabaseInput{}
-		}
-		createDBInput.DatabaseInput.Name = database
 
 		// AWS API call
-		_, err := client.CreateDatabase(c.ctx, createDBInput)
+		_, err := client.CreateDatabase(c.ctx, createDBOpts.CreateDBInput)
 		if err != nil {
-			if !errorOnAlreadyExists && isAlreadyExistsErr(err) {
+			if !createDBOpts.ErrorOnAlreadyExists && isAlreadyExistsErr(err) {
 				return 0
 			}
 			lua.Errorf(l, "%s", err.Error())

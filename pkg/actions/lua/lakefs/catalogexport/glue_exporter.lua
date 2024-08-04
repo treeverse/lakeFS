@@ -130,8 +130,7 @@ local function export_glue(glue, db, table_src_path, create_table_input, action_
     end
 
     if opts.create_db_input ~= nil then
-        local json_db_input = json.marshal(opts.create_db_input)
-        local dbopts = { error_on_already_exists = opts.error_on_db_exists, create_db_input = json_db_input }
+        local dbopts = { error_on_already_exists = opts.error_on_db_exists, create_db_input = opts.create_db_input }
         glue.create_database(db, dbopts)
     end
 
