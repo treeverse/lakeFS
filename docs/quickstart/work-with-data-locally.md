@@ -24,6 +24,8 @@ lakeFS Mount is available (in preview) for [lakeFS Enterprise](../enterprise/ind
 You can try it out by [signing up for the preview](https://info.lakefs.io/thanks-lakefs-mounts)
 {: .note }
 
+<iframe width="420" height="315" src="https://www.youtube.com/embed/BgKuoa8LAaU"></iframe>
+
 ### Getting started with lakeFS Mount
 
 Prerequisites:
@@ -71,6 +73,9 @@ Which will unmount the path and terminate the local mount-server.
 Alternatively, we can use [lakectl local](../howto/local-checkouts.md#sync-a-local-directory-with-lakefs) to bring a subset of our lakeFS data to a local directory within the lakeFS
 container and edit an image dataset used for ML model development. Unlike lakeFS Mount, using `lakectl local` requires copying data to/from lakeFS and your local machine.
 
+<iframe width="420" height="315" src="https://www.youtube.com/embed/afgQnmesLZM"></iframe>
+
+Reference Guide: [lakeFS lakectl local for machine learning](https://lakefs.io/blog/guide-lakectl-local-machine-learning/) 
 
 ### Cloning a Subset of lakeFS Data into a Local Directory
 {: .no_toc }

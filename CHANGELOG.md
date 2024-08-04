@@ -1,5 +1,10 @@
 # Changelog
 
+# v1.30.0
+
+:new: What's new:
+- KV Scan optimization - paginate with exponential jumps (#8002)
+
 # v1.29.0
 
 :bug: Bugs fixed:

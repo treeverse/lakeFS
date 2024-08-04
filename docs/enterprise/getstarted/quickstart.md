@@ -28,7 +28,7 @@ the following containers:
 * Jupyter notebooks setup: Pre-populated with [notebooks](https://github.com/treeverse/lakeFS-samples/tree/main/00_notebooks) that demonstrate lakeFS Enterprise' capabilities
 * Apache Spark: this is useful for interacting with data you'll manage with lakeFS
 
-Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/rbac-demo.ipynb) notebook to see lakeFS Enterprise [Role-Based Access Control]({% link reference/security/access-control-lists.md %}) capabilities in action.
+Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/rbac-demo.ipynb) notebook to see lakeFS Enterprise [Role-Based Access Control]({% link security/access-control-lists.md %}) capabilities in action.
 
 ## Docker Quickstart
 

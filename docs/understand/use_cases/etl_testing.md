@@ -206,6 +206,7 @@ You can safely continue working with the data from main which is unharmed due to
 ## Further Reading
 
 * Case Study: [How Enigma use lakeFS for isolated development and staging environments](https://lakefs.io/blog/improving-our-research-velocity-with-lakefs/)
+* Tutorial: [ETL Testing Tutorial with lakeFS: Step-by-Step Guide](https://lakefs.io/blog/etl-testing-tutorial/)
 * [ETL Testing: A Practical Guide](https://lakefs.io/blog/etl-testing/)
 * [Top 5 ETL Testing Challenges - Solved!](https://lakefs.io/wp-content/uploads/2023/03/Top-5-ETL-Testing-Challenges-Solved.pdf)
 

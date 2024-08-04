@@ -47,7 +47,7 @@ lakeFS is an open source project that supports managing data in AWS S3, Azure Bl
 For more details and a full list see [the integrations pages](./integrations/).
 
 <p class="center">
-    <img src="{{ site.baseurl }}/assets/what_is.png"/>
+    <img src="{{ site.baseurl }}/assets/img/lakeFSArchitecture.png"/>
 </p>
 
 {: .pb-5 }
@@ -122,9 +122,15 @@ Being able to look at data as it was at a given point is particularly useful in 
 
 1. Reproducibility of ML experiments
 
-    ML experimentation is usually an iterative process, and being able to reproduce a specific iteration is important. 
+    ML experimentation is iterative, requiring the ability to reproduce specific results. With lakeFS, you can version all aspects of an ML experiment, including the data. This enables:
     
-    With lakeFS you can version all components of an ML experiment including its data, as well as make use of zero-copy branching to minimise the footprint of versions of the data
+    **Data Lineage**: Track the transformation of data from raw datasets to the final version used in experiments, ensuring transparency and traceability.
+    
+    **Zero-Copy Branching**: Minimize storage use by creating lightweight branches of your data, allowing for easy experimentation across different versions.
+        
+    **Easy Integration**: Seamlessly integrate with ML tools like MLFlow, linking experiments directly to the exact data versions used, making reproducibility straightforward.
+    
+    lakeFS enhances your ML workflow by ensuring that all versions of data are easily accessible, traceable, and reproducible.
 
 2. Troubleshooting production problems
 
@@ -138,35 +144,11 @@ Being able to look at data as it was at a given point is particularly useful in 
 
 ### Rollback of Data Changes and Recovery from Data Errors
 
-Human error, misconfiguration, or wide-ranging systematic effects are
-unavoidable. When they do happen, erroneous data may make it into
-production or critical data assets might accidentally be deleted.
+Human error or misconfigurations can lead to erroneous data making its way into production or critical data being accidentally deleted. Traditional backups are often inadequate for recovery in these situations, as they may be outdated and require time-consuming object-level sifting.
 
-By their nature, backups are a wrong tool for recovering from such events.
-Backups are periodic events that are usually not tied to performing
-erroneous operations. So, they may be out of date, and  will require
-sifting through data at the object level. This process is inefficient and
-can take hours, days, or in some cases, weeks to complete. By quickly
-committing entire snapshots of data at well-defined times, recovering data
-in deletion or corruption events becomes an instant one-line operation with
-lakeFS: just identify a good historical commit, and then restore to it or
-copy from it.
+With lakeFS, you can avoid these inefficiencies by committing snapshots of data at well-defined times. This allows for instant recovery: simply identify a good historical commit and restore or copy from it with a single operation.
 
 👉🏻 [Read more](./understand/use_cases/rollback.html)
-
-### Multi-Table Transactions guarantees
-
-Data engineers typically need to implement custom logic in scripts to guarantee
-two or more data assets are updated synchronously. This logic often
-requires extensive rewrites or periods during which data is unavailable.
-The lakeFS merge operation from one branch into another removes the need to
-implement this logic yourself.
-
-Instead, make updates to the desired data assets on a branch and then utilize a lakeFS merge to atomically expose the data to downstream consumers.
-
-To learn more about atomic cross-collection updates, check out [this video](https://www.youtube.com/watch?v=9OsjUvk5UJU) which describes the concept in more detail, along with [this notebook](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/write-audit-publish/wap-lakefs.ipynb) in the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
-
-
 
 ### Establishing data quality guarantees - CI/CD for data
 
@@ -176,25 +158,6 @@ With lakeFS, you can achieve this by tying data quality tests to commit and merg
 
 👉🏻 [Read more](./understand/use_cases/cicd_for_data.html)
 
-## Downloads
+## Next Step
 
-{: .note}
-lakeFS is also available as a fully-managed hosted service on [lakeFS Cloud](https://lakefs.cloud/)
-
-### Binary Releases
-
-Binary packages are available for Linux/macOS/Windows on [GitHub Releases](https://github.com/treeverse/lakeFS/releases){: target="_blank" }
-
-Or using [Homebrew](https://brew.sh/) for Linux/macOS:
-
-```sh
-# add repository
-brew tap treeverse/lakefs
-
-# installing lakefs/lakectl
-brew install lakefs
-```
-
-### Docker Images
-
-The official Docker images are available at [https://hub.docker.com/r/treeverse/lakefs](https://hub.docker.com/r/treeverse/lakefs){: target="_blank" }
+Try lakeFS on the [cloud](https://lakefs.cloud/) or [run it locally](https://docs.lakefs.io/quickstart/)

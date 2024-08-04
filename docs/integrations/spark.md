@@ -424,7 +424,7 @@ SELECT * FROM delta.`s3a://example-repo/main/datasets/delta-table/` LIMIT 100
 In Hadoop 3.1.4 version and above (as tested using our lakeFS Hadoop FS), it is possible to use pre-signed URLs as return values from the lakeFS S3 Gateway.
 
 This has the immediate benefit of reducing the amount of traffic that has to go through the lakeFS server thus improving IO performance. 
-To read more about pre-signed URLs, see [this guide](../reference/security/presigned-url.html).
+To read more about pre-signed URLs, see [this guide](../security/presigned-url.html).
 
 Here's an example Spark configuration to enable this support:
 
@@ -526,7 +526,7 @@ Set the `fs.lakefs.*` Hadoop configurations to point to your lakeFS installation
 Configure the lakeFS client to use a temporary token instead of static credentials:
 
 * `fs.lakefs.auth.provider`: The default is `basic_auth` with `fs.lakefs.access.key` and `fs.lakefs.secret.key` for basic authentication.
-Can be set to `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` for using temporary AWS credentials, you can read more about it [here]({% link reference/security/external-principals-aws.md %}).
+Can be set to `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` for using temporary AWS credentials, you can read more about it [here]({% link security/external-principals-aws.md %}).
 
 When using `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` as the auth provider the following configuration are relevant:
 
@@ -652,7 +652,7 @@ Amazon provides [S3 endpoints](https://docs.aws.amazon.com/general/latest/gr/s3.
 
 ### Usage with TemporaryAWSCredentialsLakeFSTokenProvider
 
-An initial setup is required - you must have [AWS Auth configured]({% link reference/security/external-principals-aws.md %}) with lakeFS.
+An initial setup is required - you must have [AWS Auth configured]({% link security/external-principals-aws.md %}) with lakeFS.
 The `TemporaryAWSCredentialsLakeFSTokenProvider` depends on the caller to provide AWS credentials (e.g Assumed Role Key,Secret and Token) as input to the lakeFS client.
 
 ⚠️ Configure `sts.endpoint` with a valid [sts regional service endpoint](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html) and it must be be equal to the region that is used for authentication first place. The only exception is `us-east-1` which is the default region for STS.

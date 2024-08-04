@@ -1,5 +1,5 @@
 ---
-title: Protect Branches
+title: Branch Protection
 description: Branch protection rules prevent direct changes from being applied to your important branches.
 parent: How-To
 redirect_from: 

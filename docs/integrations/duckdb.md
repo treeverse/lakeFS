@@ -78,7 +78,7 @@ Python users can use DuckDB by leveraging the [lakefs-spec](https://lakefs-spec.
 in the [lakefs-spec](https://github.com/aai-institute/lakefs-spec) repository.
 {: .note}
 
-Using lakefs-spec, querying lakeFS could be done using [pre-signed URLs](../reference/security/presigned-url.html), allowing for efficient and secure I/O, where the data files are read directly from the underlying object store.
+Using lakefs-spec, querying lakeFS could be done using [pre-signed URLs](../security/presigned-url.html), allowing for efficient and secure I/O, where the data files are read directly from the underlying object store.
 
 ```python
 

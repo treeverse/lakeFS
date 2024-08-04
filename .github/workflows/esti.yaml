@@ -974,9 +974,15 @@ jobs:
           ESTI_AZURE_STORAGE_ACCOUNT: esti4hns
           ESTI_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_GEN2_ACCESS_KEY }}
 
+      - name: Az CLI login
+        if: always()
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_COSMOSDB_CLEANUP_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: cleanup cosmos db container
         if: always()
-        continue-on-error: true
         run: |
           echo "Delete database container: ${{ github.run_number }}-${{ steps.unique.outputs.value }}"
           az cosmosdb sql container delete -a ${{ env.COSMOSDB_ACCOUNT }} -g ${{ env.COSMOSDB_ACCOUNT }} -d ${{ env.COSMOSDB_DATABASE }} -n ${{ github.run_number }}-${{ steps.unique.outputs.value }} --yes
@@ -1166,3 +1172,123 @@ jobs:
                 body: output
               })
             }
+
+  quickstart:
+    name: Quickstart
+    needs: 
+      - deploy-image
+      - login-to-amazon-ecr
+    runs-on: ubuntu-latest-8-cores
+    timeout-minutes: 20
+    services:
+      dynamodb:
+        image: amazon/dynamodb-local:1.13.6
+      lakefs:
+        image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
+        credentials:
+          username: ${{ needs.login-to-amazon-ecr.outputs.docker_username }}
+          password: ${{ needs.login-to-amazon-ecr.outputs.docker_password }}
+        ports:
+          - '8000:8000'
+        env:
+          LAKEFS_DATABASE_TYPE: dynamodb
+          LAKEFS_DATABASE_DYNAMODB_ENDPOINT: http://dynamodb:8000
+          LAKEFS_DATABASE_DYNAMODB_AWS_ACCESS_KEY_ID: AKIAIOSFDNN7EXAMPLEQ
+          LAKEFS_DATABASE_DYNAMODB_AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          LAKEFS_BLOCKSTORE_TYPE: local
+          LAKEFS_EMAIL_SUBSCRIPTION_ENABLED: true
+          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
+          LAKEFS_STATS_ENABLED: false
+          LAKEFS_LOGGING_LEVEL: DEBUG
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: "npm"
+          cache-dependency-path: webui/package-lock.json
+      - name: Install dependencies
+        working-directory: webui
+        run: npm ci
+      - name: Get installed Playwright version
+        id: playwright-version
+        working-directory: webui
+        run: echo "PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package-lock.json').dependencies['@playwright/test'].version)")" >> $GITHUB_ENV
+      - name: Cache Playwright binaries
+        uses: actions/cache@v3
+        id: playwright-cache
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            ~/.cache/ms-playwright-*
+          key: ${{ runner.os }}-playwright-${{ env.PLAYWRIGHT_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+      - name: Install browsers (no cache)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        working-directory: webui
+        run: npx playwright install --with-deps chromium
+      - name: Install browsers (with cache)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        working-directory: webui
+        run: npx playwright install-deps chromium
+      - name: Playwright run
+        env:
+          BASE_URL: http://localhost:8000
+        working-directory: webui
+        run: npx playwright test --project=quickstart
+      - uses: actions/upload-artifact@v3
+        if: (success() || failure())
+        with:
+          name: playwright-report
+          path: webui/test-results/
+          retention-days: 7
+      - uses: test-summary/action@v2
+        if: ${{ github.event_name == 'pull_request' && (success() || failure()) }}
+        with:
+          paths: webui/test-results.xml
+          output: "quickstart-test-results.md"
+      # will test and move to using the composite action once it's merged to master (GH limitation)
+      - uses: actions/github-script@v6
+        if: ${{ github.event_name == 'pull_request' && (success() || failure()) }}
+        env:
+          PLAYWRIGHT_PROJECT: "Quickstart"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require("fs");
+            // 1. Retrieve existing bot comments for the PR
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            })
+            const botComment = comments.find(comment => {
+              return comment.user.type === 'Bot' && comment.body.includes(`E2E Test Results - ${process.env.PLAYWRIGHT_PROJECT}`)
+            })
+            // 2. Read markdown files
+            const content = fs.readFileSync("quickstart-test-results.md");
+            // 3. Prepare format of the comment
+            const output = `
+              # E2E Test Results - ${process.env.PLAYWRIGHT_PROJECT}
+              
+              ${content}
+            `;
+
+            // 4. If we have a comment, update it, otherwise create a new one
+            if (botComment) {
+              github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              })
+            } else {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: output
+              })
+            }
+

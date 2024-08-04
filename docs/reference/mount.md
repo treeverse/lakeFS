@@ -22,10 +22,12 @@ Once mounted, users can access the data as if it resides on their local filesyst
 This functionality is currently in limited support and is a Read-Only file system and is pointing to a commit in lakeFS.
 
 **Note**
-⚠️ Everest is currently in beta. There is no installation required, please [contact us](mailto:support@treeverse.io) to get access to the Everest binary.
+⚠️ Everest is currently in beta. There is no installation required, please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access to the Everest binary.
 {: .note }
 
 {% include toc.html %}
+
+<iframe width="420" height="315" src="https://www.youtube.com/embed/BgKuoa8LAaU"></iframe>
 
 ## Use Cases
 
@@ -148,7 +150,7 @@ everest umount "./pets"
 
 ### How do I get started with lakeFS Mount (Everest)?
 
-lakeFS Mount is avaialble for lakeFS Cloud and lakeFS Enterprise customers. Once your setup is complete, [contact us](support@treeverse.io) to access the lakeFS Mounts (beta) binary and follow the provided docs.
+lakeFS Mount is avaialble for lakeFS Cloud and lakeFS Enterprise customers. Once your setup is complete, [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to access the lakeFS Mounts (beta) binary and follow the provided docs.
 
 * Want to try lakeFS Cloud? [Signup](https://lakefs.cloud/register) for a 30-day free trial.
 * Interested in lakeFS Enterprise? [Contact sales](https://lakefs.io/contact-sales/) for a 30-day free license.
@@ -163,7 +165,7 @@ lakeFS Mount supports Linux and MacOS. Windows support is on the roadmap.
 
 ### How can I control access to my data when using lakeFS Mount?
 
-You can use lakeFS’s existing [Role-Based Access Control mechanism](../reference/security/rbac.md), which includes repository and path-level policies. lakeFS Mount translates filesystem operations into lakeFS API operations and authorizes them based on these policies.
+You can use lakeFS’s existing [Role-Based Access Control mechanism](../security/rbac.md), which includes repository and path-level policies. lakeFS Mount translates filesystem operations into lakeFS API operations and authorizes them based on these policies.
 
 ### Does data pass through the lakeFS server when using lakeFS Mount?
 

@@ -459,10 +459,10 @@ extraManifests:
       config.yaml: my-data
 ```
 
-[lakefs-sso-enterprise-spec]: {% link reference/security/sso.md %}#sso-for-lakefs-enterprise
-[lakefs-sso-enterprise-spec-oidc]: {% link reference/security/sso.md %}#oidc
-[lakefs-sso-enterprise-spec-saml]: {% link reference/security/sso.md %}#adfs
-[lakefs-sso-enterprise-spec-ldap]: {% link reference/security/sso.md %}#ldap
+[lakefs-sso-enterprise-spec]: {% link security/sso.md %}#sso-for-lakefs-enterprise
+[lakefs-sso-enterprise-spec-oidc]: {% link security/sso.md %}#oidc
+[lakefs-sso-enterprise-spec-saml]: {% link security/sso.md %}#adfs
+[lakefs-sso-enterprise-spec-ldap]: {% link security/sso.md %}#ldap
 [fluffy-configuration]: {% link enterprise/configuration.md %}#fluffy-server-configuration
 [lakefs-enterprise-architecture]: {% link enterprise/architecture.md %}
 
