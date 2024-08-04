@@ -53,7 +53,7 @@ func Serve(cfg *config.Config, catalog *catalog.Catalog, middlewareAuthenticator
 			cfg.Logging.AuditLogLevel,
 			cfg.Logging.TraceRequestHeaders,
 			cfg.IsAdvancedAuth()),
-		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
+		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig, cfg.IsAdvancedAuth()),
 		MetricsMiddleware(swagger),
 	)
 	controller := NewController(cfg, catalog, middlewareAuthenticator, authService, authenticationService, blockAdapter, metadataManager, migrator, collector, cloudMetadataProvider, actions, auditChecker, logger, sessionStore, pathProvider, usageReporter)

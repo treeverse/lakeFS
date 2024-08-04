@@ -573,6 +573,7 @@ func (c *Config) IsAuthUISimplified() bool {
 func (c *Config) IsAuthenticationTypeAPI() bool {
 	return c.Auth.AuthenticationAPI.Endpoint != ""
 }
+
 func (c *Config) IsAuthTypeAPI() bool {
 	return c.Auth.API.Endpoint != ""
 }
