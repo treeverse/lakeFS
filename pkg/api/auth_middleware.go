@@ -105,7 +105,7 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				return
 			}
 			if user != nil {
-				ctx := logging.AddFields(r.Context(), logging.Fields{logging.UserFieldKey: user.Username})
+				ctx := r.Context()
 				r = r.WithContext(auth.WithUser(ctx, user))
 			}
 			next.ServeHTTP(w, r)

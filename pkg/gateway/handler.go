@@ -62,7 +62,7 @@ type ServerContext struct {
 	verifyUnsupported bool
 }
 
-func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool, verifyUnsupported bool) http.Handler {
+func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool, verifyUnsupported bool, isAdvancedAuth bool) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -112,20 +112,23 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 		"X-Amz-Request-Id",
 		logging.Fields{"service_name": "s3_gateway"},
 		auditLogLevel,
-		traceRequestHeaders)
+		traceRequestHeaders,
+		isAdvancedAuth)
 
 	h = loggingMiddleware(h)
 
-	h = EnrichWithOperation(sc,
-		DurationHandler(
-			AuthenticationHandler(authService, EnrichWithParts(bareDomains,
-				EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
-					OperationLookupHandler(
-						h))))))
-	logging.ContextUnavailable().WithFields(logging.Fields{
-		"s3_bare_domain": bareDomains,
-		"s3_region":      region,
-	}).Info("initialized S3 Gateway handler")
+	if isAdvancedAuth {
+		h = EnrichWithOperation(sc,
+			DurationHandler(
+				AuthenticationHandler(authService, EnrichWithParts(bareDomains,
+					EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
+						OperationLookupHandler(
+							h))))))
+		logging.ContextUnavailable().WithFields(logging.Fields{
+			"s3_bare_domain": bareDomains,
+			"s3_region":      region,
+		}).Info("initialized S3 Gateway handler")
+	}
 	return h
 }
 
