@@ -156,7 +156,7 @@ func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, traceR
 			}
 			logging.FromContext(r.Context()).
 				WithFields(traceFields).
-				Trace("HTTP call ended")
+				Trace(AuditLogEndMessage)
 		})
 	}
 }
