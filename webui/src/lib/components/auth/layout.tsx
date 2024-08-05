@@ -28,8 +28,10 @@ export const AuthLayout = () => {
         <Container fluid="xl">
             <Row className="mt-5">
                 <div>
+                    <Alert variant="warning" title="ACL Deprecation"><InfoIcon/>{" "}<b>ACLs are moving out of core lakeFS!</b>{"  "}See our <Alert.Link href={"https://lakefs.io/blog/why-moving-acls-out-of-core-lakefs/"}>announcement</Alert.Link>{" "}
+                        to learn why and how to continue using your existing lakeFS installation in future versions.</Alert>
                     {rbac === 'simplified' &&  showRBACAlert &&
-                    <Alert severity="info" title="rbac CTA" dismissible onClose={() => {
+                    <Alert variant="info" title="rbac CTA" dismissible onClose={() => {
                         window.localStorage.setItem(rbacDismissedKey, "true");
                         setShowRBACAlert(false);
                     }}><InfoIcon/>{" "}Enhance Your Security with {" "}<Alert.Link href={"https://docs.lakefs.io/reference/security/rbac.html"}>Role-Based Access Control</Alert.Link>{" "}
