@@ -179,11 +179,19 @@ func VerifySafeFilename(absPath string) error {
 	if !filepath.IsAbs(absPath) {
 		return fmt.Errorf("relative path not allowed: %w", ErrInvalidPath)
 	}
-	filename, err := filepath.EvalSymlinks(absPath)
-	if err != nil {
+	if err := EvalSymlink(absPath); err != nil {
 		return err
 	}
-	if filename != absPath {
+	return nil
+}
+
+// EvalSymlink - Checks if given path is a symlink. Returns ErrSymbolicLink if p is a symbolic link or any other error if occurred.
+func EvalSymlink(p string) error {
+	filename, err := filepath.EvalSymlinks(p)
+	if err != nil {
+		return fmt.Errorf("failed to evaluate symlink: %w", err)
+	}
+	if filename != p {
 		return ErrSymbolicLink
 	}
 	return nil

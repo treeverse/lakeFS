@@ -3,15 +3,18 @@ package local
 import (
 	"container/heap"
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -266,7 +269,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 // DiffLocalWithHead Checks changes between a local directory and the head it is pointing to. The diff check assumes the remote
 // is an immutable set so any changes found resulted from changes in the local directory
 // left is an object channel which contains results from a remote source. rightPath is the local directory to diff with
-func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, includeDirs, includePOSIXPermissions bool) (Changes, error) {
+func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, cfg Config) (Changes, error) {
 	// left should be the base commit
 	changes := make([]*Change, 0)
 
@@ -279,7 +282,11 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 			return err
 		}
 
-		if !includeLocalFileInDiff(info, includeDirs) {
+		includeFile, err := includeLocalFileInDiff(info, cfg)
+		if err != nil {
+			return err
+		}
+		if !includeFile {
 			return nil
 		}
 
@@ -299,7 +306,7 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 			}
 			switch {
 			case currentRemoteFile.Path < localPath: // We removed a file locally
-				if includeRemoteFileInDiff(currentRemoteFile, includeDirs) {
+				if includeRemoteFileInDiff(currentRemoteFile, cfg) {
 					changes = append(changes, &Change{ChangeSourceLocal, currentRemoteFile.Path, ChangeTypeRemoved})
 				}
 				currentRemoteFile.Path = ""
@@ -312,7 +319,7 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, include
 				// dirs might have different sizes on different operating systems
 				sizeChanged := !info.IsDir() && localBytes != swag.Int64Value(currentRemoteFile.SizeBytes)
 				mtimeChanged := localMtime != remoteMtime
-				permissionsChanged := includePOSIXPermissions && isPermissionsChanged(info, currentRemoteFile)
+				permissionsChanged := cfg.IncludePerm && isPermissionsChanged(info, currentRemoteFile)
 				if sizeChanged || mtimeChanged || permissionsChanged {
 					// we made a change!
 					changes = append(changes, &Change{ChangeSourceLocal, localPath, ChangeTypeModified})
@@ -385,19 +392,27 @@ func ListRemote(ctx context.Context, client apigen.ClientWithResponsesInterface,
 	return nil
 }
 
-func includeLocalFileInDiff(info fs.FileInfo, includeDirs bool) bool {
-	if info.IsDir() {
-		return includeDirs
-	} else {
-		switch info.Name() {
-		case IndexFileName, ".DS_Store":
-			return false
-		default:
-			return true
-		}
-	}
+var ignoreFileList = []string{
+	IndexFileName,
+	".DS_Store",
 }
 
-func includeRemoteFileInDiff(currentRemoteFile apigen.ObjectStats, includeDirs bool) bool {
-	return includeDirs || !strings.HasSuffix(currentRemoteFile.Path, uri.PathSeparator)
+func includeLocalFileInDiff(info fs.FileInfo, cfg Config) (bool, error) {
+	if info.IsDir() {
+		return cfg.IncludePerm, nil
+	}
+	if cfg.IgnoreSymLinks {
+		if err := fileutil.EvalSymlink(info.Name()); err != nil {
+			if errors.Is(err, fileutil.ErrSymbolicLink) {
+				// Skip file in case of symbolic link
+				return false, nil
+			}
+			return true, err
+		}
+	}
+	return !slices.Contains(ignoreFileList, info.Name()), nil
+}
+
+func includeRemoteFileInDiff(currentRemoteFile apigen.ObjectStats, cfg Config) bool {
+	return cfg.IncludePerm || !strings.HasSuffix(currentRemoteFile.Path, uri.PathSeparator)
 }

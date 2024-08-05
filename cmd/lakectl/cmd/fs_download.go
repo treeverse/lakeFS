@@ -103,7 +103,11 @@ var fsDownloadCmd = &cobra.Command{
 			}
 		}()
 
-		s := local.NewSyncManager(ctx, client, getHTTPClient(), syncFlags, false)
+		s := local.NewSyncManager(ctx, client, getHTTPClient(), local.Config{
+			SyncFlags:      syncFlags,
+			IgnoreSymLinks: cfg.Local.IgnoreSymLinks,
+			IncludePerm:    false,
+		})
 		err := s.Sync(dest, remote, ch)
 		if err != nil {
 			DieErr(err)
