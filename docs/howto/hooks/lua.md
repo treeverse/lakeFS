@@ -174,8 +174,8 @@ Create a new Database in Glue Catalog.
 
 Parameters:
 
-- `database`: Glue Database name.
-- `options(table/optional)`:
+- `database(string)`: Glue Database name.
+- `options(table)` (optional):
     - `error_on_already_exists(boolean)`: Whether the call fail with an error if a DB with this name already exists
     - `create_db_input(string)`: a JSON that is passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
 
@@ -195,8 +195,8 @@ Delete an existing Database in Glue Catalog.
 
 Parameters:
 
-- `database`: Glue Database name.
-- `catalog_id(string/optional)`: Glue Catalog ID
+- `database(string)`: Glue Database name.
+- `catalog_id(string)` (optional): Glue Catalog ID
 
 Example:
 
