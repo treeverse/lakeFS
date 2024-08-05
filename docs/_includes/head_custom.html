@@ -6,6 +6,9 @@
         'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
     })(window,document,'script','dataLayer','GTM-KTZBZW9');</script>
 <!-- End Google Tag Manager Head -->
+{% if site.robots_exclude_from_indexes %}
+<meta name="robots" content="noindex">
+{% endif %}
 <meta property="og:image" content="{{ site.baseurl }}{{ site.image }}">
 <link rel="preload" href="/assets/fonts/Rene Bieder - Galano Grotesque.otf" as="font" type="font/otf" crossorigin>
 <link rel="preload" href="/assets/fonts/Rene Bieder - Galano Grotesque Medium.otf" as="font" type="font/otf" crossorigin>
