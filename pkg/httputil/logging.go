@@ -89,8 +89,6 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 			next.ServeHTTP(writer, r) // handle the request
 
 			loggingFields := logging.Fields{
-				"start_time":  startTime,
-				"end_time":    time.Now(),
 				"took":        time.Since(startTime),
 				"status_code": writer.StatusCode,
 				"source_ip":   sourceIP,
