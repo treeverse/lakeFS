@@ -570,6 +570,10 @@ func (c *Config) IsAuthUISimplified() bool {
 	return c.Auth.UIConfig.RBAC == AuthRBACSimplified
 }
 
+func (c *Config) IsAuthExternalOrInternal() bool {
+	return c.Auth.UIConfig.RBAC == AuthRBACExternal || c.Auth.UIConfig.RBAC == AuthRBACInternal
+}
+
 func (c *Config) IsAuthenticationTypeAPI() bool {
 	return c.Auth.AuthenticationAPI.Endpoint != ""
 }
@@ -584,7 +588,7 @@ func (c *Config) IsExternalPrincipalsEnabled() bool {
 }
 
 func (c *Config) IsAdvancedAuth() bool {
-	return c.IsAuthTypeAPI() && !c.IsAuthUISimplified()
+	return c.IsAuthTypeAPI() && c.IsAuthExternalOrInternal()
 }
 
 func (c *Config) UISnippets() []apiparams.CodeSnippet {
