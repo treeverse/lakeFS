@@ -16,8 +16,8 @@ type SyncFlags struct {
 
 type Config struct {
 	SyncFlags
-	// IgnoreSymLinks - By default lakectl local fails if local directory contains a symbolic link. When set, lakectl will ignore the symbolic links instead.
-	IgnoreSymLinks bool `mapstructure:"ignore_symlinks"`
+	// SkipIrregularFiles - By default lakectl local fails if local directory contains irregular files. When set, lakectl will skip these files instead.
+	SkipIrregularFiles bool
 	// IncludePerm - Experimental: preserve Unix file permissions
 	IncludePerm bool
 }

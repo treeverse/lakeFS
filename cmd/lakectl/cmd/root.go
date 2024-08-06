@@ -95,8 +95,8 @@ type Configuration struct {
 		FixSparkPlaceholder bool `mapstructure:"fix_spark_placeholder"`
 	}
 	Local struct {
-		// SkipSymLinks - By default lakectl local fails if local directory contains a symbolic link. When set, lakectl will ignore the symbolic links instead.
-		SkipSymLinks bool `mapstructure:"skip_symlinks"`
+		// SkipIrregularFiles - By default lakectl local fails if local directory contains a symbolic link. When set, lakectl will ignore the symbolic links instead.
+		SkipIrregularFiles bool `mapstructure:"skip_irregular_files"`
 	} `mapstructure:"local"`
 	// Experimental - Use caution when enabling experimental features. It should only be used after consulting with the lakeFS team!
 	Experimental struct {
@@ -553,7 +553,7 @@ func initConfig() {
 	viper.SetDefault("server.retries.max_wait_interval", defaultMaxRetryInterval)
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
-	viper.SetDefault("local.skip_symlinks", false)
+	viper.SetDefault("local.skip_irregular_files", false)
 
 	cfgErr = viper.ReadInConfig()
 }

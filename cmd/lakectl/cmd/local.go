@@ -69,8 +69,8 @@ func localDiff(ctx context.Context, client apigen.ClientWithResponsesInterface, 
 	})
 
 	changes, err := local.DiffLocalWithHead(currentRemoteState, path, local.Config{
-		IgnoreSymLinks: cfg.Local.SkipSymLinks,
-		IncludePerm:    cfg.Experimental.Local.POSIXPerm.Enabled,
+		SkipIrregularFiles: cfg.Local.SkipIrregularFiles,
+		IncludePerm:        cfg.Experimental.Local.POSIXPerm.Enabled,
 	})
 	if err != nil {
 		DieErr(err)

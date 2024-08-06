@@ -62,9 +62,9 @@ var fsUploadCmd = &cobra.Command{
 			}
 		}()
 		s := local.NewSyncManager(ctx, client, getHTTPClient(), local.Config{
-			SyncFlags:      syncFlags,
-			IgnoreSymLinks: cfg.Local.SkipSymLinks,
-			IncludePerm:    false,
+			SyncFlags:          syncFlags,
+			SkipIrregularFiles: cfg.Local.SkipIrregularFiles,
+			IncludePerm:        false,
 		})
 		fullPath, err := filepath.Abs(source)
 		if err != nil {

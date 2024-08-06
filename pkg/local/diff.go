@@ -400,10 +400,11 @@ func includeLocalFileInDiff(info fs.FileInfo, cfg Config) (bool, error) {
 	if info.IsDir() {
 		return cfg.IncludePerm, nil
 	}
-	if cfg.IgnoreSymLinks {
-		if !info.Mode().IsRegular() {
+	if !info.Mode().IsRegular() {
+		if !cfg.SkipIrregularFiles {
 			return false, fmt.Errorf("%s: %w", info.Name(), fileutil.ErrNotARegularFile)
 		}
+		return false, nil
 	}
 	return !slices.Contains(ignoreFileList, info.Name()), nil
 }
