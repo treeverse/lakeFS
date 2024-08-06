@@ -94,6 +94,10 @@ type Configuration struct {
 		// setting FixSparkPlaceholder to true will change spark placeholder with the actual location. for more information see https://github.com/treeverse/lakeFS/issues/2213
 		FixSparkPlaceholder bool `mapstructure:"fix_spark_placeholder"`
 	}
+	Local struct {
+		// SkipNonRegularFiles - By default lakectl local fails if local directory contains a symbolic link. When set, lakectl will ignore the symbolic links instead.
+		SkipNonRegularFiles bool `mapstructure:"skip_non_regular_files"`
+	} `mapstructure:"local"`
 	// Experimental - Use caution when enabling experimental features. It should only be used after consulting with the lakeFS team!
 	Experimental struct {
 		Local struct {
@@ -549,6 +553,7 @@ func initConfig() {
 	viper.SetDefault("server.retries.max_wait_interval", defaultMaxRetryInterval)
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
+	viper.SetDefault("local.skip_non_regular_files", false)
 
 	cfgErr = viper.ReadInConfig()
 }

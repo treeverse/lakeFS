@@ -136,11 +136,14 @@ func TestSyncManager_download(t *testing.T) {
 			defer server.Close()
 
 			testClient := getTestClient(t, server.URL)
-			s := local.NewSyncManager(ctx, testClient, server.Client(), local.SyncFlags{
-				Parallelism:      1,
-				Presign:          false,
-				PresignMultipart: false,
-			}, tt.UnixPermEnabled)
+			s := local.NewSyncManager(ctx, testClient, server.Client(), local.Config{
+				SyncFlags: local.SyncFlags{
+					Parallelism:      1,
+					Presign:          false,
+					PresignMultipart: false,
+				},
+				IncludePerm: tt.UnixPermEnabled,
+			})
 			u := &uri.URI{
 				Repository: "repo",
 				Ref:        "main",
@@ -306,11 +309,14 @@ func TestSyncManager_upload(t *testing.T) {
 			defer server.Close()
 
 			testClient := getTestClient(t, server.URL)
-			s := local.NewSyncManager(ctx, testClient, server.Client(), local.SyncFlags{
-				Parallelism:      1,
-				Presign:          false,
-				PresignMultipart: false,
-			}, tt.UnixPermEnabled)
+			s := local.NewSyncManager(ctx, testClient, server.Client(), local.Config{
+				SyncFlags: local.SyncFlags{
+					Parallelism:      1,
+					Presign:          false,
+					PresignMultipart: false,
+				},
+				IncludePerm: tt.UnixPermEnabled,
+			})
 			u := &uri.URI{
 				Repository: "repo",
 				Ref:        "main",

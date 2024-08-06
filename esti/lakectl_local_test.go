@@ -530,8 +530,8 @@ func TestLakectlLocal_commit(t *testing.T) {
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
 
 			// Modify local folder - add and remove files
-			os.MkdirAll(filepath.Join(dataDir, "subdir"), os.ModePerm)
-			os.MkdirAll(filepath.Join(dataDir, "subdir-a"), os.ModePerm)
+			require.NoError(t, os.MkdirAll(filepath.Join(dataDir, "subdir"), os.ModePerm))
+			require.NoError(t, os.MkdirAll(filepath.Join(dataDir, "subdir-a"), os.ModePerm))
 			fd, err = os.Create(filepath.Join(dataDir, "subdir", "test.txt"))
 			require.NoError(t, err)
 			fd, err = os.Create(filepath.Join(dataDir, "subdir-a", "test.txt"))
@@ -550,6 +550,82 @@ func TestLakectlLocal_commit(t *testing.T) {
 
 			// Check no diff after commit
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
+		})
+	}
+}
+
+func TestLakectlLocal_commit_symlink(t *testing.T) {
+	tmpDir := t.TempDir()
+	fd, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+		"PREFIX":  "",
+	}
+
+	// No repo
+	vars["LOCAL_DIR"] = tmpDir
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	tests := []struct {
+		name        string
+		skipSymlink bool
+	}{
+		{
+			name:        "skip-symlink",
+			skipSymlink: true,
+		},
+		{
+			name:        "fail-on-symlink",
+			skipSymlink: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dataDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
+			file := filepath.Join(dataDir, "file1.txt")
+			require.NoError(t, os.WriteFile(file, []byte("foo"), os.ModePerm))
+			symlink := filepath.Join(dataDir, "link_file1.txt")
+			require.NoError(t, os.Symlink(file, symlink))
+
+			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+			vars["LOCAL_DIR"] = dataDir
+			vars["PREFIX"] = ""
+			vars["BRANCH"] = tt.name
+			vars["REF"] = tt.name
+			lakectlCmd := Lakectl()
+			if tt.skipSymlink {
+				lakectlCmd = "LAKECTL_LOCAL_SKIP_NON_REGULAR_FILES=true " + lakectlCmd
+			}
+			runCmd(t, lakectlCmd+" local init lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+dataDir, false, false, vars)
+			if tt.skipSymlink {
+				RunCmdAndVerifyContainsText(t, lakectlCmd+" local status "+dataDir, false, "local  ║ added  ║ file1.txt", vars)
+			} else {
+				RunCmdAndVerifyFailureContainsText(t, lakectlCmd+" local status "+dataDir, false, "link_file1.txt: not a regular file", vars)
+			}
+
+			// Commit changes to branch
+			if tt.skipSymlink {
+				RunCmdAndVerifyContainsText(t, lakectlCmd+" local commit -m test "+dataDir, false, "Commit for branch \"${BRANCH}\" completed", vars)
+			} else {
+				RunCmdAndVerifyFailureContainsText(t, lakectlCmd+" local commit -m test "+dataDir, false, "link_file1.txt: not a regular file", vars)
+			}
+
+			// Check diff after commit
+			if tt.skipSymlink {
+				RunCmdAndVerifyContainsText(t, lakectlCmd+" local status "+dataDir, false, "No diff found", vars)
+			} else {
+				RunCmdAndVerifyFailureContainsText(t, lakectlCmd+" local status "+dataDir, false, "link_file1.txt: not a regular file", vars)
+			}
 		})
 	}
 }

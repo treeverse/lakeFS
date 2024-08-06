@@ -172,7 +172,11 @@ var localCommitCmd = &cobra.Command{
 		}
 
 		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(commitOperation))
-		s := local.NewSyncManager(sigCtx, client, getHTTPClient(), syncFlags, cfg.Experimental.Local.POSIXPerm.Enabled)
+		s := local.NewSyncManager(sigCtx, client, getHTTPClient(), local.Config{
+			SyncFlags:           syncFlags,
+			SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
+			IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
+		})
 		err = s.Sync(idx.LocalPath(), remote, c)
 		if err != nil {
 			DieErr(err)

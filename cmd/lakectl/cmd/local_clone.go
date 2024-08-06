@@ -89,7 +89,11 @@ var localCloneCmd = &cobra.Command{
 			DieErr(err)
 		}
 		sigCtx := localHandleSyncInterrupt(ctx, idx, string(cloneOperation))
-		s := local.NewSyncManager(sigCtx, client, getHTTPClient(), syncFlags, cfg.Experimental.Local.POSIXPerm.Enabled)
+		s := local.NewSyncManager(sigCtx, client, getHTTPClient(), local.Config{
+			SyncFlags:           syncFlags,
+			SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
+			IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
+		})
 		err = s.Sync(localPath, stableRemote, ch)
 		if err != nil {
 			DieErr(err)

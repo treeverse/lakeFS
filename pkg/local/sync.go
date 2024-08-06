@@ -18,24 +18,11 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
-	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
 )
-
-const (
-	// DefaultDirectoryPermissions Octal representation of default folder permissions
-	DefaultDirectoryPermissions = 0o040777
-	ClientMtimeMetadataKey      = apiutil.LakeFSMetadataPrefix + "client-mtime"
-)
-
-type SyncFlags struct {
-	Parallelism      int
-	Presign          bool
-	PresignMultipart bool
-}
 
 func getMtimeFromStats(stats apigen.ObjectStats) (int64, error) {
 	if stats.Metadata == nil {
@@ -60,20 +47,17 @@ type SyncManager struct {
 	client      *apigen.ClientWithResponses
 	httpClient  *http.Client
 	progressBar *ProgressPool
-	flags       SyncFlags
 	tasks       Tasks
-	// includePerm - Experimental: preserve Unix file permissions
-	includePerm bool
+	cfg         Config
 }
 
-func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, httpClient *http.Client, flags SyncFlags, includePerm bool) *SyncManager {
+func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, httpClient *http.Client, cfg Config) *SyncManager {
 	return &SyncManager{
 		ctx:         ctx,
 		client:      client,
 		httpClient:  httpClient,
 		progressBar: NewProgressPool(),
-		flags:       flags,
-		includePerm: includePerm,
+		cfg:         cfg,
 	}
 }
 
@@ -84,7 +68,7 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	defer s.progressBar.Stop()
 
 	wg, ctx := errgroup.WithContext(s.ctx)
-	for i := 0; i < s.flags.Parallelism; i++ {
+	for i := 0; i < s.cfg.SyncFlags.Parallelism; i++ {
 		wg.Go(func() error {
 			for change := range changeSet {
 				if err := s.apply(ctx, rootPath, remote, change); err != nil {
@@ -97,7 +81,7 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	if err := wg.Wait(); err != nil {
 		return err
 	}
-	if s.includePerm { // TODO (niro): Probably need to take care of pruning in deleteLocal flow
+	if s.cfg.IncludePerm {
 		return nil // Do not prune directories in this case to preserve directories and permissions
 	}
 	_, err := fileutil.PruneEmptyDirectories(rootPath)
@@ -162,7 +146,7 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 		defer spinner.Done()
 	} else {
 		var body io.Reader
-		if s.flags.Presign {
+		if s.cfg.SyncFlags.Presign {
 			resp, err := s.httpClient.Get(objStat.PhysicalAddress)
 			if err != nil {
 				return err
@@ -221,7 +205,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	}
 	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
 		Path:         filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
-		Presign:      swag.Bool(s.flags.Presign),
+		Presign:      swag.Bool(s.cfg.SyncFlags.Presign),
 		UserMetadata: swag.Bool(true),
 	})
 	if err != nil {
@@ -242,7 +226,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 
 	var perm *POSIXPermissions
 	isDir := strings.HasSuffix(path, uri.PathSeparator)
-	if s.includePerm { // Optimization - fail on to get permissions from metadata before having to download the entire file
+	if s.cfg.IncludePerm { // Optimization - fail on to get permissions from metadata before having to download the entire file
 		if perm, err = getPermissionFromStats(objStat, true); err != nil {
 			return err
 		}
@@ -263,7 +247,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	}
 
 	// change ownership and permissions
-	if s.includePerm {
+	if s.cfg.IncludePerm {
 		if err = os.Chown(destination, perm.UID, perm.GID); err != nil {
 			return err
 		}
@@ -308,7 +292,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	}
 
 	reader := b.Reader(f)
-	if s.includePerm {
+	if s.cfg.IncludePerm {
 		if strings.HasSuffix(path, uri.PathSeparator) { // Create a 0 byte reader for directories
 			reader = bytes.NewReader([]byte{})
 		}
@@ -327,9 +311,9 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		file:   f,
 		reader: reader,
 	}
-	if s.flags.Presign {
+	if s.cfg.SyncFlags.Presign {
 		_, err = helpers.ClientUploadPreSign(
-			ctx, s.client, s.httpClient, remote.Repository, remote.Ref, dest, metadata, "", readerWrapper, s.flags.PresignMultipart)
+			ctx, s.client, s.httpClient, remote.Repository, remote.Ref, dest, metadata, "", readerWrapper, s.cfg.SyncFlags.PresignMultipart)
 		return err
 	}
 	// not pre-signed
