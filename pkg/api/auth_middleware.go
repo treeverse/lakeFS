@@ -82,7 +82,7 @@ func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticat
 	}, nil
 }
 
-func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig, isAdvancedAuth bool) func(next http.Handler) http.Handler {
+func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig) func(next http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
 		panic(err)
@@ -105,10 +105,7 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 				return
 			}
 			if user != nil {
-				ctx := r.Context()
-				if isAdvancedAuth {
-					ctx = logging.AddFields(ctx, logging.Fields{logging.UserFieldKey: user.Username})
-				}
+				ctx := logging.AddFields(r.Context(), logging.Fields{logging.UserFieldKey: user.Username})
 				r = r.WithContext(auth.WithUser(ctx, user))
 			}
 			next.ServeHTTP(w, r)
