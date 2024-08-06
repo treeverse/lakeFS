@@ -138,8 +138,6 @@ func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, traceR
 			next.ServeHTTP(responseWriter, r) // handle the request
 
 			traceFields := logging.Fields{
-				"start_time":  startTime,
-				"end_time":    time.Now(),
 				"took":        time.Since(startTime),
 				"status_code": responseWriter.StatusCode,
 				"source_ip":   sourceIP,
