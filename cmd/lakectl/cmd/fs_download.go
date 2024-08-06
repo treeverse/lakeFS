@@ -104,9 +104,9 @@ var fsDownloadCmd = &cobra.Command{
 		}()
 
 		s := local.NewSyncManager(ctx, client, getHTTPClient(), local.Config{
-			SyncFlags:          syncFlags,
-			SkipIrregularFiles: cfg.Local.SkipIrregularFiles,
-			IncludePerm:        false,
+			SyncFlags:           syncFlags,
+			SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
+			IncludePerm:         false,
 		})
 		err := s.Sync(dest, remote, ch)
 		if err != nil {

@@ -58,9 +58,9 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 	diffs := local.Undo(localDiff(cmd.Context(), client, currentBase, idx.LocalPath()))
 	sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(checkoutOperation))
 	syncMgr := local.NewSyncManager(sigCtx, client, getHTTPClient(), local.Config{
-		SyncFlags:          syncFlags,
-		SkipIrregularFiles: cfg.Local.SkipIrregularFiles,
-		IncludePerm:        cfg.Experimental.Local.POSIXPerm.Enabled,
+		SyncFlags:           syncFlags,
+		SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
+		IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
 	})
 	// confirm on local changes
 	if confirmByFlag && len(diffs) > 0 {

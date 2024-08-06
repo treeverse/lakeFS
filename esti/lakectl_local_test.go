@@ -604,7 +604,7 @@ func TestLakectlLocal_commit_symlink(t *testing.T) {
 			vars["REF"] = tt.name
 			lakectlCmd := Lakectl()
 			if tt.skipSymlink {
-				lakectlCmd = "LAKECTL_LOCAL_SKIP_IRREGULAR_FILES=true " + lakectlCmd
+				lakectlCmd = "LAKECTL_LOCAL_SKIP_NON_REGULAR_FILES=true " + lakectlCmd
 			}
 			runCmd(t, lakectlCmd+" local init lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+dataDir, false, false, vars)
 			if tt.skipSymlink {

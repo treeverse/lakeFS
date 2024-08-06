@@ -170,8 +170,7 @@ func VerifyRelPath(relPath, basePath string) error {
 	return VerifyAbsPath(abs, basePath)
 }
 
-// VerifySafeFilename checks that the given file name is not a symbolic link and that
-// the file name does not contain path traversal
+// VerifySafeFilename checks that the given file name is absolute and does not contain path traversal
 func VerifySafeFilename(absPath string) error {
 	if err := VerifyAbsPath(absPath, absPath); err != nil {
 		return err

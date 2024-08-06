@@ -401,7 +401,7 @@ func includeLocalFileInDiff(info fs.FileInfo, cfg Config) (bool, error) {
 		return cfg.IncludePerm, nil
 	}
 	if !info.Mode().IsRegular() {
-		if !cfg.SkipIrregularFiles {
+		if !cfg.SkipNonRegularFiles {
 			return false, fmt.Errorf("%s: %w", info.Name(), fileutil.ErrNotARegularFile)
 		}
 		return false, nil
