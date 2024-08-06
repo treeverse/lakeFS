@@ -59,7 +59,7 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 	sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(checkoutOperation))
 	syncMgr := local.NewSyncManager(sigCtx, client, getHTTPClient(), local.Config{
 		SyncFlags:      syncFlags,
-		IgnoreSymLinks: cfg.Local.IgnoreSymLinks,
+		IgnoreSymLinks: cfg.Local.SkipSymLinks,
 		IncludePerm:    cfg.Experimental.Local.POSIXPerm.Enabled,
 	})
 	// confirm on local changes

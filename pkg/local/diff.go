@@ -3,7 +3,6 @@ package local
 import (
 	"container/heap"
 	"context"
-	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -402,12 +401,8 @@ func includeLocalFileInDiff(info fs.FileInfo, cfg Config) (bool, error) {
 		return cfg.IncludePerm, nil
 	}
 	if cfg.IgnoreSymLinks {
-		if err := fileutil.EvalSymlink(info.Name()); err != nil {
-			if errors.Is(err, fileutil.ErrSymbolicLink) {
-				// Skip file in case of symbolic link
-				return false, nil
-			}
-			return true, err
+		if !info.Mode().IsRegular() {
+			return false, fmt.Errorf("%s: %w", info.Name(), fileutil.ErrNotARegularFile)
 		}
 	}
 	return !slices.Contains(ignoreFileList, info.Name()), nil

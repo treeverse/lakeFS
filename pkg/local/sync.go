@@ -259,10 +259,6 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.URI, path string) error {
 	source := filepath.Join(rootPath, path)
 	if err := fileutil.VerifySafeFilename(source); err != nil {
-		if errors.Is(err, fileutil.ErrSymbolicLink) && s.cfg.IgnoreSymLinks {
-			// Skip file in case of symbolic link
-			return nil
-		}
 		return err
 	}
 	remotePath := strings.TrimRight(remote.GetPath(), uri.PathSeparator)

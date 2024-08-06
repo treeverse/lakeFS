@@ -15,10 +15,10 @@ const (
 )
 
 var (
-	ErrNotFile      = errors.New("path is not a file")
-	ErrBadPath      = errors.New("bad path traversal blocked")
-	ErrSymbolicLink = errors.New("symbolic links not supported")
-	ErrInvalidPath  = errors.New("invalid path")
+	ErrNotFile         = errors.New("path is not a file")
+	ErrBadPath         = errors.New("bad path traversal blocked")
+	ErrNotARegularFile = errors.New("not a regular file")
+	ErrInvalidPath     = errors.New("invalid path")
 )
 
 // IsDir Returns true if p is a directory, otherwise false
@@ -178,21 +178,6 @@ func VerifySafeFilename(absPath string) error {
 	}
 	if !filepath.IsAbs(absPath) {
 		return fmt.Errorf("relative path not allowed: %w", ErrInvalidPath)
-	}
-	if err := EvalSymlink(absPath); err != nil {
-		return err
-	}
-	return nil
-}
-
-// EvalSymlink - Checks if given path is a symlink. Returns ErrSymbolicLink if p is a symbolic link or any other error if occurred.
-func EvalSymlink(p string) error {
-	filename, err := filepath.EvalSymlinks(p)
-	if err != nil {
-		return fmt.Errorf("failed to evaluate symlink: %w", err)
-	}
-	if filename != p {
-		return ErrSymbolicLink
 	}
 	return nil
 }

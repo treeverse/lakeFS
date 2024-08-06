@@ -91,7 +91,7 @@ var localCloneCmd = &cobra.Command{
 		sigCtx := localHandleSyncInterrupt(ctx, idx, string(cloneOperation))
 		s := local.NewSyncManager(sigCtx, client, getHTTPClient(), local.Config{
 			SyncFlags:      syncFlags,
-			IgnoreSymLinks: cfg.Local.IgnoreSymLinks,
+			IgnoreSymLinks: cfg.Local.SkipSymLinks,
 			IncludePerm:    cfg.Experimental.Local.POSIXPerm.Enabled,
 		})
 		err = s.Sync(localPath, stableRemote, ch)
