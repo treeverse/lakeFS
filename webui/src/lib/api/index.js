@@ -71,7 +71,7 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
             cache.delete('user');
             throw new AuthenticationError('Authentication Error', response.status);
         }
-        throw new AuthorizationError(errorMessage, response.status);
+        throw new AuthorizationError(errorMessage || 'Unauthorized', response.status);
     }
 
     return response;

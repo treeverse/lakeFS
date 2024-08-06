@@ -35,7 +35,7 @@ jobs:
 
       - name: Build release
         working-directory: docs
-        run: bundle exec jekyll build --config _config.yml -d _site/${{ steps.version.outputs.tag }} -b /${{ steps.version.outputs.tag }}
+        run: bundle exec jekyll build --config _config.yml,_config.version.yml -d _site/${{ steps.version.outputs.tag }} -b /${{ steps.version.outputs.tag }}
 
       - name: Remove robots.txt
         working-directory: docs/_site/${{ steps.version.outputs.tag }}
