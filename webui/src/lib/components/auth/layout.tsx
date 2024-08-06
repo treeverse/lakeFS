@@ -6,6 +6,7 @@ import Col from "react-bootstrap/Col";
 import Nav from "react-bootstrap/Nav";
 import Card from "react-bootstrap/Card";
 
+import {auth} from "../../api";
 import {Link} from "../nav";
 import {useLoginConfigContext} from "../../hooks/conf";
 import {useLayoutOutletContext} from "../layout";
@@ -13,7 +14,6 @@ import Alert from "react-bootstrap/Alert";
 import {InfoIcon} from "@primer/octicons-react";
 
 type AuthOutletContext = [(tab: string) => void];
-
 
 const rbacDismissedKey = "lakefs:ui:acl:dismissRBACAlert";
 export const AuthLayout = () => {
@@ -24,12 +24,23 @@ export const AuthLayout = () => {
     useEffect(() => {
         setIsLogged(true);
     }, [setIsLogged]);
+    const [displayACLDeprecation, setDisplayACLDeprecation] =  useState(false);
+    useEffect(() => {
+        const listUsers = async () => {
+            return await auth.listUsers("", "", 2);
+        }
+        listUsers().then(r => setDisplayACLDeprecation(r.results.length > 1));
+    },[])
     return (
         <Container fluid="xl">
             <Row className="mt-5">
                 <div>
+                    { displayACLDeprecation &&
+                    <Alert variant="warning" title="ACL Deprecation"><InfoIcon/>{" "}<b>ACLs are moving out of core lakeFS!</b>{"  "}See the <Alert.Link href={"https://lakefs.io/blog/why-moving-acls-out-of-core-lakefs/"}>announcement</Alert.Link>{" "}
+                        to learn why and how to continue using your existing lakeFS installation in future versions.</Alert>
+                    }
                     {rbac === 'simplified' &&  showRBACAlert &&
-                    <Alert severity="info" title="rbac CTA" dismissible onClose={() => {
+                    <Alert variant="info" title="rbac CTA" dismissible onClose={() => {
                         window.localStorage.setItem(rbacDismissedKey, "true");
                         setShowRBACAlert(false);
                     }}><InfoIcon/>{" "}Enhance Your Security with {" "}<Alert.Link href={"https://docs.lakefs.io/reference/security/rbac.html"}>Role-Based Access Control</Alert.Link>{" "}
