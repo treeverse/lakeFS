@@ -573,6 +573,7 @@ func (c *Config) IsAuthUISimplified() bool {
 func (c *Config) IsAuthenticationTypeAPI() bool {
 	return c.Auth.AuthenticationAPI.Endpoint != ""
 }
+
 func (c *Config) IsAuthTypeAPI() bool {
 	return c.Auth.API.Endpoint != ""
 }
@@ -580,6 +581,10 @@ func (c *Config) IsExternalPrincipalsEnabled() bool {
 	// IsAuthTypeAPI must be true since the local auth service doesnt support external principals
 	// ExternalPrincipalsEnabled indicates that the remote auth service enables external principals support since its optional extension
 	return c.IsAuthTypeAPI() && c.Auth.AuthenticationAPI.ExternalPrincipalsEnabled
+}
+
+func (c *Config) IsAdvancedAuth() bool {
+	return c.IsAuthTypeAPI() && (c.Auth.UIConfig.RBAC == AuthRBACExternal || c.Auth.UIConfig.RBAC == AuthRBACInternal)
 }
 
 func (c *Config) UISnippets() []apiparams.CodeSnippet {

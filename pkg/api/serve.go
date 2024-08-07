@@ -51,7 +51,8 @@ func Serve(cfg *config.Config, catalog *catalog.Catalog, middlewareAuthenticator
 			httputil.RequestIDHeaderName,
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
 			cfg.Logging.AuditLogLevel,
-			cfg.Logging.TraceRequestHeaders),
+			cfg.Logging.TraceRequestHeaders,
+			cfg.IsAdvancedAuth()),
 		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
 		MetricsMiddleware(swagger),
 	)
