@@ -1,4 +1,4 @@
-package auth_acl
+package acl
 
 import (
 	"context"

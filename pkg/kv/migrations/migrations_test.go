@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/require"
-	"github.com/treeverse/lakefs/contrib/auth-acl"
+	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -351,7 +351,7 @@ func createARN(name string) string {
 	return fmt.Sprintf("arn:%s:this:is:an:arn", name)
 }
 
-func verifyMigration(t *testing.T, ctx context.Context, authService *auth_acl.AuthService, policies []model.Policy, cfg config.Config) {
+func verifyMigration(t *testing.T, ctx context.Context, authService *authacl.AuthService, policies []model.Policy, cfg config.Config) {
 	for _, prev := range policies {
 		policy, err := authService.GetPolicy(ctx, prev.DisplayName)
 		testutil.MustDo(t, "get policy", err)

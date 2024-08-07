@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/treeverse/lakefs/contrib/auth-acl"
+	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
@@ -71,7 +71,7 @@ func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 		usersWithPolicies []string
 	)
 	updateTime := time.Now()
-	authService := auth_acl.NewAuthService(
+	authService := authacl.NewAuthService(
 		kvStore,
 		crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
 		authparams.ServiceCache(cfg.Auth.Cache),
