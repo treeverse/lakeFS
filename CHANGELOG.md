@@ -1,5 +1,11 @@
 # Changelog
 
+# v1.31.0
+
+:new: What's new:
+- lakectl local: add option to ignore symlinks (#8055)
+- Allow Glue exporter to create a database per branch (#8000)
+
 # v1.30.0
 
 :new: What's new:
