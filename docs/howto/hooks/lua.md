@@ -184,7 +184,7 @@ Example:
 ```lua
 local opts = {
     error_on_already_exists = false,
-    create_db_input = "{\"DatabaseInput\":{\"Description\" : \"Created via LakeFS Action\"}}"
+    create_db_input = {DatabaseInput = {Description = "Created via LakeFS Action"}, Tags = {Owner = "Joe"}}
 }
 glue.create_database(db, opts)
 ```
