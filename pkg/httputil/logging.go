@@ -63,7 +63,7 @@ func SourceIP(r *http.Request) string {
 	return sourceIP + ":" + sourcePort
 }
 
-func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields, middlewareLogLevel string) func(next http.Handler) http.Handler {
+func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields, middlewareLogLevel string, isAdvancedAuth bool) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			startTime := time.Now()
@@ -74,25 +74,29 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 
 			// add default fields to context
 			requestFields := logging.Fields{
-				logging.PathFieldKey:      r.RequestURI,
-				logging.MethodFieldKey:    r.Method,
-				logging.HostFieldKey:      r.Host,
-				logging.RequestIDFieldKey: reqID,
+				logging.PathFieldKey:   r.RequestURI,
+				logging.MethodFieldKey: r.Method,
+				logging.HostFieldKey:   r.Host,
 			}
-			for k, v := range fields {
-				requestFields[k] = v
+			if isAdvancedAuth {
+				requestFields[logging.RequestIDFieldKey] = reqID
+				for k, v := range fields {
+					requestFields[k] = v
+				}
 			}
 			r = r.WithContext(logging.AddFields(r.Context(), requestFields))
 			writer.Header().Set(requestIDHeaderName, reqID)
 			next.ServeHTTP(writer, r) // handle the request
 
 			loggingFields := logging.Fields{
-				"took":           time.Since(startTime),
-				"status_code":    writer.StatusCode,
-				"sent_bytes":     writer.ResponseSize,
-				"client":         client,
-				logging.LogAudit: true,
-				"source_ip":      sourceIP,
+				"took":        time.Since(startTime),
+				"status_code": writer.StatusCode,
+				"source_ip":   sourceIP,
+			}
+			if isAdvancedAuth {
+				loggingFields["sent_bytes"] = writer.ResponseSize
+				loggingFields["client"] = client
+				loggingFields[logging.LogAudit] = true
 			}
 
 			logLevel := strings.ToLower(middlewareLogLevel)
@@ -106,9 +110,9 @@ func DefaultLoggingMiddleware(requestIDHeaderName string, fields logging.Fields,
 	}
 }
 
-func LoggingMiddleware(requestIDHeaderName string, fields logging.Fields, loggingMiddlewareLevel string, traceRequestHeaders bool) func(next http.Handler) http.Handler {
+func LoggingMiddleware(requestIDHeaderName string, fields logging.Fields, loggingMiddlewareLevel string, traceRequestHeaders bool, isAdvancedAuth bool) func(next http.Handler) http.Handler {
 	if strings.ToLower(loggingMiddlewareLevel) == "trace" {
-		return TracingMiddleware(requestIDHeaderName, fields, traceRequestHeaders)
+		return TracingMiddleware(requestIDHeaderName, fields, traceRequestHeaders, isAdvancedAuth)
 	}
-	return DefaultLoggingMiddleware(requestIDHeaderName, fields, loggingMiddlewareLevel)
+	return DefaultLoggingMiddleware(requestIDHeaderName, fields, loggingMiddlewareLevel, isAdvancedAuth)
 }
