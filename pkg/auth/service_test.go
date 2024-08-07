@@ -17,6 +17,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/contrib/auth-acl"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
@@ -107,7 +108,7 @@ func userWithACLs(t testing.TB, s auth.Service, a model.ACL) string {
 func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
-	s := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	s := auth_acl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.ContextUnavailable())
 
@@ -157,7 +158,7 @@ func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
 func TestAuthService_ListPaged(t *testing.T) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
-	s := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	s := auth_acl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.ContextUnavailable())
 
@@ -540,16 +541,16 @@ func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, b)
 
-	serviceWithoutCache := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	serviceWithoutCache := auth_acl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.ContextUnavailable())
-	serviceWithCache := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	serviceWithCache := auth_acl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: true,
 		Size:    1024,
 		TTL:     20 * time.Second,
 		Jitter:  3 * time.Second,
 	}, logging.ContextUnavailable())
-	serviceWithCacheLowTTL := auth.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	serviceWithCacheLowTTL := auth_acl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: true,
 		Size:    1024,
 		TTL:     1 * time.Millisecond,
@@ -568,7 +569,7 @@ func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
 	})
 }
 
-func benchmarkKVListEffectivePolicies(b *testing.B, s *auth.AuthService, userName string) {
+func benchmarkKVListEffectivePolicies(b *testing.B, s *auth_acl.AuthService, userName string) {
 	b.ResetTimer()
 	ctx := context.Background()
 	for n := 0; n < b.N; n++ {
@@ -2767,7 +2768,7 @@ func TestAPIService_RequestIDPropagation(t *testing.T) {
 
 	ctx := context.WithValue(context.Background(), httputil.RequestIDContextKey, requestID)
 
-	service.DeleteUser(ctx, "foo")
+	require.NoError(t, service.DeleteUser(ctx, "foo"))
 	if !called {
 		t.Error("Expected inner server to be called but it wasn't")
 	}
