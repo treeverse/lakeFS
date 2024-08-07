@@ -775,7 +775,7 @@ local table_input = {
     EXTERNAL: "TRUE"
     "parquet.compression": "SNAPPY"
 }
-exporter.export_glue(glue, "my-db", "_lakefs_tables/animals.yaml", table_input, action, {debug=true, create_db_input = {Description="exported db"}, Tags = {Owner = "Joe"}})
+exporter.export_glue(glue, "my-db", "_lakefs_tables/animals.yaml", table_input, action, {debug=true, create_db_input = {DatabaseInput = {Description="DB exported from LakeFS"}, Tags = {Owner = "Joe"}}})
 ```
 
 ### `lakefs/catalogexport/glue_exporter.get_full_table_name(descriptor, action_info)`
