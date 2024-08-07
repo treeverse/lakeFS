@@ -268,7 +268,8 @@ func createDatabase(c *GlueClient) lua.Function {
 		// AWS API call
 		_, err := client.CreateDatabase(c.ctx, createDBOpts.CreateDBInput)
 		if err != nil {
-			if !createDBOpts.ErrorOnAlreadyExists && isAlreadyExistsErr(err) {
+			var errExists *types.AlreadyExistsException
+			if !createDBOpts.ErrorOnAlreadyExists && errors.As(err, &errExists) {
 				return 0
 			}
 			lua.Errorf(l, "%s", err.Error())
@@ -276,11 +277,6 @@ func createDatabase(c *GlueClient) lua.Function {
 		}
 		return 0
 	}
-}
-
-func isAlreadyExistsErr(err error) bool {
-	var errExists *types.AlreadyExistsException
-	return errors.As(err, &errExists)
 }
 
 func deleteDatabase(c *GlueClient) lua.Function {
