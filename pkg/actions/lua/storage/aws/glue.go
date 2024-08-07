@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/glue"
 	"github.com/aws/aws-sdk-go-v2/service/glue/types"
+	"github.com/mitchellh/mapstructure"
 	"github.com/treeverse/lakefs/pkg/actions/lua/util"
 )
 
@@ -55,10 +56,12 @@ type GlueClient struct {
 }
 
 var glueFunctions = map[string]func(client *GlueClient) lua.Function{
-	"get_table":    getTable,
-	"create_table": createTable,
-	"update_table": updateTable,
-	"delete_table": deleteTable,
+	"get_table":       getTable,
+	"create_table":    createTable,
+	"update_table":    updateTable,
+	"delete_table":    deleteTable,
+	"create_database": createDatabase,
+	"delete_database": deleteDatabase,
 }
 
 func (c *GlueClient) client() *glue.Client {
@@ -221,5 +224,80 @@ func getTable(c *GlueClient) lua.Function {
 		util.DeepPush(l, itemMap)
 		l.PushBoolean(true)
 		return 2
+	}
+}
+
+type glueCreateDatabaseOpts struct {
+	CreateDBInput        *glue.CreateDatabaseInput `json:"create_db_input" mapstructure:"create_db_input"`
+	ErrorOnAlreadyExists bool                      `json:"error_on_already_exists" mapstructure:"error_on_already_exists"`
+}
+
+func createDatabase(c *GlueClient) lua.Function {
+	return func(l *lua.State) int {
+		client := c.client()
+		database := lua.CheckString(l, 1)
+
+		createDBOpts := &glueCreateDatabaseOpts{
+			CreateDBInput: &glue.CreateDatabaseInput{
+				DatabaseInput: &types.DatabaseInput{
+					Name: aws.String(database),
+				},
+			},
+			ErrorOnAlreadyExists: true,
+		}
+		// decode opts if provided and override defaults
+		if !l.IsNoneOrNil(2) {
+			var t interface{}
+			t, err := util.PullTable(l, 2)
+			if err != nil {
+				lua.Errorf(l, "PullTable: %s", err.Error())
+				panic("unreachable")
+			}
+			err = mapstructure.Decode(t, createDBOpts)
+			if err != nil {
+				lua.Errorf(l, "DecodeTable: %s", err.Error())
+				panic("unreachable")
+			}
+		}
+
+		if *createDBOpts.CreateDBInput.DatabaseInput.Name != database {
+			lua.Errorf(l, "database name in input (%s) doesn't match database name parameter (%s)", *createDBOpts.CreateDBInput.DatabaseInput.Name, database)
+			panic("unreachable")
+		}
+
+		// AWS API call
+		_, err := client.CreateDatabase(c.ctx, createDBOpts.CreateDBInput)
+		if err != nil {
+			var errExists *types.AlreadyExistsException
+			if !createDBOpts.ErrorOnAlreadyExists && errors.As(err, &errExists) {
+				return 0
+			}
+			lua.Errorf(l, "%s", err.Error())
+			panic("unreachable")
+		}
+		return 0
+	}
+}
+
+func deleteDatabase(c *GlueClient) lua.Function {
+	return func(l *lua.State) int {
+		client := c.client()
+		database := aws.String(lua.CheckString(l, 1))
+
+		// check if catalog ID provided
+		var catalogID *string
+		if !l.IsNone(2) {
+			catalogID = aws.String(lua.CheckString(l, 2))
+		}
+
+		_, err := client.DeleteDatabase(c.ctx, &glue.DeleteDatabaseInput{
+			Name:      database,
+			CatalogId: catalogID,
+		})
+		if err != nil {
+			lua.Errorf(l, "%s", err.Error())
+			panic("unreachable")
+		}
+		return 0
 	}
 }

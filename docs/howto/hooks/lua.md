@@ -168,9 +168,45 @@ local aws = require("aws")
 local glue = aws.glue_client("ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "REGION")
 ```
 
+### `aws/glue.create_database(database, options)`
+
+Create a new Database in Glue Catalog.
+
+Parameters:
+
+- `database(string)`: Glue Database name.
+- `options(table)` (optional):
+    - `error_on_already_exists(boolean)`: Whether the call fail with an error if a DB with this name already exists
+    - `create_db_input(Table)`: a Table that is passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
+
+Example:
+
+```lua
+local opts = {
+    error_on_already_exists = false,
+    create_db_input = {DatabaseInput = {Description = "Created via LakeFS Action"}, Tags = {Owner = "Joe"}}
+}
+glue.create_database(db, opts)
+```
+
+### `aws/glue.delete_database(database, catalog_id)`
+
+Delete an existing Database in Glue Catalog.
+
+Parameters:
+
+- `database(string)`: Glue Database name.
+- `catalog_id(string)` (optional): Glue Catalog ID
+
+Example:
+
+```lua
+glue.delete_database(db, "461129977393")
+```
+
 ### `aws/glue.get_table(database, table [, catalog_id)`
 
-Describe a table from the Glue catalog.
+Describe a table from the Glue Catalog.
 
 Example:
 
@@ -703,14 +739,15 @@ Parameters:
 - `glue`: AWS glue client
 - `db(string)`: glue database name
 - `table_src_path(string)`: path to table spec (e.g. _lakefs_tables/my_table.yaml)
-- `create_table_input(Table)`: Input equal mapping to [table_input](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html#API_CreateTable_RequestSyntax) in AWS, the same as we use for `glue.create_table`.
+- `create_table_input(table)`: Input equal mapping to [table_input](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html#API_CreateTable_RequestSyntax) in AWS, the same as we use for `glue.create_table`.
 should contain inputs describing the data format (e.g. InputFormat, OutputFormat, SerdeInfo) since the exporter is agnostic to this. 
 by default this function will configure table location and schema.
-- `action_info(Table)`: the global action object.
-- `options(Table)`:
+- `action_info(table)`: the global action object.
+- `options(table)`:
   - `table_name(string)`: Override default glue table name
   - `debug(boolean`
   - `export_base_uri(string)`: Override the default prefix in S3 for symlink location e.g. s3://other-bucket/path/
+  - `create_db_input(table)`: if this is specified, then it indicates we want to create a new database for the table export. The parameter expects a table that is converted to JSON and passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
 
 When creating a glue table, the final table input will consist of the `create_table_input` input parameter and lakeFS computed defaults that will override it:
 
@@ -738,7 +775,7 @@ local table_input = {
     EXTERNAL: "TRUE"
     "parquet.compression": "SNAPPY"
 }
-exporter.export_glue(glue, "my-db", "_lakefs_tables/animals.yaml", table_input, action, {debug=true})
+exporter.export_glue(glue, "my-db", "_lakefs_tables/animals.yaml", table_input, action, {debug=true, create_db_input = {DatabaseInput = {Description="DB exported from LakeFS"}, Tags = {Owner = "Joe"}}})
 ```
 
 ### `lakefs/catalogexport/glue_exporter.get_full_table_name(descriptor, action_info)`
