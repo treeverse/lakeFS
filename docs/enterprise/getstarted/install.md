@@ -412,9 +412,6 @@ and audit_logs that are describing a user action (i.e create branch).
 The distinction between regular logs and audit_logs is in the boolean field log_audit.
 lakeFS and fluffy share the same configuration structure under logging.* section in the config.
 
-{: .warning }
-> The log entries marked with `log_audit = true` are currently available in both the open-source version of lakeFS and lakeFS Enterprise. However, please be aware that these log entries are deprecated in the open source version and will be removed in future releases.
-
 
 ## Advanced Deployment Configurations
 
