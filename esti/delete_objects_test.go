@@ -35,8 +35,8 @@ func TestDeleteObjects(t *testing.T) {
 		Prefix: aws.String(mainBranch + "/"),
 	})
 
-	assert.NoError(t, err)
-	assert.Len(t, listOut.Contents, numOfObjects)
+	require.NoError(t, err)
+	require.Len(t, listOut.Contents, numOfObjects)
 
 	deleteOut, err := svc.DeleteObjects(ctx, &s3.DeleteObjectsInput{
 		Bucket: aws.String(repo),
