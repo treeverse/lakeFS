@@ -419,6 +419,7 @@ func (e *EntriesIterator) Next() bool {
 		if !e.queryPager.More() {
 			return false
 		}
+
 		if e.batchSize != dynamicPageSize {
 			if err := e.handleBatchSizeChange(); err != nil {
 				e.err = convertError(err)
@@ -431,13 +432,14 @@ func (e *EntriesIterator) Next() bool {
 				e.err = fmt.Errorf("getting next page: %w", convertError(err))
 				return false
 			}
-			if len(e.currPage.Items) == 0 {
-				// returned page is empty, no more items
-				return false
-			}
-			e.currPageSeekedKey = nil
-			e.currEntryIdx = -1
 		}
+
+		if len(e.currPage.Items) == 0 {
+			// returned page is empty, no more items
+			return false
+		}
+		e.currPageSeekedKey = nil
+		e.currEntryIdx = -1
 	}
 	e.currEntryIdx++
 	key, value := e.getKeyValue(e.currEntryIdx)
