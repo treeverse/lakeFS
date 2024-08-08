@@ -3,7 +3,7 @@
 # v1.31.1
 
 :bug: Bugs fixed:
-- Handle empty page when CosmosDB Iterator uses dynamic batch size (#8066)
+- Handle empty page on CosmosDB Iterator (#8066)
 
 # v1.31.0
 
