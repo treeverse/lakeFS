@@ -18,6 +18,7 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/contrib/auth/acl"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -89,7 +90,7 @@ func NewAuthService(ctx context.Context, cfg *config.Config, logger logging.Logg
 		}
 		return auth.NewMonitoredAuthServiceAndInviter(apiService)
 	}
-	authService := auth.NewAuthService(
+	authService := acl.NewAuthService(
 		kvStore,
 		crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
 		authparams.ServiceCache(cfg.Auth.Cache),
