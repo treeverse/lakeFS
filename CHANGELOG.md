@@ -1,5 +1,10 @@
 # Changelog
 
+# v1.31.1
+
+:bug: Bugs fixed:
+- Handle empty page on CosmosDB Iterator (#8066)
+
 # v1.31.0
 
 :new: What's new:
