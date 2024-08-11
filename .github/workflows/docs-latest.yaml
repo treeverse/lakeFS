@@ -34,7 +34,7 @@ jobs:
         run: |
           sed -i 's/^Sitemap: /Sitemap: https:\/\/docs.lakefs.io/' robots.txt
 
-      - name: Update sitemap.xml
+      - name: Add base-url to sitemap.xml
         working-directory: docs/_site
         run: |
           sed -i 's/<loc>/<loc>https:\/\/docs.lakefs.io/' sitemap.xml
