@@ -1,6 +1,6 @@
 package acl
 
-//go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package apigen -generate "types,chi-server,spec" -templates ../apigen/oapi-tmpl -o ../apigen/authapi.gen.go ../../../api/authorization.yml
+//go:generate go run github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.5.6 -package apigen -generate "types,chi-server,spec" -templates ../../../pkg/api/tmpl -o ../apigen/authapi.gen.go ../../../api/authorization.yml
 
 import (
 	"encoding/json"

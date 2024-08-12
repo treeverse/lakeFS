@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -510,11 +511,12 @@ type ServerInterface interface {
 	HealthCheck(w http.ResponseWriter, r *http.Request)
 }
 
+// chi-middleware.tmpl based on https://github.com/deepmap/oapi-codegen/tree/master/pkg/codegen/templates
+
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler            ServerInterface
 	HandlerMiddlewares []MiddlewareFunc
-	ErrorHandlerFunc   func(w http.ResponseWriter, r *http.Request, err error)
 }
 
 type MiddlewareFunc func(http.HandlerFunc) http.HandlerFunc
@@ -530,7 +532,7 @@ func (siw *ServerInterfaceWrapper) GetCredentials(w http.ResponseWriter, r *http
 
 	err = runtime.BindStyledParameter("simple", false, "accessKeyId", chi.URLParam(r, "accessKeyId"), &accessKeyId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accessKeyId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter accessKeyId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -562,13 +564,13 @@ func (siw *ServerInterfaceWrapper) GetExternalPrincipal(w http.ResponseWriter, r
 	if paramValue := r.URL.Query().Get("principalId"); paramValue != "" {
 
 	} else {
-		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "principalId"})
+		http.Error(w, "Query argument principalId is required, but not found", http.StatusBadRequest)
 		return
 	}
 
 	err = runtime.BindQueryParameter("form", true, true, "principalId", r.URL.Query(), &params.PrincipalId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "principalId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter principalId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -601,7 +603,7 @@ func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Req
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "prefix", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter prefix: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -612,7 +614,7 @@ func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Req
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "after", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter after: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -623,7 +625,7 @@ func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Req
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "amount", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter amount: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -647,7 +649,7 @@ func (siw *ServerInterfaceWrapper) CreateGroup(w http.ResponseWriter, r *http.Re
 	parseBody := r.ContentLength != 0
 	if parseBody {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			siw.ErrorHandlerFunc(w, r, &UnmarshalingBodyError{Err: err})
+			http.Error(w, "Error unmarshalling body 'CreateGroup' as JSON", http.StatusBadRequest)
 			return
 		}
 	}
@@ -676,7 +678,7 @@ func (siw *ServerInterfaceWrapper) DeleteGroup(w http.ResponseWriter, r *http.Re
 
 	err = runtime.BindStyledParameter("simple", false, "groupId", chi.URLParam(r, "groupId"), &groupId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter groupId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -704,7 +706,7 @@ func (siw *ServerInterfaceWrapper) GetGroup(w http.ResponseWriter, r *http.Reque
 
 	err = runtime.BindStyledParameter("simple", false, "groupId", chi.URLParam(r, "groupId"), &groupId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter groupId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -732,7 +734,7 @@ func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *ht
 
 	err = runtime.BindStyledParameter("simple", false, "groupId", chi.URLParam(r, "groupId"), &groupId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter groupId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -748,7 +750,7 @@ func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *ht
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "prefix", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter prefix: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -759,7 +761,7 @@ func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *ht
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "after", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter after: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -770,7 +772,7 @@ func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *ht
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "amount", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter amount: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -796,7 +798,7 @@ func (siw *ServerInterfaceWrapper) DeleteGroupMembership(w http.ResponseWriter, 
 
 	err = runtime.BindStyledParameter("simple", false, "groupId", chi.URLParam(r, "groupId"), &groupId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter groupId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -805,7 +807,7 @@ func (siw *ServerInterfaceWrapper) DeleteGroupMembership(w http.ResponseWriter, 
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -833,7 +835,7 @@ func (siw *ServerInterfaceWrapper) AddGroupMembership(w http.ResponseWriter, r *
 
 	err = runtime.BindStyledParameter("simple", false, "groupId", chi.URLParam(r, "groupId"), &groupId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter groupId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -842,7 +844,7 @@ func (siw *ServerInterfaceWrapper) AddGroupMembership(w http.ResponseWriter, r *
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -870,7 +872,7 @@ func (siw *ServerInterfaceWrapper) ListGroupPolicies(w http.ResponseWriter, r *h
 
 	err = runtime.BindStyledParameter("simple", false, "groupId", chi.URLParam(r, "groupId"), &groupId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter groupId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -886,7 +888,7 @@ func (siw *ServerInterfaceWrapper) ListGroupPolicies(w http.ResponseWriter, r *h
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "prefix", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter prefix: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -897,7 +899,7 @@ func (siw *ServerInterfaceWrapper) ListGroupPolicies(w http.ResponseWriter, r *h
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "after", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter after: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -908,7 +910,7 @@ func (siw *ServerInterfaceWrapper) ListGroupPolicies(w http.ResponseWriter, r *h
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "amount", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter amount: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -934,7 +936,7 @@ func (siw *ServerInterfaceWrapper) DetachPolicyFromGroup(w http.ResponseWriter, 
 
 	err = runtime.BindStyledParameter("simple", false, "groupId", chi.URLParam(r, "groupId"), &groupId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter groupId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -943,7 +945,7 @@ func (siw *ServerInterfaceWrapper) DetachPolicyFromGroup(w http.ResponseWriter, 
 
 	err = runtime.BindStyledParameter("simple", false, "policyId", chi.URLParam(r, "policyId"), &policyId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "policyId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter policyId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -971,7 +973,7 @@ func (siw *ServerInterfaceWrapper) AttachPolicyToGroup(w http.ResponseWriter, r 
 
 	err = runtime.BindStyledParameter("simple", false, "groupId", chi.URLParam(r, "groupId"), &groupId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter groupId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -980,7 +982,7 @@ func (siw *ServerInterfaceWrapper) AttachPolicyToGroup(w http.ResponseWriter, r 
 
 	err = runtime.BindStyledParameter("simple", false, "policyId", chi.URLParam(r, "policyId"), &policyId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "policyId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter policyId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1015,7 +1017,7 @@ func (siw *ServerInterfaceWrapper) ListPolicies(w http.ResponseWriter, r *http.R
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "prefix", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter prefix: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1026,7 +1028,7 @@ func (siw *ServerInterfaceWrapper) ListPolicies(w http.ResponseWriter, r *http.R
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "after", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter after: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1037,7 +1039,7 @@ func (siw *ServerInterfaceWrapper) ListPolicies(w http.ResponseWriter, r *http.R
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "amount", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter amount: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1061,7 +1063,7 @@ func (siw *ServerInterfaceWrapper) CreatePolicy(w http.ResponseWriter, r *http.R
 	parseBody := true
 	if parseBody {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			siw.ErrorHandlerFunc(w, r, &UnmarshalingBodyError{Err: err})
+			http.Error(w, "Error unmarshalling body 'CreatePolicy' as JSON", http.StatusBadRequest)
 			return
 		}
 	}
@@ -1090,7 +1092,7 @@ func (siw *ServerInterfaceWrapper) DeletePolicy(w http.ResponseWriter, r *http.R
 
 	err = runtime.BindStyledParameter("simple", false, "policyId", chi.URLParam(r, "policyId"), &policyId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "policyId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter policyId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1118,7 +1120,7 @@ func (siw *ServerInterfaceWrapper) GetPolicy(w http.ResponseWriter, r *http.Requ
 
 	err = runtime.BindStyledParameter("simple", false, "policyId", chi.URLParam(r, "policyId"), &policyId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "policyId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter policyId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1146,7 +1148,7 @@ func (siw *ServerInterfaceWrapper) UpdatePolicy(w http.ResponseWriter, r *http.R
 	parseBody := true
 	if parseBody {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			siw.ErrorHandlerFunc(w, r, &UnmarshalingBodyError{Err: err})
+			http.Error(w, "Error unmarshalling body 'UpdatePolicy' as JSON", http.StatusBadRequest)
 			return
 		}
 	}
@@ -1156,7 +1158,7 @@ func (siw *ServerInterfaceWrapper) UpdatePolicy(w http.ResponseWriter, r *http.R
 
 	err = runtime.BindStyledParameter("simple", false, "policyId", chi.URLParam(r, "policyId"), &policyId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "policyId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter policyId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1182,7 +1184,7 @@ func (siw *ServerInterfaceWrapper) ClaimTokenId(w http.ResponseWriter, r *http.R
 	parseBody := r.ContentLength != 0
 	if parseBody {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			siw.ErrorHandlerFunc(w, r, &UnmarshalingBodyError{Err: err})
+			http.Error(w, "Error unmarshalling body 'ClaimTokenId' as JSON", http.StatusBadRequest)
 			return
 		}
 	}
@@ -1218,7 +1220,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "prefix", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter prefix: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1229,7 +1231,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "after", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter after: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1240,7 +1242,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "amount", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter amount: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1251,7 +1253,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	err = runtime.BindQueryParameter("form", true, false, "id", r.URL.Query(), &params.Id)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter id: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1262,7 +1264,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	err = runtime.BindQueryParameter("form", true, false, "email", r.URL.Query(), &params.Email)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "email", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter email: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1273,7 +1275,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	err = runtime.BindQueryParameter("form", true, false, "external_id", r.URL.Query(), &params.ExternalId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter external_id: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1297,7 +1299,7 @@ func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Req
 	parseBody := r.ContentLength != 0
 	if parseBody {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			siw.ErrorHandlerFunc(w, r, &UnmarshalingBodyError{Err: err})
+			http.Error(w, "Error unmarshalling body 'CreateUser' as JSON", http.StatusBadRequest)
 			return
 		}
 	}
@@ -1326,7 +1328,7 @@ func (siw *ServerInterfaceWrapper) DeleteUser(w http.ResponseWriter, r *http.Req
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1354,7 +1356,7 @@ func (siw *ServerInterfaceWrapper) GetUser(w http.ResponseWriter, r *http.Reques
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1382,7 +1384,7 @@ func (siw *ServerInterfaceWrapper) ListUserCredentials(w http.ResponseWriter, r 
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1398,7 +1400,7 @@ func (siw *ServerInterfaceWrapper) ListUserCredentials(w http.ResponseWriter, r 
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "prefix", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter prefix: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1409,7 +1411,7 @@ func (siw *ServerInterfaceWrapper) ListUserCredentials(w http.ResponseWriter, r 
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "after", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter after: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1420,7 +1422,7 @@ func (siw *ServerInterfaceWrapper) ListUserCredentials(w http.ResponseWriter, r 
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "amount", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter amount: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1446,7 +1448,7 @@ func (siw *ServerInterfaceWrapper) CreateCredentials(w http.ResponseWriter, r *h
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1462,7 +1464,7 @@ func (siw *ServerInterfaceWrapper) CreateCredentials(w http.ResponseWriter, r *h
 
 	err = runtime.BindQueryParameter("form", true, false, "access_key", r.URL.Query(), &params.AccessKey)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "access_key", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter access_key: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1473,7 +1475,7 @@ func (siw *ServerInterfaceWrapper) CreateCredentials(w http.ResponseWriter, r *h
 
 	err = runtime.BindQueryParameter("form", true, false, "secret_key", r.URL.Query(), &params.SecretKey)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "secret_key", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter secret_key: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1499,7 +1501,7 @@ func (siw *ServerInterfaceWrapper) DeleteCredentials(w http.ResponseWriter, r *h
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1508,7 +1510,7 @@ func (siw *ServerInterfaceWrapper) DeleteCredentials(w http.ResponseWriter, r *h
 
 	err = runtime.BindStyledParameter("simple", false, "accessKeyId", chi.URLParam(r, "accessKeyId"), &accessKeyId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accessKeyId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter accessKeyId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1536,7 +1538,7 @@ func (siw *ServerInterfaceWrapper) GetCredentialsForUser(w http.ResponseWriter, 
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1545,7 +1547,7 @@ func (siw *ServerInterfaceWrapper) GetCredentialsForUser(w http.ResponseWriter, 
 
 	err = runtime.BindStyledParameter("simple", false, "accessKeyId", chi.URLParam(r, "accessKeyId"), &accessKeyId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accessKeyId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter accessKeyId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1573,7 +1575,7 @@ func (siw *ServerInterfaceWrapper) DeleteUserExternalPrincipal(w http.ResponseWr
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1586,13 +1588,13 @@ func (siw *ServerInterfaceWrapper) DeleteUserExternalPrincipal(w http.ResponseWr
 	if paramValue := r.URL.Query().Get("principalId"); paramValue != "" {
 
 	} else {
-		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "principalId"})
+		http.Error(w, "Query argument principalId is required, but not found", http.StatusBadRequest)
 		return
 	}
 
 	err = runtime.BindQueryParameter("form", true, true, "principalId", r.URL.Query(), &params.PrincipalId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "principalId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter principalId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1618,7 +1620,7 @@ func (siw *ServerInterfaceWrapper) CreateUserExternalPrincipal(w http.ResponseWr
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1631,13 +1633,13 @@ func (siw *ServerInterfaceWrapper) CreateUserExternalPrincipal(w http.ResponseWr
 	if paramValue := r.URL.Query().Get("principalId"); paramValue != "" {
 
 	} else {
-		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "principalId"})
+		http.Error(w, "Query argument principalId is required, but not found", http.StatusBadRequest)
 		return
 	}
 
 	err = runtime.BindQueryParameter("form", true, true, "principalId", r.URL.Query(), &params.PrincipalId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "principalId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter principalId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1663,7 +1665,7 @@ func (siw *ServerInterfaceWrapper) ListUserExternalPrincipals(w http.ResponseWri
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1679,7 +1681,7 @@ func (siw *ServerInterfaceWrapper) ListUserExternalPrincipals(w http.ResponseWri
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "prefix", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter prefix: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1690,7 +1692,7 @@ func (siw *ServerInterfaceWrapper) ListUserExternalPrincipals(w http.ResponseWri
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "after", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter after: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1701,7 +1703,7 @@ func (siw *ServerInterfaceWrapper) ListUserExternalPrincipals(w http.ResponseWri
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "amount", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter amount: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1727,7 +1729,7 @@ func (siw *ServerInterfaceWrapper) UpdateUserFriendlyName(w http.ResponseWriter,
 	parseBody := true
 	if parseBody {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			siw.ErrorHandlerFunc(w, r, &UnmarshalingBodyError{Err: err})
+			http.Error(w, "Error unmarshalling body 'UpdateUserFriendlyName' as JSON", http.StatusBadRequest)
 			return
 		}
 	}
@@ -1737,7 +1739,7 @@ func (siw *ServerInterfaceWrapper) UpdateUserFriendlyName(w http.ResponseWriter,
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1765,7 +1767,7 @@ func (siw *ServerInterfaceWrapper) ListUserGroups(w http.ResponseWriter, r *http
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1781,7 +1783,7 @@ func (siw *ServerInterfaceWrapper) ListUserGroups(w http.ResponseWriter, r *http
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "prefix", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter prefix: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1792,7 +1794,7 @@ func (siw *ServerInterfaceWrapper) ListUserGroups(w http.ResponseWriter, r *http
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "after", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter after: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1803,7 +1805,7 @@ func (siw *ServerInterfaceWrapper) ListUserGroups(w http.ResponseWriter, r *http
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "amount", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter amount: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1829,7 +1831,7 @@ func (siw *ServerInterfaceWrapper) UpdatePassword(w http.ResponseWriter, r *http
 	parseBody := true
 	if parseBody {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			siw.ErrorHandlerFunc(w, r, &UnmarshalingBodyError{Err: err})
+			http.Error(w, "Error unmarshalling body 'UpdatePassword' as JSON", http.StatusBadRequest)
 			return
 		}
 	}
@@ -1839,7 +1841,7 @@ func (siw *ServerInterfaceWrapper) UpdatePassword(w http.ResponseWriter, r *http
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1867,7 +1869,7 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1883,7 +1885,7 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "prefix", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter prefix: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1894,7 +1896,7 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "after", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter after: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1905,7 +1907,7 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "amount", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter amount: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1916,7 +1918,7 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 
 	err = runtime.BindQueryParameter("form", true, false, "effective", r.URL.Query(), &params.Effective)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "effective", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter effective: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1942,7 +1944,7 @@ func (siw *ServerInterfaceWrapper) DetachPolicyFromUser(w http.ResponseWriter, r
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1951,7 +1953,7 @@ func (siw *ServerInterfaceWrapper) DetachPolicyFromUser(w http.ResponseWriter, r
 
 	err = runtime.BindStyledParameter("simple", false, "policyId", chi.URLParam(r, "policyId"), &policyId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "policyId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter policyId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1979,7 +1981,7 @@ func (siw *ServerInterfaceWrapper) AttachPolicyToUser(w http.ResponseWriter, r *
 
 	err = runtime.BindStyledParameter("simple", false, "userId", chi.URLParam(r, "userId"), &userId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter userId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1988,7 +1990,7 @@ func (siw *ServerInterfaceWrapper) AttachPolicyToUser(w http.ResponseWriter, r *
 
 	err = runtime.BindStyledParameter("simple", false, "policyId", chi.URLParam(r, "policyId"), &policyId)
 	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "policyId", Err: err})
+		http.Error(w, fmt.Sprintf("Invalid format for parameter policyId: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -2037,86 +2039,7 @@ func (siw *ServerInterfaceWrapper) HealthCheck(w http.ResponseWriter, r *http.Re
 	handler(w, r.WithContext(ctx))
 }
 
-type UnescapedCookieParamError struct {
-	ParamName string
-	Err       error
-}
-
-func (e *UnescapedCookieParamError) Error() string {
-	return fmt.Sprintf("error unescaping cookie parameter '%s'", e.ParamName)
-}
-
-func (e *UnescapedCookieParamError) Unwrap() error {
-	return e.Err
-}
-
-type UnmarshalingParamError struct {
-	ParamName string
-	Err       error
-}
-
-func (e *UnmarshalingParamError) Error() string {
-	return fmt.Sprintf("Error unmarshaling parameter %s as JSON: %s", e.ParamName, e.Err.Error())
-}
-
-func (e *UnmarshalingParamError) Unwrap() error {
-	return e.Err
-}
-
-type UnmarshalingBodyError struct {
-	Err error
-}
-
-func (e *UnmarshalingBodyError) Error() string {
-	return fmt.Sprintf("Error unmarshaling body as JSON: %s", e.Err.Error())
-}
-
-func (e *UnmarshalingBodyError) Unwrap() error {
-	return e.Err
-}
-
-type RequiredParamError struct {
-	ParamName string
-}
-
-func (e *RequiredParamError) Error() string {
-	return fmt.Sprintf("Query argument %s is required, but not found", e.ParamName)
-}
-
-type RequiredHeaderError struct {
-	ParamName string
-	Err       error
-}
-
-func (e *RequiredHeaderError) Error() string {
-	return fmt.Sprintf("Header parameter %s is required, but not found", e.ParamName)
-}
-
-func (e *RequiredHeaderError) Unwrap() error {
-	return e.Err
-}
-
-type InvalidParamFormatError struct {
-	ParamName string
-	Err       error
-}
-
-func (e *InvalidParamFormatError) Error() string {
-	return fmt.Sprintf("Invalid format for parameter %s: %s", e.ParamName, e.Err.Error())
-}
-
-func (e *InvalidParamFormatError) Unwrap() error {
-	return e.Err
-}
-
-type TooManyValuesForParamError struct {
-	ParamName string
-	Count     int
-}
-
-func (e *TooManyValuesForParamError) Error() string {
-	return fmt.Sprintf("Expected one value for %s, got %d", e.ParamName, e.Count)
-} // Handler creates http.Handler with routing matching OpenAPI spec.
+// Handler creates http.Handler with routing matching OpenAPI spec.
 func Handler(si ServerInterface) http.Handler {
 	return HandlerWithOptions(si, ChiServerOptions{})
 }
@@ -2268,6 +2191,8 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	return r
 }
 
+// inline.tmpl based on https://github.com/deepmap/oapi-codegen/tree/master/pkg/codegen/templates
+
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
@@ -2322,9 +2247,8 @@ var swaggerSpec = []string{
 	"85WHITtiAAA=",
 }
 
-// GetSwagger returns the Swagger specification corresponding to the generated code
-// in this file.
-func GetSwagger() (*openapi3.Swagger, error) {
+// GetSwaggerSpecReader returns a reader to the Swagger specification corresponding to the generated code in this file.
+func GetSwaggerSpecReader() (io.Reader, error) {
 	zipped, err := base64.StdEncoding.DecodeString(strings.Join(swaggerSpec, ""))
 	if err != nil {
 		return nil, fmt.Errorf("error base64 decoding spec: %s", err)
@@ -2333,12 +2257,21 @@ func GetSwagger() (*openapi3.Swagger, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error decompressing spec: %s", err)
 	}
+	return zr, err
+}
+
+// GetSwagger returns the Swagger specification corresponding to the generated code
+// in this file.
+func GetSwagger() (*openapi3.Swagger, error) {
+	zr, err := GetSwaggerSpecReader()
+	if err != nil {
+		return nil, err
+	}
 	var buf bytes.Buffer
 	_, err = buf.ReadFrom(zr)
 	if err != nil {
 		return nil, fmt.Errorf("error decompressing spec: %s", err)
 	}
-
 	swagger, err := openapi3.NewSwaggerLoader().LoadSwaggerFromData(buf.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("error loading Swagger: %s", err)
