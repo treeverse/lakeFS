@@ -11,6 +11,9 @@ redirect_from:
 lakeFS Cloud
 {: .label .label-green }
 
+lakeFS Enterprise
+{: .label .label-purple }
+
 lakeFS Cloud includes an [SCIM v2.0](https://datatracker.ietf.org/doc/html/rfc7644) compliant server, which can integrate with SCIM clients (IdPs) to automate provisioning/de-provisioning of users and groups.  
 
 {% include toc.html %}
