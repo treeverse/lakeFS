@@ -78,56 +78,56 @@ type CosmosDB struct {
 	StrongConsistency bool
 }
 
-func NewConfig(cfg *config.Config) (Config, error) {
+func NewConfig(cfg *config.Database) (Config, error) {
 	p := Config{
-		Type: cfg.Database.Type,
+		Type: cfg.Type,
 	}
-	if cfg.Database.Local != nil {
-		localPath, err := homedir.Expand(cfg.Database.Local.Path)
+	if cfg.Local != nil {
+		localPath, err := homedir.Expand(cfg.Local.Path)
 		if err != nil {
-			return Config{}, fmt.Errorf("parse database local path '%s': %w", cfg.Database.Local.Path, err)
+			return Config{}, fmt.Errorf("parse database local path '%s': %w", cfg.Local.Path, err)
 		}
 		p.Local = &Local{
 			Path:         localPath,
-			PrefetchSize: cfg.Database.Local.PrefetchSize,
+			PrefetchSize: cfg.Local.PrefetchSize,
 		}
 	}
 
-	if cfg.Database.Postgres != nil {
+	if cfg.Postgres != nil {
 		p.Postgres = &Postgres{
-			ConnectionString:      cfg.Database.Postgres.ConnectionString.SecureValue(),
-			MaxIdleConnections:    cfg.Database.Postgres.MaxIdleConnections,
-			MaxOpenConnections:    cfg.Database.Postgres.MaxOpenConnections,
-			ConnectionMaxLifetime: cfg.Database.Postgres.ConnectionMaxLifetime,
+			ConnectionString:      cfg.Postgres.ConnectionString.SecureValue(),
+			MaxIdleConnections:    cfg.Postgres.MaxIdleConnections,
+			MaxOpenConnections:    cfg.Postgres.MaxOpenConnections,
+			ConnectionMaxLifetime: cfg.Postgres.ConnectionMaxLifetime,
 		}
 	}
 
-	if cfg.Database.DynamoDB != nil {
+	if cfg.DynamoDB != nil {
 		p.DynamoDB = &DynamoDB{
-			TableName:             cfg.Database.DynamoDB.TableName,
-			ScanLimit:             cfg.Database.DynamoDB.ScanLimit,
-			Endpoint:              cfg.Database.DynamoDB.Endpoint,
-			AwsRegion:             cfg.Database.DynamoDB.AwsRegion,
-			AwsProfile:            cfg.Database.DynamoDB.AwsProfile,
-			AwsAccessKeyID:        cfg.Database.DynamoDB.AwsAccessKeyID.SecureValue(),
-			AwsSecretAccessKey:    cfg.Database.DynamoDB.AwsSecretAccessKey.SecureValue(),
-			HealthCheckInterval:   cfg.Database.DynamoDB.HealthCheckInterval,
-			MaxAttempts:           cfg.Database.DynamoDB.MaxAttempts,
-			MaxConnectionsPerHost: cfg.Database.DynamoDB.MaxConnections,
+			TableName:             cfg.DynamoDB.TableName,
+			ScanLimit:             cfg.DynamoDB.ScanLimit,
+			Endpoint:              cfg.DynamoDB.Endpoint,
+			AwsRegion:             cfg.DynamoDB.AwsRegion,
+			AwsProfile:            cfg.DynamoDB.AwsProfile,
+			AwsAccessKeyID:        cfg.DynamoDB.AwsAccessKeyID.SecureValue(),
+			AwsSecretAccessKey:    cfg.DynamoDB.AwsSecretAccessKey.SecureValue(),
+			HealthCheckInterval:   cfg.DynamoDB.HealthCheckInterval,
+			MaxAttempts:           cfg.DynamoDB.MaxAttempts,
+			MaxConnectionsPerHost: cfg.DynamoDB.MaxConnections,
 		}
 	}
 
-	if cfg.Database.CosmosDB != nil {
-		if cfg.Database.CosmosDB.Autoscale && cfg.Database.CosmosDB.Throughput == 0 {
+	if cfg.CosmosDB != nil {
+		if cfg.CosmosDB.Autoscale && cfg.CosmosDB.Throughput == 0 {
 			return Config{}, fmt.Errorf("enabling autoscale requires setting the throughput param: %w", config.ErrBadConfiguration)
 		}
 		p.CosmosDB = &CosmosDB{
-			Key:               cfg.Database.CosmosDB.Key.SecureValue(),
-			Endpoint:          cfg.Database.CosmosDB.Endpoint,
-			Database:          cfg.Database.CosmosDB.Database,
-			Container:         cfg.Database.CosmosDB.Container,
-			Throughput:        cfg.Database.CosmosDB.Throughput,
-			Autoscale:         cfg.Database.CosmosDB.Autoscale,
+			Key:               cfg.CosmosDB.Key.SecureValue(),
+			Endpoint:          cfg.CosmosDB.Endpoint,
+			Database:          cfg.CosmosDB.Database,
+			Container:         cfg.CosmosDB.Container,
+			Throughput:        cfg.CosmosDB.Throughput,
+			Autoscale:         cfg.CosmosDB.Autoscale,
 			StrongConsistency: true,
 		}
 	}

@@ -123,7 +123,7 @@ var runCmd = &cobra.Command{
 
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
-		kvParams, err := kvparams.NewConfig(cfg)
+		kvParams, err := kvparams.NewConfig(&cfg.Database)
 		if err != nil {
 			logger.WithError(err).Fatal("Get KV params")
 		}

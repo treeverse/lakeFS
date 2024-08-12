@@ -29,7 +29,7 @@ var setupCmd = &cobra.Command{
 		cfg := loadConfig()
 
 		ctx := cmd.Context()
-		kvParams, err := kvparams.NewConfig(cfg)
+		kvParams, err := kvparams.NewConfig(&cfg.Database)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
 			os.Exit(1)

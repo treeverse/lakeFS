@@ -78,7 +78,7 @@ func TestLocalLoad(t *testing.T) {
 	testutil.Must(t, err)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
-	kvParams, err := kvparams.NewConfig(conf)
+	kvParams, err := kvparams.NewConfig(&conf.Database)
 	testutil.Must(t, err)
 	migrator := kv.NewDatabaseMigrator(kvParams)
 	t.Cleanup(func() {

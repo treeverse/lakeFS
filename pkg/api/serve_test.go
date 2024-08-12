@@ -179,7 +179,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	c.SetHooksHandler(actionsService)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
-	kvParams, err := kvparams.NewConfig(cfg)
+	kvParams, err := kvparams.NewConfig(&cfg.Database)
 	testutil.Must(t, err)
 	migrator := kv.NewDatabaseMigrator(kvParams)
 

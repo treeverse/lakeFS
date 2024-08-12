@@ -20,6 +20,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const ServerPartitionKey = "aclauth"
+
 type AuthService struct {
 	store       kv.Store
 	secretStore crypt.SecretStore
@@ -997,4 +999,16 @@ func (s *AuthService) deleteTokens(ctx context.Context) error {
 	}
 
 	return it.Err()
+}
+
+func (s *AuthService) getSetupTimestamp(ctx context.Context) (time.Time, error) {
+	valWithPred, err := s.store.Get(ctx, []byte(ServerPartitionKey), []byte(auth.SetupTimestampKeyName))
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Parse(time.RFC3339, string(valWithPred.Value))
+}
+
+func (s *AuthService) updateSetupTimestamp(ctx context.Context, ts time.Time) error {
+	return s.store.SetIf(ctx, []byte(ServerPartitionKey), []byte(model.MetadataKeyPath(auth.SetupTimestampKeyName)), []byte(ts.UTC().Format(time.RFC3339)), nil)
 }

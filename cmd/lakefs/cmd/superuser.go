@@ -50,7 +50,7 @@ var superuserCmd = &cobra.Command{
 
 		logger := logging.ContextUnavailable()
 		ctx := cmd.Context()
-		kvParams, err := kvparams.NewConfig(cfg)
+		kvParams, err := kvparams.NewConfig(&cfg.Database)
 		if err != nil {
 			fmt.Printf("KV params: %s\n", err)
 			os.Exit(1)

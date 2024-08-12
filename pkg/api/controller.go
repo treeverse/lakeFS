@@ -23,11 +23,11 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
+	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/authentication"
@@ -840,7 +840,7 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params a
 	ctx := r.Context()
 	c.LogAction(ctx, "list_groups", r, "", "", "")
 	groups, paginator, err := c.Auth.ListGroups(ctx, &model.PaginationParams{
-		After:  paginationAfter(params.After),
+		After:  PaginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
@@ -953,7 +953,7 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 }
 
 func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID string) {
-	aclPolicyName := acl.PolicyName(groupID)
+	aclPolicyName := authacl.PolicyName(groupID)
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -1025,7 +1025,7 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 }
 
 func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body apigen.SetGroupACLJSONRequestBody, groupID string) {
-	aclPolicyName := acl.PolicyName(groupID)
+	aclPolicyName := authacl.PolicyName(groupID)
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -1059,7 +1059,7 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body ap
 		Permission: model.ACLPermission(body.Permission),
 	}
 
-	err := acl.WriteGroupACL(ctx, c.Auth, groupID, newACL, time.Now(), false)
+	err := authacl.WriteGroupACL(ctx, c.Auth, groupID, newACL, time.Now(), false)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -1079,7 +1079,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 	ctx := r.Context()
 	c.LogAction(ctx, "list_group_users", r, "", "", "")
 	users, paginator, err := c.Auth.ListGroupUsers(ctx, groupID, &model.PaginationParams{
-		After:  paginationAfter(params.After),
+		After:  PaginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
@@ -1159,7 +1159,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 	ctx := r.Context()
 	c.LogAction(ctx, "list_group_policies", r, "", "", "")
 	policies, paginator, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
-		After:  paginationAfter(params.After),
+		After:  PaginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
@@ -1261,7 +1261,7 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 	ctx := r.Context()
 	c.LogAction(ctx, "list_policies", r, "", "", "")
 	policies, paginator, err := c.Auth.ListPolicies(ctx, &model.PaginationParams{
-		After:  paginationAfter(params.After),
+		After:  PaginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
@@ -1439,7 +1439,7 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 	ctx := r.Context()
 	c.LogAction(ctx, "list_users", r, "", "", "")
 	users, paginator, err := c.Auth.ListUsers(ctx, &model.PaginationParams{
-		After:  paginationAfter(params.After),
+		After:  PaginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
@@ -1573,7 +1573,7 @@ func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request,
 	ctx := r.Context()
 	c.LogAction(ctx, "list_user_credentials", r, "", "", "")
 	credentials, paginator, err := c.Auth.ListUserCredentials(ctx, userID, &model.PaginationParams{
-		After:  paginationAfter(params.After),
+		After:  PaginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
@@ -1683,7 +1683,7 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 	ctx := r.Context()
 	c.LogAction(ctx, "list_user_groups", r, "", "", "")
 	groups, paginator, err := c.Auth.ListUserGroups(ctx, userID, &model.PaginationParams{
-		After:  paginationAfter(params.After),
+		After:  PaginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
@@ -1733,7 +1733,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 		listPolicies = c.Auth.ListUserPolicies
 	}
 	policies, paginator, err := listPolicies(ctx, userID, &model.PaginationParams{
-		After:  paginationAfter(params.After),
+		After:  PaginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
 	})
@@ -1881,7 +1881,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 	ctx := r.Context()
 	c.LogAction(ctx, "list_repos", r, "", "", "")
 
-	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), paginationAfter(params.After))
+	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), PaginationAfter(params.After))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2349,7 +2349,7 @@ func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, 
 
 	branchName := swag.StringValue(params.Branch)
 	commitID := swag.StringValue(params.Commit)
-	runsIter, err := c.Actions.ListRunResults(ctx, repository, branchName, commitID, paginationAfter(params.After))
+	runsIter, err := c.Actions.ListRunResults(ctx, repository, branchName, commitID, PaginationAfter(params.After))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2454,7 +2454,7 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
-	tasksIter, err := c.Actions.ListRunTaskResults(ctx, repo.Name, runID, paginationAfter(params.After))
+	tasksIter, err := c.Actions.ListRunTaskResults(ctx, repo.Name, runID, PaginationAfter(params.After))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2563,7 +2563,7 @@ func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, reposi
 	ctx := r.Context()
 	c.LogAction(ctx, "list_branches", r, repository, "", "")
 
-	res, hasMore, err := c.Catalog.ListBranches(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After))
+	res, hasMore, err := c.Catalog.ListBranches(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), PaginationAfter(params.After))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3044,7 +3044,7 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 		paginationPrefix(params.Prefix),
 		paginationDelimiter(params.Delimiter),
 		paginationAmount(params.Amount),
-		paginationAfter(params.After),
+		PaginationAfter(params.After),
 	)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -4179,7 +4179,7 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 
 	diff, hasMore, err := diffFunc(ctx, repository, leftRef, rightRef, catalog.DiffParams{
 		Limit:            paginationAmount(params.Amount),
-		After:            paginationAfter(params.After),
+		After:            PaginationAfter(params.After),
 		Prefix:           paginationPrefix(params.Prefix),
 		Delimiter:        paginationDelimiter(params.Delimiter),
 		AdditionalFields: nil,
@@ -4225,7 +4225,7 @@ func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, reposito
 	// get commit log
 	commitLog, hasMore, err := c.Catalog.ListCommits(ctx, repository, ref, catalog.LogParams{
 		PathList:      resolvePathList(params.Objects, params.Prefixes),
-		FromReference: paginationAfter(params.After),
+		FromReference: PaginationAfter(params.After),
 		Amount:        paginationAmount(params.Amount),
 		Limit:         swag.BoolValue(params.Limit),
 		FirstParent:   swag.BoolValue(params.FirstParent),
@@ -4531,7 +4531,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 		repository,
 		ref,
 		paginationPrefix(params.Prefix),
-		paginationAfter(params.After),
+		PaginationAfter(params.After),
 		paginationDelimiter(params.Delimiter),
 		paginationAmount(params.Amount),
 	)
@@ -4803,7 +4803,7 @@ func (c *Controller) ListTags(w http.ResponseWriter, r *http.Request, repository
 	ctx := r.Context()
 	c.LogAction(ctx, "list_tags", r, repository, "", "")
 
-	res, hasMore, err := c.Catalog.ListTags(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After))
+	res, hasMore, err := c.Catalog.ListTags(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), PaginationAfter(params.After))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -5203,7 +5203,7 @@ func writeResponse(w http.ResponseWriter, r *http.Request, code int, response in
 	}
 }
 
-func paginationAfter(v *apigen.PaginationAfter) string {
+func PaginationAfter(v *apigen.PaginationAfter) string {
 	if v == nil {
 		return ""
 	}
@@ -5542,7 +5542,7 @@ func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.R
 	principals, paginator, err := c.Auth.ListUserExternalPrincipals(ctx, userID, &model.PaginationParams{
 		Prefix: paginationPrefix(params.Prefix),
 		Amount: paginationAmount(params.Amount),
-		After:  paginationAfter(params.After),
+		After:  PaginationAfter(params.After),
 	})
 
 	if c.handleAPIError(ctx, w, r, err) {

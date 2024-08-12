@@ -13,7 +13,6 @@ import (
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
 	authtestutil "github.com/treeverse/lakefs/contrib/auth/acl/testutil"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
@@ -74,7 +73,7 @@ func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) st
 
 func userWithACLs(t testing.TB, s auth.Service, a model.ACL) string {
 	t.Helper()
-	statements, err := acl.ACLToStatement(a)
+	statements, err := authacl.ACLToStatement(a)
 	if err != nil {
 		t.Fatal("ACLToStatement: ", err)
 	}
@@ -572,7 +571,7 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 }
 
 func TestACL(t *testing.T) {
-	hierarchy := []model.ACLPermission{acl.ReadPermission, acl.WritePermission, acl.SuperPermission, acl.AdminPermission}
+	hierarchy := []model.ACLPermission{authacl.ReadPermission, authacl.WritePermission, authacl.SuperPermission, authacl.AdminPermission}
 
 	type PermissionFrom map[model.ACLPermission][]permissions.Permission
 	type TestCase struct {
@@ -591,25 +590,25 @@ func TestACL(t *testing.T) {
 			Name: "all repos",
 			ACL:  model.ACL{},
 			PermissionFrom: PermissionFrom{
-				acl.ReadPermission: []permissions.Permission{
+				authacl.ReadPermission: []permissions.Permission{
 					{Action: permissions.ReadObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.ListObjectsAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.ListObjectsAction, Resource: permissions.ObjectArn("quux", "")},
 					{Action: permissions.CreateCredentialsAction, Resource: permissions.UserArn("${user}")},
 				},
-				acl.WritePermission: []permissions.Permission{
+				authacl.WritePermission: []permissions.Permission{
 					{Action: permissions.WriteObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.DeleteObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.CreateBranchAction, Resource: permissions.BranchArn("foo", "twig")},
 					{Action: permissions.CreateCommitAction, Resource: permissions.BranchArn("foo", "twig")},
 					{Action: permissions.CreateMetaRangeAction, Resource: permissions.RepoArn("foo")},
 				},
-				acl.SuperPermission: []permissions.Permission{
+				authacl.SuperPermission: []permissions.Permission{
 					{Action: permissions.AttachStorageNamespaceAction, Resource: permissions.StorageNamespace("storage://bucket/path")},
 					{Action: permissions.ImportFromStorageAction, Resource: permissions.StorageNamespace("storage://bucket/path")},
 					{Action: permissions.ImportCancelAction, Resource: permissions.BranchArn("foo", "twig")},
 				},
-				acl.AdminPermission: []permissions.Permission{
+				authacl.AdminPermission: []permissions.Permission{
 					{Action: permissions.CreateUserAction, Resource: permissions.UserArn("you")},
 				},
 			},

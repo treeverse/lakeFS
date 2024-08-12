@@ -13,13 +13,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-const (
-	AdminsGroup  = "Admins"
-	SupersGroup  = "Supers"
-	WritersGroup = "Writers"
-	ReadersGroup = "Readers"
-)
-
 func WriteGroupACL(ctx context.Context, svc auth.Service, groupName string, acl model.ACL, creationTime time.Time, warnIfCreate bool) error {
 	log := logging.FromContext(ctx).WithField("group", groupName)
 

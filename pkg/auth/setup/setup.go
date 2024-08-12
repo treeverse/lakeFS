@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -150,38 +150,6 @@ func CreateRBACBaseGroups(ctx context.Context, authService auth.Service, ts time
 	return nil
 }
 
-func CreateACLBaseGroups(ctx context.Context, authService auth.Service, ts time.Time) error {
-	if _, err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.AdminsGroup}); err != nil {
-		return fmt.Errorf("setup: create base ACL group %s: %w", acl.AdminsGroup, err)
-	}
-	if err := acl.WriteGroupACL(ctx, authService, acl.AdminsGroup, model.ACL{Permission: acl.AdminPermission}, ts, false); err != nil {
-		return fmt.Errorf("setup: %w", err)
-	}
-
-	if _, err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.SupersGroup}); err != nil {
-		return fmt.Errorf("setup: create base ACL group %s: %w", acl.SupersGroup, err)
-	}
-	if err := acl.WriteGroupACL(ctx, authService, acl.SupersGroup, model.ACL{Permission: acl.SuperPermission}, ts, false); err != nil {
-		return fmt.Errorf("setup: %w", err)
-	}
-
-	if _, err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.WritersGroup}); err != nil {
-		return fmt.Errorf("setup: create base ACL group %s: %w", acl.WritersGroup, err)
-	}
-	if err := acl.WriteGroupACL(ctx, authService, acl.WritersGroup, model.ACL{Permission: acl.WritePermission}, ts, false); err != nil {
-		return fmt.Errorf("setup: %w", err)
-	}
-
-	if _, err := authService.CreateGroup(ctx, &model.Group{CreatedAt: ts, DisplayName: acl.ReadersGroup}); err != nil {
-		return fmt.Errorf("create base ACL group %s: %w", acl.ReadersGroup, err)
-	}
-	if err := acl.WriteGroupACL(ctx, authService, acl.ReadersGroup, model.ACL{Permission: acl.ReadPermission}, ts, false); err != nil {
-		return fmt.Errorf("setup: %w", err)
-	}
-
-	return nil
-}
-
 // CreateAdminUser setup base groups, policies and create admin user
 func CreateAdminUser(ctx context.Context, authService auth.Service, cfg *config.Config, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
 	// Set up the basic groups and policies
@@ -258,8 +226,12 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 }
 
 func CreateBaseGroups(ctx context.Context, authService auth.Service, cfg *config.Config, ts time.Time) error {
+	// TODO (niro): need to remove that when transitioning to external auth ACLs server
+	if cfg.IsAuthUISimplified() && cfg.Auth.API.Endpoint != "" {
+		return nil
+	}
 	if cfg.IsAuthUISimplified() {
-		return CreateACLBaseGroups(ctx, authService, ts)
+		return authacl.CreateACLBaseGroups(ctx, authService, ts)
 	}
 	return CreateRBACBaseGroups(ctx, authService, ts)
 }
