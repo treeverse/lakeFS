@@ -27,10 +27,6 @@ jobs:
         run: |
           echo "Enable next jobs based on secrets existence: ${{ env.ENABLE_NEXT_JOBS != '' }}"
           echo "secretsavailable=${{ env.ENABLE_NEXT_JOBS != '' }}" >> $GITHUB_OUTPUT
-  
-  
-  
-  
 
   gen-code:
     name: Generate code from latest lakeFS app
