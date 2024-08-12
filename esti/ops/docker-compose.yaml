@@ -26,6 +26,7 @@ services:
       - AZURE_CLIENT_SECRET
       - AZURE_TENANT_ID
       - LAKEFSACTION_VAR=this_is_actions_var
+      - LAKEFS_AUTH_INTERNAL_BASIC
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
     image: "postgres:11"
@@ -61,6 +62,7 @@ services:
       - ESTI_FORCE_PATH_STYLE
       - ESTI_AZURE_STORAGE_ACCOUNT
       - ESTI_AZURE_STORAGE_ACCESS_KEY
+      - ESTI_AUTH_BASIC
     working_dir: /lakefs
     command:
       - /bin/sh

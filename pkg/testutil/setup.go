@@ -86,13 +86,16 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	if setupLakeFS {
 		// first setup of lakeFS
 		mockEmail := "test@acme.co"
-		_, err := client.SetupCommPrefsWithResponse(context.Background(), apigen.SetupCommPrefsJSONRequestBody{
+		commResp, err := client.SetupCommPrefsWithResponse(context.Background(), apigen.SetupCommPrefsJSONRequestBody{
 			Email:           &mockEmail,
 			FeatureUpdates:  false,
 			SecurityUpdates: false,
 		})
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to setup lakeFS")
+		}
+		if commResp.StatusCode() != http.StatusOK {
+			logger.WithField("status", commResp.HTTPResponse.Status).Fatal("Failed to setup lakeFS")
 		}
 		adminUserName := params.Name
 		requestBody := apigen.SetupJSONRequestBody{
@@ -183,11 +186,15 @@ func waitUntilLakeFSRunning(ctx context.Context, logger logging.Logger, cl apige
 	setupCtx, cancel := context.WithTimeout(ctx, viper.GetDuration("setup_lakefs_timeout"))
 	defer cancel()
 	for {
-		_, err := cl.HealthCheckWithResponse(setupCtx)
-		if err == nil {
+		resp, err := cl.HealthCheckWithResponse(setupCtx)
+		if err != nil {
+			logger.WithError(err).Info("Setup failed")
+			return err
+		}
+		if resp.StatusCode() == http.StatusNoContent {
 			return nil
 		}
-		logger.WithError(err).Info("Setup failed")
+		logger.WithField("status", resp.HTTPResponse.Status).Warning("Bad status on healthcheck")
 
 		select {
 		case <-setupCtx.Done():

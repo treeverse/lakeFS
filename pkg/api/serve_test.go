@@ -138,6 +138,8 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	viper.Set("database.type", mem.DriverName)
 	// Use 'internal' mode in order to have access to policies
 	viper.Set("auth.ui_config.rbac", config.AuthRBACInternal)
+	// Add endpoint so that 'IsAdvancedAuth' will be in effect
+	viper.Set("auth.api.endpoint", config.DefaultListenAddress)
 
 	collector := &memCollector{}
 
