@@ -29,7 +29,7 @@ type Shutter interface {
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
-	Short: "run auth server",
+	Short: "run acl server",
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.ContextUnavailable()
