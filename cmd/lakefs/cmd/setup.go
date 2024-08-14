@@ -74,8 +74,7 @@ var setupCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 		logger := logging.ContextUnavailable()
-		authLogger := logger.WithField("service", "auth_service")
-		authService = acl.NewAuthService(kvStore, crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)), authparams.ServiceCache(cfg.Auth.Cache), authLogger)
+		authService = acl.NewAuthService(kvStore, crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)), authparams.ServiceCache(cfg.Auth.Cache))
 		metadataManager = auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)

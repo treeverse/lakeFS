@@ -90,12 +90,7 @@ func NewAuthService(ctx context.Context, cfg *config.Config, logger logging.Logg
 		}
 		return auth.NewMonitoredAuthServiceAndInviter(apiService)
 	}
-	authService := acl.NewAuthService(
-		kvStore,
-		crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
-		authparams.ServiceCache(cfg.Auth.Cache),
-		logger.WithField("service", "auth_service"),
-	)
+	authService := acl.NewAuthService(kvStore, crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)), authparams.ServiceCache(cfg.Auth.Cache))
 	return auth.NewMonitoredAuthService(authService)
 }
 

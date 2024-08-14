@@ -60,7 +60,7 @@ var superuserCmd = &cobra.Command{
 			fmt.Printf("Failed to open KV store: %s\n", err)
 			os.Exit(1)
 		}
-		authService := acl.NewAuthService(kvStore, crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)), authparams.ServiceCache(cfg.Auth.Cache), logger.WithField("service", "auth_service"))
+		authService := acl.NewAuthService(kvStore, crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)), authparams.ServiceCache(cfg.Auth.Cache))
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 		metadataProvider := stats.BuildMetadataProvider(logger, cfg)

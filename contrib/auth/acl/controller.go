@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/go-openapi/swag"
@@ -21,14 +20,12 @@ import (
 const DefaultMaxPerPage int = 1000
 
 type Controller struct {
-	Auth   auth.Service
-	Logger logging.Logger
+	Auth auth.Service
 }
 
-func NewController(authService auth.Service, logger logging.Logger) *Controller {
+func NewController(authService auth.Service) *Controller {
 	return &Controller{
-		Auth:   authService,
-		Logger: logger,
+		Auth: authService,
 	}
 }
 
@@ -48,7 +45,6 @@ func (c *Controller) GetCredentials(w http.ResponseWriter, r *http.Request, acce
 		SecretAccessKey: credentials.SecretAccessKey,
 		CreationDate:    credentials.IssuedDate.Unix(),
 	}
-	response.UserId, _ = strconv.ParseInt(credentials.Username, 10, 64)
 	writeResponse(w, http.StatusOK, response)
 }
 
@@ -345,9 +341,6 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 }
 
 func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body apigen.CreateUserJSONRequestBody) {
-	// before we create the user, we need to check that they exist in the external IdP
-	// if external user management is enabled
-	// this is to mitigate this issue: https://github.com/treeverse/cloud-controlplane/issues/1281
 	ctx := r.Context()
 	u := &model.User{
 		CreatedAt:    time.Now().UTC(),
@@ -355,7 +348,6 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 		FriendlyName: body.FriendlyName,
 		Email:        body.Email,
 		Source:       swag.StringValue(body.Source),
-		ExternalID:   body.ExternalId,
 	}
 	_, err := c.Auth.CreateUser(ctx, u)
 	if c.handleAPIError(w, err) {
@@ -454,8 +446,6 @@ func (c *Controller) CreateCredentials(w http.ResponseWriter, r *http.Request, u
 		SecretAccessKey: credentials.SecretAccessKey,
 		CreationDate:    credentials.IssuedDate.Unix(),
 	}
-	// ignore error we should remove id after migrate to KV
-	response.UserId, _ = strconv.ParseInt(credentials.Username, 10, 64)
 	writeResponse(w, http.StatusCreated, response)
 }
 
@@ -627,7 +617,6 @@ func (c *Controller) handleAPIError(w http.ResponseWriter, err error) bool {
 		writeError(w, http.StatusConflict, "Already exists")
 
 	case err != nil:
-		c.Logger.WithError(err).Error("API call returns StatusInternalServerError")
 		writeError(w, http.StatusInternalServerError, err)
 
 	default:

@@ -44,12 +44,7 @@ var runCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 		secretStore := crypt.NewSecretStore(cfg.AuthEncryptionSecret())
-		authService := acl.NewAuthService(
-			kvStore,
-			secretStore,
-			cfg.Cache,
-			logger.WithField("service", "auth_service"),
-		)
+		authService := acl.NewAuthService(kvStore, secretStore, cfg.Cache)
 
 		// Setup if needed
 		if err = acl.SetupACLServer(cmd.Context(), authService); err != nil {

@@ -5,7 +5,6 @@ package acl
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -15,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/treeverse/lakefs/contrib/auth/apigen"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -35,7 +35,7 @@ func Serve(authService auth.Service, logger logging.Logger) http.Handler {
 	if err != nil {
 		panic(err)
 	}
-	controller := NewController(authService, logger)
+	controller := NewController(authService)
 
 	r := chi.NewRouter()
 	apiRouter := r.With(
@@ -47,13 +47,9 @@ func Serve(authService auth.Service, logger logging.Logger) http.Handler {
 	)
 
 	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, BaseURL)
-	r.HandleFunc("/_health", healthHandler)
+	r.Mount("/_health", httputil.ServeHealth())
 	r.Mount(BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	return r
-}
-
-func healthHandler(w http.ResponseWriter, _ *http.Request) {
-	_, _ = fmt.Fprintf(w, "alive!")
 }
 
 // OapiRequestValidatorWithOptions Creates middleware to validate request by swagger spec.

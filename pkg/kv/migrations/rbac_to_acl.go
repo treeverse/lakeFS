@@ -45,7 +45,7 @@ var (
 	allPermissions = []model.ACLPermission{"", authacl.ReadPermission, authacl.WritePermission, authacl.SuperPermission, authacl.AdminPermission}
 )
 
-func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, logger logging.Logger, version int, force bool) error {
+func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, _ logging.Logger, version int, force bool) error {
 	if !cfg.IsAuthUISimplified() {
 		fmt.Println("skipping ACL migration - not simplified")
 		return updateKVSchemaVersion(ctx, kvStore, kv.ACLNoReposMigrateVersion)
@@ -70,12 +70,7 @@ func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 		usersWithPolicies []string
 	)
 	updateTime := time.Now()
-	authService := authacl.NewAuthService(
-		kvStore,
-		crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
-		authparams.ServiceCache(cfg.Auth.Cache),
-		logger.WithField("service", "auth_service"),
-	)
+	authService := authacl.NewAuthService(kvStore, crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)), authparams.ServiceCache(cfg.Auth.Cache))
 	usersWithPolicies, err := rbacToACL(ctx, authService, false, updateTime, func(groupID string, acl model.ACL, warn error) {
 		groupReports = append(groupReports, Warning{GroupID: groupID, ACL: acl, Warn: warn})
 	})

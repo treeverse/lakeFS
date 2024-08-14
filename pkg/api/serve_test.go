@@ -149,7 +149,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	idGen := &actions.DecreasingIDGenerator{}
 	authService := acl.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
-	}, logging.ContextUnavailable())
+	})
 	meta := auth.NewKVMetadataManager("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 	// Do not validate invalid config (missing required fields).
