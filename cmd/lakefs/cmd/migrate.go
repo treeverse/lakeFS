@@ -25,7 +25,7 @@ var versionCmd = &cobra.Command{
 	Short: "Print current migration version and available version",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
-		kvParams, err := kvparams.NewConfig(cfg)
+		kvParams, err := kvparams.NewConfig(&cfg.Database)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
 			os.Exit(1)
@@ -66,7 +66,7 @@ var upCmd = &cobra.Command{
 	Short: "Apply all up migrations",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
-		kvParams, err := kvparams.NewConfig(cfg)
+		kvParams, err := kvparams.NewConfig(&cfg.Database)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
 			os.Exit(1)
@@ -132,7 +132,7 @@ var gotoCmd = &cobra.Command{
 	Short: "Migrate to version V.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
-		kvParams, err := kvparams.NewConfig(cfg)
+		kvParams, err := kvparams.NewConfig(&cfg.Database)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
 			os.Exit(1)

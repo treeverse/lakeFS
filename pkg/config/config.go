@@ -71,6 +71,77 @@ type S3AuthInfo struct {
 	}
 }
 
+// Database - holds metadata KV configuration
+type Database struct {
+	// DropTables Development flag to delete tables after successful migration to KV
+	DropTables bool `mapstructure:"drop_tables"`
+	// Type Name of the KV Store driver DB implementation which is available according to the kv package Drivers function
+	Type string `mapstructure:"type" validate:"required"`
+
+	Local *struct {
+		// Path - Local directory path to store the DB files
+		Path string `mapstructure:"path"`
+		// SyncWrites - Sync ensures data written to disk on each write instead of mem cache
+		SyncWrites bool `mapstructure:"sync_writes"`
+		// PrefetchSize - Number of elements to prefetch while iterating
+		PrefetchSize int `mapstructure:"prefetch_size"`
+		// EnableLogging - Enable store and badger (trace only) logging
+		EnableLogging bool `mapstructure:"enable_logging"`
+	} `mapstructure:"local"`
+
+	Postgres *struct {
+		ConnectionString      SecureString  `mapstructure:"connection_string"`
+		MaxOpenConnections    int32         `mapstructure:"max_open_connections"`
+		MaxIdleConnections    int32         `mapstructure:"max_idle_connections"`
+		ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
+		ScanPageSize          int           `mapstructure:"scan_page_size"`
+		Metrics               bool          `mapstructure:"metrics"`
+	}
+
+	DynamoDB *struct {
+		// The name of the DynamoDB table to be used as KV
+		TableName string `mapstructure:"table_name"`
+
+		// Maximal number of items per page during scan operation
+		ScanLimit int64 `mapstructure:"scan_limit"`
+
+		// The endpoint URL of the DynamoDB endpoint
+		// Can be used to redirect to DynamoDB on AWS, local docker etc.
+		Endpoint string `mapstructure:"endpoint"`
+
+		// AWS connection details - region and credentials
+		// This will override any such details that are already exist in the system
+		// While in general, AWS region and credentials are configured in the system for AWS usage,
+		// these can be used to specify fake values, that cna be used to connect to local DynamoDB,
+		// in case there are no credentials configured in the system
+		// This is a client requirement as described in section 4 in
+		// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
+		AwsRegion          string       `mapstructure:"aws_region"`
+		AwsProfile         string       `mapstructure:"aws_profile"`
+		AwsAccessKeyID     SecureString `mapstructure:"aws_access_key_id"`
+		AwsSecretAccessKey SecureString `mapstructure:"aws_secret_access_key"`
+
+		// HealthCheckInterval - Interval to run health check for the DynamoDB instance
+		// Won't run when is equal or less than 0.
+		HealthCheckInterval time.Duration `mapstructure:"health_check_interval"`
+
+		// MaxAttempts - Specifies the maximum number attempts to make on a request.
+		MaxAttempts int `mapstructure:"max_attempts"`
+
+		// Maximum amount of connections to DDB. 0 means no limit.
+		MaxConnections int `mapstructure:"max_connections"`
+	} `mapstructure:"dynamodb"`
+
+	CosmosDB *struct {
+		Key        SecureString `mapstructure:"key"`
+		Endpoint   string       `mapstructure:"endpoint"`
+		Database   string       `mapstructure:"database"`
+		Container  string       `mapstructure:"container"`
+		Throughput int32        `mapstructure:"throughput"`
+		Autoscale  bool         `mapstructure:"autoscale"`
+	} `mapstructure:"cosmosdb"`
+}
+
 // Config - Output struct of configuration, used to validate.  If you read a key using a viper accessor
 // rather than accessing a field of this struct, that key will *not* be validated.  So don't
 // do that.
@@ -104,78 +175,8 @@ type Config struct {
 		// TraceRequestHeaders work only on 'trace' level, default is false as it may log sensitive data to the log
 		TraceRequestHeaders bool `mapstructure:"trace_request_headers"`
 	}
-
-	Database struct {
-		// DropTables Development flag to delete tables after successful migration to KV
-		DropTables bool `mapstructure:"drop_tables"`
-		// Type Name of the KV Store driver DB implementation which is available according to the kv package Drivers function
-		Type string `mapstructure:"type" validate:"required"`
-
-		Local *struct {
-			// Path - Local directory path to store the DB files
-			Path string `mapstructure:"path"`
-			// SyncWrites - Sync ensures data written to disk on each write instead of mem cache
-			SyncWrites bool `mapstructure:"sync_writes"`
-			// PrefetchSize - Number of elements to prefetch while iterating
-			PrefetchSize int `mapstructure:"prefetch_size"`
-			// EnableLogging - Enable store and badger (trace only) logging
-			EnableLogging bool `mapstructure:"enable_logging"`
-		} `mapstructure:"local"`
-
-		Postgres *struct {
-			ConnectionString      SecureString  `mapstructure:"connection_string"`
-			MaxOpenConnections    int32         `mapstructure:"max_open_connections"`
-			MaxIdleConnections    int32         `mapstructure:"max_idle_connections"`
-			ConnectionMaxLifetime time.Duration `mapstructure:"connection_max_lifetime"`
-			ScanPageSize          int           `mapstructure:"scan_page_size"`
-			Metrics               bool          `mapstructure:"metrics"`
-		}
-
-		DynamoDB *struct {
-			// The name of the DynamoDB table to be used as KV
-			TableName string `mapstructure:"table_name"`
-
-			// Maximal number of items per page during scan operation
-			ScanLimit int64 `mapstructure:"scan_limit"`
-
-			// The endpoint URL of the DynamoDB endpoint
-			// Can be used to redirect to DynamoDB on AWS, local docker etc.
-			Endpoint string `mapstructure:"endpoint"`
-
-			// AWS connection details - region and credentials
-			// This will override any such details that are already exist in the system
-			// While in general, AWS region and credentials are configured in the system for AWS usage,
-			// these can be used to specify fake values, that cna be used to connect to local DynamoDB,
-			// in case there are no credentials configured in the system
-			// This is a client requirement as described in section 4 in
-			// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
-			AwsRegion          string       `mapstructure:"aws_region"`
-			AwsProfile         string       `mapstructure:"aws_profile"`
-			AwsAccessKeyID     SecureString `mapstructure:"aws_access_key_id"`
-			AwsSecretAccessKey SecureString `mapstructure:"aws_secret_access_key"`
-
-			// HealthCheckInterval - Interval to run health check for the DynamoDB instance
-			// Won't run when is equal or less than 0.
-			HealthCheckInterval time.Duration `mapstructure:"health_check_interval"`
-
-			// MaxAttempts - Specifies the maximum number attempts to make on a request.
-			MaxAttempts int `mapstructure:"max_attempts"`
-
-			// Maximum amount of connections to DDB. 0 means no limit.
-			MaxConnections int `mapstructure:"max_connections"`
-		} `mapstructure:"dynamodb"`
-
-		CosmosDB *struct {
-			Key        SecureString `mapstructure:"key"`
-			Endpoint   string       `mapstructure:"endpoint"`
-			Database   string       `mapstructure:"database"`
-			Container  string       `mapstructure:"container"`
-			Throughput int32        `mapstructure:"throughput"`
-			Autoscale  bool         `mapstructure:"autoscale"`
-		} `mapstructure:"cosmosdb"`
-	}
-
-	Auth struct {
+	Database Database
+	Auth     struct {
 		Cache struct {
 			Enabled bool          `mapstructure:"enabled"`
 			Size    int           `mapstructure:"size"`

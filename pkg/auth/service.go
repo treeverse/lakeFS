@@ -549,13 +549,15 @@ func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy, 
 	}
 	createdAt := policy.CreatedAt.Unix()
 
+	requestBody := Policy{
+		CreationDate: &createdAt,
+		Name:         policy.DisplayName,
+		Statement:    stmts,
+		Acl:          (*string)(&policy.ACL.Permission),
+	}
 	if update {
 		// Update existing policy
-		resp, err := a.apiClient.UpdatePolicyWithResponse(ctx, policy.DisplayName, UpdatePolicyJSONRequestBody{
-			CreationDate: &createdAt,
-			Name:         policy.DisplayName,
-			Statement:    stmts,
-		})
+		resp, err := a.apiClient.UpdatePolicyWithResponse(ctx, policy.DisplayName, UpdatePolicyJSONRequestBody(requestBody))
 		if err != nil {
 			a.logger.WithError(err).WithField("policy", policy.DisplayName).Error("failed to update policy")
 			return err
@@ -563,11 +565,7 @@ func (a *APIAuthService) WritePolicy(ctx context.Context, policy *model.Policy, 
 		return a.validateResponse(resp, http.StatusOK)
 	}
 	// Otherwise Create new
-	resp, err := a.apiClient.CreatePolicyWithResponse(ctx, CreatePolicyJSONRequestBody{
-		CreationDate: &createdAt,
-		Name:         policy.DisplayName,
-		Statement:    stmts,
-	})
+	resp, err := a.apiClient.CreatePolicyWithResponse(ctx, CreatePolicyJSONRequestBody(requestBody))
 	if err != nil {
 		a.logger.WithError(err).WithField("policy", policy.DisplayName).Error("failed to create policy")
 		return err
@@ -592,6 +590,9 @@ func serializePolicyToModalPolicy(p Policy) *model.Policy {
 		CreatedAt:   creationTime,
 		DisplayName: p.Name,
 		Statement:   stmts,
+		ACL: model.ACL{
+			Permission: model.ACLPermission(swag.StringValue(p.Acl)),
+		},
 	}
 }
 

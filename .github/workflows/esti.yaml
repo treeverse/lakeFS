@@ -27,7 +27,6 @@ jobs:
         run: |
           echo "Enable next jobs based on secrets existence: ${{ env.ENABLE_NEXT_JOBS != '' }}"
           echo "secretsavailable=${{ env.ENABLE_NEXT_JOBS != '' }}" >> $GITHUB_OUTPUT
-      
 
   gen-code:
     name: Generate code from latest lakeFS app
@@ -81,7 +80,7 @@ jobs:
 
   deploy-image:
     name: Build and push Docker image
-    needs: [check-secrets, gen-code]
+    needs: [ check-secrets, gen-code ]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     runs-on: ubuntu-latest-16-cores
     outputs:
@@ -111,6 +110,7 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:
@@ -123,9 +123,18 @@ jobs:
           cache-to: |
             type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs,mode=max
 
+      - name: Build and Push ACL server
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/aclserver:${{ needs.gen-code.outputs.tag }}
+          build-args: VERSION=${{ needs.gen-code.outputs.tag }}
+          context: .
+          file: ./contrib/auth/acl/Dockerfile
+
   login-to-amazon-ecr:
     runs-on: ubuntu-latest
-    needs: [check-secrets]
+    needs: [ check-secrets ]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     steps:
       - name: Configure AWS credentials
@@ -274,7 +283,6 @@ jobs:
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/lakefs-rclone-export:${{ steps.version.outputs.tag }}
           context: deployments/tools/export
-
 
   hadoopfs-tests:
     name: Test lakeFS Hadoop FileSystem
@@ -689,6 +697,7 @@ jobs:
           mkdir -p ${{ github.workspace }}/test/spark/metaclient
           cp target/scala-2.12/lakefs-spark-client-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark-assembly.jar
 
+
   metadata-client-export-spark3:
     name: Test lakeFS metadata client export with Spark 3.x
     needs: [deploy-image, build-spark3-metadata-client, login-to-amazon-ecr]
@@ -803,6 +812,7 @@ jobs:
             docker compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
           fi
 
+
   run-system-aws-s3:
     name: Run latest lakeFS app on AWS S3
     needs: [deploy-image, login-to-amazon-ecr]
@@ -854,6 +864,7 @@ jobs:
           if docker compose ps -q postgres; then
             docker compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
           fi
+
 
   run-system-gcp-gs:
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
@@ -1173,6 +1184,7 @@ jobs:
               })
             }
 
+
   quickstart:
     name: Quickstart
     needs: 
@@ -1292,3 +1304,56 @@ jobs:
               })
             }
 
+
+  run-system-aws-s3-acl-server:
+    name: Run latest lakeFS app on AWS S3 + ACL Server
+    needs: [ deploy-image, login-to-amazon-ecr ]
+    runs-on: ubuntu-22.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+
+      - name: Generate uniquifying value
+        id: unique
+        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
+
+      - name: Test lakeFS with S3 tests
+        uses: ./.github/actions/bootstrap-test-lakefs
+        with:
+          compose-file: esti/ops/docker-compose-acl.yaml
+          compose-flags: "--quiet-pull --exit-code-from=esti"
+        env:
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_DATABASE_TYPE: postgres
+          DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+          ESTI_BLOCKSTORE_TYPE: s3
+          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
+          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
+
+      - name: Check files in S3 bucket
+        run: |
+          FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }} --recursive | wc -l`
+          [ $FILES_COUNT -gt 5 ]
+
+      - name: lakeFS Logs on s3 failure
+        if: ${{ failure() }}
+        continue-on-error: true
+        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+
+      - name: Export DB
+        if: ${{ always() }}
+        working-directory: esti/ops
+        run: |
+          if docker compose ps -q postgres; then
+            docker compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
+          fi
+  

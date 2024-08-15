@@ -1211,6 +1211,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		acl := ""
 		t.Run(tt.name, func(t *testing.T) {
 			creationTime := time.Unix(123456789, 0)
 
@@ -1224,6 +1225,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 					},
 				}
 				mockClient.EXPECT().UpdatePolicyWithResponse(gomock.Any(), tt.policyName, gomock.Eq(auth.UpdatePolicyJSONRequestBody{
+					Acl:          &acl,
 					CreationDate: swag.Int64(creationTime.Unix()),
 					Name:         tt.policyName,
 					Statement: []auth.Statement{
@@ -1244,6 +1246,7 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 					},
 				}
 				mockClient.EXPECT().CreatePolicyWithResponse(gomock.Any(), gomock.Eq(auth.CreatePolicyJSONRequestBody{
+					Acl:          &acl,
 					CreationDate: swag.Int64(creationTime.Unix()),
 					Name:         tt.policyName,
 					Statement: []auth.Statement{
@@ -1259,11 +1262,13 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 			err := s.WritePolicy(ctx, &model.Policy{
 				DisplayName: tt.policyName,
 				CreatedAt:   creationTime,
-				Statement: []model.Statement{{
-					Action:   tt.firstStatementAction,
-					Effect:   tt.firstStatementEffect,
-					Resource: tt.firstStatementResource,
-				}},
+				Statement: []model.Statement{
+					{
+						Action:   tt.firstStatementAction,
+						Effect:   tt.firstStatementEffect,
+						Resource: tt.firstStatementResource,
+					},
+				},
 			}, tt.overwrite)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("CreatePolicy: expected err: %v got: %v", tt.expectedErr, err)

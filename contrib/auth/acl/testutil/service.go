@@ -9,7 +9,6 @@ import (
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 func SetupService(t *testing.T, ctx context.Context, secret []byte) (*acl.AuthService, kv.Store) {
@@ -17,5 +16,5 @@ func SetupService(t *testing.T, ctx context.Context, secret []byte) (*acl.AuthSe
 	kvStore := kvtest.GetStore(ctx, t)
 	return acl.NewAuthService(kvStore, crypt.NewSecretStore(secret), authparams.ServiceCache{
 		Enabled: false,
-	}, logging.ContextUnavailable()), kvStore
+	}), kvStore
 }

@@ -13,12 +13,10 @@ import (
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
 	authtestutil "github.com/treeverse/lakefs/contrib/auth/acl/testutil"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
@@ -74,7 +72,7 @@ func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) st
 
 func userWithACLs(t testing.TB, s auth.Service, a model.ACL) string {
 	t.Helper()
-	statements, err := acl.ACLToStatement(a)
+	statements, err := authacl.ACLToStatement(a)
 	if err != nil {
 		t.Fatal("ACLToStatement: ", err)
 	}
@@ -150,7 +148,7 @@ func TestAuthService_ListUsers_PagedWithPrefix(t *testing.T) {
 	kvStore := kvtest.GetStore(ctx, t)
 	s := authacl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
-	}, logging.ContextUnavailable())
+	})
 
 	users := []string{"bar", "barn", "baz", "foo", "foobar", "foobaz"}
 	for _, u := range users {
@@ -200,7 +198,7 @@ func TestAuthService_ListPaged(t *testing.T) {
 	kvStore := kvtest.GetStore(ctx, t)
 	s := authacl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
-	}, logging.ContextUnavailable())
+	})
 
 	const chars = "abcdefghijklmnopqrstuvwxyz"
 	for _, c := range chars {
@@ -256,19 +254,19 @@ func BenchmarkKVAuthService_ListEffectivePolicies(b *testing.B) {
 
 	serviceWithoutCache := authacl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
-	}, logging.ContextUnavailable())
+	})
 	serviceWithCache := authacl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: true,
 		Size:    1024,
 		TTL:     20 * time.Second,
 		Jitter:  3 * time.Second,
-	}, logging.ContextUnavailable())
+	})
 	serviceWithCacheLowTTL := authacl.NewAuthService(kvStore, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: true,
 		Size:    1024,
 		TTL:     1 * time.Millisecond,
 		Jitter:  1 * time.Millisecond,
-	}, logging.ContextUnavailable())
+	})
 	userName := userWithPolicies(b, serviceWithoutCache, userPoliciesForTesting)
 
 	b.Run("without_cache", func(b *testing.B) {
@@ -572,7 +570,7 @@ func TestAuthService_DeletePoliciesWithRelations(t *testing.T) {
 }
 
 func TestACL(t *testing.T) {
-	hierarchy := []model.ACLPermission{acl.ReadPermission, acl.WritePermission, acl.SuperPermission, acl.AdminPermission}
+	hierarchy := []model.ACLPermission{authacl.ReadPermission, authacl.WritePermission, authacl.SuperPermission, authacl.AdminPermission}
 
 	type PermissionFrom map[model.ACLPermission][]permissions.Permission
 	type TestCase struct {
@@ -591,25 +589,25 @@ func TestACL(t *testing.T) {
 			Name: "all repos",
 			ACL:  model.ACL{},
 			PermissionFrom: PermissionFrom{
-				acl.ReadPermission: []permissions.Permission{
+				authacl.ReadPermission: []permissions.Permission{
 					{Action: permissions.ReadObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.ListObjectsAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.ListObjectsAction, Resource: permissions.ObjectArn("quux", "")},
 					{Action: permissions.CreateCredentialsAction, Resource: permissions.UserArn("${user}")},
 				},
-				acl.WritePermission: []permissions.Permission{
+				authacl.WritePermission: []permissions.Permission{
 					{Action: permissions.WriteObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.DeleteObjectAction, Resource: permissions.ObjectArn("foo", "some/path")},
 					{Action: permissions.CreateBranchAction, Resource: permissions.BranchArn("foo", "twig")},
 					{Action: permissions.CreateCommitAction, Resource: permissions.BranchArn("foo", "twig")},
 					{Action: permissions.CreateMetaRangeAction, Resource: permissions.RepoArn("foo")},
 				},
-				acl.SuperPermission: []permissions.Permission{
+				authacl.SuperPermission: []permissions.Permission{
 					{Action: permissions.AttachStorageNamespaceAction, Resource: permissions.StorageNamespace("storage://bucket/path")},
 					{Action: permissions.ImportFromStorageAction, Resource: permissions.StorageNamespace("storage://bucket/path")},
 					{Action: permissions.ImportCancelAction, Resource: permissions.BranchArn("foo", "twig")},
 				},
-				acl.AdminPermission: []permissions.Permission{
+				authacl.AdminPermission: []permissions.Permission{
 					{Action: permissions.CreateUserAction, Resource: permissions.UserArn("you")},
 				},
 			},

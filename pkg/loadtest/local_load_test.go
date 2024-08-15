@@ -51,7 +51,7 @@ func TestLocalLoad(t *testing.T) {
 	}
 
 	kvStore := kvtest.GetStore(ctx, t)
-	authService := acl.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{}, logging.ContextUnavailable().WithField("service", "auth"))
+	authService := acl.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
 	meta := auth.NewKVMetadataManager("local_load_test", conf.Installation.FixedID, conf.Database.Type, kvStore)
 
 	blockstoreType := os.Getenv(testutil.EnvKeyUseBlockAdapter)
@@ -78,7 +78,7 @@ func TestLocalLoad(t *testing.T) {
 	testutil.Must(t, err)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
-	kvParams, err := kvparams.NewConfig(conf)
+	kvParams, err := kvparams.NewConfig(&conf.Database)
 	testutil.Must(t, err)
 	migrator := kv.NewDatabaseMigrator(kvParams)
 	t.Cleanup(func() {

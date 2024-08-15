@@ -313,6 +313,9 @@ components:
           items:
             $ref: "#/components/schemas/Statement"
           minItems: 1
+        acl:
+          type: string
+          description: Access control list assigned to this policy (if exists)
 
     PolicyList:
       type: object
