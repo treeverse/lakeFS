@@ -23,11 +23,11 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
+	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/authentication"
@@ -953,7 +953,7 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 }
 
 func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID string) {
-	aclPolicyName := acl.PolicyName(groupID)
+	aclPolicyName := authacl.PolicyName(groupID)
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -1025,7 +1025,7 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 }
 
 func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body apigen.SetGroupACLJSONRequestBody, groupID string) {
-	aclPolicyName := acl.PolicyName(groupID)
+	aclPolicyName := authacl.PolicyName(groupID)
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -1059,7 +1059,7 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body ap
 		Permission: model.ACLPermission(body.Permission),
 	}
 
-	err := acl.WriteGroupACL(ctx, c.Auth, groupID, newACL, time.Now(), false)
+	err := authacl.WriteGroupACL(ctx, c.Auth, groupID, newACL, time.Now(), false)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

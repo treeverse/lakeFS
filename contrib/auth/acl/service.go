@@ -14,21 +14,19 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/logging"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const ServerPartitionKey = "aclauth"
 
 type AuthService struct {
 	store       kv.Store
 	secretStore crypt.SecretStore
 	cache       auth.Cache
-	log         logging.Logger
 }
 
-func NewAuthService(store kv.Store, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) *AuthService {
-	logger.Info("initialized Auth service")
+func NewAuthService(store kv.Store, secretStore crypt.SecretStore, cacheConf params.ServiceCache) *AuthService {
 	var cache auth.Cache
 	if cacheConf.Enabled {
 		cache = auth.NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.Jitter)
@@ -39,7 +37,6 @@ func NewAuthService(store kv.Store, secretStore crypt.SecretStore, cacheConf par
 		store:       store,
 		secretStore: secretStore,
 		cache:       cache,
-		log:         logger,
 	}
 	return res
 }
@@ -912,20 +909,8 @@ func (s *AuthService) Authorize(ctx context.Context, req *auth.AuthorizationRequ
 	return &auth.AuthorizationResponse{Allowed: true}, nil
 }
 
-func (s *AuthService) ClaimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64) error {
-	return claimTokenIDOnce(ctx, tokenID, expiresAt, s.markTokenSingleUse)
-}
-
-func claimTokenIDOnce(ctx context.Context, tokenID string, expiresAt int64, markTokenSingleUse func(context.Context, string, time.Time) (bool, error)) error {
-	tokenExpiresAt := time.Unix(expiresAt, 0)
-	canUseToken, err := markTokenSingleUse(ctx, tokenID, tokenExpiresAt)
-	if err != nil {
-		return err
-	}
-	if !canUseToken {
-		return auth.ErrInvalidToken
-	}
-	return nil
+func (s *AuthService) ClaimTokenIDOnce(_ context.Context, _ string, _ int64) error {
+	return auth.ErrNotImplemented
 }
 
 func (s *AuthService) IsExternalPrincipalsEnabled(_ context.Context) bool {
@@ -948,53 +933,14 @@ func (s *AuthService) ListUserExternalPrincipals(_ context.Context, _ string, _ 
 	return nil, nil, auth.ErrNotImplemented
 }
 
-// markTokenSingleUse returns true if token is valid for single use
-func (s *AuthService) markTokenSingleUse(ctx context.Context, tokenID string, tokenExpiresAt time.Time) (bool, error) {
-	tokenPath := model.ExpiredTokenPath(tokenID)
-	m := model.TokenData{TokenId: tokenID, ExpiredAt: timestamppb.New(tokenExpiresAt)}
-	err := kv.SetMsgIf(ctx, s.store, model.PartitionKey, tokenPath, &m, nil)
+func (s *AuthService) getSetupTimestamp(ctx context.Context) (time.Time, error) {
+	valWithPred, err := s.store.Get(ctx, []byte(ServerPartitionKey), []byte(auth.SetupTimestampKeyName))
 	if err != nil {
-		if errors.Is(err, kv.ErrPredicateFailed) {
-			return false, nil
-		}
-		return false, err
+		return time.Time{}, err
 	}
-
-	if err := s.deleteTokens(ctx); err != nil {
-		s.log.WithError(err).Error("Failed to delete expired tokens")
-	}
-	return true, nil
+	return time.Parse(time.RFC3339, string(valWithPred.Value))
 }
 
-func (s *AuthService) deleteTokens(ctx context.Context) error {
-	it, err := kv.NewPrimaryIterator(ctx, s.store, (&model.TokenData{}).ProtoReflect().Type(), model.PartitionKey, model.ExpiredTokensPath(), kv.IteratorOptionsFrom([]byte("")))
-	if err != nil {
-		return err
-	}
-	defer it.Close()
-
-	deletionCutoff := time.Now()
-	for it.Next() {
-		msg := it.Entry()
-		if msg == nil {
-			return fmt.Errorf("nil token: %w", auth.ErrInvalidToken)
-		}
-		token, ok := msg.Value.(*model.TokenData)
-		if token == nil || !ok {
-			return fmt.Errorf("wrong token type: %w", auth.ErrInvalidToken)
-		}
-
-		if token.ExpiredAt.AsTime().After(deletionCutoff) {
-			// reached a token with expiry greater than the cutoff,
-			// tokens are k-ordered (xid) hence we'll not find more expired tokens
-			return nil
-		}
-
-		tokenPath := model.ExpiredTokenPath(token.TokenId)
-		if err := s.store.Delete(ctx, []byte(model.PartitionKey), tokenPath); err != nil {
-			return fmt.Errorf("deleting token: %w", err)
-		}
-	}
-
-	return it.Err()
+func (s *AuthService) updateSetupTimestamp(ctx context.Context, ts time.Time) error {
+	return s.store.SetIf(ctx, []byte(ServerPartitionKey), []byte(model.MetadataKeyPath(auth.SetupTimestampKeyName)), []byte(ts.UTC().Format(time.RFC3339)), nil)
 }

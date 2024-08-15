@@ -13,7 +13,6 @@ import (
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
 	authtestutil "github.com/treeverse/lakefs/contrib/auth/acl/testutil"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -28,13 +27,13 @@ func TestGetMinPermission(t *testing.T) {
 		Action     string
 		Permission model.ACLPermission
 	}{
-		{Action: permissions.ReadObjectAction, Permission: acl.ReadPermission},
-		{Action: "fs:Read*", Permission: acl.ReadPermission},
-		{Action: "fs:ReadO*", Permission: acl.ReadPermission},
-		{Action: permissions.ListObjectsAction, Permission: acl.ReadPermission},
-		{Action: "fs:List*", Permission: acl.ReadPermission},
-		{Action: permissions.ReadActionsAction, Permission: acl.WritePermission},
-		{Action: "fs:WriteO?ject", Permission: acl.WritePermission},
+		{Action: permissions.ReadObjectAction, Permission: authacl.ReadPermission},
+		{Action: "fs:Read*", Permission: authacl.ReadPermission},
+		{Action: "fs:ReadO*", Permission: authacl.ReadPermission},
+		{Action: permissions.ListObjectsAction, Permission: authacl.ReadPermission},
+		{Action: "fs:List*", Permission: authacl.ReadPermission},
+		{Action: permissions.ReadActionsAction, Permission: authacl.WritePermission},
+		{Action: "fs:WriteO?ject", Permission: authacl.WritePermission},
 	}
 
 	mig := migrations.NewACLsMigrator(nil, false)
@@ -60,51 +59,51 @@ func TestComputePermission(t *testing.T) {
 		{
 			Name:       "read-all",
 			Actions:    auth.GetActionsForPolicyTypeOrDie("FSRead"),
-			Permission: acl.ReadPermission,
+			Permission: authacl.ReadPermission,
 		}, {
 			Name:       "read-one",
 			Actions:    []string{permissions.ReadRepositoryAction},
-			Permission: acl.ReadPermission,
+			Permission: authacl.ReadPermission,
 		}, {
 			Name:       "read-two",
 			Actions:    []string{permissions.ListObjectsAction, permissions.ReadTagAction},
-			Permission: acl.ReadPermission,
+			Permission: authacl.ReadPermission,
 		}, {
 			Name:       "only-own-credentials",
 			Actions:    auth.GetActionsForPolicyTypeOrDie("AuthManageOwnCredentials"),
-			Permission: acl.ReadPermission,
+			Permission: authacl.ReadPermission,
 		}, {
 			Name:       "write-all",
 			Actions:    auth.GetActionsForPolicyTypeOrDie("FSReadWrite"),
-			Permission: acl.WritePermission,
+			Permission: authacl.WritePermission,
 		}, {
 			Name:       "write-one",
 			Actions:    []string{permissions.WriteObjectAction},
-			Permission: acl.WritePermission,
+			Permission: authacl.WritePermission,
 		}, {
 			Name:       "write-one-read-one-create-one",
 			Actions:    []string{permissions.CreateCommitAction, permissions.ReadObjectAction, permissions.CreateMetaRangeAction},
-			Permission: acl.WritePermission,
+			Permission: authacl.WritePermission,
 		}, {
 			Name:       "super-all",
 			Actions:    auth.GetActionsForPolicyTypeOrDie("FSFullAccess"),
-			Permission: acl.SuperPermission,
+			Permission: authacl.SuperPermission,
 		}, {
 			Name:       "super-one",
 			Actions:    []string{permissions.AttachStorageNamespaceAction},
-			Permission: acl.SuperPermission,
+			Permission: authacl.SuperPermission,
 		}, {
 			Name:       "super-one-write-one-read-two",
 			Actions:    []string{permissions.CreateTagAction, permissions.AttachStorageNamespaceAction, permissions.ReadConfigAction, permissions.ReadRepositoryAction},
-			Permission: acl.SuperPermission,
+			Permission: authacl.SuperPermission,
 		}, {
 			Name:       "admin-all",
 			Actions:    auth.GetActionsForPolicyTypeOrDie("AllAccess"),
-			Permission: acl.AdminPermission,
+			Permission: authacl.AdminPermission,
 		}, {
 			Name:       "admin-one",
 			Actions:    []string{permissions.SetGarbageCollectionRulesAction},
-			Permission: acl.AdminPermission,
+			Permission: authacl.AdminPermission,
 		},
 	}
 
@@ -126,7 +125,7 @@ func TestComputePermission(t *testing.T) {
 }
 
 func TestBroaderPermission(t *testing.T) {
-	perms := []model.ACLPermission{"", acl.ReadPermission, acl.WritePermission, acl.SuperPermission, acl.AdminPermission}
+	perms := []model.ACLPermission{"", authacl.ReadPermission, authacl.WritePermission, authacl.SuperPermission, authacl.AdminPermission}
 	for i, a := range perms {
 		for j, b := range perms {
 			after := i > j
@@ -183,25 +182,25 @@ func TestNewACLForPolicies_Generator(t *testing.T) {
 			Name:     "ExactlyFSFullAccess",
 			Policies: []*model.Policy{getPolicy(t, ctx, svc, "FSFullAccess")},
 			ACL: model.ACL{
-				Permission: acl.SuperPermission,
+				Permission: authacl.SuperPermission,
 			},
 		}, {
 			Name:     "GroupSuperUsers",
 			Policies: getPolicies(t, ctx, svc, "SuperUsers"),
 			ACL: model.ACL{
-				Permission: acl.SuperPermission,
+				Permission: authacl.SuperPermission,
 			},
 		}, {
 			Name:     "ExactlyFSReadAll",
 			Policies: []*model.Policy{getPolicy(t, ctx, svc, "FSReadAll")},
 			ACL: model.ACL{
-				Permission: acl.ReadPermission,
+				Permission: authacl.ReadPermission,
 			},
 		}, {
 			Name:     "GroupViewers",
 			Policies: getPolicies(t, ctx, svc, "Viewers"),
 			ACL: model.ACL{
-				Permission: acl.ReadPermission,
+				Permission: authacl.ReadPermission,
 			},
 		},
 	}

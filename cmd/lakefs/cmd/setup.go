@@ -29,7 +29,7 @@ var setupCmd = &cobra.Command{
 		cfg := loadConfig()
 
 		ctx := cmd.Context()
-		kvParams, err := kvparams.NewConfig(cfg)
+		kvParams, err := kvparams.NewConfig(&cfg.Database)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
 			os.Exit(1)
@@ -74,8 +74,7 @@ var setupCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 		logger := logging.ContextUnavailable()
-		authLogger := logger.WithField("service", "auth_service")
-		authService = acl.NewAuthService(kvStore, crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)), authparams.ServiceCache(cfg.Auth.Cache), authLogger)
+		authService = acl.NewAuthService(kvStore, crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)), authparams.ServiceCache(cfg.Auth.Cache))
 		metadataManager = auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)

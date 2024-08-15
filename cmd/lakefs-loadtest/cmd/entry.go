@@ -59,7 +59,7 @@ var entryCmd = &cobra.Command{
 			fmt.Printf("invalid config: %s\n", err)
 		}
 
-		kvParams, err := kvparams.NewConfig(conf)
+		kvParams, err := kvparams.NewConfig(&conf.Database)
 		if err != nil {
 			logging.ContextUnavailable().WithError(err).Fatal("Get KV params")
 		}

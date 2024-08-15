@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/go-multierror"
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
@@ -43,10 +42,10 @@ var (
 
 	// allPermissions lists all permissions, from most restrictive to
 	// most permissive.  It includes "" for some edge cases.
-	allPermissions = []model.ACLPermission{"", acl.ReadPermission, acl.WritePermission, acl.SuperPermission, acl.AdminPermission}
+	allPermissions = []model.ACLPermission{"", authacl.ReadPermission, authacl.WritePermission, authacl.SuperPermission, authacl.AdminPermission}
 )
 
-func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, logger logging.Logger, version int, force bool) error {
+func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, _ logging.Logger, version int, force bool) error {
 	if !cfg.IsAuthUISimplified() {
 		fmt.Println("skipping ACL migration - not simplified")
 		return updateKVSchemaVersion(ctx, kvStore, kv.ACLNoReposMigrateVersion)
@@ -71,12 +70,7 @@ func MigrateToACL(ctx context.Context, kvStore kv.Store, cfg *config.Config, log
 		usersWithPolicies []string
 	)
 	updateTime := time.Now()
-	authService := authacl.NewAuthService(
-		kvStore,
-		crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
-		authparams.ServiceCache(cfg.Auth.Cache),
-		logger.WithField("service", "auth_service"),
-	)
+	authService := authacl.NewAuthService(kvStore, crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)), authparams.ServiceCache(cfg.Auth.Cache))
 	usersWithPolicies, err := rbacToACL(ctx, authService, false, updateTime, func(groupID string, acl model.ACL, warn error) {
 		groupReports = append(groupReports, Warning{GroupID: groupID, ACL: acl, Warn: warn})
 	})
@@ -134,7 +128,7 @@ func reportACL(acl model.ACL) string {
 // checkPolicyACLName fails if policy name is named as an ACL policy (start
 // with PolicyPrefix) but is not an ACL policy.
 func checkPolicyACLName(ctx context.Context, svc auth.Service, name string) error {
-	if !acl.IsPolicyName(name) {
+	if !authacl.IsPolicyName(name) {
 		return nil
 	}
 
@@ -187,14 +181,14 @@ func rbacToACL(ctx context.Context, svc auth.Service, doUpdate bool, creationTim
 			"acl":   fmt.Sprintf("%+v", newACL),
 		}).Info("Computed ACL")
 
-		aclPolicyName := acl.PolicyName(group.DisplayName)
+		aclPolicyName := authacl.PolicyName(group.DisplayName)
 		err = checkPolicyACLName(ctx, svc, aclPolicyName)
 		if err != nil {
 			warnings = multierror.Append(warnings, warn)
 		}
 		policyExists := errors.Is(err, ErrPolicyExists)
 		if doUpdate {
-			err = acl.WriteGroupACL(ctx, svc, group.DisplayName, *newACL, creationTime, policyExists)
+			err = authacl.WriteGroupACL(ctx, svc, group.DisplayName, *newACL, creationTime, policyExists)
 			if errors.Is(err, auth.ErrAlreadyExists) {
 				warnings = multierror.Append(warnings, err)
 			} else if err != nil {
@@ -277,10 +271,10 @@ func NewACLsMigrator(svc auth.Service, doUpdate bool) *ACLsMigrator {
 		svc:      svc,
 		doUpdate: doUpdate,
 		Actions: map[model.ACLPermission]map[string]struct{}{
-			acl.AdminPermission: makeSet(auth.GetActionsForPolicyTypeOrDie("AllAccess")),
-			acl.SuperPermission: makeSet(auth.GetActionsForPolicyTypeOrDie("FSFullAccess"), manageOwnCredentials, ciRead),
-			acl.WritePermission: makeSet(auth.GetActionsForPolicyTypeOrDie("FSReadWrite"), manageOwnCredentials, ciRead),
-			acl.ReadPermission:  makeSet(auth.GetActionsForPolicyTypeOrDie("FSRead"), manageOwnCredentials),
+			authacl.AdminPermission: makeSet(auth.GetActionsForPolicyTypeOrDie("AllAccess")),
+			authacl.SuperPermission: makeSet(auth.GetActionsForPolicyTypeOrDie("FSFullAccess"), manageOwnCredentials, ciRead),
+			authacl.WritePermission: makeSet(auth.GetActionsForPolicyTypeOrDie("FSReadWrite"), manageOwnCredentials, ciRead),
+			authacl.ReadPermission:  makeSet(auth.GetActionsForPolicyTypeOrDie("FSRead"), manageOwnCredentials),
 		},
 	}
 }
@@ -413,15 +407,15 @@ func (mig *ACLsMigrator) ComputePermission(ctx context.Context, actions []string
 func (mig *ACLsMigrator) ComputeAddedActions(permission model.ACLPermission, alreadyAllowedActions map[string]struct{}) []string {
 	var allAllowedActions map[string]struct{}
 	switch permission {
-	case acl.ReadPermission:
-		allAllowedActions = mig.Actions[acl.ReadPermission]
-	case acl.WritePermission:
-		allAllowedActions = mig.Actions[acl.WritePermission]
-	case acl.SuperPermission:
-		allAllowedActions = mig.Actions[acl.SuperPermission]
-	case acl.AdminPermission:
+	case authacl.ReadPermission:
+		allAllowedActions = mig.Actions[authacl.ReadPermission]
+	case authacl.WritePermission:
+		allAllowedActions = mig.Actions[authacl.WritePermission]
+	case authacl.SuperPermission:
+		allAllowedActions = mig.Actions[authacl.SuperPermission]
+	case authacl.AdminPermission:
 	default:
-		allAllowedActions = mig.Actions[acl.AdminPermission]
+		allAllowedActions = mig.Actions[authacl.AdminPermission]
 	}
 	addedActions := make(map[string]struct{}, len(allAllowedActions))
 	for _, action := range permissions.Actions {
@@ -441,14 +435,14 @@ func BroaderPermission(a, b model.ACLPermission) bool {
 	switch a {
 	case "":
 		return false
-	case acl.ReadPermission:
+	case authacl.ReadPermission:
 		return b == ""
-	case acl.WritePermission:
-		return b == "" || b == acl.ReadPermission
-	case acl.SuperPermission:
-		return b == "" || b == acl.ReadPermission || b == acl.WritePermission
-	case acl.AdminPermission:
-		return b == "" || b == acl.ReadPermission || b == acl.WritePermission || b == acl.SuperPermission
+	case authacl.WritePermission:
+		return b == "" || b == authacl.ReadPermission
+	case authacl.SuperPermission:
+		return b == "" || b == authacl.ReadPermission || b == authacl.WritePermission
+	case authacl.AdminPermission:
+		return b == "" || b == authacl.ReadPermission || b == authacl.WritePermission || b == authacl.SuperPermission
 	}
 	panic(fmt.Sprintf("impossible comparison %s and %s", a, b))
 }
