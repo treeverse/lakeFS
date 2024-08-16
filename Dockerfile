@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 ARG VERSION=dev
 
-FROM --platform=$BUILDPLATFORM golang:1.21.4-alpine3.18 AS build
+FROM --platform=$BUILDPLATFORM golang:1.22.6-alpine3.20 AS build
 WORKDIR /build
 RUN apk add --no-cache build-base ca-certificates
 COPY go.mod go.sum ./
