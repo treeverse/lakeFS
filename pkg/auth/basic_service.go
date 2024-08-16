@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	basicPartitionKey = "basicAuth"
-	SuperAdminKey     = "superAdmin"
+	basicPartitionKey     = "basicAuth"
+	SuperAdminKey         = "superAdmin"
+	MaxCredentialsPerUser = 1
 )
 
 type BasicAuthService struct {
@@ -157,7 +158,7 @@ func (s *BasicAuthService) AddCredentials(ctx context.Context, username, accessK
 		return nil, err
 	}
 	// TODO (niro): Support swap?
-	if len(currCreds) > 1 {
+	if len(currCreds) >= MaxCredentialsPerUser {
 		return nil, fmt.Errorf("exceeded number of allowed credentials: %w", ErrInvalidRequest)
 	}
 	return s.addCredentials(ctx, username, accessKeyID, secretAccessKey)
