@@ -361,7 +361,11 @@ var runCmd = &cobra.Command{
 			_, _ = fmt.Fprintf(os.Stderr, "Failed to get command flag %s: %v\n", config.QuickstartConfiguration, err)
 			os.Exit(1)
 		}
-
+		var localBanner = fmt.Sprintf(`
+│
+│ If you're running lakeFS locally for the first time,
+│     complete the setup process at %s /setup
+│`, cfg.ListenAddress)
 		data := bannerData{
 			SetupMessage: localBanner,
 			Version:      version.Version,
@@ -488,12 +492,6 @@ lakeFS {{ .Version }} - Up and running (^C to shutdown)...
 │
 
 `
-
-const localBanner = `
-│
-│ If you're running lakeFS locally for the first time,
-│     complete the setup process at http://127.0.0.1:8000/setup
-│`
 
 var quickStartBanner = fmt.Sprintf(`
 │
