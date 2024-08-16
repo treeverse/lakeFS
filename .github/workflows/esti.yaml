@@ -54,7 +54,7 @@ jobs:
         if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v4
         with:
-          go-version: "1.21.4"
+          go-version: "1.22.6"
         id: go
 
       - name: Setup NodeJS
@@ -210,7 +210,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.21.4"
+          go-version: "1.22.6"
         id: go
 
       - name: Generate uniquifying value
