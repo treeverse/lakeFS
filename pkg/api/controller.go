@@ -2736,7 +2736,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, graveler.ErrPreconditionFailed):
 		log.Debug("Precondition failed")
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
-	case errors.Is(err, authentication.ErrNotImplemented):
+	case errors.Is(err, authentication.ErrNotImplemented),
+		errors.Is(err, auth.ErrNotImplemented):
 		cb(w, r, http.StatusNotImplemented, "Not implemented")
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
 		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")

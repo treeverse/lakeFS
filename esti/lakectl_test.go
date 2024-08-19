@@ -411,16 +411,26 @@ func TestLakectlAuthUsers(t *testing.T) {
 	vars := map[string]string{
 		"ID": userName,
 	}
+	isSupported := !isBasicAuth()
+	expected := "Not implemented\n501 Not Implemented\n"
+	if isSupported {
+		expected = "user not found\n404 Not Found\n"
+	}
 
 	// Not Found
-	RunCmdAndVerifyFailure(t, Lakectl()+" auth users delete --id "+userName, false, "user not found\n404 Not Found\n", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" auth users delete --id "+userName, false, expected, vars)
 
 	// Check unique
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" auth users create --id "+userName, false, "lakectl_auth_users_create_success", vars)
+	if isSupported {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" auth users create --id "+userName, false, "lakectl_auth_users_create_success", vars)
+	}
 	RunCmdAndVerifyFailure(t, Lakectl()+" auth users create --id "+userName, false, "Already exists\n409 Conflict\n", vars)
 
 	// Cleanup
-	RunCmdAndVerifySuccess(t, Lakectl()+" auth users delete --id "+userName, false, "User deleted successfully\n", vars)
+	if isSupported {
+		expected = "User deleted successfully\n"
+	}
+	runCmdAndVerifyResult(t, Lakectl()+" auth users delete --id "+userName, !isSupported, false, expected, vars)
 }
 
 func TestLakectlIngestS3(t *testing.T) {

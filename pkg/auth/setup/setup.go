@@ -159,25 +159,28 @@ func CreateAdminUser(ctx context.Context, authService auth.Service, cfg *config.
 		return nil, err
 	}
 
-	return AddAdminUser(ctx, authService, superuser)
+	return AddAdminUser(ctx, authService, superuser, true)
 }
 
-func AddAdminUser(ctx context.Context, authService auth.Service, user *model.SuperuserConfiguration) (*model.Credential, error) {
-	// verify the admin group exists
-	_, err := authService.GetGroup(ctx, AdminsGroup)
-	if err != nil {
-		return nil, fmt.Errorf("admin group - %w", err)
-	}
-
+func AddAdminUser(ctx context.Context, authService auth.Service, user *model.SuperuserConfiguration, addToAdmins bool) (*model.Credential, error) {
 	// create admin user
 	user.Source = "internal"
-	_, err = authService.CreateUser(ctx, &user.User)
+	_, err := authService.CreateUser(ctx, &user.User)
 	if err != nil {
 		return nil, fmt.Errorf("create user - %w", err)
 	}
-	err = authService.AddUserToGroup(ctx, user.Username, AdminsGroup)
-	if err != nil {
-		return nil, fmt.Errorf("add user to group - %w", err)
+
+	if addToAdmins {
+		// verify the admin group exists
+		_, err = authService.GetGroup(ctx, AdminsGroup)
+		if err != nil {
+			return nil, fmt.Errorf("admin group - %w", err)
+		}
+
+		err = authService.AddUserToGroup(ctx, user.Username, AdminsGroup)
+		if err != nil {
+			return nil, fmt.Errorf("add user to group - %w", err)
+		}
 	}
 
 	var creds *model.Credential
@@ -213,25 +216,33 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 	}
 
 	// create first admin user
-	cred, err := CreateAdminUser(ctx, authService, cfg, adminUser)
-	if err != nil {
+	var (
+		cred *model.Credential
+		err  error
+	)
+	// TODO (niro): Handle with creds (what do we want to do with custom creds?)
+	if cfg.IsAuthBasic() {
+		if cred, err = AddAdminUser(ctx, authService, adminUser, false); err != nil {
+			return nil, err
+		}
+	} else if cred, err = CreateAdminUser(ctx, authService, cfg, adminUser); err != nil {
 		return nil, err
 	}
 
 	// update setup timestamp
-	if err := metadataManger.UpdateSetupTimestamp(ctx, time.Now()); err != nil {
+	if err = metadataManger.UpdateSetupTimestamp(ctx, time.Now()); err != nil {
 		logging.FromContext(ctx).WithError(err).Error("Failed the update setup timestamp")
 	}
 	return cred, err
 }
 
 func CreateBaseGroups(ctx context.Context, authService auth.Service, cfg *config.Config, ts time.Time) error {
-	// TODO (niro): need to remove that when transitioning to external auth ACLs server
-	if cfg.IsAuthUISimplified() && cfg.Auth.API.Endpoint != "" {
-		return nil
-	}
-	if cfg.IsAuthUISimplified() {
+	// TODO (niro): need to remove this when transitioning to external auth ACLs server
+	if cfg.IsAuthUISimplified() && !cfg.IsAuthBasic() && cfg.Auth.API.Endpoint == "" {
 		return authacl.CreateACLBaseGroups(ctx, authService, ts)
+	}
+	if !cfg.IsAdvancedAuth() {
+		return nil
 	}
 	return CreateRBACBaseGroups(ctx, authService, ts)
 }

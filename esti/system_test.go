@@ -343,3 +343,7 @@ func requireBlockstoreType(t testing.TB, requiredTypes ...string) {
 		t.Skipf("Required blockstore types: %v, got: %s", requiredTypes, blockstoreType)
 	}
 }
+
+func isBasicAuth() bool {
+	return viper.GetBool("auth.basic")
+}
