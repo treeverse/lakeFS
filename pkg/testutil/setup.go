@@ -189,13 +189,12 @@ func waitUntilLakeFSRunning(ctx context.Context, logger logging.Logger, cl apige
 		resp, err := cl.HealthCheckWithResponse(setupCtx)
 		if err != nil {
 			logger.WithError(err).Info("Setup failed")
-			return err
+		} else {
+			if resp.StatusCode() == http.StatusNoContent {
+				return nil
+			}
+			logger.WithField("status", resp.HTTPResponse.Status).Warning("Bad status on healthcheck")
 		}
-		if resp.StatusCode() == http.StatusNoContent {
-			return nil
-		}
-		logger.WithField("status", resp.HTTPResponse.Status).Warning("Bad status on healthcheck")
-
 		select {
 		case <-setupCtx.Done():
 			return setupCtx.Err()
