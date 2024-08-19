@@ -129,9 +129,9 @@ $KUBECTLCMD exec deployment/$FLUFFY_DEPLOYMENT -- ./lakefs flare --stdout > $FLU
 
 After executing the script you should have four files: lakeFS/fluffy logs and lakeFS/fluffy flare output. Before sharing these files, please review them to make sure all secrets were correctly redacted and that all the collected information is shareable.
 
-### Step 4 - Zip Output Files and Attach to HubSpot Ticket
+### Step 4 - Zip Output Files and Attach to Support Ticket
 
-Once you're done inspecting the files, you can zip them into a single file and attach it to a HubSpot issue.
+Once you're done inspecting the files, you can zip them into a single file and attach it to a Support Ticket in the [support portal](https://support.lakefs.io/).
 
 #### New Ticket
 
@@ -141,6 +141,6 @@ When filing a new ticket, you can attach the zip file using the file upload inpu
 
 #### Existing Ticket
 
-To add a file to an existing ticket, click the ticket subject in the support portal. On the ticket details attach a file as a new response. You can also add text to the response, if you'd like to add further details.
+To add a file to an existing ticket, click the ticket subject in the [support portal](https://support.lakefs.io/). On the ticket details attach a file as a new response. You can also add text to the response, if you'd like to add further details.
 
 ![existing ticket](../assets/img/flare_existing_ticket.png)

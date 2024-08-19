@@ -24,8 +24,8 @@ the following containers:
 * lakeFS
 * Fluffy (includes lakeFS Enterprise features)
 * Postgres: used by lakeFS and Fluffy as a shared KV store
-* MinIO container: used as the storage connected to lakFS
-* Jupyter notebooks setup: Pre-populated with [notebooks](https://github.com/treeverse/lakeFS-samples/tree/main/00_notebooks) that demonstrate lakeFS Enterprise' capabilities
+* MinIO container: used as the storage connected to lakeFS
+* Jupyter notebooks setup: Pre-populated with [notebooks](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/00_index.ipynb) that demonstrate lakeFS Enterprise' capabilities
 * Apache Spark: this is useful for interacting with data you'll manage with lakeFS
 
 Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/rbac-demo.ipynb) notebook to see lakeFS Enterprise [Role-Based Access Control]({% link security/access-control-lists.md %}) capabilities in action.
