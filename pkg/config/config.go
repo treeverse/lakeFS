@@ -177,6 +177,8 @@ type Config struct {
 	}
 	Database Database
 	Auth     struct {
+		// TODO (niro): To be removed once we finish the transition
+		Basic bool `mapstructure:"internal_basic"`
 		Cache struct {
 			Enabled bool          `mapstructure:"enabled"`
 			Size    int           `mapstructure:"size"`
@@ -567,6 +569,12 @@ const (
 	AuthRBACInternal   = "internal"
 )
 
+func (c *Config) IsAuthBasic() bool {
+	// TODO (niro): Replace once transition is complete
+	// return c.Auth.UIConfig.RBAC == AuthRBACSimplified && c.Auth.API.Endpoint == ""
+	return c.Auth.Basic
+}
+
 func (c *Config) IsAuthUISimplified() bool {
 	return c.Auth.UIConfig.RBAC == AuthRBACSimplified
 }
@@ -578,6 +586,7 @@ func (c *Config) IsAuthenticationTypeAPI() bool {
 func (c *Config) IsAuthTypeAPI() bool {
 	return c.Auth.API.Endpoint != ""
 }
+
 func (c *Config) IsExternalPrincipalsEnabled() bool {
 	// IsAuthTypeAPI must be true since the local auth service doesnt support external principals
 	// ExternalPrincipalsEnabled indicates that the remote auth service enables external principals support since its optional extension

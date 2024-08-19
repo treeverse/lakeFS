@@ -703,6 +703,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 }
 
 func TestS3ReadObjectRedirect(t *testing.T) {
+	requireBlockstoreType(t, block.BlockstoreTypeS3)
 	const (
 		contents = "the quick brown fox jumps over the lazy dog"
 		goodPath = "main/exists.txt"

@@ -61,6 +61,9 @@ type Shutter interface {
 var errSimplifiedOrExternalAuth = errors.New(`cannot set auth.ui_config.rbac to non-simplified without setting an external auth service`)
 
 func checkAuthModeSupport(cfg *config.Config) error {
+	if cfg.IsAuthBasic() { // Basic mode
+		return nil
+	}
 	if !cfg.IsAuthUISimplified() && !cfg.IsAuthTypeAPI() {
 		return errSimplifiedOrExternalAuth
 	}
@@ -71,12 +74,23 @@ func NewAuthService(ctx context.Context, cfg *config.Config, logger logging.Logg
 	if err := checkAuthModeSupport(cfg); err != nil {
 		logger.WithError(err).Fatal("Unsupported auth mode")
 	}
+
+	secretStore := crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey))
+	if cfg.IsAuthBasic() {
+		apiService := auth.NewBasicAuthService(
+			kvStore,
+			secretStore,
+			authparams.ServiceCache(cfg.Auth.Cache),
+			logger.WithField("service", "auth_service"),
+		)
+		return auth.NewMonitoredAuthServiceAndInviter(apiService)
+	}
 	if cfg.IsAuthTypeAPI() {
 		apiService, err := auth.NewAPIAuthService(
 			cfg.Auth.API.Endpoint,
 			cfg.Auth.API.Token.SecureValue(),
 			cfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled,
-			crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)),
+			secretStore,
 			authparams.ServiceCache(cfg.Auth.Cache),
 			logger.WithField("service", "auth_api"),
 		)
@@ -90,7 +104,11 @@ func NewAuthService(ctx context.Context, cfg *config.Config, logger logging.Logg
 		}
 		return auth.NewMonitoredAuthServiceAndInviter(apiService)
 	}
-	authService := acl.NewAuthService(kvStore, crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)), authparams.ServiceCache(cfg.Auth.Cache))
+	authService := acl.NewAuthService(
+		kvStore,
+		secretStore,
+		authparams.ServiceCache(cfg.Auth.Cache),
+	)
 	return auth.NewMonitoredAuthService(authService)
 }
 

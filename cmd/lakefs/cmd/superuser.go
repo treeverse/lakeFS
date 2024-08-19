@@ -72,7 +72,7 @@ var superuserCmd = &cobra.Command{
 			},
 			AccessKeyID:     accessKeyID,
 			SecretAccessKey: secretAccessKey,
-		})
+		}, true)
 		if err != nil {
 			fmt.Printf("Failed to setup admin user: %s\n", err)
 			os.Exit(1)

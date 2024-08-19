@@ -20,11 +20,17 @@ func TestAdminPermissions(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	// creating a new group should succeed
 	const gname = "TestGroup"
 	resCreateGroup, err := client.CreateGroupWithResponse(ctx, apigen.CreateGroupJSONRequestBody{
 		Id: gname,
 	})
+	if isBasicAuth() {
+		require.NoError(t, err, "Admin failed while creating group")
+		require.Equal(t, http.StatusNotImplemented, resCreateGroup.StatusCode())
+		return
+	}
+
+	// creating a new group should succeed
 	require.NoError(t, err, "Admin failed while creating group")
 	require.Equal(t, http.StatusCreated, resCreateGroup.StatusCode(), "Admin unexpectedly failed to create group")
 	groupID := resCreateGroup.JSON201.Id
@@ -57,6 +63,9 @@ func TestAdminPermissions(t *testing.T) {
 
 // Test Super Permissions: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestSuperPermissions(t *testing.T) {
+	if isBasicAuth() {
+		t.Skip("Unsupported in basic auth configuration")
+	}
 	ctx, logger, repo := setupTest(t)
 	groups := []string{"Supers", "SuperUsers"}
 
@@ -109,6 +118,9 @@ func TestSuperPermissions(t *testing.T) {
 
 // Test Writer Permissions: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestWriterPermissions(t *testing.T) {
+	if isBasicAuth() {
+		t.Skip("Unsupported in basic auth configuration")
+	}
 	ctx, logger, repo := setupTest(t)
 	groups := []string{"Writers", "Developers"}
 	// map group names to IDs
@@ -156,6 +168,9 @@ func TestWriterPermissions(t *testing.T) {
 
 // Test Reader Permissions: AuthManageOwnCredentials, FSReadAll
 func TestReaderPermissions(t *testing.T) {
+	if isBasicAuth() {
+		t.Skip("Unsupported in basic auth configuration")
+	}
 	ctx, logger, repo := setupTest(t)
 	groups := []string{"Readers", "Viewers"}
 
