@@ -34,10 +34,12 @@ var (
 	rePhysicalAddress = regexp.MustCompile(`/data/[0-9a-v]{20}/(?:[0-9a-v]{20}(?:,.+)?)?`)
 	reVariable        = regexp.MustCompile(`\$\{([^${}]+)}`)
 	rePreSignURL      = regexp.MustCompile(`https://\S+\?\S+`)
+	reSecretAccessKey = regexp.MustCompile(`secret_access_key: \S{16,128}`)
+	reAccessKeyID     = regexp.MustCompile(`access_key_id: AKIA\S{12,124}`)
 )
 
 func lakectlLocation() string {
-	return viper.GetString("lakectl_dir") + "/lakectl"
+	return viper.GetString("binaries_dir") + "/lakectl"
 }
 
 func LakectlWithParams(accessKeyID, secretAccessKey, endPointURL string) string {
@@ -145,6 +147,8 @@ func sanitize(output string, vars map[string]string) string {
 	s = normalizeCommitID(s)
 	s = normalizeChecksum(s)
 	s = normalizeShortCommitID(s)
+	s = normalizeAccessKeyID(s)
+	s = normalizeSecretAccessKey(s)
 	return s
 }
 
@@ -266,4 +270,12 @@ func normalizeEndpoint(output string, endpoint string) string {
 
 func normalizePreSignURL(output string) string {
 	return rePreSignURL.ReplaceAllString(output, "<PRE_SIGN_URL>")
+}
+
+func normalizeAccessKeyID(output string) string {
+	return reAccessKeyID.ReplaceAllString(output, "access_key_id: <ACCESS_KEY_ID>")
+}
+
+func normalizeSecretAccessKey(output string) string {
+	return reSecretAccessKey.ReplaceAllString(output, "secret_access_key: <SECRET_ACCESS_KEY>")
 }

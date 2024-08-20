@@ -56,7 +56,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	}
 	viper.SetDefault("glue_export_hooks_database", "export-hooks-esti")
 	viper.SetDefault("glue_export_region", "us-east-1")
-	viper.SetDefault("lakectl_dir", filepath.Join(currDir, ".."))
+	viper.SetDefault("binaries_dir", filepath.Join(currDir, ".."))
 	viper.SetDefault("azure_storage_account", "")
 	viper.SetDefault("azure_storage_access_key", "")
 	viper.SetDefault("large_object_path", "")
@@ -78,12 +78,12 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 		logger.WithError(err).Fatal("could not initialize API client")
 	}
 
-	if err := waitUntilLakeFSRunning(ctx, logger, client); err != nil {
-		logger.WithError(err).Fatal("Waiting for lakeFS")
-	}
-
 	setupLakeFS := viper.GetBool("setup_lakefs")
 	if setupLakeFS {
+		if err := waitUntilLakeFSRunning(ctx, logger, client); err != nil {
+			logger.WithError(err).Fatal("Waiting for lakeFS")
+		}
+
 		// first setup of lakeFS
 		mockEmail := "test@acme.co"
 		commResp, err := client.SetupCommPrefsWithResponse(context.Background(), apigen.SetupCommPrefsJSONRequestBody{
