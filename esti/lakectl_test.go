@@ -423,7 +423,7 @@ func TestLakectlAuthUsers(t *testing.T) {
 	RunCmdAndVerifyFailure(t, Lakectl()+" auth users create --id "+userName, false, "Already exists\n409 Conflict\n", vars)
 
 	// Cleanup
-	expected := "Not implemented\n501 Not Implemented\n"
+	expected := "user not found\n404 Not Found\n"
 	if isSupported {
 		expected = "User deleted successfully\n"
 	}

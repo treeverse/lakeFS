@@ -1353,7 +1353,7 @@ jobs:
           fi
 
   run-system-aws-s3-basic-auth:
-    name: Run latest lakeFS app on AWS S3
+    name: Run latest lakeFS app on AWS S3 + Basic Auth
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
