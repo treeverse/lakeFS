@@ -243,7 +243,7 @@ func (s *AuthService) ListUserCredentials(ctx context.Context, username string, 
 	if err != nil {
 		return nil, nil, err
 	}
-	creds, err := model.ConvertCredDataList(s.secretStore, msgs)
+	creds, err := model.ConvertCredDataList(s.secretStore, msgs, false)
 	if err != nil {
 		return nil, nil, err
 	}

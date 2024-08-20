@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	basicPartitionKey     = "basicAuth"
+	BasicPartitionKey     = "basicAuth"
 	SuperAdminKey         = "superAdmin"
+	MaxUsers              = 1
 	MaxCredentialsPerUser = 1
 )
 
@@ -73,7 +74,7 @@ func (s *BasicAuthService) getUser(ctx context.Context) (*model.User, error) {
 		// Single user, always stored under this key!
 		userKey := model.UserPath(SuperAdminKey)
 		m := model.UserData{}
-		_, err := kv.GetMsg(ctx, s.store, basicPartitionKey, userKey, &m)
+		_, err := kv.GetMsg(ctx, s.store, BasicPartitionKey, userKey, &m)
 		if err != nil {
 			if errors.Is(err, kv.ErrNotFound) {
 				err = ErrNotFound
@@ -92,53 +93,57 @@ func (s *BasicAuthService) CreateUser(ctx context.Context, user *model.User) (st
 	}
 	userKey := model.UserPath(SuperAdminKey)
 
-	err := kv.SetMsgIf(ctx, s.store, basicPartitionKey, userKey, model.ProtoFromUser(user), nil)
+	err := kv.SetMsgIf(ctx, s.store, BasicPartitionKey, userKey, model.ProtoFromUser(user), nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
 		}
-		return "", fmt.Errorf("failed to create user (auth.UserKey %s): %w", userKey, err)
+		return "", fmt.Errorf("failed to create user (%s): %w", user.Username, err)
 	}
 	return user.Username, err
 }
 
+func (s *BasicAuthService) DeleteUser(ctx context.Context, username string) error {
+	if _, err := s.GetUser(ctx, username); err != nil {
+		return err
+	}
+
+	// delete user
+	userPath := model.UserPath(SuperAdminKey)
+	if err := s.store.Delete(ctx, []byte(BasicPartitionKey), userPath); err != nil {
+		return fmt.Errorf("delete user (%s): %w", username, err)
+	}
+
+	// Delete user credentials
+	return s.deleteUserCredentials(ctx, SuperAdminKey, BasicPartitionKey, "")
+}
+
 func (s *BasicAuthService) ListUsers(ctx context.Context, _ *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+	var users []*model.User
 	user, err := s.getUser(ctx)
 	if err != nil {
-		return nil, nil, err
+		if !errors.Is(err, ErrNotFound) {
+			return nil, nil, err
+		}
+	} else {
+		users = append(users, user)
 	}
-	return []*model.User{user}, &model.Paginator{Amount: 1}, nil
+	return users, &model.Paginator{Amount: MaxUsers}, nil
 }
 
 func (s *BasicAuthService) GetCredentials(ctx context.Context, accessKeyID string) (*model.Credential, error) {
 	return s.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
-		m := &model.UserData{}
-		itr, err := kv.NewPrimaryIterator(ctx, s.store, m.ProtoReflect().Type(), basicPartitionKey, model.UserPath(""), kv.IteratorOptionsAfter([]byte("")))
-		if err != nil {
-			return nil, fmt.Errorf("scan users: %w", err)
-		}
-		defer itr.Close()
-
-		for itr.Next() {
-			entry := itr.Entry()
-			user, ok := entry.Value.(*model.UserData)
-			if !ok {
-				return nil, fmt.Errorf("failed to cast: %w", err)
-			}
-			c := model.CredentialData{}
-			credentialsKey := model.CredentialPath(user.Username, accessKeyID)
-			_, err := kv.GetMsg(ctx, s.store, basicPartitionKey, credentialsKey, &c)
-			if err != nil && !errors.Is(err, kv.ErrNotFound) {
-				return nil, err
-			}
-			if err == nil {
-				return model.CredentialFromProto(s.secretStore, &c)
-			}
-		}
-		if err = itr.Err(); err != nil {
+		c := model.CredentialData{}
+		credentialsKey := model.CredentialPath(SuperAdminKey, accessKeyID)
+		_, err := kv.GetMsg(ctx, s.store, BasicPartitionKey, credentialsKey, &c)
+		switch {
+		case errors.Is(err, kv.ErrNotFound):
+			return nil, fmt.Errorf("credentials %w", ErrNotFound)
+		case err == nil:
+			return model.CredentialFromProto(s.secretStore, &c)
+		default:
 			return nil, err
 		}
-		return nil, fmt.Errorf("credentials %w", ErrNotFound)
 	})
 }
 
@@ -153,7 +158,12 @@ func (s *BasicAuthService) CreateCredentials(ctx context.Context, username strin
 }
 
 func (s *BasicAuthService) AddCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
-	currCreds, err := s.listUserCredentials(ctx, username)
+	_, err := s.GetUser(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+
+	currCreds, err := s.listUserCredentials(ctx, SuperAdminKey, BasicPartitionKey, "")
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +171,24 @@ func (s *BasicAuthService) AddCredentials(ctx context.Context, username, accessK
 	if len(currCreds) >= MaxCredentialsPerUser {
 		return nil, fmt.Errorf("exceeded number of allowed credentials: %w", ErrInvalidRequest)
 	}
+
+	// Handle user import flow from previous auth service
+	if accessKeyID != "" && secretAccessKey == "" {
+		return s.importUserCredentials(ctx, username, accessKeyID)
+	}
+
 	return s.addCredentials(ctx, username, accessKeyID, secretAccessKey)
+}
+
+func (s *BasicAuthService) importUserCredentials(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
+	creds, err := s.listUserCredentials(ctx, username, model.PartitionKey, accessKeyID)
+	if err != nil {
+		return nil, err
+	}
+	if len(creds) < 1 {
+		return nil, fmt.Errorf("no credentials found for user (%s): %w", username, ErrNotFound)
+	}
+	return s.addCredentials(ctx, username, creds[0].AccessKeyID, creds[0].SecretAccessKey)
 }
 
 func (s *BasicAuthService) addCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
@@ -179,8 +206,8 @@ func (s *BasicAuthService) addCredentials(ctx context.Context, username, accessK
 		},
 		Username: username,
 	}
-	credentialsKey := model.CredentialPath(username, c.AccessKeyID)
-	err = kv.SetMsgIf(ctx, s.store, basicPartitionKey, credentialsKey, model.ProtoFromCredential(c), nil)
+	credentialsKey := model.CredentialPath(SuperAdminKey, c.AccessKeyID)
+	err = kv.SetMsgIf(ctx, s.store, BasicPartitionKey, credentialsKey, model.ProtoFromCredential(c), nil)
 	if err != nil {
 		if errors.Is(err, kv.ErrPredicateFailed) {
 			err = ErrAlreadyExists
@@ -191,22 +218,47 @@ func (s *BasicAuthService) addCredentials(ctx context.Context, username, accessK
 	return c, nil
 }
 
-func (s *BasicAuthService) listUserCredentials(ctx context.Context, username string) ([]*model.Credential, error) {
+func (s *BasicAuthService) deleteUserCredentials(ctx context.Context, username, partition, prefix string) error {
 	var credential model.CredentialData
 	credentialsKey := model.CredentialPath(username, "")
 	var (
 		it  kv.MessageIterator
 		err error
 	)
-	it, err = kv.NewSecondaryIterator(ctx, s.store, (&credential).ProtoReflect().Type(), basicPartitionKey, credentialsKey, []byte(""))
+	it, err = kv.NewPrimaryIterator(ctx, s.store, (&credential).ProtoReflect().Type(), partition, credentialsKey, kv.IteratorOptionsFrom([]byte(prefix)))
+	if err != nil {
+		return fmt.Errorf("create iterator: %w", err)
+	}
+	defer it.Close()
+
+	for it.Next() {
+		entry := it.Entry()
+		if err = s.store.Delete(ctx, []byte(partition), entry.Key); err != nil {
+			return fmt.Errorf("delete credentials: %w", err)
+		}
+	}
+	if err = it.Err(); err != nil {
+		return fmt.Errorf("iterate credentials: %w", err)
+	}
+
+	return nil
+}
+
+func (s *BasicAuthService) listUserCredentials(ctx context.Context, username, partition, prefix string) ([]*model.Credential, error) {
+	var credential model.CredentialData
+	credentialsKey := model.CredentialPath(username, prefix)
+	var (
+		it  kv.MessageIterator
+		err error
+	)
+	it, err = kv.NewPrimaryIterator(ctx, s.store, (&credential).ProtoReflect().Type(), partition, credentialsKey, kv.IteratorOptionsAfter([]byte("")))
 	if err != nil {
 		return nil, fmt.Errorf("create iterator: %w", err)
 	}
 	defer it.Close()
 
-	amount := 2
 	entries := make([]proto.Message, 0)
-	for len(entries) < amount && it.Next() {
+	for len(entries) < MaxCredentialsPerUser && it.Next() {
 		entry := it.Entry()
 		value := entry.Value
 		entries = append(entries, value)
@@ -215,7 +267,7 @@ func (s *BasicAuthService) listUserCredentials(ctx context.Context, username str
 		return nil, fmt.Errorf("iterate credentials: %w", err)
 	}
 
-	creds, err := model.ConvertCredDataList(s.secretStore, entries)
+	creds, err := model.ConvertCredDataList(s.secretStore, entries, true)
 	if err != nil {
 		return nil, err
 	}
@@ -228,10 +280,6 @@ func (s *BasicAuthService) Cache() Cache {
 
 func (s *BasicAuthService) SecretStore() crypt.SecretStore {
 	return s.secretStore
-}
-
-func (s *BasicAuthService) DeleteUser(_ context.Context, _ string) error {
-	return ErrNotImplemented
 }
 
 func (s *BasicAuthService) GetUserByID(_ context.Context, _ string) (*model.User, error) {

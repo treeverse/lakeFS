@@ -1,0 +1,23 @@
+lakeFS is a data lake management platform
+
+Usage:
+  lakefs [command]
+
+Available Commands:
+  completion  Generate completion script
+  flare       collect configuration, environment variables, and logs for debugging and troubleshooting
+  help        Help about any command
+  migrate     Manage migrations
+  run         Run lakeFS
+  setup       Setup a new lakeFS instance with initial credentials
+  superuser   Create additional user with admin credentials
+
+Flags:
+  -c, --config string    config file (default is $HOME/.lakefs.yaml)
+  -h, --help             help for lakefs
+      --local-settings   Use lakeFS local default configuration
+      --quickstart       Use lakeFS quickstart configuration
+  -t, --toggle           Help message for toggle
+  -v, --version          version for lakefs
+
+Use "lakefs [command] --help" for more information about a command.

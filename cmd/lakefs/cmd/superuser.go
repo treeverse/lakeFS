@@ -25,6 +25,12 @@ import (
 var superuserCmd = &cobra.Command{
 	Use:   "superuser",
 	Short: "Create additional user with admin credentials",
+	Long: `Create additional user with admin credentials.
+This command can be used to import an admin user when moving from lakeFS version 
+with previously configured users to a lakeFS with basic auth version.
+To do that provide the user name as well as the access key ID to import. 
+If the wrong user or credentials were chosen it is possible to delete the user and perform the action again.
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
 		if cfg.Auth.UIConfig.RBAC == config.AuthRBACExternal {
@@ -60,7 +66,32 @@ var superuserCmd = &cobra.Command{
 			fmt.Printf("Failed to open KV store: %s\n", err)
 			os.Exit(1)
 		}
-		authService := acl.NewAuthService(kvStore, crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey)), authparams.ServiceCache(cfg.Auth.Cache))
+
+		var authService auth.Service
+		secretStore := crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey))
+		authLogger := logger.WithField("service", "auth_api")
+		addToAdmins := true
+		switch {
+		case cfg.IsAuthBasic():
+			authService = auth.NewBasicAuthService(kvStore, secretStore, authparams.ServiceCache(cfg.Auth.Cache), authLogger)
+			addToAdmins = false
+		case cfg.IsAuthUISimplified() && cfg.IsAuthenticationTypeAPI(): // ACL server
+			authService, err = auth.NewAPIAuthService(
+				cfg.Auth.API.Endpoint,
+				cfg.Auth.API.Token.SecureValue(),
+				cfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled,
+				secretStore,
+				authparams.ServiceCache(cfg.Auth.Cache),
+				authLogger)
+			if err != nil {
+				fmt.Printf("Failed to initialize auth service: %s\n", err)
+				os.Exit(1)
+			}
+		// TODO (niro): This needs to be removed
+		default:
+			authService = acl.NewAuthService(kvStore, secretStore, authparams.ServiceCache(cfg.Auth.Cache))
+		}
+
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 		metadataProvider := stats.BuildMetadataProvider(logger, cfg)
@@ -72,7 +103,7 @@ var superuserCmd = &cobra.Command{
 			},
 			AccessKeyID:     accessKeyID,
 			SecretAccessKey: secretAccessKey,
-		}, true)
+		}, addToAdmins)
 		if err != nil {
 			fmt.Printf("Failed to setup admin user: %s\n", err)
 			os.Exit(1)

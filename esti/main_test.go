@@ -23,6 +23,7 @@ import (
 const (
 	DefaultAdminAccessKeyID     = "AKIAIOSFDNN7EXAMPLEQ"
 	DefaultAdminSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	AdminUsername               = "esti"
 )
 
 type (
@@ -234,7 +235,7 @@ func TestMain(m *testing.M) {
 	}
 
 	params := testutil.SetupTestingEnvParams{
-		Name:      "esti",
+		Name:      AdminUsername,
 		StorageNS: "esti-system-testing",
 	}
 
