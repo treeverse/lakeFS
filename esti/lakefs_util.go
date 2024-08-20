@@ -11,10 +11,10 @@ func LakefsWithParams(connectionString string) string {
 	return LakefsWithParamsWithBasicAuth(connectionString, false)
 }
 
-func LakefsWithParamsWithBasicAuth(connectionString string, BasicAuth bool) string {
+func LakefsWithParamsWithBasicAuth(connectionString string, basicAuth bool) string {
 	lakefsCmdline := "LAKEFS_DATABASE_TYPE=postgres" +
 		" LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=" + connectionString +
-		" LAKEFS_AUTH_INTERNAL_BASIC=" + strconv.FormatBool(BasicAuth) +
+		" LAKEFS_AUTH_INTERNAL_BASIC=" + strconv.FormatBool(basicAuth) +
 		" " + lakefsLocation()
 
 	return lakefsCmdline
@@ -32,7 +32,7 @@ func Lakefs() string {
 	return LakefsWithParams(viper.GetString("database_connection_string"))
 }
 
-func requirePostgresDB(t *testing.T) {
+func RequirePostgresDB(t *testing.T) {
 	dbString := viper.GetString("database_connection_string")
 	if dbString == "" {
 		t.Skip("skip test - not postgres")
