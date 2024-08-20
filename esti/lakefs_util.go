@@ -15,7 +15,8 @@ func LakefsWithParamsWithBasicAuth(connectionString string, basicAuth bool) stri
 	lakefsCmdline := "LAKEFS_DATABASE_TYPE=postgres" +
 		" LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=" + connectionString +
 		" LAKEFS_AUTH_INTERNAL_BASIC=" + strconv.FormatBool(basicAuth) +
-		" " + lakefsLocation()
+		" LAKEFS_BLOCKSTORE_TYPE=" + viper.GetString("blockstore_type") +
+		" LAKEFS_AUTH_ENCRYPT_SECRET_KEY='some random secret string'" + lakefsLocation()
 
 	return lakefsCmdline
 }
