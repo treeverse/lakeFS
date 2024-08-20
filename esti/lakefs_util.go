@@ -24,14 +24,17 @@ func lakefsLocation() string {
 	return viper.GetString("binaries_dir") + "/lakefs"
 }
 
-func LakefsWithBasicAuth(t *testing.T) string {
-	dbString := viper.GetString("database_connection_string")
-	if dbString == "" {
-		t.Skip("database connection string not set")
-	}
-	return LakefsWithParamsWithBasicAuth(dbString, true)
+func LakefsWithBasicAuth() string {
+	return LakefsWithParamsWithBasicAuth(viper.GetString("database_connection_string"), true)
 }
 
 func Lakefs() string {
 	return LakefsWithParams(viper.GetString("database_connection_string"))
+}
+
+func requirePostgresDB(t *testing.T) {
+	dbString := viper.GetString("database_connection_string")
+	if dbString == "" {
+		t.Skip("skip test - not postgres")
+	}
 }

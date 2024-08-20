@@ -10,12 +10,13 @@ func TestLakefsHelp(t *testing.T) {
 }
 
 func TestLakefsSuperuser_basic(t *testing.T) {
+	requirePostgresDB(t)
 	lakefsCmd := Lakefs()
 	outputString := "credentials:\n  access_key_id: <ACCESS_KEY_ID>\n  secret_access_key: <SECRET_ACCESS_KEY>\n"
 	username := t.Name()
 	expectFailure := false
 	if isBasicAuth() {
-		lakefsCmd = LakefsWithBasicAuth(t)
+		lakefsCmd = LakefsWithBasicAuth()
 		outputString = "already exists"
 		expectFailure = true
 	}
@@ -23,9 +24,10 @@ func TestLakefsSuperuser_basic(t *testing.T) {
 }
 
 func TestLakefsSuperuser_alreadyExists(t *testing.T) {
+	requirePostgresDB(t)
 	lakefsCmd := Lakefs()
 	if isBasicAuth() {
-		lakefsCmd = LakefsWithBasicAuth(t)
+		lakefsCmd = LakefsWithBasicAuth()
 	}
 	RunCmdAndVerifyFailureContainsText(t, lakefsCmd+" superuser --user-name "+AdminUsername, false, "already exists", nil)
 }
