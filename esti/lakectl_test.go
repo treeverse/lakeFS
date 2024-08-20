@@ -412,13 +412,9 @@ func TestLakectlAuthUsers(t *testing.T) {
 		"ID": userName,
 	}
 	isSupported := !isBasicAuth()
-	expected := "Not implemented\n501 Not Implemented\n"
-	if isSupported {
-		expected = "user not found\n404 Not Found\n"
-	}
 
 	// Not Found
-	RunCmdAndVerifyFailure(t, Lakectl()+" auth users delete --id "+userName, false, expected, vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" auth users delete --id "+userName, false, "user not found\n404 Not Found\n", vars)
 
 	// Check unique
 	if isSupported {
@@ -427,6 +423,7 @@ func TestLakectlAuthUsers(t *testing.T) {
 	RunCmdAndVerifyFailure(t, Lakectl()+" auth users create --id "+userName, false, "Already exists\n409 Conflict\n", vars)
 
 	// Cleanup
+	expected := "user not found\n404 Not Found\n"
 	if isSupported {
 		expected = "User deleted successfully\n"
 	}
