@@ -50,6 +50,11 @@ func TestBasicAuthService_Users(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, username, createRes)
 
+	// Check get user
+	getRes, err := s.GetUser(ctx, user.Username)
+	require.NoError(t, err)
+	require.Equal(t, user.Username, getRes.Username)
+
 	// Check it is saved under the admin key
 	_, err = store.Get(ctx, []byte(auth.BasicPartitionKey), model.UserPath(auth.SuperAdminKey))
 	require.NoError(t, err)

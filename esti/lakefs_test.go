@@ -29,5 +29,6 @@ func TestLakefsSuperuser_alreadyExists(t *testing.T) {
 	if isBasicAuth() {
 		lakefsCmd = LakefsWithBasicAuth()
 	}
+	// On init - the AdminUsername is already created and expected error should be "already exist" (also in basic auth mode)
 	RunCmdAndVerifyFailureContainsText(t, lakefsCmd+" superuser --user-name "+AdminUsername, false, "already exists", nil)
 }
