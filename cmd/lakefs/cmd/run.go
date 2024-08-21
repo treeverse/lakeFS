@@ -70,7 +70,7 @@ func checkAuthModeSupport(cfg *config.Config) error {
 	return nil
 }
 
-func NewAuthService(ctx context.Context, cfg *config.Config, logger logging.Logger, kvStore kv.Store) auth.Service {
+func NewAuthService(ctx context.Context, cfg *config.Config, logger logging.Logger, kvStore kv.Store, metadataManager *auth.KVMetadataManager) auth.Service {
 	if err := checkAuthModeSupport(cfg); err != nil {
 		logger.WithError(err).Fatal("Unsupported auth mode")
 	}
@@ -83,6 +83,20 @@ func NewAuthService(ctx context.Context, cfg *config.Config, logger logging.Logg
 			authparams.ServiceCache(cfg.Auth.Cache),
 			logger.WithField("service", "auth_service"),
 		)
+		// Check if migration needed
+		initialized, err := metadataManager.IsInitialized(ctx)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to get lakeFS init status")
+		}
+		if initialized {
+			if err = apiService.Migrate(ctx); err != nil {
+				if errors.Is(err, kv.ErrMigrationRequired) {
+					logger.WithError(err).Fatal("cannot migrate existing user to basic auth mode!\n" +
+						"Please run `lakefs superuser -h` and follow the instructions on how to migrate existing user")
+				}
+				logger.WithError(err).Fatal("basic auth migration failed")
+			}
+		}
 		return auth.NewMonitoredAuthServiceAndInviter(apiService)
 	}
 	if cfg.IsAuthTypeAPI() {
@@ -157,7 +171,7 @@ var runCmd = &cobra.Command{
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
-		authService := NewAuthService(ctx, cfg, logger, kvStore)
+		authService := NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
 		// initialize authentication service
 		var authenticationService authentication.Service
 		if cfg.IsAuthenticationTypeAPI() {
