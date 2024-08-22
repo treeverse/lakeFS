@@ -2156,6 +2156,7 @@ lakectl fs download <path URI> [<destination path>] [flags]
 
 ```
   -h, --help              help for download
+      --no-progress       Disable progress bar animation for IO operations
   -p, --parallelism int   Max concurrent operations to perform (default 25)
       --part-size int     part size in bytes for multipart download (default 8388608)
       --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
@@ -2305,6 +2306,7 @@ lakectl fs upload <path URI> [flags]
 ```
       --content-type string   MIME type of contents
   -h, --help                  help for upload
+      --no-progress           Disable progress bar animation for IO operations
   -p, --parallelism int       Max concurrent operations to perform (default 25)
       --pre-sign              Use pre-signed URLs when downloading/uploading data (recommended) (default true)
   -r, --recursive             recursively copy all files under local source
@@ -2538,6 +2540,7 @@ lakectl local checkout [directory] [flags]
 ```
       --all               Checkout given source branch or reference for all linked directories
   -h, --help              help for checkout
+      --no-progress       Disable progress bar animation for IO operations
   -p, --parallelism int   Max concurrent operations to perform (default 25)
       --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
   -r, --ref string        Checkout the given reference
@@ -2560,6 +2563,7 @@ lakectl local clone <path URI> [directory] [flags]
 ```
       --gitignore         Update .gitignore file when working in a git repository context (default true)
   -h, --help              help for clone
+      --no-progress       Disable progress bar animation for IO operations
   -p, --parallelism int   Max concurrent operations to perform (default 25)
       --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
 ```
@@ -2583,6 +2587,7 @@ lakectl local commit [directory] [flags]
   -h, --help                  help for commit
   -m, --message string        commit message
       --meta strings          key value pair in the form of key=value
+      --no-progress           Disable progress bar animation for IO operations
   -p, --parallelism int       Max concurrent operations to perform (default 25)
       --pre-sign              Use pre-signed URLs when downloading/uploading data (recommended) (default true)
 ```
@@ -2662,6 +2667,7 @@ lakectl local pull [directory] [flags]
 ```
       --force             Reset any uncommitted local change
   -h, --help              help for pull
+      --no-progress       Disable progress bar animation for IO operations
   -p, --parallelism int   Max concurrent operations to perform (default 25)
       --pre-sign          Use pre-signed URLs when downloading/uploading data (recommended) (default true)
 ```
