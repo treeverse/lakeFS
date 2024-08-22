@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"golang.org/x/term"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -229,6 +230,14 @@ func getPresignMode(cmd *cobra.Command, client *apigen.ClientWithResponses) Pres
 	return presignMode
 }
 
+func getNoProgressMode(cmd *cobra.Command) bool {
+	// Disable progress bar if stdout is not tty
+	if !term.IsTerminal(int(os.Stdout.Fd())) {
+		return true
+	}
+	return Must(cmd.Flags().GetBool(noProgressBarFlagName))
+}
+
 func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.SyncFlags {
 	parallelism := Must(cmd.Flags().GetInt(parallelismFlagName))
 	if parallelism < 1 {
@@ -240,7 +249,7 @@ func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.
 		Parallelism:      parallelism,
 		Presign:          presignMode.Enabled,
 		PresignMultipart: presignMode.Multipart,
-		NoProgress:       Must(cmd.Flags().GetBool(noProgressBarFlagName)),
+		NoProgress:       getNoProgressMode(cmd),
 	}
 }
 
