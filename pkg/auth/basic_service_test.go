@@ -179,7 +179,8 @@ func TestBasicAuthService_Migrate(t *testing.T) {
 
 	t.Run("migarate no users", func(t *testing.T) {
 		s, _ := SetupService(t, secret)
-		require.ErrorIs(t, s.Migrate(ctx), auth.ErrMigrationNotPossible)
+		_, err := s.Migrate(ctx)
+		require.ErrorIs(t, err, auth.ErrMigrationNotPossible)
 	})
 
 	t.Run("superadmin exists", func(t *testing.T) {
@@ -193,7 +194,9 @@ func TestBasicAuthService_Migrate(t *testing.T) {
 		createOldCreds(t, ctx, store, s, "unexpected", accessKeyID, secretAccessKey)
 
 		// Should not run migration flow
-		require.NoError(t, s.Migrate(ctx))
+		username, err := s.Migrate(ctx)
+		require.NoError(t, err)
+		require.Equal(t, "", username) // No migration so username is empty
 
 		// Verify user didn't change
 		user, err := s.GetUser(ctx, expectedUser)
@@ -207,7 +210,7 @@ func TestBasicAuthService_Migrate(t *testing.T) {
 		createOldUser(t, ctx, store, "user1")
 		createOldUser(t, ctx, store, "user2")
 
-		err := s.Migrate(ctx)
+		_, err := s.Migrate(ctx)
 		require.ErrorIs(t, err, auth.ErrMigrationNotPossible)
 		require.Contains(t, err.Error(), "too many users")
 	})
@@ -219,7 +222,7 @@ func TestBasicAuthService_Migrate(t *testing.T) {
 		createOldCreds(t, ctx, store, s, user.Username, "key1", "secret1")
 		createOldCreds(t, ctx, store, s, user.Username, "key2", "secret2")
 
-		err := s.Migrate(ctx)
+		_, err := s.Migrate(ctx)
 		require.ErrorIs(t, err, auth.ErrMigrationNotPossible)
 		require.Contains(t, err.Error(), "too many credentials")
 	})
@@ -229,7 +232,9 @@ func TestBasicAuthService_Migrate(t *testing.T) {
 
 		expectedUser := createOldUser(t, ctx, store, "old-user")
 		createOldCreds(t, ctx, store, s, expectedUser.Username, accessKeyID, secretAccessKey)
-		require.NoError(t, s.Migrate(ctx))
+		username, err := s.Migrate(ctx)
+		require.NoError(t, err)
+		require.Equal(t, expectedUser.Username, username)
 
 		user, err := s.GetUser(ctx, expectedUser.Username)
 		require.NoError(t, err)

@@ -47,31 +47,31 @@ func NewBasicAuthService(store kv.Store, secretStore crypt.SecretStore, cacheCon
 }
 
 // Migrate - checks lakeFS server status for migration to basic auth
-func (s *BasicAuthService) Migrate(ctx context.Context) error {
+func (s *BasicAuthService) Migrate(ctx context.Context) (string, error) {
 	_, err := s.getUser(ctx)
 	if errors.Is(err, ErrNotFound) { // lakeFS server previously initialized and no admin user - this is a migration
 		users, err := s.listUserForMigration(ctx)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		switch len(users) {
 		case 0: // No users configured - not probable but can happen
-			return fmt.Errorf("no users configured: %w", ErrMigrationNotPossible)
+			return "", fmt.Errorf("no users configured: %w", ErrMigrationNotPossible)
 		case 1: // Can try and proceed with single user migration
 			user := users[0]
 			// import credentials - passing accessKeyID = "" will try to add the single credential or fail if more than one exists
 			if _, err = s.importUserCredentials(ctx, user.Username, ""); err != nil {
-				return fmt.Errorf("failed to import credentials: %s: %w", err, ErrMigrationNotPossible)
+				return "", fmt.Errorf("failed to import credentials: %s: %w", err, ErrMigrationNotPossible)
 			}
 			// After we added the credentials, add the user
-			_, err = s.CreateUser(ctx, user)
-			return err
+			username, err := s.CreateUser(ctx, user)
+			return username, err
 		default: // If more than one user defined in system - user must run migration manually
-			return fmt.Errorf("too many users: %w", ErrMigrationNotPossible)
+			return "", fmt.Errorf("too many users: %w", ErrMigrationNotPossible)
 		}
 	}
-	return err
+	return "", err
 }
 
 func (s *BasicAuthService) listUserForMigration(ctx context.Context) ([]*model.User, error) {
