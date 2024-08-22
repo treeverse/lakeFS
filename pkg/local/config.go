@@ -12,6 +12,7 @@ type SyncFlags struct {
 	Parallelism      int
 	Presign          bool
 	PresignMultipart bool
+	NoProgress       bool
 }
 
 type Config struct {
