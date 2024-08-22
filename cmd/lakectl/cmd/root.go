@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/term"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -28,6 +27,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 	"github.com/treeverse/lakefs/pkg/version"
 	"golang.org/x/exp/slices"
+	"golang.org/x/term"
 )
 
 const (
