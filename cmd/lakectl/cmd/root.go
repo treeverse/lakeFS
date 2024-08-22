@@ -144,13 +144,15 @@ var (
 )
 
 const (
-	recursiveFlagName   = "recursive"
-	recursiveFlagShort  = "r"
-	presignFlagName     = "pre-sign"
-	parallelismFlagName = "parallelism"
+	recursiveFlagName     = "recursive"
+	recursiveFlagShort    = "r"
+	presignFlagName       = "pre-sign"
+	parallelismFlagName   = "parallelism"
+	noProgressBarFlagName = "no-progress"
 
 	defaultSyncParallelism = 25
 	defaultSyncPresign     = true
+	defaultNoProgress      = false
 
 	myRepoExample   = "lakefs://my-repo"
 	myBucketExample = "s3://my-bucket"
@@ -182,9 +184,15 @@ func withPresignFlag(cmd *cobra.Command) {
 		"Use pre-signed URLs when downloading/uploading data (recommended)")
 }
 
+func withNoProgress(cmd *cobra.Command) {
+	cmd.Flags().Bool(noProgressBarFlagName, defaultNoProgress,
+		"Disable progress bar animation for IO operations")
+}
+
 func withSyncFlags(cmd *cobra.Command) {
 	withParallelismFlag(cmd)
 	withPresignFlag(cmd)
+	withNoProgress(cmd)
 }
 
 type PresignMode struct {
@@ -232,6 +240,7 @@ func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.
 		Parallelism:      parallelism,
 		Presign:          presignMode.Enabled,
 		PresignMultipart: presignMode.Multipart,
+		NoProgress:       Must(cmd.Flags().GetBool(noProgressBarFlagName)),
 	}
 }
 
