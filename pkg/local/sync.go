@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/go-openapi/swag"
+	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/fileutil"
@@ -52,13 +53,17 @@ type SyncManager struct {
 }
 
 func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, httpClient *http.Client, cfg Config) *SyncManager {
-	return &SyncManager{
+	sm := &SyncManager{
 		ctx:         ctx,
 		client:      client,
 		httpClient:  httpClient,
 		progressBar: NewProgressPool(),
 		cfg:         cfg,
 	}
+	if cfg.NoProgress {
+		sm.progressBar.pw.Style().Visibility = progress.StyleVisibility{}
+	}
+	return sm
 }
 
 // Sync - sync changes between remote and local directory given the Changes channel.

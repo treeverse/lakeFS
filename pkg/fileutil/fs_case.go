@@ -24,6 +24,13 @@ func IsCaseInsensitiveLocation(fs FS, dirPath string, warnFunc func(string)) (bo
 	if err != nil {
 		return false, fmt.Errorf("generate random name: %w", err)
 	}
+	exists, err := fs.Exists(dirPath)
+	if err != nil {
+		return false, fmt.Errorf("check path exists: %w", err)
+	}
+	if !exists { // Folder can be created by the command itself - go back one dir
+		dirPath = filepath.Dir(dirPath)
+	}
 	path := filepath.Join(dirPath, caseSensitiveNamePrefix+id)
 	err = fs.Touch(path)
 	if err != nil {

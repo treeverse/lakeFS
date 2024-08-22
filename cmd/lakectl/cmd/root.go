@@ -27,6 +27,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 	"github.com/treeverse/lakefs/pkg/version"
 	"golang.org/x/exp/slices"
+	"golang.org/x/term"
 )
 
 const (
@@ -144,13 +145,15 @@ var (
 )
 
 const (
-	recursiveFlagName   = "recursive"
-	recursiveFlagShort  = "r"
-	presignFlagName     = "pre-sign"
-	parallelismFlagName = "parallelism"
+	recursiveFlagName     = "recursive"
+	recursiveFlagShort    = "r"
+	presignFlagName       = "pre-sign"
+	parallelismFlagName   = "parallelism"
+	noProgressBarFlagName = "no-progress"
 
 	defaultSyncParallelism = 25
 	defaultSyncPresign     = true
+	defaultNoProgress      = false
 
 	myRepoExample   = "lakefs://my-repo"
 	myBucketExample = "s3://my-bucket"
@@ -182,9 +185,15 @@ func withPresignFlag(cmd *cobra.Command) {
 		"Use pre-signed URLs when downloading/uploading data (recommended)")
 }
 
+func withNoProgress(cmd *cobra.Command) {
+	cmd.Flags().Bool(noProgressBarFlagName, defaultNoProgress,
+		"Disable progress bar animation for IO operations")
+}
+
 func withSyncFlags(cmd *cobra.Command) {
 	withParallelismFlag(cmd)
 	withPresignFlag(cmd)
+	withNoProgress(cmd)
 }
 
 type PresignMode struct {
@@ -221,6 +230,14 @@ func getPresignMode(cmd *cobra.Command, client *apigen.ClientWithResponses) Pres
 	return presignMode
 }
 
+func getNoProgressMode(cmd *cobra.Command) bool {
+	// Disable progress bar if stdout is not tty
+	if !term.IsTerminal(int(os.Stdout.Fd())) {
+		return true
+	}
+	return Must(cmd.Flags().GetBool(noProgressBarFlagName))
+}
+
 func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.SyncFlags {
 	parallelism := Must(cmd.Flags().GetInt(parallelismFlagName))
 	if parallelism < 1 {
@@ -232,6 +249,7 @@ func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.
 		Parallelism:      parallelism,
 		Presign:          presignMode.Enabled,
 		PresignMultipart: presignMode.Multipart,
+		NoProgress:       getNoProgressMode(cmd),
 	}
 }
 
