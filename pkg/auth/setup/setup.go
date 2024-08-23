@@ -220,7 +220,6 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 		cred *model.Credential
 		err  error
 	)
-	// TODO (niro): Handle with creds (what do we want to do with custom creds?)
 	if cfg.IsAuthBasic() {
 		if cred, err = AddAdminUser(ctx, authService, adminUser, false); err != nil {
 			return nil, err

@@ -774,6 +774,13 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
+      # Required for pulling latest fluffy
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
       - name: Test lakeFS with S3 tests KV
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -828,10 +835,17 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
+      # Required for pulling latest fluffy
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
       - name: Test lakeFS with S3 tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-fluffy.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           LAKEFS_BLOCKSTORE_TYPE: s3
@@ -844,6 +858,8 @@ jobs:
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
+          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_HAGRID_CLIENT_ID }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_HAGRID_CLIENT_SECRET }}
 
       - name: Check files in S3 bucket
         run: |
@@ -853,7 +869,7 @@ jobs:
       - name: lakeFS Logs on s3 failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose-fluffy.yaml logs --tail=1000 lakefs
 
       - name: Export DB
         if: ${{ always() }}
@@ -880,10 +896,17 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
+      # Required for pulling latest fluffy
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
       - name: Start lakeFS with GS tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-fluffy.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -896,7 +919,7 @@ jobs:
       - name: lakeFS Logs on GS failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose-fluffy.yaml logs --tail=1000 lakefs
 
   run-system-azure-abfs:
     name: Run latest lakeFS app on Azure with Azure blobstore
@@ -918,10 +941,17 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
+      # Required for pulling latest fluffy
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-fluffy.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -935,7 +965,7 @@ jobs:
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose-fluffy.yaml logs --tail=1000 lakefs
 
       - name: See the env when we would have tried to publish coverage
         run: env
@@ -962,6 +992,13 @@ jobs:
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
+
+      # Required for pulling latest fluffy
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -998,7 +1035,7 @@ jobs:
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose-fluffy.yaml logs --tail=1000 lakefs
 
   python-wrapper:
     name: Test lakeFS against the python wrapper client
@@ -1342,7 +1379,7 @@ jobs:
       - name: lakeFS Logs on s3 failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose-acl.yaml logs --tail=1000 lakefs
 
       - name: Export DB
         if: ${{ always() }}
