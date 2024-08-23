@@ -1,5 +1,11 @@
 # Changelog
 
+# v1.32.0
+
+:new: What's new:
+
+- lakectl: add --no-progress flag for disabling progress bar animation (#8093)
+
 # v1.31.1
 
 :bug: Bugs fixed:
