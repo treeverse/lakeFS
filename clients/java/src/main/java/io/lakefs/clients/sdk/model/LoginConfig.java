@@ -39,12 +39,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -52,7 +50,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * LoginConfig
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class LoginConfig {
   /**
    * RBAC will remain enabled on GUI if \&quot;external\&quot;.  That only works with an external auth service. 
@@ -99,6 +97,11 @@ public class LoginConfig {
         return RBACEnum.fromValue(value);
       }
     }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      RBACEnum.fromValue(value);
+    }
   }
 
   public static final String SERIALIZED_NAME_R_B_A_C = "RBAC";
@@ -133,20 +136,18 @@ public class LoginConfig {
   }
 
   public LoginConfig RBAC(RBACEnum RBAC) {
-    
     this.RBAC = RBAC;
     return this;
   }
 
-   /**
+  /**
    * RBAC will remain enabled on GUI if \&quot;external\&quot;.  That only works with an external auth service. 
    * @return RBAC
-  **/
+   */
   @javax.annotation.Nullable
   public RBACEnum getRBAC() {
     return RBAC;
   }
-
 
   public void setRBAC(RBACEnum RBAC) {
     this.RBAC = RBAC;
@@ -154,20 +155,18 @@ public class LoginConfig {
 
 
   public LoginConfig loginUrl(String loginUrl) {
-    
     this.loginUrl = loginUrl;
     return this;
   }
 
-   /**
+  /**
    * primary URL to use for login.
    * @return loginUrl
-  **/
+   */
   @javax.annotation.Nonnull
   public String getLoginUrl() {
     return loginUrl;
   }
-
 
   public void setLoginUrl(String loginUrl) {
     this.loginUrl = loginUrl;
@@ -175,20 +174,18 @@ public class LoginConfig {
 
 
   public LoginConfig loginFailedMessage(String loginFailedMessage) {
-    
     this.loginFailedMessage = loginFailedMessage;
     return this;
   }
 
-   /**
+  /**
    * message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method 
    * @return loginFailedMessage
-  **/
+   */
   @javax.annotation.Nullable
   public String getLoginFailedMessage() {
     return loginFailedMessage;
   }
-
 
   public void setLoginFailedMessage(String loginFailedMessage) {
     this.loginFailedMessage = loginFailedMessage;
@@ -196,20 +193,18 @@ public class LoginConfig {
 
 
   public LoginConfig fallbackLoginUrl(String fallbackLoginUrl) {
-    
     this.fallbackLoginUrl = fallbackLoginUrl;
     return this;
   }
 
-   /**
+  /**
    * secondary URL to offer users to use for login.
    * @return fallbackLoginUrl
-  **/
+   */
   @javax.annotation.Nullable
   public String getFallbackLoginUrl() {
     return fallbackLoginUrl;
   }
-
 
   public void setFallbackLoginUrl(String fallbackLoginUrl) {
     this.fallbackLoginUrl = fallbackLoginUrl;
@@ -217,20 +212,18 @@ public class LoginConfig {
 
 
   public LoginConfig fallbackLoginLabel(String fallbackLoginLabel) {
-    
     this.fallbackLoginLabel = fallbackLoginLabel;
     return this;
   }
 
-   /**
+  /**
    * label to place on fallback_login_url.
    * @return fallbackLoginLabel
-  **/
+   */
   @javax.annotation.Nullable
   public String getFallbackLoginLabel() {
     return fallbackLoginLabel;
   }
-
 
   public void setFallbackLoginLabel(String fallbackLoginLabel) {
     this.fallbackLoginLabel = fallbackLoginLabel;
@@ -238,7 +231,6 @@ public class LoginConfig {
 
 
   public LoginConfig loginCookieNames(List<String> loginCookieNames) {
-    
     this.loginCookieNames = loginCookieNames;
     return this;
   }
@@ -251,15 +243,14 @@ public class LoginConfig {
     return this;
   }
 
-   /**
+  /**
    * cookie names used to store JWT
    * @return loginCookieNames
-  **/
+   */
   @javax.annotation.Nonnull
   public List<String> getLoginCookieNames() {
     return loginCookieNames;
   }
-
 
   public void setLoginCookieNames(List<String> loginCookieNames) {
     this.loginCookieNames = loginCookieNames;
@@ -267,20 +258,18 @@ public class LoginConfig {
 
 
   public LoginConfig logoutUrl(String logoutUrl) {
-    
     this.logoutUrl = logoutUrl;
     return this;
   }
 
-   /**
+  /**
    * URL to use for logging out.
    * @return logoutUrl
-  **/
+   */
   @javax.annotation.Nonnull
   public String getLogoutUrl() {
     return logoutUrl;
   }
-
 
   public void setLogoutUrl(String logoutUrl) {
     this.logoutUrl = logoutUrl;
@@ -405,12 +394,12 @@ public class LoginConfig {
     openapiRequiredFields.add("logout_url");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to LoginConfig
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to LoginConfig
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!LoginConfig.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -427,6 +416,10 @@ public class LoginConfig {
         JsonObject jsonObj = jsonElement.getAsJsonObject();
       if ((jsonObj.get("RBAC") != null && !jsonObj.get("RBAC").isJsonNull()) && !jsonObj.get("RBAC").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `RBAC` to be a primitive type in the JSON string but got `%s`", jsonObj.get("RBAC").toString()));
+      }
+      // validate the optional field `RBAC`
+      if (jsonObj.get("RBAC") != null && !jsonObj.get("RBAC").isJsonNull()) {
+        RBACEnum.validateJsonElement(jsonObj.get("RBAC"));
       }
       if (!jsonObj.get("login_url").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `login_url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("login_url").toString()));
@@ -479,7 +472,12 @@ public class LoginConfig {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -518,22 +516,22 @@ public class LoginConfig {
     }
   }
 
- /**
-  * Create an instance of LoginConfig given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of LoginConfig
-  * @throws IOException if the JSON string is invalid with respect to LoginConfig
-  */
+  /**
+   * Create an instance of LoginConfig given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of LoginConfig
+   * @throws IOException if the JSON string is invalid with respect to LoginConfig
+   */
   public static LoginConfig fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, LoginConfig.class);
   }
 
- /**
-  * Convert an instance of LoginConfig to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of LoginConfig to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

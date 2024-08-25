@@ -38,12 +38,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -51,7 +49,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * location for placing an object when staging it
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class StagingLocation {
   public static final String SERIALIZED_NAME_PHYSICAL_ADDRESS = "physical_address";
   @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS)
@@ -69,20 +67,18 @@ public class StagingLocation {
   }
 
   public StagingLocation physicalAddress(String physicalAddress) {
-    
     this.physicalAddress = physicalAddress;
     return this;
   }
 
-   /**
+  /**
    * Get physicalAddress
    * @return physicalAddress
-  **/
+   */
   @javax.annotation.Nullable
   public String getPhysicalAddress() {
     return physicalAddress;
   }
-
 
   public void setPhysicalAddress(String physicalAddress) {
     this.physicalAddress = physicalAddress;
@@ -90,20 +86,18 @@ public class StagingLocation {
 
 
   public StagingLocation presignedUrl(String presignedUrl) {
-    
     this.presignedUrl = presignedUrl;
     return this;
   }
 
-   /**
+  /**
    * if presign&#x3D;true is passed in the request, this field will contain a pre-signed URL to use when uploading
    * @return presignedUrl
-  **/
+   */
   @javax.annotation.Nullable
   public String getPresignedUrl() {
     return presignedUrl;
   }
-
 
   public void setPresignedUrl(String presignedUrl) {
     this.presignedUrl = presignedUrl;
@@ -111,20 +105,18 @@ public class StagingLocation {
 
 
   public StagingLocation presignedUrlExpiry(Long presignedUrlExpiry) {
-    
     this.presignedUrlExpiry = presignedUrlExpiry;
     return this;
   }
 
-   /**
+  /**
    * If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. 
    * @return presignedUrlExpiry
-  **/
+   */
   @javax.annotation.Nullable
   public Long getPresignedUrlExpiry() {
     return presignedUrlExpiry;
   }
-
 
   public void setPresignedUrlExpiry(Long presignedUrlExpiry) {
     this.presignedUrlExpiry = presignedUrlExpiry;
@@ -245,12 +237,12 @@ public class StagingLocation {
     openapiRequiredFields = new HashSet<String>();
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to StagingLocation
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to StagingLocation
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!StagingLocation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -294,7 +286,12 @@ public class StagingLocation {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -333,22 +330,22 @@ public class StagingLocation {
     }
   }
 
- /**
-  * Create an instance of StagingLocation given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of StagingLocation
-  * @throws IOException if the JSON string is invalid with respect to StagingLocation
-  */
+  /**
+   * Create an instance of StagingLocation given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of StagingLocation
+   * @throws IOException if the JSON string is invalid with respect to StagingLocation
+   */
   public static StagingLocation fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, StagingLocation.class);
   }
 
- /**
-  * Convert an instance of StagingLocation to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of StagingLocation to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.commit import Commit  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.commit import Commit
 
 class TestCommit(unittest.TestCase):
     """Commit unit test stubs"""
@@ -29,31 +26,31 @@ class TestCommit(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> Commit:
         """Test Commit
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `Commit`
         """
-        model = lakefs_sdk.models.commit.Commit()  # noqa: E501
-        if include_optional :
+        model = Commit()
+        if include_optional:
             return Commit(
-                id = '', 
+                id = '',
                 parents = [
                     ''
-                    ], 
-                committer = '', 
-                message = '', 
-                creation_date = 56, 
-                meta_range_id = '', 
+                    ],
+                committer = '',
+                message = '',
+                creation_date = 56,
+                meta_range_id = '',
                 metadata = {
                     'key' : ''
-                    }, 
-                generation = 56, 
+                    },
+                generation = 56,
                 version = 0
             )
-        else :
+        else:
             return Commit(
                 id = '',
                 parents = [

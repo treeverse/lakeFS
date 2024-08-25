@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,7 +48,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * BranchProtectionRule
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class BranchProtectionRule {
   public static final String SERIALIZED_NAME_PATTERN = "pattern";
   @SerializedName(SERIALIZED_NAME_PATTERN)
@@ -60,20 +58,18 @@ public class BranchProtectionRule {
   }
 
   public BranchProtectionRule pattern(String pattern) {
-    
     this.pattern = pattern;
     return this;
   }
 
-   /**
+  /**
    * fnmatch pattern for the branch name, supporting * and ? wildcards
    * @return pattern
-  **/
+   */
   @javax.annotation.Nonnull
   public String getPattern() {
     return pattern;
   }
-
 
   public void setPattern(String pattern) {
     this.pattern = pattern;
@@ -178,12 +174,12 @@ public class BranchProtectionRule {
     openapiRequiredFields.add("pattern");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to BranchProtectionRule
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to BranchProtectionRule
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!BranchProtectionRule.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -231,7 +227,12 @@ public class BranchProtectionRule {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -270,22 +271,22 @@ public class BranchProtectionRule {
     }
   }
 
- /**
-  * Create an instance of BranchProtectionRule given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of BranchProtectionRule
-  * @throws IOException if the JSON string is invalid with respect to BranchProtectionRule
-  */
+  /**
+   * Create an instance of BranchProtectionRule given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of BranchProtectionRule
+   * @throws IOException if the JSON string is invalid with respect to BranchProtectionRule
+   */
   public static BranchProtectionRule fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, BranchProtectionRule.class);
   }
 
- /**
-  * Convert an instance of BranchProtectionRule to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of BranchProtectionRule to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

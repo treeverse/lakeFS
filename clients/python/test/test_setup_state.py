@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.setup_state import SetupState  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.setup_state import SetupState
 
 class TestSetupState(unittest.TestCase):
     """SetupState unit test stubs"""
@@ -29,18 +26,18 @@ class TestSetupState(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> SetupState:
         """Test SetupState
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `SetupState`
         """
-        model = lakefs_sdk.models.setup_state.SetupState()  # noqa: E501
-        if include_optional :
+        model = SetupState()
+        if include_optional:
             return SetupState(
-                state = 'initialized', 
-                comm_prefs_missing = True, 
+                state = 'initialized',
+                comm_prefs_missing = True,
                 login_config = lakefs_sdk.models.login_config.LoginConfig(
                     rbac = 'simplified', 
                     login_url = '', 
@@ -52,7 +49,7 @@ class TestSetupState(unittest.TestCase):
                         ], 
                     logout_url = '', )
             )
-        else :
+        else:
             return SetupState(
         )
         """

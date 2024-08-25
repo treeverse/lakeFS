@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use serde::{Deserialize, Serialize};
 
 /// StagingLocation : location for placing an object when staging it
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]

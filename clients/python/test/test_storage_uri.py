@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.storage_uri import StorageURI  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.storage_uri import StorageURI
 
 class TestStorageURI(unittest.TestCase):
     """StorageURI unit test stubs"""
@@ -29,19 +26,19 @@ class TestStorageURI(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> StorageURI:
         """Test StorageURI
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `StorageURI`
         """
-        model = lakefs_sdk.models.storage_uri.StorageURI()  # noqa: E501
-        if include_optional :
+        model = StorageURI()
+        if include_optional:
             return StorageURI(
                 location = ''
             )
-        else :
+        else:
             return StorageURI(
                 location = '',
         )

@@ -18,63 +18,79 @@ import pprint
 import re  # noqa: F401
 import json
 
-
-from typing import Optional
 try:
-    from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr
+    from pydantic.v1 import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 except ImportError:
-    from pydantic import BaseModel, Field, StrictInt, StrictStr
+    from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
+from typing import Any, ClassVar, Dict, List, Optional
+from typing import Optional, Set
+from typing_extensions import Self
 
 class StagingLocation(BaseModel):
     """
     location for placing an object when staging it
-    """
+    """ # noqa: E501
     physical_address: Optional[StrictStr] = None
-    presigned_url: Optional[StrictStr] = Field(None, description="if presign=true is passed in the request, this field will contain a pre-signed URL to use when uploading")
-    presigned_url_expiry: Optional[StrictInt] = Field(None, description="If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. ")
-    __properties = ["physical_address", "presigned_url", "presigned_url_expiry"]
+    presigned_url: Optional[StrictStr] = Field(default=None, description="if presign=true is passed in the request, this field will contain a pre-signed URL to use when uploading")
+    presigned_url_expiry: Optional[StrictInt] = Field(default=None, description="If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. ")
+    __properties: ClassVar[List[str]] = ["physical_address", "presigned_url", "presigned_url_expiry"]
 
-    class Config:
-        """Pydantic configuration"""
-        allow_population_by_field_name = True
-        validate_assignment = True
+    model_config = ConfigDict(
+        populate_by_name=True,
+        validate_assignment=True,
+        protected_namespaces=(),
+    )
+
 
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.dict(by_alias=True))
+        return pprint.pformat(self.model_dump(by_alias=True))
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
+        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> StagingLocation:
+    def from_json(cls, json_str: str) -> Optional[Self]:
         """Create an instance of StagingLocation from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
-    def to_dict(self):
-        """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+    def to_dict(self) -> Dict[str, Any]:
+        """Return the dictionary representation of the model using alias.
+
+        This has the following differences from calling pydantic's
+        `self.model_dump(by_alias=True)`:
+
+        * `None` is only added to the output dict for nullable fields that
+          were set at model initialization. Other fields with value `None`
+          are ignored.
+        """
+        excluded_fields: Set[str] = set([
+        ])
+
+        _dict = self.model_dump(
+            by_alias=True,
+            exclude=excluded_fields,
+            exclude_none=True,
+        )
         # set to None if presigned_url (nullable) is None
-        # and __fields_set__ contains the field
-        if self.presigned_url is None and "presigned_url" in self.__fields_set__:
+        # and model_fields_set contains the field
+        if self.presigned_url is None and "presigned_url" in self.model_fields_set:
             _dict['presigned_url'] = None
 
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> StagingLocation:
+    def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
         """Create an instance of StagingLocation from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return StagingLocation.parse_obj(obj)
+            return cls.model_validate(obj)
 
-        _obj = StagingLocation.parse_obj({
+        _obj = cls.model_validate({
             "physical_address": obj.get("physical_address"),
             "presigned_url": obj.get("presigned_url"),
             "presigned_url_expiry": obj.get("presigned_url_expiry")

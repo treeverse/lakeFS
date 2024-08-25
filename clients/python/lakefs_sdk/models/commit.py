@@ -18,64 +18,81 @@ import pprint
 import re  # noqa: F401
 import json
 
-
-from typing import Dict, List, Optional
 try:
-    from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr, conint, conlist
+    from pydantic.v1 import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 except ImportError:
-    from pydantic import BaseModel, Field, StrictInt, StrictStr, conint, conlist
+    from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
+from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
+from typing import Optional, Set
+from typing_extensions import Self
 
 class Commit(BaseModel):
     """
     Commit
-    """
-    id: StrictStr = Field(...)
-    parents: conlist(StrictStr) = Field(...)
-    committer: StrictStr = Field(...)
-    message: StrictStr = Field(...)
-    creation_date: StrictInt = Field(..., description="Unix Epoch in seconds")
-    meta_range_id: StrictStr = Field(...)
+    """ # noqa: E501
+    id: StrictStr
+    parents: List[StrictStr]
+    committer: StrictStr
+    message: StrictStr
+    creation_date: StrictInt = Field(description="Unix Epoch in seconds")
+    meta_range_id: StrictStr
     metadata: Optional[Dict[str, StrictStr]] = None
     generation: Optional[StrictInt] = None
-    version: Optional[conint(strict=True, le=1, ge=0)] = None
-    __properties = ["id", "parents", "committer", "message", "creation_date", "meta_range_id", "metadata", "generation", "version"]
+    version: Optional[Annotated[int, Field(le=1, strict=True, ge=0)]] = None
+    __properties: ClassVar[List[str]] = ["id", "parents", "committer", "message", "creation_date", "meta_range_id", "metadata", "generation", "version"]
 
-    class Config:
-        """Pydantic configuration"""
-        allow_population_by_field_name = True
-        validate_assignment = True
+    model_config = ConfigDict(
+        populate_by_name=True,
+        validate_assignment=True,
+        protected_namespaces=(),
+    )
+
 
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.dict(by_alias=True))
+        return pprint.pformat(self.model_dump(by_alias=True))
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
+        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> Commit:
+    def from_json(cls, json_str: str) -> Optional[Self]:
         """Create an instance of Commit from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
-    def to_dict(self):
-        """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+    def to_dict(self) -> Dict[str, Any]:
+        """Return the dictionary representation of the model using alias.
+
+        This has the following differences from calling pydantic's
+        `self.model_dump(by_alias=True)`:
+
+        * `None` is only added to the output dict for nullable fields that
+          were set at model initialization. Other fields with value `None`
+          are ignored.
+        """
+        excluded_fields: Set[str] = set([
+        ])
+
+        _dict = self.model_dump(
+            by_alias=True,
+            exclude=excluded_fields,
+            exclude_none=True,
+        )
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> Commit:
+    def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
         """Create an instance of Commit from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return Commit.parse_obj(obj)
+            return cls.model_validate(obj)
 
-        _obj = Commit.parse_obj({
+        _obj = cls.model_validate({
             "id": obj.get("id"),
             "parents": obj.get("parents"),
             "committer": obj.get("committer"),

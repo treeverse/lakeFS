@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.path_list import PathList  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.path_list import PathList
 
 class TestPathList(unittest.TestCase):
     """PathList unit test stubs"""
@@ -29,21 +26,21 @@ class TestPathList(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> PathList:
         """Test PathList
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `PathList`
         """
-        model = lakefs_sdk.models.path_list.PathList()  # noqa: E501
-        if include_optional :
+        model = PathList()
+        if include_optional:
             return PathList(
                 paths = [
                     ''
                     ]
             )
-        else :
+        else:
             return PathList(
                 paths = [
                     ''

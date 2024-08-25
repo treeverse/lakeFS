@@ -18,12 +18,12 @@ json = "{}"
 # create an instance of ErrorNoACL from a JSON string
 error_no_acl_instance = ErrorNoACL.from_json(json)
 # print the JSON string representation of the object
-print ErrorNoACL.to_json()
+print(ErrorNoACL.to_json())
 
 # convert the object into a dict
 error_no_acl_dict = error_no_acl_instance.to_dict()
 # create an instance of ErrorNoACL from a dict
-error_no_acl_form_dict = error_no_acl.from_dict(error_no_acl_dict)
+error_no_acl_from_dict = ErrorNoACL.from_dict(error_no_acl_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

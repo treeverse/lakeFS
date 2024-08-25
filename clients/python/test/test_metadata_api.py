@@ -15,31 +15,29 @@
 
 import unittest
 
-import lakefs_sdk
-from lakefs_sdk.api.metadata_api import MetadataApi  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.api.metadata_api import MetadataApi
 
 
 class TestMetadataApi(unittest.TestCase):
     """MetadataApi unit test stubs"""
 
-    def setUp(self):
-        self.api = lakefs_sdk.api.metadata_api.MetadataApi()  # noqa: E501
+    def setUp(self) -> None:
+        self.api = MetadataApi()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         pass
 
-    def test_get_meta_range(self):
+    def test_get_meta_range(self) -> None:
         """Test case for get_meta_range
 
-        return URI to a meta-range file  # noqa: E501
+        return URI to a meta-range file
         """
         pass
 
-    def test_get_range(self):
+    def test_get_range(self) -> None:
         """Test case for get_range
 
-        return URI to a range file  # noqa: E501
+        return URI to a range file
         """
         pass
 

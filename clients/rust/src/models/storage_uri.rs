@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use serde::{Deserialize, Serialize};
 
 /// StorageUri : URI to a path in a storage provider (e.g. \"s3://bucket1/path/to/object\")
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]

@@ -18,73 +18,89 @@ import pprint
 import re  # noqa: F401
 import json
 
-
-from typing import List, Optional
 try:
-    from pydantic.v1 import BaseModel, Field, StrictStr, conlist, validator
+    from pydantic.v1 import BaseModel, ConfigDict, Field, StrictStr, field_validator
 except ImportError:
-    from pydantic import BaseModel, Field, StrictStr, conlist, validator
+    from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from typing import Any, ClassVar, Dict, List, Optional
+from typing import Optional, Set
+from typing_extensions import Self
 
 class LoginConfig(BaseModel):
     """
     LoginConfig
-    """
-    rbac: Optional[StrictStr] = Field(None, alias="RBAC", description="RBAC will remain enabled on GUI if \"external\".  That only works with an external auth service. ")
-    login_url: StrictStr = Field(..., description="primary URL to use for login.")
-    login_failed_message: Optional[StrictStr] = Field(None, description="message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method ")
-    fallback_login_url: Optional[StrictStr] = Field(None, description="secondary URL to offer users to use for login.")
-    fallback_login_label: Optional[StrictStr] = Field(None, description="label to place on fallback_login_url.")
-    login_cookie_names: conlist(StrictStr) = Field(..., description="cookie names used to store JWT")
-    logout_url: StrictStr = Field(..., description="URL to use for logging out.")
-    __properties = ["RBAC", "login_url", "login_failed_message", "fallback_login_url", "fallback_login_label", "login_cookie_names", "logout_url"]
+    """ # noqa: E501
+    rbac: Optional[StrictStr] = Field(default=None, description="RBAC will remain enabled on GUI if \"external\".  That only works with an external auth service. ", alias="RBAC")
+    login_url: StrictStr = Field(description="primary URL to use for login.")
+    login_failed_message: Optional[StrictStr] = Field(default=None, description="message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method ")
+    fallback_login_url: Optional[StrictStr] = Field(default=None, description="secondary URL to offer users to use for login.")
+    fallback_login_label: Optional[StrictStr] = Field(default=None, description="label to place on fallback_login_url.")
+    login_cookie_names: List[StrictStr] = Field(description="cookie names used to store JWT")
+    logout_url: StrictStr = Field(description="URL to use for logging out.")
+    __properties: ClassVar[List[str]] = ["RBAC", "login_url", "login_failed_message", "fallback_login_url", "fallback_login_label", "login_cookie_names", "logout_url"]
 
-    @validator('rbac')
+    @field_validator('rbac')
     def rbac_validate_enum(cls, value):
         """Validates the enum"""
         if value is None:
             return value
 
-        if value not in ('simplified', 'external'):
+        if value not in set(['simplified', 'external']):
             raise ValueError("must be one of enum values ('simplified', 'external')")
         return value
 
-    class Config:
-        """Pydantic configuration"""
-        allow_population_by_field_name = True
-        validate_assignment = True
+    model_config = ConfigDict(
+        populate_by_name=True,
+        validate_assignment=True,
+        protected_namespaces=(),
+    )
+
 
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.dict(by_alias=True))
+        return pprint.pformat(self.model_dump(by_alias=True))
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
+        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> LoginConfig:
+    def from_json(cls, json_str: str) -> Optional[Self]:
         """Create an instance of LoginConfig from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
-    def to_dict(self):
-        """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+    def to_dict(self) -> Dict[str, Any]:
+        """Return the dictionary representation of the model using alias.
+
+        This has the following differences from calling pydantic's
+        `self.model_dump(by_alias=True)`:
+
+        * `None` is only added to the output dict for nullable fields that
+          were set at model initialization. Other fields with value `None`
+          are ignored.
+        """
+        excluded_fields: Set[str] = set([
+        ])
+
+        _dict = self.model_dump(
+            by_alias=True,
+            exclude=excluded_fields,
+            exclude_none=True,
+        )
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> LoginConfig:
+    def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
         """Create an instance of LoginConfig from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return LoginConfig.parse_obj(obj)
+            return cls.model_validate(obj)
 
-        _obj = LoginConfig.parse_obj({
-            "rbac": obj.get("RBAC"),
+        _obj = cls.model_validate({
+            "RBAC": obj.get("RBAC"),
             "login_url": obj.get("login_url"),
             "login_failed_message": obj.get("login_failed_message"),
             "fallback_login_url": obj.get("fallback_login_url"),

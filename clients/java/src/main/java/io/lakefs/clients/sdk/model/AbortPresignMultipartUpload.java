@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,7 +48,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * AbortPresignMultipartUpload
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class AbortPresignMultipartUpload {
   public static final String SERIALIZED_NAME_PHYSICAL_ADDRESS = "physical_address";
   @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS)
@@ -60,20 +58,18 @@ public class AbortPresignMultipartUpload {
   }
 
   public AbortPresignMultipartUpload physicalAddress(String physicalAddress) {
-    
     this.physicalAddress = physicalAddress;
     return this;
   }
 
-   /**
+  /**
    * Get physicalAddress
    * @return physicalAddress
-  **/
+   */
   @javax.annotation.Nonnull
   public String getPhysicalAddress() {
     return physicalAddress;
   }
-
 
   public void setPhysicalAddress(String physicalAddress) {
     this.physicalAddress = physicalAddress;
@@ -178,12 +174,12 @@ public class AbortPresignMultipartUpload {
     openapiRequiredFields.add("physical_address");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to AbortPresignMultipartUpload
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to AbortPresignMultipartUpload
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!AbortPresignMultipartUpload.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -231,7 +227,12 @@ public class AbortPresignMultipartUpload {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -270,22 +271,22 @@ public class AbortPresignMultipartUpload {
     }
   }
 
- /**
-  * Create an instance of AbortPresignMultipartUpload given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of AbortPresignMultipartUpload
-  * @throws IOException if the JSON string is invalid with respect to AbortPresignMultipartUpload
-  */
+  /**
+   * Create an instance of AbortPresignMultipartUpload given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of AbortPresignMultipartUpload
+   * @throws IOException if the JSON string is invalid with respect to AbortPresignMultipartUpload
+   */
   public static AbortPresignMultipartUpload fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, AbortPresignMultipartUpload.class);
   }
 
- /**
-  * Convert an instance of AbortPresignMultipartUpload to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of AbortPresignMultipartUpload to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

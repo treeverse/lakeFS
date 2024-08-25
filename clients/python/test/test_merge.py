@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.merge import Merge  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.merge import Merge
 
 class TestMerge(unittest.TestCase):
     """Merge unit test stubs"""
@@ -29,25 +26,25 @@ class TestMerge(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> Merge:
         """Test Merge
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `Merge`
         """
-        model = lakefs_sdk.models.merge.Merge()  # noqa: E501
-        if include_optional :
+        model = Merge()
+        if include_optional:
             return Merge(
-                message = '', 
+                message = '',
                 metadata = {
                     'key' : ''
-                    }, 
-                strategy = '', 
-                force = True, 
+                    },
+                strategy = '',
+                force = True,
                 allow_empty = True
             )
-        else :
+        else:
             return Merge(
         )
         """

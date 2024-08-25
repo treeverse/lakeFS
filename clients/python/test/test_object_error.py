@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.object_error import ObjectError  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.object_error import ObjectError
 
 class TestObjectError(unittest.TestCase):
     """ObjectError unit test stubs"""
@@ -29,21 +26,21 @@ class TestObjectError(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> ObjectError:
         """Test ObjectError
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `ObjectError`
         """
-        model = lakefs_sdk.models.object_error.ObjectError()  # noqa: E501
-        if include_optional :
+        model = ObjectError()
+        if include_optional:
             return ObjectError(
-                status_code = 56, 
-                message = '', 
+                status_code = 56,
+                message = '',
                 path = ''
             )
-        else :
+        else:
             return ObjectError(
                 status_code = 56,
                 message = '',

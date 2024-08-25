@@ -19,12 +19,12 @@ json = "{}"
 # create an instance of ObjectCopyCreation from a JSON string
 object_copy_creation_instance = ObjectCopyCreation.from_json(json)
 # print the JSON string representation of the object
-print ObjectCopyCreation.to_json()
+print(ObjectCopyCreation.to_json())
 
 # convert the object into a dict
 object_copy_creation_dict = object_copy_creation_instance.to_dict()
 # create an instance of ObjectCopyCreation from a dict
-object_copy_creation_form_dict = object_copy_creation.from_dict(object_copy_creation_dict)
+object_copy_creation_from_dict = ObjectCopyCreation.from_dict(object_copy_creation_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

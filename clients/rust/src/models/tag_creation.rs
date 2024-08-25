@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use serde::{Deserialize, Serialize};
 
 /// TagCreation : Make tag ID point at this REF.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]

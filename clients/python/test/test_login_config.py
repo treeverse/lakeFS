@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.login_config import LoginConfig  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.login_config import LoginConfig
 
 class TestLoginConfig(unittest.TestCase):
     """LoginConfig unit test stubs"""
@@ -29,27 +26,27 @@ class TestLoginConfig(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> LoginConfig:
         """Test LoginConfig
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `LoginConfig`
         """
-        model = lakefs_sdk.models.login_config.LoginConfig()  # noqa: E501
-        if include_optional :
+        model = LoginConfig()
+        if include_optional:
             return LoginConfig(
-                rbac = 'simplified', 
-                login_url = '', 
-                login_failed_message = '', 
-                fallback_login_url = '', 
-                fallback_login_label = '', 
+                rbac = 'simplified',
+                login_url = '',
+                login_failed_message = '',
+                fallback_login_url = '',
+                fallback_login_label = '',
                 login_cookie_names = [
                     ''
-                    ], 
+                    ],
                 logout_url = ''
             )
-        else :
+        else:
             return LoginConfig(
                 login_url = '',
                 login_cookie_names = [

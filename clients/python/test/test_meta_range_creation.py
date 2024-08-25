@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.meta_range_creation import MetaRangeCreation  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.meta_range_creation import MetaRangeCreation
 
 class TestMetaRangeCreation(unittest.TestCase):
     """MetaRangeCreation unit test stubs"""
@@ -29,15 +26,15 @@ class TestMetaRangeCreation(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> MetaRangeCreation:
         """Test MetaRangeCreation
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `MetaRangeCreation`
         """
-        model = lakefs_sdk.models.meta_range_creation.MetaRangeCreation()  # noqa: E501
-        if include_optional :
+        model = MetaRangeCreation()
+        if include_optional:
             return MetaRangeCreation(
                 ranges = [
                     lakefs_sdk.models.range_metadata.RangeMetadata(
@@ -48,7 +45,7 @@ class TestMetaRangeCreation(unittest.TestCase):
                         estimated_size = 56, )
                     ]
             )
-        else :
+        else:
             return MetaRangeCreation(
                 ranges = [
                     lakefs_sdk.models.range_metadata.RangeMetadata(

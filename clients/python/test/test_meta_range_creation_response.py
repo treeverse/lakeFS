@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.meta_range_creation_response import MetaRangeCreationResponse  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.meta_range_creation_response import MetaRangeCreationResponse
 
 class TestMetaRangeCreationResponse(unittest.TestCase):
     """MetaRangeCreationResponse unit test stubs"""
@@ -29,19 +26,19 @@ class TestMetaRangeCreationResponse(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> MetaRangeCreationResponse:
         """Test MetaRangeCreationResponse
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `MetaRangeCreationResponse`
         """
-        model = lakefs_sdk.models.meta_range_creation_response.MetaRangeCreationResponse()  # noqa: E501
-        if include_optional :
+        model = MetaRangeCreationResponse()
+        if include_optional:
             return MetaRangeCreationResponse(
                 id = ''
             )
-        else :
+        else:
             return MetaRangeCreationResponse(
         )
         """

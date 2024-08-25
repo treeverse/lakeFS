@@ -40,12 +40,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -53,7 +51,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * MetaRangeCreation
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class MetaRangeCreation {
   public static final String SERIALIZED_NAME_RANGES = "ranges";
   @SerializedName(SERIALIZED_NAME_RANGES)
@@ -63,7 +61,6 @@ public class MetaRangeCreation {
   }
 
   public MetaRangeCreation ranges(List<RangeMetadata> ranges) {
-    
     this.ranges = ranges;
     return this;
   }
@@ -76,15 +73,14 @@ public class MetaRangeCreation {
     return this;
   }
 
-   /**
+  /**
    * Get ranges
    * @return ranges
-  **/
+   */
   @javax.annotation.Nonnull
   public List<RangeMetadata> getRanges() {
     return ranges;
   }
-
 
   public void setRanges(List<RangeMetadata> ranges) {
     this.ranges = ranges;
@@ -189,12 +185,12 @@ public class MetaRangeCreation {
     openapiRequiredFields.add("ranges");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to MetaRangeCreation
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to MetaRangeCreation
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!MetaRangeCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -249,7 +245,12 @@ public class MetaRangeCreation {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -288,22 +289,22 @@ public class MetaRangeCreation {
     }
   }
 
- /**
-  * Create an instance of MetaRangeCreation given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of MetaRangeCreation
-  * @throws IOException if the JSON string is invalid with respect to MetaRangeCreation
-  */
+  /**
+   * Create an instance of MetaRangeCreation given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of MetaRangeCreation
+   * @throws IOException if the JSON string is invalid with respect to MetaRangeCreation
+   */
   public static MetaRangeCreation fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, MetaRangeCreation.class);
   }
 
- /**
-  * Convert an instance of MetaRangeCreation to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of MetaRangeCreation to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

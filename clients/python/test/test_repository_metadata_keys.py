@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.repository_metadata_keys import RepositoryMetadataKeys  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.repository_metadata_keys import RepositoryMetadataKeys
 
 class TestRepositoryMetadataKeys(unittest.TestCase):
     """RepositoryMetadataKeys unit test stubs"""
@@ -29,21 +26,21 @@ class TestRepositoryMetadataKeys(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> RepositoryMetadataKeys:
         """Test RepositoryMetadataKeys
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `RepositoryMetadataKeys`
         """
-        model = lakefs_sdk.models.repository_metadata_keys.RepositoryMetadataKeys()  # noqa: E501
-        if include_optional :
+        model = RepositoryMetadataKeys()
+        if include_optional:
             return RepositoryMetadataKeys(
                 keys = [
                     ''
                     ]
             )
-        else :
+        else:
             return RepositoryMetadataKeys(
                 keys = [
                     ''

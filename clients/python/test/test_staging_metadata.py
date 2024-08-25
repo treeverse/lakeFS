@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.staging_metadata import StagingMetadata  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.staging_metadata import StagingMetadata
 
 class TestStagingMetadata(unittest.TestCase):
     """StagingMetadata unit test stubs"""
@@ -29,29 +26,29 @@ class TestStagingMetadata(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> StagingMetadata:
         """Test StagingMetadata
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `StagingMetadata`
         """
-        model = lakefs_sdk.models.staging_metadata.StagingMetadata()  # noqa: E501
-        if include_optional :
+        model = StagingMetadata()
+        if include_optional:
             return StagingMetadata(
                 staging = lakefs_sdk.models.staging_location.StagingLocation(
                     physical_address = '', 
                     presigned_url = '', 
-                    presigned_url_expiry = 56, ), 
-                checksum = '', 
-                size_bytes = 56, 
+                    presigned_url_expiry = 56, ),
+                checksum = '',
+                size_bytes = 56,
                 user_metadata = {
                     'key' : ''
-                    }, 
-                content_type = '', 
+                    },
+                content_type = '',
                 force = True
             )
-        else :
+        else:
             return StagingMetadata(
                 staging = lakefs_sdk.models.staging_location.StagingLocation(
                     physical_address = '', 

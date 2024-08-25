@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.user import User  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.user import User
 
 class TestUser(unittest.TestCase):
     """User unit test stubs"""
@@ -29,22 +26,22 @@ class TestUser(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> User:
         """Test User
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `User`
         """
-        model = lakefs_sdk.models.user.User()  # noqa: E501
-        if include_optional :
+        model = User()
+        if include_optional:
             return User(
-                id = '', 
-                creation_date = 56, 
-                friendly_name = '', 
+                id = '',
+                creation_date = 56,
+                friendly_name = '',
                 email = ''
             )
-        else :
+        else:
             return User(
                 id = '',
                 creation_date = 56,

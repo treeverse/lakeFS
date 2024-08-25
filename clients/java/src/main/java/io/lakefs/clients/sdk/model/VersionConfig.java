@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,7 +48,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * VersionConfig
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class VersionConfig {
   public static final String SERIALIZED_NAME_VERSION = "version";
   @SerializedName(SERIALIZED_NAME_VERSION)
@@ -72,20 +70,18 @@ public class VersionConfig {
   }
 
   public VersionConfig version(String version) {
-    
     this.version = version;
     return this;
   }
 
-   /**
+  /**
    * Get version
    * @return version
-  **/
+   */
   @javax.annotation.Nullable
   public String getVersion() {
     return version;
   }
-
 
   public void setVersion(String version) {
     this.version = version;
@@ -93,20 +89,18 @@ public class VersionConfig {
 
 
   public VersionConfig latestVersion(String latestVersion) {
-    
     this.latestVersion = latestVersion;
     return this;
   }
 
-   /**
+  /**
    * Get latestVersion
    * @return latestVersion
-  **/
+   */
   @javax.annotation.Nullable
   public String getLatestVersion() {
     return latestVersion;
   }
-
 
   public void setLatestVersion(String latestVersion) {
     this.latestVersion = latestVersion;
@@ -114,20 +108,18 @@ public class VersionConfig {
 
 
   public VersionConfig upgradeRecommended(Boolean upgradeRecommended) {
-    
     this.upgradeRecommended = upgradeRecommended;
     return this;
   }
 
-   /**
+  /**
    * Get upgradeRecommended
    * @return upgradeRecommended
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getUpgradeRecommended() {
     return upgradeRecommended;
   }
-
 
   public void setUpgradeRecommended(Boolean upgradeRecommended) {
     this.upgradeRecommended = upgradeRecommended;
@@ -135,20 +127,18 @@ public class VersionConfig {
 
 
   public VersionConfig upgradeUrl(String upgradeUrl) {
-    
     this.upgradeUrl = upgradeUrl;
     return this;
   }
 
-   /**
+  /**
    * Get upgradeUrl
    * @return upgradeUrl
-  **/
+   */
   @javax.annotation.Nullable
   public String getUpgradeUrl() {
     return upgradeUrl;
   }
-
 
   public void setUpgradeUrl(String upgradeUrl) {
     this.upgradeUrl = upgradeUrl;
@@ -261,12 +251,12 @@ public class VersionConfig {
     openapiRequiredFields = new HashSet<String>();
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to VersionConfig
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to VersionConfig
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!VersionConfig.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -313,7 +303,12 @@ public class VersionConfig {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -352,22 +347,22 @@ public class VersionConfig {
     }
   }
 
- /**
-  * Create an instance of VersionConfig given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of VersionConfig
-  * @throws IOException if the JSON string is invalid with respect to VersionConfig
-  */
+  /**
+   * Create an instance of VersionConfig given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of VersionConfig
+   * @throws IOException if the JSON string is invalid with respect to VersionConfig
+   */
   public static VersionConfig fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, VersionConfig.class);
   }
 
- /**
-  * Convert an instance of VersionConfig to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of VersionConfig to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

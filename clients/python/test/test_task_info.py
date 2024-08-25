@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.task_info import TaskInfo  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.task_info import TaskInfo
 
 class TestTaskInfo(unittest.TestCase):
     """TaskInfo unit test stubs"""
@@ -29,19 +26,19 @@ class TestTaskInfo(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> TaskInfo:
         """Test TaskInfo
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `TaskInfo`
         """
-        model = lakefs_sdk.models.task_info.TaskInfo()  # noqa: E501
-        if include_optional :
+        model = TaskInfo()
+        if include_optional:
             return TaskInfo(
                 id = ''
             )
-        else :
+        else:
             return TaskInfo(
                 id = '',
         )

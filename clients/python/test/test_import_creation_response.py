@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.import_creation_response import ImportCreationResponse  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.import_creation_response import ImportCreationResponse
 
 class TestImportCreationResponse(unittest.TestCase):
     """ImportCreationResponse unit test stubs"""
@@ -29,19 +26,19 @@ class TestImportCreationResponse(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> ImportCreationResponse:
         """Test ImportCreationResponse
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `ImportCreationResponse`
         """
-        model = lakefs_sdk.models.import_creation_response.ImportCreationResponse()  # noqa: E501
-        if include_optional :
+        model = ImportCreationResponse()
+        if include_optional:
             return ImportCreationResponse(
                 id = ''
             )
-        else :
+        else:
             return ImportCreationResponse(
                 id = '',
         )

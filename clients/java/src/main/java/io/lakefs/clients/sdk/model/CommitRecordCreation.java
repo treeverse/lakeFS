@@ -41,12 +41,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -54,7 +52,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * CommitRecordCreation
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class CommitRecordCreation {
   public static final String SERIALIZED_NAME_COMMIT_ID = "commit_id";
   @SerializedName(SERIALIZED_NAME_COMMIT_ID)
@@ -100,20 +98,18 @@ public class CommitRecordCreation {
   }
 
   public CommitRecordCreation commitId(String commitId) {
-    
     this.commitId = commitId;
     return this;
   }
 
-   /**
+  /**
    * id of the commit record
    * @return commitId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getCommitId() {
     return commitId;
   }
-
 
   public void setCommitId(String commitId) {
     this.commitId = commitId;
@@ -121,22 +117,20 @@ public class CommitRecordCreation {
 
 
   public CommitRecordCreation version(Integer version) {
-    
     this.version = version;
     return this;
   }
 
-   /**
+  /**
    * version of the commit record
    * minimum: 0
    * maximum: 1
    * @return version
-  **/
+   */
   @javax.annotation.Nonnull
   public Integer getVersion() {
     return version;
   }
-
 
   public void setVersion(Integer version) {
     this.version = version;
@@ -144,20 +138,18 @@ public class CommitRecordCreation {
 
 
   public CommitRecordCreation committer(String committer) {
-    
     this.committer = committer;
     return this;
   }
 
-   /**
+  /**
    * committer of the commit record
    * @return committer
-  **/
+   */
   @javax.annotation.Nonnull
   public String getCommitter() {
     return committer;
   }
-
 
   public void setCommitter(String committer) {
     this.committer = committer;
@@ -165,20 +157,18 @@ public class CommitRecordCreation {
 
 
   public CommitRecordCreation message(String message) {
-    
     this.message = message;
     return this;
   }
 
-   /**
+  /**
    * message of the commit record
    * @return message
-  **/
+   */
   @javax.annotation.Nonnull
   public String getMessage() {
     return message;
   }
-
 
   public void setMessage(String message) {
     this.message = message;
@@ -186,20 +176,18 @@ public class CommitRecordCreation {
 
 
   public CommitRecordCreation metarangeId(String metarangeId) {
-    
     this.metarangeId = metarangeId;
     return this;
   }
 
-   /**
+  /**
    * metarange_id of the commit record
    * @return metarangeId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getMetarangeId() {
     return metarangeId;
   }
-
 
   public void setMetarangeId(String metarangeId) {
     this.metarangeId = metarangeId;
@@ -207,20 +195,18 @@ public class CommitRecordCreation {
 
 
   public CommitRecordCreation creationDate(Long creationDate) {
-    
     this.creationDate = creationDate;
     return this;
   }
 
-   /**
+  /**
    * Unix Epoch in seconds
    * @return creationDate
-  **/
+   */
   @javax.annotation.Nonnull
   public Long getCreationDate() {
     return creationDate;
   }
-
 
   public void setCreationDate(Long creationDate) {
     this.creationDate = creationDate;
@@ -228,7 +214,6 @@ public class CommitRecordCreation {
 
 
   public CommitRecordCreation parents(List<String> parents) {
-    
     this.parents = parents;
     return this;
   }
@@ -241,15 +226,14 @@ public class CommitRecordCreation {
     return this;
   }
 
-   /**
+  /**
    * parents of the commit record
    * @return parents
-  **/
+   */
   @javax.annotation.Nonnull
   public List<String> getParents() {
     return parents;
   }
-
 
   public void setParents(List<String> parents) {
     this.parents = parents;
@@ -257,7 +241,6 @@ public class CommitRecordCreation {
 
 
   public CommitRecordCreation metadata(Map<String, String> metadata) {
-    
     this.metadata = metadata;
     return this;
   }
@@ -270,15 +253,14 @@ public class CommitRecordCreation {
     return this;
   }
 
-   /**
+  /**
    * metadata of the commit record
    * @return metadata
-  **/
+   */
   @javax.annotation.Nullable
   public Map<String, String> getMetadata() {
     return metadata;
   }
-
 
   public void setMetadata(Map<String, String> metadata) {
     this.metadata = metadata;
@@ -286,20 +268,18 @@ public class CommitRecordCreation {
 
 
   public CommitRecordCreation generation(Long generation) {
-    
     this.generation = generation;
     return this;
   }
 
-   /**
+  /**
    * generation of the commit record
    * @return generation
-  **/
+   */
   @javax.annotation.Nonnull
   public Long getGeneration() {
     return generation;
   }
-
 
   public void setGeneration(Long generation) {
     this.generation = generation;
@@ -307,20 +287,18 @@ public class CommitRecordCreation {
 
 
   public CommitRecordCreation force(Boolean force) {
-    
     this.force = force;
     return this;
   }
 
-   /**
+  /**
    * Get force
    * @return force
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getForce() {
     return force;
   }
-
 
   public void setForce(Boolean force) {
     this.force = force;
@@ -459,12 +437,12 @@ public class CommitRecordCreation {
     openapiRequiredFields.add("generation");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to CommitRecordCreation
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to CommitRecordCreation
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!CommitRecordCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -527,7 +505,12 @@ public class CommitRecordCreation {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -566,22 +549,22 @@ public class CommitRecordCreation {
     }
   }
 
- /**
-  * Create an instance of CommitRecordCreation given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of CommitRecordCreation
-  * @throws IOException if the JSON string is invalid with respect to CommitRecordCreation
-  */
+  /**
+   * Create an instance of CommitRecordCreation given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of CommitRecordCreation
+   * @throws IOException if the JSON string is invalid with respect to CommitRecordCreation
+   */
   public static CommitRecordCreation fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, CommitRecordCreation.class);
   }
 
- /**
-  * Convert an instance of CommitRecordCreation to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of CommitRecordCreation to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

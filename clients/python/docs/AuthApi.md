@@ -56,8 +56,6 @@ add group membership
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -165,8 +163,6 @@ attach policy to group
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -274,8 +270,6 @@ attach policy to user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -383,8 +377,6 @@ create credentials
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.credentials_with_secret import CredentialsWithSecret
 from lakefs_sdk.rest import ApiException
@@ -493,8 +485,6 @@ create group
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.group import Group
 from lakefs_sdk.models.group_creation import GroupCreation
@@ -604,8 +594,6 @@ create policy
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.policy import Policy
 from lakefs_sdk.rest import ApiException
@@ -715,8 +703,6 @@ create user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.user import User
 from lakefs_sdk.models.user_creation import UserCreation
@@ -827,8 +813,6 @@ attach external principal to user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal_creation import ExternalPrincipalCreation
 from lakefs_sdk.rest import ApiException
@@ -940,8 +924,6 @@ delete credentials
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -1049,8 +1031,6 @@ delete group
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -1156,8 +1136,6 @@ delete group membership
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -1265,8 +1243,6 @@ delete policy
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -1372,8 +1348,6 @@ delete user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -1479,8 +1453,6 @@ delete external principal from user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -1588,8 +1560,6 @@ detach policy from group
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -1697,8 +1667,6 @@ detach policy from user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -1801,8 +1769,6 @@ perform a login using an external authenticator
 
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.authentication_token import AuthenticationToken
 from lakefs_sdk.models.external_login_information import ExternalLoginInformation
@@ -1881,8 +1847,6 @@ get credentials
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.credentials import Credentials
 from lakefs_sdk.rest import ApiException
@@ -1993,8 +1957,6 @@ get current user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.current_user import CurrentUser
 from lakefs_sdk.rest import ApiException
@@ -2095,8 +2057,6 @@ describe external principal by id
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal import ExternalPrincipal
 from lakefs_sdk.rest import ApiException
@@ -2205,8 +2165,6 @@ get group
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.group import Group
 from lakefs_sdk.rest import ApiException
@@ -2315,8 +2273,6 @@ get ACL of group
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.acl import ACL
 from lakefs_sdk.rest import ApiException
@@ -2425,8 +2381,6 @@ get policy
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.policy import Policy
 from lakefs_sdk.rest import ApiException
@@ -2535,8 +2489,6 @@ get user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.user import User
 from lakefs_sdk.rest import ApiException
@@ -2645,8 +2597,6 @@ list group members
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.user_list import UserList
 from lakefs_sdk.rest import ApiException
@@ -2760,8 +2710,6 @@ list group policies
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.policy_list import PolicyList
 from lakefs_sdk.rest import ApiException
@@ -2876,8 +2824,6 @@ list groups
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.group_list import GroupList
 from lakefs_sdk.rest import ApiException
@@ -2989,8 +2935,6 @@ list policies
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.policy_list import PolicyList
 from lakefs_sdk.rest import ApiException
@@ -3102,8 +3046,6 @@ list user credentials
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.credentials_list import CredentialsList
 from lakefs_sdk.rest import ApiException
@@ -3218,8 +3160,6 @@ list user external policies attached to a user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal_list import ExternalPrincipalList
 from lakefs_sdk.rest import ApiException
@@ -3334,8 +3274,6 @@ list user groups
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.group_list import GroupList
 from lakefs_sdk.rest import ApiException
@@ -3450,8 +3388,6 @@ list user policies
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.policy_list import PolicyList
 from lakefs_sdk.rest import ApiException
@@ -3568,8 +3504,6 @@ list users
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.user_list import UserList
 from lakefs_sdk.rest import ApiException
@@ -3676,8 +3610,6 @@ perform a login
 
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.authentication_token import AuthenticationToken
 from lakefs_sdk.models.login_information import LoginInformation
@@ -3753,8 +3685,6 @@ set ACL of group
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.acl import ACL
 from lakefs_sdk.rest import ApiException
@@ -3863,8 +3793,6 @@ update policy
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.policy import Policy
 from lakefs_sdk.rest import ApiException

@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.version_config import VersionConfig  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.version_config import VersionConfig
 
 class TestVersionConfig(unittest.TestCase):
     """VersionConfig unit test stubs"""
@@ -29,22 +26,22 @@ class TestVersionConfig(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> VersionConfig:
         """Test VersionConfig
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `VersionConfig`
         """
-        model = lakefs_sdk.models.version_config.VersionConfig()  # noqa: E501
-        if include_optional :
+        model = VersionConfig()
+        if include_optional:
             return VersionConfig(
-                version = '', 
-                latest_version = '', 
-                upgrade_recommended = True, 
+                version = '',
+                latest_version = '',
+                upgrade_recommended = True,
                 upgrade_url = ''
             )
-        else :
+        else:
             return VersionConfig(
         )
         """
