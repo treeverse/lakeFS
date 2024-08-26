@@ -207,7 +207,10 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	// In all of the below lines of code, we purposefully do not use the Join methods in order to avoid the path cleaning they perform
 	destination := filepath.ToSlash(fmt.Sprintf("%s%c%s", rootPath, filepath.Separator, p))
 	destinationDirectory := filepath.Dir(destination)
-	remotePath := filepath.ToSlash(fmt.Sprintf("%s%s%s", path.Clean(remote.GetPath()), uri.PathSeparator, p))
+	remotePath := filepath.ToSlash(p)
+	if remote.GetPath() != "" {
+		remotePath = fmt.Sprintf("%s%s%s", path.Clean(remote.GetPath()), uri.PathSeparator, remotePath)
+	}
 
 	// This is where we create directories (i.e. for directory markers in lakeFS) Permissions are modified later in code as needed
 	if err := os.MkdirAll(destinationDirectory, os.FileMode(DefaultDirectoryPermissions)); err != nil {
