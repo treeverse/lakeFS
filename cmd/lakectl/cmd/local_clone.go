@@ -65,11 +65,8 @@ var localCloneCmd = &cobra.Command{
 				}
 
 				for _, o := range listResp.JSON200.Results {
-					relPath := strings.TrimPrefix(o.Path, remotePath)
-					relPath = strings.TrimPrefix(relPath, uri.PathSeparator)
-
-					// skip directory markers
-					if relPath == "" || strings.HasSuffix(relPath, uri.PathSeparator) {
+					relPath := strings.TrimPrefix(strings.TrimPrefix(o.Path, remotePath), uri.PathSeparator)
+					if relPath == "" {
 						continue
 					}
 					ch <- &local.Change{

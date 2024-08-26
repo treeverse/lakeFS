@@ -327,23 +327,64 @@ func TestLakectlLocal_posix_permissions(t *testing.T) {
 		localVerifyDirContents(t, dataDir, []string{})
 
 		// upload a new empty folder
+		emptyDirName := "empty_local_folder"
 		localDirPath := filepath.Join(dataDir, "empty_local_folder")
 		err = os.Mkdir(localDirPath, fileutil.DefaultDirectoryMask)
 		require.NoError(t, err)
 		commitMessage := "add empty folder"
 		res := runCmd(t, lakectl+" local commit "+dataDir+" -m \""+commitMessage+"\"", false, false, vars)
-		require.Contains(t, res, "upload empty_local_folder")
+		require.Contains(t, res, fmt.Sprintf("upload %s", emptyDirName))
 
 		// remove the empty folder locally, and validate it's removed from the remote repo
 		err = os.Remove(localDirPath)
 		require.NoError(t, err)
 		commitMessage = "remove empty folder"
 		res = runCmd(t, lakectl+" local commit "+dataDir+" -m \""+commitMessage+"\"", false, false, vars)
-		require.Contains(t, res, "delete remote path: empty_local_folder/")
+		require.Contains(t, res, fmt.Sprintf("delete remote path: %s/", emptyDirName))
 
 		res = runCmd(t, lakectl+" local status "+dataDir, false, false, vars)
 		require.Contains(t, res, "No diff found")
-		require.NotContains(t, res, "empty_local_folder")
+		require.NotContains(t, res, emptyDirName)
+	})
+
+	t.Run("existing posix path", func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+		vars["LOCAL_DIR"] = dataDir
+		vars["PREFIX"] = "existing_path"
+		vars["FILE_PATH"] = vars["PREFIX"]
+		lakectl := LakectlWithPosixPerms()
+
+		RunCmdAndVerifyContainsText(t, lakectl+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX}/ to ${LOCAL_DIR}.", vars)
+		localVerifyDirContents(t, dataDir, []string{})
+
+		// Add new files to path
+		contents := []string{
+			vars["PREFIX"] + uri.PathSeparator + "with-diff.txt",
+			vars["PREFIX"] + uri.PathSeparator + "subdir1" + uri.PathSeparator + "no-diff.txt",
+		}
+		localCreateTestData(t, vars, contents)
+
+		// upload a new empty folder
+		emptyDirName := "empty_dir"
+		emptyDirPath := filepath.Join(dataDir, emptyDirName)
+		err = os.Mkdir(emptyDirPath, fileutil.DefaultDirectoryMask)
+		require.NoError(t, err)
+
+		commitMessage := "sync local"
+		res := runCmd(t, lakectl+" local commit "+dataDir+" -m \""+commitMessage+"\"", false, false, vars)
+		require.Contains(t, res, fmt.Sprintf("upload %s", emptyDirName))
+
+		// clone path to a new local dir
+		dataDir2, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+		vars["LOCAL_DIR"] = dataDir2
+		RunCmdAndVerifyContainsText(t, lakectl+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir2, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX}/ to ${LOCAL_DIR}.", vars)
+		for _, f := range append(contents, "empty_dir") {
+			p := filepath.Join(dataDir2, strings.TrimPrefix(f, vars["PREFIX"]))
+			_, err = os.Stat(p)
+			require.NoError(t, err)
+		}
 	})
 }
 
