@@ -46,7 +46,7 @@ func NewBasicAuthService(store kv.Store, secretStore crypt.SecretStore, cacheCon
 	return res
 }
 
-// Migrate - checks lakeFS server status for migration to basic auth
+// Migrate tries to perform migration of existing lakeFS server to basic auth
 func (s *BasicAuthService) Migrate(ctx context.Context) (string, error) {
 	_, err := s.getUser(ctx)
 	if errors.Is(err, ErrNotFound) { // lakeFS server previously initialized and no admin user - this is a migration

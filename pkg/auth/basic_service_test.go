@@ -177,7 +177,7 @@ func TestBasicAuthService_Migrate(t *testing.T) {
 	accessKeyID := "SomeAccessKeyID"
 	secretAccessKey := "SomeSecretAccessKey"
 
-	t.Run("migrate no users", func(t *testing.T) {
+	t.Run("no users", func(t *testing.T) {
 		s, _ := SetupService(t, secret)
 		_, err := s.Migrate(ctx)
 		require.ErrorIs(t, err, auth.ErrMigrationNotPossible)
@@ -204,7 +204,7 @@ func TestBasicAuthService_Migrate(t *testing.T) {
 		require.Equal(t, expectedUser, user.Username)
 	})
 
-	t.Run("migrate too many users", func(t *testing.T) {
+	t.Run("too many users", func(t *testing.T) {
 		s, store := SetupService(t, secret)
 
 		createOldUser(t, ctx, store, "user1")
@@ -215,7 +215,7 @@ func TestBasicAuthService_Migrate(t *testing.T) {
 		require.Contains(t, err.Error(), "too many users")
 	})
 
-	t.Run("migrate too many creds", func(t *testing.T) {
+	t.Run("too many creds", func(t *testing.T) {
 		s, store := SetupService(t, secret)
 
 		user := createOldUser(t, ctx, store, "user1")

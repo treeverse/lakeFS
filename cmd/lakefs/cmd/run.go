@@ -92,15 +92,13 @@ func NewAuthService(ctx context.Context, cfg *config.Config, logger logging.Logg
 			username, err := apiService.Migrate(ctx)
 			switch {
 			case errors.Is(err, auth.ErrMigrationNotPossible):
-				logger.WithError(err).Fatal("\n**********************************\n" +
-					"cannot migrate existing user to basic auth mode!\n" +
-					"Please run `lakefs superuser -h` and follow the instructions on how to migrate an existing user\n" +
-					"**********************************\n")
+				logger.WithError(err).Fatal(`
+cannot migrate existing user to basic auth mode!
+Please run "lakefs superuser -h" and follow the instructions on how to migrate an existing user
+`)
 			case err == nil:
 				if username != "" { // Print only in case of actual migration
-					logger.Warning("\n**********************************\n" +
-						fmt.Sprintf("User %s was migrated successfully!\n", username) +
-						"**********************************\n")
+					logger.Infof("\nUser %s was migrated successfully!\n", username)
 				}
 			default:
 				logger.WithError(err).Fatal("basic auth migration failed")
