@@ -177,7 +177,7 @@ func TestBasicAuthService_Migrate(t *testing.T) {
 	accessKeyID := "SomeAccessKeyID"
 	secretAccessKey := "SomeSecretAccessKey"
 
-	t.Run("migarate no users", func(t *testing.T) {
+	t.Run("migrate no users", func(t *testing.T) {
 		s, _ := SetupService(t, secret)
 		_, err := s.Migrate(ctx)
 		require.ErrorIs(t, err, auth.ErrMigrationNotPossible)
