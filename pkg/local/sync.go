@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -198,18 +199,26 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 	return nil
 }
 
-func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, path string) error {
-	if err := fileutil.VerifyRelPath(strings.TrimPrefix(path, uri.PathSeparator), rootPath); err != nil {
+func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, p string) error {
+	if err := fileutil.VerifyRelPath(strings.TrimPrefix(p, uri.PathSeparator), rootPath); err != nil {
 		return err
 	}
-	destination := filepath.ToSlash(fmt.Sprintf("%s%s%s", rootPath, uri.PathSeparator, path))
-	destinationDirectory := filepath.Dir(destination)
 
+	// In all of the below lines of code, we purposefully do not use the Join methods in order to avoid the path cleaning they perform
+	destination := filepath.ToSlash(fmt.Sprintf("%s%c%s", rootPath, filepath.Separator, p))
+	destinationDirectory := filepath.Dir(destination)
+	remotePath := filepath.ToSlash(p)
+	if remote.GetPath() != "" {
+		remotePath = fmt.Sprintf("%s%s%s", path.Clean(remote.GetPath()), uri.PathSeparator, remotePath)
+	}
+
+	// This is where we create directories (i.e. for directory markers in lakeFS) Permissions are modified later in code as needed
 	if err := os.MkdirAll(destinationDirectory, os.FileMode(DefaultDirectoryPermissions)); err != nil {
 		return err
 	}
+
 	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
-		Path:         filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
+		Path:         remotePath,
 		Presign:      swag.Bool(s.cfg.SyncFlags.Presign),
 		UserMetadata: swag.Bool(true),
 	})
@@ -230,7 +239,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	lastModified := time.Unix(mtimeSecs, 0)
 
 	var perm *POSIXPermissions
-	isDir := strings.HasSuffix(path, uri.PathSeparator)
+	isDir := strings.HasSuffix(p, uri.PathSeparator)
 	if s.cfg.IncludePerm { // Optimization - fail on to get permissions from metadata before having to download the entire file
 		if perm, err = getPermissionFromStats(objStat, true); err != nil {
 			return err
@@ -241,7 +250,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	}
 
 	if !isDir {
-		if err = s.downloadFile(ctx, remote, path, destination, objStat); err != nil {
+		if err = s.downloadFile(ctx, remote, p, destination, objStat); err != nil {
 			return err
 		}
 	}
