@@ -305,10 +305,17 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		ClientMtimeMetadataKey: strconv.FormatInt(fileStat.ModTime().Unix(), 10),
 	}
 
-	reader := b.Reader(f)
+	readerWrapper := fileWrapper{
+		file:   f,
+		reader: b.Reader(f),
+	}
 	if s.cfg.IncludePerm {
 		if strings.HasSuffix(path, uri.PathSeparator) { // Create a 0 byte reader for directories
-			reader = bytes.NewReader([]byte{})
+			// Use empty bytes reader for read and seek dirs
+			readerWrapper = fileWrapper{
+				file:   bytes.NewReader([]byte{}),
+				reader: bytes.NewReader([]byte{}),
+			}
 		}
 		permissions, err := getPermissionFromFileInfo(fileStat)
 		if err != nil {
@@ -321,10 +328,6 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		metadata[POSIXPermissionsMetadataKey] = string(data)
 	}
 
-	readerWrapper := fileWrapper{
-		file:   f,
-		reader: reader,
-	}
 	if s.cfg.SyncFlags.Presign {
 		_, err = helpers.ClientUploadPreSign(
 			ctx, s.client, s.httpClient, remote.Repository, remote.Ref, dest, metadata, "", readerWrapper, s.cfg.SyncFlags.PresignMultipart)
