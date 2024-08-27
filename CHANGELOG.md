@@ -1,5 +1,10 @@
 # Changelog
 
+# v1.32.1
+
+:bug: Bugs fixed:
+- lakectl local: fix dir seek (#8105)
+
 # v1.32.0
 
 :new: What's new:
