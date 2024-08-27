@@ -129,29 +129,9 @@ func TestBasicAuthService_CredentialsImport(t *testing.T) {
 	require.ErrorIs(t, err, auth.ErrNotFound)
 
 	// Create users with creds under auth
-	user := &model.UserData{
-		Username: "user-old",
-	}
-	userData, err := proto.Marshal(user)
-	require.NoError(t, err)
-	require.NoError(t, store.Set(ctx, []byte(model.PartitionKey), model.UserPath(user.Username), userData))
-	encryptedKey, err := model.EncryptSecret(s.SecretStore(), secretAccessKey)
-	require.NoError(t, err)
-	creds := &model.CredentialData{
-		AccessKeyId:                   accessKeyID,
-		SecretAccessKeyEncryptedBytes: encryptedKey,
-		UserId:                        []byte(user.Username),
-	}
-	credsData, err := proto.Marshal(creds)
-	require.NoError(t, store.Set(ctx, []byte(model.PartitionKey), model.CredentialPath(user.Username, creds.AccessKeyId), credsData))
-
-	creds.AccessKeyId = "A" + secretAccessKey
-	encryptedKey, err = model.EncryptSecret(s.SecretStore(), "BadSecret")
-	require.NoError(t, err)
-
-	creds.SecretAccessKeyEncryptedBytes = encryptedKey
-	credsData, err = proto.Marshal(creds)
-	require.NoError(t, store.Set(ctx, []byte(model.PartitionKey), model.CredentialPath(user.Username, creds.AccessKeyId), credsData))
+	user := createOldUser(t, ctx, store, "user-old")
+	createOldCreds(t, ctx, store, s, user.Username, accessKeyID, secretAccessKey)
+	createOldCreds(t, ctx, store, s, user.Username, "A"+accessKeyID, "BadSecret")
 
 	// Create a different user
 	createRes, err := s.CreateUser(ctx, &model.User{
@@ -190,4 +170,106 @@ func TestBasicAuthService_CredentialsImport(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, accessKeyID, getCred.AccessKeyID)
 	require.Equal(t, secretAccessKey, getCred.SecretAccessKey)
+}
+
+func TestBasicAuthService_Migrate(t *testing.T) {
+	ctx := context.Background()
+	accessKeyID := "SomeAccessKeyID"
+	secretAccessKey := "SomeSecretAccessKey"
+
+	t.Run("no users", func(t *testing.T) {
+		s, _ := SetupService(t, secret)
+		_, err := s.Migrate(ctx)
+		require.ErrorIs(t, err, auth.ErrMigrationNotPossible)
+	})
+
+	t.Run("superadmin exists", func(t *testing.T) {
+		s, store := SetupService(t, secret)
+
+		expectedUser, err := s.CreateUser(ctx, &model.User{Username: "test"})
+		require.NoError(t, err)
+
+		// create a user for potential migration
+		createOldUser(t, ctx, store, "unexpected")
+		createOldCreds(t, ctx, store, s, "unexpected", accessKeyID, secretAccessKey)
+
+		// Should not run migration flow
+		username, err := s.Migrate(ctx)
+		require.NoError(t, err)
+		require.Equal(t, "", username) // No migration so username is empty
+
+		// Verify user didn't change
+		user, err := s.GetUser(ctx, expectedUser)
+		require.NoError(t, err)
+		require.Equal(t, expectedUser, user.Username)
+	})
+
+	t.Run("too many users", func(t *testing.T) {
+		s, store := SetupService(t, secret)
+
+		createOldUser(t, ctx, store, "user1")
+		createOldUser(t, ctx, store, "user2")
+
+		_, err := s.Migrate(ctx)
+		require.ErrorIs(t, err, auth.ErrMigrationNotPossible)
+		require.Contains(t, err.Error(), "too many users")
+	})
+
+	t.Run("too many creds", func(t *testing.T) {
+		s, store := SetupService(t, secret)
+
+		user := createOldUser(t, ctx, store, "user1")
+		createOldCreds(t, ctx, store, s, user.Username, "key1", "secret1")
+		createOldCreds(t, ctx, store, s, user.Username, "key2", "secret2")
+
+		_, err := s.Migrate(ctx)
+		require.ErrorIs(t, err, auth.ErrMigrationNotPossible)
+		require.Contains(t, err.Error(), "too many credentials")
+	})
+
+	t.Run("successful migration", func(t *testing.T) {
+		s, store := SetupService(t, secret)
+
+		expectedUser := createOldUser(t, ctx, store, "old-user")
+		createOldCreds(t, ctx, store, s, expectedUser.Username, accessKeyID, secretAccessKey)
+		username, err := s.Migrate(ctx)
+		require.NoError(t, err)
+		require.Equal(t, expectedUser.Username, username)
+
+		user, err := s.GetUser(ctx, expectedUser.Username)
+		require.NoError(t, err)
+		require.Equal(t, expectedUser.Username, user.Username)
+
+		creds, err := s.GetCredentials(ctx, accessKeyID)
+		require.NoError(t, err)
+		require.Equal(t, creds.Username, expectedUser.Username)
+		decryptedKey, err := model.DecryptSecret(s.SecretStore(), creds.SecretAccessKeyEncryptedBytes)
+		require.NoError(t, err)
+		require.Equal(t, secretAccessKey, decryptedKey)
+	})
+}
+
+func createOldUser(t *testing.T, ctx context.Context, store kv.Store, username string) *model.UserData {
+	t.Helper()
+	user := &model.UserData{
+		Username: username,
+	}
+	userData, err := proto.Marshal(user)
+	require.NoError(t, err)
+	require.NoError(t, store.Set(ctx, []byte(model.PartitionKey), model.UserPath(user.Username), userData))
+	return user
+}
+
+func createOldCreds(t *testing.T, ctx context.Context, store kv.Store, s *auth.BasicAuthService, username, accessKeyID, secretAccessKey string) *model.CredentialData {
+	t.Helper()
+	encryptedKey, err := model.EncryptSecret(s.SecretStore(), secretAccessKey)
+	require.NoError(t, err)
+	creds := &model.CredentialData{
+		AccessKeyId:                   accessKeyID,
+		SecretAccessKeyEncryptedBytes: encryptedKey,
+		UserId:                        []byte(username),
+	}
+	credsData, err := proto.Marshal(creds)
+	require.NoError(t, store.Set(ctx, []byte(model.PartitionKey), model.CredentialPath(username, creds.AccessKeyId), credsData))
+	return creds
 }
