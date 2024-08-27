@@ -2,7 +2,6 @@ package local
 
 import (
 	"io"
-	"os"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -134,7 +133,7 @@ func NewProgressPool() *ProgressPool {
 }
 
 type fileWrapper struct {
-	file   *os.File
+	file   io.Seeker
 	reader io.Reader
 }
 
