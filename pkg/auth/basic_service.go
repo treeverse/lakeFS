@@ -46,6 +46,62 @@ func NewBasicAuthService(store kv.Store, secretStore crypt.SecretStore, cacheCon
 	return res
 }
 
+// Migrate tries to perform migration of existing lakeFS server to basic auth
+func (s *BasicAuthService) Migrate(ctx context.Context) (string, error) {
+	_, err := s.getUser(ctx)
+	if errors.Is(err, ErrNotFound) { // lakeFS server previously initialized and no admin user - this is a migration
+		users, err := s.listUserForMigration(ctx)
+		if err != nil {
+			return "", err
+		}
+
+		switch len(users) {
+		case 0: // No users configured - not probable but can happen
+			return "", fmt.Errorf("no users configured: %w", ErrMigrationNotPossible)
+		case 1: // Can try and proceed with single user migration
+			user := users[0]
+			// import credentials - passing accessKeyID = "" will try to add the single credential or fail if more than one exists
+			if _, err = s.importUserCredentials(ctx, user.Username, ""); err != nil {
+				return "", fmt.Errorf("failed to import credentials: %s: %w", err, ErrMigrationNotPossible)
+			}
+			// After we added the credentials, add the user
+			username, err := s.CreateUser(ctx, user)
+			return username, err
+		default: // If more than one user defined in system - user must run migration manually
+			return "", fmt.Errorf("too many users: %w", ErrMigrationNotPossible)
+		}
+	}
+	return "", err
+}
+
+func (s *BasicAuthService) listUserForMigration(ctx context.Context) ([]*model.User, error) {
+	var credential model.UserData
+	usersKey := model.UserPath("")
+	var (
+		it  kv.MessageIterator
+		err error
+	)
+	// Using old partition key to get users from pre-basic auth installation
+	it, err = kv.NewPrimaryIterator(ctx, s.store, (&credential).ProtoReflect().Type(), model.PartitionKey, usersKey, kv.IteratorOptionsAfter([]byte("")))
+	if err != nil {
+		return nil, fmt.Errorf("create iterator: %w", err)
+	}
+	defer it.Close()
+
+	entries := make([]proto.Message, 0)
+	for len(entries) <= MaxUsers && it.Next() {
+		entry := it.Entry()
+		value := entry.Value
+		entries = append(entries, value)
+	}
+	if err = it.Err(); err != nil {
+		return nil, fmt.Errorf("iterate users: %w", err)
+	}
+
+	users := model.ConvertUsersDataList(entries)
+	return users, nil
+}
+
 func (s *BasicAuthService) Authorize(ctx context.Context, req *AuthorizationRequest) (*AuthorizationResponse, error) {
 	_, err := s.GetUser(ctx, req.Username)
 	if err != nil {
@@ -185,10 +241,14 @@ func (s *BasicAuthService) importUserCredentials(ctx context.Context, username, 
 	if err != nil {
 		return nil, err
 	}
-	if len(creds) < 1 {
+	switch len(creds) {
+	case 0:
 		return nil, fmt.Errorf("no credentials found for user (%s): %w", username, ErrNotFound)
+	case 1:
+		return s.addCredentials(ctx, username, creds[0].AccessKeyID, creds[0].SecretAccessKey)
+	default: // more than 1 credential for user
+		return nil, fmt.Errorf("too many credentials for user (%s): %w", username, ErrInvalidRequest)
 	}
-	return s.addCredentials(ctx, username, creds[0].AccessKeyID, creds[0].SecretAccessKey)
 }
 
 func (s *BasicAuthService) addCredentials(ctx context.Context, username, accessKeyID, secretAccessKey string) (*model.Credential, error) {
@@ -258,7 +318,7 @@ func (s *BasicAuthService) listUserCredentials(ctx context.Context, username, pa
 	defer it.Close()
 
 	entries := make([]proto.Message, 0)
-	for len(entries) < MaxCredentialsPerUser && it.Next() {
+	for len(entries) <= MaxCredentialsPerUser && it.Next() {
 		entry := it.Entry()
 		value := entry.Value
 		entries = append(entries, value)
