@@ -4294,9 +4294,9 @@ paths:
       operationId: createPresignMultipartUpload
       summary: Initiate a multipart upload
       description: |
+        This operation is enabled only for the S3 blockstore.
         Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional).
-        Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation.
-        For example working with S3 blockstore, minimum size is 5MB (excluding the last part).
+        Part numbers begin at 1, and each part, except for the last one, must have a minimum size of 5 MB.
       responses:
         201:
           description: Presign multipart upload initiated
@@ -4343,7 +4343,9 @@ paths:
         - experimental
       operationId: completePresignMultipartUpload
       summary: Complete a presign multipart upload request
-      description: Completes a presign multipart upload by assembling the uploaded parts.
+      description: |
+        This operation is enabled only for the S3 blockstore.
+        Completes a presign multipart upload by assembling the uploaded parts.
       requestBody:
         content:
           application/json:
@@ -4378,7 +4380,9 @@ paths:
         - experimental
       operationId: abortPresignMultipartUpload
       summary: Abort a presign multipart upload
-      description: Aborts a presign multipart upload.
+      description: |
+        This operation is enabled only for the S3 blockstore.
+        Aborts a presign multipart upload.
       requestBody:
         content:
           application/json:
