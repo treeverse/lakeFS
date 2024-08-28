@@ -174,7 +174,7 @@ etl/v1/data/region=us-west-2/organization=org-acme/year=2024/month=02/day=12/hou
 ## Schema
 
 The files are in parquet format and can be accessed directly from Spark or any client that can read parquet files.
-Using Spark's [`printSchema()`](https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.DataFrame.printSchema.html) we can inspect the values, that’s the latest schema with comments on important columns:
+Using Spark's [`printSchema()`](https://spark.apache.org/docs/3.5.2/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.printSchema.html) we can inspect the values, that’s the latest schema with comments on important columns:
 
 | column              | type   | description                                                                                                                                                                                                                         |
 |---------------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
