@@ -21,7 +21,7 @@ Method | HTTP request | Description
 
 Abort a presign multipart upload
 
-Aborts a presign multipart upload.
+This operation is enabled only for the S3 blockstore. Aborts a presign multipart upload. 
 
 ### Example
 
@@ -140,7 +140,7 @@ void (empty response body)
 
 Complete a presign multipart upload request
 
-Completes a presign multipart upload by assembling the uploaded parts.
+This operation is enabled only for the S3 blockstore. Completes a presign multipart upload by assembling the uploaded parts. 
 
 ### Example
 
@@ -263,7 +263,7 @@ Name | Type | Description  | Notes
 
 Initiate a multipart upload
 
-Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). 
+This operation is enabled only for the S3 blockstore. Part numbers start at 1. Each part, except the last, must meet a minimum size requirement based on the underlying blockstore implementation. For example, AWS S3 requires a minimum size of 5MB (excluding the last part). 
 
 ### Example
 

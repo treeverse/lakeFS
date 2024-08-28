@@ -134,7 +134,7 @@ pub enum StsLoginError {
 }
 
 
-/// Aborts a presign multipart upload.
+/// This operation is enabled only for the S3 blockstore. Aborts a presign multipart upload. 
 pub async fn abort_presign_multipart_upload(configuration: &configuration::Configuration, repository: &str, branch: &str, upload_id: &str, path: &str, abort_presign_multipart_upload: Option<models::AbortPresignMultipartUpload>) -> Result<(), Error<AbortPresignMultipartUploadError>> {
     let local_var_configuration = configuration;
 
@@ -170,7 +170,7 @@ pub async fn abort_presign_multipart_upload(configuration: &configuration::Confi
     }
 }
 
-/// Completes a presign multipart upload by assembling the uploaded parts.
+/// This operation is enabled only for the S3 blockstore. Completes a presign multipart upload by assembling the uploaded parts. 
 pub async fn complete_presign_multipart_upload(configuration: &configuration::Configuration, repository: &str, branch: &str, upload_id: &str, path: &str, complete_presign_multipart_upload: Option<models::CompletePresignMultipartUpload>) -> Result<models::ObjectStats, Error<CompletePresignMultipartUploadError>> {
     let local_var_configuration = configuration;
 
@@ -206,7 +206,7 @@ pub async fn complete_presign_multipart_upload(configuration: &configuration::Co
     }
 }
 
-/// Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part). 
+/// This operation is enabled only for the S3 blockstore. Part numbers start at 1. Each part, except the last, must meet a minimum size requirement based on the underlying blockstore implementation. For example, AWS S3 requires a minimum size of 5MB (excluding the last part). 
 pub async fn create_presign_multipart_upload(configuration: &configuration::Configuration, repository: &str, branch: &str, path: &str, parts: Option<i32>) -> Result<models::PresignMultipartUpload, Error<CreatePresignMultipartUploadError>> {
     let local_var_configuration = configuration;
 

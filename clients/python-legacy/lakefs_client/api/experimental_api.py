@@ -717,7 +717,7 @@ class ExperimentalApi(object):
     ):
         """Abort a presign multipart upload  # noqa: E501
 
-        Aborts a presign multipart upload.  # noqa: E501
+        This operation is enabled only for the S3 blockstore. Aborts a presign multipart upload.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -796,7 +796,7 @@ class ExperimentalApi(object):
     ):
         """Complete a presign multipart upload request  # noqa: E501
 
-        Completes a presign multipart upload by assembling the uploaded parts.  # noqa: E501
+        This operation is enabled only for the S3 blockstore. Completes a presign multipart upload by assembling the uploaded parts.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -874,7 +874,7 @@ class ExperimentalApi(object):
     ):
         """Initiate a multipart upload  # noqa: E501
 
-        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part).   # noqa: E501
+        This operation is enabled only for the S3 blockstore. Part numbers start at 1. Each part, except the last, must meet a minimum size requirement based on the underlying blockstore implementation. For example, AWS S3 requires a minimum size of 5MB (excluding the last part).   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 

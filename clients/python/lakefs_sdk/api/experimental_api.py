@@ -65,7 +65,7 @@ class ExperimentalApi(object):
     def abort_presign_multipart_upload(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], abort_presign_multipart_upload : Optional[AbortPresignMultipartUpload] = None, **kwargs) -> None:  # noqa: E501
         """Abort a presign multipart upload  # noqa: E501
 
-        Aborts a presign multipart upload.  # noqa: E501
+        This operation is enabled only for the S3 blockstore. Aborts a presign multipart upload.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -102,7 +102,7 @@ class ExperimentalApi(object):
     def abort_presign_multipart_upload_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], abort_presign_multipart_upload : Optional[AbortPresignMultipartUpload] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """Abort a presign multipart upload  # noqa: E501
 
-        Aborts a presign multipart upload.  # noqa: E501
+        This operation is enabled only for the S3 blockstore. Aborts a presign multipart upload.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -241,7 +241,7 @@ class ExperimentalApi(object):
     def complete_presign_multipart_upload(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], complete_presign_multipart_upload : Optional[CompletePresignMultipartUpload] = None, **kwargs) -> ObjectStats:  # noqa: E501
         """Complete a presign multipart upload request  # noqa: E501
 
-        Completes a presign multipart upload by assembling the uploaded parts.  # noqa: E501
+        This operation is enabled only for the S3 blockstore. Completes a presign multipart upload by assembling the uploaded parts.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -278,7 +278,7 @@ class ExperimentalApi(object):
     def complete_presign_multipart_upload_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], complete_presign_multipart_upload : Optional[CompletePresignMultipartUpload] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """Complete a presign multipart upload request  # noqa: E501
 
-        Completes a presign multipart upload by assembling the uploaded parts.  # noqa: E501
+        This operation is enabled only for the S3 blockstore. Completes a presign multipart upload by assembling the uploaded parts.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -424,7 +424,7 @@ class ExperimentalApi(object):
     def create_presign_multipart_upload(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], parts : Annotated[Optional[StrictInt], Field(description="number of presigned URL parts required to upload")] = None, **kwargs) -> PresignMultipartUpload:  # noqa: E501
         """Initiate a multipart upload  # noqa: E501
 
-        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part).   # noqa: E501
+        This operation is enabled only for the S3 blockstore. Part numbers start at 1. Each part, except the last, must meet a minimum size requirement based on the underlying blockstore implementation. For example, AWS S3 requires a minimum size of 5MB (excluding the last part).   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -459,7 +459,7 @@ class ExperimentalApi(object):
     def create_presign_multipart_upload_with_http_info(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], parts : Annotated[Optional[StrictInt], Field(description="number of presigned URL parts required to upload")] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """Initiate a multipart upload  # noqa: E501
 
-        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional). Part numbers starts with 1. Each part except the last one has minimum size depends on the underlying blockstore implementation. For example working with S3 blockstore, minimum size is 5MB (excluding the last part).   # noqa: E501
+        This operation is enabled only for the S3 blockstore. Part numbers start at 1. Each part, except the last, must meet a minimum size requirement based on the underlying blockstore implementation. For example, AWS S3 requires a minimum size of 5MB (excluding the last part).   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 

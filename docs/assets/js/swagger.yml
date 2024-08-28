@@ -4295,8 +4295,9 @@ paths:
       summary: Initiate a multipart upload
       description: |
         This operation is enabled only for the S3 blockstore.
-        Initiates a multipart upload and returns an upload ID with presigned URLs for each part (optional).
-        Part numbers begin at 1, and each part, except for the last one, must have a minimum size of 5 MB.
+        Part numbers start at 1.
+        Each part, except the last, must meet a minimum size requirement based on the underlying blockstore implementation.
+        For example, AWS S3 requires a minimum size of 5MB (excluding the last part).
       responses:
         201:
           description: Presign multipart upload initiated
