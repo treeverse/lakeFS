@@ -57,6 +57,7 @@ class LoginConfig(ModelNormal):
 
     allowed_values = {
         ('rbac',): {
+            'NONE': "none",
             'SIMPLIFIED': "simplified",
             'EXTERNAL': "external",
         },

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/contrib/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
@@ -87,9 +86,8 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 				fmt.Printf("Failed to initialize auth service: %s\n", err)
 				os.Exit(1)
 			}
-		// TODO (niro): This needs to be removed
 		default:
-			authService = acl.NewAuthService(kvStore, secretStore, authparams.ServiceCache(cfg.Auth.Cache))
+			logger.Fatal("invalid auth mode for superuser command")
 		}
 
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)

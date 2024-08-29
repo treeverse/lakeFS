@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -236,10 +235,6 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 }
 
 func CreateBaseGroups(ctx context.Context, authService auth.Service, cfg *config.Config, ts time.Time) error {
-	// TODO (niro): need to remove this when transitioning to external auth ACLs server
-	if cfg.IsAuthUISimplified() && !cfg.IsAuthBasic() && cfg.Auth.API.Endpoint == "" {
-		return authacl.CreateACLBaseGroups(ctx, authService, ts)
-	}
 	if !cfg.IsAdvancedAuth() {
 		return nil
 	}

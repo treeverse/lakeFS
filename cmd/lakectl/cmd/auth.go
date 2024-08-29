@@ -7,7 +7,8 @@ import (
 var authCmd = &cobra.Command{
 	Use:   "auth [sub-command]",
 	Short: "Manage authentication and authorization",
-	Long:  "manage authentication and authorization including users, groups and ACLs",
+	Long: `Manage authentication and authorization including users, groups and ACLs
+This functionality is supported with an external auth service only.`,
 }
 
 func addPaginationFlags(cmd *cobra.Command) {
