@@ -4959,7 +4959,6 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "setup_lakefs", r, "", "", "")
 	initialized, err := c.MetadataManager.IsInitialized(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
