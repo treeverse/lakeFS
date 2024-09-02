@@ -3385,7 +3385,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 	}
 
 	// copy entry
-	entry, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath, graveler.WithForce(swag.BoolValue(body.Force)))
+	entry, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath, false, nil, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
