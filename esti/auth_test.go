@@ -296,13 +296,13 @@ func TestCreatePolicy(t *testing.T) {
 			},
 		})
 		require.NoError(t, err)
-		require.NotNil(t, resp.JSON201)
+		require.NotNil(t, resp.JSON201, "wrong response: %s", resp.Status())
 	})
 
 	t.Run("invalid_policy_action", func(t *testing.T) {
 		resp, err := client.CreatePolicyWithResponse(ctx, apigen.CreatePolicyJSONRequestBody{
 			CreationDate: apiutil.Ptr(time.Now().Unix()),
-			Id:           "ValidPolicyID",
+			Id:           "InvalidPolicyID",
 			Statement: []apigen.Statement{
 				{
 					Action:   []string{"fsx:ReadObject"},
@@ -312,7 +312,7 @@ func TestCreatePolicy(t *testing.T) {
 			},
 		})
 		require.NoError(t, err)
-		require.NotNil(t, resp.JSON400)
+		require.NotNil(t, resp.JSON400, "wrong response: %s", resp.Status())
 	})
 }
 
