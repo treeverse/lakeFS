@@ -2651,7 +2651,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 }
 
 // CopyEntry copy entry information by using the block adapter to make a copy of the data to a new physical address.
-func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string, copyMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
+func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string, copySrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
 	// copyObjectFull copy data from srcEntry's physical address (if set) or srcPath into destPath
 	// fetch src entry if needed - optimization in case we already have the entry
 	srcEntry, err := c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{})
@@ -2680,7 +2680,7 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	dstEntry.AddressType = AddressTypeRelative
 	dstEntry.PhysicalAddress = c.PathProvider.NewPath()
 
-	if copyMetadata {
+	if copySrcMetadata {
 		dstEntry.Metadata = srcEntry.Metadata
 	} else if len(metadata) > 0 {
 		dstEntry.Metadata = metadata
