@@ -223,7 +223,7 @@ func TestCreateRepo_Unauthorized(t *testing.T) {
 	_, groupIDs := mapGroupNamesToIDs(t, ctx, groups)
 
 	// generate the reader client
-	readerClient := newClientFromGroup(t, ctx, logger, "reader", groupIDs)
+	readerClient := newClientFromGroup(t, ctx, logger, t.Name(), groupIDs)
 
 	resp, err := readerClient.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 		DefaultBranch:    apiutil.Ptr("main"),
