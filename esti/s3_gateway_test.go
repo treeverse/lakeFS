@@ -513,7 +513,7 @@ func TestS3CopyObject(t *testing.T) {
 	objContent := testutil.RandomString(r, randomDataContentLength)
 	srcPath := gatewayTestPrefix + "source-file"
 	destPath := gatewayTestPrefix + "dest-file"
-	userMetadata := map[string]string{"X-Amz-Meta-key1": "value1", "X-Amz-Meta-key2": "value2"}
+	userMetadata := map[string]string{"X-Amz-Meta-Key1": "value1", "X-Amz-Meta-Key2": "value2"}
 
 	// upload data
 	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
@@ -569,7 +569,7 @@ func TestS3CopyObject(t *testing.T) {
 
 	t.Run("different_repo", func(t *testing.T) {
 		// copy the object to different repository. should create another version of the file
-		userMetadataReplace := map[string]string{"X-Amz-Meta-key1": "value1Replace", "X-Amz-Meta-key2": "value2Replace"}
+		userMetadataReplace := map[string]string{"X-Amz-Meta-Key1": "value1Replace", "X-Amz-Meta-Key2": "value2Replace"}
 
 		_, err := s3lakefsClient.CopyObject(ctx,
 			minio.CopyDestOptions{
