@@ -203,11 +203,11 @@ func (s *BasicAuthService) GetCredentials(ctx context.Context, accessKeyID strin
 	})
 }
 
-func (s *BasicAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyId string) (*model.Credential, error) {
+func (s *BasicAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
 	if _, err := s.GetUser(ctx, username); err != nil {
 		return nil, err
 	}
-	return s.GetCredentials(ctx, accessKeyId)
+	return s.GetCredentials(ctx, accessKeyID)
 }
 
 func (s *BasicAuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
