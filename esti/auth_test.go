@@ -358,6 +358,7 @@ func TestGarbageCollectionRules_Unauthorized(t *testing.T) {
 
 // Creates a client with a user of the given group
 func newClientFromGroup(t *testing.T, context context.Context, logger logging.Logger, id string, groupIDs []string) *apigen.ClientWithResponses {
+	t.Helper()
 	endpointURL := testutil.ParseEndpointURL(logger, viper.GetString("endpoint_url")) // defined in setup.go
 
 	userID := "test-user-" + id
