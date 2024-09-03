@@ -40,7 +40,6 @@ services:
     entrypoint: ["/app/wait-for", "fluffy:8000", "--", "/app/lakefs", "run"]
 
   fluffy:
-    # TODO (niro): replace with 'latest'
     image: treeverse/fluffy:0.7.1
     command: "${COMMAND:-run}"
     ports:
