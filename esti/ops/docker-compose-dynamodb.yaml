@@ -6,11 +6,22 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - "dynamodb"
+      - "fluffy"
     volumes:
       - lakefs-app:/app:ro
     environment:
-      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
+      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY="some random secret string"
+      - LAKEFS_AUTH_API_ENDPOINT=http://fluffy:9000/api/v1
+      - LAKEFS_AUTH_API_SUPPORTS_INVITES=true
+      - LAKEFS_AUTH_LOGOUT_REDIRECT_URL=http://fluffy:8000/oidc/logout
+      - LAKEFS_AUTH_UI_CONFIG_LOGIN_URL=http://fluffy:8000/oidc/login
+      - LAKEFS_AUTH_UI_CONFIG_LOGOUT_URL=http://fluffy:8000/oidc/logout
+      - LAKEFS_AUTH_UI_CONFIG_RBAC=internal
+      - LAKEFS_AUTH_UI_CONFIG_LOGIN_COOKIE_NAMES=[internal_auth_session,oidc_auth_session]
+      - LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME="nickname"
+      - LAKEFS_AUTH_OIDC_DEFAULT_INITIAL_GROUPS=["Admins"]
+      - LAKEFS_AUTH_AUTHENTICATION_API_ENDPOINT=http://fluffy:8000/api/v1
+      - LAKEFS_AUTH_AUTHENTICATION_API_EXTERNAL_PRINCIPALS_ENABLED=true
       - LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-local}
       - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
       - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
@@ -20,18 +31,50 @@ services:
       - LAKEFS_LOGGING_LEVEL=DEBUG
       - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
       - LAKEFS_STATS_ENABLED
-      - LAKEFS_DATABASE_DYNAMODB_ENDPOINT=http://dynamodb:8000
       - LAKEFSACTION_VAR=this_is_actions_var
       - LAKEFS_DATABASE_TYPE=dynamodb
-      - LAKEFS_DATABASE_KV_ENABLED=true
+      - LAKEFS_DATABASE_DYNAMODB_ENDPOINT=http://dynamodb:8000
       - LAKEFS_DATABASE_DYNAMODB_AWS_REGION=us-east-1
       - LAKEFS_DATABASE_DYNAMODB_AWS_ACCESS_KEY_ID=AKIAIO5FODNN7EXAMPLE
       - LAKEFS_DATABASE_DYNAMODB_AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY
-    entrypoint: ["/app/lakefs", "run"]
+    entrypoint: ["/app/wait-for", "fluffy:8000", "--", "/app/lakefs", "run"]
+
+  fluffy:
+    image: treeverse/fluffy:0.7.1
+    command: "${COMMAND:-run}"
+    ports:
+      - "8001:8000"
+      - "9000:9000"
+    depends_on:
+      - "dynamodb"
+    environment:
+      - FLUFFY_LOGGING_LEVEL=DEBUG
+      - FLUFFY_DATABASE_TYPE=dynamodb
+      - FLUFFY_DATABASE_DYNAMODB_ENDPOINT=http://dynamodb:8000
+      - FLUFFY_DATABASE_DYNAMODB_AWS_REGION=us-east-1
+      - FLUFFY_DATABASE_DYNAMODB_AWS_ACCESS_KEY_ID=AKIAIO5FODNN7EXAMPLE
+      - FLUFFY_DATABASE_DYNAMODB_AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY
+      - FLUFFY_AUTH_ENCRYPT_SECRET_KEY="some random secret string"
+      - FLUFFY_AUTH_SERVE_LISTEN_ADDRESS=0.0.0.0:9000
+      - FLUFFY_LISTEN_ADDRESS=0.0.0.0:8000
+      - FLUFFY_AUTH_SERVE_DISABLE_AUTHENTICATION=true
+      - FLUFFY_AUTH_LOGOUT_REDIRECT_URL=https://lakefs-cloud-dev.us.auth0.com/v2/logout
+      - FLUFFY_AUTH_POST_LOGIN_REDIRECT_URL=http://lakefs:8000/
+      - FLUFFY_AUTH_OIDC_ENABLED=true
+      - FLUFFY_AUTH_OIDC_URL=https://lakefs-cloud-dev.us.auth0.com/
+      - FLUFFY_AUTH_OIDC_CLIENT_ID=${AUTH0_CLIENT_ID}
+      - FLUFFY_AUTH_OIDC_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
+      - FLUFFY_AUTH_OIDC_CALLBACK_BASE_URL=http://fluffy:8000
+      - FLUFFY_AUTH_OIDC_IS_DEFAULT_LOGIN=true
+      - FLUFFY_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=client_id
+      - FLUFFY_AUTH_EXTERNAL_AWS_AUTH_ENABLED=true
+    entrypoint: ["/app/fluffy"]
+
   dynamodb:
-    image: "amazon/dynamodb-local:1.18.0"
+    image: "amazon/dynamodb-local:2.5.2"
     ports:
       - "6432:8000"
+
   esti:
     image: "golang:1.22.6-alpine3.20"
     links:

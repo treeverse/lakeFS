@@ -22,23 +22,21 @@ services:
       - LAKEFS_AUTH_OIDC_DEFAULT_INITIAL_GROUPS=["Admins"]
       - LAKEFS_AUTH_AUTHENTICATION_API_ENDPOINT=http://fluffy:8000/api/v1
       - LAKEFS_AUTH_AUTHENTICATION_API_EXTERNAL_PRINCIPALS_ENABLED=true
+      - LAKEFS_DATABASE_TYPE=${LAKEFS_DATABASE_TYPE:-postgres}
+      - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-local}
       - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
       - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
       - LAKEFS_BLOCKSTORE_LOCAL_ALLOWED_EXTERNAL_PREFIXES=/tmp
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - LAKEFS_LOGGING_LEVEL=DEBUG
-      - LAKEFS_STATS_ENABLED=false
-      - LAKEFSACTION_VAR=this_is_actions_var
-      - LAKEFS_DATABASE_TYPE=cosmosdb
-      - LAKEFS_DATABASE_COSMOSDB_ENDPOINT
-      - LAKEFS_DATABASE_COSMOSDB_DATABASE
-      - LAKEFS_DATABASE_COSMOSDB_CONTAINER
-      - LAKEFS_DATABASE_COSMOSDB_KEY
+      - LAKEFS_LOGGING_LEVEL=DEBUG  
+      - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
+      - LAKEFS_STATS_ENABLED
       - AZURE_CLIENT_ID
       - AZURE_CLIENT_SECRET
       - AZURE_TENANT_ID
+      - LAKEFSACTION_VAR=this_is_actions_var
     entrypoint: ["/app/wait-for", "fluffy:8000", "--", "/app/lakefs", "run"]
 
   fluffy:
@@ -48,14 +46,11 @@ services:
       - "8001:8000"
       - "9000:9000"
     depends_on:
-      - "dynamodb"
+      - "postgres"
     environment:
       - FLUFFY_LOGGING_LEVEL=DEBUG
-      - FLUFFY_DATABASE_TYPE=dynamodb
-      - FLUFFY_DATABASE_DYNAMODB_ENDPOINT=http://dynamodb:8000
-      - FLUFFY_DATABASE_DYNAMODB_AWS_REGION=us-east-1
-      - FLUFFY_DATABASE_DYNAMODB_AWS_ACCESS_KEY_ID=AKIAIO5FODNN7EXAMPLE
-      - FLUFFY_DATABASE_DYNAMODB_AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY
+      - FLUFFY_DATABASE_TYPE=${LAKEFS_DATABASE_TYPE:-postgres}
+      - FLUFFY_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - FLUFFY_AUTH_ENCRYPT_SECRET_KEY="some random secret string"
       - FLUFFY_AUTH_SERVE_LISTEN_ADDRESS=0.0.0.0:9000
       - FLUFFY_LISTEN_ADDRESS=0.0.0.0:8000
@@ -70,14 +65,15 @@ services:
       - FLUFFY_AUTH_OIDC_IS_DEFAULT_LOGIN=true
       - FLUFFY_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=client_id
       - FLUFFY_AUTH_EXTERNAL_AWS_AUTH_ENABLED=true
-    entrypoint: ["/app/fluffy"]
+    entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/fluffy"]
 
-  # Fluffy is using dynamodb local container because we don't have an integration with fluffy and cosmosdb (which is ok)
-  dynamodb:
-    image: "amazon/dynamodb-local:2.5.2"
+  postgres:
+    image: "postgres:11"
     ports:
-      - "6432:8000"
-
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: lakefs
+      POSTGRES_PASSWORD: lakefs
   esti:
     image: "golang:1.22.6-alpine3.20"
     links:
@@ -99,9 +95,9 @@ services:
       - ESTI_AWS_SECRET_ACCESS_KEY
       - ESTI_ENDPOINT_URL=http://lakefs:8000
       - ESTI_BINARIES_DIR=/app
+      - ESTI_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - ESTI_GOTEST_FLAGS
       - ESTI_FLAGS
-      - ESTI_LARGE_OBJECT_PATH
       - ESTI_FORCE_PATH_STYLE
       - ESTI_AZURE_STORAGE_ACCOUNT
       - ESTI_AZURE_STORAGE_ACCESS_KEY
@@ -111,7 +107,7 @@ services:
       - -c
       - |
         apk add --no-cache util-linux
-        go test -timeout 20m -v $ESTI_GOTEST_FLAGS ./esti --system-tests $ESTI_FLAGS --skip=".*GC"
+        go test -v $ESTI_GOTEST_FLAGS ./esti --system-tests $ESTI_FLAGS --skip=".*GC"
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro
