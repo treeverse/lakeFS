@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,7 +48,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * ObjectCopyCreation
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class ObjectCopyCreation {
   public static final String SERIALIZED_NAME_SRC_PATH = "src_path";
   @SerializedName(SERIALIZED_NAME_SRC_PATH)
@@ -68,20 +66,18 @@ public class ObjectCopyCreation {
   }
 
   public ObjectCopyCreation srcPath(String srcPath) {
-    
     this.srcPath = srcPath;
     return this;
   }
 
-   /**
+  /**
    * path of the copied object relative to the ref
    * @return srcPath
-  **/
+   */
   @javax.annotation.Nonnull
   public String getSrcPath() {
     return srcPath;
   }
-
 
   public void setSrcPath(String srcPath) {
     this.srcPath = srcPath;
@@ -89,20 +85,18 @@ public class ObjectCopyCreation {
 
 
   public ObjectCopyCreation srcRef(String srcRef) {
-    
     this.srcRef = srcRef;
     return this;
   }
 
-   /**
+  /**
    * a reference, if empty uses the provided branch as ref
    * @return srcRef
-  **/
+   */
   @javax.annotation.Nullable
   public String getSrcRef() {
     return srcRef;
   }
-
 
   public void setSrcRef(String srcRef) {
     this.srcRef = srcRef;
@@ -110,20 +104,18 @@ public class ObjectCopyCreation {
 
 
   public ObjectCopyCreation force(Boolean force) {
-    
     this.force = force;
     return this;
   }
 
-   /**
+  /**
    * Get force
    * @return force
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getForce() {
     return force;
   }
-
 
   public void setForce(Boolean force) {
     this.force = force;
@@ -234,12 +226,12 @@ public class ObjectCopyCreation {
     openapiRequiredFields.add("src_path");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to ObjectCopyCreation
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ObjectCopyCreation
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!ObjectCopyCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -290,7 +282,12 @@ public class ObjectCopyCreation {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -329,22 +326,22 @@ public class ObjectCopyCreation {
     }
   }
 
- /**
-  * Create an instance of ObjectCopyCreation given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of ObjectCopyCreation
-  * @throws IOException if the JSON string is invalid with respect to ObjectCopyCreation
-  */
+  /**
+   * Create an instance of ObjectCopyCreation given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ObjectCopyCreation
+   * @throws IOException if the JSON string is invalid with respect to ObjectCopyCreation
+   */
   public static ObjectCopyCreation fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, ObjectCopyCreation.class);
   }
 
- /**
-  * Convert an instance of ObjectCopyCreation to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of ObjectCopyCreation to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

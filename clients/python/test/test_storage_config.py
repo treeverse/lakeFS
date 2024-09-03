@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.storage_config import StorageConfig  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.storage_config import StorageConfig
 
 class TestStorageConfig(unittest.TestCase):
     """StorageConfig unit test stubs"""
@@ -29,27 +26,27 @@ class TestStorageConfig(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> StorageConfig:
         """Test StorageConfig
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `StorageConfig`
         """
-        model = lakefs_sdk.models.storage_config.StorageConfig()  # noqa: E501
-        if include_optional :
+        model = StorageConfig()
+        if include_optional:
             return StorageConfig(
-                blockstore_type = '', 
-                blockstore_namespace_example = '', 
-                blockstore_namespace_validity_regex = '', 
-                default_namespace_prefix = '', 
-                pre_sign_support = True, 
-                pre_sign_support_ui = True, 
-                import_support = True, 
-                import_validity_regex = '', 
+                blockstore_type = '',
+                blockstore_namespace_example = '',
+                blockstore_namespace_validity_regex = '',
+                default_namespace_prefix = '',
+                pre_sign_support = True,
+                pre_sign_support_ui = True,
+                import_support = True,
+                import_validity_regex = '',
                 pre_sign_multipart_upload = True
             )
-        else :
+        else:
             return StorageConfig(
                 blockstore_type = '',
                 blockstore_namespace_example = '',

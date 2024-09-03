@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,7 +48,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * StatsEvent
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class StatsEvent {
   public static final String SERIALIZED_NAME_PROPERTY_CLASS = "class";
   @SerializedName(SERIALIZED_NAME_PROPERTY_CLASS)
@@ -68,20 +66,18 @@ public class StatsEvent {
   }
 
   public StatsEvent propertyClass(String propertyClass) {
-    
     this.propertyClass = propertyClass;
     return this;
   }
 
-   /**
+  /**
    * stats event class (e.g. \&quot;s3_gateway\&quot;, \&quot;openapi_request\&quot;, \&quot;experimental-feature\&quot;, \&quot;ui-event\&quot;)
    * @return propertyClass
-  **/
+   */
   @javax.annotation.Nonnull
   public String getPropertyClass() {
     return propertyClass;
   }
-
 
   public void setPropertyClass(String propertyClass) {
     this.propertyClass = propertyClass;
@@ -89,20 +85,18 @@ public class StatsEvent {
 
 
   public StatsEvent name(String name) {
-    
     this.name = name;
     return this;
   }
 
-   /**
+  /**
    * stats event name (e.g. \&quot;put_object\&quot;, \&quot;create_repository\&quot;, \&quot;&lt;experimental-feature-name&gt;\&quot;)
    * @return name
-  **/
+   */
   @javax.annotation.Nonnull
   public String getName() {
     return name;
   }
-
 
   public void setName(String name) {
     this.name = name;
@@ -110,20 +104,18 @@ public class StatsEvent {
 
 
   public StatsEvent count(Integer count) {
-    
     this.count = count;
     return this;
   }
 
-   /**
+  /**
    * number of events of the class and name
    * @return count
-  **/
+   */
   @javax.annotation.Nonnull
   public Integer getCount() {
     return count;
   }
-
 
   public void setCount(Integer count) {
     this.count = count;
@@ -236,12 +228,12 @@ public class StatsEvent {
     openapiRequiredFields.add("count");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to StatsEvent
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to StatsEvent
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!StatsEvent.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -292,7 +284,12 @@ public class StatsEvent {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -331,22 +328,22 @@ public class StatsEvent {
     }
   }
 
- /**
-  * Create an instance of StatsEvent given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of StatsEvent
-  * @throws IOException if the JSON string is invalid with respect to StatsEvent
-  */
+  /**
+   * Create an instance of StatsEvent given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of StatsEvent
+   * @throws IOException if the JSON string is invalid with respect to StatsEvent
+   */
   public static StatsEvent fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, StatsEvent.class);
   }
 
- /**
-  * Convert an instance of StatsEvent to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of StatsEvent to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

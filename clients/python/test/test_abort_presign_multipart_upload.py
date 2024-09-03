@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.abort_presign_multipart_upload import AbortPresignMultipartUpload  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.abort_presign_multipart_upload import AbortPresignMultipartUpload
 
 class TestAbortPresignMultipartUpload(unittest.TestCase):
     """AbortPresignMultipartUpload unit test stubs"""
@@ -29,19 +26,19 @@ class TestAbortPresignMultipartUpload(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> AbortPresignMultipartUpload:
         """Test AbortPresignMultipartUpload
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `AbortPresignMultipartUpload`
         """
-        model = lakefs_sdk.models.abort_presign_multipart_upload.AbortPresignMultipartUpload()  # noqa: E501
-        if include_optional :
+        model = AbortPresignMultipartUpload()
+        if include_optional:
             return AbortPresignMultipartUpload(
                 physical_address = ''
             )
-        else :
+        else:
             return AbortPresignMultipartUpload(
                 physical_address = '',
         )

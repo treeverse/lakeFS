@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,7 +48,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * RangeMetadata
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class RangeMetadata {
   public static final String SERIALIZED_NAME_ID = "id";
   @SerializedName(SERIALIZED_NAME_ID)
@@ -76,20 +74,18 @@ public class RangeMetadata {
   }
 
   public RangeMetadata id(String id) {
-    
     this.id = id;
     return this;
   }
 
-   /**
+  /**
    * ID of the range.
    * @return id
-  **/
+   */
   @javax.annotation.Nonnull
   public String getId() {
     return id;
   }
-
 
   public void setId(String id) {
     this.id = id;
@@ -97,20 +93,18 @@ public class RangeMetadata {
 
 
   public RangeMetadata minKey(String minKey) {
-    
     this.minKey = minKey;
     return this;
   }
 
-   /**
+  /**
    * First key in the range.
    * @return minKey
-  **/
+   */
   @javax.annotation.Nonnull
   public String getMinKey() {
     return minKey;
   }
-
 
   public void setMinKey(String minKey) {
     this.minKey = minKey;
@@ -118,20 +112,18 @@ public class RangeMetadata {
 
 
   public RangeMetadata maxKey(String maxKey) {
-    
     this.maxKey = maxKey;
     return this;
   }
 
-   /**
+  /**
    * Last key in the range.
    * @return maxKey
-  **/
+   */
   @javax.annotation.Nonnull
   public String getMaxKey() {
     return maxKey;
   }
-
 
   public void setMaxKey(String maxKey) {
     this.maxKey = maxKey;
@@ -139,20 +131,18 @@ public class RangeMetadata {
 
 
   public RangeMetadata count(Integer count) {
-    
     this.count = count;
     return this;
   }
 
-   /**
+  /**
    * Number of records in the range.
    * @return count
-  **/
+   */
   @javax.annotation.Nonnull
   public Integer getCount() {
     return count;
   }
-
 
   public void setCount(Integer count) {
     this.count = count;
@@ -160,20 +150,18 @@ public class RangeMetadata {
 
 
   public RangeMetadata estimatedSize(Integer estimatedSize) {
-    
     this.estimatedSize = estimatedSize;
     return this;
   }
 
-   /**
+  /**
    * Estimated size of the range in bytes
    * @return estimatedSize
-  **/
+   */
   @javax.annotation.Nonnull
   public Integer getEstimatedSize() {
     return estimatedSize;
   }
-
 
   public void setEstimatedSize(Integer estimatedSize) {
     this.estimatedSize = estimatedSize;
@@ -294,12 +282,12 @@ public class RangeMetadata {
     openapiRequiredFields.add("estimated_size");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to RangeMetadata
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to RangeMetadata
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!RangeMetadata.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -353,7 +341,12 @@ public class RangeMetadata {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -392,22 +385,22 @@ public class RangeMetadata {
     }
   }
 
- /**
-  * Create an instance of RangeMetadata given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of RangeMetadata
-  * @throws IOException if the JSON string is invalid with respect to RangeMetadata
-  */
+  /**
+   * Create an instance of RangeMetadata given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of RangeMetadata
+   * @throws IOException if the JSON string is invalid with respect to RangeMetadata
+   */
   public static RangeMetadata fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, RangeMetadata.class);
   }
 
- /**
-  * Convert an instance of RangeMetadata to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of RangeMetadata to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

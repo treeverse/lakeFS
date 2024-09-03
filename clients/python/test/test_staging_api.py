@@ -15,31 +15,29 @@
 
 import unittest
 
-import lakefs_sdk
-from lakefs_sdk.api.staging_api import StagingApi  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.api.staging_api import StagingApi
 
 
 class TestStagingApi(unittest.TestCase):
     """StagingApi unit test stubs"""
 
-    def setUp(self):
-        self.api = lakefs_sdk.api.staging_api.StagingApi()  # noqa: E501
+    def setUp(self) -> None:
+        self.api = StagingApi()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         pass
 
-    def test_get_physical_address(self):
+    def test_get_physical_address(self) -> None:
         """Test case for get_physical_address
 
-        generate an address to which the client can upload an object  # noqa: E501
+        generate an address to which the client can upload an object
         """
         pass
 
-    def test_link_physical_address(self):
+    def test_link_physical_address(self) -> None:
         """Test case for link_physical_address
 
-        associate staging on this physical address with a path  # noqa: E501
+        associate staging on this physical address with a path
         """
         pass
 

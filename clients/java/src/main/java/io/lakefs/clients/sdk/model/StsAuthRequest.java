@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,7 +48,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * StsAuthRequest
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class StsAuthRequest {
   public static final String SERIALIZED_NAME_CODE = "code";
   @SerializedName(SERIALIZED_NAME_CODE)
@@ -72,20 +70,18 @@ public class StsAuthRequest {
   }
 
   public StsAuthRequest code(String code) {
-    
     this.code = code;
     return this;
   }
 
-   /**
+  /**
    * Get code
    * @return code
-  **/
+   */
   @javax.annotation.Nonnull
   public String getCode() {
     return code;
   }
-
 
   public void setCode(String code) {
     this.code = code;
@@ -93,20 +89,18 @@ public class StsAuthRequest {
 
 
   public StsAuthRequest state(String state) {
-    
     this.state = state;
     return this;
   }
 
-   /**
+  /**
    * Get state
    * @return state
-  **/
+   */
   @javax.annotation.Nonnull
   public String getState() {
     return state;
   }
-
 
   public void setState(String state) {
     this.state = state;
@@ -114,20 +108,18 @@ public class StsAuthRequest {
 
 
   public StsAuthRequest redirectUri(String redirectUri) {
-    
     this.redirectUri = redirectUri;
     return this;
   }
 
-   /**
+  /**
    * Get redirectUri
    * @return redirectUri
-  **/
+   */
   @javax.annotation.Nonnull
   public String getRedirectUri() {
     return redirectUri;
   }
-
 
   public void setRedirectUri(String redirectUri) {
     this.redirectUri = redirectUri;
@@ -135,20 +127,18 @@ public class StsAuthRequest {
 
 
   public StsAuthRequest ttlSeconds(Long ttlSeconds) {
-    
     this.ttlSeconds = ttlSeconds;
     return this;
   }
 
-   /**
+  /**
    * The time-to-live for the generated token in seconds.  The default value is 3600 seconds (1 hour) maximum time allowed is 12 hours. 
    * @return ttlSeconds
-  **/
+   */
   @javax.annotation.Nullable
   public Long getTtlSeconds() {
     return ttlSeconds;
   }
-
 
   public void setTtlSeconds(Long ttlSeconds) {
     this.ttlSeconds = ttlSeconds;
@@ -264,12 +254,12 @@ public class StsAuthRequest {
     openapiRequiredFields.add("redirect_uri");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to StsAuthRequest
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to StsAuthRequest
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!StsAuthRequest.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -323,7 +313,12 @@ public class StsAuthRequest {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -362,22 +357,22 @@ public class StsAuthRequest {
     }
   }
 
- /**
-  * Create an instance of StsAuthRequest given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of StsAuthRequest
-  * @throws IOException if the JSON string is invalid with respect to StsAuthRequest
-  */
+  /**
+   * Create an instance of StsAuthRequest given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of StsAuthRequest
+   * @throws IOException if the JSON string is invalid with respect to StsAuthRequest
+   */
   public static StsAuthRequest fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, StsAuthRequest.class);
   }
 
- /**
-  * Convert an instance of StsAuthRequest to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of StsAuthRequest to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

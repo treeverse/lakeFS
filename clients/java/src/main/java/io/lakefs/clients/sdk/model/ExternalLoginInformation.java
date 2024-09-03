@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,7 +48,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * ExternalLoginInformation
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class ExternalLoginInformation {
   public static final String SERIALIZED_NAME_TOKEN_EXPIRATION_DURATION = "token_expiration_duration";
   @SerializedName(SERIALIZED_NAME_TOKEN_EXPIRATION_DURATION)
@@ -64,20 +62,18 @@ public class ExternalLoginInformation {
   }
 
   public ExternalLoginInformation tokenExpirationDuration(Integer tokenExpirationDuration) {
-    
     this.tokenExpirationDuration = tokenExpirationDuration;
     return this;
   }
 
-   /**
+  /**
    * Get tokenExpirationDuration
    * @return tokenExpirationDuration
-  **/
+   */
   @javax.annotation.Nullable
   public Integer getTokenExpirationDuration() {
     return tokenExpirationDuration;
   }
-
 
   public void setTokenExpirationDuration(Integer tokenExpirationDuration) {
     this.tokenExpirationDuration = tokenExpirationDuration;
@@ -85,20 +81,18 @@ public class ExternalLoginInformation {
 
 
   public ExternalLoginInformation identityRequest(Object identityRequest) {
-    
     this.identityRequest = identityRequest;
     return this;
   }
 
-   /**
+  /**
    * Get identityRequest
    * @return identityRequest
-  **/
+   */
   @javax.annotation.Nonnull
   public Object getIdentityRequest() {
     return identityRequest;
   }
-
 
   public void setIdentityRequest(Object identityRequest) {
     this.identityRequest = identityRequest;
@@ -206,12 +200,12 @@ public class ExternalLoginInformation {
     openapiRequiredFields.add("identityRequest");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to ExternalLoginInformation
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ExternalLoginInformation
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!ExternalLoginInformation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -256,7 +250,12 @@ public class ExternalLoginInformation {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -295,22 +294,22 @@ public class ExternalLoginInformation {
     }
   }
 
- /**
-  * Create an instance of ExternalLoginInformation given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of ExternalLoginInformation
-  * @throws IOException if the JSON string is invalid with respect to ExternalLoginInformation
-  */
+  /**
+   * Create an instance of ExternalLoginInformation given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ExternalLoginInformation
+   * @throws IOException if the JSON string is invalid with respect to ExternalLoginInformation
+   */
   public static ExternalLoginInformation fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, ExternalLoginInformation.class);
   }
 
- /**
-  * Convert an instance of ExternalLoginInformation to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of ExternalLoginInformation to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

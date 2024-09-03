@@ -21,12 +21,12 @@ json = "{}"
 # create an instance of RepositoryCreation from a JSON string
 repository_creation_instance = RepositoryCreation.from_json(json)
 # print the JSON string representation of the object
-print RepositoryCreation.to_json()
+print(RepositoryCreation.to_json())
 
 # convert the object into a dict
 repository_creation_dict = repository_creation_instance.to_dict()
 # create an instance of RepositoryCreation from a dict
-repository_creation_form_dict = repository_creation.from_dict(repository_creation_dict)
+repository_creation_from_dict = RepositoryCreation.from_dict(repository_creation_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

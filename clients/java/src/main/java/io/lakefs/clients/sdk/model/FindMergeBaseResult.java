@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,7 +48,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * FindMergeBaseResult
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class FindMergeBaseResult {
   public static final String SERIALIZED_NAME_SOURCE_COMMIT_ID = "source_commit_id";
   @SerializedName(SERIALIZED_NAME_SOURCE_COMMIT_ID)
@@ -68,20 +66,18 @@ public class FindMergeBaseResult {
   }
 
   public FindMergeBaseResult sourceCommitId(String sourceCommitId) {
-    
     this.sourceCommitId = sourceCommitId;
     return this;
   }
 
-   /**
+  /**
    * The commit ID of the merge source
    * @return sourceCommitId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getSourceCommitId() {
     return sourceCommitId;
   }
-
 
   public void setSourceCommitId(String sourceCommitId) {
     this.sourceCommitId = sourceCommitId;
@@ -89,20 +85,18 @@ public class FindMergeBaseResult {
 
 
   public FindMergeBaseResult destinationCommitId(String destinationCommitId) {
-    
     this.destinationCommitId = destinationCommitId;
     return this;
   }
 
-   /**
+  /**
    * The commit ID of the merge destination
    * @return destinationCommitId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getDestinationCommitId() {
     return destinationCommitId;
   }
-
 
   public void setDestinationCommitId(String destinationCommitId) {
     this.destinationCommitId = destinationCommitId;
@@ -110,20 +104,18 @@ public class FindMergeBaseResult {
 
 
   public FindMergeBaseResult baseCommitId(String baseCommitId) {
-    
     this.baseCommitId = baseCommitId;
     return this;
   }
 
-   /**
+  /**
    * The commit ID of the merge base
    * @return baseCommitId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getBaseCommitId() {
     return baseCommitId;
   }
-
 
   public void setBaseCommitId(String baseCommitId) {
     this.baseCommitId = baseCommitId;
@@ -236,12 +228,12 @@ public class FindMergeBaseResult {
     openapiRequiredFields.add("base_commit_id");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to FindMergeBaseResult
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to FindMergeBaseResult
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!FindMergeBaseResult.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -295,7 +287,12 @@ public class FindMergeBaseResult {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -334,22 +331,22 @@ public class FindMergeBaseResult {
     }
   }
 
- /**
-  * Create an instance of FindMergeBaseResult given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of FindMergeBaseResult
-  * @throws IOException if the JSON string is invalid with respect to FindMergeBaseResult
-  */
+  /**
+   * Create an instance of FindMergeBaseResult given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of FindMergeBaseResult
+   * @throws IOException if the JSON string is invalid with respect to FindMergeBaseResult
+   */
   public static FindMergeBaseResult fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, FindMergeBaseResult.class);
   }
 
- /**
-  * Convert an instance of FindMergeBaseResult to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of FindMergeBaseResult to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

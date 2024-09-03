@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.find_merge_base_result import FindMergeBaseResult  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.find_merge_base_result import FindMergeBaseResult
 
 class TestFindMergeBaseResult(unittest.TestCase):
     """FindMergeBaseResult unit test stubs"""
@@ -29,21 +26,21 @@ class TestFindMergeBaseResult(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> FindMergeBaseResult:
         """Test FindMergeBaseResult
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `FindMergeBaseResult`
         """
-        model = lakefs_sdk.models.find_merge_base_result.FindMergeBaseResult()  # noqa: E501
-        if include_optional :
+        model = FindMergeBaseResult()
+        if include_optional:
             return FindMergeBaseResult(
-                source_commit_id = '', 
-                destination_commit_id = '', 
+                source_commit_id = '',
+                destination_commit_id = '',
                 base_commit_id = ''
             )
-        else :
+        else:
             return FindMergeBaseResult(
                 source_commit_id = '',
                 destination_commit_id = '',

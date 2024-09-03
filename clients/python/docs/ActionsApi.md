@@ -24,8 +24,6 @@ get a run
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.action_run import ActionRun
 from lakefs_sdk.rest import ApiException
@@ -136,8 +134,6 @@ get run hook output
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -249,8 +245,6 @@ list runs
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.action_run_list import ActionRunList
 from lakefs_sdk.rest import ApiException
@@ -367,8 +361,6 @@ list run hooks
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.hook_run_list import HookRunList
 from lakefs_sdk.rest import ApiException

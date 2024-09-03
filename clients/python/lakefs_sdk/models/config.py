@@ -18,47 +18,63 @@ import pprint
 import re  # noqa: F401
 import json
 
-
-from typing import Optional
 try:
-    from pydantic.v1 import BaseModel
+    from pydantic.v1 import BaseModel, ConfigDict
 except ImportError:
-    from pydantic import BaseModel
+    from pydantic import BaseModel, ConfigDict
+from typing import Any, ClassVar, Dict, List, Optional
 from lakefs_sdk.models.storage_config import StorageConfig
 from lakefs_sdk.models.version_config import VersionConfig
+from typing import Optional, Set
+from typing_extensions import Self
 
 class Config(BaseModel):
     """
     Config
-    """
+    """ # noqa: E501
     version_config: Optional[VersionConfig] = None
     storage_config: Optional[StorageConfig] = None
-    __properties = ["version_config", "storage_config"]
+    __properties: ClassVar[List[str]] = ["version_config", "storage_config"]
 
-    class Config:
-        """Pydantic configuration"""
-        allow_population_by_field_name = True
-        validate_assignment = True
+    model_config = ConfigDict(
+        populate_by_name=True,
+        validate_assignment=True,
+        protected_namespaces=(),
+    )
+
 
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.dict(by_alias=True))
+        return pprint.pformat(self.model_dump(by_alias=True))
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
+        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> Config:
+    def from_json(cls, json_str: str) -> Optional[Self]:
         """Create an instance of Config from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
-    def to_dict(self):
-        """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+    def to_dict(self) -> Dict[str, Any]:
+        """Return the dictionary representation of the model using alias.
+
+        This has the following differences from calling pydantic's
+        `self.model_dump(by_alias=True)`:
+
+        * `None` is only added to the output dict for nullable fields that
+          were set at model initialization. Other fields with value `None`
+          are ignored.
+        """
+        excluded_fields: Set[str] = set([
+        ])
+
+        _dict = self.model_dump(
+            by_alias=True,
+            exclude=excluded_fields,
+            exclude_none=True,
+        )
         # override the default output from pydantic by calling `to_dict()` of version_config
         if self.version_config:
             _dict['version_config'] = self.version_config.to_dict()
@@ -68,17 +84,17 @@ class Config(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> Config:
+    def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
         """Create an instance of Config from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return Config.parse_obj(obj)
+            return cls.model_validate(obj)
 
-        _obj = Config.parse_obj({
-            "version_config": VersionConfig.from_dict(obj.get("version_config")) if obj.get("version_config") is not None else None,
-            "storage_config": StorageConfig.from_dict(obj.get("storage_config")) if obj.get("storage_config") is not None else None
+        _obj = cls.model_validate({
+            "version_config": VersionConfig.from_dict(obj["version_config"]) if obj.get("version_config") is not None else None,
+            "storage_config": StorageConfig.from_dict(obj["storage_config"]) if obj.get("storage_config") is not None else None
         })
         return _obj
 

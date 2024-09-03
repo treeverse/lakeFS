@@ -41,12 +41,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -54,7 +52,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * Commit
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class Commit {
   public static final String SERIALIZED_NAME_ID = "id";
   @SerializedName(SERIALIZED_NAME_ID)
@@ -96,20 +94,18 @@ public class Commit {
   }
 
   public Commit id(String id) {
-    
     this.id = id;
     return this;
   }
 
-   /**
+  /**
    * Get id
    * @return id
-  **/
+   */
   @javax.annotation.Nonnull
   public String getId() {
     return id;
   }
-
 
   public void setId(String id) {
     this.id = id;
@@ -117,7 +113,6 @@ public class Commit {
 
 
   public Commit parents(List<String> parents) {
-    
     this.parents = parents;
     return this;
   }
@@ -130,15 +125,14 @@ public class Commit {
     return this;
   }
 
-   /**
+  /**
    * Get parents
    * @return parents
-  **/
+   */
   @javax.annotation.Nonnull
   public List<String> getParents() {
     return parents;
   }
-
 
   public void setParents(List<String> parents) {
     this.parents = parents;
@@ -146,20 +140,18 @@ public class Commit {
 
 
   public Commit committer(String committer) {
-    
     this.committer = committer;
     return this;
   }
 
-   /**
+  /**
    * Get committer
    * @return committer
-  **/
+   */
   @javax.annotation.Nonnull
   public String getCommitter() {
     return committer;
   }
-
 
   public void setCommitter(String committer) {
     this.committer = committer;
@@ -167,20 +159,18 @@ public class Commit {
 
 
   public Commit message(String message) {
-    
     this.message = message;
     return this;
   }
 
-   /**
+  /**
    * Get message
    * @return message
-  **/
+   */
   @javax.annotation.Nonnull
   public String getMessage() {
     return message;
   }
-
 
   public void setMessage(String message) {
     this.message = message;
@@ -188,20 +178,18 @@ public class Commit {
 
 
   public Commit creationDate(Long creationDate) {
-    
     this.creationDate = creationDate;
     return this;
   }
 
-   /**
+  /**
    * Unix Epoch in seconds
    * @return creationDate
-  **/
+   */
   @javax.annotation.Nonnull
   public Long getCreationDate() {
     return creationDate;
   }
-
 
   public void setCreationDate(Long creationDate) {
     this.creationDate = creationDate;
@@ -209,20 +197,18 @@ public class Commit {
 
 
   public Commit metaRangeId(String metaRangeId) {
-    
     this.metaRangeId = metaRangeId;
     return this;
   }
 
-   /**
+  /**
    * Get metaRangeId
    * @return metaRangeId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getMetaRangeId() {
     return metaRangeId;
   }
-
 
   public void setMetaRangeId(String metaRangeId) {
     this.metaRangeId = metaRangeId;
@@ -230,7 +216,6 @@ public class Commit {
 
 
   public Commit metadata(Map<String, String> metadata) {
-    
     this.metadata = metadata;
     return this;
   }
@@ -243,15 +228,14 @@ public class Commit {
     return this;
   }
 
-   /**
+  /**
    * Get metadata
    * @return metadata
-  **/
+   */
   @javax.annotation.Nullable
   public Map<String, String> getMetadata() {
     return metadata;
   }
-
 
   public void setMetadata(Map<String, String> metadata) {
     this.metadata = metadata;
@@ -259,20 +243,18 @@ public class Commit {
 
 
   public Commit generation(Long generation) {
-    
     this.generation = generation;
     return this;
   }
 
-   /**
+  /**
    * Get generation
    * @return generation
-  **/
+   */
   @javax.annotation.Nullable
   public Long getGeneration() {
     return generation;
   }
-
 
   public void setGeneration(Long generation) {
     this.generation = generation;
@@ -280,22 +262,20 @@ public class Commit {
 
 
   public Commit version(Integer version) {
-    
     this.version = version;
     return this;
   }
 
-   /**
+  /**
    * Get version
    * minimum: 0
    * maximum: 1
    * @return version
-  **/
+   */
   @javax.annotation.Nullable
   public Integer getVersion() {
     return version;
   }
-
 
   public void setVersion(Integer version) {
     this.version = version;
@@ -429,12 +409,12 @@ public class Commit {
     openapiRequiredFields.add("meta_range_id");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to Commit
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Commit
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!Commit.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -497,7 +477,12 @@ public class Commit {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -536,22 +521,22 @@ public class Commit {
     }
   }
 
- /**
-  * Create an instance of Commit given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of Commit
-  * @throws IOException if the JSON string is invalid with respect to Commit
-  */
+  /**
+   * Create an instance of Commit given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Commit
+   * @throws IOException if the JSON string is invalid with respect to Commit
+   */
   public static Commit fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, Commit.class);
   }
 
- /**
-  * Convert an instance of Commit to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of Commit to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

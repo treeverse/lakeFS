@@ -42,12 +42,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -55,7 +53,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * CompletePresignMultipartUpload
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class CompletePresignMultipartUpload {
   public static final String SERIALIZED_NAME_PHYSICAL_ADDRESS = "physical_address";
   @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS)
@@ -77,20 +75,18 @@ public class CompletePresignMultipartUpload {
   }
 
   public CompletePresignMultipartUpload physicalAddress(String physicalAddress) {
-    
     this.physicalAddress = physicalAddress;
     return this;
   }
 
-   /**
+  /**
    * Get physicalAddress
    * @return physicalAddress
-  **/
+   */
   @javax.annotation.Nonnull
   public String getPhysicalAddress() {
     return physicalAddress;
   }
-
 
   public void setPhysicalAddress(String physicalAddress) {
     this.physicalAddress = physicalAddress;
@@ -98,7 +94,6 @@ public class CompletePresignMultipartUpload {
 
 
   public CompletePresignMultipartUpload parts(List<UploadPart> parts) {
-    
     this.parts = parts;
     return this;
   }
@@ -111,15 +106,14 @@ public class CompletePresignMultipartUpload {
     return this;
   }
 
-   /**
+  /**
    * List of uploaded parts, should be ordered by ascending part number
    * @return parts
-  **/
+   */
   @javax.annotation.Nonnull
   public List<UploadPart> getParts() {
     return parts;
   }
-
 
   public void setParts(List<UploadPart> parts) {
     this.parts = parts;
@@ -127,7 +121,6 @@ public class CompletePresignMultipartUpload {
 
 
   public CompletePresignMultipartUpload userMetadata(Map<String, String> userMetadata) {
-    
     this.userMetadata = userMetadata;
     return this;
   }
@@ -140,15 +133,14 @@ public class CompletePresignMultipartUpload {
     return this;
   }
 
-   /**
+  /**
    * Get userMetadata
    * @return userMetadata
-  **/
+   */
   @javax.annotation.Nullable
   public Map<String, String> getUserMetadata() {
     return userMetadata;
   }
-
 
   public void setUserMetadata(Map<String, String> userMetadata) {
     this.userMetadata = userMetadata;
@@ -156,20 +148,18 @@ public class CompletePresignMultipartUpload {
 
 
   public CompletePresignMultipartUpload contentType(String contentType) {
-    
     this.contentType = contentType;
     return this;
   }
 
-   /**
+  /**
    * Object media type
    * @return contentType
-  **/
+   */
   @javax.annotation.Nullable
   public String getContentType() {
     return contentType;
   }
-
 
   public void setContentType(String contentType) {
     this.contentType = contentType;
@@ -284,12 +274,12 @@ public class CompletePresignMultipartUpload {
     openapiRequiredFields.add("parts");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to CompletePresignMultipartUpload
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to CompletePresignMultipartUpload
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!CompletePresignMultipartUpload.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -350,7 +340,12 @@ public class CompletePresignMultipartUpload {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -389,22 +384,22 @@ public class CompletePresignMultipartUpload {
     }
   }
 
- /**
-  * Create an instance of CompletePresignMultipartUpload given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of CompletePresignMultipartUpload
-  * @throws IOException if the JSON string is invalid with respect to CompletePresignMultipartUpload
-  */
+  /**
+   * Create an instance of CompletePresignMultipartUpload given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of CompletePresignMultipartUpload
+   * @throws IOException if the JSON string is invalid with respect to CompletePresignMultipartUpload
+   */
   public static CompletePresignMultipartUpload fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, CompletePresignMultipartUpload.class);
   }
 
- /**
-  * Convert an instance of CompletePresignMultipartUpload to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of CompletePresignMultipartUpload to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.import_status import ImportStatus  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.import_status import ImportStatus
 
 class TestImportStatus(unittest.TestCase):
     """ImportStatus unit test stubs"""
@@ -29,20 +26,20 @@ class TestImportStatus(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> ImportStatus:
         """Test ImportStatus
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `ImportStatus`
         """
-        model = lakefs_sdk.models.import_status.ImportStatus()  # noqa: E501
-        if include_optional :
+        model = ImportStatus()
+        if include_optional:
             return ImportStatus(
-                completed = True, 
-                update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                ingested_objects = 56, 
-                metarange_id = '', 
+                completed = True,
+                update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
+                ingested_objects = 56,
+                metarange_id = '',
                 commit = lakefs_sdk.models.commit.Commit(
                     id = '', 
                     parents = [
@@ -56,11 +53,11 @@ class TestImportStatus(unittest.TestCase):
                         'key' : ''
                         }, 
                     generation = 56, 
-                    version = 0, ), 
+                    version = 0, ),
                 error = lakefs_sdk.models.error.Error(
                     message = '', )
             )
-        else :
+        else:
             return ImportStatus(
                 completed = True,
                 update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),

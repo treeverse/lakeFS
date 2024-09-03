@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.config import Config  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.config import Config
 
 class TestConfig(unittest.TestCase):
     """Config unit test stubs"""
@@ -29,21 +26,21 @@ class TestConfig(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> Config:
         """Test Config
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `Config`
         """
-        model = lakefs_sdk.models.config.Config()  # noqa: E501
-        if include_optional :
+        model = Config()
+        if include_optional:
             return Config(
                 version_config = lakefs_sdk.models.version_config.VersionConfig(
                     version = '', 
                     latest_version = '', 
                     upgrade_recommended = True, 
-                    upgrade_url = '', ), 
+                    upgrade_url = '', ),
                 storage_config = lakefs_sdk.models.storage_config.StorageConfig(
                     blockstore_type = '', 
                     blockstore_namespace_example = '', 
@@ -55,7 +52,7 @@ class TestConfig(unittest.TestCase):
                     import_validity_regex = '', 
                     pre_sign_multipart_upload = True, )
             )
-        else :
+        else:
             return Config(
         )
         """

@@ -40,12 +40,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -53,7 +51,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * ExternalPrincipal
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class ExternalPrincipal {
   public static final String SERIALIZED_NAME_ID = "id";
   @SerializedName(SERIALIZED_NAME_ID)
@@ -65,26 +63,24 @@ public class ExternalPrincipal {
 
   public static final String SERIALIZED_NAME_SETTINGS = "settings";
   @SerializedName(SERIALIZED_NAME_SETTINGS)
-  private List<Map<String, String>> settings;
+  private List<Map<String, String>> settings = new ArrayList<>();
 
   public ExternalPrincipal() {
   }
 
   public ExternalPrincipal id(String id) {
-    
     this.id = id;
     return this;
   }
 
-   /**
+  /**
    * A unique identifier for the external principal i.e aws:sts::123:assumed-role/role-name
    * @return id
-  **/
+   */
   @javax.annotation.Nonnull
   public String getId() {
     return id;
   }
-
 
   public void setId(String id) {
     this.id = id;
@@ -92,20 +88,18 @@ public class ExternalPrincipal {
 
 
   public ExternalPrincipal userId(String userId) {
-    
     this.userId = userId;
     return this;
   }
 
-   /**
+  /**
    * lakeFS user ID to associate with an external principal. 
    * @return userId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getUserId() {
     return userId;
   }
-
 
   public void setUserId(String userId) {
     this.userId = userId;
@@ -113,7 +107,6 @@ public class ExternalPrincipal {
 
 
   public ExternalPrincipal settings(List<Map<String, String>> settings) {
-    
     this.settings = settings;
     return this;
   }
@@ -126,15 +119,14 @@ public class ExternalPrincipal {
     return this;
   }
 
-   /**
+  /**
    * Get settings
    * @return settings
-  **/
+   */
   @javax.annotation.Nullable
   public List<Map<String, String>> getSettings() {
     return settings;
   }
-
 
   public void setSettings(List<Map<String, String>> settings) {
     this.settings = settings;
@@ -246,12 +238,12 @@ public class ExternalPrincipal {
     openapiRequiredFields.add("user_id");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to ExternalPrincipal
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ExternalPrincipal
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!ExternalPrincipal.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -306,7 +298,12 @@ public class ExternalPrincipal {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -345,22 +342,22 @@ public class ExternalPrincipal {
     }
   }
 
- /**
-  * Create an instance of ExternalPrincipal given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of ExternalPrincipal
-  * @throws IOException if the JSON string is invalid with respect to ExternalPrincipal
-  */
+  /**
+   * Create an instance of ExternalPrincipal given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ExternalPrincipal
+   * @throws IOException if the JSON string is invalid with respect to ExternalPrincipal
+   */
   public static ExternalPrincipal fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, ExternalPrincipal.class);
   }
 
- /**
-  * Convert an instance of ExternalPrincipal to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of ExternalPrincipal to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

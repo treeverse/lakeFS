@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,7 +48,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * ACL
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class ACL {
   public static final String SERIALIZED_NAME_PERMISSION = "permission";
   @SerializedName(SERIALIZED_NAME_PERMISSION)
@@ -60,20 +58,18 @@ public class ACL {
   }
 
   public ACL permission(String permission) {
-    
     this.permission = permission;
     return this;
   }
 
-   /**
+  /**
    * Permission level to give this ACL.  \&quot;Read\&quot;, \&quot;Write\&quot;, \&quot;Super\&quot; and \&quot;Admin\&quot; are all supported. 
    * @return permission
-  **/
+   */
   @javax.annotation.Nonnull
   public String getPermission() {
     return permission;
   }
-
 
   public void setPermission(String permission) {
     this.permission = permission;
@@ -178,12 +174,12 @@ public class ACL {
     openapiRequiredFields.add("permission");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to ACL
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ACL
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!ACL.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -231,7 +227,12 @@ public class ACL {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -270,22 +271,22 @@ public class ACL {
     }
   }
 
- /**
-  * Create an instance of ACL given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of ACL
-  * @throws IOException if the JSON string is invalid with respect to ACL
-  */
+  /**
+   * Create an instance of ACL given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ACL
+   * @throws IOException if the JSON string is invalid with respect to ACL
+   */
   public static ACL fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, ACL.class);
   }
 
- /**
-  * Convert an instance of ACL to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of ACL to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

@@ -2,6 +2,7 @@
 
 lakeFS API
 - API version: 1.0.0
+  - Generator version: 7.8.0
 
 lakeFS HTTP API
 

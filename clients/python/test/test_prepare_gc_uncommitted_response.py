@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse
 
 class TestPrepareGCUncommittedResponse(unittest.TestCase):
     """PrepareGCUncommittedResponse unit test stubs"""
@@ -29,21 +26,21 @@ class TestPrepareGCUncommittedResponse(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> PrepareGCUncommittedResponse:
         """Test PrepareGCUncommittedResponse
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `PrepareGCUncommittedResponse`
         """
-        model = lakefs_sdk.models.prepare_gc_uncommitted_response.PrepareGCUncommittedResponse()  # noqa: E501
-        if include_optional :
+        model = PrepareGCUncommittedResponse()
+        if include_optional:
             return PrepareGCUncommittedResponse(
-                run_id = '', 
-                gc_uncommitted_location = '', 
+                run_id = '',
+                gc_uncommitted_location = '',
                 continuation_token = ''
             )
-        else :
+        else:
             return PrepareGCUncommittedResponse(
                 run_id = '',
                 gc_uncommitted_location = '',

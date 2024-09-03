@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.object_copy_creation import ObjectCopyCreation  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.object_copy_creation import ObjectCopyCreation
 
 class TestObjectCopyCreation(unittest.TestCase):
     """ObjectCopyCreation unit test stubs"""
@@ -29,21 +26,21 @@ class TestObjectCopyCreation(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> ObjectCopyCreation:
         """Test ObjectCopyCreation
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `ObjectCopyCreation`
         """
-        model = lakefs_sdk.models.object_copy_creation.ObjectCopyCreation()  # noqa: E501
-        if include_optional :
+        model = ObjectCopyCreation()
+        if include_optional:
             return ObjectCopyCreation(
-                src_path = '', 
-                src_ref = '', 
+                src_path = '',
+                src_ref = '',
                 force = True
             )
-        else :
+        else:
             return ObjectCopyCreation(
                 src_path = '',
         )

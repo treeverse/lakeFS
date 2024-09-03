@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,7 +48,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * StorageConfig
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class StorageConfig {
   public static final String SERIALIZED_NAME_BLOCKSTORE_TYPE = "blockstore_type";
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_TYPE)
@@ -92,20 +90,18 @@ public class StorageConfig {
   }
 
   public StorageConfig blockstoreType(String blockstoreType) {
-    
     this.blockstoreType = blockstoreType;
     return this;
   }
 
-   /**
+  /**
    * Get blockstoreType
    * @return blockstoreType
-  **/
+   */
   @javax.annotation.Nonnull
   public String getBlockstoreType() {
     return blockstoreType;
   }
-
 
   public void setBlockstoreType(String blockstoreType) {
     this.blockstoreType = blockstoreType;
@@ -113,20 +109,18 @@ public class StorageConfig {
 
 
   public StorageConfig blockstoreNamespaceExample(String blockstoreNamespaceExample) {
-    
     this.blockstoreNamespaceExample = blockstoreNamespaceExample;
     return this;
   }
 
-   /**
+  /**
    * Get blockstoreNamespaceExample
    * @return blockstoreNamespaceExample
-  **/
+   */
   @javax.annotation.Nonnull
   public String getBlockstoreNamespaceExample() {
     return blockstoreNamespaceExample;
   }
-
 
   public void setBlockstoreNamespaceExample(String blockstoreNamespaceExample) {
     this.blockstoreNamespaceExample = blockstoreNamespaceExample;
@@ -134,20 +128,18 @@ public class StorageConfig {
 
 
   public StorageConfig blockstoreNamespaceValidityRegex(String blockstoreNamespaceValidityRegex) {
-    
     this.blockstoreNamespaceValidityRegex = blockstoreNamespaceValidityRegex;
     return this;
   }
 
-   /**
+  /**
    * Get blockstoreNamespaceValidityRegex
    * @return blockstoreNamespaceValidityRegex
-  **/
+   */
   @javax.annotation.Nonnull
   public String getBlockstoreNamespaceValidityRegex() {
     return blockstoreNamespaceValidityRegex;
   }
-
 
   public void setBlockstoreNamespaceValidityRegex(String blockstoreNamespaceValidityRegex) {
     this.blockstoreNamespaceValidityRegex = blockstoreNamespaceValidityRegex;
@@ -155,20 +147,18 @@ public class StorageConfig {
 
 
   public StorageConfig defaultNamespacePrefix(String defaultNamespacePrefix) {
-    
     this.defaultNamespacePrefix = defaultNamespacePrefix;
     return this;
   }
 
-   /**
+  /**
    * Get defaultNamespacePrefix
    * @return defaultNamespacePrefix
-  **/
+   */
   @javax.annotation.Nullable
   public String getDefaultNamespacePrefix() {
     return defaultNamespacePrefix;
   }
-
 
   public void setDefaultNamespacePrefix(String defaultNamespacePrefix) {
     this.defaultNamespacePrefix = defaultNamespacePrefix;
@@ -176,20 +166,18 @@ public class StorageConfig {
 
 
   public StorageConfig preSignSupport(Boolean preSignSupport) {
-    
     this.preSignSupport = preSignSupport;
     return this;
   }
 
-   /**
+  /**
    * Get preSignSupport
    * @return preSignSupport
-  **/
+   */
   @javax.annotation.Nonnull
   public Boolean getPreSignSupport() {
     return preSignSupport;
   }
-
 
   public void setPreSignSupport(Boolean preSignSupport) {
     this.preSignSupport = preSignSupport;
@@ -197,20 +185,18 @@ public class StorageConfig {
 
 
   public StorageConfig preSignSupportUi(Boolean preSignSupportUi) {
-    
     this.preSignSupportUi = preSignSupportUi;
     return this;
   }
 
-   /**
+  /**
    * Get preSignSupportUi
    * @return preSignSupportUi
-  **/
+   */
   @javax.annotation.Nonnull
   public Boolean getPreSignSupportUi() {
     return preSignSupportUi;
   }
-
 
   public void setPreSignSupportUi(Boolean preSignSupportUi) {
     this.preSignSupportUi = preSignSupportUi;
@@ -218,20 +204,18 @@ public class StorageConfig {
 
 
   public StorageConfig importSupport(Boolean importSupport) {
-    
     this.importSupport = importSupport;
     return this;
   }
 
-   /**
+  /**
    * Get importSupport
    * @return importSupport
-  **/
+   */
   @javax.annotation.Nonnull
   public Boolean getImportSupport() {
     return importSupport;
   }
-
 
   public void setImportSupport(Boolean importSupport) {
     this.importSupport = importSupport;
@@ -239,20 +223,18 @@ public class StorageConfig {
 
 
   public StorageConfig importValidityRegex(String importValidityRegex) {
-    
     this.importValidityRegex = importValidityRegex;
     return this;
   }
 
-   /**
+  /**
    * Get importValidityRegex
    * @return importValidityRegex
-  **/
+   */
   @javax.annotation.Nonnull
   public String getImportValidityRegex() {
     return importValidityRegex;
   }
-
 
   public void setImportValidityRegex(String importValidityRegex) {
     this.importValidityRegex = importValidityRegex;
@@ -260,20 +242,18 @@ public class StorageConfig {
 
 
   public StorageConfig preSignMultipartUpload(Boolean preSignMultipartUpload) {
-    
     this.preSignMultipartUpload = preSignMultipartUpload;
     return this;
   }
 
-   /**
+  /**
    * Get preSignMultipartUpload
    * @return preSignMultipartUpload
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getPreSignMultipartUpload() {
     return preSignMultipartUpload;
   }
-
 
   public void setPreSignMultipartUpload(Boolean preSignMultipartUpload) {
     this.preSignMultipartUpload = preSignMultipartUpload;
@@ -408,12 +388,12 @@ public class StorageConfig {
     openapiRequiredFields.add("import_validity_regex");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to StorageConfig
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to StorageConfig
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!StorageConfig.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -473,7 +453,12 @@ public class StorageConfig {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -512,22 +497,22 @@ public class StorageConfig {
     }
   }
 
- /**
-  * Create an instance of StorageConfig given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of StorageConfig
-  * @throws IOException if the JSON string is invalid with respect to StorageConfig
-  */
+  /**
+   * Create an instance of StorageConfig given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of StorageConfig
+   * @throws IOException if the JSON string is invalid with respect to StorageConfig
+   */
   public static StorageConfig fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, StorageConfig.class);
   }
 
- /**
-  * Convert an instance of StorageConfig to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of StorageConfig to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

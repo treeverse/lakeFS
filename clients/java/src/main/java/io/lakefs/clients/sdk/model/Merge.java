@@ -39,12 +39,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -52,7 +50,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * Merge
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class Merge {
   public static final String SERIALIZED_NAME_MESSAGE = "message";
   @SerializedName(SERIALIZED_NAME_MESSAGE)
@@ -78,20 +76,18 @@ public class Merge {
   }
 
   public Merge message(String message) {
-    
     this.message = message;
     return this;
   }
 
-   /**
+  /**
    * Get message
    * @return message
-  **/
+   */
   @javax.annotation.Nullable
   public String getMessage() {
     return message;
   }
-
 
   public void setMessage(String message) {
     this.message = message;
@@ -99,7 +95,6 @@ public class Merge {
 
 
   public Merge metadata(Map<String, String> metadata) {
-    
     this.metadata = metadata;
     return this;
   }
@@ -112,15 +107,14 @@ public class Merge {
     return this;
   }
 
-   /**
+  /**
    * Get metadata
    * @return metadata
-  **/
+   */
   @javax.annotation.Nullable
   public Map<String, String> getMetadata() {
     return metadata;
   }
-
 
   public void setMetadata(Map<String, String> metadata) {
     this.metadata = metadata;
@@ -128,20 +122,18 @@ public class Merge {
 
 
   public Merge strategy(String strategy) {
-    
     this.strategy = strategy;
     return this;
   }
 
-   /**
+  /**
    * In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch (&#39;dest-wins&#39;) or from the source branch(&#39;source-wins&#39;). In case no selection is made, the merge process will fail in case of a conflict
    * @return strategy
-  **/
+   */
   @javax.annotation.Nullable
   public String getStrategy() {
     return strategy;
   }
-
 
   public void setStrategy(String strategy) {
     this.strategy = strategy;
@@ -149,20 +141,18 @@ public class Merge {
 
 
   public Merge force(Boolean force) {
-    
     this.force = force;
     return this;
   }
 
-   /**
+  /**
    * Allow merge into a read-only branch or into a branch with the same content
    * @return force
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getForce() {
     return force;
   }
-
 
   public void setForce(Boolean force) {
     this.force = force;
@@ -170,20 +160,18 @@ public class Merge {
 
 
   public Merge allowEmpty(Boolean allowEmpty) {
-    
     this.allowEmpty = allowEmpty;
     return this;
   }
 
-   /**
+  /**
    * Allow merge when the branches have the same content
    * @return allowEmpty
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getAllowEmpty() {
     return allowEmpty;
   }
-
 
   public void setAllowEmpty(Boolean allowEmpty) {
     this.allowEmpty = allowEmpty;
@@ -299,12 +287,12 @@ public class Merge {
     openapiRequiredFields = new HashSet<String>();
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to Merge
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Merge
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!Merge.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -348,7 +336,12 @@ public class Merge {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -387,22 +380,22 @@ public class Merge {
     }
   }
 
- /**
-  * Create an instance of Merge given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of Merge
-  * @throws IOException if the JSON string is invalid with respect to Merge
-  */
+  /**
+   * Create an instance of Merge given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Merge
+   * @throws IOException if the JSON string is invalid with respect to Merge
+   */
   public static Merge fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, Merge.class);
   }
 
- /**
-  * Convert an instance of Merge to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of Merge to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

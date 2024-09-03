@@ -28,8 +28,6 @@ Replay the changes from the given commit on the branch
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.cherry_pick_creation import CherryPickCreation
 from lakefs_sdk.models.commit import Commit
@@ -146,8 +144,6 @@ create branch
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.branch_creation import BranchCreation
 from lakefs_sdk.rest import ApiException
@@ -261,8 +257,6 @@ delete branch
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -373,8 +367,6 @@ diff branch
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.diff_list import DiffList
 from lakefs_sdk.rest import ApiException
@@ -493,8 +485,6 @@ get branch
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.ref import Ref
 from lakefs_sdk.rest import ApiException
@@ -605,8 +595,6 @@ list branches
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.ref_list import RefList
 from lakefs_sdk.rest import ApiException
@@ -721,8 +709,6 @@ reset branch
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.reset_creation import ResetCreation
 from lakefs_sdk.rest import ApiException
@@ -835,8 +821,6 @@ revert
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.revert_creation import RevertCreation
 from lakefs_sdk.rest import ApiException

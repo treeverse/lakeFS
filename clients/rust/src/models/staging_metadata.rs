@@ -9,6 +9,7 @@
  */
 
 use crate::models;
+use serde::{Deserialize, Serialize};
 
 /// StagingMetadata : information about uploaded object
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]

@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.auth_capabilities import AuthCapabilities  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.auth_capabilities import AuthCapabilities
 
 class TestAuthCapabilities(unittest.TestCase):
     """AuthCapabilities unit test stubs"""
@@ -29,20 +26,20 @@ class TestAuthCapabilities(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> AuthCapabilities:
         """Test AuthCapabilities
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `AuthCapabilities`
         """
-        model = lakefs_sdk.models.auth_capabilities.AuthCapabilities()  # noqa: E501
-        if include_optional :
+        model = AuthCapabilities()
+        if include_optional:
             return AuthCapabilities(
-                invite_user = True, 
+                invite_user = True,
                 forgot_password = True
             )
-        else :
+        else:
             return AuthCapabilities(
         )
         """

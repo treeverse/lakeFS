@@ -18,67 +18,83 @@ import pprint
 import re  # noqa: F401
 import json
 
-
-from typing import Optional
 try:
-    from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr
+    from pydantic.v1 import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 except ImportError:
-    from pydantic import BaseModel, Field, StrictBool, StrictStr
+    from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from typing import Any, ClassVar, Dict, List, Optional
+from typing import Optional, Set
+from typing_extensions import Self
 
 class StorageConfig(BaseModel):
     """
     StorageConfig
-    """
-    blockstore_type: StrictStr = Field(...)
-    blockstore_namespace_example: StrictStr = Field(...)
-    blockstore_namespace_validity_regex: StrictStr = Field(..., alias="blockstore_namespace_ValidityRegex")
+    """ # noqa: E501
+    blockstore_type: StrictStr
+    blockstore_namespace_example: StrictStr
+    blockstore_namespace_validity_regex: StrictStr = Field(alias="blockstore_namespace_ValidityRegex")
     default_namespace_prefix: Optional[StrictStr] = None
-    pre_sign_support: StrictBool = Field(...)
-    pre_sign_support_ui: StrictBool = Field(...)
-    import_support: StrictBool = Field(...)
-    import_validity_regex: StrictStr = Field(...)
+    pre_sign_support: StrictBool
+    pre_sign_support_ui: StrictBool
+    import_support: StrictBool
+    import_validity_regex: StrictStr
     pre_sign_multipart_upload: Optional[StrictBool] = None
-    __properties = ["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "default_namespace_prefix", "pre_sign_support", "pre_sign_support_ui", "import_support", "import_validity_regex", "pre_sign_multipart_upload"]
+    __properties: ClassVar[List[str]] = ["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "default_namespace_prefix", "pre_sign_support", "pre_sign_support_ui", "import_support", "import_validity_regex", "pre_sign_multipart_upload"]
 
-    class Config:
-        """Pydantic configuration"""
-        allow_population_by_field_name = True
-        validate_assignment = True
+    model_config = ConfigDict(
+        populate_by_name=True,
+        validate_assignment=True,
+        protected_namespaces=(),
+    )
+
 
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.dict(by_alias=True))
+        return pprint.pformat(self.model_dump(by_alias=True))
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
+        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> StorageConfig:
+    def from_json(cls, json_str: str) -> Optional[Self]:
         """Create an instance of StorageConfig from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
-    def to_dict(self):
-        """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+    def to_dict(self) -> Dict[str, Any]:
+        """Return the dictionary representation of the model using alias.
+
+        This has the following differences from calling pydantic's
+        `self.model_dump(by_alias=True)`:
+
+        * `None` is only added to the output dict for nullable fields that
+          were set at model initialization. Other fields with value `None`
+          are ignored.
+        """
+        excluded_fields: Set[str] = set([
+        ])
+
+        _dict = self.model_dump(
+            by_alias=True,
+            exclude=excluded_fields,
+            exclude_none=True,
+        )
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> StorageConfig:
+    def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
         """Create an instance of StorageConfig from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return StorageConfig.parse_obj(obj)
+            return cls.model_validate(obj)
 
-        _obj = StorageConfig.parse_obj({
+        _obj = cls.model_validate({
             "blockstore_type": obj.get("blockstore_type"),
             "blockstore_namespace_example": obj.get("blockstore_namespace_example"),
-            "blockstore_namespace_validity_regex": obj.get("blockstore_namespace_ValidityRegex"),
+            "blockstore_namespace_ValidityRegex": obj.get("blockstore_namespace_ValidityRegex"),
             "default_namespace_prefix": obj.get("default_namespace_prefix"),
             "pre_sign_support": obj.get("pre_sign_support"),
             "pre_sign_support_ui": obj.get("pre_sign_support_ui"),

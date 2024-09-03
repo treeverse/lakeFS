@@ -20,12 +20,12 @@ json = "{}"
 # create an instance of StsAuthRequest from a JSON string
 sts_auth_request_instance = StsAuthRequest.from_json(json)
 # print the JSON string representation of the object
-print StsAuthRequest.to_json()
+print(StsAuthRequest.to_json())
 
 # convert the object into a dict
 sts_auth_request_dict = sts_auth_request_instance.to_dict()
 # create an instance of StsAuthRequest from a dict
-sts_auth_request_form_dict = sts_auth_request.from_dict(sts_auth_request_dict)
+sts_auth_request_from_dict = StsAuthRequest.from_dict(sts_auth_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

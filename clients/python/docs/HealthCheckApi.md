@@ -18,8 +18,6 @@ check that the API server is up and running
 
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint

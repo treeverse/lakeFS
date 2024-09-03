@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.external_principal import ExternalPrincipal  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.external_principal import ExternalPrincipal
 
 class TestExternalPrincipal(unittest.TestCase):
     """ExternalPrincipal unit test stubs"""
@@ -29,25 +26,25 @@ class TestExternalPrincipal(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> ExternalPrincipal:
         """Test ExternalPrincipal
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `ExternalPrincipal`
         """
-        model = lakefs_sdk.models.external_principal.ExternalPrincipal()  # noqa: E501
-        if include_optional :
+        model = ExternalPrincipal()
+        if include_optional:
             return ExternalPrincipal(
-                id = '', 
-                user_id = '', 
+                id = '',
+                user_id = '',
                 settings = [
                     {
                         'key' : ''
                         }
                     ]
             )
-        else :
+        else:
             return ExternalPrincipal(
                 id = '',
                 user_id = '',

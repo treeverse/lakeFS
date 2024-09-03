@@ -18,62 +18,78 @@ import pprint
 import re  # noqa: F401
 import json
 
-
-from typing import Dict, Optional
 try:
-    from pydantic.v1 import BaseModel, Field, StrictBool, StrictInt, StrictStr
+    from pydantic.v1 import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr
 except ImportError:
-    from pydantic import BaseModel, Field, StrictBool, StrictInt, StrictStr
+    from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr
+from typing import Any, ClassVar, Dict, List, Optional
+from typing import Optional, Set
+from typing_extensions import Self
 
 class ObjectStageCreation(BaseModel):
     """
     ObjectStageCreation
-    """
-    physical_address: StrictStr = Field(...)
-    checksum: StrictStr = Field(...)
-    size_bytes: StrictInt = Field(...)
-    mtime: Optional[StrictInt] = Field(None, description="Unix Epoch in seconds")
+    """ # noqa: E501
+    physical_address: StrictStr
+    checksum: StrictStr
+    size_bytes: StrictInt
+    mtime: Optional[StrictInt] = Field(default=None, description="Unix Epoch in seconds")
     metadata: Optional[Dict[str, StrictStr]] = None
-    content_type: Optional[StrictStr] = Field(None, description="Object media type")
+    content_type: Optional[StrictStr] = Field(default=None, description="Object media type")
     force: Optional[StrictBool] = False
-    __properties = ["physical_address", "checksum", "size_bytes", "mtime", "metadata", "content_type", "force"]
+    __properties: ClassVar[List[str]] = ["physical_address", "checksum", "size_bytes", "mtime", "metadata", "content_type", "force"]
 
-    class Config:
-        """Pydantic configuration"""
-        allow_population_by_field_name = True
-        validate_assignment = True
+    model_config = ConfigDict(
+        populate_by_name=True,
+        validate_assignment=True,
+        protected_namespaces=(),
+    )
+
 
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.dict(by_alias=True))
+        return pprint.pformat(self.model_dump(by_alias=True))
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
+        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> ObjectStageCreation:
+    def from_json(cls, json_str: str) -> Optional[Self]:
         """Create an instance of ObjectStageCreation from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
-    def to_dict(self):
-        """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+    def to_dict(self) -> Dict[str, Any]:
+        """Return the dictionary representation of the model using alias.
+
+        This has the following differences from calling pydantic's
+        `self.model_dump(by_alias=True)`:
+
+        * `None` is only added to the output dict for nullable fields that
+          were set at model initialization. Other fields with value `None`
+          are ignored.
+        """
+        excluded_fields: Set[str] = set([
+        ])
+
+        _dict = self.model_dump(
+            by_alias=True,
+            exclude=excluded_fields,
+            exclude_none=True,
+        )
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> ObjectStageCreation:
+    def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
         """Create an instance of ObjectStageCreation from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return ObjectStageCreation.parse_obj(obj)
+            return cls.model_validate(obj)
 
-        _obj = ObjectStageCreation.parse_obj({
+        _obj = cls.model_validate({
             "physical_address": obj.get("physical_address"),
             "checksum": obj.get("checksum"),
             "size_bytes": obj.get("size_bytes"),

@@ -20,12 +20,12 @@ json = "{}"
 # create an instance of Diff from a JSON string
 diff_instance = Diff.from_json(json)
 # print the JSON string representation of the object
-print Diff.to_json()
+print(Diff.to_json())
 
 # convert the object into a dict
 diff_dict = diff_instance.to_dict()
 # create an instance of Diff from a dict
-diff_form_dict = diff.from_dict(diff_dict)
+diff_from_dict = Diff.from_dict(diff_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

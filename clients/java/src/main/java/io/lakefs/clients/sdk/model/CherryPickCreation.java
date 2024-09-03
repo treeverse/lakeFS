@@ -38,12 +38,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -51,7 +49,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * CherryPickCreation
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class CherryPickCreation {
   public static final String SERIALIZED_NAME_REF = "ref";
   @SerializedName(SERIALIZED_NAME_REF)
@@ -73,20 +71,18 @@ public class CherryPickCreation {
   }
 
   public CherryPickCreation ref(String ref) {
-    
     this.ref = ref;
     return this;
   }
 
-   /**
+  /**
    * the commit to cherry-pick, given by a ref
    * @return ref
-  **/
+   */
   @javax.annotation.Nonnull
   public String getRef() {
     return ref;
   }
-
 
   public void setRef(String ref) {
     this.ref = ref;
@@ -94,20 +90,18 @@ public class CherryPickCreation {
 
 
   public CherryPickCreation parentNumber(Integer parentNumber) {
-    
     this.parentNumber = parentNumber;
     return this;
   }
 
-   /**
+  /**
    * When cherry-picking a merge commit, the parent number (starting from 1) with which to perform the diff. The default branch is parent 1. 
    * @return parentNumber
-  **/
+   */
   @javax.annotation.Nullable
   public Integer getParentNumber() {
     return parentNumber;
   }
-
 
   public void setParentNumber(Integer parentNumber) {
     this.parentNumber = parentNumber;
@@ -115,20 +109,18 @@ public class CherryPickCreation {
 
 
   public CherryPickCreation commitOverrides(CommitOverrides commitOverrides) {
-    
     this.commitOverrides = commitOverrides;
     return this;
   }
 
-   /**
+  /**
    * Get commitOverrides
    * @return commitOverrides
-  **/
+   */
   @javax.annotation.Nullable
   public CommitOverrides getCommitOverrides() {
     return commitOverrides;
   }
-
 
   public void setCommitOverrides(CommitOverrides commitOverrides) {
     this.commitOverrides = commitOverrides;
@@ -136,20 +128,18 @@ public class CherryPickCreation {
 
 
   public CherryPickCreation force(Boolean force) {
-    
     this.force = force;
     return this;
   }
 
-   /**
+  /**
    * Get force
    * @return force
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getForce() {
     return force;
   }
-
 
   public void setForce(Boolean force) {
     this.force = force;
@@ -263,12 +253,12 @@ public class CherryPickCreation {
     openapiRequiredFields.add("ref");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to CherryPickCreation
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to CherryPickCreation
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!CherryPickCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -320,7 +310,12 @@ public class CherryPickCreation {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -359,22 +354,22 @@ public class CherryPickCreation {
     }
   }
 
- /**
-  * Create an instance of CherryPickCreation given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of CherryPickCreation
-  * @throws IOException if the JSON string is invalid with respect to CherryPickCreation
-  */
+  /**
+   * Create an instance of CherryPickCreation given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of CherryPickCreation
+   * @throws IOException if the JSON string is invalid with respect to CherryPickCreation
+   */
   public static CherryPickCreation fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, CherryPickCreation.class);
   }
 
- /**
-  * Convert an instance of CherryPickCreation to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of CherryPickCreation to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

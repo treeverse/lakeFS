@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.error_no_acl import ErrorNoACL  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.error_no_acl import ErrorNoACL
 
 class TestErrorNoACL(unittest.TestCase):
     """ErrorNoACL unit test stubs"""
@@ -29,20 +26,20 @@ class TestErrorNoACL(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> ErrorNoACL:
         """Test ErrorNoACL
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `ErrorNoACL`
         """
-        model = lakefs_sdk.models.error_no_acl.ErrorNoACL()  # noqa: E501
-        if include_optional :
+        model = ErrorNoACL()
+        if include_optional:
             return ErrorNoACL(
-                message = '', 
+                message = '',
                 no_acl = True
             )
-        else :
+        else:
             return ErrorNoACL(
                 message = '',
         )

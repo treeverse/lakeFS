@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.setup import Setup  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.setup import Setup
 
 class TestSetup(unittest.TestCase):
     """Setup unit test stubs"""
@@ -29,22 +26,22 @@ class TestSetup(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> Setup:
         """Test Setup
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `Setup`
         """
-        model = lakefs_sdk.models.setup.Setup()  # noqa: E501
-        if include_optional :
+        model = Setup()
+        if include_optional:
             return Setup(
-                username = '', 
+                username = '',
                 key = lakefs_sdk.models.access_key_credentials.AccessKeyCredentials(
                     access_key_id = 'AKIAIOSFODNN7EXAMPLE', 
                     secret_access_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY', )
             )
-        else :
+        else:
             return Setup(
                 username = '',
         )

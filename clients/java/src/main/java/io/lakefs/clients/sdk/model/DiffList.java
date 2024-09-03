@@ -41,12 +41,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -54,7 +52,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * DiffList
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class DiffList {
   public static final String SERIALIZED_NAME_PAGINATION = "pagination";
   @SerializedName(SERIALIZED_NAME_PAGINATION)
@@ -68,20 +66,18 @@ public class DiffList {
   }
 
   public DiffList pagination(Pagination pagination) {
-    
     this.pagination = pagination;
     return this;
   }
 
-   /**
+  /**
    * Get pagination
    * @return pagination
-  **/
+   */
   @javax.annotation.Nonnull
   public Pagination getPagination() {
     return pagination;
   }
-
 
   public void setPagination(Pagination pagination) {
     this.pagination = pagination;
@@ -89,7 +85,6 @@ public class DiffList {
 
 
   public DiffList results(List<Diff> results) {
-    
     this.results = results;
     return this;
   }
@@ -102,15 +97,14 @@ public class DiffList {
     return this;
   }
 
-   /**
+  /**
    * Get results
    * @return results
-  **/
+   */
   @javax.annotation.Nonnull
   public List<Diff> getResults() {
     return results;
   }
-
 
   public void setResults(List<Diff> results) {
     this.results = results;
@@ -219,12 +213,12 @@ public class DiffList {
     openapiRequiredFields.add("results");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to DiffList
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to DiffList
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!DiffList.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -281,7 +275,12 @@ public class DiffList {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -320,22 +319,22 @@ public class DiffList {
     }
   }
 
- /**
-  * Create an instance of DiffList given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of DiffList
-  * @throws IOException if the JSON string is invalid with respect to DiffList
-  */
+  /**
+   * Create an instance of DiffList given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of DiffList
+   * @throws IOException if the JSON string is invalid with respect to DiffList
+   */
   public static DiffList fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, DiffList.class);
   }
 
- /**
-  * Convert an instance of DiffList to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of DiffList to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

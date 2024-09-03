@@ -41,12 +41,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -54,7 +52,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * ImportCreation
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.8.0")
 public class ImportCreation {
   public static final String SERIALIZED_NAME_PATHS = "paths";
   @SerializedName(SERIALIZED_NAME_PATHS)
@@ -72,7 +70,6 @@ public class ImportCreation {
   }
 
   public ImportCreation paths(List<ImportLocation> paths) {
-    
     this.paths = paths;
     return this;
   }
@@ -85,15 +82,14 @@ public class ImportCreation {
     return this;
   }
 
-   /**
+  /**
    * Get paths
    * @return paths
-  **/
+   */
   @javax.annotation.Nonnull
   public List<ImportLocation> getPaths() {
     return paths;
   }
-
 
   public void setPaths(List<ImportLocation> paths) {
     this.paths = paths;
@@ -101,20 +97,18 @@ public class ImportCreation {
 
 
   public ImportCreation commit(CommitCreation commit) {
-    
     this.commit = commit;
     return this;
   }
 
-   /**
+  /**
    * Get commit
    * @return commit
-  **/
+   */
   @javax.annotation.Nonnull
   public CommitCreation getCommit() {
     return commit;
   }
-
 
   public void setCommit(CommitCreation commit) {
     this.commit = commit;
@@ -122,20 +116,18 @@ public class ImportCreation {
 
 
   public ImportCreation force(Boolean force) {
-    
     this.force = force;
     return this;
   }
 
-   /**
+  /**
    * Get force
    * @return force
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getForce() {
     return force;
   }
-
 
   public void setForce(Boolean force) {
     this.force = force;
@@ -247,12 +239,12 @@ public class ImportCreation {
     openapiRequiredFields.add("commit");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to ImportCreation
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ImportCreation
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!ImportCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -309,7 +301,12 @@ public class ImportCreation {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -348,22 +345,22 @@ public class ImportCreation {
     }
   }
 
- /**
-  * Create an instance of ImportCreation given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of ImportCreation
-  * @throws IOException if the JSON string is invalid with respect to ImportCreation
-  */
+  /**
+   * Create an instance of ImportCreation given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ImportCreation
+   * @throws IOException if the JSON string is invalid with respect to ImportCreation
+   */
   public static ImportCreation fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, ImportCreation.class);
   }
 
- /**
-  * Convert an instance of ImportCreation to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of ImportCreation to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }
