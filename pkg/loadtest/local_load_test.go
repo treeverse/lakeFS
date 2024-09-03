@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/contrib/auth/acl"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -51,7 +50,7 @@ func TestLocalLoad(t *testing.T) {
 	}
 
 	kvStore := kvtest.GetStore(ctx, t)
-	authService := acl.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
+	authService := auth.NewBasicAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{}, logging.ContextUnavailable())
 	meta := auth.NewKVMetadataManager("local_load_test", conf.Installation.FixedID, conf.Database.Type, kvStore)
 
 	blockstoreType := os.Getenv(testutil.EnvKeyUseBlockAdapter)
@@ -74,7 +73,7 @@ func TestLocalLoad(t *testing.T) {
 	actionsService := actions.NewService(ctx, actions.NewActionsKVStore(kvStore), source, outputWriter, &actions.DecreasingIDGenerator{}, &stats.NullCollector{}, actions.Config{Enabled: true}, "")
 	c.SetHooksHandler(actionsService)
 
-	credentials, err := setup.CreateAdminUser(ctx, authService, conf, superuser)
+	credentials, err := setup.AddAdminUser(ctx, authService, superuser, false)
 	testutil.Must(t, err)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)

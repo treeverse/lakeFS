@@ -203,6 +203,13 @@ func (s *BasicAuthService) GetCredentials(ctx context.Context, accessKeyID strin
 	})
 }
 
+func (s *BasicAuthService) GetCredentialsForUser(ctx context.Context, username, accessKeyID string) (*model.Credential, error) {
+	if _, err := s.GetUser(ctx, username); err != nil {
+		return nil, err
+	}
+	return s.GetCredentials(ctx, accessKeyID)
+}
+
 func (s *BasicAuthService) CreateCredentials(ctx context.Context, username string) (*model.Credential, error) {
 	accessKeyID := keys.GenAccessKeyID()
 	secretAccessKey := keys.GenSecretAccessKey()
@@ -428,10 +435,6 @@ func (s *BasicAuthService) ListPolicies(_ context.Context, _ *model.PaginationPa
 
 func (s *BasicAuthService) DeleteCredentials(_ context.Context, _, _ string) error {
 	return ErrNotImplemented
-}
-
-func (s *BasicAuthService) GetCredentialsForUser(_ context.Context, _, _ string) (*model.Credential, error) {
-	return nil, ErrNotImplemented
 }
 
 func (s *BasicAuthService) ListUserCredentials(_ context.Context, _ string, _ *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {

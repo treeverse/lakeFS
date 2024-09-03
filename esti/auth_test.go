@@ -5,12 +5,14 @@ import (
 	"net/http"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
@@ -171,14 +173,14 @@ func TestReaderPermissions(t *testing.T) {
 	if isBasicAuth() {
 		t.Skip("Unsupported in basic auth configuration")
 	}
-	ctx, logger, repo := setupTest(t)
+	ctx, log, repo := setupTest(t)
 	groups := []string{"Readers", "Viewers"}
 
 	// map group names to IDs
 	_, groupIDs := mapGroupNamesToIDs(t, ctx, groups)
 
 	// generate the reader client
-	readerClient := newClientFromGroup(t, ctx, logger, "reader", groupIDs)
+	readerClient := newClientFromGroup(t, ctx, log, "reader", groupIDs)
 
 	// listing the available branches should succeed
 	resListBranches, err := readerClient.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{})
@@ -207,8 +209,158 @@ func TestReaderPermissions(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, resDeleteRepo.StatusCode(), "Reader unexpectedly did not receive unauthorized response while deleting repo")
 }
 
+func TestCreateRepo_Unauthorized(t *testing.T) {
+	if isBasicAuth() {
+		t.Skip("Unsupported in basic auth configuration")
+	}
+	ctx := context.Background()
+	name := generateUniqueRepositoryName()
+	storageNamespace := generateUniqueStorageNamespace(name)
+	name = makeRepositoryName(name)
+	groups := []string{"Readers", "Viewers"}
+
+	// map group names to IDs
+	_, groupIDs := mapGroupNamesToIDs(t, ctx, groups)
+
+	// generate the reader client
+	readerClient := newClientFromGroup(t, ctx, logger, t.Name(), groupIDs)
+
+	resp, err := readerClient.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    apiutil.Ptr("main"),
+		Name:             name,
+		StorageNamespace: storageNamespace,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp.JSON401)
+	if resp.JSON401.Message != auth.ErrInsufficientPermissions.Error() {
+		t.Fatalf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
+	}
+}
+
+func TestRepoMetadata_Unauthorized(t *testing.T) {
+	if isBasicAuth() {
+		t.Skip("Unsupported in basic auth configuration")
+	}
+	ctx, log, repo := setupTest(t)
+
+	// generate client with no group association
+	clt := newClientFromGroup(t, ctx, log, "none", nil)
+	t.Run("set", func(t *testing.T) {
+		resp, err := clt.SetRepositoryMetadataWithResponse(ctx, repo, apigen.SetRepositoryMetadataJSONRequestBody{
+			Metadata: apigen.RepositoryMetadataSet_Metadata{
+				AdditionalProperties: map[string]string{"foo": "bar"},
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON401)
+		if resp.JSON401.Message != auth.ErrInsufficientPermissions.Error() {
+			t.Errorf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
+		}
+	})
+	t.Run("delete", func(t *testing.T) {
+		resp, err := clt.DeleteRepositoryMetadataWithResponse(ctx, repo, apigen.DeleteRepositoryMetadataJSONRequestBody{Keys: []string{"foo"}})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON401)
+		if resp.JSON401.Message != auth.ErrInsufficientPermissions.Error() {
+			t.Errorf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
+		}
+	})
+
+	t.Run("get", func(t *testing.T) {
+		resp, err := clt.GetRepositoryMetadataWithResponse(ctx, repo)
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON401)
+		if resp.JSON401.Message != auth.ErrInsufficientPermissions.Error() {
+			t.Errorf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
+		}
+	})
+}
+
+func TestCreatePolicy(t *testing.T) {
+	if isBasicAuth() {
+		t.Skip("Unsupported in basic auth configuration")
+	}
+	ctx := context.Background()
+	//ctx, log, repo := setupTest(t)
+
+	t.Run("valid_policy", func(t *testing.T) {
+		resp, err := client.CreatePolicyWithResponse(ctx, apigen.CreatePolicyJSONRequestBody{
+			CreationDate: apiutil.Ptr(time.Now().Unix()),
+			Id:           "ValidPolicyID",
+			Statement: []apigen.Statement{
+				{
+					Action:   []string{"fs:ReadObject"},
+					Effect:   "allow",
+					Resource: "arn:lakefs:fs:::repository/foo/object/*",
+				},
+			},
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON201, "wrong response: %s", resp.Status())
+	})
+
+	t.Run("invalid_policy_action", func(t *testing.T) {
+		resp, err := client.CreatePolicyWithResponse(ctx, apigen.CreatePolicyJSONRequestBody{
+			CreationDate: apiutil.Ptr(time.Now().Unix()),
+			Id:           "InvalidPolicyID",
+			Statement: []apigen.Statement{
+				{
+					Action:   []string{"fsx:ReadObject"},
+					Effect:   "allow",
+					Resource: "arn:lakefs:fs:::repository/foo/object/*",
+				},
+			},
+		})
+		require.NoError(t, err)
+		// TODO (niro): https://github.com/treeverse/fluffy/issues/320
+		//require.NotNil(t, resp.JSON400, "wrong response: %s", resp.Status())
+		require.Nil(t, resp.JSON201)
+	})
+}
+
+func TestBranchProtectionRules_Unauthorized(t *testing.T) {
+	if isBasicAuth() {
+		t.Skip("Unsupported in basic auth configuration")
+	}
+	ctx, log, repo := setupTest(t)
+
+	// generate client with no group association
+	clt := newClientFromGroup(t, ctx, log, "none", nil)
+	respPreflight, err := clt.CreateBranchProtectionRulePreflightWithResponse(ctx, repo)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusUnauthorized, respPreflight.StatusCode())
+
+	// the result of an actual call to the endpoint should have the same result
+	resp, err := clt.InternalCreateBranchProtectionRuleWithResponse(ctx, repo, apigen.InternalCreateBranchProtectionRuleJSONRequestBody{
+		Pattern: "main",
+	})
+	require.NoError(t, err)
+	require.Equal(t, respPreflight.StatusCode(), resp.StatusCode())
+}
+
+func TestGarbageCollectionRules_Unauthorized(t *testing.T) {
+	if isBasicAuth() {
+		t.Skip("Unsupported in basic auth configuration")
+	}
+	ctx, log, repo := setupTest(t)
+
+	// generate client with no group association
+	clt := newClientFromGroup(t, ctx, log, "none", nil)
+	respPreflight, err := clt.SetGarbageCollectionRulesPreflightWithResponse(ctx, repo)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusUnauthorized, respPreflight.StatusCode())
+
+	// the result of an actual call to the endpoint should have the same result
+	resp, err := clt.SetGCRulesWithResponse(ctx, repo, apigen.SetGCRulesJSONRequestBody{
+		Branches: []apigen.GarbageCollectionRule{{BranchId: "main", RetentionDays: 1}}, DefaultRetentionDays: 5,
+	})
+	require.NoError(t, err)
+	require.Equal(t, respPreflight.StatusCode(), resp.StatusCode())
+}
+
 // Creates a client with a user of the given group
 func newClientFromGroup(t *testing.T, context context.Context, logger logging.Logger, id string, groupIDs []string) *apigen.ClientWithResponses {
+	t.Helper()
 	endpointURL := testutil.ParseEndpointURL(logger, viper.GetString("endpoint_url")) // defined in setup.go
 
 	userID := "test-user-" + id
@@ -217,13 +369,11 @@ func newClientFromGroup(t *testing.T, context context.Context, logger logging.Lo
 	})
 	require.NoErrorf(t, err, "Failed to create user %s", userID)
 
-	addGroupStatusCodes := make([]int, len(groupIDs))
-	for i, groupID := range groupIDs {
+	for _, groupID := range groupIDs {
 		resp, err := client.AddGroupMembershipWithResponse(context, groupID, userID)
 		require.NoErrorf(t, err, "Failed to add group %s to user %s", groupID, userID)
-		addGroupStatusCodes[i] = resp.StatusCode()
+		require.Equal(t, http.StatusCreated, resp.StatusCode())
 	}
-	require.Containsf(t, addGroupStatusCodes, http.StatusCreated, "Failed to add group membership to user %s", userID)
 
 	// give the user access credentials
 	r, err := client.CreateCredentialsWithResponse(context, userID)
@@ -235,6 +385,98 @@ func newClientFromGroup(t *testing.T, context context.Context, logger logging.Lo
 	require.NoError(t, err, "failed to initialize client with group")
 
 	return cli
+}
+
+func TestUpdatePolicy(t *testing.T) {
+	if isBasicAuth() {
+		t.Skip("Unsupported in basic auth configuration")
+	}
+	ctx := context.Background()
+
+	// test policy
+	now := apiutil.Ptr(time.Now().Unix())
+	const existingPolicyID = "TestUpdatePolicy"
+	response, err := client.CreatePolicyWithResponse(ctx, apigen.CreatePolicyJSONRequestBody{
+		CreationDate: now,
+		Id:           existingPolicyID,
+		Statement: []apigen.Statement{
+			{
+				Action: []string{
+					"fs:Read*",
+					"fs:List*",
+				},
+				Effect:   "deny",
+				Resource: "*",
+			},
+		},
+	})
+	testutil.Must(t, err)
+	if response.JSON201 == nil {
+		t.Fatal("Failed to create test policy", response.Status())
+	}
+
+	t.Run("unknown", func(t *testing.T) {
+		const policyID = "UnknownPolicy"
+		updatePolicyResponse, err := client.UpdatePolicyWithResponse(ctx, policyID, apigen.UpdatePolicyJSONRequestBody{
+			CreationDate: now,
+			Id:           policyID,
+			Statement: []apigen.Statement{
+				{
+					Action: []string{
+						"fs:Read*",
+						"fs:List*",
+					},
+					Effect:   "allow",
+					Resource: "*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		if updatePolicyResponse.JSON404 == nil {
+			t.Errorf("Update unknown policy should fail with 404: %s", updatePolicyResponse.Status())
+		}
+	})
+
+	t.Run("change_effect", func(t *testing.T) {
+		updatePolicyResponse, err := client.UpdatePolicyWithResponse(ctx, existingPolicyID, apigen.UpdatePolicyJSONRequestBody{
+			CreationDate: now,
+			Id:           existingPolicyID,
+			Statement: []apigen.Statement{
+				{
+					Action: []string{
+						"fs:Read*",
+						"fs:List*",
+					},
+					Effect:   "allow",
+					Resource: "*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		if updatePolicyResponse.JSON200 == nil {
+			t.Errorf("Update policy failed: %s", updatePolicyResponse.Status())
+		}
+	})
+
+	t.Run("change_policy_id", func(t *testing.T) {
+		updatePolicyResponse, err := client.UpdatePolicyWithResponse(ctx, "SomethingElse", apigen.UpdatePolicyJSONRequestBody{
+			CreationDate: now,
+			Id:           existingPolicyID,
+			Statement: []apigen.Statement{
+				{
+					Action: []string{
+						"fs:Read*",
+					},
+					Effect:   "allow",
+					Resource: "*",
+				},
+			},
+		})
+		testutil.Must(t, err)
+		if updatePolicyResponse.JSON400 == nil {
+			t.Errorf("Update policy with different id should fail with 400: %s", updatePolicyResponse.Status())
+		}
+	})
 }
 
 // Tests merge with different clients
