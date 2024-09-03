@@ -74,10 +74,10 @@ func makeRepositoryName(name string) string {
 func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
 	ctx := context.Background()
 	name := makeRepositoryName(t.Name())
-	logger := logger.WithField("testName", name)
+	log := logger.WithField("testName", name)
 	repo := createRepositoryForTest(ctx, t)
-	logger.WithField("repo", repo).Info("Created repository")
-	return ctx, logger, repo
+	log.WithField("repo", repo).Info("Created repository")
+	return ctx, log, repo
 }
 
 func tearDownTest(repoName string) {

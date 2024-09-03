@@ -1127,32 +1127,6 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("create repo user unauthorized", func(t *testing.T) {
-		repo := testUniqueRepoName()
-
-		// create a user
-		creds := createUserWithDefaultGroup(t, clt)
-		// create a client with the user
-		regClt := setupClientByEndpoint(t, deps.server.URL, creds.AccessKeyID, creds.SecretAccessKey)
-		resp, err := regClt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
-			DefaultBranch:    apiutil.Ptr("main"),
-			Name:             repo,
-			StorageNamespace: onBlock(deps, "foo-bucket-1"),
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if resp == nil {
-			t.Fatal("CreateRepository missing response")
-		}
-		if resp.JSON401 == nil {
-			t.Fatal("expected status code 401 for user forbidden, got ", resp.StatusCode())
-		}
-		if resp.JSON401.Message != auth.ErrInsufficientPermissions.Error() {
-			t.Fatalf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
-		}
-	})
-
 	t.Run("create repo with conflicting storage type", func(t *testing.T) {
 		repo := testUniqueRepoName()
 		resp, _ := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
@@ -1338,24 +1312,6 @@ func TestController_SetRepositoryMetadataHandler(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON404)
 	})
-
-	t.Run("set repo metadata user unauthorized", func(t *testing.T) {
-		repoName := testUniqueRepoName()
-		createResp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
-			DefaultBranch:    apiutil.Ptr("main"),
-			Name:             repoName,
-			StorageNamespace: onBlock(deps, "foo-bucket-3"),
-		})
-		verifyResponseOK(t, createResp, err)
-
-		// create a user
-		creds := createUserWithDefaultGroup(t, clt)
-		// create a client with the user
-		regClt := setupClientByEndpoint(t, deps.server.URL, creds.AccessKeyID, creds.SecretAccessKey)
-		resp, err := regClt.SetRepositoryMetadataWithResponse(ctx, repoName, apigen.SetRepositoryMetadataJSONRequestBody{Metadata: apigen.RepositoryMetadataSet_Metadata{AdditionalProperties: map[string]string{"foo": "bar"}}})
-		require.NoError(t, err)
-		require.NotNil(t, resp.JSON401)
-	})
 }
 
 func TestController_DeleteRepositoryMetadataHandler(t *testing.T) {
@@ -1442,24 +1398,6 @@ func TestController_DeleteRepositoryMetadataHandler(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON404)
 	})
-
-	t.Run("delete repo metadata user unauthorized", func(t *testing.T) {
-		repoName := testUniqueRepoName()
-		createResp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
-			DefaultBranch:    apiutil.Ptr("main"),
-			Name:             repoName,
-			StorageNamespace: onBlock(deps, "foo-bucket-3"),
-		})
-		verifyResponseOK(t, createResp, err)
-
-		// create a user
-		creds := createUserWithDefaultGroup(t, clt)
-		// create a client with the user
-		regClt := setupClientByEndpoint(t, deps.server.URL, creds.AccessKeyID, creds.SecretAccessKey)
-		resp, err := regClt.DeleteRepositoryMetadataWithResponse(ctx, repoName, apigen.DeleteRepositoryMetadataJSONRequestBody{Keys: []string{"foo"}})
-		require.NoError(t, err)
-		require.NotNil(t, resp.JSON401)
-	})
 }
 
 func TestController_GetRepositoryMetadataHandler(t *testing.T) {
@@ -1505,24 +1443,6 @@ func TestController_GetRepositoryMetadataHandler(t *testing.T) {
 		resp, err := clt.GetRepositoryMetadataWithResponse(ctx, repoName)
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON404)
-	})
-
-	t.Run("get repo metadata user unauthorized", func(t *testing.T) {
-		repoName := testUniqueRepoName()
-		createResp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
-			DefaultBranch:    apiutil.Ptr("main"),
-			Name:             repoName,
-			StorageNamespace: onBlock(deps, "foo-bucket-3"),
-		})
-		verifyResponseOK(t, createResp, err)
-
-		// create a user
-		creds := createUserWithDefaultGroup(t, clt)
-		// create a client with the user
-		regClt := setupClientByEndpoint(t, deps.server.URL, creds.AccessKeyID, creds.SecretAccessKey)
-		resp, err := regClt.GetRepositoryMetadataWithResponse(ctx, repoName)
-		require.NoError(t, err)
-		require.NotNil(t, resp.JSON401)
 	})
 }
 
@@ -3259,38 +3179,6 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 func TestController_CreatePolicyHandler(t *testing.T) {
 	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
-	t.Run("valid_policy", func(t *testing.T) {
-		resp, err := clt.CreatePolicyWithResponse(ctx, apigen.CreatePolicyJSONRequestBody{
-			CreationDate: apiutil.Ptr(time.Now().Unix()),
-			Id:           "ValidPolicyID",
-			Statement: []apigen.Statement{
-				{
-					Action:   []string{"fs:ReadObject"},
-					Effect:   "allow",
-					Resource: "arn:lakefs:fs:::repository/foo/object/*",
-				},
-			},
-		})
-		verifyResponseOK(t, resp, err)
-	})
-
-	t.Run("invalid_policy_action", func(t *testing.T) {
-		resp, err := clt.CreatePolicyWithResponse(ctx, apigen.CreatePolicyJSONRequestBody{
-			CreationDate: apiutil.Ptr(time.Now().Unix()),
-			Id:           "ValidPolicyID",
-			Statement: []apigen.Statement{
-				{
-					Action:   []string{"fsx:ReadObject"},
-					Effect:   "allow",
-					Resource: "arn:lakefs:fs:::repository/foo/object/*",
-				},
-			},
-		})
-		testutil.Must(t, err)
-		if resp.HTTPResponse.StatusCode != http.StatusBadRequest {
-			t.Fatalf("expected error creating invalid policy: action")
-		}
-	})
 
 	t.Run("invalid_policy_effect", func(t *testing.T) {
 		resp, err := clt.CreatePolicyWithResponse(ctx, apigen.CreatePolicyJSONRequestBody{
@@ -4284,36 +4172,33 @@ func TestController_CherryPick(t *testing.T) {
 	})
 }
 
-func TestController_UpdatePolicy(t *testing.T) {
+func TestController_Policy(t *testing.T) {
 	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
+	const policyID = "TestPolicy"
 
 	// test policy
-	now := apiutil.Ptr(time.Now().Unix())
-	const existingPolicyID = "TestUpdatePolicy"
-	response, err := clt.CreatePolicyWithResponse(ctx, apigen.CreatePolicyJSONRequestBody{
-		CreationDate: now,
-		Id:           existingPolicyID,
-		Statement: []apigen.Statement{
-			{
-				Action: []string{
-					"fs:Read*",
-					"fs:List*",
+	t.Run("create", func(t *testing.T) {
+		resp, err := clt.CreatePolicyWithResponse(ctx, apigen.CreatePolicyJSONRequestBody{
+			CreationDate: apiutil.Ptr(time.Now().Unix()),
+			Id:           policyID,
+			Statement: []apigen.Statement{
+				{
+					Action: []string{
+						"fs:Read*",
+						"fs:List*",
+					},
+					Effect:   "deny",
+					Resource: "*",
 				},
-				Effect:   "deny",
-				Resource: "*",
 			},
-		},
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNotImplemented, resp.StatusCode())
 	})
-	testutil.Must(t, err)
-	if response.JSON201 == nil {
-		t.Fatal("Failed to create test policy", response.Status())
-	}
-
-	t.Run("unknown", func(t *testing.T) {
-		const policyID = "UnknownPolicy"
-		updatePolicyResponse, err := clt.UpdatePolicyWithResponse(ctx, policyID, apigen.UpdatePolicyJSONRequestBody{
-			CreationDate: now,
+	t.Run("update", func(t *testing.T) {
+		resp, err := clt.UpdatePolicyWithResponse(ctx, policyID, apigen.UpdatePolicyJSONRequestBody{
+			CreationDate: apiutil.Ptr(time.Now().Unix()),
 			Id:           policyID,
 			Statement: []apigen.Statement{
 				{
@@ -4326,51 +4211,15 @@ func TestController_UpdatePolicy(t *testing.T) {
 				},
 			},
 		})
-		testutil.Must(t, err)
-		if updatePolicyResponse.JSON404 == nil {
-			t.Errorf("Update unknown policy should fail with 404: %s", updatePolicyResponse.Status())
-		}
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNotImplemented, resp.StatusCode())
 	})
 
-	t.Run("change_effect", func(t *testing.T) {
-		updatePolicyResponse, err := clt.UpdatePolicyWithResponse(ctx, existingPolicyID, apigen.UpdatePolicyJSONRequestBody{
-			CreationDate: now,
-			Id:           existingPolicyID,
-			Statement: []apigen.Statement{
-				{
-					Action: []string{
-						"fs:Read*",
-						"fs:List*",
-					},
-					Effect:   "allow",
-					Resource: "*",
-				},
-			},
-		})
+	t.Run("delete", func(t *testing.T) {
+		resp, err := clt.DeletePolicyWithResponse(ctx, policyID)
 		testutil.Must(t, err)
-		if updatePolicyResponse.JSON200 == nil {
-			t.Errorf("Update policy failed: %s", updatePolicyResponse.Status())
-		}
-	})
-
-	t.Run("change_policy_id", func(t *testing.T) {
-		updatePolicyResponse, err := clt.UpdatePolicyWithResponse(ctx, "SomethingElse", apigen.UpdatePolicyJSONRequestBody{
-			CreationDate: now,
-			Id:           existingPolicyID,
-			Statement: []apigen.Statement{
-				{
-					Action: []string{
-						"fs:Read*",
-					},
-					Effect:   "allow",
-					Resource: "*",
-				},
-			},
-		})
-		testutil.Must(t, err)
-		if updatePolicyResponse.JSON400 == nil {
-			t.Errorf("Update policy with different id should fail with 400: %s", updatePolicyResponse.Status())
-		}
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNotImplemented, resp.StatusCode())
 	})
 }
 
@@ -5105,60 +4954,24 @@ func TestController_LocalAdapter_StageObject(t *testing.T) {
 
 func TestController_BranchProtectionRules(t *testing.T) {
 	adminClt, deps := setupClientWithAdmin(t)
-	creds := createUserWithDefaultGroup(t, adminClt)
-	regClt := setupClientByEndpoint(t, deps.server.URL, creds.AccessKeyID, creds.SecretAccessKey)
 
-	testCases := []struct {
-		clt                apigen.ClientWithResponsesInterface
-		expectedHttpStatus int
-		err                error
-		description        string
-	}{
-		{
-			clt:                adminClt,
-			expectedHttpStatus: http.StatusNoContent,
-			description:        "success - admin user",
-		},
-		{
-			clt:                regClt,
-			expectedHttpStatus: http.StatusUnauthorized,
-			description:        "failure - regular user",
-		},
-	}
+	t.Run("admin", func(t *testing.T) {
+		currCtx := context.Background()
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(currCtx, repo, onBlock(deps, repo), "main", false)
+		testutil.MustDo(t, "create repository", err)
 
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			currCtx := context.Background()
-			repo := testUniqueRepoName()
-			_, err := deps.catalog.CreateRepository(currCtx, repo, onBlock(deps, repo), "main", false)
-			testutil.MustDo(t, "create repository", err)
+		respPreflight, err := adminClt.CreateBranchProtectionRulePreflightWithResponse(currCtx, repo)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNoContent, respPreflight.StatusCode())
 
-			respPreflight, err := tc.clt.CreateBranchProtectionRulePreflightWithResponse(currCtx, repo)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if respPreflight == nil {
-				t.Fatal("CreateBranchProtectionRulePreflightWithResponse got no response")
-			}
-			if respPreflight.StatusCode() != tc.expectedHttpStatus {
-				t.Fatalf("CreateBranchProtectionRulePreflightWithResponse expected %d, got %d", tc.expectedHttpStatus, respPreflight.StatusCode())
-			}
-
-			// the result of an actual call to the endpoint should have the same result
-			resp, err := tc.clt.InternalCreateBranchProtectionRuleWithResponse(currCtx, repo, apigen.InternalCreateBranchProtectionRuleJSONRequestBody{
-				Pattern: "main",
-			})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if resp == nil {
-				t.Fatal("InternalCreateBranchProtectionRuleWithResponse got no response")
-			}
-			if resp.StatusCode() != respPreflight.StatusCode() {
-				t.Fatalf("InternalCreateBranchProtectionRuleWithResponse and preflight should return the same unauthorized status expected %d, got %d", respPreflight.StatusCode(), resp.StatusCode())
-			}
+		// the result of an actual call to the endpoint should have the same result
+		resp, err := adminClt.InternalCreateBranchProtectionRuleWithResponse(currCtx, repo, apigen.InternalCreateBranchProtectionRuleJSONRequestBody{
+			Pattern: "main",
 		})
-	}
+		require.NoError(t, err)
+		require.Equal(t, respPreflight.StatusCode(), resp.StatusCode())
+	})
 
 	t.Run("read-only repo", func(t *testing.T) {
 		currCtx := context.Background()
@@ -5181,61 +4994,24 @@ func TestController_BranchProtectionRules(t *testing.T) {
 
 func TestController_GarbageCollectionRules(t *testing.T) {
 	adminClt, deps := setupClientWithAdmin(t)
-	creds := createUserWithDefaultGroup(t, adminClt)
-	regClt := setupClientByEndpoint(t, deps.server.URL, creds.AccessKeyID, creds.SecretAccessKey)
 
-	testCases := []struct {
-		clt                apigen.ClientWithResponsesInterface
-		expectedHttpStatus int
-		err                error
-		description        string
-	}{
-		{
-			clt:                adminClt,
-			expectedHttpStatus: http.StatusNoContent,
-			description:        "success - admin user",
-		},
-		{
-			clt:                regClt,
-			expectedHttpStatus: http.StatusUnauthorized,
-			description:        "failure - regular user",
-		},
-	}
+	t.Run("admin", func(t *testing.T) {
+		currCtx := context.Background()
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(currCtx, repo, onBlock(deps, repo), "main", false)
+		testutil.MustDo(t, "create repository", err)
 
-	for _, tc := range testCases {
-		t.Run(tc.description, func(t *testing.T) {
-			currCtx := context.Background()
-			repo := testUniqueRepoName()
-			_, err := deps.catalog.CreateRepository(currCtx, repo, onBlock(deps, repo), "main", false)
-			testutil.MustDo(t, "create repository", err)
+		respPreflight, err := adminClt.SetGarbageCollectionRulesPreflightWithResponse(currCtx, repo)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusNoContent, respPreflight.StatusCode())
 
-			respPreflight, err := tc.clt.SetGarbageCollectionRulesPreflightWithResponse(currCtx, repo)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if respPreflight == nil {
-				t.Fatal("SetGarbageCollectionRulesPreflightWithResponse got no response")
-			}
-
-			if respPreflight.StatusCode() != tc.expectedHttpStatus {
-				t.Fatalf("SetGarbageCollectionRulesPreflightWithResponse expected %d, got %d", tc.expectedHttpStatus, respPreflight.StatusCode())
-			}
-
-			// the result of an actual call to the endpoint should have the same result
-			resp, err := tc.clt.SetGCRulesWithResponse(currCtx, repo, apigen.SetGCRulesJSONRequestBody{
-				Branches: []apigen.GarbageCollectionRule{{BranchId: "main", RetentionDays: 1}}, DefaultRetentionDays: 5,
-			})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if resp == nil {
-				t.Fatal("SetGCRulesWithResponse got no response")
-			}
-			if resp.Status() != respPreflight.Status() {
-				t.Fatalf("SetGCRulesWithResponse and preflight should return the same status. expected %d, got %d", respPreflight.StatusCode(), resp.StatusCode())
-			}
+		// the result of an actual call to the endpoint should have the same result
+		resp, err := adminClt.SetGCRulesWithResponse(currCtx, repo, apigen.SetGCRulesJSONRequestBody{
+			Branches: []apigen.GarbageCollectionRule{{BranchId: "main", RetentionDays: 1}}, DefaultRetentionDays: 5,
 		})
-	}
+		require.NoError(t, err)
+		require.Equal(t, respPreflight.StatusCode(), resp.StatusCode())
+	})
 
 	t.Run("read-only repo", func(t *testing.T) {
 		currCtx := context.Background()

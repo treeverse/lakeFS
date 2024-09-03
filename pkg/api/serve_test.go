@@ -12,9 +12,7 @@ import (
 	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
-	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/contrib/auth/acl"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -102,32 +100,6 @@ func createDefaultAdminUser(t testing.TB, clt apigen.ClientWithResponsesInterfac
 	}
 }
 
-func createUserWithDefaultGroup(t testing.TB, clt apigen.ClientWithResponsesInterface) *authmodel.BaseCredential {
-	t.Helper()
-	// create the user
-	createUsrRes, err := clt.CreateUserWithResponse(context.Background(), apigen.CreateUserJSONRequestBody{
-		Id:         "test@example.com",
-		InviteUser: swag.Bool(false),
-	})
-	testutil.Must(t, err)
-	if createUsrRes.JSON201 == nil {
-		t.Fatal("Failed to create user", createUsrRes.HTTPResponse.StatusCode, createUsrRes.HTTPResponse.Status)
-	}
-
-	// create credentials for the user
-	createCredsRes, err := clt.CreateCredentialsWithResponse(context.Background(), createUsrRes.JSON201.Id)
-	testutil.Must(t, err)
-	if createCredsRes.JSON201 == nil {
-		t.Fatal("Failed to create credentials", createCredsRes.HTTPResponse.StatusCode, createCredsRes.HTTPResponse.Status)
-	}
-
-	return &authmodel.BaseCredential{
-		IssuedDate:      time.Unix(createCredsRes.JSON201.CreationDate, 0),
-		AccessKeyID:     createCredsRes.JSON201.AccessKeyId,
-		SecretAccessKey: createCredsRes.JSON201.SecretAccessKey,
-	}
-}
-
 func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	t.Helper()
 	ctx := context.Background()
@@ -136,8 +108,8 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 		viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 	}
 	viper.Set("database.type", mem.DriverName)
-	// Use 'internal' mode in order to have access to policies
-	viper.Set("auth.ui_config.rbac", config.AuthRBACInternal)
+	// Use basic mode
+	viper.Set("auth.internal_basic", true)
 	// Add endpoint so that 'IsAdvancedAuth' will be in effect
 	viper.Set("auth.api.endpoint", config.DefaultListenAddress)
 
@@ -149,9 +121,9 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	factory := store.NewFactory(nil)
 	actionsStore := actions.NewActionsKVStore(kvStore)
 	idGen := &actions.DecreasingIDGenerator{}
-	authService := acl.NewAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
+	authService := auth.NewBasicAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
-	})
+	}, logging.FromContext(ctx))
 	meta := auth.NewKVMetadataManager("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 
 	// Do not validate invalid config (missing required fields).
