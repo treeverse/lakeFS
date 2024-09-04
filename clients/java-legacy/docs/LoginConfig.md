@@ -21,6 +21,7 @@ Name | Type | Description | Notes
 
 Name | Value
 ---- | -----
+NONE | &quot;none&quot;
 SIMPLIFIED | &quot;simplified&quot;
 EXTERNAL | &quot;external&quot;
 

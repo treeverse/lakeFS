@@ -51,6 +51,8 @@ impl LoginConfig {
 /// RBAC will remain enabled on GUI if \"external\".  That only works with an external auth service. 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum Rbac {
+    #[serde(rename = "none")]
+    None,
     #[serde(rename = "simplified")]
     Simplified,
     #[serde(rename = "external")]
@@ -59,7 +61,7 @@ pub enum Rbac {
 
 impl Default for Rbac {
     fn default() -> Rbac {
-        Self::Simplified
+        Self::None
     }
 }
 

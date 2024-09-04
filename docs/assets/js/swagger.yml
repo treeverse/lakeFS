@@ -888,7 +888,7 @@ components:
             RBAC will remain enabled on GUI if "external".  That only works
             with an external auth service.
           type: string
-          enum: [simplified, external]
+          enum: [none, simplified, external]
         login_url:
           description: primary URL to use for login.
           type: string

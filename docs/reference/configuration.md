@@ -100,7 +100,7 @@ Configuration section when using `database.type="local"`
 * `auth.login_duration` `(time duration : "168h")` - The duration the login token is valid for
 * `auth.login_max_duration` `(time duration : "168h")` - The maximum duration user can ask for a login token
 * `auth.cookie_domain` `(string : "")` - [Domain attribute](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define_where_cookies_are_sent) to set the access_token cookie on (the default is an empty string which defaults to the same host that sets the cookie)
-* `auth.ui_config.rbac` `(string: "simplified")` - "simplified", "external" or "internal" (enterprise feature).  In simplified mode, do not display policy in GUI.
+* `auth.ui_config.rbac` `(string: "none")` - "none", "simplified", "external" or "internal" (enterprise feature).
   If you have configured an external auth server you can set this to "external" to support the policy editor.
   If you are using the enteprrise version of lakeFS, you can set this to "internal" to use the built-in policy editor.
 

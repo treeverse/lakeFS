@@ -177,8 +177,6 @@ type Config struct {
 	}
 	Database Database
 	Auth     struct {
-		// TODO (niro): To be removed once we finish the transition
-		Basic bool `mapstructure:"internal_basic"`
 		Cache struct {
 			Enabled bool          `mapstructure:"enabled"`
 			Size    int           `mapstructure:"size"`
@@ -564,15 +562,14 @@ func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
 }
 
 const (
+	AuthRBACNone       = "none"
 	AuthRBACSimplified = "simplified"
 	AuthRBACExternal   = "external"
 	AuthRBACInternal   = "internal"
 )
 
 func (c *Config) IsAuthBasic() bool {
-	// TODO (niro): Replace once transition is complete
-	// return c.Auth.UIConfig.RBAC == AuthRBACSimplified && c.Auth.API.Endpoint == ""
-	return c.Auth.Basic
+	return c.Auth.UIConfig.RBAC == AuthRBACNone
 }
 
 func (c *Config) IsAuthUISimplified() bool {

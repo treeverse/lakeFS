@@ -480,7 +480,8 @@ Manage authentication and authorization
 #### Synopsis
 {:.no_toc}
 
-manage authentication and authorization including users, groups and ACLs
+Manage authentication and authorization including users, groups and ACLs
+This functionality is supported with an external auth service only.
 
 #### Options
 {:.no_toc}

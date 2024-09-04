@@ -44,8 +44,8 @@ class LoginConfig(BaseModel):
         if value is None:
             return value
 
-        if value not in ('simplified', 'external'):
-            raise ValueError("must be one of enum values ('simplified', 'external')")
+        if value not in ('none', 'simplified', 'external'):
+            raise ValueError("must be one of enum values ('none', 'simplified', 'external')")
         return value
 
     class Config:

@@ -59,6 +59,8 @@ public class LoginConfig {
    */
   @JsonAdapter(RBACEnum.Adapter.class)
   public enum RBACEnum {
+    NONE("none"),
+    
     SIMPLIFIED("simplified"),
     
     EXTERNAL("external");

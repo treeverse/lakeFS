@@ -123,15 +123,6 @@ jobs:
           cache-to: |
             type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs,mode=max
 
-      - name: Build and Push ACL server
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/aclserver:${{ needs.gen-code.outputs.tag }}
-          build-args: VERSION=${{ needs.gen-code.outputs.tag }}
-          context: .
-          file: ./contrib/auth/acl/Dockerfile
-
   login-to-amazon-ecr:
     runs-on: ubuntu-latest
     needs: [ check-secrets ]
@@ -774,7 +765,7 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling latest fluffy
+      # Required for pulling fluffy image
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -835,7 +826,7 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling latest fluffy
+      # Required for pulling fluffy image
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -896,7 +887,7 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling latest fluffy
+      # Required for pulling fluffy image
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -941,7 +932,7 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling latest fluffy
+      # Required for pulling fluffy image
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -993,7 +984,7 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling latest fluffy
+      # Required for pulling fluffy image
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -1337,58 +1328,6 @@ jobs:
               })
             }
 
-  run-system-aws-s3-acl-server:
-    name: Run latest lakeFS app on AWS S3 + ACL Server
-    needs: [ deploy-image, login-to-amazon-ecr ]
-    runs-on: ubuntu-22.04
-    env:
-      TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    steps:
-      - name: Check-out code
-        uses: actions/checkout@v4
-
-      - name: Generate uniquifying value
-        id: unique
-        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
-
-      - name: Test lakeFS with S3 tests
-        uses: ./.github/actions/bootstrap-test-lakefs
-        with:
-          compose-file: esti/ops/docker-compose-acl.yaml
-          compose-flags: "--quiet-pull --exit-code-from=esti"
-        env:
-          LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          LAKEFS_DATABASE_TYPE: postgres
-          DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-          ESTI_BLOCKSTORE_TYPE: s3
-          ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
-          ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
-
-      - name: Check files in S3 bucket
-        run: |
-          FILES_COUNT=`aws s3 ls s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }} --recursive | wc -l`
-          [ $FILES_COUNT -gt 5 ]
-
-      - name: lakeFS Logs on s3 failure
-        if: ${{ failure() }}
-        continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose-acl.yaml logs --tail=1000 lakefs
-
-      - name: Export DB
-        if: ${{ always() }}
-        working-directory: esti/ops
-        run: |
-          if docker compose ps -q postgres; then
-            docker compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
-          fi
-
   run-system-aws-s3-basic-auth:
     name: Run latest lakeFS app on AWS S3 + Basic Auth
     needs: [deploy-image, login-to-amazon-ecr]
@@ -1416,7 +1355,6 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           LAKEFS_DATABASE_TYPE: postgres
-          LAKEFS_AUTH_INTERNAL_BASIC: true
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}

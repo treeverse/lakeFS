@@ -108,8 +108,6 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 		viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 	}
 	viper.Set("database.type", mem.DriverName)
-	// Use basic mode
-	viper.Set("auth.internal_basic", true)
 	// Add endpoint so that 'IsAdvancedAuth' will be in effect
 	viper.Set("auth.api.endpoint", config.DefaultListenAddress)
 

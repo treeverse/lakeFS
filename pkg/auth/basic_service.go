@@ -472,7 +472,3 @@ func (s *BasicAuthService) ListGroupPolicies(context.Context, string, *model.Pag
 func (s *BasicAuthService) ClaimTokenIDOnce(_ context.Context, _ string, _ int64) error {
 	return ErrNotImplemented
 }
-
-func (s *BasicAuthService) InviteUser(context.Context, string) error {
-	return ErrNotImplemented
-}
