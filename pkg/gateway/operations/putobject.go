@@ -104,7 +104,11 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 	}
 
 	ctx := req.Context()
-	entry, err := o.Catalog.CopyEntry(ctx, srcPath.Repo, srcPath.Reference, srcPath.Path, repository, branch, o.Path)
+
+	metadata := amzMetaAsMetadata(req)
+	replaceMetadata := shouldReplaceMetadata(req)
+
+	entry, err := o.Catalog.CopyEntry(ctx, srcPath.Repo, srcPath.Reference, srcPath.Path, repository, branch, o.Path, replaceMetadata, metadata)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could create a copy")
 		apiErr := gatewayErrors.Codes.ToAPIErrWithInternalError(gatewayErrors.ErrInvalidCopyDest, err)

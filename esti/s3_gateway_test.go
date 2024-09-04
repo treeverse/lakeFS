@@ -513,11 +513,14 @@ func TestS3CopyObject(t *testing.T) {
 	objContent := testutil.RandomString(r, randomDataContentLength)
 	srcPath := gatewayTestPrefix + "source-file"
 	destPath := gatewayTestPrefix + "dest-file"
+	userMetadata := map[string]string{"X-Amz-Meta-Key1": "value1", "X-Amz-Meta-Key2": "value2"}
 
 	// upload data
 	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
 	_, err := s3lakefsClient.PutObject(ctx, repo, srcPath, strings.NewReader(objContent), int64(len(objContent)),
-		minio.PutObjectOptions{})
+		minio.PutObjectOptions{
+			UserMetadata: userMetadata,
+		})
 	require.NoError(t, err)
 
 	t.Run("same_branch", func(t *testing.T) {
@@ -561,14 +564,19 @@ func TestS3CopyObject(t *testing.T) {
 		sourceObjectStats := resp.JSON200
 		destObjectStats := resp.JSON200
 		require.Equal(t, sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress, "source and dest physical address should match")
+		require.Equal(t, userMetadata, destObjectStats.Metadata.AdditionalProperties, "source and dest metadata should match")
 	})
 
 	t.Run("different_repo", func(t *testing.T) {
 		// copy the object to different repository. should create another version of the file
+		userMetadataReplace := map[string]string{"X-Amz-Meta-Key1": "value1Replace", "X-Amz-Meta-Key2": "value2Replace"}
+
 		_, err := s3lakefsClient.CopyObject(ctx,
 			minio.CopyDestOptions{
-				Bucket: destRepo,
-				Object: destPath,
+				Bucket:          destRepo,
+				Object:          destPath,
+				UserMetadata:    userMetadataReplace,
+				ReplaceMetadata: true,
 			},
 			minio.CopySrcOptions{
 				Bucket: repo,
@@ -605,6 +613,7 @@ func TestS3CopyObject(t *testing.T) {
 
 		// assert that the physical addresses of the objects are not the same
 		require.NotEqual(t, sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
+		require.Equal(t, userMetadataReplace, destObjectStats.Metadata.AdditionalProperties, "dest metadata should be replaced")
 	})
 }
 
