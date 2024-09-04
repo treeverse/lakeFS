@@ -34,7 +34,14 @@ In order to do that, users will need to run the separate ACL server as part of t
 
 ### ACL server Configuration
 
-Under the `contrib/auth/acl` you will be able to find an ACL server reference.  
+Under the `contrib/auth/acl` you will be able to find an ACL server reference.
+
+{: .note .warning}
+> This implementation is a reference and is not fit for production use. 
+> 
+> For a more robust authorization solution, please see [Role-Based Access Control](./rbac.html), available in [lakeFS Cloud]({% link cloud/index.md %}) and [lakeFS Enterprise]({% link enterprise/index.md %}). 
+
+
 The configuration of the ACL server is similar to lakeFS configuration, here's an example of an `.aclserver.yaml` config file:
    ```yaml
    ---
