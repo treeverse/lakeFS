@@ -18,7 +18,6 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/contrib/auth/acl"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -104,34 +103,27 @@ Please run "lakefs superuser -h" and follow the instructions on how to migrate a
 				logger.WithError(err).Fatal("basic auth migration failed")
 			}
 		}
+		return auth.NewMonitoredAuthService(apiService)
+	}
 
-		return auth.NewMonitoredAuthServiceAndInviter(apiService)
-	}
-	if cfg.IsAuthTypeAPI() {
-		apiService, err := auth.NewAPIAuthService(
-			cfg.Auth.API.Endpoint,
-			cfg.Auth.API.Token.SecureValue(),
-			cfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled,
-			secretStore,
-			authparams.ServiceCache(cfg.Auth.Cache),
-			logger.WithField("service", "auth_api"),
-		)
-		if err != nil {
-			logger.WithError(err).Fatal("failed to create authentication service")
-		}
-		if !cfg.Auth.API.SkipHealthCheck {
-			if err := apiService.CheckHealth(ctx, logger, cfg.Auth.API.HealthCheckTimeout); err != nil {
-				logger.WithError(err).Fatal("Auth API health check failed")
-			}
-		}
-		return auth.NewMonitoredAuthServiceAndInviter(apiService)
-	}
-	authService := acl.NewAuthService(
-		kvStore,
+	// Not Basic - using auth server
+	apiService, err := auth.NewAPIAuthService(
+		cfg.Auth.API.Endpoint,
+		cfg.Auth.API.Token.SecureValue(),
+		cfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled,
 		secretStore,
 		authparams.ServiceCache(cfg.Auth.Cache),
+		logger.WithField("service", "auth_api"),
 	)
-	return auth.NewMonitoredAuthService(authService)
+	if err != nil {
+		logger.WithError(err).Fatal("failed to create authentication service")
+	}
+	if !cfg.Auth.API.SkipHealthCheck {
+		if err := apiService.CheckHealth(ctx, logger, cfg.Auth.API.HealthCheckTimeout); err != nil {
+			logger.WithError(err).Fatal("Auth API health check failed")
+		}
+	}
+	return auth.NewMonitoredAuthServiceAndInviter(apiService)
 }
 
 var runCmd = &cobra.Command{

@@ -10,67 +10,68 @@ redirect_from:
 # Access Control Lists (ACLs)
 
 {: .note .warning}
-> ACLS are [moving out of core lakeFS](https://lakefs.io/blog/why-moving-acls-out-of-core-lakefs/).
+> ACLs were [removed from core lakeFS](https://lakefs.io/blog/why-moving-acls-out-of-core-lakefs/).
 > 
-> For a more robust authorization solution, please see [Role-Based Access Control](./rbac.html), available in [lakeFS Cloud]({% link cloud/index.md %}) and [lakeFS Enterprise]({% link enterprise/index.md %}). 
+> For a more robust authorization solution, please see [Role-Based Access Control](./rbac.html), available in [lakeFS Cloud]({% link cloud/index.md %}) and [lakeFS Enterprise]({% link enterprise/index.md %}).  
+> The following documentation is aimed for users with existing installations who wish to continue working with ACLs. 
 
 
 {% include toc.html %}
 
+## Basic Auth Functionality
+
+New lakeFS versions will provide basic auth functionality featuring a single Admin user with a single set of credentials.
+Existing lakeFS installations that have a single user and a single set of credentials will migrate seamlessly to the new version.  
+Installations that have more than one user / credentials will require to run a command and choose which set of user + credentials to migrate 
+(more details [here](#migration-of-existing-user))
+
 ## ACLs
 
-You can attach Permissions and scope them to groups in the Groups page.
-There are 4 default groups, named after the 4 permissions. Each group is global (applies for all repositories).
+ACL server was moved out of core lakeFS and into a new package under `contrib/auth/acl`.
+Though we [decided](https://lakefs.io/blog/why-moving-acls-out-of-core-lakefs/) to move ACLs out, we are committed to making sure existing users who still need the use of ACLs can continue using
+this feature.
+In order to do that, users will need to run the separate ACL server as part of their lakeFS deployment environment and configure lakeFS to work with it.
 
-| Group ID  | Allows                                     | 
-|-----------|--------------------------------------------|
-| **Read**  | Read operations, creating access keys      |
-| **Write** | Allows all data read and write operations. |
-| **Super** | Allows all operations except auth.         |
-| **Admin** | Allows all operations.                     |
+### ACL server Configuration
 
-## Pluggable Authentication and Authorization
+Under the `contrib/auth/acl` you will be able to find an ACL server reference.
 
-Authorization and authentication is pluggable in lakeFS. If lakeFS is attached to a [remote authentication server](remote-authenticator.html) (or you are using lakeFS Cloud) then the [role-based access control](rbac.html) user interface can be used.
+{: .note .warning}
+> This implementation is a reference and is not fit for production use. 
+> 
+> For a more robust authorization solution, please see [Role-Based Access Control](./rbac.html), available in [lakeFS Cloud]({% link cloud/index.md %}) and [lakeFS Enterprise]({% link enterprise/index.md %}). 
 
-If you are using ACL then the lakeFS configuration element `auth.ui_config.RBAC` should be set to `simplified`.
 
-## Previous versions of ACL in lakeFS
+The configuration of the ACL server is similar to lakeFS configuration, here's an example of an `.aclserver.yaml` config file:
+   ```yaml
+   ---
+   listen_address: "[ACL_SERVER_LISTEN_ADDRESS]"
+   database:
+     type: "postgres"
+     postgres:
+       connection_string: "[DATABASE_CONNECTION_STRING]"
+  
+   encrypt:
+     # This should be the same encryption key as in lakeFS
+     secret_key: "[ENCRYPTION_SECRET_KEY]"
+   ```
+It is possible to use environment variables to configure the server as in lakeFS. Use the `ACLSERVER_` prefix to do so.  
+For full configuration reference see: [this](https://github.com/treeverse/lakeFS/blob/7b2a0ac2f1afedd2059284c32e7dacb945b2ae90/contrib/auth/acl/config.go#L26)
 
-Here's a comparison of the current ACL model against the behavior prior to [the changes introduced][security-changes] in v0.98.
 
-| Permission | Allows                                     | Previous Group Name       | Previous Policy Names and Actions                                                                                                                                                                                                                                                                                                                                                | 
-|------------|--------------------------------------------|---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Read**   | Read operations, creating access keys.     | Viewers                   | FSReadAll \[fs:List*, fs:Read*]                                                                                                                                                                                                                                                                                                                                                  |
-| **Write**  | Allows all data read and write operations. | Developers                | FSReadWriteAll \[fs:ListRepositories, fs:ReadRepository, fs:ReadCommit, fs:ListBranches, fs:ListTags, fs:ListObjects, fs:ReadObject, fs:WriteObject, fs:DeleteObject, fs:RevertBranch, fs:ReadBranch, fs:ReadTag, fs:CreateBranch, fs:CreateTag, fs:DeleteBranch, fs:DeleteTag, fs:CreateCommit] RepoManagementReadAll \[ci:Read*, retention:Get*, branches:Get*, fs:ReadConfig] |
-| **Super**  | Allows all operations except auth.         | SuperUsers (with changes) | FSFullAccess  \[fs:*] RepoManagementReadAll \[ci:Read*, retention:Get*, branches:Get*, fs:ReadConfig]                                                                                                                                                                                                                                                                            |
-| **Admin**  | Allows all operations.                     | Admins                    | AuthFullAccess \[auth:*]  FSFullAccess \[fs:*]  RepoManagementFullAccess \[ci:*, retention:*, branches:*, fs:ReadConfig]                                                                                                                                                                                                                                                         |
+### lakeFS Configuration
 
-### Migrating from the previous version of ACLs
+For the ACL server to work, configure the following values in lakeFS:  
+`auth.ui_config.rbac`: `simplified`  
+`auth.api.endpoint`: `[ACL_SERVER_LISTEN_ADDRESS]`
 
-Upgrading the lakeFS version will require migrating to the new ACL authorization model.
+### Migration of existing user
 
-In order to run the migration run:
+For installation with multiple users / credentials, upgrading to the new lakeFS version requires choosing which user + credentials will be used for the single user mode.
+This is done via the `lakefs superuser` command.
+For example, if you have a user with username `<my-username>` and credential key `<my-access-key-id>` use the following command to migrate that user: 
+```bash
+lakefs superuser --user-name <my-username> --access-key-id <my-access-key-id>
 ```
-lakefs migrate up
-```
-
-The command will run the migration to ACL. The migration process might adjust the current authorization policies to fit ACL, in that case the command will not make any changes, only print warnings.  
-In case of warnings to apply the migration, re-run with the  `--force`  flag
-
-The upgrade will ensure that the 4 default groups exist, and modify existing groups to fit into the new ACLs model:
--  When creating the 4 default global groups: if another group exists and has the desired name, upgrading will rename it by appending ".orig". So after upgrading the 4 default global groups exist, with these known names.
-- For any group, upgrading configured policies follows these rules, possibly increasing access:
-    1. Any "Deny" rules are stripped, and a warning printed.
-    2. "Manage own credentials" is added.
-    3. If any actions outside of "fs:" and manage own credentials are allowed, the group becomes an Admin group, a warning is printed, and no further changes apply.
-    4. The upgrade script unifies repositories: If a resource applies to a set of repositories, permissions are unified to all repositories.
-    5. The upgrade script unifies actions: it selects the least permission of Read, Write, Super that contains all of the allowed actions.
-
-The upgrade will detach every directly attached policy from users 
-
-Note that moving to ACL from RBAC may only be performed once and **will** lose some configuration.  The upgrade script will detail the changes made by the transition.
-
-For any question or concern during the upgrade, don't hesitate to get in touch with us through [Slack](https://lakefs.io/slack) or [email](mailto:support@treeverse.io).
-
-[security-changes]:  {% link posts/security_update.md %}#whats-changing
+  
+After running the command you will be able to access the installation using the user's access key id and its respective secret access key.

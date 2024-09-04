@@ -8054,7 +8054,7 @@ components:
         login_failed_message: login_failed_message
         logout_url: logout_url
         login_url: login_url
-        RBAC: simplified
+        RBAC: none
         fallback_login_url: fallback_login_url
         login_cookie_names:
         - login_cookie_names
@@ -8066,6 +8066,7 @@ components:
             RBAC will remain enabled on GUI if "external".  That only works
             with an external auth service.
           enum:
+          - none
           - simplified
           - external
           type: string
@@ -8102,7 +8103,7 @@ components:
           login_failed_message: login_failed_message
           logout_url: logout_url
           login_url: login_url
-          RBAC: simplified
+          RBAC: none
           fallback_login_url: fallback_login_url
           login_cookie_names:
           - login_cookie_names

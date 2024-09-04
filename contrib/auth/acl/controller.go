@@ -293,7 +293,6 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body a
 	writeResponse(w, http.StatusOK, response)
 }
 
-// ClaimTokenId - TODO (niro): Should be implemented?
 func (c *Controller) ClaimTokenId(w http.ResponseWriter, _ *http.Request, _ apigen.ClaimTokenIdJSONRequestBody) {
 	writeError(w, http.StatusNotImplemented, "Not implemented")
 }
