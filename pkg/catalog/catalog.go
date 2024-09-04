@@ -2651,7 +2651,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 }
 
 // CopyEntry copy entry information by using the block adapter to make a copy of the data to a new physical address.
-// if replaceSrcMetadata is true, the metadata will be replaced with the provided metadata (if it's not empty).
+// if replaceSrcMetadata is true, the metadata will be replaced with the provided metadata.
 // if replaceSrcMetadata is false, the metadata will be copied from the source entry.
 func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string, replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
 	// copyObjectFull copy data from srcEntry's physical address (if set) or srcPath into destPath
