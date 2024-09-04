@@ -2683,9 +2683,7 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	dstEntry.PhysicalAddress = c.PathProvider.NewPath()
 
 	if replaceSrcMetadata {
-		if len(metadata) > 0 {
-			dstEntry.Metadata = metadata
-		}
+		dstEntry.Metadata = metadata
 	} else {
 		dstEntry.Metadata = srcEntry.Metadata
 	}
