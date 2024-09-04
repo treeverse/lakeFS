@@ -10,8 +10,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
-	"github.com/treeverse/lakefs/pkg/kv/migrations"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // migrateCmd represents the migrate command
@@ -102,7 +100,7 @@ var upCmd = &cobra.Command{
 	},
 }
 
-func DoMigration(ctx context.Context, kvStore kv.Store, cfg *config.Config, force bool) error {
+func DoMigration(ctx context.Context, kvStore kv.Store, _ *config.Config, _ bool) error {
 	var (
 		version int
 		err     error
@@ -115,10 +113,8 @@ func DoMigration(ctx context.Context, kvStore kv.Store, cfg *config.Config, forc
 		switch {
 		case version >= kv.NextSchemaVersion || version < kv.InitialMigrateVersion:
 			return fmt.Errorf("wrong starting version %d: %w", version, kv.ErrMigrationVersion)
-		case version < kv.ACLNoReposMigrateVersion:
-			err = migrations.MigrateToACL(ctx, kvStore, cfg, logging.ContextUnavailable(), version, force)
-		case version < kv.ACLImportMigrateVersion:
-			err = migrations.MigrateImportPermissions(ctx, kvStore, cfg)
+		default: // ACL migration code is no longer needed since we removed ACLs
+			err = kv.SetDBSchemaVersion(ctx, kvStore, kv.ACLImportMigrateVersion)
 		}
 		if err != nil {
 			return err
