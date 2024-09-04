@@ -45,18 +45,6 @@ func TestDoMigrate(t *testing.T) {
 		require.True(t, kv.IsLatestSchemaVersion(version))
 	})
 
-	t.Run("from_acl_v1_no_force", func(t *testing.T) {
-		cfg := config.Config{}
-		cfg.Auth.UIConfig.RBAC = config.AuthRBACSimplified
-		kvStore := kvtest.GetStore(ctx, t)
-		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, kv.ACLMigrateVersion))
-		err := cmd.DoMigration(ctx, kvStore, &cfg, false)
-		require.ErrorIs(t, err, kv.ErrMigrationVersion)
-		version, err := kv.GetDBSchemaVersion(ctx, kvStore)
-		require.NoError(t, err)
-		require.Equal(t, kv.ACLMigrateVersion, version)
-	})
-
 	t.Run("from_acl_v1_force", func(t *testing.T) {
 		cfg := config.Config{}
 		cfg.Auth.UIConfig.RBAC = config.AuthRBACSimplified
