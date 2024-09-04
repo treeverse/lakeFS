@@ -123,15 +123,6 @@ jobs:
           cache-to: |
             type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs,mode=max
 
-      - name: Build and Push ACL server
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/aclserver:${{ needs.gen-code.outputs.tag }}
-          build-args: VERSION=${{ needs.gen-code.outputs.tag }}
-          context: .
-          file: ./contrib/auth/acl/Dockerfile
-
   login-to-amazon-ecr:
     runs-on: ubuntu-latest
     needs: [ check-secrets ]
@@ -774,7 +765,7 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling latest fluffy
+      # Required for pulling fluffy image
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -835,7 +826,7 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling latest fluffy
+      # Required for pulling fluffy image
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -896,7 +887,7 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling latest fluffy
+      # Required for pulling fluffy image
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -941,7 +932,7 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling latest fluffy
+      # Required for pulling fluffy image
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -993,7 +984,7 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling latest fluffy
+      # Required for pulling fluffy image
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
