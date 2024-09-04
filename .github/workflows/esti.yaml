@@ -1355,7 +1355,6 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           LAKEFS_DATABASE_TYPE: postgres
-          LAKEFS_AUTH_INTERNAL_BASIC: true
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}

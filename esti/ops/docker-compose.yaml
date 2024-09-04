@@ -26,7 +26,6 @@ services:
       - AZURE_CLIENT_SECRET
       - AZURE_TENANT_ID
       - LAKEFSACTION_VAR=this_is_actions_var
-      - LAKEFS_AUTH_INTERNAL_BASIC
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
     image: "postgres:11"

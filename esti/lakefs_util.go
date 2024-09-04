@@ -1,7 +1,6 @@
 package esti
 
 import (
-	"strconv"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -14,9 +13,11 @@ func LakefsWithParams(connectionString string) string {
 func LakefsWithParamsWithBasicAuth(connectionString string, basicAuth bool) string {
 	lakefsCmdline := "LAKEFS_DATABASE_TYPE=postgres" +
 		" LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=" + connectionString +
-		" LAKEFS_AUTH_INTERNAL_BASIC=" + strconv.FormatBool(basicAuth) +
 		" LAKEFS_BLOCKSTORE_TYPE=" + viper.GetString("blockstore_type") +
 		" LAKEFS_AUTH_ENCRYPT_SECRET_KEY='some random secret string' " + lakefsLocation()
+	if basicAuth {
+		lakefsCmdline = "LAKEFS_AUTH_UI_CONFIG_RBAC=none " + lakefsCmdline
+	}
 
 	return lakefsCmdline
 }
