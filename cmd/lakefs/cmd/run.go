@@ -103,7 +103,7 @@ Please run "lakefs superuser -h" and follow the instructions on how to migrate a
 				logger.WithError(err).Fatal("basic auth migration failed")
 			}
 		}
-		return auth.NewMonitoredAuthServiceAndInviter(apiService)
+		return auth.NewMonitoredAuthService(apiService)
 	}
 
 	// Not Basic - using auth server
