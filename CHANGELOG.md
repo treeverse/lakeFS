@@ -4,7 +4,7 @@
 
 **Note:**
 PLEASE READ CAREFULLY BEFORE UPGRADING TO THIS VERSION!!!
-This version introduces deprecation of the ACLs functionality, and might require some users to take action.
+This version removes the built-in ACLs functionality, and might require some users to take action.
 Refer to [documnetation](https://docs.lakefs.io/security/access-control-lists.html) for more information.
 
 :new: What's new:
