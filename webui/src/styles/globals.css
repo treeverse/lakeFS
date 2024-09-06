@@ -1,8 +1,8 @@
 :root {
-  --color-fg-added: #339933;
-  --color-fg-removed: #FF3300;
-  --color-fg-changed: #ffc003;
-  --color-fg-conflict: #7f7966;
+  --color-fg-added: var("success");
+  --color-fg-removed: var("danger");
+  --color-fg-changed: var("warning");
+  --color-fg-conflict: var("secondary");
   --color-bg-added: #e6ffec;
   --color-bg-removed: #ffece6;
   --color-bg-changed: #fff6db;
@@ -80,10 +80,10 @@
 }
 
 .navbar a.dropdown-toggle {
-  color: #DDDDDD;
+  color: var("gray-300");
 }
 .navbar a.dropdown-toggle:hover {
-  color: #FFFFFF;
+  color: var("white");
 }
 
 .nav-tabs .nav-link.active {
@@ -91,7 +91,7 @@
 }
 
 .commit-list .list-group-item:nth-of-type(even) {
-  background-color: #FBFBFB;
+  background-color: var("light");
 }
 
 .commit-actions .btn, .branch-actions .btn, .run-commit {
@@ -101,19 +101,19 @@
 }
 
 .lakefs-uri .octicon {
-  color: #0c5460;
+  color: var("info");
   margin-right: 5px;
 }
 
 .lakefs-uri a {
-  color: #0f6674;
+  color: var("teal");
   text-decoration: underline;
 }
 
 .lakefs-uri {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
   font-size: .9rem;
-  color: #303030;
+  color: var("dark");
   width: 95%;
 }
 
@@ -149,7 +149,7 @@
 .ref-list .list-group-item {
   padding: 10px 15px;
   border: 0;
-  border-bottom: 1px solid #DDD;
+  border-bottom: 1px solid var("gray-300");
   border-radius: 0;
   clear: both;
 }
@@ -163,15 +163,15 @@
 
 .ref-popover h5 {
   padding: 10px;
-  border-bottom: 1px solid #DDD;
-  background-color: #FBFBFB;
+  border-bottom: 1px solid var("gray-300");
+  background-color: var("light");
   text-align: center;
 }
 
 .ref-filter-form {
   padding: 10px;
-  border-bottom: 1px solid #DDD;
-  background-color: #FBFBFB;
+  border-bottom: 1px solid var("gray-300");
+  background-color: var("light");
 }
 .ref-filter-form form {
   margin-bottom: 0;
@@ -237,7 +237,7 @@
 
 
 .table .change-entry-row:hover {
-  background-color: #FBFBFB;
+  background-color: var("light");
 }
 
 .table .tree-entry-row td,
@@ -271,7 +271,7 @@
 }
 
 .tree-path .octicon {
-  color: #007bff;
+  color: var("blue");
   margin-right: 5px;
   font-size: .875rem;
 }
@@ -279,7 +279,7 @@
 .diff-removed .tree-path,
 .diff-removed .tree-path .octicon,
 .diff-removed .diff-indicator .octicon {
-  color: #808080;
+  color: var("gray-600");
 }
 
 td.tree-path {
@@ -305,7 +305,7 @@ td.tree-path {
 }
 
 .diff-more td {
-  background-color: #ffffff;
+  background-color: var("white");
 }
 
 .table tr .row-hover {
@@ -329,13 +329,13 @@ td.tree-path {
 }
 
 .hook-logs {
-  background: #222222;
-  color: #FBFBFB;
+  background: var("dark");
+  color: var("light");
   padding: 40px 10px;
 }
 .hook-log, .hook-log pre {
-  background: #222222;
-  color: #FBFBFB;
+  background: var("dark");
+  color: var("light");
 }
 .hook-log pre {
   padding: 20px 0;
@@ -348,12 +348,12 @@ td.tree-path {
 }
 .hook-log-title small {
   font-size: 0.7em;
-  color: #AAAAAA;
+  color: var("gray-500");
   margin-left: 10px;
 }
 
 .hook-log-title .btn, .hook-log-title .btn.btn-link  {
-    color: #fbfbfb;
+    color: var("light");
 }
 
 .change-entry-row-actions {
@@ -419,7 +419,7 @@ td.change-entry-row-actions {
 
 .policy-body {
   padding: 30px;
-  background-color: #EEEEEE;
+  background-color: var("gray-200");
 }
 
 .auth-page .tab-content {
@@ -429,14 +429,14 @@ td.change-entry-row-actions {
 textarea.form-control.policy-document {
   font-family: "SFMono-Regular", Menlo, Consolas, Monospace, serif;
   font-size: 10px;
-  color: #e83e8c;
-  background-color: #F8F8F8;
+  color: var("pink");
+  background-color: var("light");
   padding: 10px;
 }
 textarea.form-control.policy-document:focus {
   font-family: "SFMono-Regular", Menlo, Consolas, Monospace, serif;
   font-size: 10px;
-  color: #e83e8c;
+  color: var("pink");
   padding: 10px;
 }
 
@@ -528,7 +528,7 @@ td.change-summary {
   padding-bottom: 30px;
   font-size: 30px;
   font-weight: bold;
-  color: #2ce5b5;
+  color: var("cyan");
 }
 
 .invited-welcome-msg .body {
@@ -550,11 +550,11 @@ td.change-summary {
 }
 
 .action-bar .btn.create-user {
-  background-color: #258c82;
+  background-color: var("success");
 }
 
 .action-bar .btn.cancel-create-user {
-  background-color: #7e7e7e;
+  background-color: var("secondary");
 }
 
 
@@ -562,17 +562,17 @@ td.change-summary {
 .after-setup-btn {
   width: 250px;
   margin-top: 7px;
-  background-color: #0fa276;
-  color: #FFF;
+  background-color: var("success");
+  color: var("white");
   border: 0;
 }
 .after-setup-btn:hover {
-  color: #FFF;
-  background-color: #4e555b;
+  color: var("white");
+  background-color: var("gray-700");
 }
 
 .after-setup-card code {
-  color: #4e555b;
+  color: var("gray-700");
 }
 
 .copy-button {
@@ -584,7 +584,7 @@ td.change-summary {
 
 .import-num-objects {
   display: inline-flex;
-  color: green;
+  color: var("success");
   font-weight: bolder;
   margin: 0 2px;
 }
@@ -595,7 +595,7 @@ td.change-summary {
 }
 
 .import-success {
-  color: green;
+  color: var("success");
   display: flex;
   justify-content: center;
   font-size: 160%
@@ -614,8 +614,8 @@ td.change-summary {
 
 .code-container {
   border-radius: 10px;
-  border: 1px solid #dadada;
-  background-color: #FBFBFB;
+  border: 1px solid var("gray-300");
+  background-color: var("light");
 }
 
 .file-content-card {
@@ -623,7 +623,7 @@ td.change-summary {
 }
 
 .file-content-heading {
-  background-color: #FBFBFB;
+  background-color: var("light");
   padding: 10px;
 }
 
@@ -642,14 +642,14 @@ td.change-summary {
 
 
 .object-viewer-sql-input.form-control {
-  background-color: #333333;
+  background-color: var("gray-800");
   font-size: .8rem;
   font-family: "SFMono-Regular", menlo, consolas, monospace;
-  color: #BBB;
+  color: var("gray-500");
 }
 .object-viewer-sql-input.form-control:focus {
-  background-color: #333333;
-  color: #FFFFFF;
+  background-color: var("gray-800");
+  color: var("white");
 }
 
 .powered-by {
@@ -670,7 +670,7 @@ td.change-summary {
 }
 .object-viewer-sql-results th small {
   font-size: .7rem;
-  color: #888;
+  color: var("gray-500");
 }
 
 .image-container {
@@ -696,12 +696,12 @@ td.change-summary {
 .object-viewer-markdown h6 {
   padding-bottom: 0.25em;
   margin-bottom: 1.25rem;
-  border-bottom: 1px solid #DFDFDF;
+  border-bottom: 1px solid var("gray-300");
   margin-top: 2rem;
 }
 
 .required-field-label {
-  color: red;
+  color: var("danger");
 }
 
 .otf-diff-update {
@@ -743,7 +743,7 @@ td.table-operation-details {
 }
 
 .table-operation-expansion {
-  color: black;
+  color: var("black");
 }
 
 td.table-diff-type {
@@ -762,7 +762,7 @@ td.entry-type-indicator {
   position: relative;
   background: linear-gradient(#54a3ff, #006eed);
   border-radius: 50%;
-  color: white;
+  color: var("white");
   height: 10px;
   line-height: 20px;
   margin-left: 5px;
@@ -774,7 +774,7 @@ td.entry-type-indicator {
   display: inline-block;
   background: linear-gradient(#54a3ff, #006eed);
   border-radius: 50%;
-  color: white;
+  color: var("white");
   height: 10px;
   line-height: 20px;
   margin-left: 5px;
@@ -783,9 +783,9 @@ td.entry-type-indicator {
 
 .getting-started-card {
   margin-top: 64px;
-  background-color: #f5f5f5;
+  background-color: var("light");
   border: none;
-  color: #22262A;
+  color: var("dark");
   padding: 104px 72px 32px 72px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
@@ -807,7 +807,7 @@ td.entry-type-indicator {
   font-weight: 500;
   line-height: 32px;
   font-style: normal;
-  color: #22262A;
+  color: var("dark");
 }
 
 .getting-started-card > .text-container p {
@@ -815,7 +815,7 @@ td.entry-type-indicator {
   font-weight: 200;
   line-height: 32px;
   font-style: normal;
-  color: #22262A;
+  color: var("dark");
 }
 
 .getting-started-card > .text-container p .sub-title {
@@ -823,7 +823,7 @@ td.entry-type-indicator {
   font-weight: 300;
   line-height: 32px;
   font-style: normal;
-  color: #22262A;
+  color: var("dark");
 }
 
 .getting-started-card > .button-container {
@@ -861,12 +861,12 @@ td.entry-type-indicator {
 
 .file-drop-zone {
   text-align: center;
-  background-color: #EFEFEF;
+  background-color: var("gray-200");
   height: 80px;
   vertical-align: center;
   line-height: 80px;
-  border: 2px dashed #DEDEDE;
-  color: #999;
+  border: 2px dashed var("gray-300");
+  color: var("gray-500");
   font-size: 1.3em;
   cursor: pointer;
   margin-bottom: 20px;
@@ -875,7 +875,7 @@ td.entry-type-indicator {
 .file-drop-zone.file-drop-zone-focus {
   border: 2px dashed #94B49F;
   color: #94B49F;
-  background-color: #E8F3D6;
+  background-color: var("gray-200");
 }
 
 .upload-item {
@@ -885,9 +885,9 @@ td.entry-type-indicator {
 }
 
 .upload-item-uploading {
-  background-color: #EFEFEF;
+  background-color: var("gray-200");
 }
 
 .upload-item-done {
-  color: #198754;
+  color: var("success");
 }
