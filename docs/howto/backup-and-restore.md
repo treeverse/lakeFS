@@ -6,8 +6,8 @@ parent: How-To
 
 # Backup and Restore Repository
 This section explains how to backup and restore lakeFS repository for different use-cases:
-1. Disaster Recovery: you want to backup the repository regurlarly so you can restore it in case of any disaster.
-1. Migrate Repository: you want to migrate a repository from one envrionment to another lakeFS environment.
+1. Disaster Recovery: you want to backup the repository regularly so you can restore it in case of any disaster.  You'd also need to make sure to backup the repository's storage namespace to another, preferably geographically separate location.
+1. Migrate Repository: you want to migrate a repository from one environment to another lakeFS environment.
 1. Clone Repository: you want to clone a repository.
 
 {% include toc.html %}
@@ -35,7 +35,7 @@ for branch in repo.branches():
 ### Dump Metadata
 Dump metadata/refs of the repository by using lakeFS API or CLI.
 
-* Example code to dump metadata by using lakeFS Python SDK (this process will create `_lakefs/refs_manifest.json` file in your storage for the repository):
+* Example code to dump metadata by using lakeFS Python SDK (this process will create `_lakefs/refs_manifest.json` file in your storage namespace for the repository):
 
 ```python
 lakefs_sdk_client.internal_api.dump_refs("example-repo")
@@ -61,7 +61,7 @@ Shutdown lakeFS services immediately after dumping the metadata so nobody can ma
 {: .note}
 
 ### Copy Data to Backup Storage Location
-Copy the repository’s storage namespace to a new location. Copy command depends on the type of object storage and the tool that you use.
+Copy the repository’s storage namespace to another, preferably geographically separate location. Copy command depends on the type of object storage and the tool that you use.
 
 
 * Example S3 command:
@@ -87,13 +87,13 @@ Create a bare lakeFS repository with a new name if you want to clone the reposit
 * Python example to create a bare lakeFS repository using S3 storage:
 
 ```python
-lakefs.Repository("target-example-repo").create(storage_namespace="s3://target-bucket-name/example-repo", default_branch="same-default-branch-as-in-source-repo", bare=True)
+lakefs.Repository("target-example-repo").create(bare=True, storage_namespace="s3://target-bucket-name/example-repo", default_branch="same-default-branch-as-in-source-repo")
 ```
 
 * Python example to create a bare lakeFS repository using Azure storage:
 
 ```python
-lakefs.Repository("target-example-repo").create(storage_namespace="https://target-storage-account-name.blob.core.windows.net/targetContainer/example-repo", default_branch="same-default-branch-as-in-source-repo", bare=True)
+lakefs.Repository("target-example-repo").create(bare=True, storage_namespace="https://target-storage-account-name.blob.core.windows.net/targetContainer/example-repo", default_branch="same-default-branch-as-in-source-repo")
 ```
 
 * [lakeFS CLI](https://docs.lakefs.io/reference/cli.html#lakectl-repo-create-bare) command to create a bare lakeFS repository using S3 storage:
@@ -142,5 +142,5 @@ aws s3 cp s3://target-bucket-name/example-repo/_lakefs/refs_manifest.json - | la
 az storage blob download --container-name targetContainer --name example-repo/_lakefs/refs_manifest.json --account-name target-storage-account-name --account-key <target-storage-account-key> | lakectl refs-restore lakefs://target-example-repo --manifest -
 ```
 
-**Note:** If you are running backups regularly then test the restore process periodically to make sure that you can restore the repository in case of any disaster.
+**Note:** If you are running backups regularly, it is highly advised to test the restore process periodically to make sure that you are able to restore the repository in case of disaster.
 {: .note}
