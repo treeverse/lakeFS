@@ -3,6 +3,7 @@ import useUser from '../hooks/user'
 import {auth, config} from "../api";
 import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
+import DarkModeToggle from "./darkModeToggle";
 import {useAPI} from "../hooks/api";
 import {Navbar, Nav, NavDropdown} from "react-bootstrap";
 import Container from "react-bootstrap/Container";
@@ -91,6 +92,7 @@ const TopNav = ({logged = true}) => {
                         <TopNavLink href="/auth">Administration</TopNavLink>
                     </Nav>
 
+                    <DarkModeToggle/>
                     <NavUserInfo/>
                 </Navbar.Collapse>
             </Container>
