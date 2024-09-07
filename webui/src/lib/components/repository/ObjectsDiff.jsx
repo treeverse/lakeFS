@@ -10,7 +10,7 @@ import {useStorageConfig} from "../../hooks/storageConfig";
 import {AppContext} from "../../hooks/appContext";
 
 const maxDiffSizeBytes = 120 << 10;
-const supportedReadableFormats = ["txt", "text", "csv", "tsv", "yaml", "yml", "json"];
+const supportedReadableFormats = ["txt", "text", "csv", "tsv", "yaml", "yml", "json", "jsonl", "ndjson"];
 
 export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     const config = useStorageConfig();
