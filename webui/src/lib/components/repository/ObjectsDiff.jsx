@@ -9,7 +9,7 @@ import {InfoIcon} from "@primer/octicons-react";
 import {useStorageConfig} from "../../hooks/storageConfig";
 
 const maxDiffSizeBytes = 120 << 10;
-const supportedReadableFormats = ["txt", "text", "csv", "tsv", "yaml", "yml", "json"];
+const supportedReadableFormats = ["txt", "text", "csv", "tsv", "yaml", "yml", "json", "jsonl", "ndjson"];
 
 export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     const config = useStorageConfig();
