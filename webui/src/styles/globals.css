@@ -1,13 +1,31 @@
 :root {
-  --color-fg-added: var("success");
-  --color-fg-removed: var("danger");
-  --color-fg-changed: var("warning");
-  --color-fg-conflict: var("secondary");
+  --color-fg-added: var(--bs-success);
+  --color-fg-removed: var(--bs-danger);
+  --color-fg-changed: var(--bs-warning);
+  --color-fg-conflict: var(--bs-secondary);
   --color-bg-added: #e6ffec;
   --color-bg-removed: #ffece6;
   --color-bg-changed: #fff6db;
   --color-bg-unknown: #f1f4ff;
   --color-bg-conflict: #fff3cd;
+/* The following is all the colors that are used by the css (kept here for refernce, when adding new colors): */
+/*  --bs-success: var(--bs-success);*/
+/*  --bs-danger: var(--bs-danger);*/
+/*  --bs-warning: var(--bs-warning);*/
+/*  --bs-body-bg: var(--bs-body-bg);*/
+/*  --bs-tertiary-bg: var(--bs-tertiary-bg);*/
+/*  --bs-light-border-subtle: var(--bs-light-border-subtle);*/
+/*  --bs-border-color: var(--bs-border-color);*/
+/*  --bs-dark-border-subtle: var(--bs-dark-border-subtle);*/
+/*  --bs-secondary: var(--bs-secondary);*/
+/*  --bs-light-text-emphasis: var(--bs-light-text-emphasis);*/
+/*  --bs-dark-text-emphasis: var(--bs-dark-text-emphasis);*/
+/*  --bs-body-color: var(--bs-body-color);*/
+/*  --bs-emphasis-color: var(--bs-emphasis-color);*/
+/*  --bs-blue: var(--bs-blue);*/
+/*  --bs-cyan: var(--bs-cyan);*/
+/*  --bs-pink: var(--bs-pink);*/
+/*  --bs-teal: var(--bs-teal);*/
 }
 
 .gray-out {
@@ -80,10 +98,10 @@
 }
 
 .navbar a.dropdown-toggle {
-  color: var("gray-300");
+  color: var(--bs-white);
 }
 .navbar a.dropdown-toggle:hover {
-  color: var("white");
+  color: var(--bs-gray-300);
 }
 
 .nav-tabs .nav-link.active {
@@ -91,7 +109,7 @@
 }
 
 .commit-list .list-group-item:nth-of-type(even) {
-  background-color: var("light");
+  background-color: var(--bs-tertiary-bg);
 }
 
 .commit-actions .btn, .branch-actions .btn, .run-commit {
@@ -101,19 +119,19 @@
 }
 
 .lakefs-uri .octicon {
-  color: var("info");
+  color: var(--bs-info);
   margin-right: 5px;
 }
 
 .lakefs-uri a {
-  color: var("teal");
+  color: var(--bs-teal);
   text-decoration: underline;
 }
 
 .lakefs-uri {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
   font-size: .9rem;
-  color: var("dark");
+  color: var(--bs-body-color);
   width: 95%;
 }
 
@@ -149,7 +167,7 @@
 .ref-list .list-group-item {
   padding: 10px 15px;
   border: 0;
-  border-bottom: 1px solid var("gray-300");
+  border-bottom: 1px solid var(--bs-border-color);
   border-radius: 0;
   clear: both;
 }
@@ -163,15 +181,15 @@
 
 .ref-popover h5 {
   padding: 10px;
-  border-bottom: 1px solid var("gray-300");
-  background-color: var("light");
+  border-bottom: 1px solid var(--bs-border-color);
+  background-color: var(--bs-tertiary-bg);
   text-align: center;
 }
 
 .ref-filter-form {
   padding: 10px;
-  border-bottom: 1px solid var("gray-300");
-  background-color: var("light");
+  border-bottom: 1px solid var(--bs-border-color);
+  background-color: var(--bs-tertiary-bg);
 }
 .ref-filter-form form {
   margin-bottom: 0;
@@ -237,7 +255,7 @@
 
 
 .table .change-entry-row:hover {
-  background-color: var("light");
+  background-color: var(--bs-tertiary-bg);
 }
 
 .table .tree-entry-row td,
@@ -271,7 +289,7 @@
 }
 
 .tree-path .octicon {
-  color: var("blue");
+  color: var(--bs-blue);
   margin-right: 5px;
   font-size: .875rem;
 }
@@ -279,7 +297,7 @@
 .diff-removed .tree-path,
 .diff-removed .tree-path .octicon,
 .diff-removed .diff-indicator .octicon {
-  color: var("gray-600");
+  color: var(--bs-secondary);
 }
 
 td.tree-path {
@@ -305,7 +323,7 @@ td.tree-path {
 }
 
 .diff-more td {
-  background-color: var("white");
+  background-color: var(--bs-body-bg);
 }
 
 .table tr .row-hover {
@@ -329,13 +347,13 @@ td.tree-path {
 }
 
 .hook-logs {
-  background: var("dark");
-  color: var("light");
+  background: var(--bs-body-color);
+  color: var(--bs-tertiary-bg);
   padding: 40px 10px;
 }
 .hook-log, .hook-log pre {
-  background: var("dark");
-  color: var("light");
+  background: var(--bs-body-color);
+  color: var(--bs-tertiary-bg);
 }
 .hook-log pre {
   padding: 20px 0;
@@ -348,12 +366,12 @@ td.tree-path {
 }
 .hook-log-title small {
   font-size: 0.7em;
-  color: var("gray-500");
+  color: var(--bs-dark-border-subtle);
   margin-left: 10px;
 }
 
 .hook-log-title .btn, .hook-log-title .btn.btn-link  {
-    color: var("light");
+    color: var(--bs-tertiary-bg);
 }
 
 .change-entry-row-actions {
@@ -419,7 +437,7 @@ td.change-entry-row-actions {
 
 .policy-body {
   padding: 30px;
-  background-color: var("gray-200");
+  background-color: var(--bs-light-border-subtle);
 }
 
 .auth-page .tab-content {
@@ -429,14 +447,14 @@ td.change-entry-row-actions {
 textarea.form-control.policy-document {
   font-family: "SFMono-Regular", Menlo, Consolas, Monospace, serif;
   font-size: 10px;
-  color: var("pink");
-  background-color: var("light");
+  color: var(--bs-pink);
+  background-color: var(--bs-tertiary-bg);
   padding: 10px;
 }
 textarea.form-control.policy-document:focus {
   font-family: "SFMono-Regular", Menlo, Consolas, Monospace, serif;
   font-size: 10px;
-  color: var("pink");
+  color: var(--bs-pink);
   padding: 10px;
 }
 
@@ -528,7 +546,7 @@ td.change-summary {
   padding-bottom: 30px;
   font-size: 30px;
   font-weight: bold;
-  color: var("cyan");
+  color: var(--bs-cyan);
 }
 
 .invited-welcome-msg .body {
@@ -550,11 +568,11 @@ td.change-summary {
 }
 
 .action-bar .btn.create-user {
-  background-color: var("success");
+  background-color: var(--bs-success);
 }
 
 .action-bar .btn.cancel-create-user {
-  background-color: var("secondary");
+  background-color: var(--bs-dark-text-emphasis);
 }
 
 
@@ -562,17 +580,17 @@ td.change-summary {
 .after-setup-btn {
   width: 250px;
   margin-top: 7px;
-  background-color: var("success");
-  color: var("white");
+  background-color: var(--bs-success);
+  color: var(--bs-body-bg);
   border: 0;
 }
 .after-setup-btn:hover {
-  color: var("white");
-  background-color: var("gray-700");
+  color: var(--bs-body-bg);
+  background-color: var(--bs-light-text-emphasis);
 }
 
 .after-setup-card code {
-  color: var("gray-700");
+  color: var(--bs-light-text-emphasis);
 }
 
 .copy-button {
@@ -584,7 +602,7 @@ td.change-summary {
 
 .import-num-objects {
   display: inline-flex;
-  color: var("success");
+  color: var(--bs-success);
   font-weight: bolder;
   margin: 0 2px;
 }
@@ -595,7 +613,7 @@ td.change-summary {
 }
 
 .import-success {
-  color: var("success");
+  color: var(--bs-success);
   display: flex;
   justify-content: center;
   font-size: 160%
@@ -614,8 +632,8 @@ td.change-summary {
 
 .code-container {
   border-radius: 10px;
-  border: 1px solid var("gray-300");
-  background-color: var("light");
+  border: 1px solid var(--bs-border-color);
+  background-color: var(--bs-tertiary-bg);
 }
 
 .file-content-card {
@@ -623,7 +641,7 @@ td.change-summary {
 }
 
 .file-content-heading {
-  background-color: var("light");
+  background-color: var(--bs-tertiary-bg);
   padding: 10px;
 }
 
@@ -642,14 +660,14 @@ td.change-summary {
 
 
 .object-viewer-sql-input.form-control {
-  background-color: var("gray-800");
+  background-color: var(--bs-light-text-emphasis);
   font-size: .8rem;
   font-family: "SFMono-Regular", menlo, consolas, monospace;
-  color: var("gray-500");
+  color: var(--bs-dark-border-subtle);
 }
 .object-viewer-sql-input.form-control:focus {
-  background-color: var("gray-800");
-  color: var("white");
+  background-color: var(--bs-light-text-emphasis);
+  color: var(--bs-body-bg);
 }
 
 .powered-by {
@@ -670,7 +688,7 @@ td.change-summary {
 }
 .object-viewer-sql-results th small {
   font-size: .7rem;
-  color: var("gray-500");
+  color: var(--bs-dark-border-subtle);
 }
 
 .image-container {
@@ -696,12 +714,12 @@ td.change-summary {
 .object-viewer-markdown h6 {
   padding-bottom: 0.25em;
   margin-bottom: 1.25rem;
-  border-bottom: 1px solid var("gray-300");
+  border-bottom: 1px solid var(--bs-border-color);
   margin-top: 2rem;
 }
 
 .required-field-label {
-  color: var("danger");
+  color: var(--bs-danger);
 }
 
 .otf-diff-update {
@@ -743,7 +761,7 @@ td.table-operation-details {
 }
 
 .table-operation-expansion {
-  color: var("black");
+  color: var(--bs-emphasis-color);
 }
 
 td.table-diff-type {
@@ -762,7 +780,7 @@ td.entry-type-indicator {
   position: relative;
   background: linear-gradient(#54a3ff, #006eed);
   border-radius: 50%;
-  color: var("white");
+  color: var(--bs-body-bg);
   height: 10px;
   line-height: 20px;
   margin-left: 5px;
@@ -774,7 +792,7 @@ td.entry-type-indicator {
   display: inline-block;
   background: linear-gradient(#54a3ff, #006eed);
   border-radius: 50%;
-  color: var("white");
+  color: var(--bs-body-bg);
   height: 10px;
   line-height: 20px;
   margin-left: 5px;
@@ -783,9 +801,9 @@ td.entry-type-indicator {
 
 .getting-started-card {
   margin-top: 64px;
-  background-color: var("light");
+  background-color: var(--bs-tertiary-bg);
   border: none;
-  color: var("dark");
+  color: var(--bs-body-color);
   padding: 104px 72px 32px 72px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
@@ -807,7 +825,7 @@ td.entry-type-indicator {
   font-weight: 500;
   line-height: 32px;
   font-style: normal;
-  color: var("dark");
+  color: var(--bs-body-color);
 }
 
 .getting-started-card > .text-container p {
@@ -815,7 +833,7 @@ td.entry-type-indicator {
   font-weight: 200;
   line-height: 32px;
   font-style: normal;
-  color: var("dark");
+  color: var(--bs-body-color);
 }
 
 .getting-started-card > .text-container p .sub-title {
@@ -823,7 +841,7 @@ td.entry-type-indicator {
   font-weight: 300;
   line-height: 32px;
   font-style: normal;
-  color: var("dark");
+  color: var(--bs-body-color);
 }
 
 .getting-started-card > .button-container {
@@ -861,12 +879,12 @@ td.entry-type-indicator {
 
 .file-drop-zone {
   text-align: center;
-  background-color: var("gray-200");
+  background-color: var(--bs-light-border-subtle);
   height: 80px;
   vertical-align: center;
   line-height: 80px;
-  border: 2px dashed var("gray-300");
-  color: var("gray-500");
+  border: 2px dashed var(--bs-border-color);
+  color: var(--bs-dark-border-subtle);
   font-size: 1.3em;
   cursor: pointer;
   margin-bottom: 20px;
@@ -875,7 +893,7 @@ td.entry-type-indicator {
 .file-drop-zone.file-drop-zone-focus {
   border: 2px dashed #94B49F;
   color: #94B49F;
-  background-color: var("gray-200");
+  background-color: var(--bs-light-border-subtle);
 }
 
 .upload-item {
@@ -885,9 +903,9 @@ td.entry-type-indicator {
 }
 
 .upload-item-uploading {
-  background-color: var("gray-200");
+  background-color: var(--bs-light-border-subtle);
 }
 
 .upload-item-done {
-  color: var("success");
+  color: var(--bs-success);
 }
