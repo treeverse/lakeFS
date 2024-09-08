@@ -1,4 +1,4 @@
-import React, {createContext, useReducer} from "react";
+import React, { createContext, useReducer } from "react";
 
 type AppContextType = {
     settings: AppContext;
@@ -50,7 +50,7 @@ const AppContext = createContext<ContextType>({
 });
 
 // @ts-expect-error - it doesn't like the "children" prop
-const WithAppContext: React.FC = ({ children }) => {
+const WithAppContext: React.FC = ({children}) => {
     const [state, dispatch] = useReducer(appContextReducer, initialAppContext);
 
     return (
@@ -60,4 +60,4 @@ const WithAppContext: React.FC = ({ children }) => {
     )
 }
 
-export {WithAppContext, AppContext, AppActionType};
+export { WithAppContext, AppContext, AppActionType };
