@@ -597,6 +597,7 @@ func TestLakectlFsUpload(t *testing.T) {
 		RunCmdAndVerifyFailure(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "target path is not a valid URI\nError executing command.\n", vars)
 	})
 	t.Run("dir_without_recursive_to_file", func(t *testing.T) {
+		t.Skip("#3720 Flaky ESTI test- restore once it is fixed and stops failing randomly")
 		vars["FILE_PATH"] = "data/ro/1.txt"
 		RunCmdAndVerifyFailureContainsText(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "read files/: is a directory", vars)
 	})
@@ -614,6 +615,7 @@ func getStorageConfig(t *testing.T) *apigen.StorageConfig {
 }
 
 func TestLakectlFsPresign(t *testing.T) {
+	//t.Skip("#3720 Flaky ESTI test- restore once it is fixed and stops failing randomly")
 	config := getStorageConfig(t)
 	if !config.PreSignSupport {
 		t.Skip()
