@@ -615,7 +615,6 @@ func getStorageConfig(t *testing.T) *apigen.StorageConfig {
 }
 
 func TestLakectlFsPresign(t *testing.T) {
-	//t.Skip("#3720 Flaky ESTI test- restore once it is fixed and stops failing randomly")
 	config := getStorageConfig(t)
 	if !config.PreSignSupport {
 		t.Skip()
