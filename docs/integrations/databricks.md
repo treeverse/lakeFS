@@ -94,7 +94,7 @@ a way to export changes from lakeFS to Unity Catalog.
 
 For the full guide on how to use Catalog Exports with Unity Catalog, see the [documentation](./unity-catalog.md).
 
-### lakeFS for Databricks <span class="badge">lakeFS Enterprise</span>
+### lakeFS for Databricks <span class="badge">Enterprise</span>
 
 lakeFS for Databricks provides a seamless integration between lakeFS and Unity Catalog. 
 Its primary benefits over the integration offered by lakeFS open-source are:
