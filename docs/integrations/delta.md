@@ -6,7 +6,7 @@ parent: Integrations
 
 # Using lakeFS with Delta Lake
 
-[Delta Lake](https://delta.io/) Delta Lake is an open-source storage framework designed to improve performance and provide transactional guarantees to data lake tables.
+[Delta Lake](https://delta.io/) is an open-source storage framework designed to improve performance and provide transactional guarantees to data lake tables.
 
 Because lakeFS is format-agnostic, you can save data in Delta format within a lakeFS repository and benefit from the advantages of both technologies. Specifically:
 
