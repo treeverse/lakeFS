@@ -17,7 +17,7 @@ In this document, we will cover the various Databricks products and how they int
 with lakeFS.
 
 <p class="center">
-    <img src="{{ site.baseurl }}/assets/img/Databricks-arch.png"/>
+    <img src="{{ site.baseurl }}/assets/img/databricks-arch.png"/>
 </p>
 
 ## Databricks Compute Options
