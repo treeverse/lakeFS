@@ -22,11 +22,12 @@ with lakeFS.
 
 ## Databricks Compute Options
 
-Databricks offers several compute options for running workloads. All of these options
-can be used with lakeFS. At a basic level, Databricks compute products are Spark clusters
-that run on top of cloud infrastructure. They offer different ways of configuration
-and manageability on top of Spark. From a lakeFS integration perspective, the main difference
-is how you configure the storage operations that perform read/writes to lakeFS.
+Databricks offers several [compute options](https://docs.databricks.com/en/compute/index.html#types-of-compute)
+for running workloads. All of these options can be used with lakeFS. 
+At a basic level, Databricks compute products are Spark clusters that run on top
+of cloud infrastructure and offer different configuration options. 
+From a lakeFS integration perspective, the main difference is how you configure
+the storage operations that perform read/writes to lakeFS.
 
 lakeFS storage operations will either use the [lakeFS Hadoop Filesystem](./spark#lakefs-hadoop-filesystem),
 which utilizes the [lakeFS OpenAPI](../understand/architecture.md#openapi-server),
@@ -42,7 +43,6 @@ the [Spark integration page](./spark.md#using-lakefs-with-apache-spark).
 ### All-Purpose Compute
 
 Provisioned compute used to analyze data in notebooks.
-You can create, terminate, and restart this compute using the UI, CLI, or REST API.
 
 When you create a Databricks compute cluster, you can configure it to use lakeFS
 with the [lakeFS Hadoop Filesystem](./spark.md#lakefs-hadoop-filesystem) (see Databricks installation guide)
@@ -56,9 +56,13 @@ Provisioned compute used to run automated jobs.
 The Databricks job scheduler automatically creates a job compute whenever a job is configured to run on new compute.
 
 To use lakeFS with Databricks jobs, a compute cluster needs to be configured in the cluster setup,
-just like with All-Purpose compute. Serverless compute for Databricks jobs is currently not supported.
+just like with [All-Purpose compute](#all-purpose-compute). 
 
-### Warehouses
+{.note}
+**Note**
+Serverless compute for Databricks jobs is currently not supported.
+
+### SQL Warehouses
 
 Classic & Pro warehouses are used to run SQL commands on data objects in the SQL editor or interactive notebooks.
 Serverless warehouses do the same, except that they are on-demand elastic compute.
@@ -72,7 +76,7 @@ Unity Catalog is Databricks' metastore that provides centralized access control,
 auditing, lineage, and data discovery capabilities across Databricks workspaces.
 
 lakeFS can be used with Unity Catalog to provide a versioned view of the data and
-the Unity Catalog metadata, like versioned catalogs, schemas, and tables.
+the Unity Catalog metadata.
 
 lakeFS support for Unity Catalog differs between lakeFS OSS and lakeFS Enterprise & Cloud.
 
@@ -81,6 +85,10 @@ lakeFS support for Unity Catalog differs between lakeFS OSS and lakeFS Enterpris
 Leveraging the external tables feature within Unity Catalog,
 you can register a Delta Lake table exported from lakeFS and access it through the unified catalog.
 
+{.note}
+Note
+lakeFS Catalog exporters offer read-only table exports.
+
 [Catalog Exports](../howto/catalog_exports.md) relies on [lakeFS Actions](../howto/hooks) and offers
 a way to export changes from lakeFS to Unity Catalog.
 
@@ -88,11 +96,16 @@ For the full guide on how to use Catalog Exports with Unity Catalog, see the [do
 
 ### lakeFS for Databricks <span class="badge">Cloud</span> <span class="badge">Enterprise</span>
 
-An all-in-one solution that provides a seamless integration between lakeFS and Unity Catalog.
-
+lakeFS for Databricks provides a seamless integration between lakeFS and Unity Catalog. 
+Its primary benefits over the integration offered by lakeFS open-source are:
+- Table Write support
+- Native Unity Catalog interaction: Instead of reading/writing from lakeFS path, 
+use SQL to directly access data stored in Unity catalog
+- Advanced Serverless warehouse support: lakeFS can work with anything serverless - SQL warehouse or Serverless notebooks.
+  
 For more information, visit the lakeFS for Databricks [page](https://lakefs.io/lakefs-for-databricks/).
 
 ## Delta Lake
 
-lakeFS can be used with Delta Lake to provide a versioned view of the data and the Delta Lake metadata.
+lakeFS supports Delta Lake tables, and it provides a versioned view of the data and the Delta Lake metadata.
 Read the [Delta Lake docs](./delta.md) for more information.
