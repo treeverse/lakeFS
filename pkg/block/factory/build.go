@@ -3,6 +3,7 @@ package factory
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -35,7 +36,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 }
 
 func buildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c params.AdapterConfig) (block.Adapter, error) {
-	blockstore := c.BlockstoreType()
+	blockstore := strings.ToLower(c.BlockstoreType())
 	logging.FromContext(ctx).
 		WithField("type", blockstore).
 		Info("initialize blockstore adapter")
