@@ -47,7 +47,7 @@ Provisioned compute used to analyze data in notebooks.
 When you create a Databricks compute cluster, you can configure it to use lakeFS
 with the [lakeFS Hadoop Filesystem](./spark.md#lakefs-hadoop-filesystem) (see Databricks installation guide)
 or the [lakeFS S3 Gateway](./spark.md#s3-compatible-api). The lakeFS S3 Gateway can be configured
-in the [notebook](https://docs.lakefs.io/integrations/spark.html#configuration) or during
+in the [notebook](./spark.md#configuration) or during
 cluster setup (_Advanced Options -> Spark -> Spark config_).
 
 ### Jobs Compute
