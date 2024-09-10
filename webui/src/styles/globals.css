@@ -28,6 +28,14 @@
 /*  --bs-teal: var(--bs-teal);*/
 }
 
+[data-bs-theme="dark"] {
+  --color-bg-added: #190013;
+  --color-bg-removed: #001319;
+  --color-bg-changed: #000924;
+  --color-bg-unknown: #0e0b00;
+  --color-bg-conflict: #000c32;
+}
+
 .gray-out {
   background-color: rgba(255, 255, 255, 0.5);
 }
