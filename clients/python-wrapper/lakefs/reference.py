@@ -60,9 +60,9 @@ class Reference(_BaseLakeFSObject):
                 after: Optional[str] = None,
                 prefix: Optional[str] = None,
                 delimiter: Optional[str] = None,
-                **kwargs) -> Generator[StoredObject | CommonPrefix]:
+                **kwargs) -> Generator[ObjectInfo | CommonPrefix]:
         """
-        Returns an object generator for this reference, the generator can yield either a StoredObject or a CommonPrefix
+        Returns an object generator for this reference, the generator can yield either a ObjectInfo or a CommonPrefix
         object depending on the listing parameters provided.
 
         :param max_amount: Stop showing changes after this amount
