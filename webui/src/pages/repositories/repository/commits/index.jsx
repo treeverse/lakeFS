@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useContext, useEffect, useState} from "react";
 import { useOutletContext } from "react-router-dom";
 import dayjs from "dayjs";
 import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
@@ -24,11 +24,12 @@ import RefDropdown from "../../../../lib/components/repository/refDropdown";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
 import {RepoError} from "../error";
+import {AppContext} from "../../../../lib/hooks/appContext";
 
 
 const CommitWidget = ({ repo, commit }) => {
-
-    const buttonVariant = "outline-dark";
+    const {state} = useContext(AppContext);
+    const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
 
     return (
         <ListGroup.Item>
@@ -51,7 +52,7 @@ const CommitWidget = ({ repo, commit }) => {
                 <div className="float-end">
                     <ButtonGroup className="commit-actions">
                         <LinkButton
-                            buttonVariant="outline-dark"
+                            buttonVariant={buttonVariant}
                             href={{
                                 pathname: '/repositories/:repoId/commits/:commitId',
                                 params: {repoId: repo.id, commitId: commit.id}
@@ -68,7 +69,7 @@ const CommitWidget = ({ repo, commit }) => {
                         <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}/${commit.id}`} tooltip="Copy URI to clipboard" icon={<LinkIcon/>}/>
                         <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${commit.id}`} tooltip="Copy S3 URI to clipboard" icon={<PackageIcon/>}/>
                         <LinkButton
-                            buttonVariant="outline-dark"
+                            buttonVariant={buttonVariant}
                             href={{pathname: '/repositories/:repoId/objects', params: {repoId: repo.id}, query: {ref: commit.id}}}
                             tooltip="Browse objects at this commit">
                             <BrowserIcon/>

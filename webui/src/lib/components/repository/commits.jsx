@@ -6,18 +6,19 @@ import {MetadataRow, MetadataUIButton} from "../../../pages/repositories/reposit
 import {Link} from "../nav";
 import dayjs from "dayjs";
 import Card from "react-bootstrap/Card";
-import React from "react";
+import React, {useContext} from "react";
+import {AppContext} from "../../hooks/appContext";
 
 
 const CommitActions = ({ repo, commit }) => {
-
-  const buttonVariant = "outline-dark";
+  const {state} = useContext(AppContext);
+  const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
 
   return (
     <div>
       <ButtonGroup className="commit-actions">
         <LinkButton
-          buttonVariant="outline-dark"
+          buttonVariant={buttonVariant}
           href={{pathname: '/repositories/:repoId/objects', params: {repoId: repo.id}, query: {ref: commit.id}}}
           tooltip="Browse commit objects">
           <BrowserIcon/>
