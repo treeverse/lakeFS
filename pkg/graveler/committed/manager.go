@@ -207,7 +207,10 @@ func (c *committedManager) Merge(ctx context.Context, ns graveler.StorageNamespa
 		// no changes on source
 		return "", graveler.ErrNoChanges
 	}
-
+	if source == destination {
+		// merge branch to itself
+		return "", graveler.ErrNoChanges
+	}
 	if destination == base {
 		// changes introduced only on source
 		return source, nil
