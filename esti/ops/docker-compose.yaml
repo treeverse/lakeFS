@@ -11,6 +11,8 @@ services:
       - lakefs-app:/app:ro
     environment:
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
+      - LAKEFS_AUTH_UI_CONFIG_RBAC=${LAKEFS_AUTH_UI_CONFIG_RBAC:-none}
+      - LAKEFS_AUTH_API_ENDPOINT=${LAKEFS_AUTH_API_ENDPOINT:-}
       - LAKEFS_DATABASE_TYPE=${LAKEFS_DATABASE_TYPE:-postgres}
       - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-local}
@@ -27,6 +29,9 @@ services:
       - AZURE_TENANT_ID
       - LAKEFSACTION_VAR=this_is_actions_var
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    
   postgres:
     image: "postgres:11"
     ports:
@@ -34,6 +39,7 @@ services:
     environment:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
+
   esti:
     image: "golang:1.22.6-alpine3.20"
     links:
@@ -61,7 +67,6 @@ services:
       - ESTI_FORCE_PATH_STYLE
       - ESTI_AZURE_STORAGE_ACCOUNT
       - ESTI_AZURE_STORAGE_ACCESS_KEY
-      - ESTI_AUTH_BASIC
     working_dir: /lakefs
     command:
       - /bin/sh

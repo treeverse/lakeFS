@@ -26,7 +26,7 @@ func TestAdminPermissions(t *testing.T) {
 	resCreateGroup, err := client.CreateGroupWithResponse(ctx, apigen.CreateGroupJSONRequestBody{
 		Id: gname,
 	})
-	if isBasicAuth() {
+	if isBasicAuth(t, ctx) {
 		require.NoError(t, err, "Admin failed while creating group")
 		require.Equal(t, http.StatusNotImplemented, resCreateGroup.StatusCode())
 		return
@@ -65,16 +65,16 @@ func TestAdminPermissions(t *testing.T) {
 
 // Test Super Permissions: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestSuperPermissions(t *testing.T) {
-	if isBasicAuth() {
+	ctx, log, repo := setupTest(t)
+	if isBasicAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
-	ctx, logger, repo := setupTest(t)
 	groups := []string{"Supers", "SuperUsers"}
 
 	// map group names to IDs
 	mapGroupNameToID, groupIDs := mapGroupNamesToIDs(t, ctx, groups)
 	// generate the Super client
-	superClient := newClientFromGroup(t, ctx, logger, "super", groupIDs)
+	superClient := newClientFromGroup(t, ctx, log, "super", groupIDs)
 
 	// listing the available branches should succeed
 	resListBranches, err := superClient.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{})
@@ -120,16 +120,17 @@ func TestSuperPermissions(t *testing.T) {
 
 // Test Writer Permissions: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestWriterPermissions(t *testing.T) {
-	if isBasicAuth() {
+	ctx, log, repo := setupTest(t)
+	if isBasicAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
-	ctx, logger, repo := setupTest(t)
+
 	groups := []string{"Writers", "Developers"}
 	// map group names to IDs
 	_, groupIDs := mapGroupNamesToIDs(t, ctx, groups)
 
 	// generate the Writer client
-	writerClient := newClientFromGroup(t, ctx, logger, "writer", groupIDs)
+	writerClient := newClientFromGroup(t, ctx, log, "writer", groupIDs)
 
 	// listing the available branches should succeed
 	resListBranches, err := writerClient.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{})
@@ -170,10 +171,10 @@ func TestWriterPermissions(t *testing.T) {
 
 // Test Reader Permissions: AuthManageOwnCredentials, FSReadAll
 func TestReaderPermissions(t *testing.T) {
-	if isBasicAuth() {
+	ctx, log, repo := setupTest(t)
+	if isBasicAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
-	ctx, log, repo := setupTest(t)
 	groups := []string{"Readers", "Viewers"}
 
 	// map group names to IDs
@@ -210,10 +211,11 @@ func TestReaderPermissions(t *testing.T) {
 }
 
 func TestCreateRepo_Unauthorized(t *testing.T) {
-	if isBasicAuth() {
+	ctx := context.Background()
+	if isBasicAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
-	ctx := context.Background()
+
 	name := generateUniqueRepositoryName()
 	storageNamespace := generateUniqueStorageNamespace(name)
 	name = makeRepositoryName(name)
@@ -238,10 +240,10 @@ func TestCreateRepo_Unauthorized(t *testing.T) {
 }
 
 func TestRepoMetadata_Unauthorized(t *testing.T) {
-	if isBasicAuth() {
+	ctx, log, repo := setupTest(t)
+	if isBasicAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
-	ctx, log, repo := setupTest(t)
 
 	// generate client with no group association
 	clt := newClientFromGroup(t, ctx, log, "none", nil)
@@ -277,11 +279,10 @@ func TestRepoMetadata_Unauthorized(t *testing.T) {
 }
 
 func TestCreatePolicy(t *testing.T) {
-	if isBasicAuth() {
+	ctx := context.Background()
+	if !isAdvancedAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
-	ctx := context.Background()
-	//ctx, log, repo := setupTest(t)
 
 	t.Run("valid_policy", func(t *testing.T) {
 		resp, err := client.CreatePolicyWithResponse(ctx, apigen.CreatePolicyJSONRequestBody{
@@ -319,10 +320,10 @@ func TestCreatePolicy(t *testing.T) {
 }
 
 func TestBranchProtectionRules_Unauthorized(t *testing.T) {
-	if isBasicAuth() {
+	ctx, log, repo := setupTest(t)
+	if isBasicAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
-	ctx, log, repo := setupTest(t)
 
 	// generate client with no group association
 	clt := newClientFromGroup(t, ctx, log, "none", nil)
@@ -339,10 +340,10 @@ func TestBranchProtectionRules_Unauthorized(t *testing.T) {
 }
 
 func TestGarbageCollectionRules_Unauthorized(t *testing.T) {
-	if isBasicAuth() {
+	ctx, log, repo := setupTest(t)
+	if isBasicAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
-	ctx, log, repo := setupTest(t)
 
 	// generate client with no group association
 	clt := newClientFromGroup(t, ctx, log, "none", nil)
@@ -388,10 +389,10 @@ func newClientFromGroup(t *testing.T, context context.Context, logger logging.Lo
 }
 
 func TestUpdatePolicy(t *testing.T) {
-	if isBasicAuth() {
+	ctx := context.Background()
+	if !isAdvancedAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
-	ctx := context.Background()
 
 	// test policy
 	now := apiutil.Ptr(time.Now().Unix())

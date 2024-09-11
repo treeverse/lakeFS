@@ -43,12 +43,11 @@ jobs:
         run: echo "tag=sha-$(git rev-parse --short HEAD | sed s/^v//g)" >> $GITHUB_OUTPUT
 
       - name: Restore cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: restore-cache
         with:
           path: /tmp/generated.tar.gz
-          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**', './api/**', './webui/**', './auth/**') }}
-          restore-keys: ${{ runner.os }}-go-
+          key: ${{ runner.os }}-go-${{ hashFiles('./pkg/**', './api/**', './webui/**', './auth/**', './acl') }}
 
       - name: Setup Go
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -69,7 +68,8 @@ jobs:
         if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
           make -j3 gen-api gen-code gen-ui VERSION=${{ steps.version.outputs.tag }}
-          tar -czf /tmp/generated.tar.gz ./webui/dist ./pkg/auth/{client,service_wrapper,service_inviter_wrapper}.gen.go ./pkg/authentication/apiclient/client.gen.go ./pkg/permissions/actions.gen.go ./pkg/api/apigen/lakefs.gen.go
+          go build ./contrib/auth/acl/cmd/acl
+          tar -czf /tmp/generated.tar.gz ./webui/dist ./pkg/auth/{client,service_wrapper,service_inviter_wrapper}.gen.go ./pkg/authentication/apiclient/client.gen.go ./pkg/permissions/actions.gen.go ./pkg/api/apigen/lakefs.gen.go ./acl
 
         # must upload artifact in order to download generated later
       - name: Store generated code
@@ -219,7 +219,7 @@ jobs:
         run: tar -xzvf /tmp/generated.tar.gz
 
       - name: Restore cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
@@ -659,7 +659,7 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v4
       - name: Restore cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
@@ -700,7 +700,7 @@ jobs:
       - name: Check-out code
         uses: actions/checkout@v4
       - name: Restore cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: restore-cache
         with:
           path: ${{ github.workspace }}/test/spark/metaclient
@@ -765,12 +765,22 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling fluffy image
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
+      # Retrieve ACL server binary from cache
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        run: tar -xzvf /tmp/generated.tar.gz
+
+      # Run ACL server
+      - name: Run ACL server
+        env:
+          ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
+          ACLSERVER_DATABASE_TYPE: local
+        run: ./acl run &
 
       - name: Test lakeFS with S3 tests KV
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -778,6 +788,8 @@ jobs:
           compose-file: esti/ops/docker-compose-dynamodb.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
+          LAKEFS_AUTH_API_ENDPOINT: http://host.docker.internal:8001/api/v1
+          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -826,19 +838,31 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling fluffy image
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
+      # Retrieve ACL server binary from cache
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        run: tar -xzvf /tmp/generated.tar.gz
+
+      # Run ACL server
+      - name: Run ACL server
+        env:
+          ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
+          ACLSERVER_DATABASE_TYPE: local
+        run: ./acl run &
 
       - name: Test lakeFS with S3 tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose-fluffy.yaml
+          compose-file: esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
+          LAKEFS_AUTH_API_ENDPOINT: http://host.docker.internal:8001/api/v1
+          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
@@ -860,7 +884,7 @@ jobs:
       - name: lakeFS Logs on s3 failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose-fluffy.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
 
       - name: Export DB
         if: ${{ always() }}
@@ -887,20 +911,32 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling fluffy image
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
+      # Retrieve ACL server binary from cache
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        run: tar -xzvf /tmp/generated.tar.gz
+
+      # Run ACL server
+      - name: Run ACL server
+        env:
+          ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
+          ACLSERVER_DATABASE_TYPE: local
+        run: ./acl run &
 
       - name: Start lakeFS with GS tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose-fluffy.yaml
+          compose-file: esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+          LAKEFS_AUTH_API_ENDPOINT: http://host.docker.internal:8001/api/v1
+          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_BLOCKSTORE_TYPE: gs
           LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
@@ -910,7 +946,7 @@ jobs:
       - name: lakeFS Logs on GS failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose-fluffy.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
 
   run-system-azure-abfs:
     name: Run latest lakeFS app on Azure with Azure blobstore
@@ -932,20 +968,32 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling fluffy image
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
+      # Retrieve ACL server binary from cache
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        run: tar -xzvf /tmp/generated.tar.gz
+
+      # Run ACL server
+      - name: Run ACL server
+        env:
+          ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
+          ACLSERVER_DATABASE_TYPE: local
+        run: ./acl run &
 
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: esti/ops/docker-compose-fluffy.yaml
+          compose-file: esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+          LAKEFS_AUTH_API_ENDPOINT: http://host.docker.internal:8001/api/v1
+          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: azure
           ESTI_AZURE_STORAGE_ACCOUNT: esti
@@ -956,7 +1004,7 @@ jobs:
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose-fluffy.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
 
       - name: See the env when we would have tried to publish coverage
         run: env
@@ -984,12 +1032,22 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Required for pulling fluffy image
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
+      # Retrieve ACL server binary from cache
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        run: tar -xzvf /tmp/generated.tar.gz
+
+      # Run ACL server
+      - name: Run ACL server
+        env:
+          ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
+          ACLSERVER_DATABASE_TYPE: local
+        run: ./acl run &
 
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -998,6 +1056,8 @@ jobs:
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+          LAKEFS_AUTH_API_ENDPOINT: http://host.docker.internal:8001/api/v1
+          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_DATABASE_TYPE: cosmosdb
           LAKEFS_DATABASE_COSMOSDB_ENDPOINT: "https://${{ env.COSMOSDB_ACCOUNT }}.documents.azure.com"
           LAKEFS_DATABASE_COSMOSDB_DATABASE: ${{ env.COSMOSDB_DATABASE }}
@@ -1026,7 +1086,7 @@ jobs:
       - name: lakeFS Logs on Azure failure
         if: ${{ failure() }}
         continue-on-error: true
-        run: docker compose -f esti/ops/docker-compose-fluffy.yaml logs --tail=1000 lakefs
+        run: docker compose -f esti/ops/docker-compose.yaml logs --tail=1000 lakefs
 
   python-wrapper:
     name: Test lakeFS against the python wrapper client
@@ -1073,7 +1133,7 @@ jobs:
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
-        
+
       - name: Run Python Wrapper Tests
         uses: pavelzw/pytest-action@v2
         env:
@@ -1132,7 +1192,7 @@ jobs:
         working-directory: webui
         run: echo "PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package-lock.json').dependencies['@playwright/test'].version)")" >> $GITHUB_ENV
       - name: Cache Playwright binaries
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: playwright-cache
         with:
           path: |
@@ -1188,7 +1248,7 @@ jobs:
             // 3. Prepare format of the comment
             const output = `
               # E2E Test Results - ${process.env.PLAYWRIGHT_PROJECT}
-              
+
               ${content}
             `;
 
@@ -1251,7 +1311,7 @@ jobs:
         working-directory: webui
         run: echo "PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package-lock.json').dependencies['@playwright/test'].version)")" >> $GITHUB_ENV
       - name: Cache Playwright binaries
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: playwright-cache
         with:
           path: |
@@ -1307,7 +1367,7 @@ jobs:
             // 3. Prepare format of the comment
             const output = `
               # E2E Test Results - ${process.env.PLAYWRIGHT_PROJECT}
-              
+
               ${content}
             `;
 
@@ -1361,7 +1421,6 @@ jobs:
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
-          ESTI_AUTH_BASIC: true
 
       - name: Check files in S3 bucket
         run: |
@@ -1380,4 +1439,3 @@ jobs:
           if docker compose ps -q postgres; then
             docker compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
           fi
-  

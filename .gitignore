@@ -42,6 +42,7 @@
 /cmd/lakectl/lakectl
 /dist
 /delta/
+/acl
 
 # client excludes
 /webui/node_modules
