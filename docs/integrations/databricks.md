@@ -80,7 +80,7 @@ the Unity Catalog metadata.
 
 lakeFS support for Unity Catalog differs between lakeFS OSS and lakeFS Enterprise & Cloud.
 
-### Catalog Exports <span class="badge">Open-Source</span>
+### Catalog Exports <span class="badge">lakeFS</span>
 
 Leveraging the external tables feature within Unity Catalog,
 you can register a Delta Lake table exported from lakeFS and access it through the unified catalog.
@@ -94,7 +94,7 @@ a way to export changes from lakeFS to Unity Catalog.
 
 For the full guide on how to use Catalog Exports with Unity Catalog, see the [documentation](./unity-catalog.md).
 
-### lakeFS for Databricks <span class="badge">Cloud</span> <span class="badge">Enterprise</span>
+### lakeFS for Databricks <span class="badge">Enterprise</span>
 
 lakeFS for Databricks provides a seamless integration between lakeFS and Unity Catalog. 
 Its primary benefits over the integration offered by lakeFS open-source are:
