@@ -3,6 +3,8 @@
   --color-fg-removed: var(--bs-danger);
   --color-fg-changed: var(--bs-warning);
   --color-fg-conflict: var(--bs-secondary);
+  --color-uri-octicon: #0c5460;
+  --color-uri-link: #0f6674;
   --color-bg-added: #e6ffec;
   --color-bg-removed: #ffece6;
   --color-bg-changed: #fff6db;
@@ -29,6 +31,8 @@
 }
 
 [data-bs-theme="dark"] {
+  --color-uri-octicon: #f3ab9f;
+  --color-uri-link: #f0998b;
   --color-bg-added: #190013;
   --color-bg-removed: #001319;
   --color-bg-changed: #000924;
@@ -109,7 +113,7 @@
   color: var(--bs-white);
 }
 .navbar a.dropdown-toggle:hover {
-  color: var(--bs-gray-300);
+  color: var(--bs-border-color);
 }
 
 .nav-tabs .nav-link.active {
@@ -127,12 +131,12 @@
 }
 
 .lakefs-uri .octicon {
-  color: var(--bs-info);
+  color: var(--color-uri-octicon);
   margin-right: 5px;
 }
 
 .lakefs-uri a {
-  color: var(--bs-teal);
+  color: var(--color-uri-link);
   text-decoration: underline;
 }
 
@@ -891,8 +895,8 @@ td.entry-type-indicator {
   height: 80px;
   vertical-align: center;
   line-height: 80px;
-  border: 2px dashed var(--bs-border-color);
-  color: var(--bs-dark-border-subtle);
+  border: 2px dashed var(--bs-dark-border-subtle);
+  color: var(--bs-secondary);
   font-size: 1.3em;
   cursor: pointer;
   margin-bottom: 20px;
