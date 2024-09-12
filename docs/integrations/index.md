@@ -47,7 +47,7 @@ See below for detailed instructions for using different technologies with lakeFS
     </tr>
     <tr>
         <td width="25%" align=center><a href="./huggingface_datasets.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/huggingface.png" alt="Hugging Face Logo"/><br/>HuggingFace Datasets</a></td>
-        <td width="25%" align=center></td>
+        <td width="25%" align=center><a href="./databricks.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/databricks.png" alt="Databricks Logo"/><br/>Databricks</a></td>
         <td width="25%" align=center></td>
         <td width="25%" align=center></td>
     </tr>
