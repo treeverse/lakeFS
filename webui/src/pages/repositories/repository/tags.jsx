@@ -223,7 +223,7 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
                 </ActionsBar>
                 {content}
                 <div className={"mt-2"}>
-                    A tag is an immutable pointer to a single commit. <a href="https://docs.lakefs.io/understand/object-model.html#tags" target="_blank" rel="noopener noreferrer">Learn more.</a>
+                    A tag is an immutable pointer to a single commit. <a href="https://docs.lakefs.io/understand/model.html#tags" target="_blank" rel="noopener noreferrer">Learn more.</a>
                 </div>
             </div>
         </>

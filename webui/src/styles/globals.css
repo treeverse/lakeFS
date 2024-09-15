@@ -10,6 +10,7 @@
   --color-bg-changed: #fff6db;
   --color-bg-unknown: #f1f4ff;
   --color-bg-conflict: #fff3cd;
+  --color-policy-text: #d63384;
 /* The following is all the colors that are used by the css (kept here for refernce, when adding new colors): */
 /*  --bs-success: var(--bs-success);*/
 /*  --bs-danger: var(--bs-danger);*/
@@ -31,13 +32,14 @@
 }
 
 [data-bs-theme="dark"] {
+  --color-policy-text: #ffb6c1;
   --color-uri-octicon: #f3ab9f;
   --color-uri-link: #f0998b;
-  --color-bg-added: #190013;
-  --color-bg-removed: #001319;
-  --color-bg-changed: #000924;
-  --color-bg-unknown: #0e0b00;
-  --color-bg-conflict: #000c32;
+  --color-bg-added: #005014;
+  --color-bg-removed: #571500;
+  --color-bg-changed: #b34400;
+  --color-bg-unknown: #001b7c;
+  --color-bg-conflict: #7d0046;
 }
 
 .gray-out {
@@ -459,14 +461,14 @@ td.change-entry-row-actions {
 textarea.form-control.policy-document {
   font-family: "SFMono-Regular", Menlo, Consolas, Monospace, serif;
   font-size: 10px;
-  color: var(--bs-pink);
+  color: var(--color-policy-text);
   background-color: var(--bs-tertiary-bg);
   padding: 10px;
 }
 textarea.form-control.policy-document:focus {
   font-family: "SFMono-Regular", Menlo, Consolas, Monospace, serif;
   font-size: 10px;
-  color: var(--bs-pink);
+  color: var(--color-policy-text);
   padding: 10px;
 }
 
