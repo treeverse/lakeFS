@@ -77,7 +77,7 @@ const TopNav = ({logged = true}) => {
         );
     }
     return (
-        <Navbar variant="dark" bg="dark" expand="md">
+        <Navbar variant="dark" bg="dark" expand="md" className="border-bottom">
             <Container fluid={true}>
                 <Link component={Navbar.Brand} href="/">
                     <img src="/logo.png" alt="lakeFS" className="logo"/>
