@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useContext} from "react";
 import {useAPI} from "../../hooks/api";
 import {objects} from "../../api";
 import ReactDiffViewer, {DiffMethod} from "react-diff-viewer-continued";
@@ -7,6 +7,7 @@ import {humanSize} from "./tree";
 import Alert from "react-bootstrap/Alert";
 import {InfoIcon} from "@primer/octicons-react";
 import {useStorageConfig} from "../../hooks/storageConfig";
+import {AppContext} from "../../hooks/appContext";
 
 const maxDiffSizeBytes = 120 << 10;
 const supportedReadableFormats = ["txt", "text", "csv", "tsv", "yaml", "yml", "json"];
@@ -74,6 +75,8 @@ const NoContentDiff = ({left, right, diffType}) => {
 }
 
 const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType}) => {
+    const {state} = useContext(AppContext);
+
     const left = leftRef && useAPI(async () => objects.get(repoId, leftRef, path, config.pre_sign_support_ui),
         [repoId, leftRef, path]);
     const right = rightRef && useAPI(async () => objects.get(repoId, rightRef, path, config.pre_sign_support_ui),
@@ -89,6 +92,7 @@ const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSi
             oldValue={left && left.response}
             newValue={right && right.response}
             splitView={false}
+            useDarkTheme={state.settings.darkMode}
             compareMethod={DiffMethod.WORDS}/>
     </div>;
 }

@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useContext, useState} from "react";
 
 import Modal from "react-bootstrap/Modal";
 import Table from "react-bootstrap/Table";
@@ -9,6 +9,7 @@ import {useAPIWithPagination} from "../../hooks/api";
 import {ClipboardButton, DataTable, AlertError, FormattedDate, Loading} from "../controls";
 import {ConfirmationButton} from "../modals";
 import {Paginator} from "../pagination";
+import {AppContext} from "../../hooks/appContext";
 
 
 export const CredentialsTable = ({userId, currentAccessKey, refresh, after, onPaginate}) => {
@@ -62,6 +63,9 @@ export const CredentialsTable = ({userId, currentAccessKey, refresh, after, onPa
 export const CredentialsShowModal = ({ credentials, show, onHide }) => {
     if (!credentials) return <></>;
 
+    const {state} = useContext(AppContext);
+    const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
+
     return (
         <Modal show={show} onHide={onHide} size="lg">
             <Modal.Header closeButton>
@@ -75,14 +79,14 @@ export const CredentialsShowModal = ({ credentials, show, onHide }) => {
                         <td><strong>Access Key ID</strong></td>
                         <td><code>{credentials.access_key_id}</code></td>
                         <td>
-                            <ClipboardButton variant="outline-dark" tooltip="Copy to clipboard" text={credentials.access_key_id}/>
+                            <ClipboardButton variant={buttonVariant} tooltip="Copy to clipboard" text={credentials.access_key_id}/>
                         </td>
                     </tr>
                     <tr>
                         <td><strong>Secret Access Key</strong></td>
                         <td><code>{credentials.secret_access_key}</code></td>
                         <td>
-                            <ClipboardButton variant="outline-dark" tooltip="Copy to clipboard" text={credentials.secret_access_key}/>
+                            <ClipboardButton variant={buttonVariant} tooltip="Copy to clipboard" text={credentials.secret_access_key}/>
                         </td>
                     </tr>
                     </tbody>

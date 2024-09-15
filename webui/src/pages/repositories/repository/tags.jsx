@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {useContext, useEffect, useMemo, useRef, useState} from "react";
 import { useOutletContext } from "react-router-dom";
 import {
     TagIcon,
@@ -30,11 +30,12 @@ import { useRouter } from "../../../lib/hooks/router";
 import {ConfirmationButton} from "../../../lib/components/modals";
 import Alert from "react-bootstrap/Alert";
 import {RepoError} from "./error";
+import {AppContext} from "../../../lib/hooks/appContext";
 
 
 const TagWidget = ({ repo, tag, onDelete }) => {
-
-    const buttonVariant = "outline-dark";
+    const {state} = useContext(AppContext);
+    const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
 
     return (
         <ListGroup.Item>
@@ -72,7 +73,7 @@ const TagWidget = ({ repo, tag, onDelete }) => {
                                 pathname: '/repositories/:repoId/commits/:commitId',
                                 params: { repoId: repo.id, commitId: tag.commit_id },
                             }}
-                            buttonVariant="outline-dark"
+                            buttonVariant={buttonVariant}
                             tooltip="View referenced commit">
                             {tag.commit_id.substr(0, 12)}
                         </LinkButton>
@@ -222,7 +223,7 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
                 </ActionsBar>
                 {content}
                 <div className={"mt-2"}>
-                    A tag is an immutable pointer to a single commit. <a href="https://docs.lakefs.io/understand/object-model.html#identifying-commits" target="_blank" rel="noopener noreferrer">Learn more.</a>
+                    A tag is an immutable pointer to a single commit. <a href="https://docs.lakefs.io/understand/model.html#tags" target="_blank" rel="noopener noreferrer">Learn more.</a>
                 </div>
             </div>
         </>

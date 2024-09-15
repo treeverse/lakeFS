@@ -1,4 +1,4 @@
-import React, {FC, useCallback} from "react";
+import React, { FC, useCallback, useContext } from "react";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
@@ -8,6 +8,7 @@ import {DownloadIcon} from "@primer/octicons-react";
 import {ClipboardButton} from "../../lib/components/controls";
 import { useRouter } from "../../lib/hooks/router";
 import noop from "lodash/noop";
+import { AppContext } from "../../lib/hooks/appContext";
 
 interface SetupCompleteProps {
     accessKeyId: string;
@@ -28,7 +29,9 @@ credentials:
 server:
     endpoint_url: ${window.location.protocol}//${window.location.host}${apiEndpoint}
 `);
-    
+    const {state} = useContext(AppContext);
+    const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
+
     const goToLoginHandler = useCallback(() => {
         let nextUrl = "/auth/login";
         // Need to refactor and convert the useRouter and useQuery hooks to TS in order to get rid of this any
@@ -54,11 +57,11 @@ server:
                         </Card.Text>
                         <div className="ms-2 row mt-4">
                             <div className="col-4">Access Key ID:</div>
-                            <div className="col-8"><code>{accessKeyId}</code> &#160;&#160;<ClipboardButton onSuccess={noop} onError={noop} className={"copy-button"} variant="outline-dark" text={accessKeyId} tooltip="Copy"/></div>
+                            <div className="col-8"><code>{accessKeyId}</code> &#160;&#160;<ClipboardButton onSuccess={noop} onError={noop} className={"copy-button"} variant={buttonVariant} text={accessKeyId} tooltip="Copy"/></div>
                         </div>
                         <div className="ms-2 row mt-2">
                             <div className="col-4">Secret Access Key:</div>
-                            <div className="col-8"><code>{secretAccessKey}</code> &#160;&#160;<ClipboardButton onSuccess={noop} onError={noop} className={"copy-button"} variant="outline-dark" text={secretAccessKey} tooltip="Copy"/></div>
+                            <div className="col-8"><code>{secretAccessKey}</code> &#160;&#160;<ClipboardButton onSuccess={noop} onError={noop} className={"copy-button"} variant={buttonVariant} text={secretAccessKey} tooltip="Copy"/></div>
                         </div>
                         <Alert className="mt-4" variant="warning">
                             This is the <strong>only</strong> time that the secret access keys can be viewed or downloaded. You cannot recover them later.

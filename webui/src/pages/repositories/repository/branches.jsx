@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from "react";
+import React, {useContext, useEffect, useMemo, useRef, useState} from "react";
 import { useOutletContext } from "react-router-dom";
 import {
     GitBranchIcon,
@@ -32,13 +32,14 @@ import {Link} from "../../../lib/components/nav";
 import {useRouter} from "../../../lib/hooks/router";
 import {RepoError} from "./error";
 import { Col, Row } from "react-bootstrap";
+import {AppContext} from "../../../lib/hooks/appContext";
 
 const ImportBranchName = 'import-from-inventory';
 
 
 const BranchWidget = ({ repo, branch, onDelete }) => {
-
-    const buttonVariant = "outline-dark";
+    const {state} = useContext(AppContext);
+    const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
     const isDefault = repo.default_branch === branch.id;
     let deleteMsg = (
         <>
@@ -102,7 +103,7 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
                                 pathname: '/repositories/:repoId/commits/:commitId',
                                 params:{repoId: repo.id, commitId: branch.commit_id},
                             }}
-                            buttonVariant="outline-dark"
+                            buttonVariant={buttonVariant}
                             tooltip="View referenced commit">
                             {branch.commit_id.substr(0, 12)}
                         </LinkButton>

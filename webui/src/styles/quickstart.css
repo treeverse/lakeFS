@@ -1,18 +1,18 @@
 img.quickstart {
-	border: 1px solid black;
+	border: 1px solid var(--bs-emphasis-color);
 	margin-bottom: 0.4em;
 }
 
 details {
 	margin-bottom: 0.2em;
 	padding: 0.3rem 0.5rem;
-	border: 1px solid #DFDFDF;
+	border: 1px solid var(--bs-border-color);
 }
 
 details img {
 	max-width: 100%;
 	height: auto;
-	border: 1px solid black;
+	border: 1px solid var(--bs-emphasis-color);
 	margin-bottom: 0.4em;
 	margin-right: 0.4em;
 }
@@ -30,13 +30,13 @@ details>summary {
 .repository-creation-accordion .accordion-button,
 .repository-creation-accordion .accordion-button:not(.collapsed) {
 	border: 25px;
-	background-color: #F3F4F5;
+	background-color: var(--bs-light-border-subtle);
 	color: var(--bs-heading-color);
 }
 
 .repository-creation-accordion .accordion-item {
 	margin-top: 15px;
-	background-color: #F3F4F5;
+	background-color: var(--bs-light-border-subtle);
 	border: 0;
 }
 
@@ -44,7 +44,7 @@ details>summary {
 	--bs-accordion-body-padding-x: 1.25rem;
 	--bs-accordion-body-padding-y: 1rem;
 	padding:var(--bs-accordion-body-padding-y) var(--bs-accordion-body-padding-x);
-	background-color: #F3F4F5;
+	background-color: var(--bs-light-border-subtle);
 	border-radius: 0.375rem;
 }
 
