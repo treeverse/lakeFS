@@ -68,7 +68,7 @@ func (d *dotWriter) Write(commits []apigen.Commit) {
 
 // filter merge commits, used for --no-merges flag
 func filterMergeCommits(commits []apigen.Commit) []apigen.Commit {
-	var filteredCommits []apigen.Commit
+	filteredCommits := make([]apigen.Commit, 0, len(commits))
 
 	// iterating through data.Commit, appending every instance with 1 or less parents.
 	for _, commit := range commits {
@@ -113,6 +113,10 @@ var logCmd = &cobra.Command{
 		amountForPagination := amount
 		if amountForPagination <= 0 {
 			amountForPagination = internalPageSize
+		}
+		// case --no-merges & --amount, ask for more results since some will filter out
+		if noMerges && amountForPagination < maxAmountNoMerges {
+			amountForPagination *= 3
 		}
 		logCommitsParams := &apigen.LogCommitsParams{
 			After:       apiutil.Ptr(apigen.PaginationAfter(after)),
@@ -164,8 +168,11 @@ var logCmd = &cobra.Command{
 					After:   pagination.NextOffset,
 				},
 			}
+
+			// case --no-merges, filter commits and subtract that amount from amount desired
 			if noMerges {
 				data.Commits = filterMergeCommits(data.Commits)
+				amount = amount - (3 * len(data.Commits))
 			}
 
 			if dot {
@@ -174,7 +181,7 @@ var logCmd = &cobra.Command{
 				Write(commitsTemplate, data)
 			}
 
-			if amount != 0 {
+			if amount <= 0 {
 				// user request only one page
 				break
 			}

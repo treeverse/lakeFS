@@ -40,6 +40,7 @@ const (
 const (
 	internalPageSize           = 1000 // when retrieving all records, use this page size under the hood
 	defaultAmountArgumentValue = 100  // when no amount is specified, use this value for the argument
+	maxAmountNoMerges          = 333  // when using --no-merges & amount, this const is the upper limit use huristic
 
 	defaultPollInterval = 3 * time.Second // default interval while pulling tasks status
 	minimumPollInterval = time.Second     // minimum interval while pulling tasks status
