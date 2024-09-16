@@ -1,5 +1,13 @@
 # Changelog
 
+# v1.34.0
+
+:new: What's new:
+- WebUI Dark Mode (#8137)
+
+:bug: Bugs fixed:
+- Make Blockstore Type config case insensitive (#8146)
+
 # v1.33.0
 
 **Note:**
