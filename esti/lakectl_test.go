@@ -407,11 +407,12 @@ func TestLakectlAnnotate(t *testing.T) {
 }
 
 func TestLakectlAuthUsers(t *testing.T) {
+	ctx := context.Background()
 	userName := "test_user"
 	vars := map[string]string{
 		"ID": userName,
 	}
-	isSupported := !isBasicAuth()
+	isSupported := !isBasicAuth(t, ctx)
 
 	// Not Found
 	RunCmdAndVerifyFailure(t, Lakectl()+" auth users delete --id "+userName, false, "user not found\n404 Not Found\n", vars)
