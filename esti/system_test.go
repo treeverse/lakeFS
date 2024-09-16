@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -344,6 +345,24 @@ func requireBlockstoreType(t testing.TB, requiredTypes ...string) {
 	}
 }
 
-func isBasicAuth() bool {
-	return viper.GetBool("auth.basic")
+func isBasicAuth(t testing.TB, ctx context.Context) bool {
+	t.Helper()
+	return getRBACState(t, ctx) == "none"
+}
+
+func isAdvancedAuth(t testing.TB, ctx context.Context) bool {
+	return slices.Contains([]string{"external", "internal"}, getRBACState(t, ctx))
+}
+
+func getRBACState(t testing.TB, ctx context.Context) string {
+	setupState := getServerConfig(t, ctx)
+	return swag.StringValue(setupState.LoginConfig.RBAC)
+}
+
+func getServerConfig(t testing.TB, ctx context.Context) *apigen.SetupState {
+	t.Helper()
+	resp, err := client.GetSetupStateWithResponse(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, resp.JSON200)
+	return resp.JSON200
 }

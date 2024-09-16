@@ -1,6 +1,9 @@
 package esti
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestLakefsHelp(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakefs(), false, "lakefs/help", emptyVars)
@@ -15,7 +18,8 @@ func TestLakefsSuperuser_basic(t *testing.T) {
 	outputString := "credentials:\n  access_key_id: <ACCESS_KEY_ID>\n  secret_access_key: <SECRET_ACCESS_KEY>\n"
 	username := t.Name()
 	expectFailure := false
-	if isBasicAuth() {
+	ctx := context.Background()
+	if isBasicAuth(t, ctx) {
 		lakefsCmd = LakefsWithBasicAuth()
 		outputString = "already exists"
 		expectFailure = true
@@ -26,7 +30,8 @@ func TestLakefsSuperuser_basic(t *testing.T) {
 func TestLakefsSuperuser_alreadyExists(t *testing.T) {
 	RequirePostgresDB(t)
 	lakefsCmd := Lakefs()
-	if isBasicAuth() {
+	ctx := context.Background()
+	if isBasicAuth(t, ctx) {
 		lakefsCmd = LakefsWithBasicAuth()
 	}
 	// On init - the AdminUsername is already created and expected error should be "already exist" (also in basic auth mode)
