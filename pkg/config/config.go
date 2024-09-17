@@ -251,12 +251,12 @@ type Config struct {
 			ServerSideEncryptionKmsKeyID  string        `mapstructure:"server_side_encryption_kms_key_id"`
 			PreSignedExpiry               time.Duration `mapstructure:"pre_signed_expiry"`
 			// Endpoint for pre-signed URLs, if set, will override the default pre-signed URL S3 endpoint (only for pre-sign URL generation)
-			PreSignedEndpoint         *string `mapstructure:"pre_signed_endpoint"`
-			DisablePreSigned          bool    `mapstructure:"disable_pre_signed"`
-			DisablePreSignedUI        bool    `mapstructure:"disable_pre_signed_ui"`
-			DisablePreSignedMultipart bool    `mapstructure:"disable_pre_signed_multipart"`
-			ClientLogRetries          bool    `mapstructure:"client_log_retries"`
-			ClientLogRequest          bool    `mapstructure:"client_log_request"`
+			PreSignedEndpoint         string `mapstructure:"pre_signed_endpoint"`
+			DisablePreSigned          bool   `mapstructure:"disable_pre_signed"`
+			DisablePreSignedUI        bool   `mapstructure:"disable_pre_signed_ui"`
+			DisablePreSignedMultipart bool   `mapstructure:"disable_pre_signed_multipart"`
+			ClientLogRetries          bool   `mapstructure:"client_log_retries"`
+			ClientLogRequest          bool   `mapstructure:"client_log_request"`
 			WebIdentity               *struct {
 				SessionDuration     time.Duration `mapstructure:"session_duration"`
 				SessionExpiryWindow time.Duration `mapstructure:"session_expiry_window"`

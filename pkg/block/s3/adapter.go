@@ -39,7 +39,7 @@ type Adapter struct {
 	ServerSideEncryption         string
 	ServerSideEncryptionKmsKeyID string
 	preSignedExpiry              time.Duration
-	preSignedEndpoint            *string
+	preSignedEndpoint            string
 	sessionExpiryWindow          time.Duration
 	disablePreSigned             bool
 	disablePreSignedUI           bool
@@ -65,7 +65,7 @@ func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
 	}
 }
 
-func WithPreSignedEndpoint(e *string) func(a *Adapter) {
+func WithPreSignedEndpoint(e string) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.preSignedEndpoint = e
 	}
@@ -412,9 +412,9 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	presigner := s3.NewPresignClient(client,
 		func(options *s3.PresignOptions) {
 			options.Expires = a.preSignedExpiry
-			if a.preSignedEndpoint != nil {
+			if a.preSignedEndpoint != "" {
 				options.ClientOptions = append(options.ClientOptions, func(o *s3.Options) {
-					o.BaseEndpoint = a.preSignedEndpoint
+					o.BaseEndpoint = &a.preSignedEndpoint
 				})
 			}
 		})

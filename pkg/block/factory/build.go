@@ -115,6 +115,9 @@ func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params 
 	if params.ServerSideEncryptionKmsKeyID != "" {
 		opts = append(opts, s3a.WithServerSideEncryptionKmsKeyID(params.ServerSideEncryptionKmsKeyID))
 	}
+	if params.PreSignedEndpoint != "" {
+		opts = append(opts, s3a.WithPreSignedEndpoint(params.PreSignedEndpoint))
+	}
 	adapter, err := s3a.NewAdapter(ctx, params, opts...)
 	if err != nil {
 		return nil, err
