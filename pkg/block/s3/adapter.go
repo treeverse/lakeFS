@@ -39,6 +39,7 @@ type Adapter struct {
 	ServerSideEncryption         string
 	ServerSideEncryptionKmsKeyID string
 	preSignedExpiry              time.Duration
+	preSignedEndpoint            *string
 	sessionExpiryWindow          time.Duration
 	disablePreSigned             bool
 	disablePreSignedUI           bool
@@ -61,6 +62,12 @@ func WithDiscoverBucketRegion(b bool) func(a *Adapter) {
 func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.preSignedExpiry = v
+	}
+}
+
+func WithPreSignedEndpoint(e *string) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.preSignedEndpoint = e
 	}
 }
 
@@ -120,6 +127,7 @@ func NewAdapter(ctx context.Context, params params.S3, opts ...AdapterOption) (*
 	a := &Adapter{
 		clients:             NewClientCache(cfg, params),
 		preSignedExpiry:     block.DefaultPreSignExpiryDuration,
+		preSignedEndpoint:   params.PreSignedEndpoint,
 		sessionExpiryWindow: sessionExpiryWindow,
 		nowFactory:          time.Now, // current time function can be mocked out via injection for testing purposes
 	}
@@ -404,6 +412,11 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	presigner := s3.NewPresignClient(client,
 		func(options *s3.PresignOptions) {
 			options.Expires = a.preSignedExpiry
+			if a.preSignedEndpoint != nil {
+				options.ClientOptions = append(options.ClientOptions, func(o *s3.Options) {
+					o.BaseEndpoint = a.preSignedEndpoint
+				})
+			}
 		})
 
 	captureExpiresPresigner := &CaptureExpiresPresigner{}
