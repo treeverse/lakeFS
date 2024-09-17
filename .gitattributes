@@ -1,3 +1,12 @@
 *.sh text eol=lf
 *.bash text eol=lf
 *.pb linguist-generated=true
+
+clients/java/**	linguist-generated=true
+clients/java-legacy/** linguist-generated=true
+clients/python/** linguist-generated=true
+clients/python-legacy/** linguist-generated=true
+clients/python/Gemfile linguist-generated=false
+clients/python/Gemfile.lock	linguist-generated=false
+clients/python/_config.yml linguist-generated=false
+clients/rust/** linguist-generated=true
