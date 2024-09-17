@@ -83,6 +83,11 @@ docs/PolicyList.md
 docs/PrepareGCUncommittedRequest.md
 docs/PrepareGCUncommittedResponse.md
 docs/PresignMultipartUpload.md
+docs/PullRequest.md
+docs/PullRequestBasic.md
+docs/PullRequestCreation.md
+docs/PullRequestsList.md
+docs/PullsApi.md
 docs/RangeMetadata.md
 docs/Ref.md
 docs/RefList.md
@@ -152,6 +157,7 @@ src/main/java/io/lakefs/clients/api/ObjectsApi.java
 src/main/java/io/lakefs/clients/api/Pair.java
 src/main/java/io/lakefs/clients/api/ProgressRequestBody.java
 src/main/java/io/lakefs/clients/api/ProgressResponseBody.java
+src/main/java/io/lakefs/clients/api/PullsApi.java
 src/main/java/io/lakefs/clients/api/RefsApi.java
 src/main/java/io/lakefs/clients/api/RepositoriesApi.java
 src/main/java/io/lakefs/clients/api/ServerConfiguration.java
@@ -229,6 +235,10 @@ src/main/java/io/lakefs/clients/api/model/PolicyList.java
 src/main/java/io/lakefs/clients/api/model/PrepareGCUncommittedRequest.java
 src/main/java/io/lakefs/clients/api/model/PrepareGCUncommittedResponse.java
 src/main/java/io/lakefs/clients/api/model/PresignMultipartUpload.java
+src/main/java/io/lakefs/clients/api/model/PullRequest.java
+src/main/java/io/lakefs/clients/api/model/PullRequestBasic.java
+src/main/java/io/lakefs/clients/api/model/PullRequestCreation.java
+src/main/java/io/lakefs/clients/api/model/PullRequestsList.java
 src/main/java/io/lakefs/clients/api/model/RangeMetadata.java
 src/main/java/io/lakefs/clients/api/model/Ref.java
 src/main/java/io/lakefs/clients/api/model/RefList.java
@@ -275,6 +285,7 @@ src/test/java/io/lakefs/clients/api/ImportApiTest.java
 src/test/java/io/lakefs/clients/api/InternalApiTest.java
 src/test/java/io/lakefs/clients/api/MetadataApiTest.java
 src/test/java/io/lakefs/clients/api/ObjectsApiTest.java
+src/test/java/io/lakefs/clients/api/PullsApiTest.java
 src/test/java/io/lakefs/clients/api/RefsApiTest.java
 src/test/java/io/lakefs/clients/api/RepositoriesApiTest.java
 src/test/java/io/lakefs/clients/api/StagingApiTest.java
@@ -345,6 +356,10 @@ src/test/java/io/lakefs/clients/api/model/PolicyTest.java
 src/test/java/io/lakefs/clients/api/model/PrepareGCUncommittedRequestTest.java
 src/test/java/io/lakefs/clients/api/model/PrepareGCUncommittedResponseTest.java
 src/test/java/io/lakefs/clients/api/model/PresignMultipartUploadTest.java
+src/test/java/io/lakefs/clients/api/model/PullRequestBasicTest.java
+src/test/java/io/lakefs/clients/api/model/PullRequestCreationTest.java
+src/test/java/io/lakefs/clients/api/model/PullRequestTest.java
+src/test/java/io/lakefs/clients/api/model/PullRequestsListTest.java
 src/test/java/io/lakefs/clients/api/model/RangeMetadataTest.java
 src/test/java/io/lakefs/clients/api/model/RefListTest.java
 src/test/java/io/lakefs/clients/api/model/RefTest.java
