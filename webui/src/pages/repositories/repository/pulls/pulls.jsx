@@ -2,26 +2,19 @@ import React, {useEffect, useState} from "react";
 import {useOutletContext} from "react-router-dom";
 import Card from "react-bootstrap/Card";
 import ListGroup from "react-bootstrap/ListGroup";
+import Alert from "react-bootstrap/Alert";
+import {Tab, Tabs} from "react-bootstrap";
+import Button from "react-bootstrap/Button";
+import TimeAgo from "react-timeago";
 
-import {
-    ActionGroup,
-    ActionsBar,
-    AlertError,
-    Loading,
-    PrefixSearchWidget,
-    RefreshButton
-} from "../../../../lib/components/controls";
+import {ActionGroup, AlertError, Loading, PrefixSearchWidget, RefreshButton} from "../../../../lib/components/controls";
 import {pulls} from "../../../../lib/api";
 import {useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {Paginator} from "../../../../lib/components/pagination";
 import {useRouter} from "../../../../lib/hooks/router";
-import Alert from "react-bootstrap/Alert";
 import {RepoError} from "../error";
-import {Tab, Tabs} from "react-bootstrap";
 import {Link} from "../../../../lib/components/nav";
-import Button from "react-bootstrap/Button";
-import TimeAgo from "react-timeago";
 
 
 const PullWidget = ({repo, pull}) => {
@@ -43,7 +36,7 @@ const PullWidget = ({repo, pull}) => {
                               params: {repoId: repo.id, pullId: pull.id},
                           }}
                     >
-                        {pull.id}
+                        {pull.title}
                     </Link>
                     <div className="pull-info mt-1">
                         Opened <TimeAgo date={new Date(pull.created_at * 1000)}/> ago by {authorLink}
@@ -59,6 +52,7 @@ const PullWidget = ({repo, pull}) => {
     );
 };
 
+// TODO: is there a nicer place for this?
 const PullStatus = {
     open: "open",
     closed: "closed",
@@ -95,19 +89,19 @@ const PullsList = ({repo, after, prefix, onPaginate}) => {
 
     return (
         <div className="mb-5">
-            <ActionsBar>
-                <ActionGroup>
+            <div className="position-relative clearfix">
+                <div className="">
                     <Tabs
                         defaultActiveKey={pullsState}
                         id="pulls-tabs"
                         onSelect={key => setPullsState(key)}
-                        className="mb-3"
+                        className="mb-3 pt-2"
                     >
                         <Tab eventKey={PullStatus.open} title="Open"/>
                         <Tab eventKey={PullStatus.closed} title="Closed"/>
                     </Tabs>
-                </ActionGroup>
-                <ActionGroup orientation="right">
+                </div>
+                <ActionGroup orientation="right" className="position-absolute top-0 end-0 pb-2">
                     <PrefixSearchWidget
                         defaultValue={router.query.prefix}
                         text="Find Pull Request"
@@ -120,7 +114,7 @@ const PullsList = ({repo, after, prefix, onPaginate}) => {
                     <RefreshButton onClick={doRefresh}/>
                     <Button variant="success">Create Pull Request</Button>
                 </ActionGroup>
-            </ActionsBar>
+            </div>
             {content}
         </div>
     );
