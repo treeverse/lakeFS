@@ -30,6 +30,7 @@ from lakefs_sdk.api.import_api import ImportApi
 from lakefs_sdk.api.internal_api import InternalApi
 from lakefs_sdk.api.metadata_api import MetadataApi
 from lakefs_sdk.api.objects_api import ObjectsApi
+from lakefs_sdk.api.pulls_api import PullsApi
 from lakefs_sdk.api.refs_api import RefsApi
 from lakefs_sdk.api.repositories_api import RepositoriesApi
 from lakefs_sdk.api.staging_api import StagingApi
@@ -112,6 +113,10 @@ from lakefs_sdk.models.policy_list import PolicyList
 from lakefs_sdk.models.prepare_gc_uncommitted_request import PrepareGCUncommittedRequest
 from lakefs_sdk.models.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse
 from lakefs_sdk.models.presign_multipart_upload import PresignMultipartUpload
+from lakefs_sdk.models.pull_request import PullRequest
+from lakefs_sdk.models.pull_request_basic import PullRequestBasic
+from lakefs_sdk.models.pull_request_creation import PullRequestCreation
+from lakefs_sdk.models.pull_requests_list import PullRequestsList
 from lakefs_sdk.models.range_metadata import RangeMetadata
 from lakefs_sdk.models.ref import Ref
 from lakefs_sdk.models.ref_list import RefList

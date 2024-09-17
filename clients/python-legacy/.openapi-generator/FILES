@@ -82,6 +82,11 @@ docs/PolicyList.md
 docs/PrepareGCUncommittedRequest.md
 docs/PrepareGCUncommittedResponse.md
 docs/PresignMultipartUpload.md
+docs/PullRequest.md
+docs/PullRequestBasic.md
+docs/PullRequestCreation.md
+docs/PullRequestsList.md
+docs/PullsApi.md
 docs/RangeMetadata.md
 docs/Ref.md
 docs/RefList.md
@@ -136,6 +141,7 @@ lakefs_client/api/import_api.py
 lakefs_client/api/internal_api.py
 lakefs_client/api/metadata_api.py
 lakefs_client/api/objects_api.py
+lakefs_client/api/pulls_api.py
 lakefs_client/api/refs_api.py
 lakefs_client/api/repositories_api.py
 lakefs_client/api/staging_api.py
@@ -214,6 +220,10 @@ lakefs_client/model/policy_list.py
 lakefs_client/model/prepare_gc_uncommitted_request.py
 lakefs_client/model/prepare_gc_uncommitted_response.py
 lakefs_client/model/presign_multipart_upload.py
+lakefs_client/model/pull_request.py
+lakefs_client/model/pull_request_basic.py
+lakefs_client/model/pull_request_creation.py
+lakefs_client/model/pull_requests_list.py
 lakefs_client/model/range_metadata.py
 lakefs_client/model/ref.py
 lakefs_client/model/ref_list.py
@@ -337,6 +347,11 @@ test/test_policy_list.py
 test/test_prepare_gc_uncommitted_request.py
 test/test_prepare_gc_uncommitted_response.py
 test/test_presign_multipart_upload.py
+test/test_pull_request.py
+test/test_pull_request_basic.py
+test/test_pull_request_creation.py
+test/test_pull_requests_list.py
+test/test_pulls_api.py
 test/test_range_metadata.py
 test/test_ref.py
 test/test_ref_list.py

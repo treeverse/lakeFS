@@ -1729,6 +1729,77 @@ components:
           type: object
           items:
             $ref: "#/components/schemas/ExternalPrincipalSettings"
+
+    PullRequestBasic:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ open, closed, merged ]
+        title:
+          type: string
+        description:
+          type: string
+    
+    PullRequest:
+      type: object
+      required:
+        - id
+        - status
+        - creation_date
+        - title
+        - author
+        - description
+        - source_branch
+        - destination_branch
+      allOf:
+        - $ref: '#/components/schemas/PullRequestBasic'
+      properties:
+        id:
+          type: string
+        creation_date:
+          type: integer
+          format: int64
+        author:
+          type: string
+        source_branch:
+          type: string
+        destination_branch:
+          type: string
+        commit_id:
+          type: string
+          description: the commit id of merged PRs
+
+    PullRequestsList:
+      type: object
+      required:
+        - pagination
+        - results
+      properties:
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/PullRequest"
+
+    PullRequestCreation:
+      type: object
+      required:
+        - title
+        - description
+        - source_branch
+        - destination_branch
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        source_branch:
+          type: string
+        destination_branch:
+          type: string
+
 paths:
   /setup_comm_prefs:
     post:
@@ -5582,6 +5653,159 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
+  
+  /repositories/{repository}/pulls:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - pulls
+        - experimental
+      operationId: listPullRequests
+      summary: list pull requests
+      parameters:
+        - $ref: "#/components/parameters/PaginationPrefix"
+        - $ref: "#/components/parameters/PaginationAfter"
+        - $ref: "#/components/parameters/PaginationAmount"
+        - in: query
+          name: state
+          schema:
+            type: string
+            enum: [ open, closed, all ]
+            default: all
+            description: filter pull requests by state
+      responses:
+        200:
+          description: list of pull requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PullRequestsList"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+    post:
+      tags:
+        - pulls
+        - experimental
+      operationId: createPullRequest
+      summary: create pull request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PullRequestCreation"
+      responses:
+        201:
+          description: pull request id
+          content:
+            text/html:
+              schema:
+                type: string
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        409:
+          $ref: "#/components/responses/Conflict"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/pulls/{pull_request}:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: pull_request
+        required: true
+        description: pull request id
+        schema:
+          type: string
+    get:
+      tags:
+        - pulls
+        - experimental
+      operationId: getPullRequest
+      summary: get pull request
+      responses:
+        200:
+          description: pull request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PullRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+    delete:
+      tags:
+        - pulls
+        - experimental
+      operationId: deletePullRequest
+      summary: delete pull request
+      responses:
+        204:
+          description: pull request deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+    patch:
+      tags:
+        - pulls
+        - experimental
+      operationId: updatePullRequest
+      summary: update pull request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PullRequestBasic"
+      responses:
+        204:
+          description: pull request deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /healthcheck:
     get:
       operationId: healthCheck

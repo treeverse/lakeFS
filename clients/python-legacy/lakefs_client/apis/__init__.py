@@ -26,6 +26,7 @@ from lakefs_client.api.import_api import ImportApi
 from lakefs_client.api.internal_api import InternalApi
 from lakefs_client.api.metadata_api import MetadataApi
 from lakefs_client.api.objects_api import ObjectsApi
+from lakefs_client.api.pulls_api import PullsApi
 from lakefs_client.api.refs_api import RefsApi
 from lakefs_client.api.repositories_api import RepositoriesApi
 from lakefs_client.api.staging_api import StagingApi

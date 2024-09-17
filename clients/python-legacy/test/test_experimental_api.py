@@ -45,10 +45,24 @@ class TestExperimentalApi(unittest.TestCase):
         """
         pass
 
+    def test_create_pull_request(self):
+        """Test case for create_pull_request
+
+        create pull request  # noqa: E501
+        """
+        pass
+
     def test_create_user_external_principal(self):
         """Test case for create_user_external_principal
 
         attach external principal to user  # noqa: E501
+        """
+        pass
+
+    def test_delete_pull_request(self):
+        """Test case for delete_pull_request
+
+        delete pull request  # noqa: E501
         """
         pass
 
@@ -73,10 +87,24 @@ class TestExperimentalApi(unittest.TestCase):
         """
         pass
 
+    def test_get_pull_request(self):
+        """Test case for get_pull_request
+
+        get pull request  # noqa: E501
+        """
+        pass
+
     def test_hard_reset_branch(self):
         """Test case for hard_reset_branch
 
         hard reset branch  # noqa: E501
+        """
+        pass
+
+    def test_list_pull_requests(self):
+        """Test case for list_pull_requests
+
+        list pull requests  # noqa: E501
         """
         pass
 
@@ -91,6 +119,13 @@ class TestExperimentalApi(unittest.TestCase):
         """Test case for sts_login
 
         perform a login with STS  # noqa: E501
+        """
+        pass
+
+    def test_update_pull_request(self):
+        """Test case for update_pull_request
+
+        update pull request  # noqa: E501
         """
         pass
 

@@ -24,6 +24,10 @@ import io.lakefs.clients.sdk.model.ExternalPrincipalCreation;
 import io.lakefs.clients.sdk.model.ExternalPrincipalList;
 import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.PresignMultipartUpload;
+import io.lakefs.clients.sdk.model.PullRequest;
+import io.lakefs.clients.sdk.model.PullRequestBasic;
+import io.lakefs.clients.sdk.model.PullRequestCreation;
+import io.lakefs.clients.sdk.model.PullRequestsList;
 import io.lakefs.clients.sdk.model.StagingLocation;
 import io.lakefs.clients.sdk.model.StsAuthRequest;
 import org.junit.jupiter.api.Disabled;
@@ -102,6 +106,20 @@ public class ExperimentalApiTest {
     }
 
     /**
+     * create pull request
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void createPullRequestTest() throws ApiException {
+        String repository = null;
+        PullRequestCreation pullRequestCreation = null;
+        String response = api.createPullRequest(repository, pullRequestCreation)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
      * attach external principal to user
      *
      * @throws ApiException if the Api call fails
@@ -113,6 +131,20 @@ public class ExperimentalApiTest {
         ExternalPrincipalCreation externalPrincipalCreation = null;
         api.createUserExternalPrincipal(userId, principalId)
                 .externalPrincipalCreation(externalPrincipalCreation)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * delete pull request
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void deletePullRequestTest() throws ApiException {
+        String repository = null;
+        String pullRequest = null;
+        api.deletePullRequest(repository, pullRequest)
                 .execute();
         // TODO: test validations
     }
@@ -159,6 +191,20 @@ public class ExperimentalApiTest {
     }
 
     /**
+     * get pull request
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getPullRequestTest() throws ApiException {
+        String repository = null;
+        String pullRequest = null;
+        PullRequest response = api.getPullRequest(repository, pullRequest)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
      * hard reset branch
      *
      * Relocate branch to refer to ref.  Branch must not contain uncommitted data.
@@ -173,6 +219,27 @@ public class ExperimentalApiTest {
         Boolean force = null;
         api.hardResetBranch(repository, branch, ref)
                 .force(force)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * list pull requests
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void listPullRequestsTest() throws ApiException {
+        String repository = null;
+        String prefix = null;
+        String after = null;
+        Integer amount = null;
+        String state = null;
+        PullRequestsList response = api.listPullRequests(repository)
+                .prefix(prefix)
+                .after(after)
+                .amount(amount)
+                .state(state)
                 .execute();
         // TODO: test validations
     }
@@ -205,6 +272,21 @@ public class ExperimentalApiTest {
     public void stsLoginTest() throws ApiException {
         StsAuthRequest stsAuthRequest = null;
         AuthenticationToken response = api.stsLogin(stsAuthRequest)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * update pull request
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void updatePullRequestTest() throws ApiException {
+        String repository = null;
+        String pullRequest = null;
+        PullRequestBasic pullRequestBasic = null;
+        api.updatePullRequest(repository, pullRequest, pullRequestBasic)
                 .execute();
         // TODO: test validations
     }
