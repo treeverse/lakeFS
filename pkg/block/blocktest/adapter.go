@@ -162,8 +162,9 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 // Test request for a presigned URL for temporary access
 func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	preSignedURL, exp := getPresignedURLBasicTest(t, adapter, storageNamespace)
+	require.NotNil(t, exp)
 	expectedExpiry := expectedURLExp(adapter)
-	require.Equal(t, expectedExpiry, exp)
+	require.Equal(t, expectedExpiry, *exp)
 	_, err := url.Parse(preSignedURL)
 	require.NoError(t, err)
 }
@@ -171,15 +172,16 @@ func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace s
 // Test request for a presigned URL with an endpoint override
 func testGetPreSignedURLEndpointOverride(t *testing.T, adapter block.Adapter, storageNamespace string, oe *url.URL) {
 	preSignedURL, exp := getPresignedURLBasicTest(t, adapter, storageNamespace)
+	require.NotNil(t, exp)
 	expectedExpiry := expectedURLExp(adapter)
-	require.Equal(t, expectedExpiry, exp)
+	require.Equal(t, expectedExpiry, *exp)
 	u, err := url.Parse(preSignedURL)
 	require.NoError(t, err)
 	require.Equal(t, u.Scheme, oe.Scheme)
 	require.Contains(t, u.Host, oe.Host)
 }
 
-func getPresignedURLBasicTest(t *testing.T, adapter block.Adapter, storageNamespace string) (string, time.Time) {
+func getPresignedURLBasicTest(t *testing.T, adapter block.Adapter, storageNamespace string) (string, *time.Time) {
 	ctx := context.Background()
 	obj, _ := objPointers(storageNamespace)
 
@@ -187,13 +189,13 @@ func getPresignedURLBasicTest(t *testing.T, adapter block.Adapter, storageNamesp
 
 	if adapter.BlockstoreType() == block.BlockstoreTypeGS {
 		require.ErrorContains(t, err, "no credentials found")
-		return "", time.Time{}
+		return "", nil
 	} else if adapter.BlockstoreType() == block.BlockstoreTypeLocal {
 		require.ErrorIs(t, err, block.ErrOperationNotSupported)
-		return "", time.Time{}
+		return "", nil
 	}
 	require.NoError(t, err)
-	return preSignedURL, exp
+	return preSignedURL, &exp
 }
 
 func expectedURLExp(adapter block.Adapter) time.Time {
