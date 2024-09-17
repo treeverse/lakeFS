@@ -5,7 +5,7 @@ import ListGroup from "react-bootstrap/ListGroup";
 import Alert from "react-bootstrap/Alert";
 import {Tab, Tabs} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
-import TimeAgo from "react-timeago";
+import dayjs from "dayjs";
 
 import {ActionGroup, AlertError, Loading, PrefixSearchWidget, RefreshButton} from "../../../../lib/components/controls";
 import {pulls} from "../../../../lib/api";
@@ -18,41 +18,31 @@ import {Link} from "../../../../lib/components/nav";
 
 
 const PullWidget = ({repo, pull}) => {
-    const authorLink =
-        <Link href={{
-            // TODO: to where this link should lead?
-            pathname: '/repositories/:repoId/user/:userId',
-            params: {repoId: repo.id, userId: pull.author}
-        }}>
-            {pull.author}
-        </Link>;
     return (
-        <ListGroup.Item className="pull-row">
-            <div className="clearfix">
-                <div className="float-start pt-1 pb-2">
-                    <Link className="pull-title fs-4"
-                          href={{
-                              pathname: '/repositories/:repoId/pulls/:pullId',
-                              params: {repoId: repo.id, pullId: pull.id},
-                          }}
-                    >
-                        {pull.title}
+        <ListGroup.Item className="pull-row pt-3 pb-3 clearfix">
+            <div className="float-start">
+                <h6>
+                    <Link href={{
+                        pathname: '/repositories/:repoId/pulls/:pullId',
+                        params: {repoId: repo.id, pullId: pull.id}
+                    }}>
+                        <span>{pull.title}</span>
                     </Link>
-                    <div className="pull-info mt-1">
-                        Opened <TimeAgo date={new Date(pull.created_at * 1000)}/> ago by {authorLink}
-                    </div>
-                </div>
-                <div className="pull-branches mt-3 float-end">
-                    <Button variant="secondary" size="sm" disabled={true}>{pull.source_branch}</Button>
-                    <span className="m-2">&#8680;</span>
-                    <Button variant="secondary" size="sm" disabled={true}>{pull.destination_branch}</Button>
-                </div>
+                </h6>
+                <small>
+                    Opened {dayjs.unix(pull.created_at).fromNow()} by <strong>{pull.author}</strong>
+                </small>
+            </div>
+            <div className="float-end mt-2">
+                <Button variant="secondary" size="sm" disabled={true}>{pull.source_branch}</Button>
+                <span className="m-2">&#8680;</span>
+                <Button variant="secondary" size="sm" disabled={true}>{pull.destination_branch}</Button>
             </div>
         </ListGroup.Item>
     );
 };
 
-// TODO: is there a nicer place for this?
+// TODO (gilo): is there a nicer place for this?
 const PullStatus = {
     open: "open",
     closed: "closed",

@@ -919,13 +919,3 @@ td.entry-type-indicator {
 .upload-item-done {
   color: var(--bs-success);
 }
-
-.pull-row .pull-title {
-  text-decoration: none;
-  color: var(--bs-body-color);
-}
-
-.pull-row .pull-info {
-    text-decoration: none;
-    color: var(--bs-secondary);
-}

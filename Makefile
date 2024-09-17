@@ -342,9 +342,6 @@ $(UI_DIR)/node_modules:
 gen-ui: $(UI_DIR)/node_modules  ## Build UI web app
 	cd $(UI_DIR) && $(NPM) run build
 
-gen-ui-watch: $(UI_DIR)/node_modules  ## Build UI web app and watch for changes
-	cd $(UI_DIR) && $(NPM) run build-watch
-
 gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 	go run github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION) generate
 
