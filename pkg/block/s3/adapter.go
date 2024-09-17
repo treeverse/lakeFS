@@ -408,16 +408,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		return "", time.Time{}, err
 	}
 
-	client := a.clients.Get(ctx, bucket)
-	presigner := s3.NewPresignClient(client,
-		func(options *s3.PresignOptions) {
-			options.Expires = a.preSignedExpiry
-			if a.preSignedEndpoint != "" {
-				options.ClientOptions = append(options.ClientOptions, func(o *s3.Options) {
-					o.BaseEndpoint = &a.preSignedEndpoint
-				})
-			}
-		})
+	presigner := a.presignerClient(ctx, bucket)
 
 	captureExpiresPresigner := &CaptureExpiresPresigner{}
 	var req *v4.PresignedHTTPRequest
@@ -471,12 +462,7 @@ func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectP
 		return "", err
 	}
 
-	client := a.clients.Get(ctx, bucket)
-	presigner := s3.NewPresignClient(client,
-		func(options *s3.PresignOptions) {
-			options.Expires = a.preSignedExpiry
-		},
-	)
+	presigner := a.presignerClient(ctx, bucket)
 
 	uploadInput := &s3.UploadPartInput{
 		Bucket:     aws.String(bucket),
@@ -965,4 +951,18 @@ func ExtractParamsFromQK(qk block.QualifiedKey) (string, string) {
 		key = prefix + "/" + key
 	}
 	return bucket, key
+}
+
+func (a *Adapter) presignerClient(ctx context.Context, bucket string) *s3.PresignClient {
+	client := a.clients.Get(ctx, bucket)
+	return s3.NewPresignClient(client,
+		func(options *s3.PresignOptions) {
+			options.Expires = a.preSignedExpiry
+			if a.preSignedEndpoint != "" {
+				options.ClientOptions = append(options.ClientOptions, func(o *s3.Options) {
+					o.BaseEndpoint = &a.preSignedEndpoint
+				})
+			}
+		},
+	)
 }
