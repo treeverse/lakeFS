@@ -26,6 +26,11 @@ func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, external
 	t.Run("Adapter_GetPreSignedURL", func(t *testing.T) { testGetPreSignedURL(t, adapter, storageNamespace) })
 }
 
+func AdapterPresignedEndpointOverrideTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string, oe *url.URL) {
+	AdapterBasicObjectTest(t, adapter, storageNamespace, externalPath)
+	t.Run("Adapter_GetPreSignedURLEndpointOverride", func(t *testing.T) { testGetPreSignedURLEndpointOverride(t, adapter, storageNamespace, oe) })
+}
+
 // Parameterized test of the GetRange functionality
 func testAdapterGetRange(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	ctx := context.Background()
@@ -156,6 +161,25 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 
 // Test request for a presigned URL for temporary access
 func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	preSignedURL, exp := getPresignedURLBasicTest(t, adapter, storageNamespace)
+	expectedExpiry := expectedURLExp(adapter)
+	require.Equal(t, expectedExpiry, exp)
+	_, err := url.Parse(preSignedURL)
+	require.NoError(t, err)
+}
+
+// Test request for a presigned URL with an endpoint override
+func testGetPreSignedURLEndpointOverride(t *testing.T, adapter block.Adapter, storageNamespace string, oe *url.URL) {
+	preSignedURL, exp := getPresignedURLBasicTest(t, adapter, storageNamespace)
+	expectedExpiry := expectedURLExp(adapter)
+	require.Equal(t, expectedExpiry, exp)
+	u, err := url.Parse(preSignedURL)
+	require.NoError(t, err)
+	require.Equal(t, u.Scheme, oe.Scheme)
+	require.Contains(t, u.Host, oe.Host)
+}
+
+func getPresignedURLBasicTest(t *testing.T, adapter block.Adapter, storageNamespace string) (string, time.Time) {
 	ctx := context.Background()
 	obj, _ := objPointers(storageNamespace)
 
@@ -163,16 +187,13 @@ func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace s
 
 	if adapter.BlockstoreType() == block.BlockstoreTypeGS {
 		require.ErrorContains(t, err, "no credentials found")
-		return
+		return "", time.Time{}
 	} else if adapter.BlockstoreType() == block.BlockstoreTypeLocal {
 		require.ErrorIs(t, err, block.ErrOperationNotSupported)
-		return
+		return "", time.Time{}
 	}
 	require.NoError(t, err)
-	expectedExpiry := expectedURLExp(adapter)
-	require.Equal(t, expectedExpiry, exp)
-	_, err = url.Parse(preSignedURL)
-	require.NoError(t, err)
+	return preSignedURL, exp
 }
 
 func expectedURLExp(adapter block.Adapter) time.Time {
