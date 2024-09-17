@@ -5176,6 +5176,26 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
+func (c *Controller) ListPullRequests(w http.ResponseWriter, r *http.Request, repository string, params apigen.ListPullRequestsParams) {
+	writeResponse(w, r, http.StatusNotImplemented, nil)
+}
+
+func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.CreatePullRequestJSONRequestBody, repository string) {
+	writeResponse(w, r, http.StatusNotImplemented, nil)
+}
+
+func (c *Controller) DeletePullRequest(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
+	writeResponse(w, r, http.StatusNotImplemented, nil)
+}
+
+func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
+	writeResponse(w, r, http.StatusNotImplemented, nil)
+}
+
+func (c *Controller) UpdatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.UpdatePullRequestJSONRequestBody, repository string, pullRequestID string) {
+	writeResponse(w, r, http.StatusNotImplemented, nil)
+}
+
 func writeError(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
 	apiErr := apigen.Error{
 		Message: fmt.Sprint(v),

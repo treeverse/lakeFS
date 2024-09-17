@@ -80,6 +80,11 @@ docs/PolicyList.md
 docs/PrepareGcUncommittedRequest.md
 docs/PrepareGcUncommittedResponse.md
 docs/PresignMultipartUpload.md
+docs/PullRequest.md
+docs/PullRequestBasic.md
+docs/PullRequestCreation.md
+docs/PullRequestsList.md
+docs/PullsApi.md
 docs/RangeMetadata.md
 docs/Ref.md
 docs/RefList.md
@@ -133,6 +138,7 @@ src/apis/internal_api.rs
 src/apis/metadata_api.rs
 src/apis/mod.rs
 src/apis/objects_api.rs
+src/apis/pulls_api.rs
 src/apis/refs_api.rs
 src/apis/repositories_api.rs
 src/apis/staging_api.rs
@@ -205,6 +211,10 @@ src/models/policy_list.rs
 src/models/prepare_gc_uncommitted_request.rs
 src/models/prepare_gc_uncommitted_response.rs
 src/models/presign_multipart_upload.rs
+src/models/pull_request.rs
+src/models/pull_request_basic.rs
+src/models/pull_request_creation.rs
+src/models/pull_requests_list.rs
 src/models/range_metadata.rs
 src/models/ref_list.rs
 src/models/refs_dump.rs

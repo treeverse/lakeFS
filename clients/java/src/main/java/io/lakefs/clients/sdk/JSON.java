@@ -158,6 +158,10 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.PrepareGCUncommittedRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.PrepareGCUncommittedResponse.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.PresignMultipartUpload.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.PullRequest.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.PullRequestBasic.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.PullRequestCreation.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.PullRequestsList.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.RangeMetadata.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.Ref.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new io.lakefs.clients.sdk.model.RefList.CustomTypeAdapterFactory());
