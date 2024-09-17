@@ -60,6 +60,8 @@ var (
 	ErrSkipValueUpdate              = errors.New("skip value update")
 	ErrImport                       = wrapError(ErrUserVisible, "import error")
 	ErrReadOnlyRepository           = wrapError(ErrUserVisible, "read-only repository")
+	ErrPullRequestNotFound          = fmt.Errorf("pull request %w", ErrNotFound)
+	ErrPullRequestExists            = fmt.Errorf("pull request already exists: %w", ErrNotUnique)
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.
