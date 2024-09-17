@@ -153,7 +153,7 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                     <div>{changesTreeMessage}</div>
                     <Card>
                         <Card.Header>
-                            <span className="float-start">
+                            <span className="float-start w-100">
                                 {(delimiter !== "") && uriNavigator}
                             </span>
                         </Card.Header>

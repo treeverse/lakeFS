@@ -8,7 +8,8 @@ import {Link, NavItem} from "../nav";
 import {useRouter} from "../../hooks/router";
 import {RefTypeBranch} from "../../../constants";
 
-
+// TODO: this is temp, until PRfD will be ready
+const showPulls = false;
 
 export const RepositoryNavTabs = ({ active }) => {
     const { reference } = useRefs();
@@ -59,6 +60,11 @@ export const RepositoryNavTabs = ({ active }) => {
             <Link active={active === 'tags'} href={`/repositories/${repoId}/tags`} component={NavItem}>
                 <TagIcon/> Tags
             </Link>
+            {showPulls &&
+                <Link active={active === 'pulls'} href={`/repositories/${repoId}/pulls`} component={NavItem}>
+                    <GitCompareIcon/> Pull Requests
+                </Link>
+            }
             <Link active={active === 'compare'} href={withRefAndCompareContext(`/repositories/${repoId}/compare`)} component={NavItem}>
                 <GitCompareIcon/> Compare
             </Link>
