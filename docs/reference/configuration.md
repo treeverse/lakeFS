@@ -182,6 +182,7 @@ Configuration section when using `database.type="local"`
 * `blockstore.s3.server_side_encryption` `(string : )` - Server side encryption format used (Example on AWS using SSE-KMS while passing "aws:kms")
 * `blockstore.s3.server_side_encryption_kms_key_id` `(string : )` - Server side encryption KMS key ID
 * `blockstore.s3.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
+* `blockstore.s3.pre_signed_endpoint` `(string : )` - Custom endpoint for pre-signed URLs.
 * `blockstore.s3.disable_pre_signed` `(bool : false)` - Disable use of pre-signed URL.
 * `blockstore.s3.disable_pre_signed_ui` `(bool : true)` - Disable use of pre-signed URL in the UI.
 * `blockstore.s3.disable_pre_signed_multipart` `(bool : )` - Disable use of pre-signed multipart upload **experimental**, enabled on s3 block adapter with presign support.

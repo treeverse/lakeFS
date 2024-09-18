@@ -12,7 +12,10 @@ redirect_from:
 
 With lakeFS, you can access data directly from the storage and not through lakeFS using a presigned URL.
 Based on the user's access to an object in the object store, the presigned URL will get read or write access.
-The presign support is enabled for block adapter that supports it (S3, GCP, Azure), and can be disabled by the [configuration]({% link reference/configuration.md %}) (`blockstore.<blockstore_type>.disable_pre_signed`). Note that the UI support is disabled by default.
+The presign support is enabled for block adapter that supports it (AWS, GCP, Azure), and can be disabled by the [configuration]({% link reference/configuration.md %}) (`blockstore.<blockstore_type>.disable_pre_signed`). Note that the UI support is disabled by default.
+
+- It is possible to override the default pre-signed URL endpoint in **AWS** by setting the [configuration]({% link reference/configuration.md %}) (`blockstore.s3.pre_signed_endpoint`).
+This is useful, for example, when you wish to define a [VPC endpoint](https://docs.aws.amazon.com/AmazonS3/latest/userguide/privatelink-interface-endpoints.html#accessing-s3-interface-endpoints) access for the pre-signed URL.
 
 ## Using presigned URLs in the UI
 For using presigned URLs in the UI:

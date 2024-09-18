@@ -39,6 +39,7 @@ type Adapter struct {
 	ServerSideEncryption         string
 	ServerSideEncryptionKmsKeyID string
 	preSignedExpiry              time.Duration
+	preSignedEndpoint            string
 	sessionExpiryWindow          time.Duration
 	disablePreSigned             bool
 	disablePreSignedUI           bool
@@ -61,6 +62,12 @@ func WithDiscoverBucketRegion(b bool) func(a *Adapter) {
 func WithPreSignedExpiry(v time.Duration) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.preSignedExpiry = v
+	}
+}
+
+func WithPreSignedEndpoint(e string) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.preSignedEndpoint = e
 	}
 }
 
@@ -400,11 +407,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		return "", time.Time{}, err
 	}
 
-	client := a.clients.Get(ctx, bucket)
-	presigner := s3.NewPresignClient(client,
-		func(options *s3.PresignOptions) {
-			options.Expires = a.preSignedExpiry
-		})
+	presigner := a.presignerClient(ctx, bucket)
 
 	captureExpiresPresigner := &CaptureExpiresPresigner{}
 	var req *v4.PresignedHTTPRequest
@@ -458,12 +461,7 @@ func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectP
 		return "", err
 	}
 
-	client := a.clients.Get(ctx, bucket)
-	presigner := s3.NewPresignClient(client,
-		func(options *s3.PresignOptions) {
-			options.Expires = a.preSignedExpiry
-		},
-	)
+	presigner := a.presignerClient(ctx, bucket)
 
 	uploadInput := &s3.UploadPartInput{
 		Bucket:     aws.String(bucket),
@@ -952,4 +950,18 @@ func ExtractParamsFromQK(qk block.QualifiedKey) (string, string) {
 		key = prefix + "/" + key
 	}
 	return bucket, key
+}
+
+func (a *Adapter) presignerClient(ctx context.Context, bucket string) *s3.PresignClient {
+	client := a.clients.Get(ctx, bucket)
+	return s3.NewPresignClient(client,
+		func(options *s3.PresignOptions) {
+			options.Expires = a.preSignedExpiry
+			if a.preSignedEndpoint != "" {
+				options.ClientOptions = append(options.ClientOptions, func(o *s3.Options) {
+					o.BaseEndpoint = &a.preSignedEndpoint
+				})
+			}
+		},
+	)
 }

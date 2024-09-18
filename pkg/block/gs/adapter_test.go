@@ -27,7 +27,7 @@ func TestAdapter(t *testing.T) {
 		require.NoError(t, adapter.Close())
 	}()
 
-	blocktest.AdapterTest(t, adapter, localPath, externalPath)
+	blocktest.AdapterTest(t, adapter, localPath, externalPath, false)
 }
 
 func TestAdapterNamespace(t *testing.T) {
