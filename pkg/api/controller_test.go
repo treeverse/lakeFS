@@ -5252,6 +5252,108 @@ func TestController_CreateCommitRecord(t *testing.T) {
 	})
 }
 
+func TestController_CreatePullRequest(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
+	require.NoError(t, err)
+
+	t.Run("invalid source", func(t *testing.T) {
+		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, apigen.CreatePullRequestJSONRequestBody{
+			Description:       "My description",
+			DestinationBranch: "branch_a",
+			SourceBranch:      "bad$name",
+			Title:             "My title",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, "src")
+	})
+
+	t.Run("invalid dest", func(t *testing.T) {
+		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, apigen.CreatePullRequestJSONRequestBody{
+			Description:       "My description",
+			DestinationBranch: "bad$name",
+			SourceBranch:      "branch_a",
+			Title:             "My title",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, "dest")
+	})
+
+	t.Run("no source", func(t *testing.T) {
+		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, apigen.CreatePullRequestJSONRequestBody{
+			Description:       "My description",
+			DestinationBranch: "main",
+			SourceBranch:      "branch_a",
+			Title:             "My title",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON404)
+		require.Contains(t, resp.JSON404.Message, "branch not found")
+	})
+
+	t.Run("no dest", func(t *testing.T) {
+		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, apigen.CreatePullRequestJSONRequestBody{
+			Description:       "My description",
+			DestinationBranch: "branch_a",
+			SourceBranch:      "main",
+			Title:             "My title",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON404)
+		require.Contains(t, resp.JSON404.Message, "branch not found")
+	})
+
+	t.Run("same branch", func(t *testing.T) {
+		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, apigen.CreatePullRequestJSONRequestBody{
+			Description:       "My description",
+			DestinationBranch: "main",
+			SourceBranch:      "main",
+			Title:             "My title",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, "same branch")
+	})
+
+	t.Run("create sanity", func(t *testing.T) {
+		body := apigen.CreatePullRequestJSONRequestBody{
+			Description:       "My description",
+			DestinationBranch: "main",
+			SourceBranch:      "branch_b",
+			Title:             "My title",
+		}
+		_, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+			Name:   body.SourceBranch,
+			Source: "main",
+		})
+
+		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, body)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, resp.StatusCode())
+		pid := resp.Body
+
+		// Get pull request
+		getResp, err := clt.GetPullRequestWithResponse(ctx, repo, string(pid))
+		require.NoError(t, err)
+		require.NotNil(t, getResp.JSON200)
+		require.Equal(t, body.Title, swag.StringValue(getResp.JSON200.Title))
+		require.Equal(t, body.Description, swag.StringValue(getResp.JSON200.Description))
+		require.Equal(t, body.SourceBranch, getResp.JSON200.SourceBranch)
+		require.Equal(t, body.DestinationBranch, getResp.JSON200.DestinationBranch)
+		userResp, err := clt.GetCurrentUserWithResponse(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, userResp.JSON200)
+		require.Equal(t, userResp.JSON200.User.Id, getResp.JSON200.Author)
+		require.Equal(t, "OPEN", swag.StringValue(getResp.JSON200.Status))
+		require.Equal(t, "", swag.StringValue(getResp.JSON200.MergedCommitId))
+		require.True(t, time.Now().Sub(getResp.JSON200.CreationDate) < 1*time.Minute)
+	})
+}
+
 // pollRestoreStatus polls the restore status endpoint until the restore is complete or times out.
 // test will fail in case of error.
 // will return nil in case of timeout.

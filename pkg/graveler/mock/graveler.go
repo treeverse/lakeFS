@@ -1217,6 +1217,58 @@ func (mr *MockLoaderMockRecorder) LoadTags(ctx, repository, metaRangeID interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadTags", reflect.TypeOf((*MockLoader)(nil).LoadTags), varargs...)
 }
 
+// MockCollaborator is a mock of Collaborator interface.
+type MockCollaborator struct {
+	ctrl     *gomock.Controller
+	recorder *MockCollaboratorMockRecorder
+}
+
+// MockCollaboratorMockRecorder is the mock recorder for MockCollaborator.
+type MockCollaboratorMockRecorder struct {
+	mock *MockCollaborator
+}
+
+// NewMockCollaborator creates a new mock instance.
+func NewMockCollaborator(ctrl *gomock.Controller) *MockCollaborator {
+	mock := &MockCollaborator{ctrl: ctrl}
+	mock.recorder = &MockCollaboratorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockCollaborator) EXPECT() *MockCollaboratorMockRecorder {
+	return m.recorder
+}
+
+// CreatePullRequest mocks base method.
+func (m *MockCollaborator) CreatePullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullRequest *graveler.PullRequestRecord) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreatePullRequest", ctx, repository, pullRequest)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreatePullRequest indicates an expected call of CreatePullRequest.
+func (mr *MockCollaboratorMockRecorder) CreatePullRequest(ctx, repository, pullRequest interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePullRequest", reflect.TypeOf((*MockCollaborator)(nil).CreatePullRequest), ctx, repository, pullRequest)
+}
+
+// GetPullRequest mocks base method.
+func (m *MockCollaborator) GetPullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullRequestID graveler.PullRequestID) (*graveler.PullRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPullRequest", ctx, repository, pullRequestID)
+	ret0, _ := ret[0].(*graveler.PullRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPullRequest indicates an expected call of GetPullRequest.
+func (mr *MockCollaboratorMockRecorder) GetPullRequest(ctx, repository, pullRequestID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPullRequest", reflect.TypeOf((*MockCollaborator)(nil).GetPullRequest), ctx, repository, pullRequestID)
+}
+
 // MockRepositoryIterator is a mock of RepositoryIterator interface.
 type MockRepositoryIterator struct {
 	ctrl     *gomock.Controller

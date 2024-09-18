@@ -2705,7 +2705,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, graveler.ErrInvalidMergeStrategy),
 		errors.Is(err, block.ErrInvalidAddress),
 		errors.Is(err, block.ErrOperationNotSupported),
-		errors.Is(err, authentication.ErrInvalidRequest):
+		errors.Is(err, authentication.ErrInvalidRequest),
+		errors.Is(err, graveler.ErrSameBranch):
 		log.Debug("Bad request")
 		cb(w, r, http.StatusBadRequest, err)
 
@@ -5181,7 +5182,37 @@ func (c *Controller) ListPullRequests(w http.ResponseWriter, r *http.Request, re
 }
 
 func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.CreatePullRequestJSONRequestBody, repository string) {
-	writeResponse(w, r, http.StatusNotImplemented, nil)
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.CreatePullReqeustAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "create_pull_request", r, repository, body.DestinationBranch, body.SourceBranch)
+
+	user, err := auth.GetUser(ctx)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// TODO (niro): Sanitize title and description!
+
+	pr := &catalog.PullRequest{
+		Title:             body.Title,
+		Description:       body.Description,
+		Author:            user.Username,
+		SourceBranch:      body.SourceBranch,
+		DestinationBranch: body.DestinationBranch,
+	}
+	pid, err := c.Catalog.CreatePullRequest(ctx, repository, pr)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+	_, _ = io.WriteString(w, pid)
 }
 
 func (c *Controller) DeletePullRequest(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
@@ -5189,7 +5220,34 @@ func (c *Controller) DeletePullRequest(w http.ResponseWriter, r *http.Request, r
 }
 
 func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
-	writeResponse(w, r, http.StatusNotImplemented, nil)
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.GetPullReqeustAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "get_pull_request", r, repository, pullRequestID, "")
+	pr, err := c.Catalog.GetPullRequest(ctx, repository, pullRequestID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	response := apigen.PullRequest{
+		PullRequestBasic: apigen.PullRequestBasic{
+			Description: swag.String(pr.Description),
+			Status:      swag.String(pr.Status.String()),
+			Title:       swag.String(pr.Title),
+		},
+		Author:            pr.Author,
+		CreationDate:      pr.CreationDate,
+		DestinationBranch: pr.Destination,
+		Id:                pullRequestID,
+		MergedCommitId:    swag.String(pr.MergedCommitID),
+		SourceBranch:      pr.Source,
+	}
+	writeResponse(w, r, http.StatusOK, response)
 }
 
 func (c *Controller) UpdatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.UpdatePullRequestJSONRequestBody, repository string, pullRequestID string) {

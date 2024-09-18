@@ -83,6 +83,7 @@ docs/PrepareGCUncommittedRequest.md
 docs/PrepareGCUncommittedResponse.md
 docs/PresignMultipartUpload.md
 docs/PullRequest.md
+docs/PullRequestAllOf.md
 docs/PullRequestBasic.md
 docs/PullRequestCreation.md
 docs/PullRequestsList.md
@@ -221,6 +222,7 @@ lakefs_client/model/prepare_gc_uncommitted_request.py
 lakefs_client/model/prepare_gc_uncommitted_response.py
 lakefs_client/model/presign_multipart_upload.py
 lakefs_client/model/pull_request.py
+lakefs_client/model/pull_request_all_of.py
 lakefs_client/model/pull_request_basic.py
 lakefs_client/model/pull_request_creation.py
 lakefs_client/model/pull_requests_list.py
@@ -348,6 +350,7 @@ test/test_prepare_gc_uncommitted_request.py
 test/test_prepare_gc_uncommitted_response.py
 test/test_presign_multipart_upload.py
 test/test_pull_request.py
+test/test_pull_request_all_of.py
 test/test_pull_request_basic.py
 test/test_pull_request_creation.py
 test/test_pull_requests_list.py

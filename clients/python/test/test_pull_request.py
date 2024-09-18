@@ -39,26 +39,26 @@ class TestPullRequest(unittest.TestCase):
         model = lakefs_sdk.models.pull_request.PullRequest()  # noqa: E501
         if include_optional :
             return PullRequest(
+                status = 'open', 
+                title = '', 
+                description = '', 
                 id = '', 
-                creation_date = 56, 
+                creation_date = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                 author = '', 
                 source_branch = '', 
                 destination_branch = '', 
-                commit_id = '', 
-                status = 'open', 
-                title = '', 
-                description = ''
+                merged_commit_id = ''
             )
         else :
             return PullRequest(
-                id = '',
-                creation_date = 56,
-                author = '',
-                source_branch = '',
-                destination_branch = '',
                 status = 'open',
                 title = '',
                 description = '',
+                id = '',
+                creation_date = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
+                author = '',
+                source_branch = '',
+                destination_branch = '',
         )
         """
 

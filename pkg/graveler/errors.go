@@ -37,6 +37,7 @@ var (
 	ErrRepositoryNotFound           = fmt.Errorf("repository %w", ErrNotFound)
 	ErrRepositoryInDeletion         = errors.New("repository in deletion")
 	ErrBranchNotFound               = fmt.Errorf("branch %w", ErrNotFound)
+	ErrSameBranch                   = fmt.Errorf("same branch %w", ErrInvalid)
 	ErrTagNotFound                  = fmt.Errorf("tag %w", ErrNotFound)
 	ErrNoChanges                    = wrapError(ErrUserVisible, "no changes")
 	ErrConflictFound                = wrapError(ErrUserVisible, "conflict found")

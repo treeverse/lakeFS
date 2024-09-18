@@ -332,6 +332,7 @@ Class | Method | HTTP request | Description
  - [PrepareGCUncommittedResponse](docs/PrepareGCUncommittedResponse.md)
  - [PresignMultipartUpload](docs/PresignMultipartUpload.md)
  - [PullRequest](docs/PullRequest.md)
+ - [PullRequestAllOf](docs/PullRequestAllOf.md)
  - [PullRequestBasic](docs/PullRequestBasic.md)
  - [PullRequestCreation](docs/PullRequestCreation.md)
  - [PullRequestsList](docs/PullRequestsList.md)
