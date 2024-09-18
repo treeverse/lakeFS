@@ -1935,6 +1935,20 @@ func (mr *MockRefManagerMockRecorder) CreateCommitRecord(ctx, repository, commit
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCommitRecord", reflect.TypeOf((*MockRefManager)(nil).CreateCommitRecord), ctx, repository, commitID, commit)
 }
 
+// CreatePullRequest mocks base method.
+func (m *MockRefManager) CreatePullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullRequestID graveler.PullRequestID, pullRequest *graveler.PullRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreatePullRequest", ctx, repository, pullRequestID, pullRequest)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreatePullRequest indicates an expected call of CreatePullRequest.
+func (mr *MockRefManagerMockRecorder) CreatePullRequest(ctx, repository, pullRequestID, pullRequest interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePullRequest", reflect.TypeOf((*MockRefManager)(nil).CreatePullRequest), ctx, repository, pullRequestID, pullRequest)
+}
+
 // CreateRepository mocks base method.
 func (m *MockRefManager) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, repository graveler.Repository) (*graveler.RepositoryRecord, error) {
 	m.ctrl.T.Helper()
@@ -1990,6 +2004,20 @@ func (m *MockRefManager) DeleteExpiredImports(ctx context.Context, repository *g
 func (mr *MockRefManagerMockRecorder) DeleteExpiredImports(ctx, repository interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteExpiredImports", reflect.TypeOf((*MockRefManager)(nil).DeleteExpiredImports), ctx, repository)
+}
+
+// DeletePullRequest mocks base method.
+func (m *MockRefManager) DeletePullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullRequestID graveler.PullRequestID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeletePullRequest", ctx, repository, pullRequestID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeletePullRequest indicates an expected call of DeletePullRequest.
+func (mr *MockRefManagerMockRecorder) DeletePullRequest(ctx, repository, pullRequestID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePullRequest", reflect.TypeOf((*MockRefManager)(nil).DeletePullRequest), ctx, repository, pullRequestID)
 }
 
 // DeleteRepository mocks base method.
@@ -2118,6 +2146,21 @@ func (m *MockRefManager) GetCommitByPrefix(ctx context.Context, repository *grav
 func (mr *MockRefManagerMockRecorder) GetCommitByPrefix(ctx, repository, prefix interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommitByPrefix", reflect.TypeOf((*MockRefManager)(nil).GetCommitByPrefix), ctx, repository, prefix)
+}
+
+// GetPullRequest mocks base method.
+func (m *MockRefManager) GetPullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullID graveler.PullRequestID) (*graveler.PullRequest, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPullRequest", ctx, repository, pullID)
+	ret0, _ := ret[0].(*graveler.PullRequest)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPullRequest indicates an expected call of GetPullRequest.
+func (mr *MockRefManagerMockRecorder) GetPullRequest(ctx, repository, pullID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPullRequest", reflect.TypeOf((*MockRefManager)(nil).GetPullRequest), ctx, repository, pullID)
 }
 
 // GetRepository mocks base method.
@@ -2310,6 +2353,20 @@ func (m *MockRefManager) SetRepositoryMetadata(ctx context.Context, repository *
 func (mr *MockRefManagerMockRecorder) SetRepositoryMetadata(ctx, repository, updateFunc interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRepositoryMetadata", reflect.TypeOf((*MockRefManager)(nil).SetRepositoryMetadata), ctx, repository, updateFunc)
+}
+
+// UpdatePullRequest mocks base method.
+func (m *MockRefManager) UpdatePullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullRequestID graveler.PullRequestID, f graveler.PullUpdateFunc) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePullRequest", ctx, repository, pullRequestID, f)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePullRequest indicates an expected call of UpdatePullRequest.
+func (mr *MockRefManagerMockRecorder) UpdatePullRequest(ctx, repository, pullRequestID, f interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePullRequest", reflect.TypeOf((*MockRefManager)(nil).UpdatePullRequest), ctx, repository, pullRequestID, f)
 }
 
 // MockCommittedManager is a mock of CommittedManager interface.

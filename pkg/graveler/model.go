@@ -15,9 +15,9 @@ const (
 	branchesPrefix         = "branches"
 	commitsPrefix          = "commits"
 	settingsPrefix         = "settings"
-	addressesPrefix        = "link-addresses"
 	importsPrefix          = "imports"
 	repoMetadataPrefix     = "repo-metadata"
+	pullRequestsPrefix     = "pulls"
 )
 
 //nolint:gochecknoinits
@@ -69,16 +69,16 @@ func SettingsPath(key string) string {
 	return kv.FormatPath(settingsPrefix, key)
 }
 
-func LinkedAddressPath(key string) string {
-	return kv.FormatPath(addressesPrefix, key)
-}
-
 func ImportsPath(key string) string {
 	return kv.FormatPath(importsPrefix, key)
 }
 
 func RepoMetadataPath() string {
 	return repoMetadataPrefix
+}
+
+func PullRequestPath(pullID PullRequestID) string {
+	return kv.FormatPath(pullRequestsPrefix, pullID.String())
 }
 
 func CommitFromProto(pb *CommitData) *Commit {
@@ -219,5 +219,31 @@ func RepoMetadataFromProto(pb *RepoMetadata) RepositoryMetadata {
 func ProtoFromRepositoryMetadata(metadata RepositoryMetadata) *RepoMetadata {
 	return &RepoMetadata{
 		Metadata: metadata,
+	}
+}
+
+func PullRequestFromProto(pb *PullRequestData) *PullRequest {
+	return &PullRequest{
+		CreationDate: pb.CreatedAt.AsTime(),
+		Status:       pb.Status,
+		Title:        pb.Title,
+		Author:       pb.Author,
+		Description:  pb.Description,
+		Source:       pb.SourceBranch,
+		Destination:  pb.DestinationBranch,
+	}
+}
+
+func ProtoFromPullRequest(pullID PullRequestID, pull *PullRequest) *PullRequestData {
+	return &PullRequestData{
+		Id:                pullID.String(),
+		Status:            pull.Status,
+		CreatedAt:         timestamppb.New(pull.CreationDate),
+		Title:             pull.Title,
+		Author:            pull.Author,
+		Description:       pull.Description,
+		SourceBranch:      pull.Source,
+		DestinationBranch: pull.Destination,
+		CommitId:          pull.MergedCommitID,
 	}
 }

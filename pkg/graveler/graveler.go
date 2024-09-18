@@ -109,7 +109,7 @@ const (
 //	Type: Branch / Tag / Commit
 //	BranchID: for type ReferenceTypeBranch will hold the branch ID
 //	ResolvedBranchModifier: branch indicator if resolved to a branch the latest commit, staging or none was specified.
-//	CommitID: the commit ID of the branch head,  tag or specific hash.
+//	MergedCommitID: the commit ID of the branch head,  tag or specific hash.
 //	StagingToken: empty if ResolvedBranchModifier is ResolvedBranchModifierCommitted.
 type ResolvedRef struct {
 	Type                   ReferenceType
@@ -259,6 +259,34 @@ type RangeID string
 
 // ImportID represents an import process id in the ref-store
 type ImportID string
+
+type PullRequestID string
+
+func (id PullRequestID) String() string {
+	return string(id)
+}
+
+// PullUpdateFunc Used to pass validation call back to ref manager for UpdatePullRequest flow
+type PullUpdateFunc func(request *PullRequest) (*PullRequest, error)
+
+type PullRequest struct {
+	CreationDate time.Time
+	Status       PullRequestStatus
+	Title        string
+	Author       string
+	Description  string
+	// Source - source branch of pull request
+	Source string
+	// Destination - destination branch of pull request
+	Destination string
+	// MergedCommitID - The commit ID that of the source at the time of the merge. Relevant only for merged PRs
+	MergedCommitID string
+}
+
+type PullRequestRecord struct {
+	ID PullRequestID
+	PullRequest
+}
 
 type ImportStatus struct {
 	ID          ImportID
@@ -882,6 +910,14 @@ type RefManager interface {
 
 	// DeleteExpiredImports deletes expired imports on a given repository
 	DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error
+
+	GetPullRequest(ctx context.Context, repository *RepositoryRecord, pullID PullRequestID) (*PullRequest, error)
+
+	CreatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, pullRequest *PullRequest) error
+
+	DeletePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID) error
+
+	UpdatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, f PullUpdateFunc) error
 }
 
 // CommittedManager reads and applies committed snapshots

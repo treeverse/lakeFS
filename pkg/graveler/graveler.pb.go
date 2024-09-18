@@ -113,6 +113,55 @@ func (BranchProtectionBlockedAction) EnumDescriptor() ([]byte, []int) {
 	return file_graveler_graveler_proto_rawDescGZIP(), []int{1}
 }
 
+type PullRequestStatus int32
+
+const (
+	PullRequestStatus_OPEN   PullRequestStatus = 0
+	PullRequestStatus_CLOSED PullRequestStatus = 1
+	PullRequestStatus_MERGED PullRequestStatus = 2
+)
+
+// Enum value maps for PullRequestStatus.
+var (
+	PullRequestStatus_name = map[int32]string{
+		0: "OPEN",
+		1: "CLOSED",
+		2: "MERGED",
+	}
+	PullRequestStatus_value = map[string]int32{
+		"OPEN":   0,
+		"CLOSED": 1,
+		"MERGED": 2,
+	}
+)
+
+func (x PullRequestStatus) Enum() *PullRequestStatus {
+	p := new(PullRequestStatus)
+	*p = x
+	return p
+}
+
+func (x PullRequestStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PullRequestStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_graveler_graveler_proto_enumTypes[2].Descriptor()
+}
+
+func (PullRequestStatus) Type() protoreflect.EnumType {
+	return &file_graveler_graveler_proto_enumTypes[2]
+}
+
+func (x PullRequestStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PullRequestStatus.Descriptor instead.
+func (PullRequestStatus) EnumDescriptor() ([]byte, []int) {
+	return file_graveler_graveler_proto_rawDescGZIP(), []int{2}
+}
+
 type RepositoryData struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -848,6 +897,118 @@ func (x *RepoMetadata) GetMetadata() map[string]string {
 	return nil
 }
 
+type PullRequestData struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Status            PullRequestStatus      `protobuf:"varint,2,opt,name=status,proto3,enum=io.treeverse.lakefs.graveler.PullRequestStatus" json:"status,omitempty"`
+	CreatedAt         *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Title             string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	Author            string                 `protobuf:"bytes,5,opt,name=author,proto3" json:"author,omitempty"`
+	Description       string                 `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
+	SourceBranch      string                 `protobuf:"bytes,7,opt,name=source_branch,json=sourceBranch,proto3" json:"source_branch,omitempty"`
+	DestinationBranch string                 `protobuf:"bytes,8,opt,name=destination_branch,json=destinationBranch,proto3" json:"destination_branch,omitempty"`
+	// commit_id relevant only for merged PRs
+	CommitId string `protobuf:"bytes,9,opt,name=commit_id,json=commitId,proto3" json:"commit_id,omitempty"`
+}
+
+func (x *PullRequestData) Reset() {
+	*x = PullRequestData{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_graveler_graveler_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *PullRequestData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PullRequestData) ProtoMessage() {}
+
+func (x *PullRequestData) ProtoReflect() protoreflect.Message {
+	mi := &file_graveler_graveler_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PullRequestData.ProtoReflect.Descriptor instead.
+func (*PullRequestData) Descriptor() ([]byte, []int) {
+	return file_graveler_graveler_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *PullRequestData) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *PullRequestData) GetStatus() PullRequestStatus {
+	if x != nil {
+		return x.Status
+	}
+	return PullRequestStatus_OPEN
+}
+
+func (x *PullRequestData) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *PullRequestData) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *PullRequestData) GetAuthor() string {
+	if x != nil {
+		return x.Author
+	}
+	return ""
+}
+
+func (x *PullRequestData) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *PullRequestData) GetSourceBranch() string {
+	if x != nil {
+		return x.SourceBranch
+	}
+	return ""
+}
+
+func (x *PullRequestData) GetDestinationBranch() string {
+	if x != nil {
+		return x.DestinationBranch
+	}
+	return ""
+}
+
+func (x *PullRequestData) GetCommitId() string {
+	if x != nil {
+		return x.CommitId
+	}
+	return ""
+}
+
 var File_graveler_graveler_proto protoreflect.FileDescriptor
 
 var file_graveler_graveler_proto_rawDesc = []byte{
@@ -996,14 +1157,40 @@ var file_graveler_graveler_proto_rawDesc = []byte{
 	0x61, 0x74, 0x61, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61,
 	0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65,
-	0x3a, 0x02, 0x38, 0x01, 0x2a, 0x2e, 0x0a, 0x0f, 0x52, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x6f,
-	0x72, 0x79, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x0a, 0x0a, 0x06, 0x41, 0x43, 0x54, 0x49, 0x56,
-	0x45, 0x10, 0x00, 0x12, 0x0f, 0x0a, 0x0b, 0x49, 0x4e, 0x5f, 0x44, 0x45, 0x4c, 0x45, 0x54, 0x49,
-	0x4f, 0x4e, 0x10, 0x01, 0x2a, 0x3e, 0x0a, 0x1d, 0x42, 0x72, 0x61, 0x6e, 0x63, 0x68, 0x50, 0x72,
-	0x6f, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x65, 0x64, 0x41,
-	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x11, 0x0a, 0x0d, 0x53, 0x54, 0x41, 0x47, 0x49, 0x4e, 0x47,
-	0x5f, 0x57, 0x52, 0x49, 0x54, 0x45, 0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06, 0x43, 0x4f, 0x4d, 0x4d,
-	0x49, 0x54, 0x10, 0x01, 0x42, 0x26, 0x5a, 0x24, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
+	0x3a, 0x02, 0x38, 0x01, 0x22, 0xe6, 0x02, 0x0a, 0x0f, 0x50, 0x75, 0x6c, 0x6c, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x44, 0x61, 0x74, 0x61, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x47, 0x0a, 0x06, 0x73, 0x74, 0x61, 0x74,
+	0x75, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x2f, 0x2e, 0x69, 0x6f, 0x2e, 0x74, 0x72,
+	0x65, 0x65, 0x76, 0x65, 0x72, 0x73, 0x65, 0x2e, 0x6c, 0x61, 0x6b, 0x65, 0x66, 0x73, 0x2e, 0x67,
+	0x72, 0x61, 0x76, 0x65, 0x6c, 0x65, 0x72, 0x2e, 0x50, 0x75, 0x6c, 0x6c, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75,
+	0x73, 0x12, 0x39, 0x0a, 0x0a, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x61, 0x74, 0x18,
+	0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d,
+	0x70, 0x52, 0x09, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x41, 0x74, 0x12, 0x14, 0x0a, 0x05,
+	0x74, 0x69, 0x74, 0x6c, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74,
+	0x6c, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x18, 0x05, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x06, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65,
+	0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x23, 0x0a, 0x0d,
+	0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x5f, 0x62, 0x72, 0x61, 0x6e, 0x63, 0x68, 0x18, 0x07, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x42, 0x72, 0x61, 0x6e, 0x63,
+	0x68, 0x12, 0x2d, 0x0a, 0x12, 0x64, 0x65, 0x73, 0x74, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+	0x5f, 0x62, 0x72, 0x61, 0x6e, 0x63, 0x68, 0x18, 0x08, 0x20, 0x01, 0x28, 0x09, 0x52, 0x11, 0x64,
+	0x65, 0x73, 0x74, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x42, 0x72, 0x61, 0x6e, 0x63, 0x68,
+	0x12, 0x1b, 0x0a, 0x09, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x5f, 0x69, 0x64, 0x18, 0x09, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x08, 0x63, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x49, 0x64, 0x2a, 0x2e, 0x0a,
+	0x0f, 0x52, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x6f, 0x72, 0x79, 0x53, 0x74, 0x61, 0x74, 0x65,
+	0x12, 0x0a, 0x0a, 0x06, 0x41, 0x43, 0x54, 0x49, 0x56, 0x45, 0x10, 0x00, 0x12, 0x0f, 0x0a, 0x0b,
+	0x49, 0x4e, 0x5f, 0x44, 0x45, 0x4c, 0x45, 0x54, 0x49, 0x4f, 0x4e, 0x10, 0x01, 0x2a, 0x3e, 0x0a,
+	0x1d, 0x42, 0x72, 0x61, 0x6e, 0x63, 0x68, 0x50, 0x72, 0x6f, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f,
+	0x6e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x65, 0x64, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x11,
+	0x0a, 0x0d, 0x53, 0x54, 0x41, 0x47, 0x49, 0x4e, 0x47, 0x5f, 0x57, 0x52, 0x49, 0x54, 0x45, 0x10,
+	0x00, 0x12, 0x0a, 0x0a, 0x06, 0x43, 0x4f, 0x4d, 0x4d, 0x49, 0x54, 0x10, 0x01, 0x2a, 0x35, 0x0a,
+	0x11, 0x50, 0x75, 0x6c, 0x6c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x53, 0x74, 0x61, 0x74,
+	0x75, 0x73, 0x12, 0x08, 0x0a, 0x04, 0x4f, 0x50, 0x45, 0x4e, 0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06,
+	0x43, 0x4c, 0x4f, 0x53, 0x45, 0x44, 0x10, 0x01, 0x12, 0x0a, 0x0a, 0x06, 0x4d, 0x45, 0x52, 0x47,
+	0x45, 0x44, 0x10, 0x02, 0x42, 0x26, 0x5a, 0x24, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
 	0x6f, 0x6d, 0x2f, 0x74, 0x72, 0x65, 0x65, 0x76, 0x65, 0x72, 0x73, 0x65, 0x2f, 0x6c, 0x61, 0x6b,
 	0x65, 0x66, 0x73, 0x2f, 0x67, 0x72, 0x61, 0x76, 0x65, 0x6c, 0x65, 0x72, 0x62, 0x06, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x33,
@@ -1021,45 +1208,49 @@ func file_graveler_graveler_proto_rawDescGZIP() []byte {
 	return file_graveler_graveler_proto_rawDescData
 }
 
-var file_graveler_graveler_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_graveler_graveler_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_graveler_graveler_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_graveler_graveler_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_graveler_graveler_proto_goTypes = []interface{}{
 	(RepositoryState)(0),                   // 0: io.treeverse.lakefs.graveler.RepositoryState
 	(BranchProtectionBlockedAction)(0),     // 1: io.treeverse.lakefs.graveler.BranchProtectionBlockedAction
-	(*RepositoryData)(nil),                 // 2: io.treeverse.lakefs.graveler.RepositoryData
-	(*BranchData)(nil),                     // 3: io.treeverse.lakefs.graveler.BranchData
-	(*TagData)(nil),                        // 4: io.treeverse.lakefs.graveler.TagData
-	(*CommitData)(nil),                     // 5: io.treeverse.lakefs.graveler.CommitData
-	(*GarbageCollectionRules)(nil),         // 6: io.treeverse.lakefs.graveler.GarbageCollectionRules
-	(*BranchProtectionBlockedActions)(nil), // 7: io.treeverse.lakefs.graveler.BranchProtectionBlockedActions
-	(*BranchProtectionRules)(nil),          // 8: io.treeverse.lakefs.graveler.BranchProtectionRules
-	(*StagedEntryData)(nil),                // 9: io.treeverse.lakefs.graveler.StagedEntryData
-	(*LinkAddressData)(nil),                // 10: io.treeverse.lakefs.graveler.LinkAddressData
-	(*ImportStatusData)(nil),               // 11: io.treeverse.lakefs.graveler.ImportStatusData
-	(*RepoMetadata)(nil),                   // 12: io.treeverse.lakefs.graveler.RepoMetadata
-	nil,                                    // 13: io.treeverse.lakefs.graveler.CommitData.MetadataEntry
-	nil,                                    // 14: io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
-	nil,                                    // 15: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
-	nil,                                    // 16: io.treeverse.lakefs.graveler.RepoMetadata.MetadataEntry
-	(*timestamppb.Timestamp)(nil),          // 17: google.protobuf.Timestamp
+	(PullRequestStatus)(0),                 // 2: io.treeverse.lakefs.graveler.PullRequestStatus
+	(*RepositoryData)(nil),                 // 3: io.treeverse.lakefs.graveler.RepositoryData
+	(*BranchData)(nil),                     // 4: io.treeverse.lakefs.graveler.BranchData
+	(*TagData)(nil),                        // 5: io.treeverse.lakefs.graveler.TagData
+	(*CommitData)(nil),                     // 6: io.treeverse.lakefs.graveler.CommitData
+	(*GarbageCollectionRules)(nil),         // 7: io.treeverse.lakefs.graveler.GarbageCollectionRules
+	(*BranchProtectionBlockedActions)(nil), // 8: io.treeverse.lakefs.graveler.BranchProtectionBlockedActions
+	(*BranchProtectionRules)(nil),          // 9: io.treeverse.lakefs.graveler.BranchProtectionRules
+	(*StagedEntryData)(nil),                // 10: io.treeverse.lakefs.graveler.StagedEntryData
+	(*LinkAddressData)(nil),                // 11: io.treeverse.lakefs.graveler.LinkAddressData
+	(*ImportStatusData)(nil),               // 12: io.treeverse.lakefs.graveler.ImportStatusData
+	(*RepoMetadata)(nil),                   // 13: io.treeverse.lakefs.graveler.RepoMetadata
+	(*PullRequestData)(nil),                // 14: io.treeverse.lakefs.graveler.PullRequestData
+	nil,                                    // 15: io.treeverse.lakefs.graveler.CommitData.MetadataEntry
+	nil,                                    // 16: io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
+	nil,                                    // 17: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
+	nil,                                    // 18: io.treeverse.lakefs.graveler.RepoMetadata.MetadataEntry
+	(*timestamppb.Timestamp)(nil),          // 19: google.protobuf.Timestamp
 }
 var file_graveler_graveler_proto_depIdxs = []int32{
-	17, // 0: io.treeverse.lakefs.graveler.RepositoryData.creation_date:type_name -> google.protobuf.Timestamp
+	19, // 0: io.treeverse.lakefs.graveler.RepositoryData.creation_date:type_name -> google.protobuf.Timestamp
 	0,  // 1: io.treeverse.lakefs.graveler.RepositoryData.state:type_name -> io.treeverse.lakefs.graveler.RepositoryState
-	17, // 2: io.treeverse.lakefs.graveler.CommitData.creation_date:type_name -> google.protobuf.Timestamp
-	13, // 3: io.treeverse.lakefs.graveler.CommitData.metadata:type_name -> io.treeverse.lakefs.graveler.CommitData.MetadataEntry
-	14, // 4: io.treeverse.lakefs.graveler.GarbageCollectionRules.branch_retention_days:type_name -> io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
+	19, // 2: io.treeverse.lakefs.graveler.CommitData.creation_date:type_name -> google.protobuf.Timestamp
+	15, // 3: io.treeverse.lakefs.graveler.CommitData.metadata:type_name -> io.treeverse.lakefs.graveler.CommitData.MetadataEntry
+	16, // 4: io.treeverse.lakefs.graveler.GarbageCollectionRules.branch_retention_days:type_name -> io.treeverse.lakefs.graveler.GarbageCollectionRules.BranchRetentionDaysEntry
 	1,  // 5: io.treeverse.lakefs.graveler.BranchProtectionBlockedActions.value:type_name -> io.treeverse.lakefs.graveler.BranchProtectionBlockedAction
-	15, // 6: io.treeverse.lakefs.graveler.BranchProtectionRules.branch_pattern_to_blocked_actions:type_name -> io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
-	17, // 7: io.treeverse.lakefs.graveler.ImportStatusData.updated_at:type_name -> google.protobuf.Timestamp
-	5,  // 8: io.treeverse.lakefs.graveler.ImportStatusData.commit:type_name -> io.treeverse.lakefs.graveler.CommitData
-	16, // 9: io.treeverse.lakefs.graveler.RepoMetadata.metadata:type_name -> io.treeverse.lakefs.graveler.RepoMetadata.MetadataEntry
-	7,  // 10: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry.value:type_name -> io.treeverse.lakefs.graveler.BranchProtectionBlockedActions
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	17, // 6: io.treeverse.lakefs.graveler.BranchProtectionRules.branch_pattern_to_blocked_actions:type_name -> io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry
+	19, // 7: io.treeverse.lakefs.graveler.ImportStatusData.updated_at:type_name -> google.protobuf.Timestamp
+	6,  // 8: io.treeverse.lakefs.graveler.ImportStatusData.commit:type_name -> io.treeverse.lakefs.graveler.CommitData
+	18, // 9: io.treeverse.lakefs.graveler.RepoMetadata.metadata:type_name -> io.treeverse.lakefs.graveler.RepoMetadata.MetadataEntry
+	2,  // 10: io.treeverse.lakefs.graveler.PullRequestData.status:type_name -> io.treeverse.lakefs.graveler.PullRequestStatus
+	19, // 11: io.treeverse.lakefs.graveler.PullRequestData.created_at:type_name -> google.protobuf.Timestamp
+	8,  // 12: io.treeverse.lakefs.graveler.BranchProtectionRules.BranchPatternToBlockedActionsEntry.value:type_name -> io.treeverse.lakefs.graveler.BranchProtectionBlockedActions
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_graveler_graveler_proto_init() }
@@ -1200,14 +1391,26 @@ func file_graveler_graveler_proto_init() {
 				return nil
 			}
 		}
+		file_graveler_graveler_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*PullRequestData); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_graveler_graveler_proto_rawDesc,
-			NumEnums:      2,
-			NumMessages:   15,
+			NumEnums:      3,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

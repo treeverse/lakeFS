@@ -1226,3 +1226,122 @@ func TestManager_SetRepositoryMetadata(t *testing.T) {
 		})
 	}
 }
+
+func TestManager_GetPullRequest(t *testing.T) {
+	r, _ := testRefManager(t)
+	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+	ctx := context.Background()
+
+	t.Run("get_pull_request_exists", func(t *testing.T) {
+		expected := graveler.PullRequestRecord{
+			ID: "",
+			PullRequest: graveler.PullRequest{
+				CreationDate:   time.Now().UTC(),
+				Status:         graveler.PullRequestStatus_CLOSED,
+				Title:          "some title",
+				Author:         "some author",
+				Description:    "some description",
+				Source:         "dev",
+				Destination:    "main",
+				MergedCommitID: "",
+			},
+		}
+		require.NoError(t, r.CreatePullRequest(ctx, repository, expected.ID, &expected.PullRequest))
+		pull, err := r.GetPullRequest(ctx, repository, expected.ID)
+		require.NoError(t, err)
+		require.Equal(t, expected.PullRequest, *pull)
+	})
+
+	t.Run("get_pull_request_doesnt_exists", func(t *testing.T) {
+		_, err := r.GetPullRequest(ctx, repository, "pull2")
+		require.ErrorIs(t, err, graveler.ErrPullRequestNotFound)
+	})
+}
+
+func TestManager_DeletePullRequest(t *testing.T) {
+	r, _ := testRefManager(t)
+	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+	ctx := context.Background()
+
+	t.Run("delete_pull_request_exists", func(t *testing.T) {
+		rec := graveler.PullRequestRecord{
+			ID: "",
+			PullRequest: graveler.PullRequest{
+				CreationDate:   time.Now().UTC(),
+				Status:         graveler.PullRequestStatus_CLOSED,
+				Title:          "some title",
+				Author:         "some author",
+				Description:    "some description",
+				Source:         "dev",
+				Destination:    "main",
+				MergedCommitID: "",
+			},
+		}
+		require.NoError(t, r.CreatePullRequest(ctx, repository, rec.ID, &rec.PullRequest))
+		err := r.DeletePullRequest(ctx, repository, rec.ID)
+		require.NoError(t, err)
+	})
+
+	t.Run("delete_pull_request_doesnt_exists", func(t *testing.T) {
+		// No error expected if key not found
+		require.NoError(t, r.DeletePullRequest(ctx, repository, "pull2"))
+	})
+}
+
+func TestManager_UpdatePullRequest(t *testing.T) {
+	r, _ := testRefManager(t)
+	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		StorageNamespace: "s3://",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+	ctx := context.Background()
+	expected := graveler.PullRequestRecord{
+		ID: "",
+		PullRequest: graveler.PullRequest{
+			CreationDate:   time.Now().UTC(),
+			Status:         graveler.PullRequestStatus_CLOSED,
+			Title:          "some title",
+			Author:         "some author",
+			Description:    "some description",
+			Source:         "dev",
+			Destination:    "main",
+			MergedCommitID: "",
+		},
+	}
+
+	t.Run("update_pull_request_exists", func(t *testing.T) {
+		require.NoError(t, r.CreatePullRequest(ctx, repository, expected.ID, &expected.PullRequest))
+
+		err := r.UpdatePullRequest(ctx, repository, expected.ID, func(request *graveler.PullRequest) (*graveler.PullRequest, error) {
+			// Modify pull
+			expected.Title = "foo"
+			expected.Description = "bar"
+			expected.Destination = "abc"
+			return &expected.PullRequest, nil
+		})
+		require.NoError(t, err)
+		pull, err := r.GetPullRequest(ctx, repository, expected.ID)
+		require.NoError(t, err)
+		require.Equal(t, expected.PullRequest, *pull)
+	})
+
+	t.Run("update_pull_request_doesnt_exists", func(t *testing.T) {
+		// No error expected if key not found
+		require.ErrorIs(t, r.UpdatePullRequest(ctx, repository, "pull2", func(request *graveler.PullRequest) (*graveler.PullRequest, error) {
+			t.Fatalf("Should not reach")
+			return nil, nil
+		}), graveler.ErrPullRequestNotFound)
+	})
+}

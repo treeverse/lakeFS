@@ -889,3 +889,19 @@ func (m *RefsFake) CreateCommitRecord(_ context.Context, _ *graveler.RepositoryR
 	// TODO implement me
 	panic("implement me")
 }
+
+func (m *RefsFake) GetPullRequest(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.PullRequestID) (*graveler.PullRequest, error) {
+	panic("implement me")
+}
+
+func (m *RefsFake) CreatePullRequest(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.PullRequestID, _ *graveler.PullRequest) error {
+	panic("implement me")
+}
+
+func (m *RefsFake) DeletePullRequest(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.PullRequestID) error {
+	panic("implement me")
+}
+
+func (m *RefsFake) UpdatePullRequest(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.PullRequestID, _ graveler.PullUpdateFunc) error {
+	panic("implement me")
+}
