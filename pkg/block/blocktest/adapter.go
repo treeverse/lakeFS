@@ -18,12 +18,14 @@ import (
 )
 
 // AdapterTest Test suite of basic adapter functionality
-func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
+func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string, presigned bool) {
 	AdapterBasicObjectTest(t, adapter, storageNamespace, externalPath)
 	AdapterMultipartTest(t, adapter, storageNamespace, externalPath)
 	t.Run("Adapter_GetRange", func(t *testing.T) { testAdapterGetRange(t, adapter, storageNamespace) })
 	t.Run("Adapter_Walker", func(t *testing.T) { testAdapterWalker(t, adapter, storageNamespace) })
-	t.Run("Adapter_GetPreSignedURL", func(t *testing.T) { testGetPreSignedURL(t, adapter, storageNamespace) })
+	if presigned {
+		t.Run("Adapter_GetPreSignedURL", func(t *testing.T) { testGetPreSignedURL(t, adapter, storageNamespace) })
+	}
 }
 
 func AdapterPresignedEndpointOverrideTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string, oe *url.URL) {

@@ -22,7 +22,7 @@ func TestLocalAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create new adapter", err)
 	}
-	blocktest.AdapterTest(t, adapter, testStorageNamespace, externalPath)
+	blocktest.AdapterTest(t, adapter, testStorageNamespace, externalPath, false)
 }
 
 // TestAdapterNamespace tests the namespace validity regex with various paths
