@@ -811,6 +811,14 @@ type LinkAddressIterator interface {
 	Close()
 }
 
+type PullsIterator interface {
+	Next() bool
+	SeekGE(id PullRequestID)
+	Value() *PullRequestRecord
+	Err() error
+	Close()
+}
+
 // These are the more complex internal components that compose the functionality of the Graveler
 
 // RefManager handles references: branches, commits, probably tags in the future
@@ -912,6 +920,8 @@ type RefManager interface {
 	DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error
 
 	GetPullRequest(ctx context.Context, repository *RepositoryRecord, pullID PullRequestID) (*PullRequest, error)
+
+	ListPullRequests(ctx context.Context, repository *RepositoryRecord) (PullsIterator, error)
 
 	CreatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, pullRequest *PullRequest) error
 

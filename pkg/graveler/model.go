@@ -17,7 +17,6 @@ const (
 	settingsPrefix         = "settings"
 	importsPrefix          = "imports"
 	repoMetadataPrefix     = "repo-metadata"
-	pullRequestsPrefix     = "pulls"
 )
 
 //nolint:gochecknoinits
@@ -75,10 +74,6 @@ func ImportsPath(key string) string {
 
 func RepoMetadataPath() string {
 	return repoMetadataPrefix
-}
-
-func PullRequestPath(pullID PullRequestID) string {
-	return kv.FormatPath(pullRequestsPrefix, pullID.String())
 }
 
 func CommitFromProto(pb *CommitData) *Commit {
@@ -222,15 +217,19 @@ func ProtoFromRepositoryMetadata(metadata RepositoryMetadata) *RepoMetadata {
 	}
 }
 
-func PullRequestFromProto(pb *PullRequestData) *PullRequest {
-	return &PullRequest{
-		CreationDate: pb.CreatedAt.AsTime(),
-		Status:       pb.Status,
-		Title:        pb.Title,
-		Author:       pb.Author,
-		Description:  pb.Description,
-		Source:       pb.SourceBranch,
-		Destination:  pb.DestinationBranch,
+func PullRequestFromProto(pb *PullRequestData) *PullRequestRecord {
+	return &PullRequestRecord{
+		ID: PullRequestID(pb.Id),
+		PullRequest: PullRequest{
+			CreationDate:   pb.CreatedAt.AsTime(),
+			Status:         pb.Status,
+			Title:          pb.Title,
+			Author:         pb.Author,
+			Description:    pb.Description,
+			Source:         pb.SourceBranch,
+			Destination:    pb.DestinationBranch,
+			MergedCommitID: pb.CommitId,
+		},
 	}
 }
 
