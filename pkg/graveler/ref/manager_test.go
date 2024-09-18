@@ -1241,14 +1241,14 @@ func TestManager_GetPullRequest(t *testing.T) {
 		expected := graveler.PullRequestRecord{
 			ID: "",
 			PullRequest: graveler.PullRequest{
-				CreatedAt:   time.Now().UTC(),
-				Status:      graveler.PullRequestStatus_CLOSED,
-				Title:       "some title",
-				Author:      "some author",
-				Description: "some description",
-				Source:      "dev",
-				Destination: "main",
-				CommitID:    "",
+				CreationDate:   time.Now().UTC(),
+				Status:         graveler.PullRequestStatus_CLOSED,
+				Title:          "some title",
+				Author:         "some author",
+				Description:    "some description",
+				Source:         "dev",
+				Destination:    "main",
+				MergedCommitID: "",
 			},
 		}
 		require.NoError(t, r.CreatePullRequest(ctx, repository, expected.ID, &expected.PullRequest))
@@ -1277,14 +1277,14 @@ func TestManager_DeletePullRequest(t *testing.T) {
 		rec := graveler.PullRequestRecord{
 			ID: "",
 			PullRequest: graveler.PullRequest{
-				CreatedAt:   time.Now().UTC(),
-				Status:      graveler.PullRequestStatus_CLOSED,
-				Title:       "some title",
-				Author:      "some author",
-				Description: "some description",
-				Source:      "dev",
-				Destination: "main",
-				CommitID:    "",
+				CreationDate:   time.Now().UTC(),
+				Status:         graveler.PullRequestStatus_CLOSED,
+				Title:          "some title",
+				Author:         "some author",
+				Description:    "some description",
+				Source:         "dev",
+				Destination:    "main",
+				MergedCommitID: "",
 			},
 		}
 		require.NoError(t, r.CreatePullRequest(ctx, repository, rec.ID, &rec.PullRequest))
@@ -1310,14 +1310,14 @@ func TestManager_UpdatePullRequest(t *testing.T) {
 	expected := graveler.PullRequestRecord{
 		ID: "",
 		PullRequest: graveler.PullRequest{
-			CreatedAt:   time.Now().UTC(),
-			Status:      graveler.PullRequestStatus_CLOSED,
-			Title:       "some title",
-			Author:      "some author",
-			Description: "some description",
-			Source:      "dev",
-			Destination: "main",
-			CommitID:    "",
+			CreationDate:   time.Now().UTC(),
+			Status:         graveler.PullRequestStatus_CLOSED,
+			Title:          "some title",
+			Author:         "some author",
+			Description:    "some description",
+			Source:         "dev",
+			Destination:    "main",
+			MergedCommitID: "",
 		},
 	}
 

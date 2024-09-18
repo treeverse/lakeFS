@@ -224,13 +224,13 @@ func ProtoFromRepositoryMetadata(metadata RepositoryMetadata) *RepoMetadata {
 
 func PullRequestFromProto(pb *PullRequestData) *PullRequest {
 	return &PullRequest{
-		CreatedAt:   pb.CreatedAt.AsTime(),
-		Status:      pb.Status,
-		Title:       pb.Title,
-		Author:      pb.Author,
-		Description: pb.Description,
-		Source:      pb.SourceBranch,
-		Destination: pb.DestinationBranch,
+		CreationDate: pb.CreatedAt.AsTime(),
+		Status:       pb.Status,
+		Title:        pb.Title,
+		Author:       pb.Author,
+		Description:  pb.Description,
+		Source:       pb.SourceBranch,
+		Destination:  pb.DestinationBranch,
 	}
 }
 
@@ -238,12 +238,12 @@ func ProtoFromPullRequest(pullID PullRequestID, pull *PullRequest) *PullRequestD
 	return &PullRequestData{
 		Id:                pullID.String(),
 		Status:            pull.Status,
-		CreatedAt:         timestamppb.New(pull.CreatedAt),
+		CreatedAt:         timestamppb.New(pull.CreationDate),
 		Title:             pull.Title,
 		Author:            pull.Author,
 		Description:       pull.Description,
 		SourceBranch:      pull.Source,
 		DestinationBranch: pull.Destination,
-		CommitId:          pull.CommitID,
+		CommitId:          pull.MergedCommitID,
 	}
 }

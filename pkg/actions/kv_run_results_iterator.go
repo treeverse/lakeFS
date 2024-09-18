@@ -20,7 +20,7 @@ type KVRunResultIterator struct {
 // 'after' determines the runID which we should start the scan from, used for pagination
 func NewKVRunResultIterator(ctx context.Context, store kv.Store, repositoryID, branchID, commitID, after string) (*KVRunResultIterator, error) {
 	if branchID != "" && commitID != "" {
-		return nil, fmt.Errorf("can't use both branchID and CommitID: %w", ErrParamConflict)
+		return nil, fmt.Errorf("can't use both branchID and MergedCommitID: %w", ErrParamConflict)
 	}
 
 	var (

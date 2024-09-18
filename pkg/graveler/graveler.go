@@ -109,7 +109,7 @@ const (
 //	Type: Branch / Tag / Commit
 //	BranchID: for type ReferenceTypeBranch will hold the branch ID
 //	ResolvedBranchModifier: branch indicator if resolved to a branch the latest commit, staging or none was specified.
-//	CommitID: the commit ID of the branch head,  tag or specific hash.
+//	MergedCommitID: the commit ID of the branch head,  tag or specific hash.
 //	StagingToken: empty if ResolvedBranchModifier is ResolvedBranchModifierCommitted.
 type ResolvedRef struct {
 	Type                   ReferenceType
@@ -270,17 +270,17 @@ func (id PullRequestID) String() string {
 type PullUpdateFunc func(request *PullRequest) (*PullRequest, error)
 
 type PullRequest struct {
-	CreatedAt   time.Time
-	Status      PullRequestStatus
-	Title       string
-	Author      string
-	Description string
+	CreationDate time.Time
+	Status       PullRequestStatus
+	Title        string
+	Author       string
+	Description  string
 	// Source - source branch of pull request
 	Source string
 	// Destination - destination branch of pull request
 	Destination string
-	// CommitID - The commit ID that of the source at the time of the merge. Relevant only for merged PRs
-	CommitID string
+	// MergedCommitID - The commit ID that of the source at the time of the merge. Relevant only for merged PRs
+	MergedCommitID string
 }
 
 type PullRequestRecord struct {
