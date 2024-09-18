@@ -8,7 +8,7 @@ import Button from "react-bootstrap/Button";
 import dayjs from "dayjs";
 
 import {ActionGroup, AlertError, Loading, PrefixSearchWidget, RefreshButton} from "../../../../lib/components/controls";
-import {pulls} from "../../../../lib/api";
+import {pulls as pullsAPI} from "../../../../lib/api";
 import {useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {Paginator} from "../../../../lib/components/pagination";
@@ -26,7 +26,7 @@ const PullWidget = ({repo, pull}) => {
                         pathname: '/repositories/:repoId/pulls/:pullId',
                         params: {repoId: repo.id, pullId: pull.id}
                     }}>
-                        <span>{pull.title}</span>
+                        {pull.title}
                     </Link>
                 </h6>
                 <small>
@@ -42,20 +42,13 @@ const PullWidget = ({repo, pull}) => {
     );
 };
 
-// TODO (gilo): is there a nicer place for this?
-const PullStatus = {
-    open: "open",
-    closed: "closed",
-    merged: "merged",
-}
-
 const PullsList = ({repo, after, prefix, onPaginate}) => {
     const router = useRouter()
     const [refresh, setRefresh] = useState(true);
     // TODO: pullState should be persistent in the url and saved as a url param?
-    const [pullsState, setPullsState] = useState(PullStatus.open);
+    const [pullsState, setPullsState] = useState(pullsAPI.PullStatus.open);
     const {results, error, loading, nextPage} = useAPIWithPagination(async () => {
-        return pulls.list(repo.id, pullsState, prefix, after);
+        return pullsAPI.list(repo.id, pullsState, prefix, after);
     }, [repo.id, pullsState, prefix, refresh, after]);
 
     const doRefresh = () => setRefresh(true);
@@ -87,8 +80,8 @@ const PullsList = ({repo, after, prefix, onPaginate}) => {
                         onSelect={key => setPullsState(key)}
                         className="mb-3 pt-2"
                     >
-                        <Tab eventKey={PullStatus.open} title="Open"/>
-                        <Tab eventKey={PullStatus.closed} title="Closed"/>
+                        <Tab eventKey={pullsAPI.PullStatus.open} title="Open"/>
+                        <Tab eventKey={pullsAPI.PullStatus.closed} title="Closed"/>
                     </Tabs>
                 </div>
                 <ActionGroup orientation="right" className="position-absolute top-0 end-0 pb-2">
@@ -102,14 +95,20 @@ const PullsList = ({repo, after, prefix, onPaginate}) => {
                         })}/>
 
                     <RefreshButton onClick={doRefresh}/>
-                    <Button variant="success">Create Pull Request</Button>
+                    <Button variant="success"
+                            onClick={() => router.push({
+                                pathname: '/repositories/:repoId/pulls/create',
+                                params: {repoId: repo.id},
+                            })}
+                    >
+                        Create Pull Request
+                    </Button>
                 </ActionGroup>
             </div>
             {content}
         </div>
     );
 };
-
 
 const PullsContainer = () => {
     const router = useRouter()
@@ -138,7 +137,6 @@ const PullsContainer = () => {
             }}/>
     );
 };
-
 
 const RepositoryPullsPage = () => {
     const [setActivePage] = useOutletContext();
