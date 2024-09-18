@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "vite",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build",
+    "build-watch": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build --watch",
     "serve": "vite preview",
     "test": "vitest run",
     "test-watch": "vitest",

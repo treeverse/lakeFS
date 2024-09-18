@@ -34,7 +34,7 @@ const CommitWidget = ({ repo, commit }) => {
     return (
         <ListGroup.Item>
             <div className="clearfix">
-                <div className="float-start">
+                <div className="float-start w-100">
                     <h6>
                         <Link href={{
                             pathname: '/repositories/:repoId/commits/:commitId',

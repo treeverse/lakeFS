@@ -567,6 +567,62 @@ class Tags {
 
 }
 
+class Pulls {
+    async list(repoId, state = "open", prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+        // const query = qs({prefix, after, amount});
+        // const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls?` + query);
+        // if (response.status !== 200) {
+        //     throw new Error(`could not list pulls: ${await extractError(response)}`);
+        // }
+        // return response.json();
+
+        // TODO: this is for development purposes only
+        console.log("list pulls", {repoId, state, prefix, after, amount})
+        let results = [
+            {
+                "id": "test-pull-1",
+                "title": "Test PR 1",
+                "status": "open",
+                "created_at": 1726575741,
+                "author": "test-user-1",
+                "description": "This is a test PR",
+                "source_branch": "feature-branch-1",
+                "destination_branch": "main"
+            },
+            {
+                "id": "test-pull-2",
+                "title": "Next Test PR 2",
+                "status": "closed",
+                "created_at": 1726402941,
+                "author": "test-user-2",
+                "description": "This is a another test PR",
+                "source_branch": "feature-branch-2",
+                "destination_branch": "main"
+            },
+            {
+                "id": "test-pull-3",
+                "title": "Another Test PR 3",
+                "status": "open",
+                "created_at": 1718454141,
+                "author": "test-user-1",
+                "description": "This is also a test PR",
+                "source_branch": "feature-branch-3",
+                "destination_branch": "feature-branch-1"
+            }
+        ];
+        results = results.filter(pull => pull.status === state);
+        return {
+            "pagination": {
+                "has_more": false,
+                "max_per_page": 1000,
+                "next_offset": "",
+                "results": results.length
+            },
+            "results": results
+        }
+    }
+}
+
 // uploadWithProgress uses good ol' XMLHttpRequest because progress indication in fetch() is
 //  still not well supported across browsers (see https://stackoverflow.com/questions/35711724/upload-progress-indicators-for-fetch).
 export const uploadWithProgress = (url, file, method = 'POST', onProgress = null, additionalHeaders = null) => {
@@ -652,7 +708,7 @@ class Objects {
         if (response.status === 401) {
             return false;
         }
-        
+
         // This is not one of the expected responses
         throw new Error(await extractError(response));
     }
@@ -1112,6 +1168,7 @@ class Import {
 export const repositories = new Repositories();
 export const branches = new Branches();
 export const tags = new Tags();
+export const pulls = new Pulls();
 export const objects = new Objects();
 export const commits = new Commits();
 export const refs = new Refs();
