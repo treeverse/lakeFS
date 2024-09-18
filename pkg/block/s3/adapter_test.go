@@ -12,7 +12,7 @@ import (
 	s3a "github.com/treeverse/lakefs/pkg/block/s3"
 )
 
-func getS3BlockAdapter(t *testing.T) *s3a.Adapter {
+func getS3BlockAdapter(t *testing.T, opts []s3a.AdapterOption) *s3a.Adapter {
 	s3params := params.S3{
 		Region:               "us-east-1",
 		Endpoint:             blockURL,
@@ -23,8 +23,12 @@ func getS3BlockAdapter(t *testing.T) *s3a.Adapter {
 			SecretAccessKey: minioTestSecretAccessKey,
 		},
 	}
+	if opts == nil {
+		opts = make([]s3a.AdapterOption, 0, 1)
+	}
+	opts = append(opts, s3a.WithNowFactory(blocktest.NowMockDefault))
 
-	adapter, err := s3a.NewAdapter(context.Background(), s3params, s3a.WithNowFactory(blocktest.NowMockDefault))
+	adapter, err := s3a.NewAdapter(context.Background(), s3params, opts...)
 	if err != nil {
 		t.Fatal("cannot create s3 adapter: ", err)
 	}
@@ -40,13 +44,28 @@ func TestS3Adapter(t *testing.T) {
 	externalPath, err := url.JoinPath(basePath, "external")
 	require.NoError(t, err)
 
-	adapter := getS3BlockAdapter(t)
-	blocktest.AdapterTest(t, adapter, localPath, externalPath)
+	adapter := getS3BlockAdapter(t, nil)
+	blocktest.AdapterTest(t, adapter, localPath, externalPath, true)
+}
+
+// TestS3AdapterPresignedOverride tests basic functionality of the S3 block adapter along with the desired behavior of
+// overriding the pre-signed URL endpoint
+func TestS3AdapterPresignedOverride(t *testing.T) {
+	basePath, err := url.JoinPath("s3://", bucketName)
+	require.NoError(t, err)
+	localPath, err := url.JoinPath(basePath, "lakefs")
+	require.NoError(t, err)
+	externalPath, err := url.JoinPath(basePath, "external")
+	require.NoError(t, err)
+
+	oeu, _ := url.Parse("https://myendpoint.com")
+	adapter := getS3BlockAdapter(t, []s3a.AdapterOption{s3a.WithPreSignedEndpoint(oeu.String())})
+	blocktest.AdapterPresignedEndpointOverrideTest(t, adapter, localPath, externalPath, oeu)
 }
 
 // TestAdapterNamespace tests the namespace validity regex with various paths
 func TestAdapterNamespace(t *testing.T) {
-	adapter := getS3BlockAdapter(t)
+	adapter := getS3BlockAdapter(t, nil)
 	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo().ValidityRegex)
 	require.NoError(t, err)
 

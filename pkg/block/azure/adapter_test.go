@@ -27,7 +27,7 @@ func TestAzureAdapter(t *testing.T) {
 		Domain:           domain,
 	})
 	require.NoError(t, err, "create new adapter")
-	blocktest.AdapterTest(t, adapter, localPath, externalPath)
+	blocktest.AdapterTest(t, adapter, localPath, externalPath, true)
 }
 
 func TestAdapterNamespace(t *testing.T) {

@@ -54,6 +54,7 @@ type S3 struct {
 	ServerSideEncryption          string
 	ServerSideEncryptionKmsKeyID  string
 	PreSignedExpiry               time.Duration
+	PreSignedEndpoint             string
 	DisablePreSigned              bool
 	DisablePreSignedUI            bool
 	DisablePreSignedMultipart     bool

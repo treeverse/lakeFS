@@ -18,12 +18,19 @@ import (
 )
 
 // AdapterTest Test suite of basic adapter functionality
-func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
+func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string, presigned bool) {
 	AdapterBasicObjectTest(t, adapter, storageNamespace, externalPath)
 	AdapterMultipartTest(t, adapter, storageNamespace, externalPath)
 	t.Run("Adapter_GetRange", func(t *testing.T) { testAdapterGetRange(t, adapter, storageNamespace) })
 	t.Run("Adapter_Walker", func(t *testing.T) { testAdapterWalker(t, adapter, storageNamespace) })
-	t.Run("Adapter_GetPreSignedURL", func(t *testing.T) { testGetPreSignedURL(t, adapter, storageNamespace) })
+	if presigned {
+		t.Run("Adapter_GetPreSignedURL", func(t *testing.T) { testGetPreSignedURL(t, adapter, storageNamespace) })
+	}
+}
+
+func AdapterPresignedEndpointOverrideTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string, oe *url.URL) {
+	AdapterBasicObjectTest(t, adapter, storageNamespace, externalPath)
+	t.Run("Adapter_GetPreSignedURLEndpointOverride", func(t *testing.T) { testGetPreSignedURLEndpointOverride(t, adapter, storageNamespace, oe) })
 }
 
 // Parameterized test of the GetRange functionality
@@ -156,6 +163,27 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 
 // Test request for a presigned URL for temporary access
 func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace string) {
+	preSignedURL, exp := getPresignedURLBasicTest(t, adapter, storageNamespace)
+	require.NotNil(t, exp)
+	expectedExpiry := expectedURLExp(adapter)
+	require.Equal(t, expectedExpiry, *exp)
+	_, err := url.Parse(preSignedURL)
+	require.NoError(t, err)
+}
+
+// Test request for a presigned URL with an endpoint override
+func testGetPreSignedURLEndpointOverride(t *testing.T, adapter block.Adapter, storageNamespace string, oe *url.URL) {
+	preSignedURL, exp := getPresignedURLBasicTest(t, adapter, storageNamespace)
+	require.NotNil(t, exp)
+	expectedExpiry := expectedURLExp(adapter)
+	require.Equal(t, expectedExpiry, *exp)
+	u, err := url.Parse(preSignedURL)
+	require.NoError(t, err)
+	require.Equal(t, u.Scheme, oe.Scheme)
+	require.Contains(t, u.Host, oe.Host)
+}
+
+func getPresignedURLBasicTest(t *testing.T, adapter block.Adapter, storageNamespace string) (string, *time.Time) {
 	ctx := context.Background()
 	obj, _ := objPointers(storageNamespace)
 
@@ -163,16 +191,13 @@ func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace s
 
 	if adapter.BlockstoreType() == block.BlockstoreTypeGS {
 		require.ErrorContains(t, err, "no credentials found")
-		return
+		return "", nil
 	} else if adapter.BlockstoreType() == block.BlockstoreTypeLocal {
 		require.ErrorIs(t, err, block.ErrOperationNotSupported)
-		return
+		return "", nil
 	}
 	require.NoError(t, err)
-	expectedExpiry := expectedURLExp(adapter)
-	require.Equal(t, expectedExpiry, exp)
-	_, err = url.Parse(preSignedURL)
-	require.NoError(t, err)
+	return preSignedURL, &exp
 }
 
 func expectedURLExp(adapter block.Adapter) time.Time {
