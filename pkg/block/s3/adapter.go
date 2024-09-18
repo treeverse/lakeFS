@@ -127,7 +127,6 @@ func NewAdapter(ctx context.Context, params params.S3, opts ...AdapterOption) (*
 	a := &Adapter{
 		clients:             NewClientCache(cfg, params),
 		preSignedExpiry:     block.DefaultPreSignExpiryDuration,
-		preSignedEndpoint:   params.PreSignedEndpoint,
 		sessionExpiryWindow: sessionExpiryWindow,
 		nowFactory:          time.Now, // current time function can be mocked out via injection for testing purposes
 	}
