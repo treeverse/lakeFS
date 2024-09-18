@@ -105,10 +105,10 @@ export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => 
 };
 
 
-export const ActionGroup = ({ children, orientation = "left" }) => {
+export const ActionGroup = ({ children, orientation = "left", className = "" }) => {
     const side = (orientation === 'right') ? 'ms-auto' : '';
     return (
-        <div role="toolbar" className={`${side} mb-2 btn-toolbar action-group-${orientation}`}>
+        <div role="toolbar" className={`${side} mb-2 btn-toolbar action-group-${orientation} ${className}`}>
             {children}
         </div>
     );

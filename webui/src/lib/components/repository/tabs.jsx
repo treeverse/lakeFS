@@ -1,14 +1,15 @@
 import React from "react";
 
 import Nav from "react-bootstrap/Nav";
-import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon, PlayIcon, GearIcon, TagIcon} from "@primer/octicons-react";
+import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitPullRequestIcon, GitCompareIcon, PlayIcon, GearIcon, TagIcon} from "@primer/octicons-react";
 
 import {useRefs} from "../../hooks/repo";
 import {Link, NavItem} from "../nav";
 import {useRouter} from "../../hooks/router";
 import {RefTypeBranch} from "../../../constants";
 
-
+// TODO (gilo): this is temp, until PRfD will be ready
+const showPulls = false;
 
 export const RepositoryNavTabs = ({ active }) => {
     const { reference } = useRefs();
@@ -59,6 +60,14 @@ export const RepositoryNavTabs = ({ active }) => {
             <Link active={active === 'tags'} href={`/repositories/${repoId}/tags`} component={NavItem}>
                 <TagIcon/> Tags
             </Link>
+            {
+                // TODO (gilo): this is temp, until PRfD will be ready
+                showPulls &&
+                <Link active={active === 'pulls'} href={`/repositories/${repoId}/pulls`} component={NavItem}>
+                    {/* TODO (gilo): the icon is very similar to the compare icon, consider changing it*/}
+                    <GitPullRequestIcon/> Pull Requests
+                </Link>
+            }
             <Link active={active === 'compare'} href={withRefAndCompareContext(`/repositories/${repoId}/compare`)} component={NavItem}>
                 <GitCompareIcon/> Compare
             </Link>
