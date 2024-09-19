@@ -4,7 +4,7 @@ import {Loading} from "../../../lib/components/controls";
 import {useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
 import {RepoError} from "./error";
-import BranchComparison from "../../../lib/components/repository/branchesComparison";
+import CompareBranches from "../../../lib/components/repository/compareBranches";
 
 const CompareContainer = () => {
     const router = useRouter();
@@ -31,7 +31,7 @@ const CompareContainer = () => {
     );
 
     return (
-        <BranchComparison
+        <CompareBranches
             repo={repo}
             reference={reference}
             compareReference={compare}

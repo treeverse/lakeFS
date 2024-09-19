@@ -13,7 +13,7 @@ import {RepoError} from "../error";
 import {pulls as pullsAPI} from "../../../../lib/api";
 import {useAPI} from "../../../../lib/hooks/api";
 import {Link} from "../../../../lib/components/nav";
-import BranchComparison from "../../../../lib/components/repository/branchesComparison";
+import CompareBranches from "../../../../lib/components/repository/compareBranches";
 import {PullStatus, RefTypeBranch} from "../../../../constants";
 
 const BranchLink = ({repo, branch}) =>
@@ -79,7 +79,7 @@ const PullDetailsContent = ({repo, pull}) => {
             </div>
             <hr className="mt-5 mb-4"/>
             <div className="w-75">
-                <BranchComparison
+                <CompareBranches
                     repo={repo}
                     reference={{id: pull.destination_branch, type: RefTypeBranch}}
                     compareReference={{id: pull.source_branch, type: RefTypeBranch}}
