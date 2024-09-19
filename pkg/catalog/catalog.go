@@ -2899,9 +2899,6 @@ func (c *Catalog) CreatePullRequest(ctx context.Context, repositoryID string, re
 		{Name: "dest", Value: destBranchID, Fn: graveler.ValidateBranchID},
 		{Name: "src", Value: srcBranchID, Fn: graveler.ValidateBranchID},
 	}); err != nil {
-		if errors.Is(err, graveler.ErrInvalidBranchID) {
-			return "", fmt.Errorf("%w: branch id must consist of letters, digits, underscores and dashes, and cannot start with a dash", err)
-		}
 		return "", err
 	}
 
