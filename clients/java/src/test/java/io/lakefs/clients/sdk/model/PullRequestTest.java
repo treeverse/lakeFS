@@ -19,6 +19,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,54 @@ public class PullRequestTest {
     @Test
     public void descriptionTest() {
         // TODO: test description
+    }
+
+    /**
+     * Test the property 'id'
+     */
+    @Test
+    public void idTest() {
+        // TODO: test id
+    }
+
+    /**
+     * Test the property 'creationDate'
+     */
+    @Test
+    public void creationDateTest() {
+        // TODO: test creationDate
+    }
+
+    /**
+     * Test the property 'author'
+     */
+    @Test
+    public void authorTest() {
+        // TODO: test author
+    }
+
+    /**
+     * Test the property 'sourceBranch'
+     */
+    @Test
+    public void sourceBranchTest() {
+        // TODO: test sourceBranch
+    }
+
+    /**
+     * Test the property 'destinationBranch'
+     */
+    @Test
+    public void destinationBranchTest() {
+        // TODO: test destinationBranch
+    }
+
+    /**
+     * Test the property 'mergedCommitId'
+     */
+    @Test
+    public void mergedCommitIdTest() {
+        // TODO: test mergedCommitId
     }
 
 }

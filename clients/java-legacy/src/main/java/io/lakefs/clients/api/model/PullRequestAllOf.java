@@ -20,79 +20,16 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.api.model.PullRequestAllOf;
-import io.lakefs.clients.api.model.PullRequestBasic;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
 import org.threeten.bp.OffsetDateTime;
 
 /**
- * PullRequest
+ * PullRequestAllOf
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class PullRequest {
-  /**
-   * Gets or Sets status
-   */
-  @JsonAdapter(StatusEnum.Adapter.class)
-  public enum StatusEnum {
-    OPEN("open"),
-    
-    CLOSED("closed"),
-    
-    MERGED("merged");
-
-    private String value;
-
-    StatusEnum(String value) {
-      this.value = value;
-    }
-
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    public static StatusEnum fromValue(String value) {
-      for (StatusEnum b : StatusEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-
-    public static class Adapter extends TypeAdapter<StatusEnum> {
-      @Override
-      public void write(final JsonWriter jsonWriter, final StatusEnum enumeration) throws IOException {
-        jsonWriter.value(enumeration.getValue());
-      }
-
-      @Override
-      public StatusEnum read(final JsonReader jsonReader) throws IOException {
-        String value =  jsonReader.nextString();
-        return StatusEnum.fromValue(value);
-      }
-    }
-  }
-
-  public static final String SERIALIZED_NAME_STATUS = "status";
-  @SerializedName(SERIALIZED_NAME_STATUS)
-  private StatusEnum status;
-
-  public static final String SERIALIZED_NAME_TITLE = "title";
-  @SerializedName(SERIALIZED_NAME_TITLE)
-  private String title;
-
-  public static final String SERIALIZED_NAME_DESCRIPTION = "description";
-  @SerializedName(SERIALIZED_NAME_DESCRIPTION)
-  private String description;
-
+public class PullRequestAllOf {
   public static final String SERIALIZED_NAME_ID = "id";
   @SerializedName(SERIALIZED_NAME_ID)
   private String id;
@@ -118,76 +55,7 @@ public class PullRequest {
   private String mergedCommitId;
 
 
-  public PullRequest status(StatusEnum status) {
-    
-    this.status = status;
-    return this;
-  }
-
-   /**
-   * Get status
-   * @return status
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-
-  public StatusEnum getStatus() {
-    return status;
-  }
-
-
-  public void setStatus(StatusEnum status) {
-    this.status = status;
-  }
-
-
-  public PullRequest title(String title) {
-    
-    this.title = title;
-    return this;
-  }
-
-   /**
-   * Get title
-   * @return title
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-
-  public String getTitle() {
-    return title;
-  }
-
-
-  public void setTitle(String title) {
-    this.title = title;
-  }
-
-
-  public PullRequest description(String description) {
-    
-    this.description = description;
-    return this;
-  }
-
-   /**
-   * Get description
-   * @return description
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-
-  public String getDescription() {
-    return description;
-  }
-
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-
-  public PullRequest id(String id) {
+  public PullRequestAllOf id(String id) {
     
     this.id = id;
     return this;
@@ -210,7 +78,7 @@ public class PullRequest {
   }
 
 
-  public PullRequest creationDate(OffsetDateTime creationDate) {
+  public PullRequestAllOf creationDate(OffsetDateTime creationDate) {
     
     this.creationDate = creationDate;
     return this;
@@ -233,7 +101,7 @@ public class PullRequest {
   }
 
 
-  public PullRequest author(String author) {
+  public PullRequestAllOf author(String author) {
     
     this.author = author;
     return this;
@@ -256,7 +124,7 @@ public class PullRequest {
   }
 
 
-  public PullRequest sourceBranch(String sourceBranch) {
+  public PullRequestAllOf sourceBranch(String sourceBranch) {
     
     this.sourceBranch = sourceBranch;
     return this;
@@ -279,7 +147,7 @@ public class PullRequest {
   }
 
 
-  public PullRequest destinationBranch(String destinationBranch) {
+  public PullRequestAllOf destinationBranch(String destinationBranch) {
     
     this.destinationBranch = destinationBranch;
     return this;
@@ -302,7 +170,7 @@ public class PullRequest {
   }
 
 
-  public PullRequest mergedCommitId(String mergedCommitId) {
+  public PullRequestAllOf mergedCommitId(String mergedCommitId) {
     
     this.mergedCommitId = mergedCommitId;
     return this;
@@ -333,30 +201,24 @@ public class PullRequest {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    PullRequest pullRequest = (PullRequest) o;
-    return Objects.equals(this.status, pullRequest.status) &&
-        Objects.equals(this.title, pullRequest.title) &&
-        Objects.equals(this.description, pullRequest.description) &&
-        Objects.equals(this.id, pullRequest.id) &&
-        Objects.equals(this.creationDate, pullRequest.creationDate) &&
-        Objects.equals(this.author, pullRequest.author) &&
-        Objects.equals(this.sourceBranch, pullRequest.sourceBranch) &&
-        Objects.equals(this.destinationBranch, pullRequest.destinationBranch) &&
-        Objects.equals(this.mergedCommitId, pullRequest.mergedCommitId);
+    PullRequestAllOf pullRequestAllOf = (PullRequestAllOf) o;
+    return Objects.equals(this.id, pullRequestAllOf.id) &&
+        Objects.equals(this.creationDate, pullRequestAllOf.creationDate) &&
+        Objects.equals(this.author, pullRequestAllOf.author) &&
+        Objects.equals(this.sourceBranch, pullRequestAllOf.sourceBranch) &&
+        Objects.equals(this.destinationBranch, pullRequestAllOf.destinationBranch) &&
+        Objects.equals(this.mergedCommitId, pullRequestAllOf.mergedCommitId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(status, title, description, id, creationDate, author, sourceBranch, destinationBranch, mergedCommitId);
+    return Objects.hash(id, creationDate, author, sourceBranch, destinationBranch, mergedCommitId);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class PullRequest {\n");
-    sb.append("    status: ").append(toIndentedString(status)).append("\n");
-    sb.append("    title: ").append(toIndentedString(title)).append("\n");
-    sb.append("    description: ").append(toIndentedString(description)).append("\n");
+    sb.append("class PullRequestAllOf {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    creationDate: ").append(toIndentedString(creationDate)).append("\n");
     sb.append("    author: ").append(toIndentedString(author)).append("\n");

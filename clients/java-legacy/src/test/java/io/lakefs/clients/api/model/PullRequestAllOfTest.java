@@ -18,8 +18,6 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.api.model.PullRequestAllOf;
-import io.lakefs.clients.api.model.PullRequestBasic;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.io.IOException;
@@ -30,41 +28,17 @@ import org.junit.Test;
 
 
 /**
- * Model tests for PullRequest
+ * Model tests for PullRequestAllOf
  */
-public class PullRequestTest {
-    private final PullRequest model = new PullRequest();
+public class PullRequestAllOfTest {
+    private final PullRequestAllOf model = new PullRequestAllOf();
 
     /**
-     * Model tests for PullRequest
+     * Model tests for PullRequestAllOf
      */
     @Test
-    public void testPullRequest() {
-        // TODO: test PullRequest
-    }
-
-    /**
-     * Test the property 'status'
-     */
-    @Test
-    public void statusTest() {
-        // TODO: test status
-    }
-
-    /**
-     * Test the property 'title'
-     */
-    @Test
-    public void titleTest() {
-        // TODO: test title
-    }
-
-    /**
-     * Test the property 'description'
-     */
-    @Test
-    public void descriptionTest() {
-        // TODO: test description
+    public void testPullRequestAllOf() {
+        // TODO: test PullRequestAllOf
     }
 
     /**

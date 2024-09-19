@@ -67,12 +67,18 @@ func CreateRBACBasePolicies(ctx context.Context, authService auth.Service, ts ti
 						"ci:*",
 						"retention:*",
 						"branches:*",
+						"pr:*",
 						"fs:ReadConfig",
 					},
 					Resource: permissions.All,
 					Effect:   model.StatementEffectAllow,
 				},
 			},
+		},
+		{
+			CreatedAt:   ts,
+			DisplayName: "PRReadWriteAll",
+			Statement:   auth.MakeStatementForPolicyTypeOrDie("PRReadWrite", all),
 		},
 		{
 			CreatedAt:   ts,
@@ -137,7 +143,7 @@ func CreateRBACBaseGroups(ctx context.Context, authService auth.Service, ts time
 	if err != nil {
 		return err
 	}
-	err = attachPolicies(ctx, authService, "Developers", []string{"FSReadWriteAll", "AuthManageOwnCredentials", "RepoManagementReadAll"})
+	err = attachPolicies(ctx, authService, "Developers", []string{"FSReadWriteAll", "PRReadWriteAll", "AuthManageOwnCredentials", "RepoManagementReadAll"})
 	if err != nil {
 		return err
 	}

@@ -14,14 +14,10 @@ import unittest
 
 import lakefs_client
 from lakefs_client.model.pull_request_all_of import PullRequestAllOf
-from lakefs_client.model.pull_request_basic import PullRequestBasic
-globals()['PullRequestAllOf'] = PullRequestAllOf
-globals()['PullRequestBasic'] = PullRequestBasic
-from lakefs_client.model.pull_request import PullRequest
 
 
-class TestPullRequest(unittest.TestCase):
-    """PullRequest unit test stubs"""
+class TestPullRequestAllOf(unittest.TestCase):
+    """PullRequestAllOf unit test stubs"""
 
     def setUp(self):
         pass
@@ -29,10 +25,10 @@ class TestPullRequest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testPullRequest(self):
-        """Test PullRequest"""
+    def testPullRequestAllOf(self):
+        """Test PullRequestAllOf"""
         # FIXME: construct object with mandatory attributes with example values
-        # model = PullRequest()  # noqa: E501
+        # model = PullRequestAllOf()  # noqa: E501
         pass
 
 

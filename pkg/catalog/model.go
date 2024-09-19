@@ -60,6 +60,15 @@ type Tag struct {
 	CommitID string
 }
 
+type PullRequest struct {
+	ID                string
+	Title             string
+	Description       string
+	Author            string
+	SourceBranch      string
+	DestinationBranch string
+}
+
 // AddressType is the type of an entry address
 type AddressType int32
 

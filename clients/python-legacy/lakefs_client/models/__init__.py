@@ -78,6 +78,7 @@ from lakefs_client.model.prepare_gc_uncommitted_request import PrepareGCUncommit
 from lakefs_client.model.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse
 from lakefs_client.model.presign_multipart_upload import PresignMultipartUpload
 from lakefs_client.model.pull_request import PullRequest
+from lakefs_client.model.pull_request_all_of import PullRequestAllOf
 from lakefs_client.model.pull_request_basic import PullRequestBasic
 from lakefs_client.model.pull_request_creation import PullRequestCreation
 from lakefs_client.model.pull_requests_list import PullRequestsList

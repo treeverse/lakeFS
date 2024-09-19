@@ -5,15 +5,15 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**id** | **str** |  | 
-**creation_date** | **int** |  | 
-**author** | **str** |  | 
-**source_branch** | **str** |  | 
-**destination_branch** | **str** |  | 
-**commit_id** | **str** | the commit id of merged PRs | [optional] 
 **status** | **str** |  | 
 **title** | **str** |  | 
 **description** | **str** |  | 
+**id** | **str** |  | 
+**creation_date** | **datetime** |  | 
+**author** | **str** |  | 
+**source_branch** | **str** |  | 
+**destination_branch** | **str** |  | 
+**merged_commit_id** | **str** | the commit id of merged PRs | [optional] 
 
 ## Example
 

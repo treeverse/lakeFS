@@ -1742,33 +1742,34 @@ components:
           type: string
     
     PullRequest:
-      type: object
-      required:
-        - id
-        - status
-        - creation_date
-        - title
-        - author
-        - description
-        - source_branch
-        - destination_branch
       allOf:
-        - $ref: '#/components/schemas/PullRequestBasic'
-      properties:
-        id:
-          type: string
-        creation_date:
-          type: integer
-          format: int64
-        author:
-          type: string
-        source_branch:
-          type: string
-        destination_branch:
-          type: string
-        commit_id:
-          type: string
-          description: the commit id of merged PRs
+          - $ref: '#/components/schemas/PullRequestBasic'
+          - required:
+            - status
+            - title
+            - description
+          - type: object
+            required:
+              - id
+              - creation_date
+              - author
+              - source_branch
+              - destination_branch
+            properties:
+              id:
+                type: string
+              creation_date:
+                type: string
+                format: date-time
+              author:
+                type: string
+              source_branch:
+                type: string
+              destination_branch:
+                type: string
+              merged_commit_id:
+                type: string
+                description: the commit id of merged PRs
 
     PullRequestsList:
       type: object

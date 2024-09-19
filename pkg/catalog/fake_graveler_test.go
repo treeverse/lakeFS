@@ -301,6 +301,15 @@ func (g *FakeGraveler) GetStagingToken(_ context.Context, _ *graveler.Repository
 	panic("implement me")
 }
 
+func (g *FakeGraveler) GetPullRequest(context.Context, *graveler.RepositoryRecord, graveler.PullRequestID) (*graveler.PullRequest, error) {
+	panic("implement me")
+}
+
+func (g *FakeGraveler) CreatePullRequest(context.Context, *graveler.RepositoryRecord, *graveler.PullRequestRecord) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 type FakeValueIterator struct {
 	Data  []*graveler.ValueRecord
 	Index int

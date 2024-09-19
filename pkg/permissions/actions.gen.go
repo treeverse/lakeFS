@@ -60,4 +60,6 @@ var Actions = []string{
 	"retention:PrepareGarbageCollectionUncommitted",
 	"branches:GetBranchProtectionRules",
 	"branches:SetBranchProtectionRules",
+	"pr:GetPullRequest",
+	"pr:CreatePullRequest",
 }

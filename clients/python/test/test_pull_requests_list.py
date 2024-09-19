@@ -45,13 +45,7 @@ class TestPullRequestsList(unittest.TestCase):
                     results = 0, 
                     max_per_page = 0, ), 
                 results = [
-                    lakefs_sdk.models.pull_request.PullRequest(
-                        id = '', 
-                        creation_date = 56, 
-                        author = '', 
-                        source_branch = '', 
-                        destination_branch = '', 
-                        commit_id = '', )
+                    null
                     ]
             )
         else :
@@ -62,13 +56,7 @@ class TestPullRequestsList(unittest.TestCase):
                     results = 0, 
                     max_per_page = 0, ),
                 results = [
-                    lakefs_sdk.models.pull_request.PullRequest(
-                        id = '', 
-                        creation_date = 56, 
-                        author = '', 
-                        source_branch = '', 
-                        destination_branch = '', 
-                        commit_id = '', )
+                    null
                     ],
         )
         """

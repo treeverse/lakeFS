@@ -12,10 +12,16 @@ use crate::models;
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PullRequest {
+    #[serde(rename = "status")]
+    pub status: Status,
+    #[serde(rename = "title")]
+    pub title: String,
+    #[serde(rename = "description")]
+    pub description: String,
     #[serde(rename = "id")]
     pub id: String,
     #[serde(rename = "creation_date")]
-    pub creation_date: i64,
+    pub creation_date: String,
     #[serde(rename = "author")]
     pub author: String,
     #[serde(rename = "source_branch")]
@@ -23,28 +29,22 @@ pub struct PullRequest {
     #[serde(rename = "destination_branch")]
     pub destination_branch: String,
     /// the commit id of merged PRs
-    #[serde(rename = "commit_id", skip_serializing_if = "Option::is_none")]
-    pub commit_id: Option<String>,
-    #[serde(rename = "status")]
-    pub status: Status,
-    #[serde(rename = "title")]
-    pub title: String,
-    #[serde(rename = "description")]
-    pub description: String,
+    #[serde(rename = "merged_commit_id", skip_serializing_if = "Option::is_none")]
+    pub merged_commit_id: Option<String>,
 }
 
 impl PullRequest {
-    pub fn new(id: String, creation_date: i64, author: String, source_branch: String, destination_branch: String, status: Status, title: String, description: String) -> PullRequest {
+    pub fn new(status: Status, title: String, description: String, id: String, creation_date: String, author: String, source_branch: String, destination_branch: String) -> PullRequest {
         PullRequest {
+            status,
+            title,
+            description,
             id,
             creation_date,
             author,
             source_branch,
             destination_branch,
-            commit_id: None,
-            status,
-            title,
-            description,
+            merged_commit_id: None,
         }
     }
 }

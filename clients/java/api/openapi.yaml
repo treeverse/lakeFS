@@ -9580,38 +9580,32 @@ components:
     PullRequest:
       allOf:
       - $ref: '#/components/schemas/PullRequestBasic'
-      example:
-        author: author
-        destination_branch: destination_branch
-        id: id
-        creation_date: 0
-        commit_id: commit_id
-        source_branch: source_branch
-      properties:
-        id:
-          type: string
-        creation_date:
-          format: int64
-          type: integer
-        author:
-          type: string
-        source_branch:
-          type: string
-        destination_branch:
-          type: string
-        commit_id:
-          description: the commit id of merged PRs
-          type: string
-      required:
-      - author
-      - creation_date
-      - description
-      - destination_branch
-      - id
-      - source_branch
-      - status
-      - title
-      type: object
+      - required:
+        - description
+        - status
+        - title
+      - properties:
+          id:
+            type: string
+          creation_date:
+            format: date-time
+            type: string
+          author:
+            type: string
+          source_branch:
+            type: string
+          destination_branch:
+            type: string
+          merged_commit_id:
+            description: the commit id of merged PRs
+            type: string
+        required:
+        - author
+        - creation_date
+        - destination_branch
+        - id
+        - source_branch
+        type: object
     PullRequestsList:
       example:
         pagination:
@@ -9620,18 +9614,8 @@ components:
           next_offset: next_offset
           results: 0
         results:
-        - author: author
-          destination_branch: destination_branch
-          id: id
-          creation_date: 0
-          commit_id: commit_id
-          source_branch: source_branch
-        - author: author
-          destination_branch: destination_branch
-          id: id
-          creation_date: 0
-          commit_id: commit_id
-          source_branch: source_branch
+        - null
+        - null
       properties:
         pagination:
           $ref: '#/components/schemas/Pagination'

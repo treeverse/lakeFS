@@ -18,27 +18,27 @@ import pprint
 import re  # noqa: F401
 import json
 
-
+from datetime import datetime
 from typing import Optional
 try:
-    from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr, validator
+    from pydantic.v1 import BaseModel, Field, StrictStr, validator
 except ImportError:
-    from pydantic import BaseModel, Field, StrictInt, StrictStr, validator
+    from pydantic import BaseModel, Field, StrictStr, validator
 
 class PullRequest(BaseModel):
     """
     PullRequest
     """
-    id: StrictStr = Field(...)
-    creation_date: StrictInt = Field(...)
-    author: StrictStr = Field(...)
-    source_branch: StrictStr = Field(...)
-    destination_branch: StrictStr = Field(...)
-    commit_id: Optional[StrictStr] = Field(None, description="the commit id of merged PRs")
     status: StrictStr = Field(...)
     title: StrictStr = Field(...)
     description: StrictStr = Field(...)
-    __properties = ["status", "title", "description"]
+    id: StrictStr = Field(...)
+    creation_date: datetime = Field(...)
+    author: StrictStr = Field(...)
+    source_branch: StrictStr = Field(...)
+    destination_branch: StrictStr = Field(...)
+    merged_commit_id: Optional[StrictStr] = Field(None, description="the commit id of merged PRs")
+    __properties = ["status", "title", "description", "id", "creation_date", "author", "source_branch", "destination_branch", "merged_commit_id"]
 
     @validator('status')
     def status_validate_enum(cls, value):
@@ -85,7 +85,13 @@ class PullRequest(BaseModel):
         _obj = PullRequest.parse_obj({
             "status": obj.get("status"),
             "title": obj.get("title"),
-            "description": obj.get("description")
+            "description": obj.get("description"),
+            "id": obj.get("id"),
+            "creation_date": obj.get("creation_date"),
+            "author": obj.get("author"),
+            "source_branch": obj.get("source_branch"),
+            "destination_branch": obj.get("destination_branch"),
+            "merged_commit_id": obj.get("merged_commit_id")
         })
         return _obj
 

@@ -1,12 +1,9 @@
-# PullRequest
+# PullRequestAllOf
 
 
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**status** | **str** |  | 
-**title** | **str** |  | 
-**description** | **str** |  | 
 **id** | **str** |  | 
 **creation_date** | **datetime** |  | 
 **author** | **str** |  | 
