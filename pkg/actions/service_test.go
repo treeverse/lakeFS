@@ -188,7 +188,7 @@ hooks:
 				t.Errorf("Run() manifest RunID %s, expected %s", lastManifest.Run.RunID, record.RunID)
 			}
 			if lastManifest.Run.CommitID != "" {
-				t.Errorf("Run() manifest CommitID %s, expected empty", lastManifest.Run.CommitID)
+				t.Errorf("Run() manifest MergedCommitID %s, expected empty", lastManifest.Run.CommitID)
 			}
 			lastManifest = nil
 
@@ -204,7 +204,7 @@ hooks:
 				t.Errorf("UpdateCommitID() manifest RunID %s, expected %s", lastManifest.Run.RunID, record.RunID)
 			}
 			if lastManifest.Run.CommitID != "commit1" {
-				t.Errorf("UpdateCommitID() manifest CommitID %s, expected 'commit1'", lastManifest.Run.CommitID)
+				t.Errorf("UpdateCommitID() manifest MergedCommitID %s, expected 'commit1'", lastManifest.Run.CommitID)
 			}
 
 			// get run result
@@ -236,7 +236,7 @@ hooks:
 			}
 			const expectedCommitID = "commit1"
 			if runResult.CommitID != expectedCommitID {
-				t.Errorf("GetRunResult() result CommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
+				t.Errorf("GetRunResult() result MergedCommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
 			}
 
 			require.Equal(t, 3, mockStatsCollector.Hits["pre-commit"])

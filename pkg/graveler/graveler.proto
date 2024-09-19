@@ -87,3 +87,25 @@ message ImportStatusData {
 message RepoMetadata {
   map<string, string> metadata = 1;
 }
+
+
+// Pull Requests Data
+
+message PullRequestData {
+  string id = 1;
+  PullRequestStatus status = 2;
+  google.protobuf.Timestamp created_at = 3;
+  string title = 4;
+  string author = 5;
+  string description = 6;
+  string source_branch = 7;
+  string destination_branch = 8;
+  // commit_id relevant only for merged PRs
+  string commit_id = 9;
+}
+
+enum PullRequestStatus {
+  OPEN = 0;
+  CLOSED = 1;
+  MERGED = 2;
+}

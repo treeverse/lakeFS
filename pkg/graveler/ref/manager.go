@@ -644,3 +644,61 @@ func (m *Manager) DeleteExpiredImports(ctx context.Context, repository *graveler
 	}
 	return errs.ErrorOrNil()
 }
+
+// Pull Requests logic
+
+func (m *Manager) getPullWithPredicate(ctx context.Context, repository *graveler.RepositoryRecord, pullID graveler.PullRequestID) (*graveler.PullRequest, kv.Predicate, error) {
+	type pullWithPred struct {
+		*graveler.PullRequest
+		kv.Predicate
+	}
+	key := fmt.Sprintf("GetPullRequest:%s:%s", repository.RepositoryID, pullID)
+	result, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
+		pullKey := graveler.PullRequestPath(pullID)
+		data := graveler.PullRequestData{}
+		pred, err := kv.GetMsg(context.Background(), m.kvStore, graveler.RepoPartition(repository), []byte(pullKey), &data)
+		if err != nil {
+			return nil, err
+		}
+		return &pullWithPred{graveler.PullRequestFromProto(&data), pred}, nil
+	}))
+	if errors.Is(err, kv.ErrNotFound) {
+		err = graveler.ErrPullRequestNotFound
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	p := result.(*pullWithPred)
+	return p.PullRequest, p.Predicate, nil
+}
+
+func (m *Manager) GetPullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullID graveler.PullRequestID) (*graveler.PullRequest, error) {
+	pull, _, err := m.getPullWithPredicate(ctx, repository, pullID)
+	return pull, err
+}
+
+func (m *Manager) CreatePullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullRequestID graveler.PullRequestID, pullRequest *graveler.PullRequest) error {
+	err := kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(graveler.PullRequestPath(pullRequestID)), graveler.ProtoFromPullRequest(pullRequestID, pullRequest), nil)
+	if errors.Is(err, kv.ErrPredicateFailed) {
+		err = graveler.ErrPullRequestExists
+	}
+	return err
+}
+
+func (m *Manager) DeletePullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullRequestID graveler.PullRequestID) error {
+	pullKey := graveler.PullRequestPath(pullRequestID)
+	return m.kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), []byte(pullKey))
+}
+
+func (m *Manager) UpdatePullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullRequestID graveler.PullRequestID, f graveler.PullUpdateFunc) error {
+	b, pred, err := m.getPullWithPredicate(ctx, repository, pullRequestID)
+	if err != nil {
+		return err
+	}
+	newPull, err := f(b)
+	// return on error or nothing to update
+	if err != nil || newPull == nil {
+		return err
+	}
+	return kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(graveler.PullRequestPath(pullRequestID)), graveler.ProtoFromPullRequest(pullRequestID, newPull), pred)
+}
