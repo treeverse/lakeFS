@@ -50,7 +50,7 @@ const ChangeList = ({ repo, commit, prefix, onNavigate }) => {
         <>
             {actionErrorDisplay}
             <ChangesTreeContainer results={results} delimiter={delimiter} uriNavigator={uriNavigator} leftDiffRefID={commit.parents[0]}
-                                  rightDiffRefID={commit.id} repo={repo} refID={commit.id} prefix={prefix}
+                                  rightDiffRefID={commit.id} repo={repo} reference={commit} prefix={prefix}
                                   getMore={defaultGetMoreChanges(repo, commit.parents[0], commit.id, delimiter)}
                                   loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}
                                   changesTreeMessage={changesTreeMessage}/>

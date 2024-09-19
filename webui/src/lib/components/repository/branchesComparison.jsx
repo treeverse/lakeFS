@@ -49,7 +49,7 @@ const BranchComparison = ({repo, reference: ref, compareReference: compareRef, p
 
     return <ChangesTreeContainer
         results={results}
-        refID={ref.id}
+        reference={ref}
         leftDiffRefID={getRefID(ref)}
         rightDiffRefID={getRefID(compareRef)}
         repo={repo}

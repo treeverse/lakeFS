@@ -223,7 +223,7 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
             {actionErrorDisplay}
             <ChangesTreeContainer results={results} delimiter={delimiter}
                                   uriNavigator={uriNavigator} leftDiffRefID={committedRef} rightDiffRefID={uncommittedRef}
-                                  repo={repo} refID={reference.id} internalReferesh={internalRefresh} prefix={prefix}
+                                  repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
                                   getMore={getMoreUncommittedChanges}
                                   loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}
                                   onNavigate={onNavigate} onRevert={onReset} changesTreeMessage={changesTreeMessage}/>
