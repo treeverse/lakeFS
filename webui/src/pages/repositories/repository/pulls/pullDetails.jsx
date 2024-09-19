@@ -14,7 +14,7 @@ import {pulls as pullsAPI} from "../../../../lib/api";
 import {useAPI} from "../../../../lib/hooks/api";
 import {Link} from "../../../../lib/components/nav";
 import BranchComparison from "../../../../lib/components/repository/branchesComparison";
-import {PullStatus} from "../../../../constants";
+import {PullStatus, RefTypeBranch} from "../../../../constants";
 
 const BranchLink = ({repo, branch}) =>
     <Link href={{
@@ -69,17 +69,20 @@ const PullDetailsContent = ({repo, pull}) => {
             </Card>
             <div className="bottom-buttons-row mt-4 clearfix">
                 <div className="bottom-buttons-group float-end">
-                    <Button variant="outline-secondary" className="text-secondary-emphasis me-2">Close pull
-                        request</Button>
-                    <Button variant="success">Merge pull request</Button>
+                    <Button variant="outline-secondary" className="text-secondary-emphasis me-2">
+                        Close pull request
+                    </Button>
+                    <Button variant="success">
+                        <GitMergeIcon/> Merge pull request
+                    </Button>
                 </div>
             </div>
             <hr className="mt-5 mb-4"/>
             <div className="w-75">
                 <BranchComparison
                     repo={repo}
-                    reference={{id: pull.destination_branch, type: "branch"}}
-                    compareReference={{id: pull.source_branch, type: "branch"}}
+                    reference={{id: pull.destination_branch, type: RefTypeBranch}}
+                    compareReference={{id: pull.source_branch, type: RefTypeBranch}}
                 />
             </div>
         </div>

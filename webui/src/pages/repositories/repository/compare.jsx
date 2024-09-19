@@ -4,14 +4,10 @@ import {ActionGroup, ActionsBar, AlertError, Loading, RefreshButton} from "../..
 import {useRefs} from "../../../lib/hooks/repo";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {ArrowLeftIcon, ArrowSwitchIcon, GitMergeIcon} from "@primer/octicons-react";
-import {useAPIWithPagination} from "../../../lib/hooks/api";
 import {refs} from "../../../lib/api";
-import Alert from "react-bootstrap/Alert";
-import {ChangesTreeContainer, defaultGetMoreChanges, MetadataFields} from "../../../lib/components/repository/changes";
+import {MetadataFields} from "../../../lib/components/repository/changes";
 import {useRouter} from "../../../lib/hooks/router";
-import {URINavigator} from "../../../lib/components/repository/tree";
-import {appendMoreResults} from "./changes";
-import {RefTypeBranch, RefTypeCommit} from "../../../constants";
+import {RefTypeBranch} from "../../../constants";
 import Button from "react-bootstrap/Button";
 import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/material";
 import Modal from "react-bootstrap/Modal";
@@ -19,11 +15,11 @@ import {RepoError} from "./error";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 import Form from "react-bootstrap/Form";
+import BranchComparison from "../../../lib/components/repository/branchesComparison";
 
-const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare, onNavigate }) => {
+const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, onSelectCompare }) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
-    const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
-    const [resultsState, setResultsState] = useState({prefix: prefix, results:[], pagination:{}}); // current retrieved children of the item
+    const [isEmptyDiff, setEmptyDiff] = useState(true);
 
     const router = useRouter();
     const handleSwitchRefs = useCallback(
@@ -34,90 +30,11 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
         },[]
     );
 
-    const refresh = () => {
-        setResultsState({prefix: prefix, results:[], pagination:{}})
-        setInternalRefresh(!internalRefresh)
-    }
+    const doRefresh = () => setInternalRefresh(!internalRefresh);
 
-    const delimiter = "/"
-
-    const { error, loading, nextPage } = useAPIWithPagination(async () => {
-        if (!repo) return
-        if (compareReference.id === reference.id)
-            return {pagination: {has_more: false}, results: []}; // nothing to compare here.
-
-        return await appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState,
-            () => refs.diff(repo.id, reference.id, compareReference.id, afterUpdated, prefix, delimiter));
-    }, [repo.id, reference.id, internalRefresh, afterUpdated, delimiter, prefix])
-
-    let results = resultsState.results
-    let content;
-
-    const relativeTitle = (from, to) => {
-        let fromId = from.id;
-        let toId = to.id;
-        if (from.type === RefTypeCommit) {
-            fromId = fromId.substr(0, 12);
-        }
-        if (to.type === RefTypeCommit) {
-            toId = toId.substr(0, 12);
-        }
-
-        return `${fromId}...${toId}`
-    }
-    const uriNavigator = <URINavigator
-            path={prefix}
-            reference={reference}
-            relativeTo={relativeTitle(reference, compareReference)}
-            repo={repo}
-            pathURLBuilder={(params, query) => {
-                const q = {
-                    delimiter: "/",
-                    prefix: query.path,
-                };
-                if (compareReference)
-                    q.compare = compareReference.id;
-                if (reference)
-                    q.ref = reference.id;
-                return {
-                    pathname: '/repositories/:repoId/compare',
-                    params: {repoId: repo.id},
-                    query: q
-                };
-            }}/>
-
-    const changesTreeMessage = <p>Showing changes between <strong>{reference.id}</strong> and <strong>{compareReference.id}</strong></p>
-    let leftCommittedRef = reference.id;
-    let rightCommittedRef = compareReference.id;
-    if (reference.type === RefTypeBranch) {
-        leftCommittedRef += "@";
-    }
-    if (compareReference.type === RefTypeBranch) {
-        rightCommittedRef += "@";
-    }
-
-    if (loading) {
-        content = <Loading/>
-    }
-    else if (error) content = <AlertError error={error}/>
-    else if (compareReference.id === reference.id) {
-        content = (
-            <Alert variant="warning">
-                <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
-                You’ll need to use two different sources to get a valid comparison.
-            </Alert>
-        )
-    }
-    else {
-        content = <ChangesTreeContainer results={results} delimiter={delimiter}
-                                        uriNavigator={uriNavigator} leftDiffRefID={leftCommittedRef} rightDiffRefID={rightCommittedRef}
-                                        repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
-                                        getMore={defaultGetMoreChanges(repo, reference.id, compareReference.id, delimiter)}
-                                        loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated} onNavigate={onNavigate}
-                                        changesTreeMessage={changesTreeMessage}/>
-    }
-
-    const emptyDiff = (!loading && !error && !!results && results.length === 0);
+    const onResultsFetched = (results, loading, error) => {
+        setEmptyDiff(!loading && !error && !!results && results.length === 0);
+    };
 
     return (
         <>
@@ -156,20 +73,27 @@ const CompareList = ({ repo, reference, compareReference, prefix, onSelectRef, o
 
                 <ActionGroup orientation="right">
 
-                    <RefreshButton onClick={refresh}/>
+                    <RefreshButton onClick={doRefresh}/>
 
                     {(compareReference.type === RefTypeBranch && reference.type === RefTypeBranch) &&
                         <MergeButton
                             repo={repo}
-                            disabled={((compareReference.id === reference.id) || emptyDiff || repo?.read_only)}
+                            disabled={((compareReference.id === reference.id) || isEmptyDiff || repo?.read_only)}
                             source={compareReference.id}
                             dest={reference.id}
-                            onDone={refresh}
+                            onDone={doRefresh}
                         />
                     }
                 </ActionGroup>
             </ActionsBar>
-            {content}
+            <BranchComparison
+                repo={repo}
+                reference={reference}
+                compareReference={compareReference}
+                prefix={prefix}
+                refresh={internalRefresh}
+                onResultsFetched={onResultsFetched}
+            />
         </>
     );
 };
@@ -289,17 +213,6 @@ const CompareContainer = () => {
             onSelectRef={reference => route(compare ? {ref: reference.id, compare: compare.id} : {ref: reference.id})}
             compareReference={compare}
             onSelectCompare={compare => route(reference ? {ref: reference.id, compare: compare.id} : {compare: compare.id})}
-            onNavigate={entry => {
-                return {
-                    pathname: `/repositories/:repoId/compare`,
-                    params: {repoId: repo.id},
-                    query: {
-                        ref: reference.id,
-                        compare: compare.id,
-                        prefix: entry.path,
-                    }
-                }
-            }}
         />
     );
 };

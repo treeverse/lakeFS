@@ -21,7 +21,7 @@ import Col from "react-bootstrap/Col";
  * 2. Multiple TreeItem as children, each representing another tree node.
  * @param entry The entry the TreeItem is representing, could be either an object or a prefix.
  * @param repo Repository
- * @param reference commitID / branch
+ * @param refID commitID / branch
  * @param leftDiffRefID commitID / branch
  * @param rightDiffRefID commitID / branch
  * @param internalRefresh to be called when the page refreshes manually
@@ -31,7 +31,7 @@ import Col from "react-bootstrap/Col";
  * @param relativeTo prefix of the parent item ('' for root elements)
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore callback to be called when more items need to be rendered
  */
-export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore,
+export const TreeItemRow = ({ entry, repo, refID, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore,
                                 depth=0}) => {
     const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
@@ -50,7 +50,7 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
         const { results, pagination } =  await getMore(afterUpdated, entry.path)
         setResultsState({results: resultsState.results.concat(results), pagination: pagination})
         return {results:resultsState.results, pagination: pagination}
-    }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded])
+    }, [repo.id, refID, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded])
 
     const results = resultsState.results
     if (error)
@@ -58,7 +58,7 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
 
     if (loading && results.length === 0) {
         return <ObjectTreeEntryRow key={entry.path + "entry-row"} entry={entry} loading={true} relativeTo={relativeTo}
-                                   depth={depth} onRevert={onRevert} repo={repo} reference={reference}
+                                   depth={depth} onRevert={onRevert} repo={repo}
                                    getMore={getMore}/>
     }
     if (entry.path_type === "object") {
@@ -83,10 +83,10 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
     }
     // entry is a common prefix
     return <>
-        <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
+        <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo}/>
         {dirExpanded && results &&
         results.map(child =>
-            (<TreeItemRow key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
+            (<TreeItemRow key={child.path + "-item"} entry={child} repo={repo} refID={refID} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
                           internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
                           relativeTo={entry.path} getMore={getMore}
                           />))}
@@ -129,7 +129,7 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
  * @param leftDiffRefID commitID / branch
  * @param rightDiffRefID commitID / branch
  * @param repo Repository
- * @param reference commitID / branch
+ * @param refID commitID / branch
  * @param internalRefresh to be called when the page refreshes manually
  * @param prefix for which changes are displayed
  * @param getMore to be called when requesting more diff results for a prefix
@@ -141,7 +141,7 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
  * @param changesTreeMessage
  */
 export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
-                                         leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
+                                         leftDiffRefID, rightDiffRefID, repo, refID, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert,
                                          changesTreeMessage}) => {
     if (results.length === 0) {
@@ -162,10 +162,14 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                 <tbody>
                                 {results.map(entry => {
                                     return (
-                                        <TreeItemRow key={entry.path + "-item"} entry={entry} repo={repo}
-                                                     reference={reference}
-                                                     internalReferesh={internalRefresh} leftDiffRefID={leftDiffRefID}
-                                                     rightDiffRefID={rightDiffRefID} delimiter={delimiter}
+                                        <TreeItemRow key={entry.path + "-item"}
+                                                     entry={entry}
+                                                     repo={repo}
+                                                     refID={refID}
+                                                     internalReferesh={internalRefresh}
+                                                     leftDiffRefID={leftDiffRefID}
+                                                     rightDiffRefID={rightDiffRefID}
+                                                     delimiter={delimiter}
                                                      relativeTo={prefix}
                                                      onNavigate={onNavigate}
                                                      getMore={getMore}
