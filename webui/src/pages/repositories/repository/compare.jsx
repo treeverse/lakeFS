@@ -36,7 +36,7 @@ const CompareContainer = () => {
             reference={reference}
             compareReference={compare}
             showActionsBar={true}
-            prefix={(prefix) ? prefix : ""}
+            prefix={prefix}
             onSelectRef={onSelectRef}
             onSelectCompare={onSelectCompare}
         />

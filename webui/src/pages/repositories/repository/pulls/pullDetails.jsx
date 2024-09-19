@@ -25,24 +25,18 @@ const BranchLink = ({repo, branch}) =>
         {branch}
     </Link>;
 
-const getStatusBadgeParams = status => {
+const StatusBadge = ({status}) => {
+    const text = <span className="text-capitalize">{status}</span>;
     switch (status) {
         case PullStatus.open:
-            return {bgColor: "success", icon: <GitPullRequestIcon/>};
+            return <Badge pill bg={"success"}>{<GitPullRequestIcon/>} {text}</Badge>;
         case PullStatus.closed:
-            return {bgColor: "purple", icon: <GitPullRequestClosedIcon/>};
+            return <Badge pill bg={"purple"}>{<GitPullRequestClosedIcon/>} {text}</Badge>;
         case PullStatus.merged:
-            return {bgColor: "danger", icon: <GitMergeIcon/>};
+            return <Badge pill bg={"danger"}>{<GitMergeIcon/>} {text}</Badge>;
         default:
-            return {bgColor: "secondary", icon: null};
+            return <Badge pill bg={"secondary"}>{text}</Badge>;
     }
-};
-
-const StatusBadge = ({status}) => {
-    const {bgColor, icon} = getStatusBadgeParams(status);
-    return <Badge pill bg={bgColor}>
-        {icon} <span className="text-capitalize">{status}</span>
-    </Badge>;
 };
 
 const PullDetailsContent = ({repo, pull}) => {
@@ -51,7 +45,7 @@ const PullDetailsContent = ({repo, pull}) => {
     return (
         <div className="pull-details mb-5">
             <h1>{pull.title} <span className="fs-5 text-secondary">{pull.id}</span></h1>
-            <div className="mt-3">
+            <div className="pull-info mt-3">
                 <StatusBadge status={pull.status}/>
                 <span className="ms-2">
                     <strong>{pull.author}</strong> wants to merge {""}
@@ -91,12 +85,12 @@ const PullDetailsContent = ({repo, pull}) => {
 
 const PullDetails = ({repo, pullId}) => {
     const {response: pull, error, loading} = useAPI(async () => {
-        console.log({repo, pullId});
         return pullsAPI.get(repo.id, pullId);
     }, [repo.id, pullId]);
 
     if (loading) return <Loading/>;
     if (error) return <AlertError error={error}/>;
+
     return <PullDetailsContent repo={repo} pull={pull}/>;
 }
 
