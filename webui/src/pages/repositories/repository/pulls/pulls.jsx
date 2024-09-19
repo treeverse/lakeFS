@@ -15,6 +15,7 @@ import {Paginator} from "../../../../lib/components/pagination";
 import {useRouter} from "../../../../lib/hooks/router";
 import {RepoError} from "../error";
 import {Link} from "../../../../lib/components/nav";
+import {PullStatus} from "../../../../constants";
 
 
 const PullWidget = ({repo, pull}) => {
@@ -30,7 +31,7 @@ const PullWidget = ({repo, pull}) => {
                     </Link>
                 </h6>
                 <small>
-                    Opened {dayjs.unix(pull.created_at).fromNow()} by <strong>{pull.author}</strong>
+                    Opened {dayjs.unix(pull.creation_date).fromNow()} by <strong>{pull.author}</strong>
                 </small>
             </div>
             <div className="float-end mt-2">
@@ -46,7 +47,7 @@ const PullsList = ({repo, after, prefix, onPaginate}) => {
     const router = useRouter()
     const [refresh, setRefresh] = useState(true);
     // TODO: pullState should be persistent in the url and saved as a url param?
-    const [pullsState, setPullsState] = useState(pullsAPI.PullStatus.open);
+    const [pullsState, setPullsState] = useState(PullStatus.open);
     const {results, error, loading, nextPage} = useAPIWithPagination(async () => {
         return pullsAPI.list(repo.id, pullsState, prefix, after);
     }, [repo.id, pullsState, prefix, refresh, after]);
@@ -80,8 +81,8 @@ const PullsList = ({repo, after, prefix, onPaginate}) => {
                         onSelect={key => setPullsState(key)}
                         className="mb-3 pt-2"
                     >
-                        <Tab eventKey={pullsAPI.PullStatus.open} title="Open"/>
-                        <Tab eventKey={pullsAPI.PullStatus.closed} title="Closed"/>
+                        <Tab eventKey={PullStatus.open} title="Open"/>
+                        <Tab eventKey={PullStatus.closed} title="Closed"/>
                     </Tabs>
                 </div>
                 <ActionGroup orientation="right" className="position-absolute top-0 end-0 pb-2">

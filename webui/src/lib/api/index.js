@@ -568,12 +568,6 @@ class Tags {
 }
 
 class Pulls {
-    PullStatus = {
-        open: "open",
-        closed: "closed",
-        merged: "merged",
-    }
-
     async get(repoId, pullId) {
         // const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls/${encodeURIComponent(pullId)}`);
         // if (response.status === 404) {
@@ -589,10 +583,10 @@ class Pulls {
             "id": pullId,
             "title": "Test PR 1",
             "status": "open",
-            "created_at": 1726575741,
+            "creation_date": 1726575741,
             "author": "test-user-1",
             "description": "This is a test PR",
-            "source_branch": "feature-branch-1",
+            "source_branch": "test-1",
             "destination_branch": "main"
         }
     }
@@ -612,7 +606,7 @@ class Pulls {
                 "id": "test-pull-1",
                 "title": "Test PR 1",
                 "status": "open",
-                "created_at": 1726575741,
+                "creation_date": 1726575741,
                 "author": "test-user-1",
                 "description": "This is a test PR",
                 "source_branch": "feature-branch-1",
@@ -622,7 +616,7 @@ class Pulls {
                 "id": "test-pull-2",
                 "title": "Next Test PR 2",
                 "status": "closed",
-                "created_at": 1726402941,
+                "creation_date": 1726402941,
                 "author": "test-user-2",
                 "description": "This is a another test PR",
                 "source_branch": "feature-branch-2",
@@ -632,7 +626,7 @@ class Pulls {
                 "id": "test-pull-3",
                 "title": "Another Test PR 3",
                 "status": "open",
-                "created_at": 1718454141,
+                "creation_date": 1718454141,
                 "author": "test-user-1",
                 "description": "This is also a test PR",
                 "source_branch": "feature-branch-3",

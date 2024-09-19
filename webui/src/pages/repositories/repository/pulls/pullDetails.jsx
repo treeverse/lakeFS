@@ -13,6 +13,8 @@ import {RepoError} from "../error";
 import {pulls as pullsAPI} from "../../../../lib/api";
 import {useAPI} from "../../../../lib/hooks/api";
 import {Link} from "../../../../lib/components/nav";
+import BranchComparison from "../../../../lib/components/repository/branchesComparison";
+import {PullStatus} from "../../../../constants";
 
 const BranchLink = ({repo, branch}) =>
     <Link href={{
@@ -25,11 +27,11 @@ const BranchLink = ({repo, branch}) =>
 
 const getStatusBadgeParams = status => {
     switch (status) {
-        case pullsAPI.PullStatus.open:
+        case PullStatus.open:
             return {bgColor: "success", icon: <GitPullRequestIcon/>};
-        case pullsAPI.PullStatus.closed:
+        case PullStatus.closed:
             return {bgColor: "purple", icon: <GitPullRequestClosedIcon/>};
-        case pullsAPI.PullStatus.merged:
+        case PullStatus.merged:
             return {bgColor: "danger", icon: <GitMergeIcon/>};
         default:
             return {bgColor: "secondary", icon: null};
@@ -44,7 +46,7 @@ const StatusBadge = ({status}) => {
 };
 
 const PullDetailsContent = ({repo, pull}) => {
-    const createdAt = dayjs.unix(pull.created_at);
+    const createdAt = dayjs.unix(pull.creation_date);
 
     return (
         <div className="pull-details mb-5">
@@ -59,16 +61,26 @@ const PullDetailsContent = ({repo, pull}) => {
             </div>
             <Card className="mt-4">
                 <Card.Header>
-                    <strong>{pull.author}</strong> opened {""}
-                    on {createdAt.format("MMM D, YYYY")} ({createdAt.fromNow()}).
+                    Opened on {createdAt.format("MMM D, YYYY")} ({createdAt.fromNow()}).
                 </Card.Header>
                 <Card.Body className="description">
                     {pull.description}
                 </Card.Body>
             </Card>
-            <div className="bottom-buttons-group mt-4 float-end">
-                <Button variant="outline-secondary" className="text-secondary-emphasis me-2">Close pull request</Button>
-                <Button variant="success">Merge pull request</Button>
+            <div className="bottom-buttons-row mt-4 clearfix">
+                <div className="bottom-buttons-group float-end">
+                    <Button variant="outline-secondary" className="text-secondary-emphasis me-2">Close pull
+                        request</Button>
+                    <Button variant="success">Merge pull request</Button>
+                </div>
+            </div>
+            <hr className="mt-5 mb-4"/>
+            <div className="w-75">
+                <BranchComparison
+                    repo={repo}
+                    reference={{id: pull.destination_branch, type: "branch"}}
+                    compareReference={{id: pull.source_branch, type: "branch"}}
+                />
             </div>
         </div>
     );
