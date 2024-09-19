@@ -672,6 +672,7 @@ func (c *Catalog) CreateBranch(ctx context.Context, repositoryID string, branch 
 		return nil, err
 	}
 
+	// look for a tag with the same name to avoid reference conflict
 	if _, err := c.Store.GetTag(ctx, repository, graveler.TagID(branchID)); err == nil {
 		return nil, fmt.Errorf("tag ID %s: %w", branchID, graveler.ErrConflictFound)
 	} else if !errors.Is(err, graveler.ErrNotFound) {
