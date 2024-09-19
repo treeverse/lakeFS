@@ -1840,6 +1840,95 @@ func (mr *MockLinkAddressIteratorMockRecorder) Value() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Value", reflect.TypeOf((*MockLinkAddressIterator)(nil).Value))
 }
 
+// MockPullsIterator is a mock of PullsIterator interface.
+type MockPullsIterator struct {
+	ctrl     *gomock.Controller
+	recorder *MockPullsIteratorMockRecorder
+}
+
+// MockPullsIteratorMockRecorder is the mock recorder for MockPullsIterator.
+type MockPullsIteratorMockRecorder struct {
+	mock *MockPullsIterator
+}
+
+// NewMockPullsIterator creates a new mock instance.
+func NewMockPullsIterator(ctrl *gomock.Controller) *MockPullsIterator {
+	mock := &MockPullsIterator{ctrl: ctrl}
+	mock.recorder = &MockPullsIteratorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockPullsIterator) EXPECT() *MockPullsIteratorMockRecorder {
+	return m.recorder
+}
+
+// Close mocks base method.
+func (m *MockPullsIterator) Close() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Close")
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockPullsIteratorMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockPullsIterator)(nil).Close))
+}
+
+// Err mocks base method.
+func (m *MockPullsIterator) Err() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Err")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Err indicates an expected call of Err.
+func (mr *MockPullsIteratorMockRecorder) Err() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Err", reflect.TypeOf((*MockPullsIterator)(nil).Err))
+}
+
+// Next mocks base method.
+func (m *MockPullsIterator) Next() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Next")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Next indicates an expected call of Next.
+func (mr *MockPullsIteratorMockRecorder) Next() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Next", reflect.TypeOf((*MockPullsIterator)(nil).Next))
+}
+
+// SeekGE mocks base method.
+func (m *MockPullsIterator) SeekGE(id graveler.PullRequestID) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SeekGE", id)
+}
+
+// SeekGE indicates an expected call of SeekGE.
+func (mr *MockPullsIteratorMockRecorder) SeekGE(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeekGE", reflect.TypeOf((*MockPullsIterator)(nil).SeekGE), id)
+}
+
+// Value mocks base method.
+func (m *MockPullsIterator) Value() *graveler.PullRequestRecord {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Value")
+	ret0, _ := ret[0].(*graveler.PullRequestRecord)
+	return ret0
+}
+
+// Value indicates an expected call of Value.
+func (mr *MockPullsIteratorMockRecorder) Value() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Value", reflect.TypeOf((*MockPullsIterator)(nil).Value))
+}
+
 // MockRefManager is a mock of RefManager interface.
 type MockRefManager struct {
 	ctrl     *gomock.Controller
@@ -2236,6 +2325,21 @@ func (m *MockRefManager) ListCommits(ctx context.Context, repository *graveler.R
 func (mr *MockRefManagerMockRecorder) ListCommits(ctx, repository interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCommits", reflect.TypeOf((*MockRefManager)(nil).ListCommits), ctx, repository)
+}
+
+// ListPullRequests mocks base method.
+func (m *MockRefManager) ListPullRequests(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.PullsIterator, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListPullRequests", ctx, repository)
+	ret0, _ := ret[0].(graveler.PullsIterator)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListPullRequests indicates an expected call of ListPullRequests.
+func (mr *MockRefManagerMockRecorder) ListPullRequests(ctx, repository interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPullRequests", reflect.TypeOf((*MockRefManager)(nil).ListPullRequests), ctx, repository)
 }
 
 // ListRepositories mocks base method.

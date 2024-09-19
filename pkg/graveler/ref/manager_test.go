@@ -1228,7 +1228,7 @@ func TestManager_SetRepositoryMetadata(t *testing.T) {
 }
 
 func TestManager_GetPullRequest(t *testing.T) {
-	r, _ := testRefManager(t)
+	r, store := testRefManager(t)
 	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
@@ -1239,7 +1239,7 @@ func TestManager_GetPullRequest(t *testing.T) {
 
 	t.Run("get_pull_request_exists", func(t *testing.T) {
 		expected := graveler.PullRequestRecord{
-			ID: "",
+			ID: "pullID",
 			PullRequest: graveler.PullRequest{
 				CreationDate:   time.Now().UTC(),
 				Status:         graveler.PullRequestStatus_CLOSED,
@@ -1248,11 +1248,20 @@ func TestManager_GetPullRequest(t *testing.T) {
 				Description:    "some description",
 				Source:         "dev",
 				Destination:    "main",
-				MergedCommitID: "",
+				MergedCommitID: "abc",
 			},
 		}
 		require.NoError(t, r.CreatePullRequest(ctx, repository, expected.ID, &expected.PullRequest))
-		pull, err := r.GetPullRequest(ctx, repository, expected.ID)
+
+		// Verify secondary index
+		data, err := store.Get(ctx, []byte(ref.PullsPartitionKey), []byte(ref.PullBySrcDstPath(repository, expected.Source, expected.Destination)))
+		require.NoError(t, err)
+		sec := kv.SecondaryIndex{}
+		require.NoError(t, proto.Unmarshal(data.Value, &sec))
+		require.Equal(t, expected.ID.String(), string(sec.PrimaryKey))
+
+		// Verify we can get pull from secondary index
+		pull, err := r.GetPullRequest(ctx, repository, graveler.PullRequestID(sec.PrimaryKey))
 		require.NoError(t, err)
 		require.Equal(t, expected.PullRequest, *pull)
 	})
@@ -1264,7 +1273,7 @@ func TestManager_GetPullRequest(t *testing.T) {
 }
 
 func TestManager_DeletePullRequest(t *testing.T) {
-	r, _ := testRefManager(t)
+	r, store := testRefManager(t)
 	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
@@ -1288,8 +1297,14 @@ func TestManager_DeletePullRequest(t *testing.T) {
 			},
 		}
 		require.NoError(t, r.CreatePullRequest(ctx, repository, rec.ID, &rec.PullRequest))
+
+		// Delete Pull request
 		err := r.DeletePullRequest(ctx, repository, rec.ID)
 		require.NoError(t, err)
+
+		// Verify secondary index deleted
+		_, err = store.Get(ctx, []byte(ref.PullsPartitionKey), []byte(ref.PullBySrcDstPath(repository, rec.Source, rec.Destination)))
+		require.ErrorIs(t, err, kv.ErrNotFound)
 	})
 
 	t.Run("delete_pull_request_doesnt_exists", func(t *testing.T) {
