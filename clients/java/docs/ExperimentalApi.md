@@ -1080,7 +1080,7 @@ null (empty response body)
 
 <a id="listPullRequests"></a>
 # **listPullRequests**
-> PullRequestsList listPullRequests(repository).prefix(prefix).after(after).amount(amount).state(state).execute();
+> PullRequestsList listPullRequests(repository).prefix(prefix).after(after).amount(amount).status(status).execute();
 
 list pull requests
 
@@ -1131,13 +1131,13 @@ public class Example {
     String prefix = "prefix_example"; // String | return items prefixed with this value
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
-    String state = "open"; // String | 
+    String status = "open"; // String | 
     try {
       PullRequestsList result = apiInstance.listPullRequests(repository)
             .prefix(prefix)
             .after(after)
             .amount(amount)
-            .state(state)
+            .status(status)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -1159,7 +1159,7 @@ public class Example {
 | **prefix** | **String**| return items prefixed with this value | [optional] |
 | **after** | **String**| return items after this value | [optional] |
 | **amount** | **Integer**| how many items to return | [optional] [default to 100] |
-| **state** | **String**|  | [optional] [default to all] [enum: open, closed, all] |
+| **status** | **String**|  | [optional] [default to all] [enum: open, closed, all] |
 
 ### Return type
 

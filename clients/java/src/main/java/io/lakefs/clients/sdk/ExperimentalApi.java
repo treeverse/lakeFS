@@ -2250,7 +2250,7 @@ public class ExperimentalApi {
     public APIhardResetBranchRequest hardResetBranch(String repository, String branch, String ref) {
         return new APIhardResetBranchRequest(repository, branch, ref);
     }
-    private okhttp3.Call listPullRequestsCall(String repository, String prefix, String after, Integer amount, String state, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call listPullRequestsCall(String repository, String prefix, String after, Integer amount, String status, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -2288,8 +2288,8 @@ public class ExperimentalApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("amount", amount));
         }
 
-        if (state != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("state", state));
+        if (status != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("status", status));
         }
 
         final String[] localVarAccepts = {
@@ -2312,26 +2312,26 @@ public class ExperimentalApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call listPullRequestsValidateBeforeCall(String repository, String prefix, String after, Integer amount, String state, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call listPullRequestsValidateBeforeCall(String repository, String prefix, String after, Integer amount, String status, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling listPullRequests(Async)");
         }
 
-        return listPullRequestsCall(repository, prefix, after, amount, state, _callback);
+        return listPullRequestsCall(repository, prefix, after, amount, status, _callback);
 
     }
 
 
-    private ApiResponse<PullRequestsList> listPullRequestsWithHttpInfo(String repository, String prefix, String after, Integer amount, String state) throws ApiException {
-        okhttp3.Call localVarCall = listPullRequestsValidateBeforeCall(repository, prefix, after, amount, state, null);
+    private ApiResponse<PullRequestsList> listPullRequestsWithHttpInfo(String repository, String prefix, String after, Integer amount, String status) throws ApiException {
+        okhttp3.Call localVarCall = listPullRequestsValidateBeforeCall(repository, prefix, after, amount, status, null);
         Type localVarReturnType = new TypeToken<PullRequestsList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call listPullRequestsAsync(String repository, String prefix, String after, Integer amount, String state, final ApiCallback<PullRequestsList> _callback) throws ApiException {
+    private okhttp3.Call listPullRequestsAsync(String repository, String prefix, String after, Integer amount, String status, final ApiCallback<PullRequestsList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = listPullRequestsValidateBeforeCall(repository, prefix, after, amount, state, _callback);
+        okhttp3.Call localVarCall = listPullRequestsValidateBeforeCall(repository, prefix, after, amount, status, _callback);
         Type localVarReturnType = new TypeToken<PullRequestsList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -2342,7 +2342,7 @@ public class ExperimentalApi {
         private String prefix;
         private String after;
         private Integer amount;
-        private String state;
+        private String status;
 
         private APIlistPullRequestsRequest(String repository) {
             this.repository = repository;
@@ -2379,12 +2379,12 @@ public class ExperimentalApi {
         }
 
         /**
-         * Set state
-         * @param state  (optional, default to all)
+         * Set status
+         * @param status  (optional, default to all)
          * @return APIlistPullRequestsRequest
          */
-        public APIlistPullRequestsRequest state(String state) {
-            this.state = state;
+        public APIlistPullRequestsRequest status(String status) {
+            this.status = status;
             return this;
         }
 
@@ -2404,7 +2404,7 @@ public class ExperimentalApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return listPullRequestsCall(repository, prefix, after, amount, state, _callback);
+            return listPullRequestsCall(repository, prefix, after, amount, status, _callback);
         }
 
         /**
@@ -2422,7 +2422,7 @@ public class ExperimentalApi {
          </table>
          */
         public PullRequestsList execute() throws ApiException {
-            ApiResponse<PullRequestsList> localVarResp = listPullRequestsWithHttpInfo(repository, prefix, after, amount, state);
+            ApiResponse<PullRequestsList> localVarResp = listPullRequestsWithHttpInfo(repository, prefix, after, amount, status);
             return localVarResp.getData();
         }
 
@@ -2441,7 +2441,7 @@ public class ExperimentalApi {
          </table>
          */
         public ApiResponse<PullRequestsList> executeWithHttpInfo() throws ApiException {
-            return listPullRequestsWithHttpInfo(repository, prefix, after, amount, state);
+            return listPullRequestsWithHttpInfo(repository, prefix, after, amount, status);
         }
 
         /**
@@ -2460,7 +2460,7 @@ public class ExperimentalApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<PullRequestsList> _callback) throws ApiException {
-            return listPullRequestsAsync(repository, prefix, after, amount, state, _callback);
+            return listPullRequestsAsync(repository, prefix, after, amount, status, _callback);
         }
     }
 

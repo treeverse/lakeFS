@@ -73,6 +73,7 @@ const (
 	SetBranchProtectionRulesAction            = "branches:SetBranchProtectionRules"
 	GetPullReqeustAction                      = "pr:GetPullRequest"
 	CreatePullReqeustAction                   = "pr:CreatePullRequest"
+	ListPullRequestsAction                    = "pr:ListPullRequests"
 )
 
 var serviceSet = map[string]struct{}{

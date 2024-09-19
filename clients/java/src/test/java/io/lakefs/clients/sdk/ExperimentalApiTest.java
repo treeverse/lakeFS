@@ -234,12 +234,12 @@ public class ExperimentalApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
-        String state = null;
+        String status = null;
         PullRequestsList response = api.listPullRequests(repository)
                 .prefix(prefix)
                 .after(after)
                 .amount(amount)
-                .state(state)
+                .status(status)
                 .execute();
         // TODO: test validations
     }

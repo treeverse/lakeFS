@@ -5673,12 +5673,12 @@ paths:
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
         - in: query
-          name: state
+          name: status
           schema:
             type: string
             enum: [ open, closed, all ]
             default: all
-            description: filter pull requests by state
+            description: filter pull requests by status
       responses:
         200:
           description: list of pull requests

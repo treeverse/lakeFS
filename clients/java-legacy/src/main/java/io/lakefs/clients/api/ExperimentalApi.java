@@ -1707,7 +1707,7 @@ public class ExperimentalApi {
      * @param prefix return items prefixed with this value (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
-     * @param state  (optional, default to all)
+     * @param status  (optional, default to all)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -1721,7 +1721,7 @@ public class ExperimentalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call listPullRequestsCall(String repository, String prefix, String after, Integer amount, String state, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call listPullRequestsCall(String repository, String prefix, String after, Integer amount, String status, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -1746,8 +1746,8 @@ public class ExperimentalApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("amount", amount));
         }
 
-        if (state != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("state", state));
+        if (status != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("status", status));
         }
 
         final String[] localVarAccepts = {
@@ -1769,7 +1769,7 @@ public class ExperimentalApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call listPullRequestsValidateBeforeCall(String repository, String prefix, String after, Integer amount, String state, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call listPullRequestsValidateBeforeCall(String repository, String prefix, String after, Integer amount, String status, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -1777,7 +1777,7 @@ public class ExperimentalApi {
         }
         
 
-        okhttp3.Call localVarCall = listPullRequestsCall(repository, prefix, after, amount, state, _callback);
+        okhttp3.Call localVarCall = listPullRequestsCall(repository, prefix, after, amount, status, _callback);
         return localVarCall;
 
     }
@@ -1789,7 +1789,7 @@ public class ExperimentalApi {
      * @param prefix return items prefixed with this value (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
-     * @param state  (optional, default to all)
+     * @param status  (optional, default to all)
      * @return PullRequestsList
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -1802,8 +1802,8 @@ public class ExperimentalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public PullRequestsList listPullRequests(String repository, String prefix, String after, Integer amount, String state) throws ApiException {
-        ApiResponse<PullRequestsList> localVarResp = listPullRequestsWithHttpInfo(repository, prefix, after, amount, state);
+    public PullRequestsList listPullRequests(String repository, String prefix, String after, Integer amount, String status) throws ApiException {
+        ApiResponse<PullRequestsList> localVarResp = listPullRequestsWithHttpInfo(repository, prefix, after, amount, status);
         return localVarResp.getData();
     }
 
@@ -1814,7 +1814,7 @@ public class ExperimentalApi {
      * @param prefix return items prefixed with this value (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
-     * @param state  (optional, default to all)
+     * @param status  (optional, default to all)
      * @return ApiResponse&lt;PullRequestsList&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -1827,8 +1827,8 @@ public class ExperimentalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<PullRequestsList> listPullRequestsWithHttpInfo(String repository, String prefix, String after, Integer amount, String state) throws ApiException {
-        okhttp3.Call localVarCall = listPullRequestsValidateBeforeCall(repository, prefix, after, amount, state, null);
+    public ApiResponse<PullRequestsList> listPullRequestsWithHttpInfo(String repository, String prefix, String after, Integer amount, String status) throws ApiException {
+        okhttp3.Call localVarCall = listPullRequestsValidateBeforeCall(repository, prefix, after, amount, status, null);
         Type localVarReturnType = new TypeToken<PullRequestsList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -1840,7 +1840,7 @@ public class ExperimentalApi {
      * @param prefix return items prefixed with this value (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
-     * @param state  (optional, default to all)
+     * @param status  (optional, default to all)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -1854,9 +1854,9 @@ public class ExperimentalApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call listPullRequestsAsync(String repository, String prefix, String after, Integer amount, String state, final ApiCallback<PullRequestsList> _callback) throws ApiException {
+    public okhttp3.Call listPullRequestsAsync(String repository, String prefix, String after, Integer amount, String status, final ApiCallback<PullRequestsList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = listPullRequestsValidateBeforeCall(repository, prefix, after, amount, state, _callback);
+        okhttp3.Call localVarCall = listPullRequestsValidateBeforeCall(repository, prefix, after, amount, status, _callback);
         Type localVarReturnType = new TypeToken<PullRequestsList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

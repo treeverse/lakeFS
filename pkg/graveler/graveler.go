@@ -745,6 +745,9 @@ type Collaborator interface {
 
 	// CreatePullRequest creates a pull request on a repository for the given source and destination branches
 	CreatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequest *PullRequestRecord) error
+
+	// ListPullRequests lists pull requests on repository
+	ListPullRequests(ctx context.Context, repository *RepositoryRecord) (PullsIterator, error)
 }
 
 // Internal structures used by Graveler
@@ -3381,6 +3384,10 @@ func (g *Graveler) GetPullRequest(ctx context.Context, repository *RepositoryRec
 
 func (g *Graveler) CreatePullRequest(ctx context.Context, repository *RepositoryRecord, record *PullRequestRecord) error {
 	return g.RefManager.CreatePullRequest(ctx, repository, record.ID, &record.PullRequest)
+}
+
+func (g *Graveler) ListPullRequests(ctx context.Context, repository *RepositoryRecord) (PullsIterator, error) {
+	return g.RefManager.ListPullRequests(ctx, repository)
 }
 
 func tagsToValueIterator(src TagIterator) ValueIterator {

@@ -790,7 +790,7 @@ class ExperimentalApi(object):
                     'prefix',
                     'after',
                     'amount',
-                    'state',
+                    'status',
                 ],
                 'required': [
                     'repository',
@@ -798,7 +798,7 @@ class ExperimentalApi(object):
                 'nullable': [
                 ],
                 'enum': [
-                    'state',
+                    'status',
                 ],
                 'validation': [
                     'amount',
@@ -813,7 +813,7 @@ class ExperimentalApi(object):
                     },
                 },
                 'allowed_values': {
-                    ('state',): {
+                    ('status',): {
 
                         "OPEN": "open",
                         "CLOSED": "closed",
@@ -829,7 +829,7 @@ class ExperimentalApi(object):
                         (str,),
                     'amount':
                         (int,),
-                    'state':
+                    'status':
                         (str,),
                 },
                 'attribute_map': {
@@ -837,14 +837,14 @@ class ExperimentalApi(object):
                     'prefix': 'prefix',
                     'after': 'after',
                     'amount': 'amount',
-                    'state': 'state',
+                    'status': 'status',
                 },
                 'location_map': {
                     'repository': 'path',
                     'prefix': 'query',
                     'after': 'query',
                     'amount': 'query',
-                    'state': 'query',
+                    'status': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -1852,7 +1852,7 @@ class ExperimentalApi(object):
             prefix (str): return items prefixed with this value. [optional]
             after (str): return items after this value. [optional]
             amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
-            state (str): [optional] if omitted the server will use the default value of "all"
+            status (str): [optional] if omitted the server will use the default value of "all"
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

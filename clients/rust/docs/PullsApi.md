@@ -101,7 +101,7 @@ Name | Type | Description  | Required | Notes
 
 ## list_pull_requests
 
-> models::PullRequestsList list_pull_requests(repository, prefix, after, amount, state)
+> models::PullRequestsList list_pull_requests(repository, prefix, after, amount, status)
 list pull requests
 
 ### Parameters
@@ -113,7 +113,7 @@ Name | Type | Description  | Required | Notes
 **prefix** | Option<**String**> | return items prefixed with this value |  |
 **after** | Option<**String**> | return items after this value |  |
 **amount** | Option<**i32**> | how many items to return |  |[default to 100]
-**state** | Option<**String**> |  |  |[default to all]
+**status** | Option<**String**> |  |  |[default to all]
 
 ### Return type
 
