@@ -71,6 +71,8 @@ const (
 	PrepareGarbageCollectionUncommittedAction = "retention:PrepareGarbageCollectionUncommitted"
 	GetBranchProtectionRulesAction            = "branches:GetBranchProtectionRules"
 	SetBranchProtectionRulesAction            = "branches:SetBranchProtectionRules"
+	GetPullReqeustAction                      = "pr:GetPullRequest"
+	CreatePullReqeustAction                   = "pr:CreatePullRequest"
 )
 
 var serviceSet = map[string]struct{}{
@@ -79,6 +81,7 @@ var serviceSet = map[string]struct{}{
 	"ci":        {},
 	"retention": {},
 	"branches":  {},
+	"pr":        {},
 }
 
 func IsValidAction(name string) error {

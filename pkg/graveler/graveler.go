@@ -738,6 +738,15 @@ type Loader interface {
 	LoadTags(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID, opts ...SetOptionsFunc) error
 }
 
+// Collaborator TODO (niro): This should eventually exist in a separate service
+type Collaborator interface {
+	// GetPullRequest returns pull request by ID
+	GetPullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID) (*PullRequest, error)
+
+	// CreatePullRequest creates a pull request on a repository for the given source and destination branches
+	CreatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequest *PullRequestRecord) error
+}
+
 // Internal structures used by Graveler
 // xxxIterator used as follows:
 // ```
@@ -3364,6 +3373,14 @@ func (g *Graveler) DumpTags(ctx context.Context, repository *RepositoryRecord) (
 
 func (g *Graveler) DeleteExpiredImports(ctx context.Context, repository *RepositoryRecord) error {
 	return g.RefManager.DeleteExpiredImports(ctx, repository)
+}
+
+func (g *Graveler) GetPullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID) (*PullRequest, error) {
+	return g.RefManager.GetPullRequest(ctx, repository, pullRequestID)
+}
+
+func (g *Graveler) CreatePullRequest(ctx context.Context, repository *RepositoryRecord, record *PullRequestRecord) error {
+	return g.RefManager.CreatePullRequest(ctx, repository, record.ID, &record.PullRequest)
 }
 
 func tagsToValueIterator(src TagIterator) ValueIterator {

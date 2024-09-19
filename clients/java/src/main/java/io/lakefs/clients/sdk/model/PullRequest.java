@@ -20,6 +20,7 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 
 import com.google.gson.Gson;
@@ -52,30 +53,6 @@ import io.lakefs.clients.sdk.JSON;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class PullRequest {
-  public static final String SERIALIZED_NAME_ID = "id";
-  @SerializedName(SERIALIZED_NAME_ID)
-  private String id;
-
-  public static final String SERIALIZED_NAME_CREATION_DATE = "creation_date";
-  @SerializedName(SERIALIZED_NAME_CREATION_DATE)
-  private Long creationDate;
-
-  public static final String SERIALIZED_NAME_AUTHOR = "author";
-  @SerializedName(SERIALIZED_NAME_AUTHOR)
-  private String author;
-
-  public static final String SERIALIZED_NAME_SOURCE_BRANCH = "source_branch";
-  @SerializedName(SERIALIZED_NAME_SOURCE_BRANCH)
-  private String sourceBranch;
-
-  public static final String SERIALIZED_NAME_DESTINATION_BRANCH = "destination_branch";
-  @SerializedName(SERIALIZED_NAME_DESTINATION_BRANCH)
-  private String destinationBranch;
-
-  public static final String SERIALIZED_NAME_COMMIT_ID = "commit_id";
-  @SerializedName(SERIALIZED_NAME_COMMIT_ID)
-  private String commitId;
-
   /**
    * Gets or Sets status
    */
@@ -137,8 +114,95 @@ public class PullRequest {
   @SerializedName(SERIALIZED_NAME_DESCRIPTION)
   private String description;
 
+  public static final String SERIALIZED_NAME_ID = "id";
+  @SerializedName(SERIALIZED_NAME_ID)
+  private String id;
+
+  public static final String SERIALIZED_NAME_CREATION_DATE = "creation_date";
+  @SerializedName(SERIALIZED_NAME_CREATION_DATE)
+  private OffsetDateTime creationDate;
+
+  public static final String SERIALIZED_NAME_AUTHOR = "author";
+  @SerializedName(SERIALIZED_NAME_AUTHOR)
+  private String author;
+
+  public static final String SERIALIZED_NAME_SOURCE_BRANCH = "source_branch";
+  @SerializedName(SERIALIZED_NAME_SOURCE_BRANCH)
+  private String sourceBranch;
+
+  public static final String SERIALIZED_NAME_DESTINATION_BRANCH = "destination_branch";
+  @SerializedName(SERIALIZED_NAME_DESTINATION_BRANCH)
+  private String destinationBranch;
+
+  public static final String SERIALIZED_NAME_MERGED_COMMIT_ID = "merged_commit_id";
+  @SerializedName(SERIALIZED_NAME_MERGED_COMMIT_ID)
+  private String mergedCommitId;
+
   public PullRequest() {
   }
+
+  public PullRequest status(StatusEnum status) {
+    
+    this.status = status;
+    return this;
+  }
+
+   /**
+   * Get status
+   * @return status
+  **/
+  @javax.annotation.Nonnull
+  public StatusEnum getStatus() {
+    return status;
+  }
+
+
+  public void setStatus(StatusEnum status) {
+    this.status = status;
+  }
+
+
+  public PullRequest title(String title) {
+    
+    this.title = title;
+    return this;
+  }
+
+   /**
+   * Get title
+   * @return title
+  **/
+  @javax.annotation.Nonnull
+  public String getTitle() {
+    return title;
+  }
+
+
+  public void setTitle(String title) {
+    this.title = title;
+  }
+
+
+  public PullRequest description(String description) {
+    
+    this.description = description;
+    return this;
+  }
+
+   /**
+   * Get description
+   * @return description
+  **/
+  @javax.annotation.Nonnull
+  public String getDescription() {
+    return description;
+  }
+
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
 
   public PullRequest id(String id) {
     
@@ -161,7 +225,7 @@ public class PullRequest {
   }
 
 
-  public PullRequest creationDate(Long creationDate) {
+  public PullRequest creationDate(OffsetDateTime creationDate) {
     
     this.creationDate = creationDate;
     return this;
@@ -172,12 +236,12 @@ public class PullRequest {
    * @return creationDate
   **/
   @javax.annotation.Nonnull
-  public Long getCreationDate() {
+  public OffsetDateTime getCreationDate() {
     return creationDate;
   }
 
 
-  public void setCreationDate(Long creationDate) {
+  public void setCreationDate(OffsetDateTime creationDate) {
     this.creationDate = creationDate;
   }
 
@@ -245,87 +309,24 @@ public class PullRequest {
   }
 
 
-  public PullRequest commitId(String commitId) {
+  public PullRequest mergedCommitId(String mergedCommitId) {
     
-    this.commitId = commitId;
+    this.mergedCommitId = mergedCommitId;
     return this;
   }
 
    /**
    * the commit id of merged PRs
-   * @return commitId
+   * @return mergedCommitId
   **/
   @javax.annotation.Nullable
-  public String getCommitId() {
-    return commitId;
+  public String getMergedCommitId() {
+    return mergedCommitId;
   }
 
 
-  public void setCommitId(String commitId) {
-    this.commitId = commitId;
-  }
-
-
-  public PullRequest status(StatusEnum status) {
-    
-    this.status = status;
-    return this;
-  }
-
-   /**
-   * Get status
-   * @return status
-  **/
-  @javax.annotation.Nonnull
-  public StatusEnum getStatus() {
-    return status;
-  }
-
-
-  public void setStatus(StatusEnum status) {
-    this.status = status;
-  }
-
-
-  public PullRequest title(String title) {
-    
-    this.title = title;
-    return this;
-  }
-
-   /**
-   * Get title
-   * @return title
-  **/
-  @javax.annotation.Nonnull
-  public String getTitle() {
-    return title;
-  }
-
-
-  public void setTitle(String title) {
-    this.title = title;
-  }
-
-
-  public PullRequest description(String description) {
-    
-    this.description = description;
-    return this;
-  }
-
-   /**
-   * Get description
-   * @return description
-  **/
-  @javax.annotation.Nonnull
-  public String getDescription() {
-    return description;
-  }
-
-
-  public void setDescription(String description) {
-    this.description = description;
+  public void setMergedCommitId(String mergedCommitId) {
+    this.mergedCommitId = mergedCommitId;
   }
 
   /**
@@ -383,36 +384,36 @@ public class PullRequest {
       return false;
     }
     PullRequest pullRequest = (PullRequest) o;
-    return Objects.equals(this.id, pullRequest.id) &&
+    return Objects.equals(this.status, pullRequest.status) &&
+        Objects.equals(this.title, pullRequest.title) &&
+        Objects.equals(this.description, pullRequest.description) &&
+        Objects.equals(this.id, pullRequest.id) &&
         Objects.equals(this.creationDate, pullRequest.creationDate) &&
         Objects.equals(this.author, pullRequest.author) &&
         Objects.equals(this.sourceBranch, pullRequest.sourceBranch) &&
         Objects.equals(this.destinationBranch, pullRequest.destinationBranch) &&
-        Objects.equals(this.commitId, pullRequest.commitId) &&
-        Objects.equals(this.status, pullRequest.status) &&
-        Objects.equals(this.title, pullRequest.title) &&
-        Objects.equals(this.description, pullRequest.description)&&
+        Objects.equals(this.mergedCommitId, pullRequest.mergedCommitId)&&
         Objects.equals(this.additionalProperties, pullRequest.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, creationDate, author, sourceBranch, destinationBranch, commitId, status, title, description, additionalProperties);
+    return Objects.hash(status, title, description, id, creationDate, author, sourceBranch, destinationBranch, mergedCommitId, additionalProperties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class PullRequest {\n");
+    sb.append("    status: ").append(toIndentedString(status)).append("\n");
+    sb.append("    title: ").append(toIndentedString(title)).append("\n");
+    sb.append("    description: ").append(toIndentedString(description)).append("\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    creationDate: ").append(toIndentedString(creationDate)).append("\n");
     sb.append("    author: ").append(toIndentedString(author)).append("\n");
     sb.append("    sourceBranch: ").append(toIndentedString(sourceBranch)).append("\n");
     sb.append("    destinationBranch: ").append(toIndentedString(destinationBranch)).append("\n");
-    sb.append("    commitId: ").append(toIndentedString(commitId)).append("\n");
-    sb.append("    status: ").append(toIndentedString(status)).append("\n");
-    sb.append("    title: ").append(toIndentedString(title)).append("\n");
-    sb.append("    description: ").append(toIndentedString(description)).append("\n");
+    sb.append("    mergedCommitId: ").append(toIndentedString(mergedCommitId)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -439,17 +440,23 @@ public class PullRequest {
     openapiFields.add("status");
     openapiFields.add("title");
     openapiFields.add("description");
+    openapiFields.add("id");
+    openapiFields.add("creation_date");
+    openapiFields.add("author");
+    openapiFields.add("source_branch");
+    openapiFields.add("destination_branch");
+    openapiFields.add("merged_commit_id");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
+    openapiRequiredFields.add("status");
+    openapiRequiredFields.add("title");
+    openapiRequiredFields.add("description");
     openapiRequiredFields.add("id");
     openapiRequiredFields.add("creation_date");
     openapiRequiredFields.add("author");
     openapiRequiredFields.add("source_branch");
     openapiRequiredFields.add("destination_branch");
-    openapiRequiredFields.add("status");
-    openapiRequiredFields.add("title");
-    openapiRequiredFields.add("description");
   }
 
  /**
@@ -472,6 +479,15 @@ public class PullRequest {
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("status").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `status` to be a primitive type in the JSON string but got `%s`", jsonObj.get("status").toString()));
+      }
+      if (!jsonObj.get("title").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `title` to be a primitive type in the JSON string but got `%s`", jsonObj.get("title").toString()));
+      }
+      if (!jsonObj.get("description").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `description` to be a primitive type in the JSON string but got `%s`", jsonObj.get("description").toString()));
+      }
       if (!jsonObj.get("id").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
       }
@@ -484,17 +500,8 @@ public class PullRequest {
       if (!jsonObj.get("destination_branch").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `destination_branch` to be a primitive type in the JSON string but got `%s`", jsonObj.get("destination_branch").toString()));
       }
-      if ((jsonObj.get("commit_id") != null && !jsonObj.get("commit_id").isJsonNull()) && !jsonObj.get("commit_id").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `commit_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("commit_id").toString()));
-      }
-      if (!jsonObj.get("status").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `status` to be a primitive type in the JSON string but got `%s`", jsonObj.get("status").toString()));
-      }
-      if (!jsonObj.get("title").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `title` to be a primitive type in the JSON string but got `%s`", jsonObj.get("title").toString()));
-      }
-      if (!jsonObj.get("description").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `description` to be a primitive type in the JSON string but got `%s`", jsonObj.get("description").toString()));
+      if ((jsonObj.get("merged_commit_id") != null && !jsonObj.get("merged_commit_id").isJsonNull()) && !jsonObj.get("merged_commit_id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `merged_commit_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("merged_commit_id").toString()));
       }
   }
 

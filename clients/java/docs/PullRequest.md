@@ -7,15 +7,15 @@
 
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
-|**id** | **String** |  |  |
-|**creationDate** | **Long** |  |  |
-|**author** | **String** |  |  |
-|**sourceBranch** | **String** |  |  |
-|**destinationBranch** | **String** |  |  |
-|**commitId** | **String** | the commit id of merged PRs |  [optional] |
 |**status** | [**StatusEnum**](#StatusEnum) |  |  |
 |**title** | **String** |  |  |
 |**description** | **String** |  |  |
+|**id** | **String** |  |  |
+|**creationDate** | **OffsetDateTime** |  |  |
+|**author** | **String** |  |  |
+|**sourceBranch** | **String** |  |  |
+|**destinationBranch** | **String** |  |  |
+|**mergedCommitId** | **String** | the commit id of merged PRs |  [optional] |
 
 
 

@@ -132,6 +132,7 @@ type Store interface {
 	graveler.Dumper
 	graveler.Loader
 	graveler.Plumbing
+	graveler.Collaborator
 }
 
 const (
@@ -2869,6 +2870,75 @@ func (c *Catalog) checkCommitIDDuplication(ctx context.Context, repository *grav
 	}
 
 	return err
+}
+
+func (c *Catalog) GetPullRequest(ctx context.Context, repositoryID string, pullRequestID string) (*graveler.PullRequest, error) {
+	pid := graveler.PullRequestID(pullRequestID)
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "name", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "pullRequestID", Value: pid, Fn: graveler.ValidatePullRequestID},
+	}); err != nil {
+		return nil, err
+	}
+
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+
+	pr, err := c.Store.GetPullRequest(ctx, repository, pid)
+	if err != nil {
+		return nil, err
+	}
+
+	return pr, nil
+}
+
+func (c *Catalog) CreatePullRequest(ctx context.Context, repositoryID string, request *PullRequest) (string, error) {
+	srcBranchID := graveler.BranchID(request.SourceBranch)
+	destBranchID := graveler.BranchID(request.DestinationBranch)
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "dest", Value: destBranchID, Fn: graveler.ValidateBranchID},
+		{Name: "src", Value: srcBranchID, Fn: graveler.ValidateBranchID},
+	}); err != nil {
+		return "", err
+	}
+
+	// Verify src and dst are different
+	if srcBranchID == destBranchID {
+		return "", fmt.Errorf("source and destination branches are the same: %w", graveler.ErrSameBranch)
+	}
+
+	// Check all entities exist
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return "", err
+	}
+	if _, err = c.Store.GetBranch(ctx, repository, srcBranchID); err != nil {
+		return "", err
+	}
+	if _, err = c.Store.GetBranch(ctx, repository, destBranchID); err != nil {
+		return "", err
+	}
+
+	pullID := graveler.NewRunID()
+	pull := &graveler.PullRequestRecord{
+		ID: graveler.PullRequestID(pullID),
+		PullRequest: graveler.PullRequest{
+			CreationDate: time.Now(),
+			Title:        request.Title,
+			Author:       request.Author,
+			Description:  request.Description,
+			Source:       request.SourceBranch,
+			Destination:  request.DestinationBranch,
+		},
+	}
+	if err = c.Store.CreatePullRequest(ctx, repository, pull); err != nil {
+		return "", err
+	}
+
+	return pullID, nil
 }
 
 func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntry {
