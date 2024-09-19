@@ -646,15 +646,37 @@ func (m *Manager) DeleteExpiredImports(ctx context.Context, repository *graveler
 }
 
 // Pull Requests logic
+// TODO (niro): In the future we would probably like to move all the PR logic into a dedicated service similar to actions.
+// TODO (niro): For now we put all the logic here under a single block
+
+const (
+	// pullRequestsPrefix used for repo context listing
+	pullRequestsPrefix = "pulls"
+	// PullsPartitionKey used for lookup per source-dest (future)
+	PullsPartitionKey = "pulls"
+	reposPrefix       = "repos"
+)
+
+func PullRequestPath(pullID graveler.PullRequestID) string {
+	return kv.FormatPath(pullRequestsPrefix, pullID.String())
+}
+
+func basePullsPath(repoID string) string {
+	return kv.FormatPath(reposPrefix, repoID)
+}
+
+func PullBySrcDstPath(repository *graveler.RepositoryRecord, srcBranch, dstBranch string) string {
+	return kv.FormatPath(basePullsPath(graveler.RepoPartition(repository)), srcBranch, dstBranch)
+}
 
 func (m *Manager) getPullWithPredicate(ctx context.Context, repository *graveler.RepositoryRecord, pullID graveler.PullRequestID) (*graveler.PullRequest, kv.Predicate, error) {
 	type pullWithPred struct {
-		*graveler.PullRequest
+		*graveler.PullRequestRecord
 		kv.Predicate
 	}
 	key := fmt.Sprintf("GetPullRequest:%s:%s", repository.RepositoryID, pullID)
 	result, err := m.batchExecutor.BatchFor(ctx, key, m.maxBatchDelay, batch.ExecuterFunc(func() (interface{}, error) {
-		pullKey := graveler.PullRequestPath(pullID)
+		pullKey := PullRequestPath(pullID)
 		data := graveler.PullRequestData{}
 		pred, err := kv.GetMsg(context.Background(), m.kvStore, graveler.RepoPartition(repository), []byte(pullKey), &data)
 		if err != nil {
@@ -669,7 +691,7 @@ func (m *Manager) getPullWithPredicate(ctx context.Context, repository *graveler
 		return nil, nil, err
 	}
 	p := result.(*pullWithPred)
-	return p.PullRequest, p.Predicate, nil
+	return &p.PullRequest, p.Predicate, nil
 }
 
 func (m *Manager) GetPullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullID graveler.PullRequestID) (*graveler.PullRequest, error) {
@@ -677,8 +699,20 @@ func (m *Manager) GetPullRequest(ctx context.Context, repository *graveler.Repos
 	return pull, err
 }
 
+func (m *Manager) ListPullRequests(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.PullsIterator, error) {
+	return NewPullsIterator(ctx, m.kvStore, repository)
+}
+
 func (m *Manager) CreatePullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullRequestID graveler.PullRequestID, pullRequest *graveler.PullRequest) error {
-	err := kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(graveler.PullRequestPath(pullRequestID)), graveler.ProtoFromPullRequest(pullRequestID, pullRequest), nil)
+	// Save secondary index by source - dest. For now, we override the value. In the future we should allow only single src-dest to exist
+	secondaryKey := []byte(PullBySrcDstPath(repository, pullRequest.Source, pullRequest.Destination))
+	err := kv.SetMsg(ctx, m.kvStore, PullsPartitionKey, secondaryKey, &kv.SecondaryIndex{PrimaryKey: []byte(pullRequestID.String())})
+	if err != nil {
+		return fmt.Errorf("save secondary index by src-dest (key %s): %w", secondaryKey, err)
+	}
+
+	// Save primary
+	err = kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(PullRequestPath(pullRequestID)), graveler.ProtoFromPullRequest(pullRequestID, pullRequest), nil)
 	if errors.Is(err, kv.ErrPredicateFailed) {
 		err = graveler.ErrPullRequestExists
 	}
@@ -686,7 +720,22 @@ func (m *Manager) CreatePullRequest(ctx context.Context, repository *graveler.Re
 }
 
 func (m *Manager) DeletePullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullRequestID graveler.PullRequestID) error {
-	pullKey := graveler.PullRequestPath(pullRequestID)
+	pr, _, err := m.getPullWithPredicate(ctx, repository, pullRequestID)
+	if err != nil {
+		if errors.Is(err, graveler.ErrPullRequestNotFound) { // Ignore if not exists
+			return nil
+		}
+		return err
+	}
+
+	// Delete secondary key
+	secondaryKey := []byte(PullBySrcDstPath(repository, pr.Source, pr.Destination))
+	if err = m.kvStore.Delete(ctx, []byte(PullsPartitionKey), secondaryKey); err != nil {
+		return fmt.Errorf("delete secondary index by src-dest (key %s): %w", secondaryKey, err)
+	}
+
+	// Delete primary key
+	pullKey := PullRequestPath(pullRequestID)
 	return m.kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), []byte(pullKey))
 }
 
@@ -700,5 +749,5 @@ func (m *Manager) UpdatePullRequest(ctx context.Context, repository *graveler.Re
 	if err != nil || newPull == nil {
 		return err
 	}
-	return kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(graveler.PullRequestPath(pullRequestID)), graveler.ProtoFromPullRequest(pullRequestID, newPull), pred)
+	return kv.SetMsgIf(ctx, m.kvStore, graveler.RepoPartition(repository), []byte(PullRequestPath(pullRequestID)), graveler.ProtoFromPullRequest(pullRequestID, newPull), pred)
 }

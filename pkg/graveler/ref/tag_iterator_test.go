@@ -2,6 +2,7 @@ package ref_test
 
 import (
 	"context"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
@@ -104,8 +105,13 @@ func TestTagIterator(t *testing.T) {
 	t.Run("empty value SeekGE", func(t *testing.T) {
 		iter, err := ref.NewTagIterator(ctx, kvStore, repository)
 		testutil.Must(t, err)
-		iter.SeekGE("b")
+		defer iter.Close()
 
+		// make sure value is not nil
+		require.True(t, iter.Next())
+
+		// SeekGE should nil the value field
+		iter.SeekGE("b")
 		if iter.Value() != nil {
 			t.Fatalf("expected nil value after seekGE")
 		}
