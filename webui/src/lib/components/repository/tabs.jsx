@@ -9,7 +9,7 @@ import {useRouter} from "../../hooks/router";
 import {RefTypeBranch} from "../../../constants";
 
 // TODO (gilo): this is temp, until PRfD will be ready
-const showPulls = true;
+const showPulls = false;
 
 export const RepositoryNavTabs = ({ active }) => {
     const { reference } = useRefs();
