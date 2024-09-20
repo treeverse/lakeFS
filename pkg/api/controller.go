@@ -5224,7 +5224,7 @@ func (c *Controller) ListPullRequests(w http.ResponseWriter, r *http.Request, re
 func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.CreatePullRequestJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.CreatePullReqeustAction,
+			Action:   permissions.WritePullReqeustAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
@@ -5262,7 +5262,7 @@ func (c *Controller) DeletePullRequest(w http.ResponseWriter, r *http.Request, r
 func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.GetPullReqeustAction,
+			Action:   permissions.ReadPullReqeustAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
