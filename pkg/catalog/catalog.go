@@ -2954,7 +2954,6 @@ func shouldSkipByStatus(requested string, status graveler.PullRequestStatus) boo
 		return status != graveler.PullRequestStatus_OPEN
 	default: // Anything else should return all
 		return false
-
 	}
 }
 

@@ -5382,7 +5382,7 @@ func TestController_ListPullRequestsHandler(t *testing.T) {
 	t.Run("with pull requests", func(t *testing.T) {
 		// Create Data
 		expected := make([]catalog.PullRequest, 100)
-		for i, _ := range expected {
+		for i := range expected {
 			expected[i].Title = fmt.Sprintf("pull_%d", i)
 			expected[i].DestinationBranch = "main"
 			expected[i].SourceBranch = fmt.Sprintf("src_%d", i)
