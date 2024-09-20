@@ -88,6 +88,9 @@ func ValidatePullRequestID(v interface{}) error {
 
 	// TODO (niro): Any other validations?
 	_, err := xid.FromString(s.String())
+	if err != nil {
+		return ErrInvalidPullRequestID
+	}
 	return err
 }
 

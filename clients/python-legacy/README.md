@@ -172,7 +172,6 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**create_presign_multipart_upload**](docs/ExperimentalApi.md#create_presign_multipart_upload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
 *ExperimentalApi* | [**create_pull_request**](docs/ExperimentalApi.md#create_pull_request) | **POST** /repositories/{repository}/pulls | create pull request
 *ExperimentalApi* | [**create_user_external_principal**](docs/ExperimentalApi.md#create_user_external_principal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
-*ExperimentalApi* | [**delete_pull_request**](docs/ExperimentalApi.md#delete_pull_request) | **DELETE** /repositories/{repository}/pulls/{pull_request} | delete pull request
 *ExperimentalApi* | [**delete_user_external_principal**](docs/ExperimentalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 *ExperimentalApi* | [**external_principal_login**](docs/ExperimentalApi.md#external_principal_login) | **POST** /auth/external/principal/login | perform a login using an external authenticator
 *ExperimentalApi* | [**get_external_principal**](docs/ExperimentalApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
@@ -231,7 +230,6 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**stat_object**](docs/ObjectsApi.md#stat_object) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
 *ObjectsApi* | [**upload_object**](docs/ObjectsApi.md#upload_object) | **POST** /repositories/{repository}/branches/{branch}/objects | 
 *PullsApi* | [**create_pull_request**](docs/PullsApi.md#create_pull_request) | **POST** /repositories/{repository}/pulls | create pull request
-*PullsApi* | [**delete_pull_request**](docs/PullsApi.md#delete_pull_request) | **DELETE** /repositories/{repository}/pulls/{pull_request} | delete pull request
 *PullsApi* | [**get_pull_request**](docs/PullsApi.md#get_pull_request) | **GET** /repositories/{repository}/pulls/{pull_request} | get pull request
 *PullsApi* | [**list_pull_requests**](docs/PullsApi.md#list_pull_requests) | **GET** /repositories/{repository}/pulls | list pull requests
 *PullsApi* | [**update_pull_request**](docs/PullsApi.md#update_pull_request) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request

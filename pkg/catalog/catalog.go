@@ -2876,7 +2876,7 @@ func (c *Catalog) checkCommitIDDuplication(ctx context.Context, repository *grav
 func (c *Catalog) GetPullRequest(ctx context.Context, repositoryID string, pullRequestID string) (*graveler.PullRequest, error) {
 	pid := graveler.PullRequestID(pullRequestID)
 	if err := validator.Validate([]validator.ValidateArg{
-		{Name: "name", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 		{Name: "pullRequestID", Value: pid, Fn: graveler.ValidatePullRequestID},
 	}); err != nil {
 		return nil, err
@@ -2999,7 +2999,7 @@ func (c *Catalog) ListPullRequest(ctx context.Context, repositoryID, prefix stri
 		p := &PullRequest{
 			ID:                pullID,
 			Title:             v.Title,
-			Status:            v.Status.String(),
+			Status:            strings.ToLower(v.Status.String()),
 			Description:       v.Description,
 			Author:            v.Author,
 			SourceBranch:      v.Source,
@@ -3021,6 +3021,21 @@ func (c *Catalog) ListPullRequest(ctx context.Context, repositoryID, prefix stri
 		pulls = pulls[:limit]
 	}
 	return pulls, hasMore, nil
+}
+
+func (c *Catalog) UpdatePullRequest(ctx context.Context, repositoryID string, pullRequestID string, request *graveler.UpdatePullRequest) error {
+	pullID := graveler.PullRequestID(pullRequestID)
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "pullRequestID", Value: pullID, Fn: graveler.ValidatePullRequestID},
+	}); err != nil {
+		return err
+	}
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return err
+	}
+	return c.Store.UpdatePullRequest(ctx, repository, pullID, request)
 }
 
 func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntry {

@@ -2709,7 +2709,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, block.ErrInvalidAddress),
 		errors.Is(err, block.ErrOperationNotSupported),
 		errors.Is(err, authentication.ErrInvalidRequest),
-		errors.Is(err, graveler.ErrSameBranch):
+		errors.Is(err, graveler.ErrSameBranch),
+		errors.Is(err, graveler.ErrInvalidPullRequestStatus):
 		log.Debug("Bad request")
 		cb(w, r, http.StatusBadRequest, err)
 
@@ -5255,10 +5256,6 @@ func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, b
 	_, _ = io.WriteString(w, pid)
 }
 
-func (c *Controller) DeletePullRequest(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
-	writeResponse(w, r, http.StatusNotImplemented, nil)
-}
-
 func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -5277,7 +5274,7 @@ func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repo
 	response := apigen.PullRequest{
 		PullRequestBasic: apigen.PullRequestBasic{
 			Description: swag.String(pr.Description),
-			Status:      swag.String(pr.Status.String()),
+			Status:      swag.String(strings.ToLower(pr.Status.String())),
 			Title:       swag.String(pr.Title),
 		},
 		Author:            pr.Author,
@@ -5291,7 +5288,26 @@ func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repo
 }
 
 func (c *Controller) UpdatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.UpdatePullRequestJSONRequestBody, repository string, pullRequestID string) {
-	writeResponse(w, r, http.StatusNotImplemented, nil)
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.WritePullReqeustAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "update_pull_request", r, repository, "", "")
+
+	err := c.Catalog.UpdatePullRequest(ctx, repository, pullRequestID, &graveler.UpdatePullRequest{
+		Title:       body.Title,
+		Description: body.Description,
+		Status:      body.Status,
+	})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
 func writeError(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
