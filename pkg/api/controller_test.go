@@ -5326,10 +5326,12 @@ func TestController_CreatePullRequest(t *testing.T) {
 			SourceBranch:      "branch_b",
 			Title:             "My title",
 		}
-		_, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+		branchResp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 			Name:   body.SourceBranch,
 			Source: "main",
 		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, branchResp.StatusCode())
 
 		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, body)
 		require.NoError(t, err)
@@ -5351,6 +5353,141 @@ func TestController_CreatePullRequest(t *testing.T) {
 		require.Equal(t, "OPEN", swag.StringValue(getResp.JSON200.Status))
 		require.Equal(t, "", swag.StringValue(getResp.JSON200.MergedCommitId))
 		require.True(t, time.Now().Sub(getResp.JSON200.CreationDate) < 1*time.Minute)
+	})
+}
+
+func TestController_ListPullRequestsHandler(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
+	require.NoError(t, err)
+
+	t.Run("no pull requests", func(t *testing.T) {
+		resp, err := clt.ListPullRequestsWithResponse(ctx, repo, &apigen.ListPullRequestsParams{
+			Amount: apiutil.Ptr(apigen.PaginationAmount(-1)),
+		})
+		verifyResponseOK(t, resp, err)
+		require.Equal(t, 0, len(resp.JSON200.Results))
+	})
+
+	t.Run("repo doesnt exist", func(t *testing.T) {
+		resp, err := clt.ListPullRequestsWithResponse(ctx, "repo666", &apigen.ListPullRequestsParams{
+			Amount: apiutil.Ptr(apigen.PaginationAmount(2)),
+		})
+		testutil.Must(t, err)
+		require.NotNil(t, resp.JSON404)
+	})
+
+	t.Run("with pull requests", func(t *testing.T) {
+		// Create Data
+		expected := make([]catalog.PullRequest, 100)
+		for i := range expected {
+			expected[i].Title = fmt.Sprintf("pull_%d", i)
+			expected[i].DestinationBranch = "main"
+			expected[i].SourceBranch = fmt.Sprintf("src_%d", i)
+			expected[i].Description = fmt.Sprintf("description_%d", i)
+			expected[i].Status = "OPEN"
+
+			branchResp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+				Name:   expected[i].SourceBranch,
+				Source: "main",
+			})
+			require.NoError(t, err)
+			require.Equal(t, http.StatusCreated, branchResp.StatusCode())
+
+			resp, err := clt.CreatePullRequestWithResponse(ctx, repo, apigen.CreatePullRequestJSONRequestBody{
+				Description:       expected[i].Description,
+				DestinationBranch: expected[i].DestinationBranch,
+				SourceBranch:      expected[i].SourceBranch,
+				Title:             expected[i].Title,
+			})
+			require.NoError(t, err)
+			require.Equal(t, http.StatusCreated, resp.StatusCode())
+			expected[i].ID = string(resp.Body)
+		}
+		// Sort by p.ID
+		sort.Slice(expected, func(i, j int) bool {
+			return expected[i].ID < expected[j].ID
+		})
+
+		// list 10
+		amount := 10
+		resp, err := clt.ListPullRequestsWithResponse(ctx, repo, &apigen.ListPullRequestsParams{
+			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
+		})
+		verifyResponseOK(t, resp, err)
+		require.Equal(t, amount, len(resp.JSON200.Results))
+		require.True(t, resp.JSON200.Pagination.HasMore)
+		require.Equal(t, expected[amount-1].ID, resp.JSON200.Pagination.NextOffset)
+
+		for i := range amount {
+			require.Equal(t, expected[i].ID, resp.JSON200.Results[i].Id)
+		}
+
+		// List all
+		resp, err = clt.ListPullRequestsWithResponse(ctx, repo, &apigen.ListPullRequestsParams{
+			Amount: apiutil.Ptr(apigen.PaginationAmount(-1)),
+		})
+		verifyResponseOK(t, resp, err)
+
+		require.Equal(t, len(expected), len(resp.JSON200.Results))
+		userResp, err := clt.GetCurrentUserWithResponse(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, userResp.JSON200)
+
+		for i, p := range resp.JSON200.Results {
+			require.Equal(t, expected[i].ID, p.Id)
+			require.Equal(t, expected[i].Title, swag.StringValue(p.Title))
+			require.Equal(t, userResp.JSON200.User.Id, p.Author)
+			require.Equal(t, expected[i].SourceBranch, p.SourceBranch)
+			require.Equal(t, expected[i].DestinationBranch, p.DestinationBranch)
+			require.Equal(t, expected[i].Status, swag.StringValue(p.Status))
+		}
+
+		require.False(t, resp.JSON200.Pagination.HasMore)
+		require.Empty(t, resp.JSON200.Pagination.NextOffset)
+
+		// Test out of bounds
+		after := expected[len(expected)-1].ID
+		resp, err = clt.ListPullRequestsWithResponse(ctx, repo, &apigen.ListPullRequestsParams{
+			Amount: apiutil.Ptr(apigen.PaginationAmount(-1)),
+			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+		})
+		verifyResponseOK(t, resp, err)
+		require.Equal(t, 0, len(resp.JSON200.Results))
+
+		// Test Pagination
+		afterInt := 35
+		after = expected[afterInt].ID
+		amount = 2
+		resp, err = clt.ListPullRequestsWithResponse(ctx, repo, &apigen.ListPullRequestsParams{
+			After:  apiutil.Ptr[apigen.PaginationAfter](apigen.PaginationAfter(after)),
+			Amount: apiutil.Ptr[apigen.PaginationAmount](apigen.PaginationAmount(amount)),
+		})
+		verifyResponseOK(t, resp, err)
+		require.NotNil(t, resp.JSON200)
+		require.Equal(t, amount, len(resp.JSON200.Results))
+		require.True(t, resp.JSON200.Pagination.HasMore)
+		require.Equal(t, expected[afterInt+amount].ID, resp.JSON200.Pagination.NextOffset)
+		for i := range amount {
+			require.Equal(t, expected[afterInt+i+1].ID, resp.JSON200.Results[i].Id)
+		}
+
+		// TODO (niro): Add tests for open / closed after we implement update
+		status := "closed"
+		resp, err = clt.ListPullRequestsWithResponse(ctx, repo, &apigen.ListPullRequestsParams{
+			Status: &status,
+		})
+		verifyResponseOK(t, resp, err)
+		require.Equal(t, 0, len(resp.JSON200.Results))
+
+		status = "open"
+		resp, err = clt.ListPullRequestsWithResponse(ctx, repo, &apigen.ListPullRequestsParams{
+			Status: &status,
+		})
+		verifyResponseOK(t, resp, err)
+		require.Equal(t, len(expected), len(resp.JSON200.Results))
 	})
 }
 

@@ -636,7 +636,7 @@ public class PullsApi {
     public APIgetPullRequestRequest getPullRequest(String repository, String pullRequest) {
         return new APIgetPullRequestRequest(repository, pullRequest);
     }
-    private okhttp3.Call listPullRequestsCall(String repository, String prefix, String after, Integer amount, String state, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call listPullRequestsCall(String repository, String prefix, String after, Integer amount, String status, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -674,8 +674,8 @@ public class PullsApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("amount", amount));
         }
 
-        if (state != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("state", state));
+        if (status != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("status", status));
         }
 
         final String[] localVarAccepts = {
@@ -698,26 +698,26 @@ public class PullsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call listPullRequestsValidateBeforeCall(String repository, String prefix, String after, Integer amount, String state, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call listPullRequestsValidateBeforeCall(String repository, String prefix, String after, Integer amount, String status, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling listPullRequests(Async)");
         }
 
-        return listPullRequestsCall(repository, prefix, after, amount, state, _callback);
+        return listPullRequestsCall(repository, prefix, after, amount, status, _callback);
 
     }
 
 
-    private ApiResponse<PullRequestsList> listPullRequestsWithHttpInfo(String repository, String prefix, String after, Integer amount, String state) throws ApiException {
-        okhttp3.Call localVarCall = listPullRequestsValidateBeforeCall(repository, prefix, after, amount, state, null);
+    private ApiResponse<PullRequestsList> listPullRequestsWithHttpInfo(String repository, String prefix, String after, Integer amount, String status) throws ApiException {
+        okhttp3.Call localVarCall = listPullRequestsValidateBeforeCall(repository, prefix, after, amount, status, null);
         Type localVarReturnType = new TypeToken<PullRequestsList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call listPullRequestsAsync(String repository, String prefix, String after, Integer amount, String state, final ApiCallback<PullRequestsList> _callback) throws ApiException {
+    private okhttp3.Call listPullRequestsAsync(String repository, String prefix, String after, Integer amount, String status, final ApiCallback<PullRequestsList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = listPullRequestsValidateBeforeCall(repository, prefix, after, amount, state, _callback);
+        okhttp3.Call localVarCall = listPullRequestsValidateBeforeCall(repository, prefix, after, amount, status, _callback);
         Type localVarReturnType = new TypeToken<PullRequestsList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -728,7 +728,7 @@ public class PullsApi {
         private String prefix;
         private String after;
         private Integer amount;
-        private String state;
+        private String status;
 
         private APIlistPullRequestsRequest(String repository) {
             this.repository = repository;
@@ -765,12 +765,12 @@ public class PullsApi {
         }
 
         /**
-         * Set state
-         * @param state  (optional, default to all)
+         * Set status
+         * @param status  (optional, default to all)
          * @return APIlistPullRequestsRequest
          */
-        public APIlistPullRequestsRequest state(String state) {
-            this.state = state;
+        public APIlistPullRequestsRequest status(String status) {
+            this.status = status;
             return this;
         }
 
@@ -790,7 +790,7 @@ public class PullsApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return listPullRequestsCall(repository, prefix, after, amount, state, _callback);
+            return listPullRequestsCall(repository, prefix, after, amount, status, _callback);
         }
 
         /**
@@ -808,7 +808,7 @@ public class PullsApi {
          </table>
          */
         public PullRequestsList execute() throws ApiException {
-            ApiResponse<PullRequestsList> localVarResp = listPullRequestsWithHttpInfo(repository, prefix, after, amount, state);
+            ApiResponse<PullRequestsList> localVarResp = listPullRequestsWithHttpInfo(repository, prefix, after, amount, status);
             return localVarResp.getData();
         }
 
@@ -827,7 +827,7 @@ public class PullsApi {
          </table>
          */
         public ApiResponse<PullRequestsList> executeWithHttpInfo() throws ApiException {
-            return listPullRequestsWithHttpInfo(repository, prefix, after, amount, state);
+            return listPullRequestsWithHttpInfo(repository, prefix, after, amount, status);
         }
 
         /**
@@ -846,7 +846,7 @@ public class PullsApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<PullRequestsList> _callback) throws ApiException {
-            return listPullRequestsAsync(repository, prefix, after, amount, state, _callback);
+            return listPullRequestsAsync(repository, prefix, after, amount, status, _callback);
         }
     }
 

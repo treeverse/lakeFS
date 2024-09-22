@@ -1244,7 +1244,7 @@ void (empty response body)
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **list_pull_requests**
-> PullRequestsList list_pull_requests(repository, prefix=prefix, after=after, amount=amount, state=state)
+> PullRequestsList list_pull_requests(repository, prefix=prefix, after=after, amount=amount, status=status)
 
 list pull requests
 
@@ -1312,11 +1312,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     prefix = 'prefix_example' # str | return items prefixed with this value (optional)
     after = 'after_example' # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) (default to 100)
-    state = 'all' # str |  (optional) (default to 'all')
+    status = 'all' # str |  (optional) (default to 'all')
 
     try:
         # list pull requests
-        api_response = api_instance.list_pull_requests(repository, prefix=prefix, after=after, amount=amount, state=state)
+        api_response = api_instance.list_pull_requests(repository, prefix=prefix, after=after, amount=amount, status=status)
         print("The response of ExperimentalApi->list_pull_requests:\n")
         pprint(api_response)
     except Exception as e:
@@ -1334,7 +1334,7 @@ Name | Type | Description  | Notes
  **prefix** | **str**| return items prefixed with this value | [optional] 
  **after** | **str**| return items after this value | [optional] 
  **amount** | **int**| how many items to return | [optional] [default to 100]
- **state** | **str**|  | [optional] [default to &#39;all&#39;]
+ **status** | **str**|  | [optional] [default to &#39;all&#39;]
 
 ### Return type
 

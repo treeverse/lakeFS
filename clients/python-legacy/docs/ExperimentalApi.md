@@ -1366,7 +1366,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     prefix = "prefix_example" # str | return items prefixed with this value (optional)
     after = "after_example" # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) if omitted the server will use the default value of 100
-    state = "all" # str |  (optional) if omitted the server will use the default value of "all"
+    status = "all" # str |  (optional) if omitted the server will use the default value of "all"
 
     # example passing only required values which don't have defaults set
     try:
@@ -1380,7 +1380,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # list pull requests
-        api_response = api_instance.list_pull_requests(repository, prefix=prefix, after=after, amount=amount, state=state)
+        api_response = api_instance.list_pull_requests(repository, prefix=prefix, after=after, amount=amount, status=status)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling ExperimentalApi->list_pull_requests: %s\n" % e)
@@ -1395,7 +1395,7 @@ Name | Type | Description  | Notes
  **prefix** | **str**| return items prefixed with this value | [optional]
  **after** | **str**| return items after this value | [optional]
  **amount** | **int**| how many items to return | [optional] if omitted the server will use the default value of 100
- **state** | **str**|  | [optional] if omitted the server will use the default value of "all"
+ **status** | **str**|  | [optional] if omitted the server will use the default value of "all"
 
 ### Return type
 

@@ -505,13 +505,13 @@ class PullsApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def list_pull_requests(self, repository : StrictStr, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, state : Optional[StrictStr] = None, **kwargs) -> PullRequestsList:  # noqa: E501
+    def list_pull_requests(self, repository : StrictStr, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, status : Optional[StrictStr] = None, **kwargs) -> PullRequestsList:  # noqa: E501
         """list pull requests  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.list_pull_requests(repository, prefix, after, amount, state, async_req=True)
+        >>> thread = api.list_pull_requests(repository, prefix, after, amount, status, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -522,8 +522,8 @@ class PullsApi(object):
         :type after: str
         :param amount: how many items to return
         :type amount: int
-        :param state:
-        :type state: str
+        :param status:
+        :type status: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request. If one
@@ -538,16 +538,16 @@ class PullsApi(object):
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
             raise ValueError("Error! Please call the list_pull_requests_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.list_pull_requests_with_http_info(repository, prefix, after, amount, state, **kwargs)  # noqa: E501
+        return self.list_pull_requests_with_http_info(repository, prefix, after, amount, status, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def list_pull_requests_with_http_info(self, repository : StrictStr, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, state : Optional[StrictStr] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def list_pull_requests_with_http_info(self, repository : StrictStr, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, status : Optional[StrictStr] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """list pull requests  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.list_pull_requests_with_http_info(repository, prefix, after, amount, state, async_req=True)
+        >>> thread = api.list_pull_requests_with_http_info(repository, prefix, after, amount, status, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -558,8 +558,8 @@ class PullsApi(object):
         :type after: str
         :param amount: how many items to return
         :type amount: int
-        :param state:
-        :type state: str
+        :param status:
+        :type status: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -592,7 +592,7 @@ class PullsApi(object):
             'prefix',
             'after',
             'amount',
-            'state'
+            'status'
         ]
         _all_params.extend(
             [
@@ -635,8 +635,8 @@ class PullsApi(object):
         if _params.get('amount') is not None:  # noqa: E501
             _query_params.append(('amount', _params['amount']))
 
-        if _params.get('state') is not None:  # noqa: E501
-            _query_params.append(('state', _params['state']))
+        if _params.get('status') is not None:  # noqa: E501
+            _query_params.append(('status', _params['status']))
 
         # process the header parameters
         _header_params = dict(_params.get('_headers', {}))

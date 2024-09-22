@@ -310,6 +310,10 @@ func (g *FakeGraveler) CreatePullRequest(context.Context, *graveler.RepositoryRe
 	panic("implement me")
 }
 
+func (g *FakeGraveler) ListPullRequests(context.Context, *graveler.RepositoryRecord) (graveler.PullsIterator, error) {
+	panic("implement me")
+}
+
 type FakeValueIterator struct {
 	Data  []*graveler.ValueRecord
 	Index int

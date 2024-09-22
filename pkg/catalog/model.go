@@ -67,9 +67,11 @@ type PullRequest struct {
 	Author            string
 	SourceBranch      string
 	DestinationBranch string
+	Status            string
+	CreationDate      time.Time
 }
 
-// AddressType is the type of an entry address
+// AddressType is the type of entry address
 type AddressType int32
 
 const (

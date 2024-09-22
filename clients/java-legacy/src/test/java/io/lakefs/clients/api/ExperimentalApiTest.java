@@ -246,8 +246,8 @@ public class ExperimentalApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
-        String state = null;
-                PullRequestsList response = api.listPullRequests(repository, prefix, after, amount, state);
+        String status = null;
+                PullRequestsList response = api.listPullRequests(repository, prefix, after, amount, status);
         // TODO: test validations
     }
     
