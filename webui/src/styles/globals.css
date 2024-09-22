@@ -919,3 +919,7 @@ td.entry-type-indicator {
 .upload-item-done {
   color: var(--bs-success);
 }
+
+.pull-details .description {
+  min-height: 160px;
+}

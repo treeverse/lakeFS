@@ -568,6 +568,29 @@ class Tags {
 }
 
 class Pulls {
+    async get(repoId, pullId) {
+        // const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls/${encodeURIComponent(pullId)}`);
+        // if (response.status === 404) {
+        //     throw new NotFoundError(`could not find pull ${pullId}`);
+        // } else if (response.status !== 200) {
+        //     throw new Error(`could not get pullId: ${await extractError(response)}`);
+        // }
+        // return response.json();
+
+        // TODO: this is for development purposes only
+        console.log("get pull", {repoId, pullId});
+        return {
+            "id": pullId,
+            "title": "Test PR 1",
+            "status": "open",
+            "creation_date": 1726575741,
+            "author": "test-user-1",
+            "description": "This is a test PR",
+            "source_branch": "test-1",
+            "destination_branch": "main"
+        }
+    }
+
     async list(repoId, state = "open", prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
         // const query = qs({prefix, after, amount});
         // const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls?` + query);
@@ -577,13 +600,13 @@ class Pulls {
         // return response.json();
 
         // TODO: this is for development purposes only
-        console.log("list pulls", {repoId, state, prefix, after, amount})
+        console.log("list pulls", {repoId, state, prefix, after, amount});
         let results = [
             {
                 "id": "test-pull-1",
                 "title": "Test PR 1",
                 "status": "open",
-                "created_at": 1726575741,
+                "creation_date": 1726575741,
                 "author": "test-user-1",
                 "description": "This is a test PR",
                 "source_branch": "feature-branch-1",
@@ -593,7 +616,7 @@ class Pulls {
                 "id": "test-pull-2",
                 "title": "Next Test PR 2",
                 "status": "closed",
-                "created_at": 1726402941,
+                "creation_date": 1726402941,
                 "author": "test-user-2",
                 "description": "This is a another test PR",
                 "source_branch": "feature-branch-2",
@@ -603,7 +626,7 @@ class Pulls {
                 "id": "test-pull-3",
                 "title": "Another Test PR 3",
                 "status": "open",
-                "created_at": 1718454141,
+                "creation_date": 1718454141,
                 "author": "test-user-1",
                 "description": "This is also a test PR",
                 "source_branch": "feature-branch-3",
@@ -634,13 +657,13 @@ export const uploadWithProgress = (url, file, method = 'POST', onProgress = null
             }
         });
         xhr.addEventListener('load', () => {
-          resolve({
-              status: xhr.status,
-              body: xhr.responseText,
-              contentType: xhr.getResponseHeader('Content-Type'),
-              etag: xhr.getResponseHeader('ETag'),
-              contentMD5: xhr.getResponseHeader('Content-MD5'),
-          })
+            resolve({
+                status: xhr.status,
+                body: xhr.responseText,
+                contentType: xhr.getResponseHeader('Content-Type'),
+                etag: xhr.getResponseHeader('ETag'),
+                contentMD5: xhr.getResponseHeader('Content-MD5'),
+            })
         });
         xhr.addEventListener('error', () => reject(new Error('Upload Failed')));
         xhr.addEventListener('abort', () => reject(new Error('Upload Aborted')));
@@ -683,7 +706,7 @@ class Objects {
             next: async () => {
                 const query = qs({prefix, presign, after, amount: MAX_LISTING_AMOUNT});
                 const response = await apiRequest(
-                  `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
+                    `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
                 if (response.status === 404) {
                     throw new NotFoundError(response.message ?? "ref not found");
                 }
@@ -693,7 +716,7 @@ class Objects {
                 const responseBody = await response.json();
                 const done = !responseBody.pagination.has_more;
                 if (!done) after = responseBody.pagination.next_offset;
-                return {page:responseBody.results, done}
+                return {page: responseBody.results, done}
             },
         }
     }
@@ -1031,7 +1054,7 @@ class Config {
         let cfg;
         switch (response.status) {
             case 200:
-                cfg =  await response.json();
+                cfg = await response.json();
                 return cfg.version_config
             default:
                 throw new Error('Unknown');
@@ -1106,7 +1129,12 @@ class Staging {
         const query = qs({path});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
             method: 'PUT',
-            body: JSON.stringify({staging: staging, checksum: checksum, size_bytes: sizeBytes, content_type: contentType})
+            body: JSON.stringify({
+                staging: staging,
+                checksum: checksum,
+                size_bytes: sizeBytes,
+                content_type: contentType
+            })
         });
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -1135,7 +1163,7 @@ class Import {
                     "path": source,
                     "destination": prepend,
                     "type": "common_prefix",
-            }],
+                }],
             "commit": {
                 "message": commitMessage
             },
