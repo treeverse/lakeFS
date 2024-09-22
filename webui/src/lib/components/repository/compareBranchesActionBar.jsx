@@ -20,7 +20,8 @@ const CompareBranchesActionsBar = (
     const handleSwitchRefs = useCallback((e) => {
         e.preventDefault();
         router.push({
-            pathname: `/repositories/:repoId/compare`, params: {repoId: repo.id},
+            pathname: `/repositories/:repoId/compare`,
+            params: {repoId: repo.id},
             query: {ref: compareReference.id, compare: reference.id}
         });
     }, []);

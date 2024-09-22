@@ -569,26 +569,13 @@ class Tags {
 
 class Pulls {
     async get(repoId, pullId) {
-        // const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls/${encodeURIComponent(pullId)}`);
-        // if (response.status === 404) {
-        //     throw new NotFoundError(`could not find pull ${pullId}`);
-        // } else if (response.status !== 200) {
-        //     throw new Error(`could not get pullId: ${await extractError(response)}`);
-        // }
-        // return response.json();
-
-        // TODO: this is for development purposes only
-        console.log("get pull", {repoId, pullId});
-        return {
-            "id": pullId,
-            "title": "Test PR 1",
-            "status": "open",
-            "creation_date": 1726575741,
-            "author": "test-user-1",
-            "description": "This is a test PR",
-            "source_branch": "test-1",
-            "destination_branch": "main"
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls/${encodeURIComponent(pullId)}`);
+        if (response.status === 404) {
+            throw new NotFoundError(`could not find pull ${pullId}`);
+        } else if (response.status !== 200) {
+            throw new Error(`could not get pullId: ${await extractError(response)}`);
         }
+        return response.json();
     }
 
     async list(repoId, state = "open", prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
@@ -643,6 +630,17 @@ class Pulls {
             },
             "results": results
         }
+    }
+
+    async create(repoId, pullDetails) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls`, {
+            method: 'POST',
+            body: JSON.stringify(pullDetails),
+        });
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+        return await response.text();
     }
 }
 
