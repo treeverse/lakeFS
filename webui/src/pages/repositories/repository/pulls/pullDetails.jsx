@@ -40,7 +40,7 @@ const StatusBadge = ({status}) => {
 };
 
 const PullDetailsContent = ({repo, pull}) => {
-    const createdAt = dayjs.unix(pull.creation_date);
+    const createdAt = dayjs(pull.creation_date);
 
     return (
         <div className="pull-details mb-5">
