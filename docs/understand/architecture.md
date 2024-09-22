@@ -93,7 +93,7 @@ Some data applications benefit from deeper integrations with lakeFS to support d
 ### OpenAPI Generated SDKs
 
 OpenAPI specification can be used to generate lakeFS clients for many programming languages.
-For example, the [Python lakefs-client](https://pypi.org/project/lakefs-client/) or the [Java client](https://search.maven.org/artifact/io.lakefs/api-client) are published with every new lakeFS release.
+For example, the [Python lakefs-client](https://pypi.org/project/lakefs-client/) or the [Java client](https://central.sonatype.com/artifact/io.lakefs/api-client) are published with every new lakeFS release.
 
 ### lakectl
 
