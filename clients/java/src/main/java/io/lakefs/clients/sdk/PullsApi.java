@@ -273,188 +273,6 @@ public class PullsApi {
     public APIcreatePullRequestRequest createPullRequest(String repository, PullRequestCreation pullRequestCreation) {
         return new APIcreatePullRequestRequest(repository, pullRequestCreation);
     }
-    private okhttp3.Call deletePullRequestCall(String repository, String pullRequest, final ApiCallback _callback) throws ApiException {
-        String basePath = null;
-        // Operation Servers
-        String[] localBasePaths = new String[] {  };
-
-        // Determine Base Path to Use
-        if (localCustomBaseUrl != null){
-            basePath = localCustomBaseUrl;
-        } else if ( localBasePaths.length > 0 ) {
-            basePath = localBasePaths[localHostIndex];
-        } else {
-            basePath = null;
-        }
-
-        Object localVarPostBody = null;
-
-        // create path and map variables
-        String localVarPath = "/repositories/{repository}/pulls/{pull_request}"
-            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
-            .replace("{" + "pull_request" + "}", localVarApiClient.escapeString(pullRequest.toString()));
-
-        List<Pair> localVarQueryParams = new ArrayList<Pair>();
-        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
-        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
-        Map<String, String> localVarCookieParams = new HashMap<String, String>();
-        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
-
-        final String[] localVarAccepts = {
-            "application/json"
-        };
-        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
-        if (localVarAccept != null) {
-            localVarHeaderParams.put("Accept", localVarAccept);
-        }
-
-        final String[] localVarContentTypes = {
-        };
-        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
-        if (localVarContentType != null) {
-            localVarHeaderParams.put("Content-Type", localVarContentType);
-        }
-
-        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
-        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private okhttp3.Call deletePullRequestValidateBeforeCall(String repository, String pullRequest, final ApiCallback _callback) throws ApiException {
-        // verify the required parameter 'repository' is set
-        if (repository == null) {
-            throw new ApiException("Missing the required parameter 'repository' when calling deletePullRequest(Async)");
-        }
-
-        // verify the required parameter 'pullRequest' is set
-        if (pullRequest == null) {
-            throw new ApiException("Missing the required parameter 'pullRequest' when calling deletePullRequest(Async)");
-        }
-
-        return deletePullRequestCall(repository, pullRequest, _callback);
-
-    }
-
-
-    private ApiResponse<Void> deletePullRequestWithHttpInfo(String repository, String pullRequest) throws ApiException {
-        okhttp3.Call localVarCall = deletePullRequestValidateBeforeCall(repository, pullRequest, null);
-        return localVarApiClient.execute(localVarCall);
-    }
-
-    private okhttp3.Call deletePullRequestAsync(String repository, String pullRequest, final ApiCallback<Void> _callback) throws ApiException {
-
-        okhttp3.Call localVarCall = deletePullRequestValidateBeforeCall(repository, pullRequest, _callback);
-        localVarApiClient.executeAsync(localVarCall, _callback);
-        return localVarCall;
-    }
-
-    public class APIdeletePullRequestRequest {
-        private final String repository;
-        private final String pullRequest;
-
-        private APIdeletePullRequestRequest(String repository, String pullRequest) {
-            this.repository = repository;
-            this.pullRequest = pullRequest;
-        }
-
-        /**
-         * Build call for deletePullRequest
-         * @param _callback ApiCallback API callback
-         * @return Call to execute
-         * @throws ApiException If fail to serialize the request body object
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> pull request deleted successfully </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return deletePullRequestCall(repository, pullRequest, _callback);
-        }
-
-        /**
-         * Execute deletePullRequest request
-         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> pull request deleted successfully </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public void execute() throws ApiException {
-            deletePullRequestWithHttpInfo(repository, pullRequest);
-        }
-
-        /**
-         * Execute deletePullRequest request with HTTP info returned
-         * @return ApiResponse&lt;Void&gt;
-         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> pull request deleted successfully </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
-            return deletePullRequestWithHttpInfo(repository, pullRequest);
-        }
-
-        /**
-         * Execute deletePullRequest request (asynchronously)
-         * @param _callback The callback to be executed when the API call finishes
-         * @return The request call
-         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
-         * @http.response.details
-         <table summary="Response Details" border="1">
-            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> pull request deleted successfully </td><td>  -  </td></tr>
-            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-         </table>
-         */
-        public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
-            return deletePullRequestAsync(repository, pullRequest, _callback);
-        }
-    }
-
-    /**
-     * delete pull request
-     * 
-     * @param repository  (required)
-     * @param pullRequest pull request id (required)
-     * @return APIdeletePullRequestRequest
-     * @http.response.details
-     <table summary="Response Details" border="1">
-        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> pull request deleted successfully </td><td>  -  </td></tr>
-        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
-        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
-     </table>
-     */
-    public APIdeletePullRequestRequest deletePullRequest(String repository, String pullRequest) {
-        return new APIdeletePullRequestRequest(repository, pullRequest);
-    }
     private okhttp3.Call getPullRequestCall(String repository, String pullRequest, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
@@ -550,6 +368,7 @@ public class PullsApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> pull request </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -568,6 +387,7 @@ public class PullsApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> pull request </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -587,6 +407,7 @@ public class PullsApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> pull request </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -606,6 +427,7 @@ public class PullsApi {
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> pull request </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -627,6 +449,7 @@ public class PullsApi {
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> pull request </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -968,7 +791,8 @@ public class PullsApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> pull request deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> pull request updated successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -986,7 +810,8 @@ public class PullsApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> pull request deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> pull request updated successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -1005,7 +830,8 @@ public class PullsApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> pull request deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> pull request updated successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -1025,7 +851,8 @@ public class PullsApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 204 </td><td> pull request deleted successfully </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> pull request updated successfully </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
@@ -1048,7 +875,8 @@ public class PullsApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 204 </td><td> pull request deleted successfully </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> pull request updated successfully </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>

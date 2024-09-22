@@ -50,20 +50,6 @@ public class PullsApiTest {
     }
 
     /**
-     * delete pull request
-     *
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void deletePullRequestTest() throws ApiException {
-        String repository = null;
-        String pullRequest = null;
-        api.deletePullRequest(repository, pullRequest)
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
      * get pull request
      *
      * @throws ApiException if the Api call fails

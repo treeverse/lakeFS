@@ -64,13 +64,6 @@ class TestExperimentalApi(unittest.TestCase):
         """
         pass
 
-    def test_delete_pull_request(self):
-        """Test case for delete_pull_request
-
-        delete pull request  # noqa: E501
-        """
-        pass
-
     def test_delete_user_external_principal(self):
         """Test case for delete_user_external_principal
 

@@ -63,6 +63,8 @@ var (
 	ErrReadOnlyRepository           = wrapError(ErrUserVisible, "read-only repository")
 	ErrPullRequestNotFound          = fmt.Errorf("pull request %w", ErrNotFound)
 	ErrPullRequestExists            = fmt.Errorf("pull request already exists: %w", ErrNotUnique)
+	ErrInvalidPullRequestStatus     = fmt.Errorf("invalid pull request status: %w", ErrInvalid)
+	ErrInvalidPullRequestID         = fmt.Errorf("pull request id: %w", ErrInvalidValue)
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.
