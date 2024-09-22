@@ -756,7 +756,7 @@ type Collaborator interface {
 	// ListPullRequests lists pull requests on repository
 	ListPullRequests(ctx context.Context, repository *RepositoryRecord) (PullsIterator, error)
 
-	// UpdatePullRequest delete pull request from the given repository
+	// UpdatePullRequest update pull request in the given repository
 	UpdatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, update *UpdatePullRequest) error
 }
 
@@ -946,8 +946,6 @@ type RefManager interface {
 	ListPullRequests(ctx context.Context, repository *RepositoryRecord) (PullsIterator, error)
 
 	CreatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, pullRequest *PullRequest) error
-
-	DeletePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID) error
 
 	UpdatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, f PullUpdateFunc) error
 }
