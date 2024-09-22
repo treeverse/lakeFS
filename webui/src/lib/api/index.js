@@ -578,58 +578,13 @@ class Pulls {
         return response.json();
     }
 
-    async list(repoId, state = "open", prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        // const query = qs({prefix, after, amount});
-        // const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls?` + query);
-        // if (response.status !== 200) {
-        //     throw new Error(`could not list pulls: ${await extractError(response)}`);
-        // }
-        // return response.json();
-
-        // TODO: this is for development purposes only
-        console.log("list pulls", {repoId, state, prefix, after, amount});
-        let results = [
-            {
-                "id": "test-pull-1",
-                "title": "Test PR 1",
-                "status": "open",
-                "creation_date": 1726575741,
-                "author": "test-user-1",
-                "description": "This is a test PR",
-                "source_branch": "feature-branch-1",
-                "destination_branch": "main"
-            },
-            {
-                "id": "test-pull-2",
-                "title": "Next Test PR 2",
-                "status": "closed",
-                "creation_date": 1726402941,
-                "author": "test-user-2",
-                "description": "This is a another test PR",
-                "source_branch": "feature-branch-2",
-                "destination_branch": "main"
-            },
-            {
-                "id": "test-pull-3",
-                "title": "Another Test PR 3",
-                "status": "open",
-                "creation_date": 1718454141,
-                "author": "test-user-1",
-                "description": "This is also a test PR",
-                "source_branch": "feature-branch-3",
-                "destination_branch": "feature-branch-1"
-            }
-        ];
-        results = results.filter(pull => pull.status === state);
-        return {
-            "pagination": {
-                "has_more": false,
-                "max_per_page": 1000,
-                "next_offset": "",
-                "results": results.length
-            },
-            "results": results
+    async list(repoId, status = "open", prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({status, prefix, after, amount});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls?` + query);
+        if (response.status !== 200) {
+            throw new Error(`could not list pulls: ${await extractError(response)}`);
         }
+        return response.json();
     }
 
     async create(repoId, pullDetails) {
