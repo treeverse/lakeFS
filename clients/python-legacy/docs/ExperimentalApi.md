@@ -9,7 +9,6 @@ Method | HTTP request | Description
 [**create_presign_multipart_upload**](ExperimentalApi.md#create_presign_multipart_upload) | **POST** /repositories/{repository}/branches/{branch}/staging/pmpu | Initiate a multipart upload
 [**create_pull_request**](ExperimentalApi.md#create_pull_request) | **POST** /repositories/{repository}/pulls | create pull request
 [**create_user_external_principal**](ExperimentalApi.md#create_user_external_principal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
-[**delete_pull_request**](ExperimentalApi.md#delete_pull_request) | **DELETE** /repositories/{repository}/pulls/{pull_request} | delete pull request
 [**delete_user_external_principal**](ExperimentalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 [**external_principal_login**](ExperimentalApi.md#external_principal_login) | **POST** /auth/external/principal/login | perform a login using an external authenticator
 [**get_external_principal**](ExperimentalApi.md#get_external_principal) | **GET** /auth/external/principals | describe external principal by id
@@ -662,115 +661,6 @@ void (empty response body)
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **delete_pull_request**
-> delete_pull_request(repository, pull_request)
-
-delete pull request
-
-### Example
-
-* Basic Authentication (basic_auth):
-* Api Key Authentication (cookie_auth):
-* Bearer (JWT) Authentication (jwt_token):
-* Api Key Authentication (oidc_auth):
-* Api Key Authentication (saml_auth):
-
-```python
-import time
-import lakefs_client
-from lakefs_client.api import experimental_api
-from lakefs_client.model.error import Error
-from pprint import pprint
-# Defining the host is optional and defaults to http://localhost/api/v1
-# See configuration.py for a list of all supported configuration parameters.
-configuration = lakefs_client.Configuration(
-    host = "http://localhost/api/v1"
-)
-
-# The client must configure the authentication and authorization parameters
-# in accordance with the API server security policy.
-# Examples for each auth method are provided below, use the example that
-# satisfies your auth use case.
-
-# Configure HTTP basic authorization: basic_auth
-configuration = lakefs_client.Configuration(
-    username = 'YOUR_USERNAME',
-    password = 'YOUR_PASSWORD'
-)
-
-# Configure API key authorization: cookie_auth
-configuration.api_key['cookie_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
-
-# Configure Bearer authorization (JWT): jwt_token
-configuration = lakefs_client.Configuration(
-    access_token = 'YOUR_BEARER_TOKEN'
-)
-
-# Configure API key authorization: oidc_auth
-configuration.api_key['oidc_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
-
-# Configure API key authorization: saml_auth
-configuration.api_key['saml_auth'] = 'YOUR_API_KEY'
-
-# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-# configuration.api_key_prefix['saml_auth'] = 'Bearer'
-
-# Enter a context with an instance of the API client
-with lakefs_client.ApiClient(configuration) as api_client:
-    # Create an instance of the API class
-    api_instance = experimental_api.ExperimentalApi(api_client)
-    repository = "repository_example" # str | 
-    pull_request = "pull_request_example" # str | pull request id
-
-    # example passing only required values which don't have defaults set
-    try:
-        # delete pull request
-        api_instance.delete_pull_request(repository, pull_request)
-    except lakefs_client.ApiException as e:
-        print("Exception when calling ExperimentalApi->delete_pull_request: %s\n" % e)
-```
-
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **repository** | **str**|  |
- **pull_request** | **str**| pull request id |
-
-### Return type
-
-void (empty response body)
-
-### Authorization
-
-[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [jwt_token](../README.md#jwt_token), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-
-### HTTP response details
-
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**204** | pull request deleted successfully |  -  |
-**401** | Unauthorized |  -  |
-**403** | Forbidden |  -  |
-**404** | Resource Not Found |  -  |
-**420** | too many requests |  -  |
-**0** | Internal Server Error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
 # **delete_user_external_principal**
 > delete_user_external_principal(user_id, principal_id)
 
@@ -1167,6 +1057,7 @@ Name | Type | Description  | Notes
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | pull request |  -  |
+**400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |
@@ -1728,7 +1619,8 @@ void (empty response body)
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**204** | pull request deleted successfully |  -  |
+**200** | pull request updated successfully |  -  |
+**400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |

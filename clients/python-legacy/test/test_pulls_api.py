@@ -31,13 +31,6 @@ class TestPullsApi(unittest.TestCase):
         """
         pass
 
-    def test_delete_pull_request(self):
-        """Test case for delete_pull_request
-
-        delete pull request  # noqa: E501
-        """
-        pass
-
     def test_get_pull_request(self):
         """Test case for get_pull_request
 

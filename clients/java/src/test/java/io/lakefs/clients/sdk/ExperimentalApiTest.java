@@ -136,20 +136,6 @@ public class ExperimentalApiTest {
     }
 
     /**
-     * delete pull request
-     *
-     * @throws ApiException if the Api call fails
-     */
-    @Test
-    public void deletePullRequestTest() throws ApiException {
-        String repository = null;
-        String pullRequest = null;
-        api.deletePullRequest(repository, pullRequest)
-                .execute();
-        // TODO: test validations
-    }
-
-    /**
      * delete external principal from user
      *
      * @throws ApiException if the Api call fails

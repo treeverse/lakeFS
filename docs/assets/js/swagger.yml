@@ -5754,27 +5754,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PullRequest"
+        400:
+          $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        420:
-          description: too many requests
-        default:
-          $ref: "#/components/responses/ServerError"
-    delete:
-      tags:
-        - pulls
-        - experimental
-      operationId: deletePullRequest
-      summary: delete pull request
-      responses:
-        204:
-          description: pull request deleted successfully
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        403:
-          $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
         420:
@@ -5794,8 +5777,10 @@ paths:
             schema:
               $ref: "#/components/schemas/PullRequestBasic"
       responses:
-        204:
-          description: pull request deleted successfully
+        200:
+          description: pull request updated successfully
+        400:
+          $ref: "#/components/responses/ValidationError"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
