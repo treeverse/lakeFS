@@ -1,19 +1,16 @@
-import React, {useCallback, useEffect, useState} from "react";
+import React, {useEffect, useState} from "react";
 import {useOutletContext} from "react-router-dom";
 
 import {ActionGroup, ActionsBar, AlertError, Loading} from "../../../../lib/components/controls";
 import {useRefs} from "../../../../lib/hooks/repo";
 import {RepoError} from "../error";
 import {useRouter} from "../../../../lib/hooks/router";
-import RefDropdown from "../../../../lib/components/repository/refDropdown";
-import {ArrowLeftIcon, ArrowSwitchIcon} from "@primer/octicons-react";
-import OverlayTrigger from "react-bootstrap/OverlayTrigger";
-import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
 import CompareBranches from "../../../../lib/components/repository/compareBranches";
 import {RefTypeBranch} from "../../../../constants";
 import Form from "react-bootstrap/Form";
 import {pulls as pullsAPI} from "../../../../lib/api";
+import CompareBranchesSelection from "../../../../lib/components/repository/compareBranchesSelection";
 
 const CreatePullForm = ({repo, reference, compare}) => {
     const router = useRouter();
@@ -83,36 +80,23 @@ const CreatePullForm = ({repo, reference, compare}) => {
 };
 
 const CreatePull = () => {
-    const router = useRouter()
     const {repo, loading, error, reference, compare} = useRefs();
 
     if (loading) return <Loading/>;
     if (error) return <RepoError error={error}/>;
 
-    const route = query => router.push({
-        pathname: `/repositories/:repoId/pulls/create`,
-        params: {repoId: repo.id},
-        query
-    });
-
-    const onSelectRef = reference => route(compare ?
-        {ref: reference.id, compare: compare.id} :
-        {ref: reference.id}
-    );
-    const onSelectCompare = compare => route(reference ?
-        {ref: reference.id, compare: compare.id} :
-        {compare: compare.id}
-    );
-
     return (
         <div>
-            <CompareBranchesSelection
-                repo={repo}
-                reference={reference}
-                onSelectRef={onSelectRef}
-                compare={compare}
-                onSelectCompare={onSelectCompare}
-            />
+            <ActionsBar>
+                <ActionGroup orientation="left">
+                    <CompareBranchesSelection
+                        repo={repo}
+                        reference={reference}
+                        compareReference={compare}
+                        baseSelectURL={"/repositories/:repoId/pulls/create"}
+                    />
+                </ActionGroup>
+            </ActionsBar>
             <h1 className="mt-3">Create Pull Request</h1>
             <div className="mt-4">
                 <CreatePullForm repo={repo} reference={reference} compare={compare}/>
@@ -127,56 +111,6 @@ const CreatePull = () => {
             </div>
         </div>
     );
-};
-
-const CompareBranchesSelection = (
-    {repo, reference, onSelectRef, compare, onSelectCompare}
-) => {
-    const router = useRouter();
-    const handleSwitchRefs = useCallback((e) => {
-        e.preventDefault();
-        router.push({
-            pathname: `/repositories/:repoId/pulls/create`,
-            params: {repoId: repo.id},
-            query: {reference: compare.id, compare: reference.id}
-        });
-    }, []);
-
-    return <ActionsBar>
-        <ActionGroup orientation="left">
-            <RefDropdown
-                prefix={'Base '}
-                repo={repo}
-                selected={(reference) ? reference : null}
-                withCommits={false}
-                withWorkspace={false}
-                withTags={false}
-                selectRef={onSelectRef}/>
-
-            <ArrowLeftIcon className="me-2 mt-2" size="small" verticalAlign="middle"/>
-
-            <RefDropdown
-                prefix={'Compared to '}
-                emptyText={'Compare with...'}
-                repo={repo}
-                selected={(compare) ? compare : null}
-                withCommits={false}
-                withWorkspace={false}
-                withTags={false}
-                selectRef={onSelectCompare}/>
-
-            <OverlayTrigger placement="bottom" overlay={
-                <Tooltip>Switch directions</Tooltip>
-            }>
-                    <span>
-                        <Button variant={"link"}
-                                onClick={handleSwitchRefs}>
-                            <ArrowSwitchIcon className="me-2 mt-2" size="small" verticalAlign="middle"/>
-                        </Button>
-                    </span>
-            </OverlayTrigger>
-        </ActionGroup>
-    </ActionsBar>;
 };
 
 const RepositoryCreatePullPage = () => {
