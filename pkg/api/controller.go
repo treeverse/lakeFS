@@ -71,6 +71,9 @@ const (
 	httpStatusClientClosedRequest = 499
 	// httpStatusClientClosedRequestText text used for client closed request status code
 	httpStatusClientClosedRequestText = "Client closed request"
+
+	pullRequestClosed = "CLOSED"
+	pullRequestOpen   = "OPEN"
 )
 
 type actionsHandler interface {
@@ -5178,13 +5181,50 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 }
 
 func (c *Controller) ListPullRequests(w http.ResponseWriter, r *http.Request, repository string, params apigen.ListPullRequestsParams) {
-	writeResponse(w, r, http.StatusNotImplemented, nil)
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ListPullRequestsAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "list_pull_requests", r, repository, "", "")
+
+	res, hasMore, err := c.Catalog.ListPullRequest(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After), pullRequestStatus(params.Status))
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	pulls := make([]apigen.PullRequest, 0, len(res))
+	for _, p := range res {
+		pulls = append(pulls, apigen.PullRequest{
+			PullRequestBasic: apigen.PullRequestBasic{
+				// Explicitly not passing description so to maintain permissions requirements
+				Description: nil,
+				Status:      swag.String(p.Status),
+				Title:       swag.String(p.Title),
+			},
+			Id:                p.ID,
+			Author:            p.Author,
+			CreationDate:      p.CreationDate,
+			DestinationBranch: p.DestinationBranch,
+			SourceBranch:      p.SourceBranch,
+			MergedCommitId:    nil,
+		})
+	}
+	response := apigen.PullRequestsList{
+		Results:    pulls,
+		Pagination: paginationFor(hasMore, pulls, "Id"),
+	}
+	writeResponse(w, r, http.StatusOK, response)
 }
 
 func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.CreatePullRequestJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.CreatePullReqeustAction,
+			Action:   permissions.WritePullReqeustAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
@@ -5222,7 +5262,7 @@ func (c *Controller) DeletePullRequest(w http.ResponseWriter, r *http.Request, r
 func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.GetPullReqeustAction,
+			Action:   permissions.ReadPullReqeustAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
@@ -5315,6 +5355,20 @@ func paginationAmount(v *apigen.PaginationAmount) int {
 		return DefaultPerPage
 	}
 	return i
+}
+
+func pullRequestStatus(v *string) string {
+	if v == nil {
+		return ""
+	}
+	switch *v {
+	case "open":
+		return pullRequestOpen
+	case "closed":
+		return pullRequestClosed
+	default:
+		return ""
+	}
 }
 
 func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {

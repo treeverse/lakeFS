@@ -6787,11 +6787,11 @@ paths:
         style: form
       - explode: true
         in: query
-        name: state
+        name: status
         required: false
         schema:
           default: all
-          description: filter pull requests by state
+          description: filter pull requests by status
           enum:
           - open
           - closed

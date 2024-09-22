@@ -176,7 +176,7 @@ pub async fn get_pull_request(configuration: &configuration::Configuration, repo
     }
 }
 
-pub async fn list_pull_requests(configuration: &configuration::Configuration, repository: &str, prefix: Option<&str>, after: Option<&str>, amount: Option<i32>, state: Option<&str>) -> Result<models::PullRequestsList, Error<ListPullRequestsError>> {
+pub async fn list_pull_requests(configuration: &configuration::Configuration, repository: &str, prefix: Option<&str>, after: Option<&str>, amount: Option<i32>, status: Option<&str>) -> Result<models::PullRequestsList, Error<ListPullRequestsError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -193,8 +193,8 @@ pub async fn list_pull_requests(configuration: &configuration::Configuration, re
     if let Some(ref local_var_str) = amount {
         local_var_req_builder = local_var_req_builder.query(&[("amount", &local_var_str.to_string())]);
     }
-    if let Some(ref local_var_str) = state {
-        local_var_req_builder = local_var_req_builder.query(&[("state", &local_var_str.to_string())]);
+    if let Some(ref local_var_str) = status {
+        local_var_req_builder = local_var_req_builder.query(&[("status", &local_var_str.to_string())]);
     }
     if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
         local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());

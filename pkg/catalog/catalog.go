@@ -243,6 +243,7 @@ const (
 	ListBranchesLimitMax     = 1000
 	ListTagsLimitMax         = 1000
 	DiffLimitMax             = 1000
+	ListPullsLimitMax        = 1000
 	ListEntriesLimitMax      = 10000
 	sharedWorkers            = 30
 	pendingTasksPerWorker    = 3
@@ -2939,6 +2940,87 @@ func (c *Catalog) CreatePullRequest(ctx context.Context, repositoryID string, re
 	}
 
 	return pullID, nil
+}
+
+func shouldSkipByStatus(requested string, status graveler.PullRequestStatus) bool {
+	if status.String() == requested {
+		return false
+	}
+
+	switch requested {
+	case graveler.PullRequestStatus_CLOSED.String(): // CLOSED can be either CLOSED OR MERGED
+		return status != graveler.PullRequestStatus_CLOSED && status != graveler.PullRequestStatus_MERGED
+	case graveler.PullRequestStatus_OPEN.String(): // OPEN must be equal to OPEN
+		return status != graveler.PullRequestStatus_OPEN
+	default: // Anything else should return all
+		return false
+	}
+}
+
+func (c *Catalog) ListPullRequest(ctx context.Context, repositoryID, prefix string, limit int, after, status string) ([]*PullRequest, bool, error) {
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+	}); err != nil {
+		return nil, false, err
+	}
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil, false, err
+	}
+
+	// normalize limit
+	if limit < 0 || limit > ListPullsLimitMax {
+		limit = ListPullsLimitMax
+	}
+	it, err := c.Store.ListPullRequests(ctx, repository)
+	if err != nil {
+		return nil, false, err
+	}
+	defer it.Close()
+
+	afterPR := graveler.PullRequestID(after)
+	prefixPR := graveler.PullRequestID(prefix)
+	if afterPR < prefixPR {
+		it.SeekGE(prefixPR)
+	} else {
+		it.SeekGE(afterPR)
+	}
+	var pulls []*PullRequest
+	for it.Next() {
+		v := it.Value()
+		if v.ID == afterPR || shouldSkipByStatus(status, v.Status) {
+			continue
+		}
+		pullID := v.ID.String()
+		// break in case we got to a pull outside our prefix
+		if !strings.HasPrefix(pullID, prefix) {
+			break
+		}
+		p := &PullRequest{
+			ID:                pullID,
+			Title:             v.Title,
+			Status:            v.Status.String(),
+			Description:       v.Description,
+			Author:            v.Author,
+			SourceBranch:      v.Source,
+			DestinationBranch: v.Destination,
+			CreationDate:      v.CreationDate,
+		}
+		pulls = append(pulls, p)
+		if len(pulls) >= limit+1 {
+			break
+		}
+	}
+	if err := it.Err(); err != nil {
+		return nil, false, err
+	}
+	// return results (optionally trimmed) and hasMore
+	hasMore := false
+	if len(pulls) > limit {
+		hasMore = true
+		pulls = pulls[:limit]
+	}
+	return pulls, hasMore, nil
 }
 
 func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntry {
