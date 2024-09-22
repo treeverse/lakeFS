@@ -143,14 +143,14 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
 export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert,
-                                         changesTreeMessage= ""}) => {
+                                         changesTreeMessage}) => {
     if (results.length === 0) {
         return <div className="tree-container">
             <Alert variant="info">No changes</Alert>
         </div>
     } else {
         return <div className="tree-container">
-                    <div>{changesTreeMessage}</div>
+            {changesTreeMessage && <div>{changesTreeMessage}</div>}
                     <Card>
                         <Card.Header>
                             <span className="float-start w-100">
