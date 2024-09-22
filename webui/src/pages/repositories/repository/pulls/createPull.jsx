@@ -32,8 +32,8 @@ const CreatePullForm = ({repo, reference, compare}) => {
             const createdPullId = await pullsAPI.create(repo.id, {
                 title,
                 description,
-                source_branch: reference.id,
-                destination_branch: compare.id
+                source_branch: compare.id,
+                destination_branch: reference.id
             });
 
             router.push({
