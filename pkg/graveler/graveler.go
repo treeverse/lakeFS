@@ -947,6 +947,8 @@ type RefManager interface {
 
 	CreatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, pullRequest *PullRequest) error
 
+	DeletePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID) error
+
 	UpdatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, f PullUpdateFunc) error
 }
 

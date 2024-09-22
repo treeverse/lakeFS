@@ -2176,6 +2176,20 @@ func (mr *MockRefManagerMockRecorder) DeleteExpiredImports(ctx, repository inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteExpiredImports", reflect.TypeOf((*MockRefManager)(nil).DeleteExpiredImports), ctx, repository)
 }
 
+// DeletePullRequest mocks base method.
+func (m *MockRefManager) DeletePullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullRequestID graveler.PullRequestID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeletePullRequest", ctx, repository, pullRequestID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeletePullRequest indicates an expected call of DeletePullRequest.
+func (mr *MockRefManagerMockRecorder) DeletePullRequest(ctx, repository, pullRequestID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePullRequest", reflect.TypeOf((*MockRefManager)(nil).DeletePullRequest), ctx, repository, pullRequestID)
+}
+
 // DeleteRepository mocks base method.
 func (m *MockRefManager) DeleteRepository(ctx context.Context, repositoryID graveler.RepositoryID, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
