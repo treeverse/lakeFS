@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -286,6 +287,12 @@ type PullRequest struct {
 type PullRequestRecord struct {
 	ID PullRequestID
 	PullRequest
+}
+
+type UpdatePullRequest struct {
+	Title       *string
+	Description *string
+	Status      *string
 }
 
 type ImportStatus struct {
@@ -748,6 +755,9 @@ type Collaborator interface {
 
 	// ListPullRequests lists pull requests on repository
 	ListPullRequests(ctx context.Context, repository *RepositoryRecord) (PullsIterator, error)
+
+	// UpdatePullRequest update pull request in the given repository
+	UpdatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, update *UpdatePullRequest) error
 }
 
 // Internal structures used by Graveler
@@ -3388,6 +3398,39 @@ func (g *Graveler) CreatePullRequest(ctx context.Context, repository *Repository
 
 func (g *Graveler) ListPullRequests(ctx context.Context, repository *RepositoryRecord) (PullsIterator, error) {
 	return g.RefManager.ListPullRequests(ctx, repository)
+}
+
+func PullRequestStatusFromString(s string) (PullRequestStatus, error) {
+	status, ok := PullRequestStatus_value[strings.ToUpper(s)]
+	if !ok {
+		return -1, ErrInvalidPullRequestStatus
+	}
+	return PullRequestStatus(status), nil
+}
+
+func (g *Graveler) UpdatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, update *UpdatePullRequest) error {
+	pr, err := g.GetPullRequest(ctx, repository, pullRequestID)
+	if err != nil {
+		return err
+	}
+
+	err = g.RefManager.UpdatePullRequest(ctx, repository, pullRequestID, func(request *PullRequest) (*PullRequest, error) {
+		if update.Title != nil {
+			pr.Title = *update.Title
+		}
+		if update.Description != nil {
+			pr.Description = *update.Description
+		}
+		if update.Status != nil {
+			status, err := PullRequestStatusFromString(*update.Status)
+			if err != nil {
+				return nil, err
+			}
+			pr.Status = status
+		}
+		return pr, nil
+	})
+	return err
 }
 
 func tagsToValueIterator(src TagIterator) ValueIterator {

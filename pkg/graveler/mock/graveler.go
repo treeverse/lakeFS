@@ -1284,6 +1284,20 @@ func (mr *MockCollaboratorMockRecorder) ListPullRequests(ctx, repository interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPullRequests", reflect.TypeOf((*MockCollaborator)(nil).ListPullRequests), ctx, repository)
 }
 
+// UpdatePullRequest mocks base method.
+func (m *MockCollaborator) UpdatePullRequest(ctx context.Context, repository *graveler.RepositoryRecord, pullRequestID graveler.PullRequestID, update *graveler.UpdatePullRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePullRequest", ctx, repository, pullRequestID, update)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePullRequest indicates an expected call of UpdatePullRequest.
+func (mr *MockCollaboratorMockRecorder) UpdatePullRequest(ctx, repository, pullRequestID, update interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePullRequest", reflect.TypeOf((*MockCollaborator)(nil).UpdatePullRequest), ctx, repository, pullRequestID, update)
+}
+
 // MockRepositoryIterator is a mock of RepositoryIterator interface.
 type MockRepositoryIterator struct {
 	ctrl     *gomock.Controller

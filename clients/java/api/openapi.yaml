@@ -6898,58 +6898,6 @@ paths:
       x-content-type: application/json
       x-accepts: application/json
   /repositories/{repository}/pulls/{pull_request}:
-    delete:
-      operationId: deletePullRequest
-      parameters:
-      - explode: false
-        in: path
-        name: repository
-        required: true
-        schema:
-          type: string
-        style: simple
-      - description: pull request id
-        explode: false
-        in: path
-        name: pull_request
-        required: true
-        schema:
-          type: string
-        style: simple
-      responses:
-        "204":
-          description: pull request deleted successfully
-        "401":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Unauthorized
-        "403":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Forbidden
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Resource Not Found
-        "420":
-          description: too many requests
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: Internal Server Error
-      summary: delete pull request
-      tags:
-      - pulls
-      - experimental
-      x-accepts: application/json
     get:
       operationId: getPullRequest
       parameters:
@@ -6975,6 +6923,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PullRequest'
           description: pull request
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
         "401":
           content:
             application/json:
@@ -7025,8 +6979,14 @@ paths:
               $ref: '#/components/schemas/PullRequestBasic'
         required: true
       responses:
-        "204":
-          description: pull request deleted successfully
+        "200":
+          description: pull request updated successfully
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
         "401":
           content:
             application/json:
