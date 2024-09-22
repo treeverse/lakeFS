@@ -91,7 +91,8 @@ var cliReferenceHiddenCommandsSeparator = `
 
 **note:** These commands are plumbing commands and for internal use only.
 Avoid using them unless you're _really_ sure you know what you're doing, or
-have been in contact with lakeFS support!{: .note .note-warning }
+have been in contact with lakeFS support!
+{: .note .note-warning }
 
 `
 
