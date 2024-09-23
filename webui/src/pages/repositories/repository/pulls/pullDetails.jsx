@@ -45,7 +45,6 @@ const PullDetailsContent = ({repo, pull}) => {
     let [error, setError] = useState(null);
 
     const mergePullRequest = async () => {
-        // TODO: this is not ideal - this should be handled in an atomic way
         setError(null);
         setLoading(true);
         try {
@@ -57,7 +56,7 @@ const PullDetailsContent = ({repo, pull}) => {
         }
         try {
             await pullsAPI.update(repo.id, pull.id, {status: PullStatus.merged});
-            window.location.reload(); // TODO: replace with a more elegant solution
+            window.location.reload(); // TODO (gilo): replace with a more elegant solution
         } catch (error) {
             setError(`Failed to update pull-request status: ${error.message}`);
             setLoading(false);
@@ -69,7 +68,7 @@ const PullDetailsContent = ({repo, pull}) => {
         setLoading(true);
         try {
             await pullsAPI.update(repo.id, pull.id, {status});
-            window.location.reload(); // TODO: replace with a more elegant solution
+            window.location.reload(); // TODO (gilo): replace with a more elegant solution
         } catch (error) {
             setError(`Failed to change pull-request status to ${status}: ${error.message}`);
             setLoading(false);
@@ -82,7 +81,7 @@ const PullDetailsContent = ({repo, pull}) => {
 
     return (
         <div className="pull-details mb-5">
-            <h1>{pull.title} <span className="fs-5 text-secondary">{pull.id}</span></h1>
+            <h1>{pull.title}</h1>
             <div className="pull-info mt-3">
                 <StatusBadge status={pull.status}/>
                 <span className="ms-2">
