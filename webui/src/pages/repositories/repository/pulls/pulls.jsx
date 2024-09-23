@@ -34,7 +34,7 @@ const PullIcon = ({status}) => {
 
 const PullWidget = ({repo, pull}) => {
     return (
-        <ListGroup.Item className="pull-row pt-3 pb-3 clearfix">
+        <ListGroup.Item className="pull-row pt-3 pb-3 clearfix" id={pull.id}>
             <div className="float-start">
                 <h6>
                     <PullIcon status={pull.status}/>
