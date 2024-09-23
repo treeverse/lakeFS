@@ -1801,6 +1801,15 @@ components:
         destination_branch:
           type: string
 
+    PullRequestCreationResponse:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: ID of the pull request
+
 paths:
   /setup_comm_prefs:
     post:
@@ -5708,11 +5717,11 @@ paths:
               $ref: "#/components/schemas/PullRequestCreation"
       responses:
         201:
-          description: pull request id
+          description: pull request created
           content:
-            text/html:
+            application/json:
               schema:
-                type: string
+                $ref: "#/components/schemas/PullRequestCreationResponse"
         400:
           $ref: "#/components/responses/ValidationError"
         401:

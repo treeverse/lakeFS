@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/go-openapi/swag"
 	"github.com/golang/mock/gomock"
+	"github.com/rs/xid"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -1043,5 +1045,94 @@ func TestGravelerImport(t *testing.T) {
 
 	t.Run("import successful with metadata", func(t *testing.T) {
 		importTest(t, graveler.Metadata{"key": "value"})
+	})
+}
+
+func TestGraveler_UpdatePullRequest(t *testing.T) {
+	ctx := context.Background()
+	pullID := graveler.PullRequestID(xid.New().String())
+	pr := graveler.PullRequest{
+		CreationDate:   time.Now(),
+		Status:         graveler.PullRequestStatus_CLOSED,
+		Title:          "title",
+		Author:         "author",
+		Description:    "description",
+		Source:         "source",
+		Destination:    "destination",
+		MergedCommitID: "ref",
+	}
+
+	testCases := []struct {
+		Name    string
+		request graveler.UpdatePullRequest
+	}{
+		{
+			Name:    "modify title",
+			request: graveler.UpdatePullRequest{Title: swag.String("new title")},
+		},
+		{
+			Name:    "modify Description",
+			request: graveler.UpdatePullRequest{Description: swag.String("new description")},
+		},
+		{
+			Name:    "modify status",
+			request: graveler.UpdatePullRequest{Status: swag.String(graveler.PullRequestStatus_MERGED.String())},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			expectedPr := pr
+			if tt.request.Title != nil {
+				expectedPr.Title = *tt.request.Title
+			}
+			if tt.request.Status != nil {
+				expectedPr.Status = graveler.PullRequestStatus(graveler.PullRequestStatus_value[*tt.request.Status])
+			}
+			if tt.request.Description != nil {
+				expectedPr.Description = *tt.request.Description
+			}
+			updatePullRequest := func(test *testutil.GravelerTest) {
+				test.RefManager.EXPECT().UpdatePullRequest(ctx, repository, pullID, gomock.Any()).
+					Do(func(_ context.Context, _ *graveler.RepositoryRecord, id graveler.PullRequestID, f graveler.PullUpdateFunc) error {
+						require.Equal(t, pullID, id)
+						newPr, err := f(&pr)
+						require.NoError(t, err)
+						require.Equal(t, expectedPr, *newPr)
+						return nil
+					}).Times(1)
+				test.RefManager.EXPECT().GetPullRequest(ctx, repository, pullID).
+					DoAndReturn(func(_ context.Context, _ *graveler.RepositoryRecord, id graveler.PullRequestID) (*graveler.PullRequest, error) {
+						require.Equal(t, pullID, id)
+						return &pr, nil
+					}).Times(1)
+			}
+			test := testutil.InitGravelerTest(t)
+			updatePullRequest(test)
+			err := test.Sut.UpdatePullRequest(ctx, repository, pullID, &tt.request)
+			require.NoError(t, err)
+		})
+	}
+
+	t.Run("invalid status", func(t *testing.T) {
+		updatePullRequest := func(test *testutil.GravelerTest) {
+			test.RefManager.EXPECT().UpdatePullRequest(ctx, repository, pullID, gomock.Any()).
+				DoAndReturn(func(_ context.Context, _ *graveler.RepositoryRecord, id graveler.PullRequestID, f graveler.PullUpdateFunc) error {
+					require.Equal(t, pullID, id)
+					newPr, err := f(&pr)
+					require.ErrorIs(t, err, graveler.ErrInvalidPullRequestStatus)
+					require.Nil(t, newPr)
+					return err
+				}).Times(1)
+			test.RefManager.EXPECT().GetPullRequest(ctx, repository, pullID).
+				DoAndReturn(func(_ context.Context, _ *graveler.RepositoryRecord, id graveler.PullRequestID) (*graveler.PullRequest, error) {
+					require.Equal(t, pullID, id)
+					return &pr, nil
+				}).Times(1)
+		}
+		test := testutil.InitGravelerTest(t)
+		updatePullRequest(test)
+		err := test.Sut.UpdatePullRequest(ctx, repository, pullID, &graveler.UpdatePullRequest{Status: swag.String("invalid status")})
+		require.ErrorIs(t, err, graveler.ErrInvalidPullRequestStatus)
 	})
 }
