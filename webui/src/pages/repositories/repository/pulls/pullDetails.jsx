@@ -108,14 +108,14 @@ const PullDetailsContent = ({repo, pull}) => {
             <div className="bottom-buttons-row mt-4 clearfix">
                 {error && <AlertError error={error} onDismiss={() => setError(null)}/>}
                 <div className="bottom-buttons-group float-end">
-                    {pull.status !== PullStatus.merged &&
+                    {isPullOpen() &&
                         <Button variant="outline-secondary"
                                 className="text-secondary-emphasis me-2"
                                 disabled={loading}
-                                onClick={changePullStatus(isPullOpen() ? PullStatus.closed : PullStatus.open)}>
+                                onClick={changePullStatus(PullStatus.closed)}>
                             {loading ?
                                 <span className="spinner-border spinner-border-sm text-light" role="status"/> :
-                                <>{isPullOpen() ? "Close" : "Re-open"} pull request</>
+                                <>Close pull request</>
                             }
                         </Button>
                     }
