@@ -597,6 +597,16 @@ class Pulls {
         }
         return await response.text();
     }
+
+    async update(repoId, pullId, pullDetails) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls/${encodeURIComponent(pullId)}`, {
+            method: 'PATCH',
+            body: JSON.stringify(pullDetails),
+        });
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
 }
 
 // uploadWithProgress uses good ol' XMLHttpRequest because progress indication in fetch() is
