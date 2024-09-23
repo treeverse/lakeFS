@@ -571,9 +571,9 @@ class Pulls {
     async get(repoId, pullId) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls/${encodeURIComponent(pullId)}`);
         if (response.status === 404) {
-            throw new NotFoundError(`could not find pull ${pullId}`);
+            throw new NotFoundError(`Could not find pull request (id = ${pullId}).`);
         } else if (response.status !== 200) {
-            throw new Error(`could not get pullId: ${await extractError(response)}`);
+            throw new Error(`Could not get pullId: ${await extractError(response)}`);
         }
         return response.json();
     }
@@ -582,7 +582,8 @@ class Pulls {
         const query = qs({status, prefix, after, amount});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls?` + query);
         if (response.status !== 200) {
-            throw new Error(`could not list pulls: ${await extractError(response)}`);
+            console.error(`Could not list pulls: ${await extractError(response)}`);
+            throw new Error(`Could not list pulls (status = ${response.status}).`);
         }
         return response.json();
     }
@@ -593,7 +594,8 @@ class Pulls {
             body: JSON.stringify(pullDetails),
         });
         if (response.status !== 201) {
-            throw new Error(await extractError(response));
+            console.error(`Could not create pull request: ${await extractError(response)}`);
+            throw new Error(`Could not create pull request (status = ${response.status}).`);
         }
         return await response.text();
     }

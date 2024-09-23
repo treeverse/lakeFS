@@ -67,9 +67,7 @@ const CreatePullForm = ({repo, reference, compare}) => {
                 onChange={onDescriptionInput}
             />
         </Form.Group>
-        {error &&
-            <AlertError error={<div><p>Failed to create pull request:</p>{error}</div>}
-                        onDismiss={() => setError(null)}/>}
+        {error && <AlertError error={error} onDismiss={() => setError(null)}/>}
         <Button variant="success"
                 disabled={!title || !description || loading}
                 onClick={submitForm}>
@@ -86,7 +84,7 @@ const CreatePull = () => {
     if (error) return <RepoError error={error}/>;
 
     return (
-        <div>
+        <div className="w-75">
             <ActionsBar>
                 <ActionGroup orientation="left">
                     <CompareBranchesSelection
@@ -102,13 +100,11 @@ const CreatePull = () => {
                 <CreatePullForm repo={repo} reference={reference} compare={compare}/>
             </div>
             <hr className="mt-5 mb-4"/>
-            <div className="w-75">
-                <CompareBranches
-                    repo={repo}
-                    reference={{id: reference.id, type: RefTypeBranch}}
-                    compareReference={{id: compare.id, type: RefTypeBranch}}
-                />
-            </div>
+            <CompareBranches
+                repo={repo}
+                reference={{id: reference.id, type: RefTypeBranch}}
+                compareReference={{id: compare.id, type: RefTypeBranch}}
+            />
         </div>
     );
 };
