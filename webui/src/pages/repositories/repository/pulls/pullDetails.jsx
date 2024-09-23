@@ -80,7 +80,7 @@ const PullDetailsContent = ({repo, pull}) => {
     const isPullOpen = () => pull.status === PullStatus.open;
 
     return (
-        <div className="pull-details mb-5">
+        <div className="pull-details w-75 mb-5">
             <h1>{pull.title}</h1>
             <div className="pull-info mt-3">
                 <StatusBadge status={pull.status}/>
@@ -125,13 +125,11 @@ const PullDetailsContent = ({repo, pull}) => {
                 </div>
             </div>
             <hr className="mt-5 mb-4"/>
-            <div className="w-75">
-                <CompareBranches
-                    repo={repo}
-                    reference={{id: pull.destination_branch, type: RefTypeBranch}}
-                    compareReference={{id: pull.source_branch, type: RefTypeBranch}}
-                />
-            </div>
+            <CompareBranches
+                repo={repo}
+                reference={{id: pull.destination_branch, type: RefTypeBranch}}
+                compareReference={{id: pull.source_branch, type: RefTypeBranch}}
+            />
         </div>
     );
 };
