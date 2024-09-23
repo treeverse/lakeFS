@@ -12,7 +12,7 @@ All URIs are relative to */api/v1*
 
 <a id="createPullRequest"></a>
 # **createPullRequest**
-> String createPullRequest(repository, pullRequestCreation).execute();
+> PullRequestCreationResponse createPullRequest(repository, pullRequestCreation).execute();
 
 create pull request
 
@@ -62,7 +62,7 @@ public class Example {
     String repository = "repository_example"; // String | 
     PullRequestCreation pullRequestCreation = new PullRequestCreation(); // PullRequestCreation | 
     try {
-      String result = apiInstance.createPullRequest(repository, pullRequestCreation)
+      PullRequestCreationResponse result = apiInstance.createPullRequest(repository, pullRequestCreation)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -85,7 +85,7 @@ public class Example {
 
 ### Return type
 
-**String**
+[**PullRequestCreationResponse**](PullRequestCreationResponse.md)
 
 ### Authorization
 
@@ -94,12 +94,12 @@ public class Example {
 ### HTTP request headers
 
  - **Content-Type**: application/json
- - **Accept**: text/html, application/json
+ - **Accept**: application/json
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **201** | pull request id |  -  |
+| **201** | pull request created |  -  |
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |

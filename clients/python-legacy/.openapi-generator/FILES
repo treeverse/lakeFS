@@ -86,6 +86,7 @@ docs/PullRequest.md
 docs/PullRequestAllOf.md
 docs/PullRequestBasic.md
 docs/PullRequestCreation.md
+docs/PullRequestCreationResponse.md
 docs/PullRequestsList.md
 docs/PullsApi.md
 docs/RangeMetadata.md
@@ -225,6 +226,7 @@ lakefs_client/model/pull_request.py
 lakefs_client/model/pull_request_all_of.py
 lakefs_client/model/pull_request_basic.py
 lakefs_client/model/pull_request_creation.py
+lakefs_client/model/pull_request_creation_response.py
 lakefs_client/model/pull_requests_list.py
 lakefs_client/model/range_metadata.py
 lakefs_client/model/ref.py
@@ -353,6 +355,7 @@ test/test_pull_request.py
 test/test_pull_request_all_of.py
 test/test_pull_request_basic.py
 test/test_pull_request_creation.py
+test/test_pull_request_creation_response.py
 test/test_pull_requests_list.py
 test/test_pulls_api.py
 test/test_range_metadata.py

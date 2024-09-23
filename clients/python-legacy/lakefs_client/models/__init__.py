@@ -81,6 +81,7 @@ from lakefs_client.model.pull_request import PullRequest
 from lakefs_client.model.pull_request_all_of import PullRequestAllOf
 from lakefs_client.model.pull_request_basic import PullRequestBasic
 from lakefs_client.model.pull_request_creation import PullRequestCreation
+from lakefs_client.model.pull_request_creation_response import PullRequestCreationResponse
 from lakefs_client.model.pull_requests_list import PullRequestsList
 from lakefs_client.model.range_metadata import RangeMetadata
 from lakefs_client.model.ref import Ref

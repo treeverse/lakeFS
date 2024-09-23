@@ -294,7 +294,7 @@ pub async fn create_presign_multipart_upload(configuration: &configuration::Conf
     }
 }
 
-pub async fn create_pull_request(configuration: &configuration::Configuration, repository: &str, pull_request_creation: models::PullRequestCreation) -> Result<String, Error<CreatePullRequestError>> {
+pub async fn create_pull_request(configuration: &configuration::Configuration, repository: &str, pull_request_creation: models::PullRequestCreation) -> Result<models::PullRequestCreationResponse, Error<CreatePullRequestError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;

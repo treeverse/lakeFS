@@ -6849,10 +6849,10 @@ paths:
       responses:
         "201":
           content:
-            text/html:
+            application/json:
               schema:
-                type: string
-          description: pull request id
+                $ref: '#/components/schemas/PullRequestCreationResponse'
+          description: pull request created
         "400":
           content:
             application/json:
@@ -9607,6 +9607,16 @@ components:
       - destination_branch
       - source_branch
       - title
+      type: object
+    PullRequestCreationResponse:
+      example:
+        id: id
+      properties:
+        id:
+          description: ID of the pull request
+          type: string
+      required:
+      - id
       type: object
     uploadObject_request:
       properties:

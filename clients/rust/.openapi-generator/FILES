@@ -83,6 +83,7 @@ docs/PresignMultipartUpload.md
 docs/PullRequest.md
 docs/PullRequestBasic.md
 docs/PullRequestCreation.md
+docs/PullRequestCreationResponse.md
 docs/PullRequestsList.md
 docs/PullsApi.md
 docs/RangeMetadata.md
@@ -214,6 +215,7 @@ src/models/presign_multipart_upload.rs
 src/models/pull_request.rs
 src/models/pull_request_basic.rs
 src/models/pull_request_creation.rs
+src/models/pull_request_creation_response.rs
 src/models/pull_requests_list.rs
 src/models/range_metadata.rs
 src/models/ref_list.rs

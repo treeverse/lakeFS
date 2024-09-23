@@ -42,6 +42,7 @@ from lakefs_sdk.models.presign_multipart_upload import PresignMultipartUpload
 from lakefs_sdk.models.pull_request import PullRequest
 from lakefs_sdk.models.pull_request_basic import PullRequestBasic
 from lakefs_sdk.models.pull_request_creation import PullRequestCreation
+from lakefs_sdk.models.pull_request_creation_response import PullRequestCreationResponse
 from lakefs_sdk.models.pull_requests_list import PullRequestsList
 from lakefs_sdk.models.sts_auth_request import StsAuthRequest
 
@@ -592,7 +593,7 @@ class ExperimentalApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def create_pull_request(self, repository : StrictStr, pull_request_creation : PullRequestCreation, **kwargs) -> str:  # noqa: E501
+    def create_pull_request(self, repository : StrictStr, pull_request_creation : PullRequestCreation, **kwargs) -> PullRequestCreationResponse:  # noqa: E501
         """create pull request  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -614,7 +615,7 @@ class ExperimentalApi(object):
         :return: Returns the result object.
                  If the method is called asynchronously,
                  returns the request thread.
-        :rtype: str
+        :rtype: PullRequestCreationResponse
         """
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
@@ -657,7 +658,7 @@ class ExperimentalApi(object):
         :return: Returns the result object.
                  If the method is called asynchronously,
                  returns the request thread.
-        :rtype: tuple(str, status_code(int), headers(HTTPHeaderDict))
+        :rtype: tuple(PullRequestCreationResponse, status_code(int), headers(HTTPHeaderDict))
         """
 
         _params = locals()
@@ -710,7 +711,7 @@ class ExperimentalApi(object):
 
         # set the HTTP header `Accept`
         _header_params['Accept'] = self.api_client.select_header_accept(
-            ['text/html', 'application/json'])  # noqa: E501
+            ['application/json'])  # noqa: E501
 
         # set the HTTP header `Content-Type`
         _content_types_list = _params.get('_content_type',
@@ -723,7 +724,7 @@ class ExperimentalApi(object):
         _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
 
         _response_types_map = {
-            '201': "str",
+            '201': "PullRequestCreationResponse",
             '400': "Error",
             '401': "Error",
             '403': "Error",

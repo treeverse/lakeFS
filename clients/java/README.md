@@ -356,6 +356,7 @@ Class | Method | HTTP request | Description
  - [PullRequest](docs/PullRequest.md)
  - [PullRequestBasic](docs/PullRequestBasic.md)
  - [PullRequestCreation](docs/PullRequestCreation.md)
+ - [PullRequestCreationResponse](docs/PullRequestCreationResponse.md)
  - [PullRequestsList](docs/PullRequestsList.md)
  - [RangeMetadata](docs/RangeMetadata.md)
  - [Ref](docs/Ref.md)
