@@ -67,9 +67,7 @@ const CreatePullForm = ({repo, reference, compare}) => {
                 onChange={onDescriptionInput}
             />
         </Form.Group>
-        {error &&
-            <AlertError error={<div><p>Failed to create pull request:</p>{error}</div>}
-                        onDismiss={() => setError(null)}/>}
+        {error && <AlertError error={error} onDismiss={() => setError(null)}/>}
         <Button variant="success"
                 disabled={!title || !description || loading}
                 onClick={submitForm}>
