@@ -17,6 +17,8 @@ import {Link} from "../../../../lib/components/nav";
 import CompareBranches from "../../../../lib/components/repository/compareBranches";
 import {PullStatus, RefTypeBranch} from "../../../../constants";
 
+const RETRIES_COUNT = 3;
+
 const BranchLink = ({repo, branch}) =>
     <Link href={{
         pathname: '/repositories/:repoId/objects',
@@ -54,13 +56,18 @@ const PullDetailsContent = ({repo, pull}) => {
             setLoading(false);
             return;
         }
-        try {
-            await pullsAPI.update(repo.id, pull.id, {status: PullStatus.merged});
-            window.location.reload(); // TODO (gilo): replace with a more elegant solution
-        } catch (error) {
-            setError(`Failed to update pull-request status: ${error.message}`);
-            setLoading(false);
+        for (let i = 0; i < RETRIES_COUNT; i++) {
+            try {
+                await pullsAPI.update(repo.id, pull.id, {status: PullStatus.merged});
+            } catch (error) {
+                if (i === RETRIES_COUNT - 1) {
+                    setError(`Failed to update pull-request status: ${error.message}`);
+                    setLoading(false);
+                }
+                // else, retry
+            }
         }
+        window.location.reload(); // TODO (gilo): replace with a more elegant solution
     }
 
     const changePullStatus = (status) => async () => {
