@@ -38,7 +38,6 @@ const CreatePullForm = ({repo, reference, compare}) => {
                 params: {repoId: repo.id, pullId: createdPullId},
             });
         } catch (error) {
-            console.error("Failed to create pull request", error);
             setError(error.message);
             setLoading(false);
         }

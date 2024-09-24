@@ -573,7 +573,7 @@ class Pulls {
         if (response.status === 404) {
             throw new NotFoundError(`Could not find pull request (id = ${pullId}).`);
         } else if (response.status !== 200) {
-            throw new Error(`Could not get pullId: ${await extractError(response)}`);
+            throw new Error(`Could not get pull request (id = ${pullId}): ${await extractError(response)}`);
         }
         return response.json();
     }
@@ -582,8 +582,15 @@ class Pulls {
         const query = qs({status, prefix, after, amount});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls?` + query);
         if (response.status !== 200) {
-            console.error(`Could not list pulls: ${await extractError(response)}`);
-            throw new Error(`Could not list pulls (status = ${response.status}).`);
+            const baseMessage = 'Could not list pull requests';
+            switch (response.status) {
+                case 400:
+                case 401:
+                case 404:
+                    throw new Error(`${baseMessage}: ${(await response.json()).message}`);
+                default:
+                    throw new Error(`${baseMessage} (status = ${response.status}).`);
+            }
         }
         return response.json();
     }
@@ -594,8 +601,17 @@ class Pulls {
             body: JSON.stringify(pullDetails),
         });
         if (response.status !== 201) {
-            console.error(`Could not create pull request: ${await extractError(response)}`);
-            throw new Error(`Could not create pull request (status = ${response.status}).`);
+            const baseMessage = 'Could not create pull request';
+            switch (response.status) {
+                case 400:
+                case 401:
+                case 403:
+                case 404:
+                case 409:
+                    throw new Error(`${baseMessage}: ${(await response.json()).message}`);
+                default:
+                    throw new Error(`${baseMessage} (status = ${response.status}).`);
+            }
         }
         return await response.text();
     }
