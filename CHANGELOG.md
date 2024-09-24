@@ -1,5 +1,10 @@
 # Changelog
 
+# v1.35.0
+
+:new: What's new:
+- AWS Pre-signed url endpoint configuration (#8170)
+
 # v1.34.0
 
 :new: What's new:
