@@ -110,4 +110,12 @@ public class PullRequestTest {
         // TODO: test mergedCommitId
     }
 
+    /**
+     * Test the property 'closeDate'
+     */
+    @Test
+    public void closeDateTest() {
+        // TODO: test closeDate
+    }
+
 }

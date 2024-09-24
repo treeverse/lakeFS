@@ -138,6 +138,10 @@ public class PullRequest {
   @SerializedName(SERIALIZED_NAME_MERGED_COMMIT_ID)
   private String mergedCommitId;
 
+  public static final String SERIALIZED_NAME_CLOSE_DATE = "close_date";
+  @SerializedName(SERIALIZED_NAME_CLOSE_DATE)
+  private OffsetDateTime closeDate;
+
   public PullRequest() {
   }
 
@@ -329,6 +333,27 @@ public class PullRequest {
     this.mergedCommitId = mergedCommitId;
   }
 
+
+  public PullRequest closeDate(OffsetDateTime closeDate) {
+    
+    this.closeDate = closeDate;
+    return this;
+  }
+
+   /**
+   * Get closeDate
+   * @return closeDate
+  **/
+  @javax.annotation.Nullable
+  public OffsetDateTime getCloseDate() {
+    return closeDate;
+  }
+
+
+  public void setCloseDate(OffsetDateTime closeDate) {
+    this.closeDate = closeDate;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -392,13 +417,14 @@ public class PullRequest {
         Objects.equals(this.author, pullRequest.author) &&
         Objects.equals(this.sourceBranch, pullRequest.sourceBranch) &&
         Objects.equals(this.destinationBranch, pullRequest.destinationBranch) &&
-        Objects.equals(this.mergedCommitId, pullRequest.mergedCommitId)&&
+        Objects.equals(this.mergedCommitId, pullRequest.mergedCommitId) &&
+        Objects.equals(this.closeDate, pullRequest.closeDate)&&
         Objects.equals(this.additionalProperties, pullRequest.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(status, title, description, id, creationDate, author, sourceBranch, destinationBranch, mergedCommitId, additionalProperties);
+    return Objects.hash(status, title, description, id, creationDate, author, sourceBranch, destinationBranch, mergedCommitId, closeDate, additionalProperties);
   }
 
   @Override
@@ -414,6 +440,7 @@ public class PullRequest {
     sb.append("    sourceBranch: ").append(toIndentedString(sourceBranch)).append("\n");
     sb.append("    destinationBranch: ").append(toIndentedString(destinationBranch)).append("\n");
     sb.append("    mergedCommitId: ").append(toIndentedString(mergedCommitId)).append("\n");
+    sb.append("    closeDate: ").append(toIndentedString(closeDate)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -446,6 +473,7 @@ public class PullRequest {
     openapiFields.add("source_branch");
     openapiFields.add("destination_branch");
     openapiFields.add("merged_commit_id");
+    openapiFields.add("close_date");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

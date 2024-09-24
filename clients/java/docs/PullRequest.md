@@ -16,6 +16,7 @@
 |**sourceBranch** | **String** |  |  |
 |**destinationBranch** | **String** |  |  |
 |**mergedCommitId** | **String** | the commit id of merged PRs |  [optional] |
+|**closeDate** | **OffsetDateTime** |  |  [optional] |
 
 
 

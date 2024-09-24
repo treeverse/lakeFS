@@ -117,6 +117,10 @@ public class PullRequest {
   @SerializedName(SERIALIZED_NAME_MERGED_COMMIT_ID)
   private String mergedCommitId;
 
+  public static final String SERIALIZED_NAME_CLOSE_DATE = "close_date";
+  @SerializedName(SERIALIZED_NAME_CLOSE_DATE)
+  private OffsetDateTime closeDate;
+
 
   public PullRequest status(StatusEnum status) {
     
@@ -325,6 +329,29 @@ public class PullRequest {
   }
 
 
+  public PullRequest closeDate(OffsetDateTime closeDate) {
+    
+    this.closeDate = closeDate;
+    return this;
+  }
+
+   /**
+   * Get closeDate
+   * @return closeDate
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+
+  public OffsetDateTime getCloseDate() {
+    return closeDate;
+  }
+
+
+  public void setCloseDate(OffsetDateTime closeDate) {
+    this.closeDate = closeDate;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -342,12 +369,13 @@ public class PullRequest {
         Objects.equals(this.author, pullRequest.author) &&
         Objects.equals(this.sourceBranch, pullRequest.sourceBranch) &&
         Objects.equals(this.destinationBranch, pullRequest.destinationBranch) &&
-        Objects.equals(this.mergedCommitId, pullRequest.mergedCommitId);
+        Objects.equals(this.mergedCommitId, pullRequest.mergedCommitId) &&
+        Objects.equals(this.closeDate, pullRequest.closeDate);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(status, title, description, id, creationDate, author, sourceBranch, destinationBranch, mergedCommitId);
+    return Objects.hash(status, title, description, id, creationDate, author, sourceBranch, destinationBranch, mergedCommitId, closeDate);
   }
 
   @Override
@@ -363,6 +391,7 @@ public class PullRequest {
     sb.append("    sourceBranch: ").append(toIndentedString(sourceBranch)).append("\n");
     sb.append("    destinationBranch: ").append(toIndentedString(destinationBranch)).append("\n");
     sb.append("    mergedCommitId: ").append(toIndentedString(mergedCommitId)).append("\n");
+    sb.append("    closeDate: ").append(toIndentedString(closeDate)).append("\n");
     sb.append("}");
     return sb.toString();
   }
