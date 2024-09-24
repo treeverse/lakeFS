@@ -633,6 +633,7 @@ class Pulls {
                     throw new Error(`${baseMessage} (status = ${response.status}).`);
             }
         }
+        return await response.text();
     }
 }
 
