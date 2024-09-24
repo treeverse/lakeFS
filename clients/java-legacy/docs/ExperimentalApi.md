@@ -329,7 +329,7 @@ Name | Type | Description  | Notes
 
 <a name="createPullRequest"></a>
 # **createPullRequest**
-> String createPullRequest(repository, pullRequestCreation)
+> PullRequestCreationResponse createPullRequest(repository, pullRequestCreation)
 
 create pull request
 
@@ -379,7 +379,7 @@ public class Example {
     String repository = "repository_example"; // String | 
     PullRequestCreation pullRequestCreation = new PullRequestCreation(); // PullRequestCreation | 
     try {
-      String result = apiInstance.createPullRequest(repository, pullRequestCreation);
+      PullRequestCreationResponse result = apiInstance.createPullRequest(repository, pullRequestCreation);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ExperimentalApi#createPullRequest");
@@ -401,7 +401,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-**String**
+[**PullRequestCreationResponse**](PullRequestCreationResponse.md)
 
 ### Authorization
 
@@ -410,12 +410,12 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
  - **Content-Type**: application/json
- - **Accept**: text/html, application/json
+ - **Accept**: application/json
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**201** | pull request id |  -  |
+**201** | pull request created |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |

@@ -5335,11 +5335,10 @@ func TestController_CreatePullRequest(t *testing.T) {
 
 		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, body)
 		require.NoError(t, err)
-		require.Equal(t, http.StatusCreated, resp.StatusCode())
-		pid := resp.Body
+		require.NotNil(t, resp.JSON201)
 
 		// Get pull request
-		getResp, err := clt.GetPullRequestWithResponse(ctx, repo, string(pid))
+		getResp, err := clt.GetPullRequestWithResponse(ctx, repo, resp.JSON201.Id)
 		require.NoError(t, err)
 		require.NotNil(t, getResp.JSON200)
 		require.Equal(t, body.Title, swag.StringValue(getResp.JSON200.Title))
@@ -5424,8 +5423,8 @@ func TestController_ListPullRequestsHandler(t *testing.T) {
 				Title:             expected[i].Title,
 			})
 			require.NoError(t, err)
-			require.Equal(t, http.StatusCreated, resp.StatusCode())
-			expected[i].ID = string(resp.Body)
+			require.NotNil(t, resp.JSON201)
+			expected[i].ID = resp.JSON201.Id
 		}
 		// Sort by p.ID
 		sort.Slice(expected, func(i, j int) bool {
@@ -5556,11 +5555,10 @@ func TestController_UpdatePullRequest(t *testing.T) {
 
 		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, body)
 		require.NoError(t, err)
-		require.Equal(t, http.StatusCreated, resp.StatusCode())
-		pid := resp.Body
+		require.NotNil(t, resp.JSON201)
 
 		// Update with wrong status
-		updateResp, err := clt.UpdatePullRequestWithResponse(ctx, repo, string(pid), apigen.UpdatePullRequestJSONRequestBody{
+		updateResp, err := clt.UpdatePullRequestWithResponse(ctx, repo, resp.JSON201.Id, apigen.UpdatePullRequestJSONRequestBody{
 			Description: swag.String("description"),
 			Status:      swag.String("invalid"),
 			Title:       swag.String("title"),
@@ -5569,7 +5567,7 @@ func TestController_UpdatePullRequest(t *testing.T) {
 		require.NotNil(t, updateResp.JSON400, updateResp.Status())
 
 		// Get pull request
-		getResp, err := clt.GetPullRequestWithResponse(ctx, repo, string(pid))
+		getResp, err := clt.GetPullRequestWithResponse(ctx, repo, resp.JSON201.Id)
 		require.NoError(t, err)
 		require.NotNil(t, getResp.JSON200)
 
@@ -5589,14 +5587,14 @@ func TestController_UpdatePullRequest(t *testing.T) {
 			MergedCommitId:    pr.MergedCommitId,
 			SourceBranch:      pr.SourceBranch,
 		}
-		updateResp, err = clt.UpdatePullRequestWithResponse(ctx, repo, string(pid), apigen.UpdatePullRequestJSONRequestBody{
+		updateResp, err = clt.UpdatePullRequestWithResponse(ctx, repo, resp.JSON201.Id, apigen.UpdatePullRequestJSONRequestBody{
 			Description: expected.Description,
 		})
 		require.NoError(t, err)
 		require.Equal(t, http.StatusNoContent, updateResp.StatusCode())
 
 		// Verify update
-		getResp, err = clt.GetPullRequestWithResponse(ctx, repo, string(pid))
+		getResp, err = clt.GetPullRequestWithResponse(ctx, repo, resp.JSON201.Id)
 		require.NoError(t, err)
 		require.NotNil(t, getResp.JSON200)
 		if diff := deep.Equal(expected, getResp.JSON200); diff != nil {
@@ -5607,7 +5605,7 @@ func TestController_UpdatePullRequest(t *testing.T) {
 		expected.Description = swag.String("Other description")
 		expected.Title = swag.String("New title")
 		expected.Status = swag.String("closed")
-		updateResp, err = clt.UpdatePullRequestWithResponse(ctx, repo, string(pid), apigen.UpdatePullRequestJSONRequestBody{
+		updateResp, err = clt.UpdatePullRequestWithResponse(ctx, repo, resp.JSON201.Id, apigen.UpdatePullRequestJSONRequestBody{
 			Description: expected.Description,
 			Status:      expected.Status,
 			Title:       expected.Title,
@@ -5616,7 +5614,7 @@ func TestController_UpdatePullRequest(t *testing.T) {
 		require.Equal(t, http.StatusNoContent, updateResp.StatusCode(), string(updateResp.Body))
 
 		// Verify update
-		getResp, err = clt.GetPullRequestWithResponse(ctx, repo, string(pid))
+		getResp, err = clt.GetPullRequestWithResponse(ctx, repo, resp.JSON201.Id)
 		require.NoError(t, err)
 		require.NotNil(t, getResp.JSON200)
 		if diff := deep.Equal(expected, getResp.JSON200); diff != nil {

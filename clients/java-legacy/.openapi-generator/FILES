@@ -87,6 +87,7 @@ docs/PullRequest.md
 docs/PullRequestAllOf.md
 docs/PullRequestBasic.md
 docs/PullRequestCreation.md
+docs/PullRequestCreationResponse.md
 docs/PullRequestsList.md
 docs/PullsApi.md
 docs/RangeMetadata.md
@@ -240,6 +241,7 @@ src/main/java/io/lakefs/clients/api/model/PullRequest.java
 src/main/java/io/lakefs/clients/api/model/PullRequestAllOf.java
 src/main/java/io/lakefs/clients/api/model/PullRequestBasic.java
 src/main/java/io/lakefs/clients/api/model/PullRequestCreation.java
+src/main/java/io/lakefs/clients/api/model/PullRequestCreationResponse.java
 src/main/java/io/lakefs/clients/api/model/PullRequestsList.java
 src/main/java/io/lakefs/clients/api/model/RangeMetadata.java
 src/main/java/io/lakefs/clients/api/model/Ref.java
@@ -360,6 +362,7 @@ src/test/java/io/lakefs/clients/api/model/PrepareGCUncommittedResponseTest.java
 src/test/java/io/lakefs/clients/api/model/PresignMultipartUploadTest.java
 src/test/java/io/lakefs/clients/api/model/PullRequestAllOfTest.java
 src/test/java/io/lakefs/clients/api/model/PullRequestBasicTest.java
+src/test/java/io/lakefs/clients/api/model/PullRequestCreationResponseTest.java
 src/test/java/io/lakefs/clients/api/model/PullRequestCreationTest.java
 src/test/java/io/lakefs/clients/api/model/PullRequestTest.java
 src/test/java/io/lakefs/clients/api/model/PullRequestsListTest.java

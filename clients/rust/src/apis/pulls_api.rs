@@ -66,7 +66,7 @@ pub enum UpdatePullRequestError {
 }
 
 
-pub async fn create_pull_request(configuration: &configuration::Configuration, repository: &str, pull_request_creation: models::PullRequestCreation) -> Result<String, Error<CreatePullRequestError>> {
+pub async fn create_pull_request(configuration: &configuration::Configuration, repository: &str, pull_request_creation: models::PullRequestCreation) -> Result<models::PullRequestCreationResponse, Error<CreatePullRequestError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;

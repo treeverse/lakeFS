@@ -18,6 +18,7 @@ import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.PullRequest;
 import io.lakefs.clients.sdk.model.PullRequestBasic;
 import io.lakefs.clients.sdk.model.PullRequestCreation;
+import io.lakefs.clients.sdk.model.PullRequestCreationResponse;
 import io.lakefs.clients.sdk.model.PullRequestsList;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,7 @@ public class PullsApiTest {
     public void createPullRequestTest() throws ApiException {
         String repository = null;
         PullRequestCreation pullRequestCreation = null;
-        String response = api.createPullRequest(repository, pullRequestCreation)
+        PullRequestCreationResponse response = api.createPullRequest(repository, pullRequestCreation)
                 .execute();
         // TODO: test validations
     }

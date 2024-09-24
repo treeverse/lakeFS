@@ -134,6 +134,8 @@ pub mod pull_request_basic;
 pub use self::pull_request_basic::PullRequestBasic;
 pub mod pull_request_creation;
 pub use self::pull_request_creation::PullRequestCreation;
+pub mod pull_request_creation_response;
+pub use self::pull_request_creation_response::PullRequestCreationResponse;
 pub mod pull_requests_list;
 pub use self::pull_requests_list::PullRequestsList;
 pub mod range_metadata;

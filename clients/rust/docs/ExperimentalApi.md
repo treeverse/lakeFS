@@ -124,7 +124,7 @@ Name | Type | Description  | Required | Notes
 
 ## create_pull_request
 
-> String create_pull_request(repository, pull_request_creation)
+> models::PullRequestCreationResponse create_pull_request(repository, pull_request_creation)
 create pull request
 
 ### Parameters
@@ -137,7 +137,7 @@ Name | Type | Description  | Required | Notes
 
 ### Return type
 
-**String**
+[**models::PullRequestCreationResponse**](PullRequestCreationResponse.md)
 
 ### Authorization
 
@@ -146,7 +146,7 @@ Name | Type | Description  | Required | Notes
 ### HTTP request headers
 
 - **Content-Type**: application/json
-- **Accept**: text/html, application/json
+- **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

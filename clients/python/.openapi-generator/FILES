@@ -80,6 +80,7 @@ docs/PresignMultipartUpload.md
 docs/PullRequest.md
 docs/PullRequestBasic.md
 docs/PullRequestCreation.md
+docs/PullRequestCreationResponse.md
 docs/PullRequestsList.md
 docs/PullsApi.md
 docs/RangeMetadata.md
@@ -213,6 +214,7 @@ lakefs_sdk/models/presign_multipart_upload.py
 lakefs_sdk/models/pull_request.py
 lakefs_sdk/models/pull_request_basic.py
 lakefs_sdk/models/pull_request_creation.py
+lakefs_sdk/models/pull_request_creation_response.py
 lakefs_sdk/models/pull_requests_list.py
 lakefs_sdk/models/range_metadata.py
 lakefs_sdk/models/ref.py
@@ -336,6 +338,7 @@ test/test_presign_multipart_upload.py
 test/test_pull_request.py
 test/test_pull_request_basic.py
 test/test_pull_request_creation.py
+test/test_pull_request_creation_response.py
 test/test_pull_requests_list.py
 test/test_pulls_api.py
 test/test_range_metadata.py
