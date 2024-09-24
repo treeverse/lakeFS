@@ -26,7 +26,7 @@ const CreatePullForm = ({repo, reference, compare}) => {
         setLoading(true);
         setError(null);
         try {
-            const createdPullId = await pullsAPI.create(repo.id, {
+            const {id: createdPullId} = await pullsAPI.create(repo.id, {
                 title,
                 description,
                 source_branch: compare.id,
