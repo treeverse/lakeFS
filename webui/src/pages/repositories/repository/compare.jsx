@@ -15,21 +15,6 @@ const CompareContainer = () => {
     if (loading) return <Loading/>;
     if (error) return <RepoError error={error}/>;
 
-    const route = query => router.push({
-        pathname: `/repositories/:repoId/compare`,
-        params: {repoId: repo.id},
-        query
-    });
-
-    const onSelectRef = reference => route(compare ?
-        {ref: reference.id, compare: compare.id} :
-        {ref: reference.id}
-    );
-    const onSelectCompare = compare => route(reference ?
-        {ref: reference.id, compare: compare.id} :
-        {compare: compare.id}
-    );
-
     return (
         <CompareBranches
             repo={repo}
@@ -37,8 +22,7 @@ const CompareContainer = () => {
             compareReference={compare}
             showActionsBar={true}
             prefix={prefix}
-            onSelectRef={onSelectRef}
-            onSelectCompare={onSelectCompare}
+            baseSelectURL={"/repositories/:repoId/compare"}
         />
     );
 };
