@@ -82,7 +82,7 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 			newBase := newRemote.WithRef(newHead)
 
 			// write new index
-			_, err = local.WriteIndex(idx.LocalPath(), remote, newHead, "")
+			_, err = local.WriteIndex(idx.LocalPath(), newRemote, newHead, "")
 			if err != nil {
 				DieErr(err)
 			}
