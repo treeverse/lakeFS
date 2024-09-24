@@ -613,8 +613,7 @@ class Pulls {
                     throw new Error(`${baseMessage} (status = ${response.status}).`);
             }
         }
-        const respJson = await response.json();
-        return respJson.id;
+        return response.json()
     }
 
     async update(repoId, pullId, pullDetails) {
