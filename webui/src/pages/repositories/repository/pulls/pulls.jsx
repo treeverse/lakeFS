@@ -142,10 +142,10 @@ const PullsContainer = () => {
     );
 };
 
-const RepositoryPullsListPage = () => {
+const RepositoryPullsPage = () => {
     const [setActivePage] = useOutletContext();
     useEffect(() => setActivePage("pulls"), [setActivePage]);
     return <PullsContainer/>;
 }
 
-export default RepositoryPullsListPage;
+export default RepositoryPullsPage;
