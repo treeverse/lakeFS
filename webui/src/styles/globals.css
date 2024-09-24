@@ -35,11 +35,11 @@
   --color-policy-text: #ffb6c1;
   --color-uri-octicon: #f3ab9f;
   --color-uri-link: #f0998b;
-  --color-bg-added: #005014;
+  --color-bg-added: #002008;
   --color-bg-removed: #571500;
-  --color-bg-changed: #b34400;
-  --color-bg-unknown: #001b7c;
-  --color-bg-conflict: #7d0046;
+  --color-bg-changed: #6b2900;
+  --color-bg-unknown: #00104a;
+  --color-bg-conflict: #32001c;
 }
 
 .gray-out {
