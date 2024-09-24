@@ -7,7 +7,7 @@ import {Tab, Tabs} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import dayjs from "dayjs";
 
-import {ActionGroup, AlertError, Loading, PrefixSearchWidget, RefreshButton} from "../../../../lib/components/controls";
+import {ActionGroup, AlertError, Loading} from "../../../../lib/components/controls";
 import {pulls as pullsAPI} from "../../../../lib/api";
 import {useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
@@ -16,13 +16,29 @@ import {useRouter} from "../../../../lib/hooks/router";
 import {RepoError} from "../error";
 import {Link} from "../../../../lib/components/nav";
 import {PullStatus} from "../../../../constants";
+import {ArrowLeftIcon, GitMergeIcon, GitPullRequestClosedIcon, GitPullRequestIcon} from "@primer/octicons-react";
 
+
+const PullIcon = ({status}) => {
+    switch (status) {
+        case PullStatus.open:
+            return <GitPullRequestIcon className="text-success"/>;
+        case PullStatus.closed:
+            return <GitPullRequestClosedIcon className="text-secondary"/>;
+        case PullStatus.merged:
+            return <GitMergeIcon className="text-primary"/>;
+        default:
+            return null;
+    }
+}
 
 const PullWidget = ({repo, pull}) => {
     return (
-        <ListGroup.Item className="pull-row pt-3 pb-3 clearfix">
+        <ListGroup.Item className="pull-row pt-3 pb-3 clearfix" id={pull.id}>
             <div className="float-start">
                 <h6>
+                    <PullIcon status={pull.status}/>
+                    {" "}
                     <Link href={{
                         pathname: '/repositories/:repoId/pulls/:pullId',
                         params: {repoId: repo.id, pullId: pull.id}
@@ -35,9 +51,9 @@ const PullWidget = ({repo, pull}) => {
                 </small>
             </div>
             <div className="float-end mt-2">
-                <Button variant="secondary" size="sm" disabled={true}>{pull.source_branch}</Button>
-                <span className="m-2">&#8680;</span>
                 <Button variant="secondary" size="sm" disabled={true}>{pull.destination_branch}</Button>
+                <ArrowLeftIcon className="m-1 text-secondary" size="small" verticalAlign="middle"/>
+                <Button variant="secondary" size="sm" disabled={true}>{pull.source_branch}</Button>
             </div>
         </ListGroup.Item>
     );
@@ -45,14 +61,11 @@ const PullWidget = ({repo, pull}) => {
 
 const PullsList = ({repo, after, prefix, onPaginate}) => {
     const router = useRouter()
-    const [refresh, setRefresh] = useState(true);
     // TODO: pullState should be persistent in the url and saved as a url param?
     const [pullsState, setPullsState] = useState(PullStatus.open);
     const {results, error, loading, nextPage} = useAPIWithPagination(async () => {
         return pullsAPI.list(repo.id, pullsState, prefix, after);
-    }, [repo.id, pullsState, prefix, refresh, after]);
-
-    const doRefresh = () => setRefresh(true);
+    }, [repo.id, pullsState, prefix, after]);
 
     let content;
 
@@ -86,16 +99,6 @@ const PullsList = ({repo, after, prefix, onPaginate}) => {
                     </Tabs>
                 </div>
                 <ActionGroup orientation="right" className="position-absolute top-0 end-0 pb-2">
-                    <PrefixSearchWidget
-                        defaultValue={router.query.prefix}
-                        text="Find Pull Request"
-                        onFilter={prefix => router.push({
-                            pathname: '/repositories/:repoId/pulls',
-                            params: {repoId: repo.id},
-                            query: {prefix}
-                        })}/>
-
-                    <RefreshButton onClick={doRefresh}/>
                     <Button variant="success"
                             onClick={() => router.push({
                                 pathname: '/repositories/:repoId/pulls/create',
@@ -139,10 +142,10 @@ const PullsContainer = () => {
     );
 };
 
-const RepositoryPullsPage = () => {
+const RepositoryPullsListPage = () => {
     const [setActivePage] = useOutletContext();
     useEffect(() => setActivePage("pulls"), [setActivePage]);
     return <PullsContainer/>;
 }
 
-export default RepositoryPullsPage;
+export default RepositoryPullsListPage;

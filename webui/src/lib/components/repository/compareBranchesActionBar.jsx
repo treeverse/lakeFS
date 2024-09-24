@@ -111,12 +111,13 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
                         <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields}/>
                     </Form>
                     <FormControl sx={{m: 1, minWidth: 120}}>
-                        <InputLabel id="demo-select-small">Strategy</InputLabel>
+                        <InputLabel id="demo-select-small" className="text-secondary">Strategy</InputLabel>
                         <Select
                             labelId="demo-select-small"
                             id="demo-simple-select-helper"
                             value={mergeState.strategy}
                             label="Strategy"
+                            className="text-secondary"
                             onChange={onStrategyChange}
                         >
                             <MenuItem value={"none"}>Default</MenuItem>
@@ -124,10 +125,12 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
                             <MenuItem value={"dest-wins"}>dest-wins</MenuItem>
                         </Select>
                     </FormControl>
-                    <FormHelperText>In case of a merge conflict, this option will force the merge process
+                    <FormHelperText className="text-secondary">
+                        In case of a merge conflict, this option will force the merge process
                         to automatically favor changes from <b>{dest}</b> (&rdquo;dest-wins&rdquo;) or
                         from <b>{source}</b> (&rdquo;source-wins&rdquo;). In case no selection is made,
-                        the merge process will fail in case of a conflict.</FormHelperText>
+                        the merge process will fail in case of a conflict.
+                    </FormHelperText>
                     {(mergeState.err) ? (<AlertError error={mergeState.err}/>) : (<></>)}
                 </Modal.Body>
                 <Modal.Footer>
