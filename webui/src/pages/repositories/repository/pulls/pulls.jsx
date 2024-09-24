@@ -31,7 +31,7 @@ const PullWidget = ({repo, pull}) => {
                     </Link>
                 </h6>
                 <small>
-                    Opened {dayjs.unix(pull.creation_date).fromNow()} by <strong>{pull.author}</strong>
+                    Opened {dayjs(pull.creation_date).fromNow()} by <strong>{pull.author}</strong>
                 </small>
             </div>
             <div className="float-end mt-2">

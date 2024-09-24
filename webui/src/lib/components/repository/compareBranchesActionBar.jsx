@@ -3,59 +3,25 @@ import {refs as refsAPI} from "../../../lib/api";
 import {RefTypeBranch} from "../../../constants";
 import {ActionGroup, ActionsBar, AlertError, RefreshButton} from "../controls";
 import {MetadataFields} from "./changes";
-import {useRouter} from "../../hooks/router";
-import RefDropdown from "./refDropdown";
-import {ArrowLeftIcon, ArrowSwitchIcon, GitMergeIcon} from "@primer/octicons-react";
-import OverlayTrigger from "react-bootstrap/OverlayTrigger";
-import Tooltip from "react-bootstrap/Tooltip";
+import {GitMergeIcon} from "@primer/octicons-react";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/material";
+import CompareBranchesSelection from "./compareBranchesSelection";
 
 const CompareBranchesActionsBar = (
-    {repo, reference, onSelectRef, compareReference, onSelectCompare, doRefresh, isEmptyDiff}
+    {repo, reference, compareReference, baseSelectURL, doRefresh, isEmptyDiff}
 ) => {
-    const router = useRouter();
-    const handleSwitchRefs = useCallback((e) => {
-        e.preventDefault();
-        router.push({
-            pathname: `/repositories/:repoId/compare`, params: {repoId: repo.id},
-            query: {ref: compareReference.id, compare: reference.id}
-        });
-    }, []);
-
     return <ActionsBar>
         <ActionGroup orientation="left">
-            <RefDropdown
-                prefix={'Base '}
+            <CompareBranchesSelection
                 repo={repo}
-                selected={(reference) ? reference : null}
+                reference={reference}
+                compareReference={compareReference}
+                baseSelectURL={baseSelectURL}
                 withCommits={true}
-                withWorkspace={false}
-                selectRef={onSelectRef}/>
-
-            <ArrowLeftIcon className="me-2 mt-2" size="small" verticalAlign="middle"/>
-
-            <RefDropdown
-                prefix={'Compared to '}
-                emptyText={'Compare with...'}
-                repo={repo}
-                selected={(compareReference) ? compareReference : null}
-                withCommits={true}
-                withWorkspace={false}
-                selectRef={onSelectCompare}/>
-
-            <OverlayTrigger placement="bottom" overlay={
-                <Tooltip>Switch directions</Tooltip>
-            }>
-                    <span>
-                        <Button variant={"link"}
-                                onClick={handleSwitchRefs}>
-                            <ArrowSwitchIcon className="me-2 mt-2" size="small" verticalAlign="middle"/>
-                        </Button>
-                    </span>
-            </OverlayTrigger>&#160;&#160;
+                />
         </ActionGroup>
 
         <ActionGroup orientation="right">

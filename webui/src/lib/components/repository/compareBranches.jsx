@@ -10,7 +10,7 @@ import {URINavigator} from "./tree";
 import CompareBranchesActionsBar from "./compareBranchesActionBar";
 
 const CompareBranches = (
-    {repo, reference, compareReference, showActionsBar, prefix = "", onSelectRef, onSelectCompare}
+    {repo, reference, compareReference, showActionsBar, prefix = "", baseSelectURL}
 ) => {
     const [internalRefresh, setInternalRefresh] = useState(true);
 
@@ -47,9 +47,8 @@ const CompareBranches = (
                 <CompareBranchesActionsBar
                     repo={repo}
                     reference={reference}
-                    onSelectRef={onSelectRef}
                     compareReference={compareReference}
-                    onSelectCompare={onSelectCompare}
+                    baseSelectURL={baseSelectURL}
                     doRefresh={doRefresh}
                     isEmptyDiff={isEmptyDiff}
                 />
