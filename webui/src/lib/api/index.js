@@ -622,7 +622,16 @@ class Pulls {
             body: JSON.stringify(pullDetails),
         });
         if (response.status !== 204) {
-            throw new Error(await extractError(response));
+            const baseMessage = 'Could not update pull request';
+            switch (response.status) {
+                case 400:
+                case 401:
+                case 403:
+                case 404:
+                    throw new Error(`${baseMessage}: ${(await response.json()).message}`);
+                default:
+                    throw new Error(`${baseMessage} (status = ${response.status}).`);
+            }
         }
     }
 }

@@ -7,7 +7,7 @@ import {Tab, Tabs} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import dayjs from "dayjs";
 
-import {ActionGroup, AlertError, Loading, PrefixSearchWidget} from "../../../../lib/components/controls";
+import {ActionGroup, AlertError, Loading} from "../../../../lib/components/controls";
 import {pulls as pullsAPI} from "../../../../lib/api";
 import {useRefs} from "../../../../lib/hooks/repo";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
@@ -99,14 +99,6 @@ const PullsList = ({repo, after, prefix, onPaginate}) => {
                     </Tabs>
                 </div>
                 <ActionGroup orientation="right" className="position-absolute top-0 end-0 pb-2">
-                    <PrefixSearchWidget
-                        defaultValue={router.query.prefix}
-                        text="Find Pull Request"
-                        onFilter={prefix => router.push({
-                            pathname: '/repositories/:repoId/pulls',
-                            params: {repoId: repo.id},
-                            query: {prefix}
-                        })}/>
                     <Button variant="success"
                             onClick={() => router.push({
                                 pathname: '/repositories/:repoId/pulls/create',

@@ -51,14 +51,14 @@ const PullDetailsContent = ({repo, pull}) => {
         try {
             await refsAPI.merge(repo.id, pull.source_branch, pull.destination_branch);
         } catch (error) {
-            setError(`Failed to merge pull-request: ${error.message}`);
+            setError(`Failed to merge pull request: ${error.message}`);
             setLoading(false);
             return;
         }
         try {
             await backOff(() => pullsAPI.update(repo.id, pull.id, {status: PullStatus.merged}));
         } catch (error) {
-            setError(`Failed to update pull-request status: ${error.message}`);
+            setError(`Failed to update pull request status: ${error.message}`);
             setLoading(false);
         }
         window.location.reload(); // TODO (gilo): replace with a more elegant solution
