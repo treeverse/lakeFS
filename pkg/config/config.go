@@ -174,6 +174,7 @@ type Config struct {
 		AuditLogLevel string   `mapstructure:"audit_log_level"`
 		// TraceRequestHeaders work only on 'trace' level, default is false as it may log sensitive data to the log
 		TraceRequestHeaders bool `mapstructure:"trace_request_headers"`
+		EnableSyslog        bool `mapstructure:"enable_syslog"`
 	}
 	Database Database
 	Auth     struct {
@@ -407,7 +408,7 @@ func newConfig(cfgType string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	logging.SetLevel(c.Logging.Level)
+	logging.SetLevel(c.Logging.Level, c.Logging.EnableSyslog)
 	return c, nil
 }
 

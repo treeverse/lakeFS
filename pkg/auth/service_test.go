@@ -28,7 +28,7 @@ import (
 const creationDate = 12345678
 
 func TestMain(m *testing.M) {
-	logging.SetLevel("panic")
+	logging.SetLevel("panic", false)
 	code := m.Run()
 	os.Exit(code)
 }

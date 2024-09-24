@@ -12,7 +12,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	if !testing.Verbose() {
 		// keep the log level calm
-		logging.SetLevel("panic")
+		logging.SetLevel("panic", false)
 	}
 
 	code := m.Run()

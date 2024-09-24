@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/syslog"
 	"os"
 	"reflect"
 	"runtime"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	lSyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -86,7 +88,7 @@ func logCallerTrimmer(frame *runtime.Frame) (function string, file string) {
 	return
 }
 
-func SetLevel(level string) {
+func SetLevel(level string, setSysLogs bool) {
 	switch strings.ToLower(level) {
 	case "trace":
 		defaultLogger.SetLevel(logrus.TraceLevel)
@@ -103,6 +105,28 @@ func SetLevel(level string) {
 	case "null", "none":
 		defaultLogger.SetLevel(logrus.PanicLevel)
 		defaultLogger.SetOutput(io.Discard)
+	}
+	if setSysLogs {
+		var hook *lSyslog.SyslogHook
+		var err error
+		switch strings.ToLower(level) {
+		// There's no syslog level for trace, using debug instead.
+		case "trace", "debug":
+			hook, err = lSyslog.NewSyslogHook("", "", syslog.LOG_DEBUG, "")
+		case "info":
+			hook, err = lSyslog.NewSyslogHook("", "", syslog.LOG_INFO, "")
+		case "warn", "warning":
+			hook, err = lSyslog.NewSyslogHook("", "", syslog.LOG_WARNING, "")
+		case "error":
+			hook, err = lSyslog.NewSyslogHook("", "", syslog.LOG_ERR, "")
+		case "panic", "null", "none":
+			hook, err = lSyslog.NewSyslogHook("", "", syslog.LOG_CRIT, "")
+		}
+		if err != nil {
+			defaultLogger.WithError(err).Error("failed to set syslog hook")
+		} else {
+			defaultLogger.AddHook(hook)
+		}
 	}
 }
 
