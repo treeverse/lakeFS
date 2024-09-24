@@ -35,6 +35,7 @@ from lakefs_client.model.presign_multipart_upload import PresignMultipartUpload
 from lakefs_client.model.pull_request import PullRequest
 from lakefs_client.model.pull_request_basic import PullRequestBasic
 from lakefs_client.model.pull_request_creation import PullRequestCreation
+from lakefs_client.model.pull_request_creation_response import PullRequestCreationResponse
 from lakefs_client.model.pull_requests_list import PullRequestsList
 from lakefs_client.model.staging_location import StagingLocation
 from lakefs_client.model.sts_auth_request import StsAuthRequest
@@ -283,7 +284,7 @@ class ExperimentalApi(object):
         )
         self.create_pull_request_endpoint = _Endpoint(
             settings={
-                'response_type': (str,),
+                'response_type': (PullRequestCreationResponse,),
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
@@ -335,7 +336,6 @@ class ExperimentalApi(object):
             },
             headers_map={
                 'accept': [
-                    'text/html',
                     'application/json'
                 ],
                 'content_type': [
@@ -1264,7 +1264,7 @@ class ExperimentalApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            str
+            PullRequestCreationResponse
                 If the method is called asynchronously, returns the request
                 thread.
         """

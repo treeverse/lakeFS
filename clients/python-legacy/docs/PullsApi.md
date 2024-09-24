@@ -11,7 +11,7 @@ Method | HTTP request | Description
 
 
 # **create_pull_request**
-> str create_pull_request(repository, pull_request_creation)
+> PullRequestCreationResponse create_pull_request(repository, pull_request_creation)
 
 create pull request
 
@@ -27,6 +27,7 @@ create pull request
 import time
 import lakefs_client
 from lakefs_client.api import pulls_api
+from lakefs_client.model.pull_request_creation_response import PullRequestCreationResponse
 from lakefs_client.model.pull_request_creation import PullRequestCreation
 from lakefs_client.model.error import Error
 from pprint import pprint
@@ -101,7 +102,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-**str**
+[**PullRequestCreationResponse**](PullRequestCreationResponse.md)
 
 ### Authorization
 
@@ -110,14 +111,14 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
  - **Content-Type**: application/json
- - **Accept**: text/html, application/json
+ - **Accept**: application/json
 
 
 ### HTTP response details
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**201** | pull request id |  -  |
+**201** | pull request created |  -  |
 **400** | Validation Error |  -  |
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |

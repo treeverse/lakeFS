@@ -31,6 +31,7 @@ import io.lakefs.clients.sdk.model.Error;
 import io.lakefs.clients.sdk.model.PullRequest;
 import io.lakefs.clients.sdk.model.PullRequestBasic;
 import io.lakefs.clients.sdk.model.PullRequestCreation;
+import io.lakefs.clients.sdk.model.PullRequestCreationResponse;
 import io.lakefs.clients.sdk.model.PullRequestsList;
 
 import java.lang.reflect.Type;
@@ -103,7 +104,6 @@ public class PullsApi {
         Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
         final String[] localVarAccepts = {
-            "text/html",
             "application/json"
         };
         final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
@@ -140,16 +140,16 @@ public class PullsApi {
     }
 
 
-    private ApiResponse<String> createPullRequestWithHttpInfo(String repository, PullRequestCreation pullRequestCreation) throws ApiException {
+    private ApiResponse<PullRequestCreationResponse> createPullRequestWithHttpInfo(String repository, PullRequestCreation pullRequestCreation) throws ApiException {
         okhttp3.Call localVarCall = createPullRequestValidateBeforeCall(repository, pullRequestCreation, null);
-        Type localVarReturnType = new TypeToken<String>(){}.getType();
+        Type localVarReturnType = new TypeToken<PullRequestCreationResponse>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call createPullRequestAsync(String repository, PullRequestCreation pullRequestCreation, final ApiCallback<String> _callback) throws ApiException {
+    private okhttp3.Call createPullRequestAsync(String repository, PullRequestCreation pullRequestCreation, final ApiCallback<PullRequestCreationResponse> _callback) throws ApiException {
 
         okhttp3.Call localVarCall = createPullRequestValidateBeforeCall(repository, pullRequestCreation, _callback);
-        Type localVarReturnType = new TypeToken<String>(){}.getType();
+        Type localVarReturnType = new TypeToken<PullRequestCreationResponse>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }
@@ -171,7 +171,7 @@ public class PullsApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 201 </td><td> pull request id </td><td>  -  </td></tr>
+            <tr><td> 201 </td><td> pull request created </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
@@ -187,12 +187,12 @@ public class PullsApi {
 
         /**
          * Execute createPullRequest request
-         * @return String
+         * @return PullRequestCreationResponse
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 201 </td><td> pull request id </td><td>  -  </td></tr>
+            <tr><td> 201 </td><td> pull request created </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
@@ -202,19 +202,19 @@ public class PullsApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public String execute() throws ApiException {
-            ApiResponse<String> localVarResp = createPullRequestWithHttpInfo(repository, pullRequestCreation);
+        public PullRequestCreationResponse execute() throws ApiException {
+            ApiResponse<PullRequestCreationResponse> localVarResp = createPullRequestWithHttpInfo(repository, pullRequestCreation);
             return localVarResp.getData();
         }
 
         /**
          * Execute createPullRequest request with HTTP info returned
-         * @return ApiResponse&lt;String&gt;
+         * @return ApiResponse&lt;PullRequestCreationResponse&gt;
          * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 201 </td><td> pull request id </td><td>  -  </td></tr>
+            <tr><td> 201 </td><td> pull request created </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
@@ -224,7 +224,7 @@ public class PullsApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public ApiResponse<String> executeWithHttpInfo() throws ApiException {
+        public ApiResponse<PullRequestCreationResponse> executeWithHttpInfo() throws ApiException {
             return createPullRequestWithHttpInfo(repository, pullRequestCreation);
         }
 
@@ -236,7 +236,7 @@ public class PullsApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 201 </td><td> pull request id </td><td>  -  </td></tr>
+            <tr><td> 201 </td><td> pull request created </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
@@ -246,7 +246,7 @@ public class PullsApi {
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
-        public okhttp3.Call executeAsync(final ApiCallback<String> _callback) throws ApiException {
+        public okhttp3.Call executeAsync(final ApiCallback<PullRequestCreationResponse> _callback) throws ApiException {
             return createPullRequestAsync(repository, pullRequestCreation, _callback);
         }
     }
@@ -260,7 +260,7 @@ public class PullsApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 201 </td><td> pull request id </td><td>  -  </td></tr>
+        <tr><td> 201 </td><td> pull request created </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>

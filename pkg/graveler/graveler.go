@@ -3409,7 +3409,7 @@ func PullRequestStatusFromString(s string) (PullRequestStatus, error) {
 }
 
 func (g *Graveler) UpdatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, update *UpdatePullRequest) error {
-	pr, err := g.GetPullRequest(ctx, repository, pullRequestID)
+	pr, err := g.RefManager.GetPullRequest(ctx, repository, pullRequestID)
 	if err != nil {
 		return err
 	}

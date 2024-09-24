@@ -5249,11 +5249,14 @@ func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, b
 		DestinationBranch: body.DestinationBranch,
 	}
 	pid, err := c.Catalog.CreatePullRequest(ctx, repository, pr)
+	response := &apigen.PullRequestCreationResponse{
+		Id: pid,
+	}
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	_, _ = io.WriteString(w, pid)
+	writeResponse(w, r, http.StatusCreated, response)
 }
 
 func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {

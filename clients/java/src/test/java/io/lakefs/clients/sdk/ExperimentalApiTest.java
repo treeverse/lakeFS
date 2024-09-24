@@ -27,6 +27,7 @@ import io.lakefs.clients.sdk.model.PresignMultipartUpload;
 import io.lakefs.clients.sdk.model.PullRequest;
 import io.lakefs.clients.sdk.model.PullRequestBasic;
 import io.lakefs.clients.sdk.model.PullRequestCreation;
+import io.lakefs.clients.sdk.model.PullRequestCreationResponse;
 import io.lakefs.clients.sdk.model.PullRequestsList;
 import io.lakefs.clients.sdk.model.StagingLocation;
 import io.lakefs.clients.sdk.model.StsAuthRequest;
@@ -114,7 +115,7 @@ public class ExperimentalApiTest {
     public void createPullRequestTest() throws ApiException {
         String repository = null;
         PullRequestCreation pullRequestCreation = null;
-        String response = api.createPullRequest(repository, pullRequestCreation)
+        PullRequestCreationResponse response = api.createPullRequest(repository, pullRequestCreation)
                 .execute();
         // TODO: test validations
     }

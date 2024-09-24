@@ -26,6 +26,7 @@ from lakefs_client.model.error import Error
 from lakefs_client.model.pull_request import PullRequest
 from lakefs_client.model.pull_request_basic import PullRequestBasic
 from lakefs_client.model.pull_request_creation import PullRequestCreation
+from lakefs_client.model.pull_request_creation_response import PullRequestCreationResponse
 from lakefs_client.model.pull_requests_list import PullRequestsList
 
 
@@ -42,7 +43,7 @@ class PullsApi(object):
         self.api_client = api_client
         self.create_pull_request_endpoint = _Endpoint(
             settings={
-                'response_type': (str,),
+                'response_type': (PullRequestCreationResponse,),
                 'auth': [
                     'basic_auth',
                     'cookie_auth',
@@ -94,7 +95,6 @@ class PullsApi(object):
             },
             headers_map={
                 'accept': [
-                    'text/html',
                     'application/json'
                 ],
                 'content_type': [
@@ -361,7 +361,7 @@ class PullsApi(object):
             async_req (bool): execute request asynchronously
 
         Returns:
-            str
+            PullRequestCreationResponse
                 If the method is called asynchronously, returns the request
                 thread.
         """
