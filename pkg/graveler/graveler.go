@@ -280,7 +280,7 @@ type PullRequest struct {
 	Source string
 	// Destination - destination branch of pull request
 	Destination string
-	// MergedCommitID - The commit ID that of the source at the time of the merge. Relevant only for merged PRs
+	// MergedCommitID - The commit ID of the source at the time of the merge. Relevant only for merged PRs
 	MergedCommitID *string
 	// CloseDate - Closing date of pull request. Relevant only for closed or merged PRs
 	CloseDate *time.Time
