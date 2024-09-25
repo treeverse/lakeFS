@@ -38,7 +38,7 @@ const PullWidget = ({repo, pull}) => {
             return <>Opened {dayjs(pull.creation_date).fromNow()} by <strong>{pull.author}</strong>.</>;
         } else if (pull.status === PullStatus.closed || pull.status === PullStatus.merged) {
             const statusDesc = pull.status === PullStatus.closed ? "Closed" : "Merged";
-            return <>{statusDesc} {dayjs(pull.close_date).fromNow()} by <strong>{pull.author}</strong>.</>;
+            return <>{statusDesc} {dayjs(pull.closed_date).fromNow()} by <strong>{pull.author}</strong>.</>;
         }
     };
 
