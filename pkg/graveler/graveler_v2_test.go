@@ -1101,7 +1101,7 @@ func TestGraveler_UpdatePullRequest(t *testing.T) {
 						newPr, err := f(&pr)
 						require.NoError(t, err)
 						if slices.Contains([]string{"MERGED", "CLOSED"}, swag.StringValue(tt.request.Status)) {
-							expectedPr.CloseDate = newPr.CloseDate
+							expectedPr.ClosedDate = newPr.ClosedDate
 						}
 						require.Equal(t, expectedPr, *newPr)
 						return nil

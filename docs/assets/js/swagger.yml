@@ -1770,7 +1770,7 @@ components:
               merged_commit_id:
                 type: string
                 description: the commit id of merged PRs
-              close_date:
+              closed_date:
                 type: string
                 format: date-time
 

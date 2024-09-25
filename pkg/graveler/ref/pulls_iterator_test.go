@@ -38,7 +38,7 @@ func TestPullsIterator(t *testing.T) {
 			Source:         pid,
 			Destination:    pid,
 			MergedCommitID: &pid,
-			CloseDate:      &now,
+			ClosedDate:     &now,
 		}))
 	}
 
@@ -60,7 +60,7 @@ func TestPullsIterator(t *testing.T) {
 					Source:         pid,
 					Destination:    pid,
 					MergedCommitID: &pid,
-					CloseDate:      &now,
+					ClosedDate:     &now,
 				},
 			}, p)
 			count++

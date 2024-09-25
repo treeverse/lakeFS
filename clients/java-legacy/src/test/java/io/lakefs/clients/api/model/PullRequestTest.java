@@ -116,11 +116,11 @@ public class PullRequestTest {
     }
 
     /**
-     * Test the property 'closeDate'
+     * Test the property 'closedDate'
      */
     @Test
-    public void closeDateTest() {
-        // TODO: test closeDate
+    public void closedDateTest() {
+        // TODO: test closedDate
     }
 
 }

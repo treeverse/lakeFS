@@ -9559,7 +9559,7 @@ components:
           merged_commit_id:
             description: the commit id of merged PRs
             type: string
-          close_date:
+          closed_date:
             format: date-time
             type: string
         required:

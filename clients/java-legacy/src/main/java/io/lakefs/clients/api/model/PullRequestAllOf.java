@@ -54,9 +54,9 @@ public class PullRequestAllOf {
   @SerializedName(SERIALIZED_NAME_MERGED_COMMIT_ID)
   private String mergedCommitId;
 
-  public static final String SERIALIZED_NAME_CLOSE_DATE = "close_date";
-  @SerializedName(SERIALIZED_NAME_CLOSE_DATE)
-  private OffsetDateTime closeDate;
+  public static final String SERIALIZED_NAME_CLOSED_DATE = "closed_date";
+  @SerializedName(SERIALIZED_NAME_CLOSED_DATE)
+  private OffsetDateTime closedDate;
 
 
   public PullRequestAllOf id(String id) {
@@ -197,26 +197,26 @@ public class PullRequestAllOf {
   }
 
 
-  public PullRequestAllOf closeDate(OffsetDateTime closeDate) {
+  public PullRequestAllOf closedDate(OffsetDateTime closedDate) {
     
-    this.closeDate = closeDate;
+    this.closedDate = closedDate;
     return this;
   }
 
    /**
-   * Get closeDate
-   * @return closeDate
+   * Get closedDate
+   * @return closedDate
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
 
-  public OffsetDateTime getCloseDate() {
-    return closeDate;
+  public OffsetDateTime getClosedDate() {
+    return closedDate;
   }
 
 
-  public void setCloseDate(OffsetDateTime closeDate) {
-    this.closeDate = closeDate;
+  public void setClosedDate(OffsetDateTime closedDate) {
+    this.closedDate = closedDate;
   }
 
 
@@ -235,12 +235,12 @@ public class PullRequestAllOf {
         Objects.equals(this.sourceBranch, pullRequestAllOf.sourceBranch) &&
         Objects.equals(this.destinationBranch, pullRequestAllOf.destinationBranch) &&
         Objects.equals(this.mergedCommitId, pullRequestAllOf.mergedCommitId) &&
-        Objects.equals(this.closeDate, pullRequestAllOf.closeDate);
+        Objects.equals(this.closedDate, pullRequestAllOf.closedDate);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, creationDate, author, sourceBranch, destinationBranch, mergedCommitId, closeDate);
+    return Objects.hash(id, creationDate, author, sourceBranch, destinationBranch, mergedCommitId, closedDate);
   }
 
   @Override
@@ -253,7 +253,7 @@ public class PullRequestAllOf {
     sb.append("    sourceBranch: ").append(toIndentedString(sourceBranch)).append("\n");
     sb.append("    destinationBranch: ").append(toIndentedString(destinationBranch)).append("\n");
     sb.append("    mergedCommitId: ").append(toIndentedString(mergedCommitId)).append("\n");
-    sb.append("    closeDate: ").append(toIndentedString(closeDate)).append("\n");
+    sb.append("    closedDate: ").append(toIndentedString(closedDate)).append("\n");
     sb.append("}");
     return sb.toString();
   }

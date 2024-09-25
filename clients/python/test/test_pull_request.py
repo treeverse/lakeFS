@@ -48,7 +48,7 @@ class TestPullRequest(unittest.TestCase):
                 source_branch = '', 
                 destination_branch = '', 
                 merged_commit_id = '', 
-                close_date = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f')
+                closed_date = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f')
             )
         else :
             return PullRequest(

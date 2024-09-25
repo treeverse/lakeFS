@@ -233,7 +233,7 @@ func PullRequestFromProto(pb *PullRequestData) *PullRequestRecord {
 	}
 	if pb.ClosedAt != nil {
 		pbTime := pb.ClosedAt.AsTime()
-		pr.CloseDate = &pbTime
+		pr.ClosedDate = &pbTime
 	}
 	return pr
 }
@@ -250,8 +250,8 @@ func ProtoFromPullRequest(pullID PullRequestID, pull *PullRequest) *PullRequestD
 		DestinationBranch: pull.Destination,
 		CommitId:          pull.MergedCommitID,
 	}
-	if pull.CloseDate != nil {
-		prData.ClosedAt = timestamppb.New(*pull.CloseDate)
+	if pull.ClosedDate != nil {
+		prData.ClosedAt = timestamppb.New(*pull.ClosedDate)
 	}
 
 	return prData
