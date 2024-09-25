@@ -399,12 +399,10 @@ func ContextUnavailable() Logger {
 
 func ContextUnavailableWithSysLogs(sysLogsLevel string) Logger {
 	// wrap formatter with our own formatter that overrides caller
-	defaultLogger.Debug("using default logger")
 	formatterInitOnce.Do(func() {
 		defaultLogger.SetReportCaller(true)
 		defaultLogger.SetNoLock()
 		defaultLogger.Formatter = logrusCallerFormatter{defaultLogger.Formatter}
-		defaultLogger.Debug("initialized logger")
 	})
 	syslogOnce.Do(func() {
 		var hook *lSyslog.SyslogHook
