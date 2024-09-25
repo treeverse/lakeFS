@@ -101,7 +101,9 @@ message PullRequestData {
   string source_branch = 7;
   string destination_branch = 8;
   // commit_id relevant only for merged PRs
-  string commit_id = 9;
+  optional string commit_id = 9;
+  // closed_at relevant only for merged or closed PRs
+  optional google.protobuf.Timestamp closed_at = 10;
 }
 
 enum PullRequestStatus {

@@ -3,6 +3,7 @@ package graveler_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 	"time"
 
@@ -1051,6 +1052,7 @@ func TestGravelerImport(t *testing.T) {
 func TestGraveler_UpdatePullRequest(t *testing.T) {
 	ctx := context.Background()
 	pullID := graveler.PullRequestID(xid.New().String())
+	ref := "ref"
 	pr := graveler.PullRequest{
 		CreationDate:   time.Now(),
 		Status:         graveler.PullRequestStatus_CLOSED,
@@ -1059,7 +1061,7 @@ func TestGraveler_UpdatePullRequest(t *testing.T) {
 		Description:    "description",
 		Source:         "source",
 		Destination:    "destination",
-		MergedCommitID: "ref",
+		MergedCommitID: &ref,
 	}
 
 	testCases := []struct {
@@ -1098,6 +1100,9 @@ func TestGraveler_UpdatePullRequest(t *testing.T) {
 						require.Equal(t, pullID, id)
 						newPr, err := f(&pr)
 						require.NoError(t, err)
+						if slices.Contains([]string{"MERGED", "CLOSED"}, swag.StringValue(tt.request.Status)) {
+							expectedPr.ClosedDate = newPr.ClosedDate
+						}
 						require.Equal(t, expectedPr, *newPr)
 						return nil
 					}).Times(1)

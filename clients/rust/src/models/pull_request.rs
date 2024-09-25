@@ -31,6 +31,8 @@ pub struct PullRequest {
     /// the commit id of merged PRs
     #[serde(rename = "merged_commit_id", skip_serializing_if = "Option::is_none")]
     pub merged_commit_id: Option<String>,
+    #[serde(rename = "closed_date", skip_serializing_if = "Option::is_none")]
+    pub closed_date: Option<String>,
 }
 
 impl PullRequest {
@@ -45,6 +47,7 @@ impl PullRequest {
             source_branch,
             destination_branch,
             merged_commit_id: None,
+            closed_date: None,
         }
     }
 }

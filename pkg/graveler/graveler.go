@@ -280,8 +280,10 @@ type PullRequest struct {
 	Source string
 	// Destination - destination branch of pull request
 	Destination string
-	// MergedCommitID - The commit ID that of the source at the time of the merge. Relevant only for merged PRs
-	MergedCommitID string
+	// MergedCommitID - The commit ID of the merge commit created during the merge from source to destination. Relevant only for merged PRs
+	MergedCommitID *string
+	// ClosedDate - Closing date of pull request. Relevant only for closed or merged PRs
+	ClosedDate *time.Time
 }
 
 type PullRequestRecord struct {
@@ -3400,12 +3402,16 @@ func (g *Graveler) ListPullRequests(ctx context.Context, repository *RepositoryR
 	return g.RefManager.ListPullRequests(ctx, repository)
 }
 
-func PullRequestStatusFromString(s string) (PullRequestStatus, error) {
+func pullRequestStatusFromString(s string) (PullRequestStatus, error) {
 	status, ok := PullRequestStatus_value[strings.ToUpper(s)]
 	if !ok {
 		return -1, ErrInvalidPullRequestStatus
 	}
 	return PullRequestStatus(status), nil
+}
+
+func isPullClosed(status PullRequestStatus) bool {
+	return status == PullRequestStatus_CLOSED || status == PullRequestStatus_MERGED
 }
 
 func (g *Graveler) UpdatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, update *UpdatePullRequest) error {
@@ -3422,11 +3428,15 @@ func (g *Graveler) UpdatePullRequest(ctx context.Context, repository *Repository
 			pr.Description = *update.Description
 		}
 		if update.Status != nil {
-			status, err := PullRequestStatusFromString(*update.Status)
+			status, err := pullRequestStatusFromString(*update.Status)
 			if err != nil {
 				return nil, err
 			}
 			pr.Status = status
+			if isPullClosed(status) {
+				now := time.Now()
+				pr.ClosedDate = &now
+			}
 		}
 		return pr, nil
 	})

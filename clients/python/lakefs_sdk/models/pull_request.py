@@ -38,7 +38,8 @@ class PullRequest(BaseModel):
     source_branch: StrictStr = Field(...)
     destination_branch: StrictStr = Field(...)
     merged_commit_id: Optional[StrictStr] = Field(None, description="the commit id of merged PRs")
-    __properties = ["status", "title", "description", "id", "creation_date", "author", "source_branch", "destination_branch", "merged_commit_id"]
+    closed_date: Optional[datetime] = None
+    __properties = ["status", "title", "description", "id", "creation_date", "author", "source_branch", "destination_branch", "merged_commit_id", "closed_date"]
 
     @validator('status')
     def status_validate_enum(cls, value):
@@ -91,7 +92,8 @@ class PullRequest(BaseModel):
             "author": obj.get("author"),
             "source_branch": obj.get("source_branch"),
             "destination_branch": obj.get("destination_branch"),
-            "merged_commit_id": obj.get("merged_commit_id")
+            "merged_commit_id": obj.get("merged_commit_id"),
+            "closed_date": obj.get("closed_date")
         })
         return _obj
 

@@ -218,7 +218,7 @@ func ProtoFromRepositoryMetadata(metadata RepositoryMetadata) *RepoMetadata {
 }
 
 func PullRequestFromProto(pb *PullRequestData) *PullRequestRecord {
-	return &PullRequestRecord{
+	pr := &PullRequestRecord{
 		ID: PullRequestID(pb.Id),
 		PullRequest: PullRequest{
 			CreationDate:   pb.CreatedAt.AsTime(),
@@ -231,10 +231,15 @@ func PullRequestFromProto(pb *PullRequestData) *PullRequestRecord {
 			MergedCommitID: pb.CommitId,
 		},
 	}
+	if pb.ClosedAt != nil {
+		pbTime := pb.ClosedAt.AsTime()
+		pr.ClosedDate = &pbTime
+	}
+	return pr
 }
 
 func ProtoFromPullRequest(pullID PullRequestID, pull *PullRequest) *PullRequestData {
-	return &PullRequestData{
+	prData := &PullRequestData{
 		Id:                pullID.String(),
 		Status:            pull.Status,
 		CreatedAt:         timestamppb.New(pull.CreationDate),
@@ -245,4 +250,9 @@ func ProtoFromPullRequest(pullID PullRequestID, pull *PullRequest) *PullRequestD
 		DestinationBranch: pull.Destination,
 		CommitId:          pull.MergedCommitID,
 	}
+	if pull.ClosedDate != nil {
+		prData.ClosedAt = timestamppb.New(*pull.ClosedDate)
+	}
+
+	return prData
 }
