@@ -125,12 +125,24 @@ const PullDetailsContent = ({repo, pull}) => {
                     }
                 </div>
             </div>
-            <hr className="mt-5 mb-4"/>
-            <CompareBranches
-                repo={repo}
-                reference={{id: pull.destination_branch, type: RefTypeBranch}}
-                compareReference={{id: pull.source_branch, type: RefTypeBranch}}
-            />
+            {isPullOpen() &&
+                <>
+                    <hr className="mt-5 mb-4"/>
+                    <CompareBranches
+                        repo={repo}
+                        reference={{id: pull.destination_branch, type: RefTypeBranch}}
+                        compareReference={{id: pull.source_branch, type: RefTypeBranch}}
+                    />
+                </>
+            }
+            {pull.status === PullStatus.merged && pull.merged_commit_id &&
+                <Link href={{
+                    pathname: '/repositories/:repoId/commits/:commitId',
+                    params: {repoId: repo.id, commitId: pull.merged_commit_id},
+                }}>
+                    Merged commit
+                </Link>
+            }
         </div>
     );
 };
