@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useContext, useEffect, useState} from "react";
 import {useOutletContext} from "react-router-dom";
 import Badge from "react-bootstrap/Badge";
 import Button from "react-bootstrap/Button";
@@ -17,6 +17,7 @@ import {useAPI} from "../../../../lib/hooks/api";
 import {Link} from "../../../../lib/components/nav";
 import CompareBranches from "../../../../lib/components/repository/compareBranches";
 import {PullStatus, RefTypeBranch} from "../../../../constants";
+import {DiffContext, WithDiffContext} from "../../../../lib/hooks/diffContext";
 
 const BranchLink = ({repo, branch}) =>
     <Link href={{
@@ -44,6 +45,9 @@ const StatusBadge = ({status}) => {
 const PullDetailsContent = ({repo, pull}) => {
     let [loading, setLoading] = useState(false);
     let [error, setError] = useState(null);
+
+    const {state: {results: diffResults, loading: diffLoading, error: diffError}} = useContext(DiffContext);
+    const isEmptyDiff = (!diffLoading && !diffError && !!diffResults && diffResults.length === 0);
 
     const mergePullRequest = async () => {
         setError(null);
@@ -113,7 +117,7 @@ const PullDetailsContent = ({repo, pull}) => {
                             }
                         </Button>
                         <Button variant="success"
-                                disabled={loading}
+                                disabled={loading || isEmptyDiff}
                                 onClick={mergePullRequest}>
                             {loading ?
                                 <span className="spinner-border spinner-border-sm text-light" role="status"/> :
@@ -125,6 +129,13 @@ const PullDetailsContent = ({repo, pull}) => {
             </div>
             {isPullOpen() &&
                 <>
+                    {isEmptyDiff &&
+                        <div className="clearfix">
+                            <div className="mt-4 text-warning float-end">
+                                Merging is disabled for pull requests without changes.
+                            </div>
+                        </div>
+                    }
                     <hr className="mt-5 mb-4"/>
                     <CompareBranches
                         repo={repo}
@@ -171,7 +182,9 @@ const PullDetailsContainer = () => {
 const RepositoryPullDetailsPage = () => {
     const [setActivePage] = useOutletContext();
     useEffect(() => setActivePage("pulls"), [setActivePage]);
-    return <PullDetailsContainer/>;
+    return <WithDiffContext>
+        <PullDetailsContainer/>
+    </WithDiffContext>;
 }
 
 export default RepositoryPullDetailsPage;
