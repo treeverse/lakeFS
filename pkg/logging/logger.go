@@ -3,7 +3,6 @@ package logging
 import (
 	"context"
 	"fmt"
-	lSyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"io"
 	"log/syslog"
 	"os"
@@ -15,6 +14,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	lSyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
