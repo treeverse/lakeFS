@@ -51,9 +51,9 @@ const PullWidget = ({repo, pull}) => {
                 </small>
             </div>
             <div className="float-end mt-2">
-                <Button variant="secondary" size="sm" disabled={true}>{pull.destination_branch}</Button>
-                <ArrowLeftIcon className="m-1 text-secondary" size="small" verticalAlign="middle"/>
-                <Button variant="secondary" size="sm" disabled={true}>{pull.source_branch}</Button>
+                <div className="btn btn-light btn-sm">{pull.destination_branch}</div>
+                <ArrowLeftIcon className="m-1" size="small" verticalAlign="middle"/>
+                <div className="btn btn-light btn-sm">{pull.source_branch}</div>
             </div>
         </ListGroup.Item>
     );
