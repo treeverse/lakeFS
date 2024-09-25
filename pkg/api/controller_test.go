@@ -5731,7 +5731,7 @@ func TestController_MergePullRequest(t *testing.T) {
 		body := apigen.CreatePullRequestJSONRequestBody{
 			Description:       swag.String("My description"),
 			DestinationBranch: "main",
-			SourceBranch:      "branch_b",
+			SourceBranch:      "branch_c",
 			Title:             "My title",
 		}
 		branchResp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
@@ -5764,7 +5764,7 @@ func TestController_MergePullRequest(t *testing.T) {
 		body := apigen.CreatePullRequestJSONRequestBody{
 			Description:       swag.String("My description"),
 			DestinationBranch: "main",
-			SourceBranch:      "branch_b",
+			SourceBranch:      "branch_d",
 			Title:             "My title",
 		}
 		branchResp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{

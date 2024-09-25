@@ -3439,7 +3439,9 @@ func (g *Graveler) UpdatePullRequest(ctx context.Context, repository *Repository
 				pr.ClosedDate = &now
 			}
 		}
-		pr.MergedCommitID = update.MergedCommitID
+		if update.MergedCommitID != nil {
+			pr.MergedCommitID = update.MergedCommitID
+		}
 		return pr, nil
 	})
 	return err
