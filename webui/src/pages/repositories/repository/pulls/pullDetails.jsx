@@ -124,14 +124,16 @@ const PullDetailsContent = ({repo, pull}) => {
                                     <>Close pull request</>
                                 }
                             </Button>
-                            <Button variant="success"
-                                    disabled={loading || isEmptyDiff}
-                                    onClick={mergePullRequest}>
-                                {loading ?
-                                    <span className="spinner-border spinner-border-sm text-light" role="status"/> :
-                                    <><GitMergeIcon/> Merge pull request</>
-                                }
-                            </Button>
+                            {!isBranchNotFoundError &&
+                                <Button variant="success"
+                                        disabled={loading || isEmptyDiff}
+                                        onClick={mergePullRequest}>
+                                    {loading ?
+                                        <span className="spinner-border spinner-border-sm text-light" role="status"/> :
+                                        <><GitMergeIcon/> Merge pull request</>
+                                    }
+                                </Button>
+                            }
                         </div>
                         {isEmptyDiff &&
                             <Alert variant="warning" className="mt-4">
