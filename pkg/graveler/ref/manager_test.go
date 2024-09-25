@@ -1238,6 +1238,7 @@ func TestManager_GetPullRequest(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("get_pull_request_exists", func(t *testing.T) {
+		mergeCommitID := "abc"
 		expected := graveler.PullRequestRecord{
 			ID: "pullID",
 			PullRequest: graveler.PullRequest{
@@ -1248,7 +1249,7 @@ func TestManager_GetPullRequest(t *testing.T) {
 				Description:    "some description",
 				Source:         "dev",
 				Destination:    "main",
-				MergedCommitID: "abc",
+				MergedCommitID: &mergeCommitID,
 			},
 		}
 		require.NoError(t, r.CreatePullRequest(ctx, repository, expected.ID, &expected.PullRequest))
@@ -1293,7 +1294,7 @@ func TestManager_DeletePullRequest(t *testing.T) {
 				Description:    "some description",
 				Source:         "dev",
 				Destination:    "main",
-				MergedCommitID: "",
+				MergedCommitID: nil,
 			},
 		}
 		require.NoError(t, r.CreatePullRequest(ctx, repository, rec.ID, &rec.PullRequest))
@@ -1332,7 +1333,7 @@ func TestManager_UpdatePullRequest(t *testing.T) {
 			Description:    "some description",
 			Source:         "dev",
 			Destination:    "main",
-			MergedCommitID: "",
+			MergedCommitID: nil,
 		},
 	}
 

@@ -104,6 +104,7 @@ class PullRequest(ModelComposed):
             'source_branch': (str,),  # noqa: E501
             'destination_branch': (str,),  # noqa: E501
             'merged_commit_id': (str,),  # noqa: E501
+            'closed_date': (datetime,),  # noqa: E501
         }
 
     @cached_property
@@ -121,6 +122,7 @@ class PullRequest(ModelComposed):
         'source_branch': 'source_branch',  # noqa: E501
         'destination_branch': 'destination_branch',  # noqa: E501
         'merged_commit_id': 'merged_commit_id',  # noqa: E501
+        'closed_date': 'closed_date',  # noqa: E501
     }
 
     read_only_vars = {
@@ -171,6 +173,7 @@ class PullRequest(ModelComposed):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             merged_commit_id (str): the commit id of merged PRs. [optional]  # noqa: E501
+            closed_date (datetime): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -279,6 +282,7 @@ class PullRequest(ModelComposed):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             merged_commit_id (str): the commit id of merged PRs. [optional]  # noqa: E501
+            closed_date (datetime): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

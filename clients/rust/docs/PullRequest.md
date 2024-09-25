@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **source_branch** | **String** |  | 
 **destination_branch** | **String** |  | 
 **merged_commit_id** | Option<**String**> | the commit id of merged PRs | [optional]
+**closed_date** | Option<**String**> |  | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
