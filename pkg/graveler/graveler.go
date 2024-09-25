@@ -3411,15 +3411,7 @@ func pullRequestStatusFromString(s string) (PullRequestStatus, error) {
 }
 
 func isPullClosed(status PullRequestStatus) bool {
-	switch status {
-	case PullRequestStatus_OPEN:
-		return false
-	case PullRequestStatus_CLOSED,
-		PullRequestStatus_MERGED:
-		return true
-	default: // Should not reach
-		return false
-	}
+	return status == PullRequestStatus_CLOSED || status == PullRequestStatus_MERGED
 }
 
 func (g *Graveler) UpdatePullRequest(ctx context.Context, repository *RepositoryRecord, pullRequestID PullRequestID, update *UpdatePullRequest) error {
