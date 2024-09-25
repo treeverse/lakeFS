@@ -5284,8 +5284,9 @@ func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repo
 		CreationDate:      pr.CreationDate,
 		DestinationBranch: pr.Destination,
 		Id:                pullRequestID,
-		MergedCommitId:    swag.String(pr.MergedCommitID),
+		MergedCommitId:    pr.MergedCommitID,
 		SourceBranch:      pr.Source,
+		ClosedDate:        pr.ClosedDate,
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }

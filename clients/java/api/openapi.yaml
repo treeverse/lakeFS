@@ -9559,6 +9559,9 @@ components:
           merged_commit_id:
             description: the commit id of merged PRs
             type: string
+          closed_date:
+            format: date-time
+            type: string
         required:
         - author
         - creation_date

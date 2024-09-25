@@ -5352,6 +5352,8 @@ func TestController_CreatePullRequest(t *testing.T) {
 		require.Equal(t, "open", swag.StringValue(getResp.JSON200.Status))
 		require.Equal(t, "", swag.StringValue(getResp.JSON200.MergedCommitId))
 		require.True(t, time.Now().Sub(getResp.JSON200.CreationDate) < 1*time.Minute)
+		require.Nil(t, getResp.JSON200.MergedCommitId)
+		require.Nil(t, getResp.JSON200.ClosedDate)
 	})
 }
 
@@ -5572,7 +5574,6 @@ func TestController_UpdatePullRequest(t *testing.T) {
 		require.NotNil(t, getResp.JSON200)
 
 		pr := getResp.JSON200
-
 		// Partial update
 		expected := &apigen.PullRequest{
 			PullRequestBasic: apigen.PullRequestBasic{
@@ -5617,8 +5618,49 @@ func TestController_UpdatePullRequest(t *testing.T) {
 		getResp, err = clt.GetPullRequestWithResponse(ctx, repo, resp.JSON201.Id)
 		require.NoError(t, err)
 		require.NotNil(t, getResp.JSON200)
+		// Update closing time since we closed PR
+		expected.ClosedDate = getResp.JSON200.ClosedDate
 		if diff := deep.Equal(expected, getResp.JSON200); diff != nil {
 			t.Error("updated value not as expected", diff)
+		}
+	})
+
+	t.Run("close date", func(t *testing.T) {
+		body := apigen.CreatePullRequestJSONRequestBody{
+			Description:       "My description",
+			DestinationBranch: "main",
+			SourceBranch:      "branch_c",
+			Title:             "My title",
+		}
+		branchResp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+			Name:   body.SourceBranch,
+			Source: "main",
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, branchResp.StatusCode())
+		for _, status := range []string{"closed", "merged"} {
+			t.Run(status, func(t *testing.T) {
+				resp, err := clt.CreatePullRequestWithResponse(ctx, repo, body)
+				require.NoError(t, err)
+				require.NotNil(t, resp.JSON201)
+
+				// Get pull request
+				getResp, err := clt.GetPullRequestWithResponse(ctx, repo, resp.JSON201.Id)
+				require.NoError(t, err)
+				require.NotNil(t, getResp.JSON200)
+				updateResp, err := clt.UpdatePullRequestWithResponse(ctx, repo, resp.JSON201.Id, apigen.UpdatePullRequestJSONRequestBody{
+					Status: &status,
+				})
+				require.NoError(t, err)
+				require.Equal(t, http.StatusNoContent, updateResp.StatusCode())
+
+				// Verify update
+				getResp, err = clt.GetPullRequestWithResponse(ctx, repo, resp.JSON201.Id)
+				require.NoError(t, err)
+				require.NotNil(t, getResp.JSON200)
+				require.NotNil(t, getResp.JSON200.ClosedDate)
+				require.True(t, time.Now().Sub(*getResp.JSON200.ClosedDate) < 1*time.Minute)
+			})
 		}
 	})
 }

@@ -14,6 +14,7 @@ Name | Type | Description | Notes
 **source_branch** | **str** |  | 
 **destination_branch** | **str** |  | 
 **merged_commit_id** | **str** | the commit id of merged PRs | [optional] 
+**closed_date** | **datetime** |  | [optional] 
 
 ## Example
 

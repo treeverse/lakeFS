@@ -1770,6 +1770,9 @@ components:
               merged_commit_id:
                 type: string
                 description: the commit id of merged PRs
+              closed_date:
+                type: string
+                format: date-time
 
     PullRequestsList:
       type: object
