@@ -30,6 +30,7 @@ from lakefs_client.model.external_login_information import ExternalLoginInformat
 from lakefs_client.model.external_principal import ExternalPrincipal
 from lakefs_client.model.external_principal_creation import ExternalPrincipalCreation
 from lakefs_client.model.external_principal_list import ExternalPrincipalList
+from lakefs_client.model.merge_result import MergeResult
 from lakefs_client.model.object_stats import ObjectStats
 from lakefs_client.model.presign_multipart_upload import PresignMultipartUpload
 from lakefs_client.model.pull_request import PullRequest
@@ -860,6 +861,67 @@ class ExperimentalApi(object):
                     'prefix': 'query',
                     'after': 'query',
                     'amount': 'query',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [],
+            },
+            api_client=api_client
+        )
+        self.merge_pull_request_endpoint = _Endpoint(
+            settings={
+                'response_type': (MergeResult,),
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth',
+                    'saml_auth'
+                ],
+                'endpoint_path': '/repositories/{repository}/pulls/{pull_request}/merge',
+                'operation_id': 'merge_pull_request',
+                'http_method': 'PUT',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'repository',
+                    'pull_request',
+                ],
+                'required': [
+                    'repository',
+                    'pull_request',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'repository':
+                        (str,),
+                    'pull_request':
+                        (str,),
+                },
+                'attribute_map': {
+                    'repository': 'repository',
+                    'pull_request': 'pull_request',
+                },
+                'location_map': {
+                    'repository': 'path',
+                    'pull_request': 'path',
                 },
                 'collection_format_map': {
                 }
@@ -1838,6 +1900,75 @@ class ExperimentalApi(object):
         kwargs['user_id'] = \
             user_id
         return self.list_user_external_principals_endpoint.call_with_http_info(**kwargs)
+
+    def merge_pull_request(
+        self,
+        repository,
+        pull_request,
+        **kwargs
+    ):
+        """merge pull request  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.merge_pull_request(repository, pull_request, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            repository (str):
+            pull_request (str): pull request id
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            MergeResult
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['repository'] = \
+            repository
+        kwargs['pull_request'] = \
+            pull_request
+        return self.merge_pull_request_endpoint.call_with_http_info(**kwargs)
 
     def sts_login(
         self,

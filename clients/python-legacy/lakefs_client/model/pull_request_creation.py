@@ -83,9 +83,9 @@ class PullRequestCreation(ModelNormal):
         """
         return {
             'title': (str,),  # noqa: E501
-            'description': (str,),  # noqa: E501
             'source_branch': (str,),  # noqa: E501
             'destination_branch': (str,),  # noqa: E501
+            'description': (str,),  # noqa: E501
         }
 
     @cached_property
@@ -95,9 +95,9 @@ class PullRequestCreation(ModelNormal):
 
     attribute_map = {
         'title': 'title',  # noqa: E501
-        'description': 'description',  # noqa: E501
         'source_branch': 'source_branch',  # noqa: E501
         'destination_branch': 'destination_branch',  # noqa: E501
+        'description': 'description',  # noqa: E501
     }
 
     read_only_vars = {
@@ -107,12 +107,11 @@ class PullRequestCreation(ModelNormal):
 
     @classmethod
     @convert_js_args_to_python_args
-    def _from_openapi_data(cls, title, description, source_branch, destination_branch, *args, **kwargs):  # noqa: E501
+    def _from_openapi_data(cls, title, source_branch, destination_branch, *args, **kwargs):  # noqa: E501
         """PullRequestCreation - a model defined in OpenAPI
 
         Args:
             title (str):
-            description (str):
             source_branch (str):
             destination_branch (str):
 
@@ -147,6 +146,7 @@ class PullRequestCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            description (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -175,7 +175,6 @@ class PullRequestCreation(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.title = title
-        self.description = description
         self.source_branch = source_branch
         self.destination_branch = destination_branch
         for var_name, var_value in kwargs.items():
@@ -198,12 +197,11 @@ class PullRequestCreation(ModelNormal):
     ])
 
     @convert_js_args_to_python_args
-    def __init__(self, title, description, source_branch, destination_branch, *args, **kwargs):  # noqa: E501
+    def __init__(self, title, source_branch, destination_branch, *args, **kwargs):  # noqa: E501
         """PullRequestCreation - a model defined in OpenAPI
 
         Args:
             title (str):
-            description (str):
             source_branch (str):
             destination_branch (str):
 
@@ -238,6 +236,7 @@ class PullRequestCreation(ModelNormal):
                                 Animal class but this time we won't travel
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
+            description (str): [optional]  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -264,7 +263,6 @@ class PullRequestCreation(ModelNormal):
         self._visited_composed_classes = _visited_composed_classes + (self.__class__,)
 
         self.title = title
-        self.description = description
         self.source_branch = source_branch
         self.destination_branch = destination_branch
         for var_name, var_value in kwargs.items():

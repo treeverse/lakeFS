@@ -45,6 +45,13 @@ class TestPullsApi(unittest.TestCase):
         """
         pass
 
+    def test_merge_pull_request(self):
+        """Test case for merge_pull_request
+
+        merge pull request  # noqa: E501
+        """
+        pass
+
     def test_update_pull_request(self):
         """Test case for update_pull_request
 

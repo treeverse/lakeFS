@@ -5213,6 +5213,7 @@ func (c *Controller) ListPullRequests(w http.ResponseWriter, r *http.Request, re
 			DestinationBranch: p.DestinationBranch,
 			SourceBranch:      p.SourceBranch,
 			MergedCommitId:    nil,
+			ClosedDate:        p.ClosedDate,
 		})
 	}
 	response := apigen.PullRequestsList{
@@ -5243,7 +5244,7 @@ func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, b
 
 	pr := &catalog.PullRequest{
 		Title:             body.Title,
-		Description:       body.Description,
+		Description:       swag.StringValue(body.Description),
 		Author:            user.Username,
 		SourceBranch:      body.SourceBranch,
 		DestinationBranch: body.DestinationBranch,
@@ -5312,6 +5313,72 @@ func (c *Controller) UpdatePullRequest(w http.ResponseWriter, r *http.Request, b
 		return
 	}
 	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
+	ctx := r.Context()
+	pr, err := c.Catalog.GetPullRequest(ctx, repository, pullRequestID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.CreateCommitAction,
+					Resource: permissions.BranchArn(repository, pr.Destination),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.WritePullReqeustAction,
+					Resource: permissions.RepoArn(repository),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	if pr.Status != graveler.PullRequestStatus_OPEN {
+		c.Logger.WithError(err).WithField("pr_status", pr.Status.String()).Error("pull request is not open")
+		writeError(w, r, http.StatusBadRequest, "bad pull request status")
+		return
+	}
+
+	user, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, "missing user")
+		return
+	}
+
+	// Attempt to merge branches
+	reference, err := c.Catalog.Merge(ctx, repository, pr.Destination, pr.Source, user.Committer(), "", nil, "")
+	if errors.Is(err, graveler.ErrConflictFound) {
+		writeResponse(w, r, http.StatusConflict, apigen.MergeResult{
+			Reference: reference,
+		})
+		return
+	}
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// Update pull request status
+	status := graveler.PullRequestStatus_MERGED.String()
+	err = c.Catalog.UpdatePullRequest(ctx, repository, pullRequestID, &graveler.UpdatePullRequest{
+		Status:         &status,
+		MergedCommitID: &reference,
+	})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	writeResponse(w, r, http.StatusOK, apigen.MergeResult{
+		Reference: reference,
+	})
 }
 
 func writeError(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
