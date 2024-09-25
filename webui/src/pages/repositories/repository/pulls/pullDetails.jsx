@@ -18,6 +18,7 @@ import {Link} from "../../../../lib/components/nav";
 import CompareBranches from "../../../../lib/components/repository/compareBranches";
 import {PullStatus, RefTypeBranch} from "../../../../constants";
 import {DiffContext, WithDiffContext} from "../../../../lib/hooks/diffContext";
+import Alert from "react-bootstrap/Alert";
 
 const BranchLink = ({repo, branch}) =>
     <Link href={{
@@ -48,6 +49,11 @@ const PullDetailsContent = ({repo, pull}) => {
 
     const {state: {results: diffResults, loading: diffLoading, error: diffError}} = useContext(DiffContext);
     const isEmptyDiff = (!diffLoading && !diffError && !!diffResults && diffResults.length === 0);
+    // this is pretty hacky, but there seem to be no other way to detect this specific error
+    const isBranchNotFoundError =
+        diffError?.message?.startsWith("get commit by ref") &&
+        diffError?.message?.endsWith("not found");
+    const formattedDiffError = isBranchNotFoundError ? "Branch not found." : diffError?.message;
 
     const mergePullRequest = async () => {
         setError(null);
@@ -105,37 +111,38 @@ const PullDetailsContent = ({repo, pull}) => {
             </Card>
             <div className="bottom-buttons-row mt-4 clearfix">
                 {error && <AlertError error={error} onDismiss={() => setError(null)}/>}
+                {formattedDiffError && <AlertError error={formattedDiffError}/>}
                 {isPullOpen() &&
-                    <div className="bottom-buttons-group float-end">
-                        <Button variant="outline-secondary"
-                                className="text-secondary-emphasis me-2"
-                                disabled={loading}
-                                onClick={changePullStatus(PullStatus.closed)}>
-                            {loading ?
-                                <span className="spinner-border spinner-border-sm text-light" role="status"/> :
-                                <>Close pull request</>
-                            }
-                        </Button>
-                        <Button variant="success"
-                                disabled={loading || isEmptyDiff}
-                                onClick={mergePullRequest}>
-                            {loading ?
-                                <span className="spinner-border spinner-border-sm text-light" role="status"/> :
-                                <><GitMergeIcon/> Merge pull request</>
-                            }
-                        </Button>
-                    </div>
+                    <>
+                        <div className="bottom-buttons-group float-end">
+                            <Button variant="outline-secondary"
+                                    className="text-secondary-emphasis me-2"
+                                    disabled={loading}
+                                    onClick={changePullStatus(PullStatus.closed)}>
+                                {loading ?
+                                    <span className="spinner-border spinner-border-sm text-light" role="status"/> :
+                                    <>Close pull request</>
+                                }
+                            </Button>
+                            <Button variant="success"
+                                    disabled={loading || isEmptyDiff}
+                                    onClick={mergePullRequest}>
+                                {loading ?
+                                    <span className="spinner-border spinner-border-sm text-light" role="status"/> :
+                                    <><GitMergeIcon/> Merge pull request</>
+                                }
+                            </Button>
+                        </div>
+                        {isEmptyDiff &&
+                            <Alert variant="warning" className="mt-4">
+                                Merging is disabled for pull requests without changes.
+                            </Alert>
+                        }
+                    </>
                 }
             </div>
-            {isPullOpen() &&
+            {isPullOpen() && !isBranchNotFoundError && // in case of branch not found, a different error message is shown
                 <>
-                    {isEmptyDiff &&
-                        <div className="clearfix">
-                            <div className="mt-4 text-warning float-end">
-                                Merging is disabled for pull requests without changes.
-                            </div>
-                        </div>
-                    }
                     <hr className="mt-5 mb-4"/>
                     <CompareBranches
                         repo={repo}
