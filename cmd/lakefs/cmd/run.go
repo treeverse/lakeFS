@@ -141,7 +141,7 @@ var runCmd = &cobra.Command{
 			}
 			if c.Logging.Level != logging.Level() {
 				logger.WithField("level", c.Logging.Level).Info("Update log level")
-				logging.SetLevel(c.Logging.Level, c.Logging.EnableSyslog)
+				logging.SetLevel(c.Logging.Level)
 			}
 		})
 

@@ -392,7 +392,7 @@ var excludeStatsCmds = []string{
 }
 
 func preRunCmd(cmd *cobra.Command) {
-	logging.SetLevel(logLevel, false)
+	logging.SetLevel(logLevel)
 	logging.SetOutputFormat(logFormat)
 	err := logging.SetOutputs(logOutputs, 0, 0)
 	if err != nil {
