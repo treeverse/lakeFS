@@ -56,7 +56,7 @@ To export to S3:
             <properties>
                 <exclude.tests>io/lakefs/contract/hadoop3/**</exclude.tests>
                 <contract_tests.resource_dir>../../test/lakefsfs_contract/</contract_tests.resource_dir>
-                <hadoop.version>2.7.7</hadoop.version>
+                <hadoop.version>3.4.0</hadoop.version>
             </properties>
             <build>
                 <resources>
@@ -222,7 +222,7 @@ To export to S3:
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <name-suffix/>          <!-- Set via profile to rename JAR -->
-        <hadoop.version>2.7.7</hadoop.version>
+        <hadoop.version>3.4.0</hadoop.version>
         <finalName>${project.artifactId}-${project.version}</finalName>
     </properties>
     <build>
