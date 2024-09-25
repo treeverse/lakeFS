@@ -101,8 +101,8 @@ const PullDetailsContent = ({repo, pull}) => {
             </Card>
             <div className="bottom-buttons-row mt-4 clearfix">
                 {error && <AlertError error={error} onDismiss={() => setError(null)}/>}
-                <div className="bottom-buttons-group float-end">
-                    {isPullOpen() &&
+                {isPullOpen() &&
+                    <div className="bottom-buttons-group float-end">
                         <Button variant="outline-secondary"
                                 className="text-secondary-emphasis me-2"
                                 disabled={loading}
@@ -112,8 +112,6 @@ const PullDetailsContent = ({repo, pull}) => {
                                 <>Close pull request</>
                             }
                         </Button>
-                    }
-                    {isPullOpen() &&
                         <Button variant="success"
                                 disabled={loading}
                                 onClick={mergePullRequest}>
@@ -122,8 +120,8 @@ const PullDetailsContent = ({repo, pull}) => {
                                 <><GitMergeIcon/> Merge pull request</>
                             }
                         </Button>
-                    }
-                </div>
+                    </div>
+                }
             </div>
             {isPullOpen() &&
                 <>
