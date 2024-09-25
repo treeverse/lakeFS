@@ -33,6 +33,15 @@ const PullIcon = ({status}) => {
 }
 
 const PullWidget = ({repo, pull}) => {
+    const getDescription = () => {
+        if (pull.status === PullStatus.open) {
+            return <>Opened {dayjs(pull.creation_date).fromNow()} by <strong>{pull.author}</strong>.</>;
+        } else if (pull.status === PullStatus.closed || pull.status === PullStatus.merged) {
+            const statusDesc = pull.status === PullStatus.closed ? "Closed" : "Merged";
+            return <>{statusDesc} {dayjs(pull.close_date).fromNow()} by <strong>{pull.author}</strong>.</>;
+        }
+    };
+
     return (
         <ListGroup.Item className="pull-row pt-3 pb-3 clearfix" id={pull.id}>
             <div className="float-start">
@@ -46,9 +55,7 @@ const PullWidget = ({repo, pull}) => {
                         {pull.title}
                     </Link>
                 </h6>
-                <small>
-                    Opened {dayjs(pull.creation_date).fromNow()} by <strong>{pull.author}</strong>
-                </small>
+                <small>{getDescription()}</small>
             </div>
             <div className="float-end mt-2">
                 <div className="btn btn-light btn-sm">{pull.destination_branch}</div>
