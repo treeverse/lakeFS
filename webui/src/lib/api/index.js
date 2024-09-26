@@ -620,8 +620,6 @@ class Pulls {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls/${encodeURIComponent(pullId)}/merge`, {
             method: 'PUT',
         });
-        console.log({response});
-
         if (response.status !== 200) {
             const baseMessage = 'Could not merge pull request';
             switch (response.status) {
