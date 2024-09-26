@@ -22,7 +22,7 @@ Once mounted, users can access the data as if it resides on their local filesyst
 This functionality is currently in limited support and is a Read-Only file system and is pointing to a commit in lakeFS.
 
 **Note**
-⚠️ Everest is currently in beta. There is no installation required, please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access to the Everest binary.
+⚠️ No installation is required. Please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access to the Everest binary.
 {: .note }
 
 {% include toc.html %}
