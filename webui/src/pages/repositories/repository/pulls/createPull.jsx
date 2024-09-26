@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useContext, useEffect, useState} from "react";
 import {useOutletContext} from "react-router-dom";
 
 import {ActionGroup, ActionsBar, AlertError, Loading} from "../../../../lib/components/controls";
@@ -11,6 +11,7 @@ import {RefTypeBranch} from "../../../../constants";
 import Form from "react-bootstrap/Form";
 import {pulls as pullsAPI} from "../../../../lib/api";
 import CompareBranchesSelection from "../../../../lib/components/repository/compareBranchesSelection";
+import {DiffContext, WithDiffContext} from "../../../../lib/hooks/diffContext";
 
 const CreatePullForm = ({repo, reference, compare}) => {
     const router = useRouter();
@@ -18,6 +19,9 @@ const CreatePullForm = ({repo, reference, compare}) => {
     let [error, setError] = useState(null);
     let [title, setTitle] = useState("");
     let [description, setDescription] = useState("");
+
+    const {state: {results: diffResults, loading: diffLoading, error: diffError}} = useContext(DiffContext);
+    const isEmptyDiff = (!diffLoading && !diffError && !!diffResults && diffResults.length === 0);
 
     const onTitleInput = ({target: {value}}) => setTitle(value);
     const onDescriptionInput = ({target: {value}}) => setDescription(value);
@@ -67,12 +71,19 @@ const CreatePullForm = ({repo, reference, compare}) => {
             />
         </Form.Group>
         {error && <AlertError error={error} onDismiss={() => setError(null)}/>}
-        <Button variant="success"
-                disabled={!title || !description || loading}
-                onClick={submitForm}>
-            {loading && <><span className="spinner-border spinner-border-sm text-light" role="status"/> {""}</>}
-            Create Pull Request
-        </Button>
+        <div>
+            <Button variant="success"
+                    disabled={!title || !description || loading || isEmptyDiff}
+                    onClick={submitForm}>
+                {loading && <><span className="spinner-border spinner-border-sm text-light" role="status"/> {""}</>}
+                Create Pull Request
+            </Button>
+            {isEmptyDiff &&
+                <span className="alert alert-warning align-middle ms-4 pt-2 pb-2">
+                    Pull requests must include changes.
+                </span>
+            }
+        </div>
     </>;
 };
 
@@ -111,7 +122,9 @@ const CreatePull = () => {
 const RepositoryCreatePullPage = () => {
     const [setActivePage] = useOutletContext();
     useEffect(() => setActivePage("pulls"), [setActivePage]);
-    return <CreatePull/>;
+    return <WithDiffContext>
+        <CreatePull/>
+    </WithDiffContext>;
 }
 
 export default RepositoryCreatePullPage;

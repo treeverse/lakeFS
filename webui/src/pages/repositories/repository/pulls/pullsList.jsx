@@ -33,6 +33,15 @@ const PullIcon = ({status}) => {
 }
 
 const PullWidget = ({repo, pull}) => {
+    const getDescription = () => {
+        if (pull.status === PullStatus.open) {
+            return <>Opened {dayjs(pull.creation_date).fromNow()} by <strong>{pull.author}</strong>.</>;
+        } else if (pull.status === PullStatus.closed || pull.status === PullStatus.merged) {
+            const statusDesc = pull.status === PullStatus.closed ? "Closed" : "Merged";
+            return <>{statusDesc} {dayjs(pull.closed_date).fromNow()} by <strong>{pull.author}</strong>.</>;
+        }
+    };
+
     return (
         <ListGroup.Item className="pull-row pt-3 pb-3 clearfix" id={pull.id}>
             <div className="float-start">
@@ -46,14 +55,12 @@ const PullWidget = ({repo, pull}) => {
                         {pull.title}
                     </Link>
                 </h6>
-                <small>
-                    Opened {dayjs(pull.creation_date).fromNow()} by <strong>{pull.author}</strong>
-                </small>
+                <small>{getDescription()}</small>
             </div>
             <div className="float-end mt-2">
-                <Button variant="secondary" size="sm" disabled={true}>{pull.destination_branch}</Button>
-                <ArrowLeftIcon className="m-1 text-secondary" size="small" verticalAlign="middle"/>
-                <Button variant="secondary" size="sm" disabled={true}>{pull.source_branch}</Button>
+                <div className="btn btn-light btn-sm">{pull.destination_branch}</div>
+                <ArrowLeftIcon className="m-1" size="small" verticalAlign="middle"/>
+                <div className="btn btn-light btn-sm">{pull.source_branch}</div>
             </div>
         </ListGroup.Item>
     );
