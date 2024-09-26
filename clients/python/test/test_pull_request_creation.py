@@ -47,7 +47,6 @@ class TestPullRequestCreation(unittest.TestCase):
         else :
             return PullRequestCreation(
                 title = '',
-                description = '',
                 source_branch = '',
                 destination_branch = '',
         )

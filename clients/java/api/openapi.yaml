@@ -7019,6 +7019,83 @@ paths:
       - experimental
       x-content-type: application/json
       x-accepts: application/json
+  /repositories/{repository}/pulls/{pull_request}/merge:
+    put:
+      operationId: mergePullRequest
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: pull request id
+        explode: false
+        in: path
+        name: pull_request
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeResult'
+          description: merge completed
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeResult'
+          description: |
+            Conflict
+            Deprecated: content schema will return Error format and not an empty MergeResult
+        "412":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: precondition failed (e.g. a pre-merge hook returned a failure)
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: merge pull request
+      tags:
+      - pulls
+      - experimental
+      x-accepts: application/json
   /healthcheck:
     get:
       description: check that the API server is up and running
@@ -9606,7 +9683,6 @@ components:
         destination_branch:
           type: string
       required:
-      - description
       - destination_branch
       - source_branch
       - title

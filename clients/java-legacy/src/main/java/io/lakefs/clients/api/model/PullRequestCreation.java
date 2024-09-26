@@ -79,8 +79,8 @@ public class PullRequestCreation {
    * Get description
    * @return description
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
 
   public String getDescription() {
     return description;

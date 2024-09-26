@@ -5261,7 +5261,7 @@ func TestController_CreatePullRequest(t *testing.T) {
 
 	t.Run("invalid source", func(t *testing.T) {
 		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, apigen.CreatePullRequestJSONRequestBody{
-			Description:       "My description",
+			Description:       swag.String("My description"),
 			DestinationBranch: "branch_a",
 			SourceBranch:      "bad$name",
 			Title:             "My title",
@@ -5273,7 +5273,7 @@ func TestController_CreatePullRequest(t *testing.T) {
 
 	t.Run("invalid dest", func(t *testing.T) {
 		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, apigen.CreatePullRequestJSONRequestBody{
-			Description:       "My description",
+			Description:       swag.String("My description"),
 			DestinationBranch: "bad$name",
 			SourceBranch:      "branch_a",
 			Title:             "My title",
@@ -5285,7 +5285,7 @@ func TestController_CreatePullRequest(t *testing.T) {
 
 	t.Run("no source", func(t *testing.T) {
 		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, apigen.CreatePullRequestJSONRequestBody{
-			Description:       "My description",
+			Description:       swag.String("My description"),
 			DestinationBranch: "main",
 			SourceBranch:      "branch_a",
 			Title:             "My title",
@@ -5297,7 +5297,7 @@ func TestController_CreatePullRequest(t *testing.T) {
 
 	t.Run("no dest", func(t *testing.T) {
 		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, apigen.CreatePullRequestJSONRequestBody{
-			Description:       "My description",
+			Description:       swag.String("My description"),
 			DestinationBranch: "branch_a",
 			SourceBranch:      "main",
 			Title:             "My title",
@@ -5309,7 +5309,7 @@ func TestController_CreatePullRequest(t *testing.T) {
 
 	t.Run("same branch", func(t *testing.T) {
 		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, apigen.CreatePullRequestJSONRequestBody{
-			Description:       "My description",
+			Description:       swag.String("My description"),
 			DestinationBranch: "main",
 			SourceBranch:      "main",
 			Title:             "My title",
@@ -5321,7 +5321,7 @@ func TestController_CreatePullRequest(t *testing.T) {
 
 	t.Run("create sanity", func(t *testing.T) {
 		body := apigen.CreatePullRequestJSONRequestBody{
-			Description:       "My description",
+			Description:       swag.String("My description"),
 			DestinationBranch: "main",
 			SourceBranch:      "branch_b",
 			Title:             "My title",
@@ -5342,7 +5342,7 @@ func TestController_CreatePullRequest(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, getResp.JSON200)
 		require.Equal(t, body.Title, swag.StringValue(getResp.JSON200.Title))
-		require.Equal(t, body.Description, swag.StringValue(getResp.JSON200.Description))
+		require.Equal(t, body.Description, getResp.JSON200.Description)
 		require.Equal(t, body.SourceBranch, getResp.JSON200.SourceBranch)
 		require.Equal(t, body.DestinationBranch, getResp.JSON200.DestinationBranch)
 		userResp, err := clt.GetCurrentUserWithResponse(ctx)
@@ -5419,7 +5419,7 @@ func TestController_ListPullRequestsHandler(t *testing.T) {
 			require.Equal(t, http.StatusCreated, branchResp.StatusCode())
 
 			resp, err := clt.CreatePullRequestWithResponse(ctx, repo, apigen.CreatePullRequestJSONRequestBody{
-				Description:       expected[i].Description,
+				Description:       &expected[i].Description,
 				DestinationBranch: expected[i].DestinationBranch,
 				SourceBranch:      expected[i].SourceBranch,
 				Title:             expected[i].Title,
@@ -5543,7 +5543,7 @@ func TestController_UpdatePullRequest(t *testing.T) {
 
 	t.Run("exists", func(t *testing.T) {
 		body := apigen.CreatePullRequestJSONRequestBody{
-			Description:       "My description",
+			Description:       swag.String("My description"),
 			DestinationBranch: "main",
 			SourceBranch:      "branch_b",
 			Title:             "My title",
@@ -5627,7 +5627,7 @@ func TestController_UpdatePullRequest(t *testing.T) {
 
 	t.Run("close date", func(t *testing.T) {
 		body := apigen.CreatePullRequestJSONRequestBody{
-			Description:       "My description",
+			Description:       swag.String("My description"),
 			DestinationBranch: "main",
 			SourceBranch:      "branch_c",
 			Title:             "My title",
@@ -5662,6 +5662,146 @@ func TestController_UpdatePullRequest(t *testing.T) {
 				require.True(t, time.Now().Sub(*getResp.JSON200.ClosedDate) < 1*time.Minute)
 			})
 		}
+	})
+}
+
+func TestController_MergePullRequest(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
+	require.NoError(t, err)
+
+	t.Run("invalid xid", func(t *testing.T) {
+		resp, err := clt.MergePullRequestWithResponse(ctx, repo, "invalid-request-id")
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON400)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		id := xid.New()
+		resp, err := clt.MergePullRequestWithResponse(ctx, repo, id.String())
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON404, resp.Status())
+	})
+
+	t.Run("exists not open", func(t *testing.T) {
+		body := apigen.CreatePullRequestJSONRequestBody{
+			Description:       swag.String("My description"),
+			DestinationBranch: "main",
+			SourceBranch:      "branch_b",
+			Title:             "My title",
+		}
+		branchResp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+			Name:   body.SourceBranch,
+			Source: "main",
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, branchResp.StatusCode())
+
+		for _, status := range []string{"closed", "merged"} {
+			t.Run(status, func(t *testing.T) {
+				resp, err := clt.CreatePullRequestWithResponse(ctx, repo, body)
+				require.NoError(t, err)
+				require.NotNil(t, resp.JSON201)
+
+				updateResp, err := clt.UpdatePullRequestWithResponse(ctx, repo, resp.JSON201.Id, apigen.UpdatePullRequestJSONRequestBody{
+					Status: &status,
+				})
+				require.NoError(t, err)
+				require.Equal(t, http.StatusNoContent, updateResp.StatusCode())
+
+				// Merge with wrong status
+				mergeResp, err := clt.MergePullRequestWithResponse(ctx, repo, resp.JSON201.Id)
+				require.NoError(t, err)
+				require.NotNil(t, mergeResp.JSON400, mergeResp.Status())
+				require.Contains(t, mergeResp.JSON400.Message, "bad pull request status")
+
+				// Verify status
+				getResp, err := clt.GetPullRequestWithResponse(ctx, repo, resp.JSON201.Id)
+				require.NoError(t, err)
+				require.NotNil(t, getResp.JSON200)
+				require.Equal(t, status, *getResp.JSON200.Status)
+				require.Nil(t, getResp.JSON200.MergedCommitId)
+			})
+		}
+	})
+
+	t.Run("exists no changes", func(t *testing.T) {
+		body := apigen.CreatePullRequestJSONRequestBody{
+			Description:       swag.String("My description"),
+			DestinationBranch: "main",
+			SourceBranch:      "branch_c",
+			Title:             "My title",
+		}
+		branchResp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+			Name:   body.SourceBranch,
+			Source: "main",
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, branchResp.StatusCode())
+
+		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, body)
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON201)
+
+		// Update with wrong status
+		mergeResp, err := clt.MergePullRequestWithResponse(ctx, repo, resp.JSON201.Id)
+		require.NoError(t, err)
+		require.NotNil(t, mergeResp.JSON400, mergeResp.Status())
+		require.Contains(t, mergeResp.JSON400.Message, "no changes")
+
+		// Verify status
+		getResp, err := clt.GetPullRequestWithResponse(ctx, repo, resp.JSON201.Id)
+		require.NoError(t, err)
+		require.NotNil(t, getResp.JSON200)
+		require.Equal(t, "open", *getResp.JSON200.Status)
+		require.Nil(t, getResp.JSON200.MergedCommitId)
+		require.Nil(t, getResp.JSON200.ClosedDate)
+	})
+
+	t.Run("exists with changes", func(t *testing.T) {
+		body := apigen.CreatePullRequestJSONRequestBody{
+			Description:       swag.String("My description"),
+			DestinationBranch: "main",
+			SourceBranch:      "branch_d",
+			Title:             "My title",
+		}
+		branchResp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+			Name:   body.SourceBranch,
+			Source: "main",
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, branchResp.StatusCode())
+
+		err = deps.catalog.CreateEntry(ctx, repo, body.SourceBranch, catalog.DBEntry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
+		require.NoError(t, err)
+		parentCommitLog, err := deps.catalog.Commit(ctx, repo, body.SourceBranch, "some message", DefaultUserID, nil, nil, nil, false)
+		require.NoError(t, err)
+
+		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, body)
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON201)
+
+		// Update with wrong status
+		mergeResp, err := clt.MergePullRequestWithResponse(ctx, repo, resp.JSON201.Id)
+		require.NoError(t, err)
+		require.NotNil(t, mergeResp.JSON200, mergeResp.Status())
+
+		// Verify parent
+		commitLog, err := deps.catalog.GetCommit(ctx, repo, mergeResp.JSON200.Reference)
+		require.NoError(t, err)
+		require.Equal(t, parentCommitLog.Reference, commitLog.Parents[1])
+
+		// Verify status
+		getResp, err := clt.GetPullRequestWithResponse(ctx, repo, resp.JSON201.Id)
+		require.NoError(t, err)
+		require.NotNil(t, getResp.JSON200)
+		require.Equal(t, "merged", *getResp.JSON200.Status)
+		require.NotNil(t, getResp.JSON200.MergedCommitId)
+		require.Equal(t, mergeResp.JSON200.Reference, *getResp.JSON200.MergedCommitId)
+		require.NotNil(t, getResp.JSON200.ClosedDate)
+		require.True(t, time.Now().Sub(*getResp.JSON200.ClosedDate) < 1*time.Minute)
 	})
 }
 

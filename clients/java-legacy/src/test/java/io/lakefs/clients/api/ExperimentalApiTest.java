@@ -22,6 +22,7 @@ import io.lakefs.clients.api.model.ExternalLoginInformation;
 import io.lakefs.clients.api.model.ExternalPrincipal;
 import io.lakefs.clients.api.model.ExternalPrincipalCreation;
 import io.lakefs.clients.api.model.ExternalPrincipalList;
+import io.lakefs.clients.api.model.MergeResult;
 import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.PresignMultipartUpload;
 import io.lakefs.clients.api.model.PullRequest;
@@ -251,6 +252,22 @@ public class ExperimentalApiTest {
         String after = null;
         Integer amount = null;
                 ExternalPrincipalList response = api.listUserExternalPrincipals(userId, prefix, after, amount);
+        // TODO: test validations
+    }
+    
+    /**
+     * merge pull request
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void mergePullRequestTest() throws ApiException {
+        String repository = null;
+        String pullRequest = null;
+                MergeResult response = api.mergePullRequest(repository, pullRequest);
         // TODO: test validations
     }
     

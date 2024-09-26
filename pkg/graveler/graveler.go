@@ -292,9 +292,10 @@ type PullRequestRecord struct {
 }
 
 type UpdatePullRequest struct {
-	Title       *string
-	Description *string
-	Status      *string
+	Title          *string
+	Description    *string
+	Status         *string
+	MergedCommitID *string
 }
 
 type ImportStatus struct {
@@ -3437,6 +3438,9 @@ func (g *Graveler) UpdatePullRequest(ctx context.Context, repository *Repository
 				now := time.Now()
 				pr.ClosedDate = &now
 			}
+		}
+		if update.MergedCommitID != nil {
+			pr.MergedCommitID = update.MergedCommitID
 		}
 		return pr, nil
 	})

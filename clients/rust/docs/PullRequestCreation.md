@@ -5,7 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **title** | **String** |  | 
-**description** | **String** |  | 
+**description** | Option<**String**> |  | [optional]
 **source_branch** | **String** |  | 
 **destination_branch** | **String** |  | 
 
