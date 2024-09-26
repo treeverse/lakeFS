@@ -14,8 +14,8 @@ use crate::models;
 pub struct PullRequestCreation {
     #[serde(rename = "title")]
     pub title: String,
-    #[serde(rename = "description")]
-    pub description: String,
+    #[serde(rename = "description", skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     #[serde(rename = "source_branch")]
     pub source_branch: String,
     #[serde(rename = "destination_branch")]
@@ -23,10 +23,10 @@ pub struct PullRequestCreation {
 }
 
 impl PullRequestCreation {
-    pub fn new(title: String, description: String, source_branch: String, destination_branch: String) -> PullRequestCreation {
+    pub fn new(title: String, source_branch: String, destination_branch: String) -> PullRequestCreation {
         PullRequestCreation {
             title,
-            description,
+            description: None,
             source_branch,
             destination_branch,
         }

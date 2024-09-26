@@ -108,6 +108,13 @@ class TestExperimentalApi(unittest.TestCase):
         """
         pass
 
+    def test_merge_pull_request(self):
+        """Test case for merge_pull_request
+
+        merge pull request  # noqa: E501
+        """
+        pass
+
     def test_sts_login(self):
         """Test case for sts_login
 

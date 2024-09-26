@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **title** | **str** |  | 
-**description** | **str** |  | 
+**description** | **str** |  | [optional] 
 **source_branch** | **str** |  | 
 **destination_branch** | **str** |  | 
 

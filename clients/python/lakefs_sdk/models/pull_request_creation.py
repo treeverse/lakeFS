@@ -19,7 +19,7 @@ import re  # noqa: F401
 import json
 
 
-
+from typing import Optional
 try:
     from pydantic.v1 import BaseModel, Field, StrictStr
 except ImportError:
@@ -30,7 +30,7 @@ class PullRequestCreation(BaseModel):
     PullRequestCreation
     """
     title: StrictStr = Field(...)
-    description: StrictStr = Field(...)
+    description: Optional[StrictStr] = None
     source_branch: StrictStr = Field(...)
     destination_branch: StrictStr = Field(...)
     __properties = ["title", "description", "source_branch", "destination_branch"]
