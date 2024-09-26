@@ -78,7 +78,11 @@ const CreatePullForm = ({repo, reference, compare}) => {
                 {loading && <><span className="spinner-border spinner-border-sm text-light" role="status"/> {""}</>}
                 Create Pull Request
             </Button>
-            {isEmptyDiff && <span className="ms-3 text-warning">Pull requests must include changes.</span>}
+            {isEmptyDiff &&
+                <span className="alert alert-warning align-middle ms-4 pt-2 pb-2">
+                    Pull requests must include changes.
+                </span>
+            }
         </div>
     </>;
 };
