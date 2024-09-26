@@ -339,48 +339,51 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 }
 
 func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
+
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+
+	featureBranch := "feature"
+	branchVars := map[string]string{
+		"REPO":          repoName,
+		"STORAGE":       storage,
+		"SOURCE_BRANCH": mainBranch,
+		"DEST_BRANCH":   featureBranch,
+	}
 
 	filePath1 := "file1"
 	filePath2 := "file2"
-	vars := map[string]string{
-		"REPO":        repoName,
-		"STORAGE":     storage,
-		"FILE_PATH_1": filePath1,
-		"FILE_PATH_2": filePath2,
-	}
 
-	// create repo
+	// create repo with 'main' branch
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
 
-	// create a branch
-	branchName := "main"
-	vars["BRANCH"] = branchName
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+branchName, false, "lakectl_branch_create", vars)
-
-	// Upload a file and commit
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s lakefs://"+repoName+"/"+branchName+"/"+filePath1, false, "lakectl_fs_upload", vars)
-	commitMessage := "Initial commit"
+	// upload 'file1' and commit
+	vars["FILE_PATH"] = filePath1
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath1, false, "lakectl_fs_upload", vars)
+	commitMessage := "first commit to main"
 	vars["MESSAGE"] = commitMessage
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+branchName+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
 
-	// create a new branch
-	newBranchName := "feature"
-	vars["NEW_BRANCH"] = newBranchName
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+newBranchName+" lakefs://"+repoName+"/"+branchName, false, "lakectl_branch_create", vars)
-	// upload a file
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/feature.txt lakefs://"+repoName+"/"+newBranchName+"/"+filePath2, false, "lakectl_fs_upload", vars)
-	newCommitMessage := "Feature commit"
-	vars["NEW_MESSAGE"] = newCommitMessage
-	// commit
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+newBranchName+" -m \""+newCommitMessage+"\"", false, "lakectl_commit", vars)
+	// create new branch 'feature'
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+featureBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", branchVars)
 
-	// merge the feature branch into main
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+newBranchName+" lakefs://"+repoName+"/"+branchName, false, "lakectl_merge_success", vars)
+	// upload 'file2' to feature branch and commit
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k_other lakefs://"+repoName+"/"+featureBranch+"/"+filePath2, false, "lakectl_fs_upload", branchVars)
+	commitMessage = "second commit to feature branch"
+	vars["MESSAGE"] = commitMessage
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+featureBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", branchVars)
+
+	// merge feature into main
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+featureBranch+" lakefs://"+repoName+"/"+mainBranch, false, "lakectl_merge_success", branchVars)
 
 	// log the commits without merges
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+branchName+" --no-merges", false, "lakectl_log_no_merges", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --no-merges", false, "lakectl_log_no_merges", vars)
+
 }
 
 func TestLakectlAnnotate(t *testing.T) {

@@ -1,11 +1,11 @@
 ID:            <COMMIT_ID>
 Author:        esti
 Date:          <DATE> <TIME> <TZ>
-    Initial commit
+    ${MESSAGE}
 ID:            <COMMIT_ID>
 Author:        esti
 Date:          <DATE> <TIME> <TZ>
-    Feature commit
+    ${MESSAGE}
 ID:            <COMMIT_ID>
 Date:          <DATE> <TIME> <TZ>
     Repository created
