@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useContext, useEffect, useState} from "react";
 import {refs as refsAPI} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
 import {RefTypeBranch, RefTypeCommit} from "../../../constants";
@@ -8,10 +8,13 @@ import {AlertError, Loading} from "../controls";
 import {ChangesTreeContainer, defaultGetMoreChanges} from "./changes";
 import {URINavigator} from "./tree";
 import CompareBranchesActionsBar from "./compareBranchesActionBar";
+import {DiffActionType, DiffContext} from "../../hooks/diffContext";
 
 const CompareBranches = (
     {repo, reference, compareReference, showActionsBar, prefix = "", baseSelectURL}
 ) => {
+    const {dispatch} = useContext(DiffContext);
+
     const [internalRefresh, setInternalRefresh] = useState(true);
 
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
@@ -33,6 +36,14 @@ const CompareBranches = (
 
     const {results} = resultsState;
     const apiResult = {results, loading, error, nextPage};
+
+    useEffect(() => {
+        // dispatch for dependent components
+        dispatch({
+            type: DiffActionType.setResults,
+            value: {results, loading, error, nextPage}
+        });
+    }, [results, loading, error, nextPage]);
 
     const isEmptyDiff = (!loading && !error && !!results && results.length === 0);
 
