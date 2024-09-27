@@ -69,6 +69,7 @@ type PullRequest struct {
 	DestinationBranch string
 	Status            string
 	CreationDate      time.Time
+	ClosedDate        *time.Time
 }
 
 // AddressType is the type of entry address

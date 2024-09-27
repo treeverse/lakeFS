@@ -15,6 +15,7 @@ package io.lakefs.clients.api;
 
 import io.lakefs.clients.api.ApiException;
 import io.lakefs.clients.api.model.Error;
+import io.lakefs.clients.api.model.MergeResult;
 import io.lakefs.clients.api.model.PullRequest;
 import io.lakefs.clients.api.model.PullRequestBasic;
 import io.lakefs.clients.api.model.PullRequestCreation;
@@ -85,6 +86,22 @@ public class PullsApiTest {
         Integer amount = null;
         String status = null;
                 PullRequestsList response = api.listPullRequests(repository, prefix, after, amount, status);
+        // TODO: test validations
+    }
+    
+    /**
+     * merge pull request
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void mergePullRequestTest() throws ApiException {
+        String repository = null;
+        String pullRequest = null;
+                MergeResult response = api.mergePullRequest(repository, pullRequest);
         // TODO: test validations
     }
     

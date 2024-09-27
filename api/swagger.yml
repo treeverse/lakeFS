@@ -1791,7 +1791,6 @@ components:
       type: object
       required:
         - title
-        - description
         - source_branch
         - destination_branch
       properties:
@@ -5804,6 +5803,59 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/pulls/{pull_request}/merge:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: pull_request
+        required: true
+        description: pull request id
+        schema:
+          type: string
+    put:
+      tags:
+        - pulls
+        - experimental
+      operationId: mergePullRequest
+      summary: merge pull request
+      responses:
+        200:
+          description: merge completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MergeResult"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        409:
+          description: |
+            Conflict
+            Deprecated: content schema will return Error format and not an empty MergeResult
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MergeResult"
+        412:
+          description: precondition failed (e.g. a pre-merge hook returned a failure)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /healthcheck:
     get:
       operationId: healthCheck
@@ -5814,6 +5866,7 @@ paths:
       responses:
         204:
           description: NoContent
+
   /config:
     get:
       tags:

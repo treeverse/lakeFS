@@ -3005,6 +3005,7 @@ func (c *Catalog) ListPullRequest(ctx context.Context, repositoryID, prefix stri
 			SourceBranch:      v.Source,
 			DestinationBranch: v.Destination,
 			CreationDate:      v.CreationDate,
+			ClosedDate:        v.ClosedDate,
 		}
 		pulls = append(pulls, p)
 		if len(pulls) >= limit+1 {
