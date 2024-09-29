@@ -354,6 +354,7 @@ func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
 		"STORAGE":       storage,
 		"SOURCE_BRANCH": mainBranch,
 		"DEST_BRANCH":   featureBranch,
+		"BRANCH":        featureBranch,
 	}
 
 	filePath1 := "file1"
