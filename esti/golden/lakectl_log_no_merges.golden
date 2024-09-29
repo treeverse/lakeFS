@@ -3,16 +3,16 @@ ID:            <COMMIT_ID>
 Author:        esti
 Date:          <DATE> <TIME> <TZ>
 
-        ${SECOND_MESSAGE}
+    ${SECOND_MESSAGE}
 
 ID:            <COMMIT_ID>
 Author:        esti
 Date:          <DATE> <TIME> <TZ>
 
-        ${MESSAGE}
+    ${MESSAGE}
 
 ID:            <COMMIT_ID>
 Date:          <DATE> <TIME> <TZ>
 
-        Repository created
+    Repository created
 
