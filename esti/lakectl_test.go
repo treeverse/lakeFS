@@ -381,7 +381,7 @@ func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+featureBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", branchVars)
 
 	// merge feature into main
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+featureBranch+" lakefs://"+repoName+"/"+mainBranch, false, "lakectl_merge_success", branchVars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+featureBranch+" lakefs://"+repoName+"/"+mainBranch, false, "lakectl_merge_success", branchVars)
 
 	// log the commits without merges
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --no-merges", false, "lakectl_log_no_merges", vars)
