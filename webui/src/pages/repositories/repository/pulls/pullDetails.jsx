@@ -33,7 +33,7 @@ const PullDetailsContent = ({repo, pull}) => {
         try {
             await pullsAPI.merge(repo.id, pull.id);
         } catch (error) {
-            setError(`Failed to merge pull request: ${error.message}`);
+            setError(error.message);
             setLoading(false);
             return;
         }
