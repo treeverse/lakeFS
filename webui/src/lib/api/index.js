@@ -616,6 +616,26 @@ class Pulls {
         return response.json()
     }
 
+    async merge(repoId, pullId) {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls/${encodeURIComponent(pullId)}/merge`, {
+            method: 'PUT',
+        });
+        if (response.status !== 200) {
+            const baseMessage = 'Could not merge pull request';
+            switch (response.status) {
+                case 400:
+                case 401:
+                case 403:
+                case 404:
+                case 409:
+                case 412:
+                    throw new Error(`${baseMessage}: ${(await response.json()).message}`);
+                default:
+                    throw new Error(`${baseMessage} (status = ${response.status}).`);
+            }
+        }
+    }
+
     async update(repoId, pullId, pullDetails) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls/${encodeURIComponent(pullId)}`, {
             method: 'PATCH',

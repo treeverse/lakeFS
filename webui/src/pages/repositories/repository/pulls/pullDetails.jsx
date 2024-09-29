@@ -6,13 +6,12 @@ import Card from "react-bootstrap/Card";
 import {GitMergeIcon, GitPullRequestClosedIcon, GitPullRequestIcon} from "@primer/octicons-react";
 import dayjs from "dayjs";
 import Markdown from 'react-markdown'
-import {backOff} from "exponential-backoff";
 
 import {AlertError, Loading} from "../../../../lib/components/controls";
 import {useRefs} from "../../../../lib/hooks/repo";
 import {useRouter} from "../../../../lib/hooks/router";
 import {RepoError} from "../error";
-import {pulls as pullsAPI, refs as refsAPI} from "../../../../lib/api";
+import {pulls as pullsAPI} from "../../../../lib/api";
 import {useAPI} from "../../../../lib/hooks/api";
 import {Link} from "../../../../lib/components/nav";
 import CompareBranches from "../../../../lib/components/repository/compareBranches";
@@ -32,17 +31,11 @@ const PullDetailsContent = ({repo, pull}) => {
         setError(null);
         setLoading(true);
         try {
-            await refsAPI.merge(repo.id, pull.source_branch, pull.destination_branch);
+            await pullsAPI.merge(repo.id, pull.id);
         } catch (error) {
-            setError(`Failed to merge pull request: ${error.message}`);
+            setError(error.message);
             setLoading(false);
             return;
-        }
-        try {
-            await backOff(() => pullsAPI.update(repo.id, pull.id, {status: PullStatus.merged}));
-        } catch (error) {
-            setError(`Failed to update pull request status: ${error.message}`);
-            setLoading(false);
         }
         window.location.reload(); // TODO (gilo): replace with a more elegant solution
     }
