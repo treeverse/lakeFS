@@ -352,8 +352,8 @@ func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
 	branchVars := map[string]string{
 		"REPO":          repoName,
 		"STORAGE":       storage,
-		"SOURCE_BRANCH": featureBranch,
-		"DEST_BRANCH":   mainBranch,
+		"SOURCE_BRANCH": mainBranch,
+		"DEST_BRANCH":   featureBranch,
 		"BRANCH":        featureBranch,
 	}
 
@@ -381,6 +381,8 @@ func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+featureBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", branchVars)
 
 	// merge feature into main
+	branchVars["SOURCE_BRANCH"] = featureBranch
+	branchVars["DEST_BRANCH"] = mainBranch
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+featureBranch+" lakefs://"+repoName+"/"+mainBranch, false, "lakectl_merge_success", branchVars)
 
 	// log the commits without merges
