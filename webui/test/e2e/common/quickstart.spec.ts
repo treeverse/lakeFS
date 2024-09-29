@@ -107,24 +107,28 @@ test.describe("Quickstart", () => {
         await repositoriesPage.goToRepository(QUICKSTART_REPO_NAME);
 
         const branchNameForPull = "branch-for-pull-1";
-        const commitMsg = "commit-for-pull-1";
 
         const repositoryPage = new RepositoryPage(page);
+        await repositoryPage.createBranch(branchNameForPull);
 
+        // delete a file in the branch
         await repositoryPage.gotoObjectsTab();
         await repositoryPage.switchBranch(branchNameForPull);
         await repositoryPage.deleteFirstFileInDirectory("images/");
 
+        // commit the change
         await repositoryPage.gotoUncommittedChangeTab();
         expect(await repositoryPage.getUncommittedCount()).toEqual(1);
-        await repositoryPage.commitChanges(commitMsg);
+        await repositoryPage.commitChanges("Commit for pull-1");
         await expect(page.getByText("No changes")).toBeVisible();
 
+        // pulls list sanity
         await repositoryPage.gotoPullRequestsTab();
         await expect(page.getByText("Create Pull Request")).toBeVisible();
         const pullsPage = new PullsPage(page);
         expect(await pullsPage.getPullsListCount()).toEqual(0);
 
+        // create a pull request
         await pullsPage.clickCreatePullButton();
         await expect(page.getByRole("heading", {name: "Create Pull Request"})).toBeVisible();
         await pullsPage.switchCompareBranch(branchNameForPull);
@@ -132,7 +136,6 @@ test.describe("Quickstart", () => {
         await pullsPage.fillPullTitle(titleForPull1);
         await pullsPage.clickCreatePullButton();
         await expect(page.getByRole("heading", {name: titleForPull1})).toBeVisible();
-
         await expect(page.locator("div.lakefs-uri").getByText(`main...${branchNameForPull}`)).toBeVisible();
     });
 });
