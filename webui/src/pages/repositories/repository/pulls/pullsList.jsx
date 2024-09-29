@@ -81,7 +81,7 @@ const PullsList = ({repo, after, prefix, onPaginate}) => {
     else content = (results && !!results.length ?
                 <>
                     <Card>
-                        <ListGroup variant="flush">
+                        <ListGroup variant="flush" className="pulls-list">
                             {results.map(pull => (
                                 <PullWidget key={pull.id} repo={repo} pull={pull}/>
                             ))}

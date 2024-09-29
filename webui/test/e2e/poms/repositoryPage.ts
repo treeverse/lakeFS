@@ -21,6 +21,8 @@ export class RepositoryPage {
       .click();
   }
 
+  // branch operations
+
   async createBranch(name: string): Promise<void> {
     await this.page
       .getByRole("link", { name: "Branches", exact: false })
@@ -36,6 +38,35 @@ export class RepositoryPage {
     await this.page.getByRole("button", { name: "branch: " }).click();
     await this.page.getByRole("button", { name }).click();
   }
+
+  // file manipulation operations
+
+  async deleteFirstFileInDirectory(dirName: string): Promise<void> {
+    await this.page.getByRole("link", {name: dirName}).click();
+    await this.page
+        .locator("table.table")
+        .locator("tbody")
+        .locator("tr")
+        .first()
+        .locator("div.dropdown")
+        .hover();
+    await this.page
+        .locator("table.table")
+        .locator("tbody")
+        .locator("tr")
+        .first()
+        .locator("div.dropdown")
+        .locator("button")
+        .click();
+    await this.page
+        .locator("div.dropdown")
+        .locator(".dropdown-item")
+        .last()
+        .click();
+    await this.page.getByRole("button", {name: "Yes"}).click();
+  }
+
+  // uncommitted changes operations
 
   async getUncommittedCount(): Promise<number> {
     await this.page.locator("div.card").isVisible();
@@ -57,6 +88,8 @@ export class RepositoryPage {
       .click();
   }
 
+  // merge operations
+
   async merge(commitMsg: string): Promise<void> {
     await this.page.getByRole("button", { name: "Merge" }).click();
     if (commitMsg?.length) {
@@ -75,6 +108,8 @@ export class RepositoryPage {
     await this.page.getByRole("button", { name }).click();
   }
 
+  // navigation
+
   async gotoObjectsTab(): Promise<void> {
     await this.page.getByRole("link", { name: "Objects" }).click();
   }
@@ -85,5 +120,9 @@ export class RepositoryPage {
 
   async gotoCompareTab(): Promise<void> {
     await this.page.getByRole("link", { name: "Compare" }).click();
+  }
+
+  async gotoPullRequestsTab(): Promise<void> {
+    await this.page.getByRole("link", { name: "Pull Requests" }).click();
   }
 }
