@@ -73,7 +73,7 @@ const CreatePullForm = ({repo, reference, compare}) => {
         {error && <AlertError error={error} onDismiss={() => setError(null)}/>}
         <div>
             <Button variant="success"
-                    disabled={!title || !description || loading || isEmptyDiff}
+                    disabled={!title || loading || isEmptyDiff}
                     onClick={submitForm}>
                 {loading && <><span className="spinner-border spinner-border-sm text-light" role="status"/> {""}</>}
                 Create Pull Request
