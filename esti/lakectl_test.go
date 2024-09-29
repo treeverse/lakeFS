@@ -352,8 +352,8 @@ func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
 	branchVars := map[string]string{
 		"REPO":          repoName,
 		"STORAGE":       storage,
-		"SOURCE_BRANCH": mainBranch,
-		"DEST_BRANCH":   featureBranch,
+		"SOURCE_BRANCH": featureBranch,
+		"DEST_BRANCH":   mainBranch,
 		"BRANCH":        featureBranch,
 	}
 
