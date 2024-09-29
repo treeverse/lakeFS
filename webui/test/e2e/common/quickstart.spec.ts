@@ -112,7 +112,7 @@ test.describe("Quickstart", () => {
         // delete a file in the branch
         await repositoryPage.gotoObjectsTab();
         await repositoryPage.switchBranch(branchNameForPull);
-        await repositoryPage.deleteFirstFileInDirectory("images/");
+        await repositoryPage.deleteFirstObjectInDirectory("images/");
 
         // commit the change
         await repositoryPage.gotoUncommittedChangeTab();

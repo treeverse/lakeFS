@@ -41,20 +41,19 @@ export class RepositoryPage {
 
   // file manipulation operations
 
-  async deleteFirstFileInDirectory(dirName: string): Promise<void> {
+  async deleteFirstObjectInDirectory(dirName: string): Promise<void> {
     await this.page.getByRole("link", {name: dirName}).click();
-    await this.page
+
+    const getFirstObjectRow = (page: Page) => page
         .locator("table.table")
         .locator("tbody")
         .locator("tr")
-        .first()
+        .first();
+
+    await getFirstObjectRow(this.page)
         .locator("div.dropdown")
         .hover();
-    await this.page
-        .locator("table.table")
-        .locator("tbody")
-        .locator("tr")
-        .first()
+    await getFirstObjectRow(this.page)
         .locator("div.dropdown")
         .locator("button")
         .click();
