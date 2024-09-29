@@ -38,7 +38,7 @@ test.describe("Quickstart", () => {
         const objectViewerPage = new ObjectViewerPage(page);
         await objectViewerPage.enterQuery(SELECT_QUERY);
         await objectViewerPage.clickExecuteButton();
-        await expect(await objectViewerPage.getResultRowCount()).toEqual(5);
+        expect(await objectViewerPage.getResultRowCount()).toEqual(5);
     });
 
     test("transforming data", async ({page}) => {
@@ -65,7 +65,7 @@ test.describe("Quickstart", () => {
 
         await objectViewerPage.enterQuery(SELECT_NEW_BRANCH);
         await objectViewerPage.clickExecuteButton();
-        await expect(await objectViewerPage.getResultRowCount()).toEqual(1);
+        expect(await objectViewerPage.getResultRowCount()).toEqual(1);
     });
 
     test("commit and merge", async ({page}) => {
@@ -76,18 +76,16 @@ test.describe("Quickstart", () => {
         const repositoryPage = new RepositoryPage(page);
         await repositoryPage.gotoUncommittedChangeTab();
         await repositoryPage.switchBranch(NEW_BRANCH_NAME);
-        await expect(
-            await page.getByText("Showing changes for branch")
-        ).toBeVisible();
-        await expect(await repositoryPage.getUncommittedCount()).toEqual(1);
+        await expect(page.getByText("Showing changes for branch")).toBeVisible();
+        expect(await repositoryPage.getUncommittedCount()).toEqual(1);
 
         await repositoryPage.commitChanges("denmark");
         await expect(page.getByText("No changes")).toBeVisible();
 
         await repositoryPage.gotoCompareTab();
         await repositoryPage.switchBaseBranch("main");
-        await expect(await page.getByText("Showing changes between")).toBeVisible();
-        await expect(await repositoryPage.getUncommittedCount()).toEqual(1);
+        await expect(page.getByText("Showing changes between")).toBeVisible();
+        expect(await repositoryPage.getUncommittedCount()).toEqual(1);
         await repositoryPage.merge("merge commit");
         await expect(page.getByText("No changes")).toBeVisible();
 
@@ -98,7 +96,7 @@ test.describe("Quickstart", () => {
         const objectViewerPage = new ObjectViewerPage(page);
         await objectViewerPage.enterQuery(SELECT_QUERY);
         await objectViewerPage.clickExecuteButton();
-        await expect(await objectViewerPage.getResultRowCount()).toEqual(1);
+        expect(await objectViewerPage.getResultRowCount()).toEqual(1);
     });
 
     test("pull requests", async ({page}) => {
@@ -132,10 +130,18 @@ test.describe("Quickstart", () => {
         await pullsPage.clickCreatePullButton();
         await expect(page.getByRole("heading", {name: "Create Pull Request"})).toBeVisible();
         await pullsPage.switchCompareBranch(branchNameForPull);
-        const titleForPull1 = "PR for branch 1";
-        await pullsPage.fillPullTitle(titleForPull1);
+        const pullDetails = {title: "PR for branch 1", description: "A description for PR 1"};
+        await pullsPage.fillPullTitle(pullDetails.title);
+        await pullsPage.fillPullDescription(pullDetails.description);
         await pullsPage.clickCreatePullButton();
-        await expect(page.getByRole("heading", {name: titleForPull1})).toBeVisible();
-        await expect(page.locator("div.lakefs-uri").getByText(`main...${branchNameForPull}`)).toBeVisible();
+        expect(await pullsPage.getBranchesCompareURI()).toEqual(`main...${branchNameForPull}/`);
+
+        // merge the pull request
+        await pullsPage.clickMergePullButton();
+        await repositoryPage.gotoPullRequestsTab();
+        await pullsPage.gotoPullsTab("closed");
+        const firstPullRowDetails = await pullsPage.getFirstPullsRowDetails();
+        expect(firstPullRowDetails.title).toEqual(pullDetails.title);
+        expect(firstPullRowDetails.description).toMatch(/^Merged/)
     });
 });
