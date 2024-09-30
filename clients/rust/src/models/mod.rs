@@ -192,6 +192,8 @@ pub mod task_info;
 pub use self::task_info::TaskInfo;
 pub mod underlying_object_properties;
 pub use self::underlying_object_properties::UnderlyingObjectProperties;
+pub mod update_object_user_metadata;
+pub use self::update_object_user_metadata::UpdateObjectUserMetadata;
 pub mod update_token;
 pub use self::update_token::UpdateToken;
 pub mod upload_part;

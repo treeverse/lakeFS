@@ -121,6 +121,7 @@ docs/TagCreation.md
 docs/TagsApi.md
 docs/TaskInfo.md
 docs/UnderlyingObjectProperties.md
+docs/UpdateObjectUserMetadata.md
 docs/UpdateToken.md
 docs/UploadPart.md
 docs/UsageReport.md
@@ -270,6 +271,7 @@ src/main/java/io/lakefs/clients/api/model/StsAuthRequest.java
 src/main/java/io/lakefs/clients/api/model/TagCreation.java
 src/main/java/io/lakefs/clients/api/model/TaskInfo.java
 src/main/java/io/lakefs/clients/api/model/UnderlyingObjectProperties.java
+src/main/java/io/lakefs/clients/api/model/UpdateObjectUserMetadata.java
 src/main/java/io/lakefs/clients/api/model/UpdateToken.java
 src/main/java/io/lakefs/clients/api/model/UploadPart.java
 src/main/java/io/lakefs/clients/api/model/UsageReport.java
@@ -393,6 +395,7 @@ src/test/java/io/lakefs/clients/api/model/StsAuthRequestTest.java
 src/test/java/io/lakefs/clients/api/model/TagCreationTest.java
 src/test/java/io/lakefs/clients/api/model/TaskInfoTest.java
 src/test/java/io/lakefs/clients/api/model/UnderlyingObjectPropertiesTest.java
+src/test/java/io/lakefs/clients/api/model/UpdateObjectUserMetadataTest.java
 src/test/java/io/lakefs/clients/api/model/UpdateTokenTest.java
 src/test/java/io/lakefs/clients/api/model/UploadPartTest.java
 src/test/java/io/lakefs/clients/api/model/UsageReportTest.java
