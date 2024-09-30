@@ -2293,6 +2293,27 @@ lakectl fs stat <path URI> [flags]
 
 
 
+### lakectl fs update-metadata
+
+**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+{: .note .note-warning }
+
+Update user metadata on the specified URI
+
+```
+lakectl fs update-metadata <path URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help               help for update-metadata
+      --metadata strings   Metadata to set, in the form key1=value1,key2=value2
+```
+
+
+
 ### lakectl fs upload
 
 Upload a local file to the specified URI
