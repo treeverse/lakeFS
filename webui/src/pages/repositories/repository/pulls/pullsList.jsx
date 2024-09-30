@@ -48,14 +48,14 @@ const PullWidget = ({repo, pull}) => {
                 <h6>
                     <PullIcon status={pull.status}/>
                     {" "}
-                    <Link href={{
+                    <Link className="pull-title" href={{
                         pathname: '/repositories/:repoId/pulls/:pullId',
                         params: {repoId: repo.id, pullId: pull.id}
                     }}>
                         {pull.title}
                     </Link>
                 </h6>
-                <small>{getDescription()}</small>
+                <small className="pull-description">{getDescription()}</small>
             </div>
             <div className="float-end mt-2">
                 <div className="btn btn-light btn-sm">{pull.destination_branch}</div>
@@ -81,7 +81,7 @@ const PullsList = ({repo, after, prefix, onPaginate}) => {
     else content = (results && !!results.length ?
                 <>
                     <Card>
-                        <ListGroup variant="flush">
+                        <ListGroup variant="flush" className="pulls-list">
                             {results.map(pull => (
                                 <PullWidget key={pull.id} repo={repo} pull={pull}/>
                             ))}
