@@ -4689,6 +4689,35 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 	writeResponse(w, r, code, objStat)
 }
 
+func (c *Controller) UpdateObjectUserMetadata(w http.ResponseWriter, r *http.Request, body apigen.UpdateObjectUserMetadataJSONRequestBody, repository, branch string, params apigen.UpdateObjectUserMetadataParams) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.WriteObjectAction,
+			Resource: permissions.ObjectArn(repository, params.Path),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "update_object_user_metadata", r, repository, branch, "")
+
+	// read all the _other_ metadata.  Does not require checking read
+	// permissions, as the caller will never see this.
+	entry, err := c.Catalog.GetEntry(ctx, repository, branch, params.Path, catalog.GetEntryParams{})
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	entry.Metadata = catalog.Metadata(body.Set.AdditionalProperties)
+
+	err = c.Catalog.CreateEntry(ctx, repository, branch, *entry)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
 func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Request, repository, ref string, params apigen.GetUnderlyingPropertiesParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
