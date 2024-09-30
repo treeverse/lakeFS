@@ -339,7 +339,6 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 }
 
 func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
-
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{

@@ -116,7 +116,7 @@ var logCmd = &cobra.Command{
 		}
 		// case --no-merges & --amount, ask for more results since some will filter out
 		if noMerges && amountForPagination < maxAmountNoMerges {
-			amountForPagination *= 3
+			amountForPagination *= noMergesHeuristic
 		}
 		logCommitsParams := &apigen.LogCommitsParams{
 			After:       apiutil.Ptr(apigen.PaginationAfter(after)),
@@ -172,8 +172,8 @@ var logCmd = &cobra.Command{
 			// case --no-merges, filter commits and subtract that amount from amount desired
 			if noMerges {
 				data.Commits = filterMergeCommits(data.Commits)
-				amount -= len(data.Commits)
 			}
+			amount -= len(data.Commits)
 
 			if dot {
 				graph.Write(data.Commits)
