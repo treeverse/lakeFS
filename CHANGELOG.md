@@ -1,5 +1,13 @@
 # Changelog
 
+# v1.36.0
+
+:new: What's new:
+- Pull Requests for Data (#8235)
+
+:bug: Bugs fixed:
+- lakectl local checkout src uri (#8213)
+
 # v1.35.0
 
 :new: What's new:
