@@ -318,7 +318,7 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, cfg Con
 				// dirs might have different sizes on different operating systems
 				sizeChanged := !info.IsDir() && localBytes != swag.Int64Value(currentRemoteFile.SizeBytes)
 				mtimeChanged := localMtime != remoteMtime
-				permissionsChanged := cfg.IncludePerm && isPermissionsChanged(info, currentRemoteFile)
+				permissionsChanged := isPermissionsChanged(info, currentRemoteFile, cfg)
 				if sizeChanged || mtimeChanged || permissionsChanged {
 					// we made a change!
 					changes = append(changes, &Change{ChangeSourceLocal, localPath, ChangeTypeModified})
