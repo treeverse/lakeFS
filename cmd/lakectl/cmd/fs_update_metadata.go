@@ -20,18 +20,18 @@ var fsUpdateUserMetadataCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path URI", args[0])
-		user_metadata_kvs, err := cmd.Flags().GetStringSlice("metadata")
+		userMetadataKVs, err := cmd.Flags().GetStringSlice("metadata")
 		if err != nil {
 			DieErr(err)
 		}
-		user_metadata, err := makeMap(user_metadata_kvs)
+		userMetadata, err := makeMap(userMetadataKVs)
 		if err != nil {
 			DieErr(err)
 		}
 
 		body := apigen.UpdateObjectUserMetadataJSONRequestBody{
 			Set: apigen.ObjectUserMetadata{
-				AdditionalProperties: user_metadata,
+				AdditionalProperties: userMetadata,
 			},
 		}
 
@@ -48,6 +48,8 @@ var fsUpdateUserMetadataCmd = &cobra.Command{
 }
 
 // makeMap converts a slice of strings of the form KEY=VALUE into a map.
+//
+//nolint:mnd
 func makeMap(kvs []string) (map[string]string, error) {
 	ret := make(map[string]string, len(kvs))
 	for _, kv := range kvs {
@@ -62,6 +64,7 @@ func makeMap(kvs []string) (map[string]string, error) {
 	return ret, nil
 }
 
+//nolint:gochecknoinits
 func init() {
 	fsUpdateUserMetadataCmd.Flags().StringSliceP("metadata", "", nil, "Metadata to set, in the form key1=value1,key2=value2")
 	fsCmd.AddCommand(fsUpdateUserMetadataCmd)
