@@ -22,6 +22,7 @@ import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.ObjectStatsList;
 import io.lakefs.clients.sdk.model.PathList;
 import io.lakefs.clients.sdk.model.UnderlyingObjectProperties;
+import io.lakefs.clients.sdk.model.UpdateObjectUserMetadata;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -182,6 +183,22 @@ public class ObjectsApiTest {
         ObjectStats response = api.statObject(repository, ref, path)
                 .userMetadata(userMetadata)
                 .presign(presign)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * rewrite (all) object metadata
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void updateObjectUserMetadataTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String path = null;
+        UpdateObjectUserMetadata updateObjectUserMetadata = null;
+        api.updateObjectUserMetadata(repository, branch, path, updateObjectUserMetadata)
                 .execute();
         // TODO: test validations
     }

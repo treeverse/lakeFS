@@ -5643,6 +5643,74 @@ paths:
       tags:
       - objects
       x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/objects/stat/user_metadata:
+    put:
+      operationId: updateObjectUserMetadata
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: branch to update
+        explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: path to object relative to the branch
+        explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateObjectUserMetadata'
+        required: true
+      responses:
+        "201":
+          description: User metadata updated
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: rewrite (all) object metadata
+      tags:
+      - objects
+      - experimental
+      x-content-type: application/json
+      x-accepts: application/json
   /repositories/{repository}/refs/{ref}/objects/underlyingProperties:
     get:
       operationId: getUnderlyingProperties
@@ -7667,6 +7735,18 @@ components:
       required:
       - pagination
       - results
+      type: object
+    UpdateObjectUserMetadata:
+      example:
+        set:
+          key: set
+      properties:
+        set:
+          additionalProperties:
+            type: string
+          type: object
+      required:
+      - set
       type: object
     ObjectCopyCreation:
       example:

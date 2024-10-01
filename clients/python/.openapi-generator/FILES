@@ -114,6 +114,7 @@ docs/TagCreation.md
 docs/TagsApi.md
 docs/TaskInfo.md
 docs/UnderlyingObjectProperties.md
+docs/UpdateObjectUserMetadata.md
 docs/UpdateToken.md
 docs/UploadPart.md
 docs/UsageReport.md
@@ -243,6 +244,7 @@ lakefs_sdk/models/sts_auth_request.py
 lakefs_sdk/models/tag_creation.py
 lakefs_sdk/models/task_info.py
 lakefs_sdk/models/underlying_object_properties.py
+lakefs_sdk/models/update_object_user_metadata.py
 lakefs_sdk/models/update_token.py
 lakefs_sdk/models/upload_part.py
 lakefs_sdk/models/usage_report.py
@@ -372,6 +374,7 @@ test/test_tag_creation.py
 test/test_tags_api.py
 test/test_task_info.py
 test/test_underlying_object_properties.py
+test/test_update_object_user_metadata.py
 test/test_update_token.py
 test/test_upload_part.py
 test/test_usage_report.py

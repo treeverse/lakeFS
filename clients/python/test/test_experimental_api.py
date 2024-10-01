@@ -127,6 +127,13 @@ class TestExperimentalApi(unittest.TestCase):
         """
         pass
 
+    def test_update_object_user_metadata(self):
+        """Test case for update_object_user_metadata
+
+        rewrite (all) object metadata  # noqa: E501
+        """
+        pass
+
     def test_update_pull_request(self):
         """Test case for update_pull_request
 

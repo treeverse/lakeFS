@@ -111,6 +111,7 @@ from lakefs_client.model.sts_auth_request import StsAuthRequest
 from lakefs_client.model.tag_creation import TagCreation
 from lakefs_client.model.task_info import TaskInfo
 from lakefs_client.model.underlying_object_properties import UnderlyingObjectProperties
+from lakefs_client.model.update_object_user_metadata import UpdateObjectUserMetadata
 from lakefs_client.model.update_token import UpdateToken
 from lakefs_client.model.upload_part import UploadPart
 from lakefs_client.model.usage_report import UsageReport

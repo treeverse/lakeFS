@@ -22,6 +22,7 @@ import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.ObjectStatsList;
 import io.lakefs.clients.api.model.PathList;
 import io.lakefs.clients.api.model.UnderlyingObjectProperties;
+import io.lakefs.clients.api.model.UpdateObjectUserMetadata;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -186,6 +187,24 @@ public class ObjectsApiTest {
         Boolean userMetadata = null;
         Boolean presign = null;
                 ObjectStats response = api.statObject(repository, ref, path, userMetadata, presign);
+        // TODO: test validations
+    }
+    
+    /**
+     * rewrite (all) object metadata
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void updateObjectUserMetadataTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String path = null;
+        UpdateObjectUserMetadata updateObjectUserMetadata = null;
+                api.updateObjectUserMetadata(repository, branch, path, updateObjectUserMetadata);
         // TODO: test validations
     }
     

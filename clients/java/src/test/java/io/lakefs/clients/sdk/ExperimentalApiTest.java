@@ -32,6 +32,7 @@ import io.lakefs.clients.sdk.model.PullRequestCreationResponse;
 import io.lakefs.clients.sdk.model.PullRequestsList;
 import io.lakefs.clients.sdk.model.StagingLocation;
 import io.lakefs.clients.sdk.model.StsAuthRequest;
+import io.lakefs.clients.sdk.model.UpdateObjectUserMetadata;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -274,6 +275,22 @@ public class ExperimentalApiTest {
     public void stsLoginTest() throws ApiException {
         StsAuthRequest stsAuthRequest = null;
         AuthenticationToken response = api.stsLogin(stsAuthRequest)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * rewrite (all) object metadata
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void updateObjectUserMetadataTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String path = null;
+        UpdateObjectUserMetadata updateObjectUserMetadata = null;
+        api.updateObjectUserMetadata(repository, branch, path, updateObjectUserMetadata)
                 .execute();
         // TODO: test validations
     }
