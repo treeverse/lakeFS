@@ -3,7 +3,7 @@
 # v1.37.0
 
 :new: What's new:
-- Add update object metadata API (#8253)
+- Experimental: add update object metadata API (#8253)
 
 :bug: Bugs fixed:
 - Fix Sample Data checkbox of the Repository Create form (#8255)
