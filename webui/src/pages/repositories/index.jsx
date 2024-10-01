@@ -50,7 +50,7 @@ const GettingStartedCreateRepoButton = ({text, variant = "success", enabled = fa
     );
 }
 
-const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress, samlpleRepoChecked = false }) => {
+const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress }) => {
 
   const [formValid, setFormValid] = useState(false);
 
@@ -79,7 +79,6 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress, sam
                   onSubmit={onSubmit}
                   onCancel={onCancel}
                   inProgress={inProgress}
-                  sampleRepoChecked={samlpleRepoChecked}
                 />
             </Modal.Body>
             <Modal.Footer>
@@ -186,7 +185,6 @@ const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo
 const RepositoriesPage = () => {
     const router = useRouter();
     const [showCreateRepositoryModal, setShowCreateRepositoryModal] = useState(false);
-    const [sampleRepoChecked, setSampleRepoChecked] = useState(false);
     const [createRepoError, setCreateRepoError] = useState(null);
     const [refresh, setRefresh] = useState(false);
     const [creatingRepo, setCreatingRepo] = useState(false);
@@ -222,7 +220,6 @@ const RepositoriesPage = () => {
     }, [setShowActionsBar]);
 
     const createRepositoryButtonCallback = useCallback(() => {
-        setSampleRepoChecked(false);
         setShowCreateRepositoryModal(true);
         setCreateRepoError(null);
     }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
@@ -240,7 +237,6 @@ const RepositoriesPage = () => {
             await createRepo(sampleRepo);
             return;
         }
-        setSampleRepoChecked(true);
         setShowCreateRepositoryModal(true);
         setCreateRepoError(null);
     }, [showCreateRepositoryModal, setShowCreateRepositoryModal, loading, err, response, createRepo]);
@@ -294,7 +290,6 @@ const RepositoriesPage = () => {
                 show={showCreateRepositoryModal}
                 error={createRepoError}
                 onSubmit={(repo) => createRepo(repo, true)}
-                samlpleRepoChecked={sampleRepoChecked}
                 inProgress={creatingRepo}
                 />
 
