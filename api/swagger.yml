@@ -5026,7 +5026,7 @@ paths:
         - objects
         - experimental
       operationId: updateObjectUserMetadata
-      summary: update object metadata
+      summary: rewrite (all) object metadata
       requestBody:
         required: true
         content:
