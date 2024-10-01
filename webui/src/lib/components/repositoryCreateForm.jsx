@@ -8,7 +8,7 @@ import Accordion from "react-bootstrap/Accordion";
 const DEFAULT_BLOCKSTORE_EXAMPLE = "e.g. s3://example-bucket/";
 const DEFAULT_BLOCKSTORE_VALIDITY_REGEX = new RegExp(`^s3://`);
 
-export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormValid, error = null, sampleRepoChecked = false }) => {
+export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormValid, error = null }) => {
     const repoValidityRegex = /^[a-z0-9][a-z0-9-]{2,62}$/;
 
     const [repoValid, setRepoValid] = useState(null);
@@ -16,18 +16,11 @@ export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormV
 
     const [storageNamespaceValid, setStorageNamespaceValid] = useState(defaultNamespacePrefix ? true : null);
     const [defaultBranchValid, setDefaultBranchValid] = useState(true);
-    
+    const [addSampleData, setAddSampleData] = useState(false);
+
     const storageNamespaceField = useRef(null);
     const defaultBranchField = useRef(null);
     const repoNameField = useRef(null);
-    const sampleDataCheckbox = useRef(null);
-
-    useEffect(() => {
-        if (sampleDataCheckbox.current) {
-            sampleDataCheckbox.current.checked = sampleRepoChecked;
-        }
-    }, [sampleRepoChecked, sampleDataCheckbox.current]);
-
 
     const onRepoNameChange = () => {
         const isRepoValid = repoValidityRegex.test(repoNameField.current.value);
@@ -64,7 +57,10 @@ export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormV
 
     const sampleCheckbox = (
       <Form.Group controlId="sampleData" className="mt-3">
-          <Form.Check ref={sampleDataCheckbox} type="checkbox" label="Add sample data, hooks, and configuration" />
+          <Form.Check type="checkbox"
+                      label="Add sample data, hooks, and configuration"
+                      onChange={(ev) => setAddSampleData(ev.target.checked)}
+          />
       </Form.Group>
     );
 
@@ -154,7 +150,7 @@ export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormV
                 name: repoNameField.current.value,
                 storage_namespace: storageNamespaceField.current.value,
                 default_branch: defaultBranchField.current.value,
-                sample_data: sampleDataCheckbox.current.checked,
+                sample_data: addSampleData,
             });
         }}>
             <h4 className="mb-3">Create A New Repository</h4>
