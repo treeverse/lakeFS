@@ -80,6 +80,7 @@ var statementByName = map[string]model.Statement{
 		Action: []string{
 			"pr:*",
 		},
+		Effect: model.StatementEffectAllow,
 	},
 }
 
