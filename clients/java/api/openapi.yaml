@@ -5705,7 +5705,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Internal Server Error
-      summary: update object metadata
+      summary: rewrite (all) object metadata
       tags:
       - objects
       - experimental

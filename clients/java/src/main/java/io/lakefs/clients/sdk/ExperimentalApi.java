@@ -3074,7 +3074,7 @@ public class ExperimentalApi {
     }
 
     /**
-     * update object metadata
+     * rewrite (all) object metadata
      * 
      * @param repository  (required)
      * @param branch branch to update (required)

@@ -188,7 +188,7 @@ public class ObjectsApiTest {
     }
 
     /**
-     * update object metadata
+     * rewrite (all) object metadata
      *
      * @throws ApiException if the Api call fails
      */

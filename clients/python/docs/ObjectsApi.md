@@ -12,7 +12,7 @@ Method | HTTP request | Description
 [**head_object**](ObjectsApi.md#head_object) | **HEAD** /repositories/{repository}/refs/{ref}/objects | check if object exists
 [**list_objects**](ObjectsApi.md#list_objects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix
 [**stat_object**](ObjectsApi.md#stat_object) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
-[**update_object_user_metadata**](ObjectsApi.md#update_object_user_metadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | update object metadata
+[**update_object_user_metadata**](ObjectsApi.md#update_object_user_metadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 [**upload_object**](ObjectsApi.md#upload_object) | **POST** /repositories/{repository}/branches/{branch}/objects | 
 
 
@@ -968,7 +968,7 @@ Name | Type | Description  | Notes
 # **update_object_user_metadata**
 > update_object_user_metadata(repository, branch, path, update_object_user_metadata)
 
-update object metadata
+rewrite (all) object metadata
 
 ### Example
 
@@ -1036,7 +1036,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     update_object_user_metadata = lakefs_sdk.UpdateObjectUserMetadata() # UpdateObjectUserMetadata | 
 
     try:
-        # update object metadata
+        # rewrite (all) object metadata
         api_instance.update_object_user_metadata(repository, branch, path, update_object_user_metadata)
     except Exception as e:
         print("Exception when calling ObjectsApi->update_object_user_metadata: %s\n" % e)

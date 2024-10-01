@@ -1441,7 +1441,7 @@ class ObjectsApi(object):
         update_object_user_metadata,
         **kwargs
     ):
-        """update object metadata  # noqa: E501
+        """rewrite (all) object metadata  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True

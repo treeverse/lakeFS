@@ -1508,7 +1508,7 @@ public class ObjectsApi {
     }
 
     /**
-     * update object metadata
+     * rewrite (all) object metadata
      * 
      * @param repository  (required)
      * @param branch branch to update (required)
@@ -1531,7 +1531,7 @@ public class ObjectsApi {
     }
 
     /**
-     * update object metadata
+     * rewrite (all) object metadata
      * 
      * @param repository  (required)
      * @param branch branch to update (required)
@@ -1556,7 +1556,7 @@ public class ObjectsApi {
     }
 
     /**
-     * update object metadata (asynchronously)
+     * rewrite (all) object metadata (asynchronously)
      * 
      * @param repository  (required)
      * @param branch branch to update (required)

@@ -18,7 +18,7 @@ Method | HTTP request | Description
 [**list_user_external_principals**](ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 [**merge_pull_request**](ExperimentalApi.md#merge_pull_request) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
 [**sts_login**](ExperimentalApi.md#sts_login) | **POST** /sts/login | perform a login with STS
-[**update_object_user_metadata**](ExperimentalApi.md#update_object_user_metadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | update object metadata
+[**update_object_user_metadata**](ExperimentalApi.md#update_object_user_metadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 [**update_pull_request**](ExperimentalApi.md#update_pull_request) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
 
 
@@ -453,7 +453,7 @@ No authorization required
 ## update_object_user_metadata
 
 > update_object_user_metadata(repository, branch, path, update_object_user_metadata)
-update object metadata
+rewrite (all) object metadata
 
 ### Parameters
 

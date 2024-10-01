@@ -88,7 +88,7 @@ class TestObjectsApi(unittest.TestCase):
     def test_update_object_user_metadata(self):
         """Test case for update_object_user_metadata
 
-        update object metadata  # noqa: E501
+        rewrite (all) object metadata  # noqa: E501
         """
         pass
 

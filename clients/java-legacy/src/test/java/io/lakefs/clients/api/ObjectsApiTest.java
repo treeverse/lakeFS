@@ -191,7 +191,7 @@ public class ObjectsApiTest {
     }
     
     /**
-     * update object metadata
+     * rewrite (all) object metadata
      *
      * 
      *

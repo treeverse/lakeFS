@@ -18,7 +18,7 @@ Method | HTTP request | Description
 [**listUserExternalPrincipals**](ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 [**mergePullRequest**](ExperimentalApi.md#mergePullRequest) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
 [**stsLogin**](ExperimentalApi.md#stsLogin) | **POST** /sts/login | perform a login with STS
-[**updateObjectUserMetadata**](ExperimentalApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | update object metadata
+[**updateObjectUserMetadata**](ExperimentalApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 [**updatePullRequest**](ExperimentalApi.md#updatePullRequest) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
 
 
@@ -1332,7 +1332,7 @@ No authorization required
 # **updateObjectUserMetadata**
 > updateObjectUserMetadata(repository, branch, path, updateObjectUserMetadata)
 
-update object metadata
+rewrite (all) object metadata
 
 ### Example
 ```java

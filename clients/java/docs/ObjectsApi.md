@@ -12,7 +12,7 @@ All URIs are relative to */api/v1*
 | [**headObject**](ObjectsApi.md#headObject) | **HEAD** /repositories/{repository}/refs/{ref}/objects | check if object exists |
 | [**listObjects**](ObjectsApi.md#listObjects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix |
 | [**statObject**](ObjectsApi.md#statObject) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata |
-| [**updateObjectUserMetadata**](ObjectsApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | update object metadata |
+| [**updateObjectUserMetadata**](ObjectsApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata |
 | [**uploadObject**](ObjectsApi.md#uploadObject) | **POST** /repositories/{repository}/branches/{branch}/objects |  |
 
 
@@ -850,7 +850,7 @@ public class Example {
 # **updateObjectUserMetadata**
 > updateObjectUserMetadata(repository, branch, path, updateObjectUserMetadata).execute();
 
-update object metadata
+rewrite (all) object metadata
 
 ### Example
 ```java

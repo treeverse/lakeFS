@@ -2288,7 +2288,7 @@ class ExperimentalApi(object):
 
     @validate_arguments
     def update_object_user_metadata(self, repository : StrictStr, branch : Annotated[StrictStr, Field(..., description="branch to update")], path : Annotated[StrictStr, Field(..., description="path to object relative to the branch")], update_object_user_metadata : UpdateObjectUserMetadata, **kwargs) -> None:  # noqa: E501
-        """update object metadata  # noqa: E501
+        """rewrite (all) object metadata  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
@@ -2322,7 +2322,7 @@ class ExperimentalApi(object):
 
     @validate_arguments
     def update_object_user_metadata_with_http_info(self, repository : StrictStr, branch : Annotated[StrictStr, Field(..., description="branch to update")], path : Annotated[StrictStr, Field(..., description="path to object relative to the branch")], update_object_user_metadata : UpdateObjectUserMetadata, **kwargs) -> ApiResponse:  # noqa: E501
-        """update object metadata  # noqa: E501
+        """rewrite (all) object metadata  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
