@@ -29,6 +29,7 @@ func TestDiffLocal(t *testing.T) {
 	cases := []struct {
 		Name                   string
 		IncludeUnixPermissions bool
+		IncludeGID             bool
 		LocalPath              string
 		InitLocalPath          func() string
 		CleanLocalPath         func(localPath string)
@@ -238,6 +239,7 @@ func TestDiffLocal(t *testing.T) {
 		{
 			Name:                   "t1_unix_permissions_modified",
 			IncludeUnixPermissions: true,
+			IncludeGID:             true,
 			LocalPath:              "testdata/localdiff/t1/sub",
 			RemoteList: []apigen.ObjectStats{
 				{
@@ -249,12 +251,12 @@ func TestDiffLocal(t *testing.T) {
 					Path:      "folder/",
 					SizeBytes: swag.Int64(1),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(osUid+1, osGid, local.DefaultDirectoryPermissions-umask),
+					Metadata:  getPermissionsMetadata(osUid, osGid+1, local.DefaultDirectoryPermissions-umask),
 				}, {
 					Path:      "folder/f.txt",
 					SizeBytes: swag.Int64(6),
 					Mtime:     diffTestCorrectTime,
-					Metadata:  getPermissionsMetadata(osUid, osGid, local.DefaultFilePermissions-umask),
+					Metadata:  getPermissionsMetadata(osUid+1, osGid, local.DefaultFilePermissions-umask),
 				},
 			},
 			Expected: []*local.Change{
@@ -360,6 +362,8 @@ func TestDiffLocal(t *testing.T) {
 
 			changes, err := local.DiffLocalWithHead(lc, tt.LocalPath, local.Config{
 				IncludePerm: tt.IncludeUnixPermissions,
+				IncludeUID:  false,
+				IncludeGID:  tt.IncludeGID,
 			})
 
 			if tt.CleanLocalPath != nil {
