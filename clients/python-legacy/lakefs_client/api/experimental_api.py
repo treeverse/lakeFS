@@ -40,6 +40,7 @@ from lakefs_client.model.pull_request_creation_response import PullRequestCreati
 from lakefs_client.model.pull_requests_list import PullRequestsList
 from lakefs_client.model.staging_location import StagingLocation
 from lakefs_client.model.sts_auth_request import StsAuthRequest
+from lakefs_client.model.update_object_user_metadata import UpdateObjectUserMetadata
 
 
 class ExperimentalApi(object):
@@ -970,6 +971,80 @@ class ExperimentalApi(object):
                 },
                 'location_map': {
                     'sts_auth_request': 'body',
+                },
+                'collection_format_map': {
+                }
+            },
+            headers_map={
+                'accept': [
+                    'application/json'
+                ],
+                'content_type': [
+                    'application/json'
+                ]
+            },
+            api_client=api_client
+        )
+        self.update_object_user_metadata_endpoint = _Endpoint(
+            settings={
+                'response_type': None,
+                'auth': [
+                    'basic_auth',
+                    'cookie_auth',
+                    'jwt_token',
+                    'oidc_auth',
+                    'saml_auth'
+                ],
+                'endpoint_path': '/repositories/{repository}/branches/{branch}/objects/stat/user_metadata',
+                'operation_id': 'update_object_user_metadata',
+                'http_method': 'PUT',
+                'servers': None,
+            },
+            params_map={
+                'all': [
+                    'repository',
+                    'branch',
+                    'path',
+                    'update_object_user_metadata',
+                ],
+                'required': [
+                    'repository',
+                    'branch',
+                    'path',
+                    'update_object_user_metadata',
+                ],
+                'nullable': [
+                ],
+                'enum': [
+                ],
+                'validation': [
+                ]
+            },
+            root_map={
+                'validations': {
+                },
+                'allowed_values': {
+                },
+                'openapi_types': {
+                    'repository':
+                        (str,),
+                    'branch':
+                        (str,),
+                    'path':
+                        (str,),
+                    'update_object_user_metadata':
+                        (UpdateObjectUserMetadata,),
+                },
+                'attribute_map': {
+                    'repository': 'repository',
+                    'branch': 'branch',
+                    'path': 'path',
+                },
+                'location_map': {
+                    'repository': 'path',
+                    'branch': 'path',
+                    'path': 'query',
+                    'update_object_user_metadata': 'body',
                 },
                 'collection_format_map': {
                 }
@@ -2034,6 +2109,83 @@ class ExperimentalApi(object):
         kwargs['sts_auth_request'] = \
             sts_auth_request
         return self.sts_login_endpoint.call_with_http_info(**kwargs)
+
+    def update_object_user_metadata(
+        self,
+        repository,
+        branch,
+        path,
+        update_object_user_metadata,
+        **kwargs
+    ):
+        """rewrite (all) object metadata  # noqa: E501
+
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.update_object_user_metadata(repository, branch, path, update_object_user_metadata, async_req=True)
+        >>> result = thread.get()
+
+        Args:
+            repository (str):
+            branch (str): branch to update
+            path (str): path to object relative to the branch
+            update_object_user_metadata (UpdateObjectUserMetadata):
+
+        Keyword Args:
+            _return_http_data_only (bool): response data without head status
+                code and headers. Default is True.
+            _preload_content (bool): if False, the urllib3.HTTPResponse object
+                will be returned without reading/decoding response data.
+                Default is True.
+            _request_timeout (int/float/tuple): timeout setting for this request. If
+                one number provided, it will be total request timeout. It can also
+                be a pair (tuple) of (connection, read) timeouts.
+                Default is None.
+            _check_input_type (bool): specifies if type checking
+                should be done one the data sent to the server.
+                Default is True.
+            _check_return_type (bool): specifies if type checking
+                should be done one the data received from the server.
+                Default is True.
+            _host_index (int/None): specifies the index of the server
+                that we want to use.
+                Default is read from the configuration.
+            async_req (bool): execute request asynchronously
+
+        Returns:
+            None
+                If the method is called asynchronously, returns the request
+                thread.
+        """
+        kwargs['async_req'] = kwargs.get(
+            'async_req', False
+        )
+        kwargs['_return_http_data_only'] = kwargs.get(
+            '_return_http_data_only', True
+        )
+        kwargs['_preload_content'] = kwargs.get(
+            '_preload_content', True
+        )
+        kwargs['_request_timeout'] = kwargs.get(
+            '_request_timeout', None
+        )
+        kwargs['_check_input_type'] = kwargs.get(
+            '_check_input_type', True
+        )
+        kwargs['_check_return_type'] = kwargs.get(
+            '_check_return_type', True
+        )
+        kwargs['_host_index'] = kwargs.get('_host_index')
+        kwargs['repository'] = \
+            repository
+        kwargs['branch'] = \
+            branch
+        kwargs['path'] = \
+            path
+        kwargs['update_object_user_metadata'] = \
+            update_object_user_metadata
+        return self.update_object_user_metadata_endpoint.call_with_http_info(**kwargs)
 
     def update_pull_request(
         self,

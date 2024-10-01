@@ -2289,6 +2289,83 @@ func TestController_ObjectsStatObjectHandler(t *testing.T) {
 	})
 }
 
+func TestController_UpdateObjectUserMetadataHander(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "some-bucket"), "main", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("update metadata", func(t *testing.T) {
+		const objPath = "foo/bar"
+		entry := catalog.DBEntry{
+			Path:            objPath,
+			PhysicalAddress: "this_is_bars_address",
+			CreationDate:    time.Now(),
+			Size:            666,
+			Checksum:        "this_is_a_checksum",
+		}
+		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", entry))
+
+		userMetadataMap := map[string]string{
+			"foo": "bar",
+			"baz": "quux",
+		}
+
+		body := apigen.UpdateObjectUserMetadataJSONRequestBody{
+			Set: apigen.ObjectUserMetadata{
+				AdditionalProperties: userMetadataMap,
+			},
+		}
+
+		resp, err := clt.UpdateObjectUserMetadataWithResponse(ctx, repo, "main",
+			&apigen.UpdateObjectUserMetadataParams{Path: objPath},
+			body,
+		)
+		verifyResponseOK(t, resp, err)
+
+		// Verify that it was set
+		statResp, err := clt.StatObjectWithResponse(ctx, repo, "main",
+			&apigen.StatObjectParams{
+				Path:         objPath,
+				UserMetadata: swag.Bool(true),
+			},
+		)
+		verifyResponseOK(t, statResp, err)
+		objectStats := statResp.JSON200
+		if diffs := deep.Equal(objectStats.Metadata.AdditionalProperties, userMetadataMap); diffs != nil {
+			t.Errorf("did not get expected metadata, diffs %s", diffs)
+		}
+	})
+
+	t.Run("update metadata not found", func(t *testing.T) {
+		const objPath = "foo/not/found/bar"
+
+		userMetadata := map[string]string{
+			"foo": "bar",
+			"baz": "quux",
+		}
+
+		body := apigen.UpdateObjectUserMetadataJSONRequestBody{
+			Set: apigen.ObjectUserMetadata{
+				AdditionalProperties: userMetadata,
+			},
+		}
+
+		resp, err := clt.UpdateObjectUserMetadataWithResponse(ctx, repo, "main",
+			&apigen.UpdateObjectUserMetadataParams{Path: objPath},
+			body,
+		)
+		testutil.Must(t, err)
+		if resp.JSON404 == nil {
+			t.Errorf("Expected 404, got %+v", resp)
+		}
+	})
+}
+
 func TestController_ObjectsListObjectsHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()

@@ -347,6 +347,15 @@ components:
           items:
             $ref: "#/components/schemas/ObjectStats"
 
+    UpdateObjectUserMetadata:
+      type: object
+      required:
+        - set
+      properties:
+        set:
+          description: Set this object user metadata
+          $ref: "#/components/schemas/ObjectUserMetadata"
+
     ObjectCopyCreation:
       type: object
       required:
@@ -4988,6 +4997,51 @@ paths:
           $ref: "#/components/responses/BadRequest"
         410:
           description: object gone (but partial metadata may be available)
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/objects/stat/user_metadata:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        description: branch to update
+      - in: query
+        name: path
+        description: path to object relative to the branch
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - objects
+        - experimental
+      operationId: updateObjectUserMetadata
+      summary: rewrite (all) object metadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateObjectUserMetadata"
+      responses:
+        201:
+          description: User metadata updated
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        400:
+          $ref: "#/components/responses/BadRequest"
         420:
           description: too many requests
         default:

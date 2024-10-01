@@ -35,6 +35,7 @@ import io.lakefs.clients.api.model.ObjectStats;
 import io.lakefs.clients.api.model.ObjectStatsList;
 import io.lakefs.clients.api.model.PathList;
 import io.lakefs.clients.api.model.UnderlyingObjectProperties;
+import io.lakefs.clients.api.model.UpdateObjectUserMetadata;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -1419,6 +1420,166 @@ public class ObjectsApi {
         okhttp3.Call localVarCall = statObjectValidateBeforeCall(repository, ref, path, userMetadata, presign, _callback);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for updateObjectUserMetadata
+     * @param repository  (required)
+     * @param branch branch to update (required)
+     * @param path path to object relative to the branch (required)
+     * @param updateObjectUserMetadata  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> User metadata updated </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call updateObjectUserMetadataCall(String repository, String branch, String path, UpdateObjectUserMetadata updateObjectUserMetadata, final ApiCallback _callback) throws ApiException {
+        Object localVarPostBody = updateObjectUserMetadata;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/branches/{branch}/objects/stat/user_metadata"
+            .replaceAll("\\{" + "repository" + "\\}", localVarApiClient.escapeString(repository.toString()))
+            .replaceAll("\\{" + "branch" + "\\}", localVarApiClient.escapeString(branch.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (path != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("path", path));
+        }
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        localVarHeaderParams.put("Content-Type", localVarContentType);
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "jwt_token", "oidc_auth", "saml_auth" };
+        return localVarApiClient.buildCall(localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call updateObjectUserMetadataValidateBeforeCall(String repository, String branch, String path, UpdateObjectUserMetadata updateObjectUserMetadata, final ApiCallback _callback) throws ApiException {
+        
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling updateObjectUserMetadata(Async)");
+        }
+        
+        // verify the required parameter 'branch' is set
+        if (branch == null) {
+            throw new ApiException("Missing the required parameter 'branch' when calling updateObjectUserMetadata(Async)");
+        }
+        
+        // verify the required parameter 'path' is set
+        if (path == null) {
+            throw new ApiException("Missing the required parameter 'path' when calling updateObjectUserMetadata(Async)");
+        }
+        
+        // verify the required parameter 'updateObjectUserMetadata' is set
+        if (updateObjectUserMetadata == null) {
+            throw new ApiException("Missing the required parameter 'updateObjectUserMetadata' when calling updateObjectUserMetadata(Async)");
+        }
+        
+
+        okhttp3.Call localVarCall = updateObjectUserMetadataCall(repository, branch, path, updateObjectUserMetadata, _callback);
+        return localVarCall;
+
+    }
+
+    /**
+     * rewrite (all) object metadata
+     * 
+     * @param repository  (required)
+     * @param branch branch to update (required)
+     * @param path path to object relative to the branch (required)
+     * @param updateObjectUserMetadata  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> User metadata updated </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public void updateObjectUserMetadata(String repository, String branch, String path, UpdateObjectUserMetadata updateObjectUserMetadata) throws ApiException {
+        updateObjectUserMetadataWithHttpInfo(repository, branch, path, updateObjectUserMetadata);
+    }
+
+    /**
+     * rewrite (all) object metadata
+     * 
+     * @param repository  (required)
+     * @param branch branch to update (required)
+     * @param path path to object relative to the branch (required)
+     * @param updateObjectUserMetadata  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> User metadata updated </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> updateObjectUserMetadataWithHttpInfo(String repository, String branch, String path, UpdateObjectUserMetadata updateObjectUserMetadata) throws ApiException {
+        okhttp3.Call localVarCall = updateObjectUserMetadataValidateBeforeCall(repository, branch, path, updateObjectUserMetadata, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     * rewrite (all) object metadata (asynchronously)
+     * 
+     * @param repository  (required)
+     * @param branch branch to update (required)
+     * @param path path to object relative to the branch (required)
+     * @param updateObjectUserMetadata  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> User metadata updated </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call updateObjectUserMetadataAsync(String repository, String branch, String path, UpdateObjectUserMetadata updateObjectUserMetadata, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = updateObjectUserMetadataValidateBeforeCall(repository, branch, path, updateObjectUserMetadata, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
     /**

@@ -200,6 +200,7 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**listUserExternalPrincipals**](docs/ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 *ExperimentalApi* | [**mergePullRequest**](docs/ExperimentalApi.md#mergePullRequest) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
 *ExperimentalApi* | [**stsLogin**](docs/ExperimentalApi.md#stsLogin) | **POST** /sts/login | perform a login with STS
+*ExperimentalApi* | [**updateObjectUserMetadata**](docs/ExperimentalApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 *ExperimentalApi* | [**updatePullRequest**](docs/ExperimentalApi.md#updatePullRequest) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
 *ExternalApi* | [**createUserExternalPrincipal**](docs/ExternalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 *ExternalApi* | [**deleteUserExternalPrincipal**](docs/ExternalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
@@ -248,6 +249,7 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**headObject**](docs/ObjectsApi.md#headObject) | **HEAD** /repositories/{repository}/refs/{ref}/objects | check if object exists
 *ObjectsApi* | [**listObjects**](docs/ObjectsApi.md#listObjects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix
 *ObjectsApi* | [**statObject**](docs/ObjectsApi.md#statObject) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
+*ObjectsApi* | [**updateObjectUserMetadata**](docs/ObjectsApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 *ObjectsApi* | [**uploadObject**](docs/ObjectsApi.md#uploadObject) | **POST** /repositories/{repository}/branches/{branch}/objects | 
 *PullsApi* | [**createPullRequest**](docs/PullsApi.md#createPullRequest) | **POST** /repositories/{repository}/pulls | create pull request
 *PullsApi* | [**getPullRequest**](docs/PullsApi.md#getPullRequest) | **GET** /repositories/{repository}/pulls/{pull_request} | get pull request
@@ -381,6 +383,7 @@ Class | Method | HTTP request | Description
  - [TagCreation](docs/TagCreation.md)
  - [TaskInfo](docs/TaskInfo.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)
+ - [UpdateObjectUserMetadata](docs/UpdateObjectUserMetadata.md)
  - [UpdateToken](docs/UpdateToken.md)
  - [UploadPart](docs/UploadPart.md)
  - [UsageReport](docs/UsageReport.md)

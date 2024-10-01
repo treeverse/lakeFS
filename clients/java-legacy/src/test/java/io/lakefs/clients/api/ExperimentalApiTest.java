@@ -32,6 +32,7 @@ import io.lakefs.clients.api.model.PullRequestCreationResponse;
 import io.lakefs.clients.api.model.PullRequestsList;
 import io.lakefs.clients.api.model.StagingLocation;
 import io.lakefs.clients.api.model.StsAuthRequest;
+import io.lakefs.clients.api.model.UpdateObjectUserMetadata;
 import org.junit.Test;
 import org.junit.Ignore;
 
@@ -283,6 +284,24 @@ public class ExperimentalApiTest {
     public void stsLoginTest() throws ApiException {
         StsAuthRequest stsAuthRequest = null;
                 AuthenticationToken response = api.stsLogin(stsAuthRequest);
+        // TODO: test validations
+    }
+    
+    /**
+     * rewrite (all) object metadata
+     *
+     * 
+     *
+     * @throws ApiException
+     *          if the Api call fails
+     */
+    @Test
+    public void updateObjectUserMetadataTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String path = null;
+        UpdateObjectUserMetadata updateObjectUserMetadata = null;
+                api.updateObjectUserMetadata(repository, branch, path, updateObjectUserMetadata);
         // TODO: test validations
     }
     

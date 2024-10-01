@@ -18,6 +18,7 @@ Method | HTTP request | Description
 [**list_user_external_principals**](ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 [**merge_pull_request**](ExperimentalApi.md#merge_pull_request) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
 [**sts_login**](ExperimentalApi.md#sts_login) | **POST** /sts/login | perform a login with STS
+[**update_object_user_metadata**](ExperimentalApi.md#update_object_user_metadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 [**update_pull_request**](ExperimentalApi.md#update_pull_request) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
 
 
@@ -440,6 +441,37 @@ Name | Type | Description  | Required | Notes
 ### Authorization
 
 No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## update_object_user_metadata
+
+> update_object_user_metadata(repository, branch, path, update_object_user_metadata)
+rewrite (all) object metadata
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**repository** | **String** |  | [required] |
+**branch** | **String** | branch to update | [required] |
+**path** | **String** | path to object relative to the branch | [required] |
+**update_object_user_metadata** | [**UpdateObjectUserMetadata**](UpdateObjectUserMetadata.md) |  | [required] |
+
+### Return type
+
+ (empty response body)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
 
 ### HTTP request headers
 

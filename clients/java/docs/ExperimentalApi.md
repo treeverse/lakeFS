@@ -18,6 +18,7 @@ All URIs are relative to */api/v1*
 | [**listUserExternalPrincipals**](ExperimentalApi.md#listUserExternalPrincipals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user |
 | [**mergePullRequest**](ExperimentalApi.md#mergePullRequest) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request |
 | [**stsLogin**](ExperimentalApi.md#stsLogin) | **POST** /sts/login | perform a login with STS |
+| [**updateObjectUserMetadata**](ExperimentalApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata |
 | [**updatePullRequest**](ExperimentalApi.md#updatePullRequest) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request |
 
 
@@ -1351,6 +1352,105 @@ No authorization required
 |-------------|-------------|------------------|
 | **200** | successful STS login |  -  |
 | **401** | Unauthorized |  -  |
+| **420** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
+
+<a id="updateObjectUserMetadata"></a>
+# **updateObjectUserMetadata**
+> updateObjectUserMetadata(repository, branch, path, updateObjectUserMetadata).execute();
+
+rewrite (all) object metadata
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ExperimentalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("/api/v1");
+    
+    // Configure HTTP basic authorization: basic_auth
+    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
+    basic_auth.setUsername("YOUR USERNAME");
+    basic_auth.setPassword("YOUR PASSWORD");
+
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: saml_auth
+    ApiKeyAuth saml_auth = (ApiKeyAuth) defaultClient.getAuthentication("saml_auth");
+    saml_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //saml_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
+    ExperimentalApi apiInstance = new ExperimentalApi(defaultClient);
+    String repository = "repository_example"; // String | 
+    String branch = "branch_example"; // String | branch to update
+    String path = "path_example"; // String | path to object relative to the branch
+    UpdateObjectUserMetadata updateObjectUserMetadata = new UpdateObjectUserMetadata(); // UpdateObjectUserMetadata | 
+    try {
+      apiInstance.updateObjectUserMetadata(repository, branch, path, updateObjectUserMetadata)
+            .execute();
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ExperimentalApi#updateObjectUserMetadata");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **repository** | **String**|  | |
+| **branch** | **String**| branch to update | |
+| **path** | **String**| path to object relative to the branch | |
+| **updateObjectUserMetadata** | [**UpdateObjectUserMetadata**](UpdateObjectUserMetadata.md)|  | |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **201** | User metadata updated |  -  |
+| **401** | Unauthorized |  -  |
+| **404** | Resource Not Found |  -  |
+| **400** | Bad Request |  -  |
 | **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

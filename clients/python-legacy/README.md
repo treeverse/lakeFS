@@ -181,6 +181,7 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**list_user_external_principals**](docs/ExperimentalApi.md#list_user_external_principals) | **GET** /auth/users/{userId}/external/principals/ls | list user external policies attached to a user
 *ExperimentalApi* | [**merge_pull_request**](docs/ExperimentalApi.md#merge_pull_request) | **PUT** /repositories/{repository}/pulls/{pull_request}/merge | merge pull request
 *ExperimentalApi* | [**sts_login**](docs/ExperimentalApi.md#sts_login) | **POST** /sts/login | perform a login with STS
+*ExperimentalApi* | [**update_object_user_metadata**](docs/ExperimentalApi.md#update_object_user_metadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 *ExperimentalApi* | [**update_pull_request**](docs/ExperimentalApi.md#update_pull_request) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
 *ExternalApi* | [**create_user_external_principal**](docs/ExternalApi.md#create_user_external_principal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 *ExternalApi* | [**delete_user_external_principal**](docs/ExternalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
@@ -229,6 +230,7 @@ Class | Method | HTTP request | Description
 *ObjectsApi* | [**head_object**](docs/ObjectsApi.md#head_object) | **HEAD** /repositories/{repository}/refs/{ref}/objects | check if object exists
 *ObjectsApi* | [**list_objects**](docs/ObjectsApi.md#list_objects) | **GET** /repositories/{repository}/refs/{ref}/objects/ls | list objects under a given prefix
 *ObjectsApi* | [**stat_object**](docs/ObjectsApi.md#stat_object) | **GET** /repositories/{repository}/refs/{ref}/objects/stat | get object metadata
+*ObjectsApi* | [**update_object_user_metadata**](docs/ObjectsApi.md#update_object_user_metadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 *ObjectsApi* | [**upload_object**](docs/ObjectsApi.md#upload_object) | **POST** /repositories/{repository}/branches/{branch}/objects | 
 *PullsApi* | [**create_pull_request**](docs/PullsApi.md#create_pull_request) | **POST** /repositories/{repository}/pulls | create pull request
 *PullsApi* | [**get_pull_request**](docs/PullsApi.md#get_pull_request) | **GET** /repositories/{repository}/pulls/{pull_request} | get pull request
@@ -365,6 +367,7 @@ Class | Method | HTTP request | Description
  - [TagCreation](docs/TagCreation.md)
  - [TaskInfo](docs/TaskInfo.md)
  - [UnderlyingObjectProperties](docs/UnderlyingObjectProperties.md)
+ - [UpdateObjectUserMetadata](docs/UpdateObjectUserMetadata.md)
  - [UpdateToken](docs/UpdateToken.md)
  - [UploadPart](docs/UploadPart.md)
  - [UsageReport](docs/UsageReport.md)

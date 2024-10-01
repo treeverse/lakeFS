@@ -117,6 +117,7 @@ docs/TagCreation.md
 docs/TagsApi.md
 docs/TaskInfo.md
 docs/UnderlyingObjectProperties.md
+docs/UpdateObjectUserMetadata.md
 docs/UpdateToken.md
 docs/UploadPart.md
 docs/UsageReport.md
@@ -243,6 +244,7 @@ src/models/sts_auth_request.rs
 src/models/tag_creation.rs
 src/models/task_info.rs
 src/models/underlying_object_properties.rs
+src/models/update_object_user_metadata.rs
 src/models/update_token.rs
 src/models/upload_part.rs
 src/models/usage_report.rs
