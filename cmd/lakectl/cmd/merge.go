@@ -46,6 +46,9 @@ var mergeCmd = &cobra.Command{
 		fmt.Println("Source:", sourceRef)
 		fmt.Println("Destination:", destinationRef)
 
+		if destinationRef.Ref == sourceRef.Ref {
+			Die("branch can not be merged to itself", 1)
+		}
 		if destinationRef.Repository != sourceRef.Repository {
 			Die("both references must belong to the same repository", 1)
 		}
