@@ -1,5 +1,14 @@
 # Changelog
 
+# v1.37.0
+
+:new: What's new:
+- Experimental: add update object metadata API (#8253)
+
+:bug: Bugs fixed:
+- Fix Sample Data checkbox of the Repository Create form (#8255)
+- Add Effect to PR statement (#8254)
+
 # v1.36.0
 
 :new: What's new:
