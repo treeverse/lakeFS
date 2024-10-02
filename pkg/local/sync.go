@@ -262,7 +262,15 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 
 	// change ownership and permissions
 	if s.cfg.IncludePerm {
-		if err = os.Chown(destination, perm.UID, perm.GID); err != nil {
+		uid := perm.UID
+		gid := perm.GID
+		if !s.cfg.IncludeUID {
+			uid = -1
+		}
+		if !s.cfg.IncludeGID {
+			gid = -1
+		}
+		if err = os.Chown(destination, uid, gid); err != nil {
 			return err
 		}
 		err = syscall.Chmod(destination, uint32(perm.Mode))

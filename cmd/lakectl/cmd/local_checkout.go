@@ -61,6 +61,8 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 		SyncFlags:           syncFlags,
 		SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
 		IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
+		IncludeUID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,
+		IncludeGID:          cfg.Experimental.Local.POSIXPerm.IncludeGID,
 	})
 	// confirm on local changes
 	if confirmByFlag && len(diffs) > 0 {
