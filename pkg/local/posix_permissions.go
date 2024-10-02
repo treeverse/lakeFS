@@ -83,7 +83,10 @@ func getPermissionFromFileInfo(info os.FileInfo) (*POSIXPermissions, error) {
 	return permissionsFromFileInfo(info)
 }
 
-func isPermissionsChanged(localFileInfo os.FileInfo, remoteFileStats apigen.ObjectStats) bool {
+func isPermissionsChanged(localFileInfo os.FileInfo, remoteFileStats apigen.ObjectStats, cfg Config) bool {
+	if !cfg.IncludePerm {
+		return false
+	}
 	local, err := getPermissionFromFileInfo(localFileInfo)
 	if err != nil {
 		return true
@@ -94,5 +97,12 @@ func isPermissionsChanged(localFileInfo os.FileInfo, remoteFileStats apigen.Obje
 		return true
 	}
 
-	return local.Mode != remote.Mode || local.POSIXOwnership != remote.POSIXOwnership
+	if cfg.IncludeUID && local.UID != remote.UID {
+		return true
+	}
+	if cfg.IncludeGID && local.GID != remote.GID {
+		return true
+	}
+
+	return local.Mode != remote.Mode
 }

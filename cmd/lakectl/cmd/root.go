@@ -103,7 +103,9 @@ type Configuration struct {
 	Experimental struct {
 		Local struct {
 			POSIXPerm struct {
-				Enabled bool `mapstructure:"enabled"`
+				Enabled    bool `mapstructure:"enabled"`
+				IncludeUID bool `mapstructure:"include_uid"`
+				IncludeGID bool `mapstructure:"include_gid"`
 			} `mapstructure:"posix_permissions"`
 		} `mapstructure:"local"`
 	} `mapstructure:"experimental"`

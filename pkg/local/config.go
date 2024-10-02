@@ -21,4 +21,6 @@ type Config struct {
 	SkipNonRegularFiles bool
 	// IncludePerm - Experimental: preserve Unix file permissions
 	IncludePerm bool
+	IncludeUID  bool
+	IncludeGID  bool
 }
