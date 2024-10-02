@@ -12,7 +12,10 @@ max-args=10
 max-attributes=10
 
 [MESSAGES CONTROL]
-disable=too-few-public-methods, fixme
+disable=
+    too-few-public-methods,
+    too-many-positional-arguments, 
+    fixme
 
 [MISCELLANEOUS]
 
