@@ -30,6 +30,7 @@ func TestDiffLocal(t *testing.T) {
 		Name                   string
 		IncludeUnixPermissions bool
 		IncludeGID             bool
+		IncludeUID             bool
 		LocalPath              string
 		InitLocalPath          func() string
 		CleanLocalPath         func(localPath string)
@@ -59,6 +60,8 @@ func TestDiffLocal(t *testing.T) {
 		{
 			Name:                   "t1_no_diff_include_folders",
 			IncludeUnixPermissions: true,
+			IncludeGID:             true,
+			IncludeUID:             true,
 			LocalPath:              "testdata/localdiff/t1",
 			RemoteList: []apigen.ObjectStats{
 				{
@@ -197,6 +200,8 @@ func TestDiffLocal(t *testing.T) {
 		{
 			Name:                   "t1_folder_added",
 			IncludeUnixPermissions: true,
+			IncludeGID:             true,
+			IncludeUID:             true,
 			LocalPath:              "testdata/localdiff/t1",
 			RemoteList: []apigen.ObjectStats{
 				{
@@ -240,6 +245,45 @@ func TestDiffLocal(t *testing.T) {
 			Name:                   "t1_unix_permissions_modified",
 			IncludeUnixPermissions: true,
 			IncludeGID:             true,
+			IncludeUID:             true,
+			LocalPath:              "testdata/localdiff/t1/sub",
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "f.txt",
+					SizeBytes: swag.Int64(3),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid, osGid, 755),
+				}, {
+					Path:      "folder/",
+					SizeBytes: swag.Int64(1),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid, osGid+1, local.DefaultDirectoryPermissions-umask),
+				}, {
+					Path:      "folder/f.txt",
+					SizeBytes: swag.Int64(6),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid+1, osGid, local.DefaultFilePermissions-umask),
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: "f.txt",
+					Type: local.ChangeTypeModified,
+				},
+				{
+					Path: "folder/",
+					Type: local.ChangeTypeModified,
+				},
+				{
+					Path: "folder/f.txt",
+					Type: local.ChangeTypeModified,
+				},
+			},
+		},
+		{
+			Name:                   "t1_unix_permissions_modified_only_gid",
+			IncludeUnixPermissions: true,
+			IncludeGID:             true,
 			LocalPath:              "testdata/localdiff/t1/sub",
 			RemoteList: []apigen.ObjectStats{
 				{
@@ -271,8 +315,44 @@ func TestDiffLocal(t *testing.T) {
 			},
 		},
 		{
+			Name:                   "t1_unix_permissions_modified_only_uid",
+			IncludeUnixPermissions: true,
+			IncludeUID:             true,
+			LocalPath:              "testdata/localdiff/t1/sub",
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "f.txt",
+					SizeBytes: swag.Int64(3),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid, osGid, 755),
+				}, {
+					Path:      "folder/",
+					SizeBytes: swag.Int64(1),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid, osGid+1, local.DefaultDirectoryPermissions-umask),
+				}, {
+					Path:      "folder/f.txt",
+					SizeBytes: swag.Int64(6),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid+1, osGid, local.DefaultFilePermissions-umask),
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: "f.txt",
+					Type: local.ChangeTypeModified,
+				},
+				{
+					Path: "folder/f.txt",
+					Type: local.ChangeTypeModified,
+				},
+			},
+		},
+		{
 			Name:                   "t1_empty_folder_removed",
 			IncludeUnixPermissions: true,
+			IncludeGID:             true,
+			IncludeUID:             true,
 			LocalPath:              "testdata/localdiff/t1/sub/folder",
 			RemoteList: []apigen.ObjectStats{
 				{
@@ -316,6 +396,8 @@ func TestDiffLocal(t *testing.T) {
 		{
 			Name:                   "empty_folder_added",
 			IncludeUnixPermissions: true,
+			IncludeGID:             true,
+			IncludeUID:             true,
 			InitLocalPath: func() string {
 				return createTempEmptyFolder(t)
 			},
@@ -362,7 +444,7 @@ func TestDiffLocal(t *testing.T) {
 
 			changes, err := local.DiffLocalWithHead(lc, tt.LocalPath, local.Config{
 				IncludePerm: tt.IncludeUnixPermissions,
-				IncludeUID:  false,
+				IncludeUID:  tt.IncludeUID,
 				IncludeGID:  tt.IncludeGID,
 			})
 

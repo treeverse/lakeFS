@@ -72,7 +72,7 @@ func localDiff(ctx context.Context, client apigen.ClientWithResponsesInterface, 
 		SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
 		IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
 		IncludeUID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,
-		IncludeGID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,
+		IncludeGID:          cfg.Experimental.Local.POSIXPerm.IncludeGID,
 	})
 	if err != nil {
 		DieErr(err)

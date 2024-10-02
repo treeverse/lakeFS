@@ -71,7 +71,7 @@ var localPullCmd = &cobra.Command{
 			SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
 			IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
 			IncludeUID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,
-			IncludeGID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,
+			IncludeGID:          cfg.Experimental.Local.POSIXPerm.IncludeGID,
 		})
 		err = s.Sync(idx.LocalPath(), newBase, c)
 		if err != nil {
