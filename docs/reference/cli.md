@@ -110,185 +110,6 @@ $ export LAKECTL_BASE_URI="lakefs://my-repo/my-branch"
 $ lakectl fs ls /path
 ```
 
-### lakectl abuse
-
-**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
-{: .note .note-warning }
-
-Abuse a running lakeFS instance. See sub commands for more info.
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for abuse
-```
-
-
-
-### lakectl abuse commit
-
-Commits to the source branch repeatedly
-
-```
-lakectl abuse commit <branch URI> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-      --amount int     amount of commits to do (default 100)
-      --gap duration   duration to wait between commits (default 2s)
-  -h, --help           help for commit
-```
-
-
-
-### lakectl abuse create-branches
-
-Create a lot of branches very quickly.
-
-```
-lakectl abuse create-branches <source ref URI> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-      --amount int             amount of things to do (default 1000000)
-      --branch-prefix string   prefix to create branches under (default "abuse-")
-      --clean-only             only clean up past runs
-  -h, --help                   help for create-branches
-      --parallelism int        amount of things to do in parallel (default 100)
-```
-
-
-
-### lakectl abuse help
-
-Help about any command
-
-#### Synopsis
-{:.no_toc}
-
-Help provides help for any command in the application.
-Simply type abuse help [path to command] for full details.
-
-```
-lakectl abuse help [command] [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for help
-```
-
-
-
-### lakectl abuse link-same-object
-
-Link the same object in parallel.
-
-```
-lakectl abuse link-same-object <branch URI> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-      --amount int        amount of link object to do (default 1000000)
-  -h, --help              help for link-same-object
-      --key string        key used for the test (default "linked-object")
-      --parallelism int   amount of link object to do in parallel (default 100)
-```
-
-
-
-### lakectl abuse list
-
-List from the source ref
-
-```
-lakectl abuse list <source ref URI> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-      --amount int        amount of lists to do (default 1000000)
-  -h, --help              help for list
-      --parallelism int   amount of lists to do in parallel (default 100)
-      --prefix string     prefix to list under (default "abuse/")
-```
-
-
-
-### lakectl abuse random-delete
-
-Delete keys from a file and generate random delete from the source ref for those keys.
-
-```
-lakectl abuse random-delete <source ref URI> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-      --amount int         amount of reads to do (default 1000000)
-      --from-file string   read keys from this file ("-" for stdin)
-  -h, --help               help for random-delete
-      --parallelism int    amount of reads to do in parallel (default 100)
-```
-
-
-
-### lakectl abuse random-read
-
-Read keys from a file and generate random reads from the source ref for those keys.
-
-```
-lakectl abuse random-read <source ref URI> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-      --amount int         amount of reads to do (default 1000000)
-      --from-file string   read keys from this file ("-" for stdin)
-  -h, --help               help for random-read
-      --parallelism int    amount of reads to do in parallel (default 100)
-```
-
-
-
-### lakectl abuse random-write
-
-Generate random writes to the source branch
-
-```
-lakectl abuse random-write <branch URI> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-      --amount int        amount of writes to do (default 1000000)
-  -h, --help              help for random-write
-      --parallelism int   amount of writes to do in parallel (default 100)
-      --prefix string     prefix to create paths under (default "abuse/")
-```
-
-
-
 ### lakectl actions
 
 Manage Actions commands
@@ -1332,164 +1153,6 @@ lakectl auth users policies list [flags]
 
 
 
-### lakectl bisect
-
-**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
-{: .note .note-warning }
-
-Binary search to find the commit that introduced a bug
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for bisect
-```
-
-
-
-### lakectl bisect bad
-
-Set 'bad' commit that is known to contain the bug
-
-```
-lakectl bisect bad [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for bad
-```
-
-
-
-### lakectl bisect good
-
-Set current commit as 'good' commit that is known to be before the bug was introduced
-
-```
-lakectl bisect good [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for good
-```
-
-
-
-### lakectl bisect help
-
-Help about any command
-
-#### Synopsis
-{:.no_toc}
-
-Help provides help for any command in the application.
-Simply type bisect help [path to command] for full details.
-
-```
-lakectl bisect help [command] [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for help
-```
-
-
-
-### lakectl bisect log
-
-Print out the current bisect state
-
-```
-lakectl bisect log [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for log
-```
-
-
-
-### lakectl bisect reset
-
-Clean up the bisection state
-
-```
-lakectl bisect reset [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for reset
-```
-
-
-
-### lakectl bisect run
-
-Bisecting based on command status code
-
-```
-lakectl bisect run <command> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for run
-```
-
-
-
-### lakectl bisect start
-
-Start a bisect session
-
-```
-lakectl bisect start <bad ref URI> <good ref URI> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for start
-```
-
-
-
-### lakectl bisect view
-
-Current bisect commits
-
-```
-lakectl bisect view [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for view
-```
-
-
-
 ### lakectl branch
 
 Create and manage branches within a repository
@@ -1824,55 +1487,6 @@ lakectl branch-protect list lakefs://my-repo
 
 
 
-### lakectl cat-hook-output
-
-**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
-{: .note .note-warning }
-
-Cat actions hook output
-
-```
-lakectl cat-hook-output <repository URI> <run_id> <hook_id> [flags]
-```
-
-#### Examples
-{:.no_toc}
-
-```
-lakectl cat-hook-output lakefs://my-repo 20230719152411arS0z6I my_hook_name
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for cat-hook-output
-```
-
-
-
-### lakectl cat-sst
-
-**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
-{: .note .note-warning }
-
-Explore lakeFS .sst files
-
-```
-lakectl cat-sst <sst-file> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-      --amount int    how many records to return, or -1 for all records (default -1)
-  -f, --file string   path to an sstable file, or "-" for stdin
-  -h, --help          help for cat-sst
-```
-
-
-
 ### lakectl cherry-pick
 
 Apply the changes introduced by an existing commit
@@ -2056,26 +1670,6 @@ lakectl diff <ref URI> [ref URI] [flags]
 
 
 
-### lakectl docs
-
-**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
-{: .note .note-warning }
-
-
-
-```
-lakectl docs [outfile] [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for docs
-```
-
-
-
 ### lakectl doctor
 
 Run a basic diagnosis of the LakeFS configuration
@@ -2089,26 +1683,6 @@ lakectl doctor [flags]
 
 ```
   -h, --help   help for doctor
-```
-
-
-
-### lakectl find-merge-base
-
-**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
-{: .note .note-warning }
-
-Find the commits for the merge operation
-
-```
-lakectl find-merge-base <source ref URI> <destination ref URI> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help   help for find-merge-base
 ```
 
 
@@ -2243,38 +1817,6 @@ lakectl fs rm <path URI> [flags]
 
 
 
-### lakectl fs stage
-
-**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
-{: .note .note-warning }
-
-Link an external object with a path in a repository
-
-#### Synopsis
-{:.no_toc}
-
-Link an external object with a path in a repository, creating an uncommitted change.
-The object location must be outside the repository's storage namespace
-
-```
-lakectl fs stage <path URI> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-      --checksum string       Object MD5 checksum as a hexadecimal string
-      --content-type string   MIME type of contents
-  -h, --help                  help for stage
-      --location string       fully qualified storage location (i.e. "s3://bucket/path/to/object")
-      --meta strings          key value pairs in the form of key=value
-      --mtime int             Object modified time (Unix Epoch in seconds). Defaults to current time
-      --size int              Object size in bytes
-```
-
-
-
 ### lakectl fs stat
 
 View object metadata
@@ -2333,6 +1875,41 @@ lakectl fs upload <path URI> [flags]
       --pre-sign              Use pre-signed URLs when downloading/uploading data (recommended) (default true)
   -r, --recursive             recursively copy all files under local source
   -s, --source string         local file to upload, or "-" for stdin
+```
+
+
+
+
+---------
+### lakectl fs stage
+
+**note:**
+lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
+{: .note .note-warning }
+
+Link an external object with a path in a repository
+
+#### Synopsis
+{:.no_toc}
+
+Link an external object with a path in a repository, creating an uncommitted change.
+The object location must be outside the repository's storage namespace
+
+```
+lakectl fs stage <path URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --checksum string       Object MD5 checksum as a hexadecimal string
+      --content-type string   MIME type of contents
+  -h, --help                  help for stage
+      --location string       fully qualified storage location (i.e. "s3://bucket/path/to/object")
+      --meta strings          key value pairs in the form of key=value
+      --mtime int             Object modified time (Unix Epoch in seconds). Defaults to current time
+      --size int              Object size in bytes
 ```
 
 
@@ -3006,67 +2583,6 @@ lakectl metastore import-all [flags]
 
 
 
-### lakectl refs-dump
-
-**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
-{: .note .note-warning }
-
-Dumps refs (branches, commits, tags) to the underlying object store
-
-```
-lakectl refs-dump <repository URI> [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help                     help for refs-dump
-  -o, --output string            output filename (default stdout)
-      --poll-interval duration   poll status check interval (default 3s)
-      --timeout duration         timeout for polling status checks (default 1h0m0s)
-```
-
-
-
-### lakectl refs-restore
-
-**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
-{: .note .note-warning }
-
-Restores refs (branches, commits, tags) from the underlying object store to a bare repository
-
-#### Synopsis
-{:.no_toc}
-
-restores refs (branches, commits, tags) from the underlying object store to a bare repository.
-
-This command is expected to run on a bare repository (i.e. one created with 'lakectl repo create-bare').
-Since a bare repo is expected, in case of transient failure, delete the repository and recreate it as bare and retry.
-
-```
-lakectl refs-restore <repository URI> [flags]
-```
-
-#### Examples
-{:.no_toc}
-
-```
-aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-restore lakefs://my-bare-repository --manifest -
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -h, --help                     help for refs-restore
-      --manifest refs-dump       path to a refs manifest json file (as generated by refs-dump). Alternatively, use "-" to read from stdin
-      --poll-interval duration   poll status check interval (default 3s)
-      --timeout duration         timeout for polling status checks (default 1h0m0s)
-```
-
-
-
 ### lakectl repo
 
 Manage and explore repos
@@ -3101,34 +2617,6 @@ lakectl repo create lakefs://my-repo s3://my-bucket
 ```
   -d, --default-branch string   the default branch of this repository (default "main")
   -h, --help                    help for create
-```
-
-
-
-### lakectl repo create-bare
-
-**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
-{: .note .note-warning }
-
-Create a new repository with no initial branch or commit
-
-```
-lakectl repo create-bare <repository URI> <storage namespace> [flags]
-```
-
-#### Examples
-{:.no_toc}
-
-```
-lakectl create-bare lakefs://my-repo s3://my-bucket
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -d, --default-branch string   the default branch name of this repository (will not be created) (default "main")
-  -h, --help                    help for create-bare
 ```
 
 
@@ -3196,6 +2684,37 @@ lakectl repo list [flags]
       --after string   show results after this value (used for pagination)
       --amount int     number of results to return (default 100)
   -h, --help           help for list
+```
+
+
+
+
+---------
+### lakectl repo create-bare
+
+**note:**
+lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
+{: .note .note-warning }
+
+Create a new repository with no initial branch or commit
+
+```
+lakectl repo create-bare <repository URI> <storage namespace> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl create-bare lakefs://my-repo s3://my-bucket
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -d, --default-branch string   the default branch name of this repository (will not be created) (default "main")
+  -h, --help                    help for create-bare
 ```
 
 
@@ -3380,9 +2899,516 @@ lakectl tag show <tag URI> [flags]
 
 
 
+
+-------
+
+## Undocumented commands
+
+**note:**
+⚠️ These commands are plumbing commands and for internal use only.
+Avoid using them unless you're _really_ sure you know what you're doing, or
+have been in contact with lakeFS support!
+{: .note .note-warning }
+
+### lakectl abuse
+
+**note:**
+lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
+{: .note .note-warning }
+
+Abuse a running lakeFS instance. See sub commands for more info.
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for abuse
+```
+
+
+
+### lakectl abuse commit
+
+Commits to the source branch repeatedly
+
+```
+lakectl abuse commit <branch URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int     amount of commits to do (default 100)
+      --gap duration   duration to wait between commits (default 2s)
+  -h, --help           help for commit
+```
+
+
+
+### lakectl abuse create-branches
+
+Create a lot of branches very quickly.
+
+```
+lakectl abuse create-branches <source ref URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int             amount of things to do (default 1000000)
+      --branch-prefix string   prefix to create branches under (default "abuse-")
+      --clean-only             only clean up past runs
+  -h, --help                   help for create-branches
+      --parallelism int        amount of things to do in parallel (default 100)
+```
+
+
+
+### lakectl abuse help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type abuse help [path to command] for full details.
+
+```
+lakectl abuse help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl abuse link-same-object
+
+Link the same object in parallel.
+
+```
+lakectl abuse link-same-object <branch URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int        amount of link object to do (default 1000000)
+  -h, --help              help for link-same-object
+      --key string        key used for the test (default "linked-object")
+      --parallelism int   amount of link object to do in parallel (default 100)
+```
+
+
+
+### lakectl abuse list
+
+List from the source ref
+
+```
+lakectl abuse list <source ref URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int        amount of lists to do (default 1000000)
+  -h, --help              help for list
+      --parallelism int   amount of lists to do in parallel (default 100)
+      --prefix string     prefix to list under (default "abuse/")
+```
+
+
+
+### lakectl abuse random-delete
+
+Delete keys from a file and generate random delete from the source ref for those keys.
+
+```
+lakectl abuse random-delete <source ref URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int         amount of reads to do (default 1000000)
+      --from-file string   read keys from this file ("-" for stdin)
+  -h, --help               help for random-delete
+      --parallelism int    amount of reads to do in parallel (default 100)
+```
+
+
+
+### lakectl abuse random-read
+
+Read keys from a file and generate random reads from the source ref for those keys.
+
+```
+lakectl abuse random-read <source ref URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int         amount of reads to do (default 1000000)
+      --from-file string   read keys from this file ("-" for stdin)
+  -h, --help               help for random-read
+      --parallelism int    amount of reads to do in parallel (default 100)
+```
+
+
+
+### lakectl abuse random-write
+
+Generate random writes to the source branch
+
+```
+lakectl abuse random-write <branch URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int        amount of writes to do (default 1000000)
+  -h, --help              help for random-write
+      --parallelism int   amount of writes to do in parallel (default 100)
+      --prefix string     prefix to create paths under (default "abuse/")
+```
+
+
+
+### lakectl bisect
+
+**note:**
+lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
+{: .note .note-warning }
+
+Binary search to find the commit that introduced a bug
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for bisect
+```
+
+
+
+### lakectl bisect bad
+
+Set 'bad' commit that is known to contain the bug
+
+```
+lakectl bisect bad [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for bad
+```
+
+
+
+### lakectl bisect good
+
+Set current commit as 'good' commit that is known to be before the bug was introduced
+
+```
+lakectl bisect good [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for good
+```
+
+
+
+### lakectl bisect help
+
+Help about any command
+
+#### Synopsis
+{:.no_toc}
+
+Help provides help for any command in the application.
+Simply type bisect help [path to command] for full details.
+
+```
+lakectl bisect help [command] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl bisect log
+
+Print out the current bisect state
+
+```
+lakectl bisect log [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for log
+```
+
+
+
+### lakectl bisect reset
+
+Clean up the bisection state
+
+```
+lakectl bisect reset [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for reset
+```
+
+
+
+### lakectl bisect run
+
+Bisecting based on command status code
+
+```
+lakectl bisect run <command> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for run
+```
+
+
+
+### lakectl bisect start
+
+Start a bisect session
+
+```
+lakectl bisect start <bad ref URI> <good ref URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for start
+```
+
+
+
+### lakectl bisect view
+
+Current bisect commits
+
+```
+lakectl bisect view [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for view
+```
+
+
+
+### lakectl cat-hook-output
+
+**note:**
+lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
+{: .note .note-warning }
+
+Cat actions hook output
+
+```
+lakectl cat-hook-output <repository URI> <run_id> <hook_id> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl cat-hook-output lakefs://my-repo 20230719152411arS0z6I my_hook_name
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for cat-hook-output
+```
+
+
+
+### lakectl cat-sst
+
+**note:**
+lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
+{: .note .note-warning }
+
+Explore lakeFS .sst files
+
+```
+lakectl cat-sst <sst-file> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int    how many records to return, or -1 for all records (default -1)
+  -f, --file string   path to an sstable file, or "-" for stdin
+  -h, --help          help for cat-sst
+```
+
+
+
+### lakectl docs
+
+**note:**
+lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
+{: .note .note-warning }
+
+
+
+```
+lakectl docs [outfile] [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for docs
+```
+
+
+
+### lakectl find-merge-base
+
+**note:**
+lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
+{: .note .note-warning }
+
+Find the commits for the merge operation
+
+```
+lakectl find-merge-base <source ref URI> <destination ref URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for find-merge-base
+```
+
+
+
+### lakectl refs-dump
+
+**note:**
+lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
+{: .note .note-warning }
+
+Dumps refs (branches, commits, tags) to the underlying object store
+
+```
+lakectl refs-dump <repository URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help                     help for refs-dump
+  -o, --output string            output filename (default stdout)
+      --poll-interval duration   poll status check interval (default 3s)
+      --timeout duration         timeout for polling status checks (default 1h0m0s)
+```
+
+
+
+### lakectl refs-restore
+
+**note:**
+lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
+{: .note .note-warning }
+
+Restores refs (branches, commits, tags) from the underlying object store to a bare repository
+
+#### Synopsis
+{:.no_toc}
+
+restores refs (branches, commits, tags) from the underlying object store to a bare repository.
+
+This command is expected to run on a bare repository (i.e. one created with 'lakectl repo create-bare').
+Since a bare repo is expected, in case of transient failure, delete the repository and recreate it as bare and retry.
+
+```
+lakectl refs-restore <repository URI> [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-restore lakefs://my-bare-repository --manifest -
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help                     help for refs-restore
+      --manifest refs-dump       path to a refs manifest json file (as generated by refs-dump). Alternatively, use "-" to read from stdin
+      --poll-interval duration   poll status check interval (default 3s)
+      --timeout duration         timeout for polling status checks (default 1h0m0s)
+```
+
+
+
 ### lakectl usage
 
-**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+**note:**
+lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 {: .note .note-warning }
 
 Usage reports from lakeFS
@@ -3419,9 +3445,12 @@ lakectl usage help [command] [flags]
 
 
 
+
+---------
 ### lakectl usage summary
 
-**note:** This command is a lakeFS plumbing command. Don't use it unless you're really sure you know what you're doing.
+**note:**
+lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 {: .note .note-warning }
 
 Summary reports from lakeFS
