@@ -541,6 +541,11 @@ type KeyValueStore interface {
 	// Set stores value on repository / branch by key. nil value is a valid value for tombstone
 	Set(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, value Value, opts ...SetOptionsFunc) error
 
+	// UpdateObjectMetadata atomically runs update on repository /
+	// branch by key.  (Of course, if entry is only on committed, the
+	// updated entry will still be created (atomically) on staging.)
+	UpdateObjectMetadata(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, update ValueUpdateFunc, opts ...SetOptionsFunc) error
+
 	// Delete value from repository / branch by key
 	Delete(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, opts ...SetOptionsFunc) error
 
@@ -1735,6 +1740,33 @@ func (g *Graveler) Get(ctx context.Context, repository *RepositoryRecord, ref Re
 	return g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
 }
 
+// getFromBranchWithStaging returns the value for key on repository and
+// branch.  It returns true if the object was found in the staging area,
+// otherwise false.  It does not micro-batch.
+func (g *Graveler) getFromBranchWithStaging(ctx context.Context, repository *RepositoryRecord, branch *Branch, key Key) (*Value, bool, error) {
+	if branch.StagingToken != "" {
+		stagingValue, err := g.getFromStagingArea(ctx, branch, key)
+		if err != nil && !errors.Is(err, ErrNotFound) {
+			return nil, false, err
+		}
+		if err == nil {
+			// Found, possibly deleted on staging.
+			return stagingValue, true, err
+		}
+		// Not found on staging - get it from a metarange.
+	}
+	metaRangeID := branch.CompactedBaseMetaRangeID
+	if metaRangeID == "" {
+		commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
+		if err != nil {
+			return nil, false, fmt.Errorf("get commit ID to get from committed branch HEAD: %w", err)
+		}
+		metaRangeID = commit.MetaRangeID
+	}
+	committedValue, err := g.CommittedManager.Get(ctx, repository.StorageNamespace, metaRangeID, key)
+	return committedValue, false, err
+}
+
 func (g *Graveler) GetByCommitID(ctx context.Context, repository *RepositoryRecord, commitID CommitID, key Key) (*Value, error) {
 	// If key is not found in staging area (or reference is not a branch), return the key from committed
 	commit, err := g.RefManager.GetCommit(ctx, repository, commitID)
@@ -1839,6 +1871,46 @@ func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repo
 		return fmt.Errorf("safe branch write: %w (last failure %s)", ErrTooManyTries, err)
 	}
 	return nil
+}
+
+func (g *Graveler) UpdateObjectMetadata(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, update ValueUpdateFunc, opts ...SetOptionsFunc) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+
+	options := NewSetOptions(opts)
+	if repository.ReadOnly && !options.Force {
+		return ErrReadOnlyRepository
+	}
+
+	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "update_user_metadata"})
+
+	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
+		value, onStaging, err := g.getFromBranchWithStaging(ctx, repository, branch, key)
+		if err != nil && !errors.Is(err, ErrNotFound) {
+			return fmt.Errorf("get existing entry to update user metadata: %w", err)
+		}
+
+		return g.StagingManager.Update(ctx, branch.StagingToken, key, func(currentValue *Value) (*Value, error) {
+			if currentValue == nil {
+				if onStaging {
+					// Object previously on staging, and
+					// was deleted since
+					// getFromBranchWithStaging.
+					return nil, ErrNotFound
+				}
+				// Use committed value (in practice it came
+				// from committed, so it is non-nil).
+				currentValue = value
+			}
+			return update(currentValue)
+		})
+	}, "update_metadata")
+	return err
 }
 
 func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, opts ...SetOptionsFunc) error {
