@@ -1,5 +1,11 @@
 # Changelog
 
+# v1.38.0
+
+:new: What's new:
+- WebUI: support jsonl/ndjson file diff (#8136)
+- Separate hidden and non-hidden commands in lakectl docs (#8204)
+
 # v1.37.0
 
 :new: What's new:
