@@ -11,8 +11,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/util"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -37,6 +39,7 @@ type Manager struct {
 	repoCache       cache.Cache
 	commitCache     cache.Cache
 	maxBatchDelay   time.Duration
+	branchOwnership *util.WeakOwner
 }
 
 func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
@@ -85,6 +88,8 @@ func NewRefManager(cfg ManagerConfig) *Manager {
 		repoCache:       newCache(cfg.RepositoryCacheConfig),
 		commitCache:     newCache(cfg.CommitCacheConfig),
 		maxBatchDelay:   cfg.MaxBatchDelay,
+		// TODO(ariels): Configure all of these, especially whether or not this is enabled!
+		branchOwnership: util.NewWeakOwner(logging.ContextUnavailable().WithField("component", "RefManager weak branch ownership"), cfg.KVStore, "run-refs/weak-branch-owner"),
 	}
 }
 
@@ -395,6 +400,23 @@ func (m *Manager) SetBranch(ctx context.Context, repository *graveler.Repository
 }
 
 func (m *Manager) BranchUpdate(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, f graveler.BranchUpdateFunc) error {
+	// TODO(ariels): Get request ID in a nicer way.
+	requestIDPtr := httputil.RequestIDFromContext(ctx)
+	requestID := "<unknown>"
+	if requestIDPtr != nil {
+		requestID = *requestIDPtr
+	}
+	if m.branchOwnership != nil {
+		own, err := m.branchOwnership.Own(ctx, requestID, string(branchID), 10*time.Millisecond, 3*time.Millisecond)
+		if err != nil {
+			logging.FromContext(ctx).
+				WithFields(logging.Fields{}).
+				WithError(err).
+				Warn("Failed to get ownership on branch; continuing but may be slow")
+		} else {
+			defer own()
+		}
+	}
 	b, pred, err := m.getBranchWithPredicate(ctx, repository, branchID)
 	if err != nil {
 		return err
