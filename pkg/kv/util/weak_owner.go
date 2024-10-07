@@ -37,6 +37,23 @@ var finished = errors.New("finished")
 // So it *cannot* guarantee correctness.  However it usually works, and if
 // it does work, the owning goroutine wins all races by default.
 type WeakOwner struct {
+	// acquireInterval is the polling interval for acquiring ownership.
+	// Reducing it reduces some additional time to recover if an
+	// instance crashes while holding ownership.  Reducing it too much
+	// may cause another instance falsely to grab ownership when the
+	// owner is merely slow.  Reducing it also increases read load on
+	// the KV store when there is contention on the branch.
+	acquireInterval time.Duration
+	// refreshInterval is the time for which to assert ownership.  It
+	// should be rather bigger than acquireInterval, probably at least
+	// 3*.  Reducing it reduces the time to recover if an instance
+	// crashes while holding ownership; because it is greater than
+	// acquireInterval, it has a greater effect on this recovery time.
+	// Reducing it too uch may cause another instance falsely to grab
+	// ownership when the owner is merely slow.  Reducing it also
+	// increases write load on the KV store, always.
+	refreshInterval time.Duration
+
 	// Log is used for logs. Everything is at a fine granularity,
 	// usually TRACE.
 	Log logging.Logger
@@ -47,12 +64,20 @@ type WeakOwner struct {
 	Prefix string
 }
 
-func NewWeakOwner(log logging.Logger, store kv.Store, prefix string) *WeakOwner {
-	return &WeakOwner{Log: log, Store: store, Prefix: prefix}
+func NewWeakOwner(log logging.Logger, store kv.Store, prefix string, acquireInterval, refreshInterval time.Duration) *WeakOwner {
+	return &WeakOwner{
+		acquireInterval: acquireInterval,
+		refreshInterval: refreshInterval,
+		Log:             log,
+		Store:           store,
+		Prefix:          prefix,
+	}
 }
 
 // refreshKey refreshes key for owner at interval until ctx is cancelled.
-func (w *WeakOwner) refreshKey(ctx context.Context, owner string, prefixedKey []byte, interval time.Duration) {
+func (w *WeakOwner) refreshKey(ctx context.Context, owner string, prefixedKey []byte) {
+	// Always refresh before ownership expires
+	interval := w.refreshInterval / 2
 	log := w.Log.WithContext(ctx).WithFields(logging.Fields{
 		"interval":     interval,
 		"owner":        owner,
@@ -144,12 +169,12 @@ func checkOwnership(expires, now time.Time, getErr error) keyOwnership {
 //
 // TODO(ariels): Be fair, at least in the same process.  Chaining requests
 // and spinning only on the first would do this as well.
-func (w *WeakOwner) startOwningKey(ctx context.Context, owner string, prefixedKey []byte, acquireInterval, refreshInterval time.Duration) error {
+func (w *WeakOwner) startOwningKey(ctx context.Context, owner string, prefixedKey []byte) error {
 	log := w.Log.WithContext(ctx).WithFields(logging.Fields{
 		"owner":            owner,
 		"prefixed_key":     string(prefixedKey),
-		"acquire_interval": acquireInterval,
-		"refresh_interval": refreshInterval,
+		"acquire_interval": w.acquireInterval,
+		"refresh_interval": w.refreshInterval,
 	})
 	for {
 		ownership := WeakOwnership{}
@@ -161,7 +186,7 @@ func (w *WeakOwner) startOwningKey(ctx context.Context, owner string, prefixedKe
 		now := time.Now()
 		free := checkOwnership(ownership.Expires.AsTime(), now, err)
 		if free != keyOwned {
-			expiryTime := now.Add(refreshInterval)
+			expiryTime := now.Add(w.refreshInterval)
 			ownership = WeakOwnership{
 				Owner:   owner,
 				Expires: timestamppb.New(expiryTime),
@@ -188,7 +213,12 @@ func (w *WeakOwner) startOwningKey(ctx context.Context, owner string, prefixedKe
 		}
 		sleep := ownership.Expires.AsTime().Sub(now) - 5*time.Millisecond
 		if sleep < 0 {
-			sleep = acquireInterval
+			// Multiple instances will race the same regardless
+			// of jitter.  Jitter here will _not_ help with a
+			// perfect KV.  However if using a KV that enforces
+			// rate limits at a very small resolution, jitter
+			// may help.
+			sleep = w.acquireInterval
 		}
 		log.WithField("sleep", sleep).Trace("Still owned; try again soon")
 		err = sleepFor(ctx, sleep)
@@ -201,14 +231,14 @@ func (w *WeakOwner) startOwningKey(ctx context.Context, owner string, prefixedKe
 // Own blocks until it gets weak ownership of key for owner.  Ownership
 // will be refreshed at resolution interval.  It returns a function to stop
 // owning key.
-func (w *WeakOwner) Own(ctx context.Context, owner, key string, acquireInterval, refreshInterval time.Duration) (func(), error) {
+func (w *WeakOwner) Own(ctx context.Context, owner, key string) (func(), error) {
 	prefixedKey := []byte(fmt.Sprintf("%s/%s", w.Prefix, key))
-	err := w.startOwningKey(context.Background(), owner, prefixedKey, acquireInterval, refreshInterval)
+	err := w.startOwningKey(context.Background(), owner, prefixedKey)
 	if err != nil {
 		return nil, fmt.Errorf("start owning %s for %s: %w", owner, key, err)
 	}
 	refreshCtx, refreshCancel := context.WithCancel(ctx)
-	go w.refreshKey(refreshCtx, owner, prefixedKey, refreshInterval/2)
+	go w.refreshKey(refreshCtx, owner, prefixedKey)
 	stopOwning := func() {
 		defer refreshCancel()
 		// Use the original context - in case cancelled twice.

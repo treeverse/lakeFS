@@ -69,17 +69,54 @@ func protoFromBranch(branchID graveler.BranchID, b *graveler.Branch) *graveler.B
 	return branch
 }
 
+// WeakBranchOwnershipParams configures weak ownership of branches.  Branch
+// correctness is safe _regardless_ of the values of these parameters.  They
+// exist solely to reduce expensive operations when multiple concurrent
+// updates race on the same branch.  Only one update can win a race, and
+// ownership prevents others from interfering by consuming resources on the
+// instance.
+type WeakBranchOwnershipParams struct {
+	// AcquireInterval is the interval at which to attempt to acquire
+	// ownership of a branch.  It is a bound on the latency of the time
+	// for one worker to acquire a branch when multiple operations race
+	// on that branch.  Reducing it increases read load on the branch
+	// ownership record when concurrent operations occur.
+	AcquireInterval time.Duration
+	// RefreshInterval the interval for which to assert ownership of a
+	// branch.  It is a bound on the time to perform an operation on a
+	// branch IF a previous worker crashed while owning that branch.  It
+	// has no effect when there are no crashes.  Reducing it increases
+	// write load on the branch ownership record when concurrent
+	// operations occur.  This.
+	//
+	// If zero or negative, ownership will not be asserted and branch
+	// operations will race.  This is safe but can be slow.
+	RefreshInterval time.Duration
+}
+
 type ManagerConfig struct {
-	Executor              batch.Batcher
-	KVStore               kv.Store
-	KVStoreLimited        kv.Store
-	AddressProvider       ident.AddressProvider
-	RepositoryCacheConfig CacheConfig
-	CommitCacheConfig     CacheConfig
-	MaxBatchDelay         time.Duration
+	Executor                  batch.Batcher
+	KVStore                   kv.Store
+	KVStoreLimited            kv.Store
+	AddressProvider           ident.AddressProvider
+	RepositoryCacheConfig     CacheConfig
+	CommitCacheConfig         CacheConfig
+	MaxBatchDelay             time.Duration
+	WeakBranchOwnershipParams WeakBranchOwnershipParams
 }
 
 func NewRefManager(cfg ManagerConfig) *Manager {
+	var branchOwnership *util.WeakOwner
+	if cfg.WeakBranchOwnershipParams.RefreshInterval > 0 {
+		branchOwnership = util.NewWeakOwner(
+			logging.ContextUnavailable().WithField("component", "RefManager weak branch ownership"),
+			cfg.KVStore,
+			"run-refs/weak-branch-owner",
+			cfg.WeakBranchOwnershipParams.AcquireInterval,
+			cfg.WeakBranchOwnershipParams.RefreshInterval,
+		)
+	}
+
 	return &Manager{
 		kvStore:         cfg.KVStore,
 		kvStoreLimited:  cfg.KVStoreLimited,
@@ -88,8 +125,7 @@ func NewRefManager(cfg ManagerConfig) *Manager {
 		repoCache:       newCache(cfg.RepositoryCacheConfig),
 		commitCache:     newCache(cfg.CommitCacheConfig),
 		maxBatchDelay:   cfg.MaxBatchDelay,
-		// TODO(ariels): Configure all of these, especially whether or not this is enabled!
-		branchOwnership: util.NewWeakOwner(logging.ContextUnavailable().WithField("component", "RefManager weak branch ownership"), cfg.KVStore, "run-refs/weak-branch-owner"),
+		branchOwnership: branchOwnership,
 	}
 }
 
@@ -407,7 +443,7 @@ func (m *Manager) BranchUpdate(ctx context.Context, repository *graveler.Reposit
 		requestID = *requestIDPtr
 	}
 	if m.branchOwnership != nil {
-		own, err := m.branchOwnership.Own(ctx, requestID, string(branchID), 500*time.Millisecond, 100*time.Millisecond)
+		own, err := m.branchOwnership.Own(ctx, requestID, string(branchID))
 		if err != nil {
 			logging.FromContext(ctx).
 				WithFields(logging.Fields{}).

@@ -147,6 +147,11 @@ func setDefaults(cfgType string) {
 	// 3ms of delay with ~300 requests/second per resource sounds like a reasonable tradeoff.
 	viper.SetDefault("graveler.max_batch_delay", 3*time.Millisecond)
 
+	viper.SetDefault("graveler.branch_ownership.enabled", false)
+	// ... but if branch ownership is enabled, set up some useful defaults!
+	viper.SetDefault("graveler.branch_ownership.refresh", 400*time.Millisecond)
+	viper.SetDefault("graveler.branch_ownership.acquire", 150*time.Millisecond)
+
 	viper.SetDefault("ugc.prepare_interval", time.Minute)
 	viper.SetDefault("ugc.prepare_max_file_size", 20*1024*1024)
 

@@ -36,15 +36,15 @@ func TestWeakOwnerSingleThreaded(t *testing.T) {
 	}
 	log := logging.FromContext(ctx).WithField("test", t.Name())
 
-	w := util.NewWeakOwner(log, store, "p")
+	w := util.NewWeakOwner(log, store, "p", 5*time.Millisecond, 10*time.Millisecond)
 
-	releaseAbc, err := w.Own(ctx, "me", "abc", 5*time.Millisecond, 10*time.Millisecond)
+	releaseAbc, err := w.Own(ctx, "me", "abc")
 	if err != nil {
 		t.Fatalf("Failed to own \"abc\": %s", err)
 	}
 	defer releaseAbc()
 
-	releaseXyz, err := w.Own(ctx, "me", "xyz", 5*time.Millisecond, 10*time.Millisecond)
+	releaseXyz, err := w.Own(ctx, "me", "xyz")
 	if err != nil {
 		t.Fatalf("Failed to own \"xyz\": %s", err)
 	}
@@ -100,10 +100,10 @@ func TestWeakOwnerConsecutiveReleased(t *testing.T) {
 	}
 	log := logging.FromContext(ctx).WithField("test", t.Name())
 
-	w := util.NewWeakOwner(log, store, "p")
+	w := util.NewWeakOwner(log, store, "p", 5*time.Millisecond, 40*time.Millisecond)
 	events := Ordering[string]{}
 
-	releaseA, err := w.Own(ctx, "me", "xyz", 5*time.Millisecond, 40*time.Millisecond)
+	releaseA, err := w.Own(ctx, "me", "xyz")
 	if err != nil {
 		t.Fatalf("Own main me: %s", err)
 	}
@@ -115,7 +115,7 @@ func TestWeakOwnerConsecutiveReleased(t *testing.T) {
 	go func() {
 		log.Info("Goroutine start")
 		defer wg.Done()
-		releaseB, err := w.Own(ctx, "us", "xyz", 5*time.Millisecond, 40*time.Millisecond)
+		releaseB, err := w.Own(ctx, "us", "xyz")
 		if err != nil {
 			t.Fatalf("Own goroutine us: %s", err)
 		}
