@@ -407,7 +407,7 @@ func (m *Manager) BranchUpdate(ctx context.Context, repository *graveler.Reposit
 		requestID = *requestIDPtr
 	}
 	if m.branchOwnership != nil {
-		own, err := m.branchOwnership.Own(ctx, requestID, string(branchID), 10*time.Millisecond, 3*time.Millisecond)
+		own, err := m.branchOwnership.Own(ctx, requestID, string(branchID), 500*time.Millisecond, 100*time.Millisecond)
 		if err != nil {
 			logging.FromContext(ctx).
 				WithFields(logging.Fields{}).
