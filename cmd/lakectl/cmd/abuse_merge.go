@@ -108,7 +108,7 @@ func mergeSomething(ctx context.Context, client *apigen.ClientWithResponses, bas
 		if err == nil {
 			err = helpers.ResponseAsError(linkResponse)
 		}
-		return fmt.Errorf("Link physical address for %s: %w", name, err)
+		return fmt.Errorf("link physical address for %s: %w", name, err)
 	}
 
 	commitResponse, err := client.CommitWithResponse(ctx, u.Repository, u.Ref, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: fmt.Sprintf("commit %s", name)})
@@ -116,7 +116,7 @@ func mergeSomething(ctx context.Context, client *apigen.ClientWithResponses, bas
 		if err == nil {
 			err = helpers.ResponseAsError(commitResponse)
 		}
-		return fmt.Errorf("Commit for %s: %w", name, err)
+		return fmt.Errorf("commit for %s: %w", name, err)
 	}
 
 	mergeResponse, err := client.MergeIntoBranchWithResponse(ctx, u.Repository, u.Ref, base.Ref, apigen.MergeIntoBranchJSONRequestBody{})
@@ -124,13 +124,13 @@ func mergeSomething(ctx context.Context, client *apigen.ClientWithResponses, bas
 		if err == nil {
 			err = helpers.ResponseAsError(mergeResponse)
 		}
-		return fmt.Errorf("Merge from %s: %w", name, err)
+		return fmt.Errorf("merge from %s: %w", name, err)
 	}
 
 	return nil
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits,mnd
 func init() {
 	abuseMergeCmd.Flags().Int("amount", 1000, "amount of merges to perform")
 	abuseMergeCmd.Flags().Int("parallelism", abuseDefaultParallelism, "number of merges to perform in parallel")

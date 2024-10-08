@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -13,6 +14,7 @@ import (
 
 const weakOwnerPartition = "weak-ownership"
 
+//nolint:stylecheck
 var finished = errors.New("finished")
 
 // A WeakOwner uses a Store to allow roughly at most a single goroutine to
@@ -74,9 +76,22 @@ func NewWeakOwner(log logging.Logger, store kv.Store, prefix string, acquireInte
 	}
 }
 
+// getJitter shortens interval by applying some jitter.  It will not make
+// interval negative.
+func getJitter(interval time.Duration) time.Duration {
+	if interval < 0 {
+		return 0
+	}
+	// Safe to use rand, jitter has no security implications.
+	//nolint:mnd,gosec
+	jitter := time.Duration(rand.Int63n(int64(interval) / 3))
+	return interval - jitter
+}
+
 // refreshKey refreshes key for owner at interval until ctx is cancelled.
 func (w *WeakOwner) refreshKey(ctx context.Context, owner string, prefixedKey []byte) {
-	// Always refresh before ownership expires
+	// Always refresh before ownership expires.
+	//nolint:mnd
 	interval := w.refreshInterval / 2
 	log := w.Log.WithContext(ctx).WithFields(logging.Fields{
 		"interval":     interval,
@@ -84,7 +99,7 @@ func (w *WeakOwner) refreshKey(ctx context.Context, owner string, prefixedKey []
 		"prefixed_key": string(prefixedKey),
 	})
 
-	ticker := time.NewTicker(interval / 2)
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	log.Trace("Start refreshing ownership")
 	for {
@@ -108,7 +123,7 @@ func (w *WeakOwner) refreshKey(ctx context.Context, owner string, prefixedKey []
 				}).Info("Lost ownership race")
 				break
 			}
-			expires := time.Now().Add(interval)
+			expires := time.Now().Add(w.refreshInterval)
 			ownership.Expires = timestamppb.New(expires)
 			err = kv.SetMsgIf(ctx, w.Store, weakOwnerPartition, prefixedKey, &ownership, predicate)
 			if err != nil {
@@ -211,14 +226,9 @@ func (w *WeakOwner) startOwningKey(ctx context.Context, owner string, prefixedKe
 					string(prefixedKey), owner, err)
 			}
 		}
-		sleep := ownership.Expires.AsTime().Sub(now) - 5*time.Millisecond
+		sleep := ownership.Expires.AsTime().Sub(now)
 		if sleep < 0 {
-			// Multiple instances will race the same regardless
-			// of jitter.  Jitter here will _not_ help with a
-			// perfect KV.  However if using a KV that enforces
-			// rate limits at a very small resolution, jitter
-			// may help.
-			sleep = w.acquireInterval
+			sleep = getJitter(w.acquireInterval)
 		}
 		log.WithField("sleep", sleep).Trace("Still owned; try again soon")
 		err = sleepFor(ctx, sleep)
