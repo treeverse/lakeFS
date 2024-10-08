@@ -213,10 +213,9 @@ func (w *WeakOwner) startOwningKey(ctx context.Context, owner string, prefixedKe
 				"now":       now,
 			}).Trace("Try to take ownership")
 			if errors.Is(err, kv.ErrNotFound) {
-				err = kv.SetMsg(ctx, w.Store, weakOwnerPartition, prefixedKey, &ownership)
-			} else {
-				err = kv.SetMsgIf(ctx, w.Store, weakOwnerPartition, prefixedKey, &ownership, predicate)
+				predicate = nil
 			}
+			err = kv.SetMsgIf(ctx, w.Store, weakOwnerPartition, prefixedKey, &ownership, predicate)
 			if err == nil {
 				log.Trace("Got ownership")
 				return nil
