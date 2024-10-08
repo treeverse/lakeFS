@@ -11,4 +11,3 @@ Date:          <DATE> <TIME> <TZ>
 
 	${MESSAGE}
 
-for more results run with --amount 2 --after <COMMIT_ID>
