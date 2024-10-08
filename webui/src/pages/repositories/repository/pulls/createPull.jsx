@@ -1,5 +1,6 @@
 import React, {useContext, useEffect, useState} from "react";
 import {useOutletContext} from "react-router-dom";
+import purify from "dompurify";
 
 import {ActionGroup, ActionsBar, AlertError, Loading} from "../../../../lib/components/controls";
 import {useRefs} from "../../../../lib/hooks/repo";
@@ -23,8 +24,8 @@ const CreatePullForm = ({repo, reference, compare}) => {
     const {state: {results: diffResults, loading: diffLoading, error: diffError}} = useContext(DiffContext);
     const isEmptyDiff = (!diffLoading && !diffError && !!diffResults && diffResults.length === 0);
 
-    const onTitleInput = ({target: {value}}) => setTitle(value);
-    const onDescriptionInput = ({target: {value}}) => setDescription(value);
+    const onTitleInput = ({target: {value}}) => setTitle(purify.sanitize(value));
+    const onDescriptionInput = ({target: {value}}) => setDescription(purify.sanitize(value));
 
     const submitForm = async () => {
         setLoading(true);
