@@ -11,46 +11,32 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type EnvVarKV struct {
-	Key   string
-	Value string
-}
-
 func TestEnvVarHandler(t *testing.T) {
 	testCases := []struct {
 		Name            string
 		PrefixOverrides []string
 		PrefixAdditions []string
-		EnvVars         []EnvVarKV
+		EnvVars         []string
 		Expected        string
 	}{
 		{
 			Name:     "no env vars",
-			EnvVars:  []EnvVarKV{},
+			EnvVars:  []string{},
 			Expected: "",
 		},
 		{
 			Name: "single env var with prefix",
-			EnvVars: []EnvVarKV{
-				{
-					Key:   "LAKEFS_TEST_ENV_VAR",
-					Value: "test",
-				},
+			EnvVars: []string{
+				"LAKEFS_TEST_ENV_VAR=test",
 			},
 			Expected: `LAKEFS_TEST_ENV_VAR=test
 `,
 		},
 		{
 			Name: "multiple env vars with prefix",
-			EnvVars: []EnvVarKV{
-				{
-					Key:   "LAKEFS_TEST_ENV_VAR",
-					Value: "test",
-				},
-				{
-					Key:   "LAKEFS_OTHER_TEST_ENV_VAR",
-					Value: "test2",
-				},
+			EnvVars: []string{
+				"LAKEFS_TEST_ENV_VAR=test",
+				"LAKEFS_OTHER_TEST_ENV_VAR=test2",
 			},
 			Expected: `LAKEFS_TEST_ENV_VAR=test
 LAKEFS_OTHER_TEST_ENV_VAR=test2
@@ -58,41 +44,26 @@ LAKEFS_OTHER_TEST_ENV_VAR=test2
 		},
 		{
 			Name: "postgres connection string",
-			EnvVars: []EnvVarKV{
-				{
-					Key:   "LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING",
-					Value: "postgresql://lakefs:lakefs@localhost:5432/postgres?sslmode=disable",
-				},
+			EnvVars: []string{
+				"LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgresql://lakefs:lakefs@localhost:5432/postgres?sslmode=disable",
 			},
 			Expected: `LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=<REDACTED>
 `,
 		},
 		{
 			Name: "env var with secret",
-			EnvVars: []EnvVarKV{
-				{
-					Key:   "LAKEFS_SOME_API_KEY",
-					Value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
-				},
+			EnvVars: []string{
+				"LAKEFS_SOME_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
 			},
 			Expected: `LAKEFS_SOME_API_KEY=<REDACTED>
 `,
 		},
 		{
 			Name: "multiple env vars with secrets",
-			EnvVars: []EnvVarKV{
-				{
-					Key:   "LAKEFS_DB_CONNECTION_STRING",
-					Value: "postgresql://lakefs:password@localhost:5432/lakefe_db",
-				},
-				{
-					Key:   "LAKEFS_AWS_SECRET_KEY",
-					Value: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-				},
-				{
-					Key:   "LAKEFS_AWS_ACCESS_KEY_ID",
-					Value: "AKIAIOSFODNN7EXAMPLE",
-				},
+			EnvVars: []string{
+				"LAKEFS_DB_CONNECTION_STRING=postgresql://lakefs:password@localhost:5432/lakefe_db",
+				"LAKEFS_AWS_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+				"LAKEFS_AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE",
 			},
 			Expected: `LAKEFS_DB_CONNECTION_STRING=<REDACTED>
 LAKEFS_AWS_SECRET_KEY=<REDACTED>
@@ -101,39 +72,34 @@ LAKEFS_AWS_ACCESS_KEY_ID=<REDACTED>
 		},
 		{
 			Name: "low-entropy value",
-			EnvVars: []EnvVarKV{
-				{
-					Key:   "LAKEFS_AUTH_ENCRYPT_SECRET_KEY",
-					Value: "12e3wadasd",
-				},
+			EnvVars: []string{
+				"LAKEFS_AUTH_ENCRYPT_SECRET_KEY=12e3wadasd",
 			},
 			Expected: `LAKEFS_AUTH_ENCRYPT_SECRET_KEY=<REDACTED>
 `,
 		},
 		{
 			Name: "high-entropy value",
-			EnvVars: []EnvVarKV{
-				{
-					Key:   "LAKEFS_AUTH_ENCRYPT_SECRET_KEY",
-					Value: "h8vkOauR6Ptt2cvM8WEVsaexZ1IsX55s",
-				},
+			EnvVars: []string{
+				"LAKEFS_AUTH_ENCRYPT_SECRET_KEY=h8vkOauR6Ptt2cvM8WEVsaexZ1IsX55s",
 			},
 			Expected: `LAKEFS_AUTH_ENCRYPT_SECRET_KEY=<REDACTED>
 `,
 		},
 	}
 
-	flr, err := NewFlare(WithSecretReplacerFunc(func(value string) string {
-		return "<REDACTED>"
-	}))
-	assert.NoError(t, err)
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
+			flr, err := NewFlare(
+				WithSecretReplacerFunc(func(value string) string {
+					return "<REDACTED>"
+				}),
+				WithEnv(tc.EnvVars),
+			)
+			assert.NoError(t, err)
+
 			b := new(bytes.Buffer)
 			bw := bufio.NewWriter(b)
-			for _, kv := range tc.EnvVars {
-				t.Setenv(kv.Key, kv.Value)
-			}
 			flr.processEnvVars(bw)
 			bw.Flush()
 			assert.Equal(t, tc.Expected, b.String())
@@ -145,17 +111,14 @@ func TestEnvVarBlacklist(t *testing.T) {
 	testCases := []struct {
 		Name      string
 		Blacklist []string
-		EnvVars   []EnvVarKV
+		EnvVars   []string
 		Expected  string
 	}{
 		{
 			Name:      "empty blacklist",
 			Blacklist: []string{},
-			EnvVars: []EnvVarKV{
-				{
-					Key:   "LAKEFS_TEST_ENV_VAR",
-					Value: "test",
-				},
+			EnvVars: []string{
+				"LAKEFS_TEST_ENV_VAR=test",
 			},
 			Expected: `LAKEFS_TEST_ENV_VAR=test
 `,
@@ -163,11 +126,8 @@ func TestEnvVarBlacklist(t *testing.T) {
 		{
 			Name:      "single blacklisted",
 			Blacklist: []string{"LAKEFS_TEST"},
-			EnvVars: []EnvVarKV{
-				{
-					Key:   "LAKEFS_TEST",
-					Value: "test",
-				},
+			EnvVars: []string{
+				"LAKEFS_TEST=test",
 			},
 			Expected: `LAKEFS_TEST=<REDACTED>
 `,
@@ -175,15 +135,9 @@ func TestEnvVarBlacklist(t *testing.T) {
 		{
 			Name:      "Blacklisted and non-blacklisted",
 			Blacklist: []string{"LAKEFS_TEST"},
-			EnvVars: []EnvVarKV{
-				{
-					Key:   "LAKEFS_TEST",
-					Value: "test",
-				},
-				{
-					Key:   "LAKEFS_TEST_OTHER",
-					Value: "test2",
-				},
+			EnvVars: []string{
+				"LAKEFS_TEST=test",
+				"LAKEFS_TEST_OTHER=test2",
 			},
 			Expected: `LAKEFS_TEST=<REDACTED>
 LAKEFS_TEST_OTHER=test2
@@ -196,13 +150,14 @@ LAKEFS_TEST_OTHER=test2
 	}
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			flr, err := NewFlare(WithEnvVarBlacklist(tc.Blacklist), WithSecretReplacerFunc(replacerFunc))
+			flr, err := NewFlare(
+				WithEnvVarBlacklist(tc.Blacklist),
+				WithSecretReplacerFunc(replacerFunc),
+				WithEnv(tc.EnvVars),
+			)
 			assert.NoError(t, err)
 			b := new(bytes.Buffer)
 			bw := bufio.NewWriter(b)
-			for _, kv := range tc.EnvVars {
-				t.Setenv(kv.Key, kv.Value)
-			}
 			flr.processEnvVars(bw)
 			bw.Flush()
 			assert.Equal(t, tc.Expected, b.String())
@@ -213,64 +168,42 @@ LAKEFS_TEST_OTHER=test2
 func TestDefaultReplacerFunc(t *testing.T) {
 	testCases := []struct {
 		Name    string
-		EnvVars []EnvVarKV
+		EnvVars []string
 	}{
 		{
 			Name: "single env var",
-			EnvVars: []EnvVarKV{
-				{
-					Key:   "LAKEFS_AUTH_ENCRYPT_SECRET_KEY",
-					Value: "12e3wadasd",
-				},
+			EnvVars: []string{
+				"LAKEFS_AUTH_ENCRYPT_SECRET_KEY=12e3wadasd",
 			},
 		},
 		{
 			Name: "multiple env vars",
-			EnvVars: []EnvVarKV{
-				{
-					Key:   "LAKEFS_DB_CONNECTION_STRING",
-					Value: "postgresql://lakefs:password@localhost:5432/lakefe_db",
-				},
-				{
-					Key:   "LAKEFS_AWS_SECRET_KEY",
-					Value: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-				},
-				{
-					Key:   "LAKEFS_AWS_ACCESS_KEY_ID",
-					Value: "AKIAIOSFODNN7EXAMPLE",
-				},
+			EnvVars: []string{
+				"LAKEFS_DB_CONNECTION_STRING=postgresql://lakefs:password@localhost:5432/lakefe_db",
+				"LAKEFS_AWS_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+				"LAKEFS_AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE",
 			},
 		},
 	}
 
-	flr, err := NewFlare()
-	assert.NoError(t, err)
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			expected := make([]EnvVarKV, 0, len(tc.EnvVars))
+			flr, err := NewFlare(WithEnv(tc.EnvVars))
+			assert.NoError(t, err)
+
+			expected := ""
 			b := new(bytes.Buffer)
 			bw := bufio.NewWriter(b)
 			for _, kv := range tc.EnvVars {
-				t.Setenv(kv.Key, kv.Value)
 				hasher := sha512.New()
-				hasher.Write([]byte(kv.Value))
-				expected = append(expected, EnvVarKV{
-					Key:   kv.Key,
-					Value: fmt.Sprintf("%x", hasher.Sum(nil)),
-				})
+				v := strings.SplitN(kv, "=", 2)
+				hasher.Write([]byte(v[1]))
+				expected = expected +
+					fmt.Sprintf("%s=%x\n", v[0], hasher.Sum(nil))
 			}
 			flr.processEnvVars(bw)
 			bw.Flush()
-			expectedString := fmt.Sprintf("%s%s", strings.Join(joinKeyValue(expected), "\n"), "\n")
-			assert.Equal(t, expectedString, b.String())
+			assert.Equal(t, expected, b.String())
 		})
 	}
-}
-
-func joinKeyValue(kv []EnvVarKV) []string {
-	res := make([]string, 0, len(kv))
-	for _, itm := range kv {
-		res = append(res, fmt.Sprintf("%s=%s", itm.Key, itm.Value))
-	}
-	return res
 }
