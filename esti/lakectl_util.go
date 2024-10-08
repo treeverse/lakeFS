@@ -232,7 +232,7 @@ func runCmdAndVerifyResult(t *testing.T, cmd string, expectFail bool, isTerminal
 	t.Helper()
 	expanded, err := expandVariables(expected, vars)
 	if err != nil {
-		t.Fatal("Failed to extract variables for:", cmd)
+		t.Fatalf("Failed to extract variables for: \"%s\": %s", cmd, err)
 	}
 	sanitizedResult := runCmd(t, cmd, expectFail, isTerminal, vars)
 
