@@ -2322,6 +2322,7 @@ lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg
       --first-parent         follow only the first parent commit upon seeing a merge commit
   -h, --help                 help for log
       --limit                limit result just to amount. By default, returns whether more items are available.
+      --no-merges            skip merge commits
       --objects strings      show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together
       --prefixes strings     show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together
       --show-meta-range-id   also show meta range ID

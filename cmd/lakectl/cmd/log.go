@@ -66,6 +66,19 @@ func (d *dotWriter) Write(commits []apigen.Commit) {
 	}
 }
 
+// filter merge commits, used for --no-merges flag
+func filterMergeCommits(commits []apigen.Commit) []apigen.Commit {
+	filteredCommits := make([]apigen.Commit, 0, len(commits))
+
+	// iterating through data.Commit, appending every instance with 1 or less parents.
+	for _, commit := range commits {
+		if len(commit.Parents) <= 1 {
+			filteredCommits = append(filteredCommits, commit)
+		}
+	}
+	return filteredCommits
+}
+
 // logCmd represents the log command
 var logCmd = &cobra.Command{
 	Use:               "log <branch URI>",
@@ -80,6 +93,7 @@ var logCmd = &cobra.Command{
 		limit := Must(cmd.Flags().GetBool("limit"))
 		since := Must(cmd.Flags().GetString("since"))
 		dot := Must(cmd.Flags().GetBool("dot"))
+		noMerges := Must(cmd.Flags().GetBool("no-merges"))
 		firstParent := Must(cmd.Flags().GetBool("first-parent"))
 		objects := Must(cmd.Flags().GetStringSlice("objects"))
 		prefixes := Must(cmd.Flags().GetStringSlice("prefixes"))
@@ -99,6 +113,10 @@ var logCmd = &cobra.Command{
 		amountForPagination := amount
 		if amountForPagination <= 0 {
 			amountForPagination = internalPageSize
+		}
+		// case --no-merges & --amount, ask for more results since some will filter out
+		if noMerges && amountForPagination < maxAmountNoMerges {
+			amountForPagination *= noMergesHeuristic
 		}
 		logCommitsParams := &apigen.LogCommitsParams{
 			After:       apiutil.Ptr(apigen.PaginationAfter(after)),
@@ -151,13 +169,23 @@ var logCmd = &cobra.Command{
 				},
 			}
 
+			// case --no-merges, filter commits and subtract that amount from amount desired
+			if noMerges {
+				data.Commits = filterMergeCommits(data.Commits)
+				// case user asked for a specified amount
+				if amount > 0 {
+					data.Commits = data.Commits[:amount]
+				}
+			}
+			amount -= len(data.Commits)
+
 			if dot {
 				graph.Write(data.Commits)
 			} else {
 				Write(commitsTemplate, data)
 			}
 
-			if amount != 0 {
+			if amount <= 0 {
 				// user request only one page
 				break
 			}
@@ -177,6 +205,7 @@ func init() {
 	logCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	logCmd.Flags().Bool("dot", false, "return results in a dotgraph format")
 	logCmd.Flags().Bool("first-parent", false, "follow only the first parent commit upon seeing a merge commit")
+	logCmd.Flags().Bool("no-merges", false, "skip merge commits")
 	logCmd.Flags().Bool("show-meta-range-id", false, "also show meta range ID")
 	logCmd.Flags().StringSlice("objects", nil, "show results that contains changes to at least one path in that list of objects. Use comma separator to pass all objects together")
 	logCmd.Flags().StringSlice("prefixes", nil, "show results that contains changes to at least one path in that list of prefixes. Use comma separator to pass all prefixes together")
