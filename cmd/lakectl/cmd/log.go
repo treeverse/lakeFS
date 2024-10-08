@@ -172,7 +172,10 @@ var logCmd = &cobra.Command{
 			// case --no-merges, filter commits and subtract that amount from amount desired
 			if noMerges {
 				data.Commits = filterMergeCommits(data.Commits)
-				data.Commits = data.Commits[:amount]
+				// case user asked for a specified amount
+				if amount > 0 {
+					data.Commits = data.Commits[:amount]
+				}
 			}
 			amount -= len(data.Commits)
 
