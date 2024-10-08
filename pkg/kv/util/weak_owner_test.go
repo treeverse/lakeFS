@@ -50,8 +50,7 @@ func TestWeakOwnerSingleThreaded(t *testing.T) {
 	}
 	defer releaseXyz()
 
-	// Just show off that different keys did not deadlock.
-	t.Log("Now own \"abc\" and \"xyz\"")
+	// Got here, so different keys did not deadlock.
 }
 
 // Ordering retains an ordering on events without creating a data race.
