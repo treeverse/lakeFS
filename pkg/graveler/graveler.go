@@ -1740,33 +1740,6 @@ func (g *Graveler) Get(ctx context.Context, repository *RepositoryRecord, ref Re
 	return g.CommittedManager.Get(ctx, repository.StorageNamespace, commit.MetaRangeID, key)
 }
 
-// getFromBranchWithStaging returns the value for key on repository and
-// branch.  It returns true if the object was found in the staging area,
-// otherwise false.  It does not micro-batch.
-func (g *Graveler) getFromBranchWithStaging(ctx context.Context, repository *RepositoryRecord, branch *Branch, key Key) (*Value, bool, error) {
-	if branch.StagingToken != "" {
-		stagingValue, err := g.getFromStagingArea(ctx, branch, key)
-		if err != nil && !errors.Is(err, ErrNotFound) {
-			return nil, false, err
-		}
-		if err == nil {
-			// Found, possibly deleted on staging.
-			return stagingValue, true, err
-		}
-		// Not found on staging - get it from a metarange.
-	}
-	metaRangeID := branch.CompactedBaseMetaRangeID
-	if metaRangeID == "" {
-		commit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
-		if err != nil {
-			return nil, false, fmt.Errorf("get commit ID to get from committed branch HEAD: %w", err)
-		}
-		metaRangeID = commit.MetaRangeID
-	}
-	committedValue, err := g.CommittedManager.Get(ctx, repository.StorageNamespace, metaRangeID, key)
-	return committedValue, false, err
-}
-
 func (g *Graveler) GetByCommitID(ctx context.Context, repository *RepositoryRecord, commitID CommitID, key Key) (*Value, error) {
 	// If key is not found in staging area (or reference is not a branch), return the key from committed
 	commit, err := g.RefManager.GetCommit(ctx, repository, commitID)
@@ -1825,8 +1798,7 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 }
 
 // safeBranchWrite repeatedly attempts to perform stagingOperation, retrying
-// if the staging token changes during the write.  It never backs off.  It
-// returns the number of times it tried -- between 1 and options.MaxTries.
+// if the staging token changes during the write.  It never backs off.
 func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID,
 	options safeBranchWriteOptions, stagingOperation func(branch *Branch) error, operation string,
 ) error {
@@ -1889,23 +1861,24 @@ func (g *Graveler) UpdateObjectMetadata(ctx context.Context, repository *Reposit
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "update_user_metadata"})
 
-	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
-		value, onStaging, err := g.getFromBranchWithStaging(ctx, repository, branch, key)
-		if err != nil && !errors.Is(err, ErrNotFound) {
-			return fmt.Errorf("get existing entry to update user metadata: %w", err)
-		}
+	// committedValue, if non-nil is a value read from either uncommitted or committed.  Usually
+	// it it is read from committed.  If there is a value on staging, that entry will be
+	// modified and committedValue will never be read.
+	var committedValue *Value
 
+	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
 		return g.StagingManager.Update(ctx, branch.StagingToken, key, func(currentValue *Value) (*Value, error) {
 			if currentValue == nil {
-				if onStaging {
-					// Object previously on staging, and
-					// was deleted since
-					// getFromBranchWithStaging.
-					return nil, ErrNotFound
+				// Object not on staging: need to update committed value.
+				if committedValue == nil {
+					committedValue, err = g.Get(ctx, repository, Ref(branchID), key)
+					if err != nil {
+						// (Includes ErrNotFound)
+						return nil, fmt.Errorf("read %s/%s/%s from committed: %w", repository.RepositoryID, branchID, key, err)
+					}
 				}
-				// Use committed value (in practice it came
-				// from committed, so it is non-nil).
-				currentValue = value
+				// Get always returns a non-nil value or an error.
+				currentValue = committedValue
 			}
 			return update(currentValue)
 		})
