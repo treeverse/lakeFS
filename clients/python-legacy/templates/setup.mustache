@@ -29,18 +29,32 @@ REQUIRES = [
 {{/hasHttpSignatureMethods}}
 ]
 
+long_prefix = '''
+[EOL] Do NOT use: lakeFS OpenAPI Python client legacy SDK
+
+The lakeFS OpenAPI Python client legacy SDK has reached end of life.  Please
+use lakefs-sdk or lakefs-wrapper instead.
+
+* lakefs-sdk code maintains backwards compatibility.
+* lakefs-wrapper uses lakefs-sdk to provide support at a much higher level.
+
+lakefs-client will shortly stop being published.  For help migrating, refer
+to
+https://docs.lakefs.io/project/code-migrate-1.0-sdk.html#migrating-sdk-code-for-python.
+'''
+
 with open('README.md') as f:
     import re
     # replace relative links with links to the docs:
     doc_version = '.'.join(f'v{VERSION}'.split('.')[:2])
-    long_description = re.sub(r'(\[[*a-zA-Z_]*]\()docs/([A-Za-z0-9]*)\.md',
+    long_description = long_prefix + re.sub(r'(\[[*a-zA-Z_]*]\()docs/([A-Za-z0-9]*)\.md',
                               rf'\1https://pydocs.lakefs.io/{doc_version}/docs/\2.html',
                               f.read())
 
 setup(
     name=NAME,
     version=VERSION,
-    description="{{appName}}",
+    description="[legacy] {{appName}}",
     author="{{infoName}}{{^infoName}}OpenAPI Generator community{{/infoName}}",
     author_email="{{infoEmail}}{{^infoEmail}}team@openapitools.org{{/infoEmail}}",
     url="{{packageUrl}}",
