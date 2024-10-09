@@ -46,6 +46,7 @@ type WithTime struct {
 }
 
 type Flare struct {
+	envVariables    []string
 	envVarPrefixes  []string
 	envVarBlacklist *regexp.Regexp
 	// LogDateLayout is the layout used by time.Parse to parse dates in log lines.
@@ -79,6 +80,7 @@ func NewFlare(options ...Option) (*Flare, error) {
 		return nil, fmt.Errorf("failed to init secrets scanner: %w", err)
 	}
 	flare := &Flare{
+		envVariables:    os.Environ(),
 		envVarPrefixes:  defaultEnvVarPrefixes,
 		envVarBlacklist: nil,
 		replacerFunc:    defaultSecretReplacer,
@@ -124,6 +126,13 @@ func WithEnvVarBlacklist(blacklist []string) Option {
 func WithSecretReplacerFunc(fn RedactedValueReplacer) Option {
 	return func(f *Flare) {
 		f.replacerFunc = fn
+	}
+}
+
+// WithEnv replaces the process environment variables vars.
+func WithEnv(vars []string) Option {
+	return func(f *Flare) {
+		f.envVariables = vars
 	}
 }
 
@@ -178,7 +187,7 @@ func SetBaselinePermissions(mask int) {
 }
 
 func (f *Flare) processEnvVars(w io.Writer) error {
-	for _, e := range os.Environ() {
+	for _, e := range f.envVariables {
 		for _, p := range f.envVarPrefixes {
 			if strings.HasPrefix(e, p) {
 				var re string
