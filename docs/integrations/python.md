@@ -159,10 +159,10 @@ Listing repositories:
 ```python
 import lakefs
 
-branch1 = lakefs.repository("example-repo").branch("experiment1").create(source_reference_id="main")
+branch1 = lakefs.repository("example-repo").branch("experiment1").create(source_reference="main")
 print("experiment1 ref:", branch1.get_commit().id)
 
-branch1 = lakefs.repository("example-repo").branch("experiment2").create(source_reference_id="main")
+branch1 = lakefs.repository("example-repo").branch("experiment2").create(source_reference="main")
 print("experiment2 ref:", branch2.get_commit().id)
 ```
 
