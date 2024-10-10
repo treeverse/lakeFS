@@ -116,6 +116,19 @@ func (g *FakeGraveler) Set(_ context.Context, repository *graveler.RepositoryRec
 	return nil
 }
 
+func (g *FakeGraveler) Update(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, update graveler.ValueUpdateFunc, opts ...graveler.SetOptionsFunc) error {
+	if g.Err != nil {
+		return g.Err
+	}
+	k := fakeGravelerBuildKey(repository.RepositoryID, graveler.Ref(branchID.String()), key)
+	value, err := update(g.KeyValue[k])
+	if err != nil {
+		return err
+	}
+	g.KeyValue[k] = value
+	return nil
+}
+
 func (g *FakeGraveler) Delete(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, _ ...graveler.SetOptionsFunc) error {
 	return nil
 }

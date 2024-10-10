@@ -1000,6 +1000,39 @@ func (c *Catalog) GetEntry(ctx context.Context, repositoryID string, reference s
 	return &catalogEntry, nil
 }
 
+// UpdateEntryUserMetadata updates user metadata for the current entry for a
+// path in repository branch reference.
+func (c *Catalog) UpdateEntryUserMetadata(ctx context.Context, repositoryID, branch, path string, newUserMetadata map[string]string) error {
+	branchID := graveler.BranchID(branch)
+	if err := validator.Validate([]validator.ValidateArg{
+		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
+		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
+		{Name: "path", Value: Path(path), Fn: ValidatePath},
+	}); err != nil {
+		return err
+	}
+
+	repository, err := c.getRepository(ctx, repositoryID)
+	if err != nil {
+		return nil
+	}
+
+	key := graveler.Key(path)
+	updater := graveler.ValueUpdateFunc(func(value *graveler.Value) (*graveler.Value, error) {
+		if value == nil {
+			return nil, fmt.Errorf("update user metadata on %s/%s/%s: %w",
+				repositoryID, branchID, path, graveler.ErrNotFound)
+		}
+		entry, err := ValueToEntry(value)
+		if err != nil {
+			return nil, err
+		}
+		entry.Metadata = newUserMetadata
+		return EntryToValue(entry)
+	})
+	return c.Store.Update(ctx, repository, branchID, key, updater)
+}
+
 func newEntryFromCatalogEntry(entry DBEntry) *Entry {
 	ent := &Entry{
 		Address:      entry.PhysicalAddress,

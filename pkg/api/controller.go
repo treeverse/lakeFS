@@ -4701,16 +4701,8 @@ func (c *Controller) UpdateObjectUserMetadata(w http.ResponseWriter, r *http.Req
 	ctx := r.Context()
 	c.LogAction(ctx, "update_object_user_metadata", r, repository, branch, "")
 
-	// read all the _other_ metadata.  Does not require checking read
-	// permissions, as the caller will never see this.
-	entry, err := c.Catalog.GetEntry(ctx, repository, branch, params.Path, catalog.GetEntryParams{})
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
-	entry.Metadata = catalog.Metadata(body.Set.AdditionalProperties)
-
-	err = c.Catalog.CreateEntry(ctx, repository, branch, *entry)
+	newUserMetadata := body.Set.AdditionalProperties
+	err := c.Catalog.UpdateEntryUserMetadata(ctx, repository, branch, params.Path, newUserMetadata)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
