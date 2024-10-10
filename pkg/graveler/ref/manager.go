@@ -438,19 +438,19 @@ func (m *Manager) SetBranch(ctx context.Context, repository *graveler.Repository
 func (m *Manager) BranchUpdate(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, f graveler.BranchUpdateFunc) error {
 	// TODO(ariels): Get request ID in a nicer way.
 	requestIDPtr := httputil.RequestIDFromContext(ctx)
-	requestID := "<unknown>"
-	if requestIDPtr != nil {
-		requestID = *requestIDPtr
-	}
-	if m.branchOwnership != nil {
-		own, err := m.branchOwnership.Own(ctx, requestID, string(branchID))
+	// Grab ownership if configured.  Also check we actually have a
+	// request-ID on the request.  (lakeFS middleware should *always*
+	// place a request ID anyways.)
+	if m.branchOwnership != nil && requestIDPtr != nil {
+		requestID := *requestIDPtr
+		release, err := m.branchOwnership.Own(ctx, requestID, string(branchID))
 		if err != nil {
 			logging.FromContext(ctx).
 				WithFields(logging.Fields{}).
 				WithError(err).
 				Warn("Failed to get ownership on branch; continuing but may be slow")
 		} else {
-			defer own()
+			defer release()
 		}
 	}
 	b, pred, err := m.getBranchWithPredicate(ctx, repository, branchID)
