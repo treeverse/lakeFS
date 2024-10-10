@@ -108,13 +108,15 @@ type ManagerConfig struct {
 func NewRefManager(cfg ManagerConfig) *Manager {
 	var branchOwnership *util.WeakOwner
 	if cfg.WeakBranchOwnershipParams.RefreshInterval > 0 {
+		log := logging.ContextUnavailable().WithField("component", "RefManager weak branch ownership")
 		branchOwnership = util.NewWeakOwner(
-			logging.ContextUnavailable().WithField("component", "RefManager weak branch ownership"),
+			log,
 			cfg.KVStore,
 			"run-refs/weak-branch-owner",
 			cfg.WeakBranchOwnershipParams.AcquireInterval,
 			cfg.WeakBranchOwnershipParams.RefreshInterval,
 		)
+		log.Info("Initialized")
 	}
 
 	return &Manager{
