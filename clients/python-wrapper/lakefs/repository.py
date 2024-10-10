@@ -34,6 +34,7 @@ class Repository(_BaseLakeFSObject):
                default_branch: str = "main",
                include_samples: bool = False,
                exist_ok: bool = False,
+               read_only: bool = False,
                **kwargs) -> Repository:
         """
         Create a new repository in lakeFS from this object
@@ -43,6 +44,7 @@ class Repository(_BaseLakeFSObject):
         :param include_samples: Whether to include sample data in repository creation
         :param exist_ok: If False will throw an exception if a repository by this name already exists. Otherwise,
             return the existing repository without creating a new one
+        :param read_only: Whether the repository is a read-only repository - not relevant for bare repositories
         :param kwargs: Additional Keyword Arguments to send to the server
         :return: The lakeFS SDK object representing the repository
         :raise NotAuthorizedException: if user is not authorized to perform this operation
@@ -51,7 +53,8 @@ class Repository(_BaseLakeFSObject):
         repository_creation = lakefs_sdk.RepositoryCreation(name=self._id,
                                                             storage_namespace=storage_namespace,
                                                             default_branch=default_branch,
-                                                            sample_data=include_samples)
+                                                            sample_data=include_samples,
+                                                            read_only=read_only)
 
         def handle_conflict(e: LakeFSException):
             if isinstance(e, ConflictException) and exist_ok:
