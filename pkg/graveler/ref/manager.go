@@ -87,7 +87,7 @@ type WeakBranchOwnershipParams struct {
 	// branch IF a previous worker crashed while owning that branch.  It
 	// has no effect when there are no crashes.  Reducing it increases
 	// write load on the branch ownership record when concurrent
-	// operations occur.  This.
+	// operations occur.
 	//
 	// If zero or negative, ownership will not be asserted and branch
 	// operations will race.  This is safe but can be slow.

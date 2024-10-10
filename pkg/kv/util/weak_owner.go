@@ -38,6 +38,14 @@ var finished = errors.New("finished")
 //
 // So it *cannot* guarantee correctness.  However it usually works, and if
 // it does work, the owning goroutine wins all races by default.
+//
+// WeakOwner creates some additional load on its KV partition:
+//
+//   - Acquiring ownership reads at least once and writes (SetIf) once.  If
+//     the key is already held, each acquisition reads once every
+//     acquireInterval and once every time ownership expires.
+//
+//   - Holding a lock reads and writes (SetIf) once every refreshInterval.
 type WeakOwner struct {
 	// acquireInterval is the polling interval for acquiring ownership.
 	// Reducing it reduces some additional time to recover if an
@@ -62,7 +70,8 @@ type WeakOwner struct {
 	// Store is used to synchronize ownership across
 	// goroutiness on multiple cooperating processes.
 	Store kv.Store
-	// Prefix is used to select "locking" keys.
+	// Prefix is used to separate "locking" keys between different
+	// instances of WeakOwner.
 	Prefix string
 }
 
@@ -102,6 +111,14 @@ func (w *WeakOwner) refreshKey(ctx context.Context, owner string, prefixedKey []
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	log.Trace("Start refreshing ownership")
+	// This loop never stops the action it is supposed to protect - even
+	// on error!  It is not useful to cancel ourselves, the original
+	// owners.  For instance, if a new owner "stole" ownership then it
+	// thought we were stuck.  Now we're back -- and we have a fair
+	// chance of winning the update race.
+	//
+	// Cancelling anything here can lead to livelock.  It is only safe
+	// to run the action to completion.
 	for {
 		select {
 		case <-ctx.Done():

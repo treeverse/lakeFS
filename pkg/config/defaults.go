@@ -149,6 +149,18 @@ func setDefaults(cfgType string) {
 
 	viper.SetDefault("graveler.branch_ownership.enabled", false)
 	// ... but if branch ownership is enabled, set up some useful defaults!
+
+	// The single concurrent branch updater has these requirements from
+	// KV with these settings:
+	//
+	//   - Cleanly acquiring ownership performs 1 read operation and 1
+	//     write operation.
+	//
+	//   - While ownership is held, add 2.5 read and 2.5 write operation
+	//     per second, and an additional ~7 read and write operations
+	//     per second per branch operation waiting to acquire ownership.
+
+	// See comments on WeakOwner for how to compute these numbers.
 	viper.SetDefault("graveler.branch_ownership.refresh", 400*time.Millisecond)
 	viper.SetDefault("graveler.branch_ownership.acquire", 150*time.Millisecond)
 

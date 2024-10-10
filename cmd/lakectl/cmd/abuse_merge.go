@@ -19,7 +19,7 @@ import (
 
 var abuseMergeCmd = &cobra.Command{
 	Use:               "merge <branch URI>",
-	Short:             "Merge nonconflicting objects to the source branch in parallel",
+	Short:             "Merge non-conflicting objects to the source branch in parallel",
 	Hidden:            false,
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
@@ -28,7 +28,7 @@ var abuseMergeCmd = &cobra.Command{
 		amount := Must(cmd.Flags().GetInt("amount"))
 		parallelism := Must(cmd.Flags().GetInt("parallelism"))
 
-		fmt.Println("Source branch:", u)
+		fmt.Println("Source branch: ", u)
 
 		generator := stress.NewGenerator("merge", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
@@ -74,8 +74,8 @@ func mergeSomething(ctx context.Context, client *apigen.ClientWithResponses, bas
 	if err != nil || !apiutil.IsStatusCodeOK(createBranchResponse.StatusCode()) {
 		if err == nil {
 			err = helpers.ResponseAsError(createBranchResponse)
-			return fmt.Errorf("create branch %s: %w", name, err)
 		}
+		return fmt.Errorf("create branch %s: %w", name, err)
 	}
 
 	u := base.WithRef(name)

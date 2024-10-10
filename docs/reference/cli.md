@@ -3033,7 +3033,7 @@ lakectl abuse list <source ref URI> [flags]
 
 ### lakectl abuse merge
 
-Merge nonconflicting objects to the source branch in parallel
+Merge non-conflicting objects to the source branch in parallel
 
 ```
 lakectl abuse merge <branch URI> [flags]
