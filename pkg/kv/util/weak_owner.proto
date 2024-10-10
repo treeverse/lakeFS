@@ -1,0 +1,13 @@
+syntax = "proto3";
+option go_package = "github.com/treeverse/lakefs/kv/util";
+
+import "google/protobuf/timestamp.proto";
+
+package io.treeverse.lakefs.kv;
+
+// message data model for weak ownership
+message WeakOwnership {
+    string owner = 1;
+    google.protobuf.Timestamp expires = 2;
+    string comment = 3;
+}

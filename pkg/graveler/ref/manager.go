@@ -11,8 +11,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/util"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -37,6 +39,7 @@ type Manager struct {
 	repoCache       cache.Cache
 	commitCache     cache.Cache
 	maxBatchDelay   time.Duration
+	branchOwnership *util.WeakOwner
 }
 
 func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
@@ -66,17 +69,56 @@ func protoFromBranch(branchID graveler.BranchID, b *graveler.Branch) *graveler.B
 	return branch
 }
 
+// WeakBranchOwnershipParams configures weak ownership of branches.  Branch
+// correctness is safe _regardless_ of the values of these parameters.  They
+// exist solely to reduce expensive operations when multiple concurrent
+// updates race on the same branch.  Only one update can win a race, and
+// ownership prevents others from interfering by consuming resources on the
+// instance.
+type WeakBranchOwnershipParams struct {
+	// AcquireInterval is the interval at which to attempt to acquire
+	// ownership of a branch.  It is a bound on the latency of the time
+	// for one worker to acquire a branch when multiple operations race
+	// on that branch.  Reducing it increases read load on the branch
+	// ownership record when concurrent operations occur.
+	AcquireInterval time.Duration
+	// RefreshInterval the interval for which to assert ownership of a
+	// branch.  It is a bound on the time to perform an operation on a
+	// branch IF a previous worker crashed while owning that branch.  It
+	// has no effect when there are no crashes.  Reducing it increases
+	// write load on the branch ownership record when concurrent
+	// operations occur.
+	//
+	// If zero or negative, ownership will not be asserted and branch
+	// operations will race.  This is safe but can be slow.
+	RefreshInterval time.Duration
+}
+
 type ManagerConfig struct {
-	Executor              batch.Batcher
-	KVStore               kv.Store
-	KVStoreLimited        kv.Store
-	AddressProvider       ident.AddressProvider
-	RepositoryCacheConfig CacheConfig
-	CommitCacheConfig     CacheConfig
-	MaxBatchDelay         time.Duration
+	Executor                  batch.Batcher
+	KVStore                   kv.Store
+	KVStoreLimited            kv.Store
+	AddressProvider           ident.AddressProvider
+	RepositoryCacheConfig     CacheConfig
+	CommitCacheConfig         CacheConfig
+	MaxBatchDelay             time.Duration
+	WeakBranchOwnershipParams WeakBranchOwnershipParams
 }
 
 func NewRefManager(cfg ManagerConfig) *Manager {
+	var branchOwnership *util.WeakOwner
+	if cfg.WeakBranchOwnershipParams.RefreshInterval > 0 {
+		log := logging.ContextUnavailable().WithField("component", "RefManager weak branch ownership")
+		branchOwnership = util.NewWeakOwner(
+			log,
+			cfg.KVStore,
+			"run-refs/weak-branch-owner",
+			cfg.WeakBranchOwnershipParams.AcquireInterval,
+			cfg.WeakBranchOwnershipParams.RefreshInterval,
+		)
+		log.Info("Initialized")
+	}
+
 	return &Manager{
 		kvStore:         cfg.KVStore,
 		kvStoreLimited:  cfg.KVStoreLimited,
@@ -85,6 +127,7 @@ func NewRefManager(cfg ManagerConfig) *Manager {
 		repoCache:       newCache(cfg.RepositoryCacheConfig),
 		commitCache:     newCache(cfg.CommitCacheConfig),
 		maxBatchDelay:   cfg.MaxBatchDelay,
+		branchOwnership: branchOwnership,
 	}
 }
 
@@ -395,6 +438,23 @@ func (m *Manager) SetBranch(ctx context.Context, repository *graveler.Repository
 }
 
 func (m *Manager) BranchUpdate(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, f graveler.BranchUpdateFunc) error {
+	// TODO(ariels): Get request ID in a nicer way.
+	requestIDPtr := httputil.RequestIDFromContext(ctx)
+	// Grab ownership if configured.  Also check we actually have a
+	// request-ID on the request.  (lakeFS middleware should *always*
+	// place a request ID anyways.)
+	if m.branchOwnership != nil && requestIDPtr != nil {
+		requestID := *requestIDPtr
+		release, err := m.branchOwnership.Own(ctx, requestID, string(branchID))
+		if err != nil {
+			logging.FromContext(ctx).
+				WithFields(logging.Fields{}).
+				WithError(err).
+				Warn("Failed to get ownership on branch; continuing but may be slow")
+		} else {
+			defer release()
+		}
+	}
 	b, pred, err := m.getBranchWithPredicate(ctx, repository, branchID)
 	if err != nil {
 		return err
