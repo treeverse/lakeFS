@@ -297,8 +297,8 @@ lakeFS Server Configuration (Update in helm's `values.yaml` file):
 auth:
   remote_authenticator:
     enabled: true
-    endpoint: https://lakefs.company.com/api/v1/ldap/login
-    default_user_group: "Developers"
+    endpoint: http://<Fluffy URL>:<Fluffy http port>/api/v1/ldap/login
+    default_user_group: "Developers" # Value needs to correspond with an existing group in lakeFS
   ui_config:
     logout_url: /logout
     login_cookie_names:
