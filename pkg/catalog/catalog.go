@@ -1009,7 +1009,7 @@ func (c *Catalog) UpdateEntryUserMetadata(ctx context.Context, repositoryID, bra
 		{Name: "branch", Value: branchID, Fn: graveler.ValidateBranchID},
 		{Name: "path", Value: Path(path), Fn: ValidatePath},
 	}); err != nil {
-		return fmt.Errorf("%w: %s %s %s", err, repositoryID, branchID, path)
+		return err
 	}
 
 	repository, err := c.getRepository(ctx, repositoryID)
@@ -1030,8 +1030,7 @@ func (c *Catalog) UpdateEntryUserMetadata(ctx context.Context, repositoryID, bra
 		entry.Metadata = newUserMetadata
 		return EntryToValue(entry)
 	})
-	err = c.Store.UpdateObjectMetadata(ctx, repository, branchID, key, updater)
-	return err
+	return c.Store.Update(ctx, repository, branchID, key, updater)
 }
 
 func newEntryFromCatalogEntry(entry DBEntry) *Entry {

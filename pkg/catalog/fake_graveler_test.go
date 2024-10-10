@@ -116,7 +116,7 @@ func (g *FakeGraveler) Set(_ context.Context, repository *graveler.RepositoryRec
 	return nil
 }
 
-func (g *FakeGraveler) UpdateObjectMetadata(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, update graveler.ValueUpdateFunc, opts ...graveler.SetOptionsFunc) error {
+func (g *FakeGraveler) Update(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, update graveler.ValueUpdateFunc, opts ...graveler.SetOptionsFunc) error {
 	if g.Err != nil {
 		return g.Err
 	}
