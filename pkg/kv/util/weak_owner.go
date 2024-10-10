@@ -14,9 +14,6 @@ import (
 
 const weakOwnerPartition = "weak-ownership"
 
-//nolint:stylecheck
-var finished = errors.New("finished")
-
 // A WeakOwner uses a Store to allow roughly at most a single goroutine to
 // handle an operation for a key, across all processes sharing that store.
 // It can block but never deadlock.  "Rough" ownership means that when the
@@ -132,13 +129,13 @@ func (w *WeakOwner) refreshKey(ctx context.Context, owner string, prefixedKey []
 				// Do NOT attempt to delete, to avoid
 				// knock-on effects destroying the new
 				// owner.
-				break
+				return
 			}
 			if ownership.Owner != owner {
 				log.WithFields(logging.Fields{
 					"new_owner": ownership.Owner,
 				}).Info("Lost ownership race")
-				break
+				return
 			}
 			expires := time.Now().Add(w.refreshInterval)
 			ownership.Expires = timestamppb.New(expires)
@@ -164,11 +161,7 @@ func sleepFor(ctx context.Context, duration time.Duration) error {
 		case <-timer.C:
 			return nil
 		case <-ctx.Done():
-			err := ctx.Err()
-			if err == nil {
-				err = finished
-			}
-			return err
+			return ctx.Err()
 		}
 	}
 }
@@ -229,9 +222,6 @@ func (w *WeakOwner) startOwningKey(ctx context.Context, owner string, prefixedKe
 				"expires":   expiryTime,
 				"now":       now,
 			}).Trace("Try to take ownership")
-			if errors.Is(err, kv.ErrNotFound) {
-				predicate = nil
-			}
 			err = kv.SetMsgIf(ctx, w.Store, weakOwnerPartition, prefixedKey, &ownership, predicate)
 			if err == nil {
 				log.Trace("Got ownership")
@@ -259,7 +249,7 @@ func (w *WeakOwner) startOwningKey(ctx context.Context, owner string, prefixedKe
 // owning key.
 func (w *WeakOwner) Own(ctx context.Context, owner, key string) (func(), error) {
 	prefixedKey := []byte(fmt.Sprintf("%s/%s", w.Prefix, key))
-	err := w.startOwningKey(context.Background(), owner, prefixedKey)
+	err := w.startOwningKey(ctx, owner, prefixedKey)
 	if err != nil {
 		return nil, fmt.Errorf("start owning %s for %s: %w", owner, key, err)
 	}
