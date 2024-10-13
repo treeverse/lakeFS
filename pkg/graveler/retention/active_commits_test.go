@@ -100,13 +100,13 @@ func TestCommitsMap(t *testing.T) {
 			Name: "FromList",
 			CommitGetter: &fakeRepositoryCommitGetter{
 				Commits: []*graveler.CommitRecord{
-					&graveler.CommitRecord{
+					{
 						CommitID: "a",
 						Commit: &graveler.Commit{
 							MetaRangeID: graveler.MetaRangeID("metarange:A"),
 						},
 					},
-					&graveler.CommitRecord{
+					{
 						CommitID: "b",
 						Commit: &graveler.Commit{
 							MetaRangeID: graveler.MetaRangeID("metarange:B"),
@@ -119,7 +119,7 @@ func TestCommitsMap(t *testing.T) {
 			Name: "FromGet",
 			CommitGetter: &fakeRepositoryCommitGetter{
 				Commits: []*graveler.CommitRecord{
-					&graveler.CommitRecord{
+					{
 						CommitID: "a",
 						Commit: &graveler.Commit{
 							MetaRangeID: graveler.MetaRangeID("metarange:A"),
