@@ -92,8 +92,12 @@ type RepositoryCommitGetter struct {
 	repository *graveler.RepositoryRecord
 }
 
-func (r *RepositoryCommitGetter) ListCommits(ctx context.Context) (graveler.CommitIterator, error) {
+func (r *RepositoryCommitGetter) List(ctx context.Context) (graveler.CommitIterator, error) {
 	return r.refManager.ListCommits(ctx, r.repository)
+}
+
+func (r *RepositoryCommitGetter) Get(ctx context.Context, id graveler.CommitID) (*graveler.Commit, error) {
+	return r.refManager.GetCommit(ctx, r.repository, id)
 }
 
 func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager graveler.RefManager, committedBlockStoragePrefix string) *GarbageCollectionManager {
