@@ -2299,47 +2299,73 @@ func TestController_UpdateObjectUserMetadataHander(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Run("update metadata", func(t *testing.T) {
-		const objPath = "foo/bar"
-		entry := catalog.DBEntry{
-			Path:            objPath,
-			PhysicalAddress: "this_is_bars_address",
-			CreationDate:    time.Now(),
-			Size:            666,
-			Checksum:        "this_is_a_checksum",
-		}
-		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", entry))
+	bools := []bool{false, true}
 
-		userMetadataMap := map[string]string{
-			"foo": "bar",
-			"baz": "quux",
+	for _, doCommit := range bools {
+		commitLabel := "no commit"
+		if doCommit {
+			commitLabel = "commit"
 		}
+		for _, doSetMetadata := range bools {
+			metadataLabel := "no metadata"
+			if doSetMetadata {
+				metadataLabel = "initial metadata"
+			}
 
-		body := apigen.UpdateObjectUserMetadataJSONRequestBody{
-			Set: apigen.ObjectUserMetadata{
-				AdditionalProperties: userMetadataMap,
-			},
+			label := fmt.Sprintf("%s, %s", commitLabel, metadataLabel)
+			t.Run(label, func(t *testing.T) {
+				const objPath = "foo/bar"
+				entry := catalog.DBEntry{
+					Path:            objPath,
+					PhysicalAddress: "this_is_bars_address",
+					CreationDate:    time.Now(),
+					Size:            666,
+					Checksum:        "this_is_a_checksum",
+				}
+				if doSetMetadata {
+					entry.Metadata = catalog.Metadata{
+						"old": "metadata",
+					}
+				}
+				testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", entry))
+
+				if doCommit {
+					_, err := deps.catalog.Commit(ctx, repo, "main", "First commit!", t.Name(), nil, nil, nil, false)
+					testutil.MustDo(t, "Commit", err)
+				}
+
+				userMetadataMap := map[string]string{
+					"foo": "bar",
+					"baz": "quux",
+				}
+
+				body := apigen.UpdateObjectUserMetadataJSONRequestBody{
+					Set: apigen.ObjectUserMetadata{
+						AdditionalProperties: userMetadataMap,
+					},
+				}
+
+				resp, err := clt.UpdateObjectUserMetadataWithResponse(ctx, repo, "main",
+					&apigen.UpdateObjectUserMetadataParams{Path: objPath},
+					body,
+				)
+				verifyResponseOK(t, resp, err)
+
+				// Verify that it was set
+				statResp, err := clt.StatObjectWithResponse(ctx, repo, "main",
+					&apigen.StatObjectParams{
+						Path:         objPath,
+						UserMetadata: swag.Bool(true),
+					},
+				)
+				verifyResponseOK(t, statResp, err)
+				objectStats := statResp.JSON200
+				if diffs := deep.Equal(objectStats.Metadata.AdditionalProperties, userMetadataMap); diffs != nil {
+					t.Errorf("did not get expected metadata, diffs %s", diffs)
+				}
+			})
 		}
-
-		resp, err := clt.UpdateObjectUserMetadataWithResponse(ctx, repo, "main",
-			&apigen.UpdateObjectUserMetadataParams{Path: objPath},
-			body,
-		)
-		verifyResponseOK(t, resp, err)
-
-		// Verify that it was set
-		statResp, err := clt.StatObjectWithResponse(ctx, repo, "main",
-			&apigen.StatObjectParams{
-				Path:         objPath,
-				UserMetadata: swag.Bool(true),
-			},
-		)
-		verifyResponseOK(t, statResp, err)
-		objectStats := statResp.JSON200
-		if diffs := deep.Equal(objectStats.Metadata.AdditionalProperties, userMetadataMap); diffs != nil {
-			t.Errorf("did not get expected metadata, diffs %s", diffs)
-		}
-	})
+	}
 
 	t.Run("update metadata not found", func(t *testing.T) {
 		const objPath = "foo/not/found/bar"

@@ -541,6 +541,10 @@ type KeyValueStore interface {
 	// Set stores value on repository / branch by key. nil value is a valid value for tombstone
 	Set(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, value Value, opts ...SetOptionsFunc) error
 
+	// Update atomically runs update on repository / branch by key.  (Of course, if entry
+	// is only on committed, the updated entry will still be created (atomically) on staging.)
+	Update(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, update ValueUpdateFunc, opts ...SetOptionsFunc) error
+
 	// Delete value from repository / branch by key
 	Delete(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, opts ...SetOptionsFunc) error
 
@@ -1793,8 +1797,7 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 }
 
 // safeBranchWrite repeatedly attempts to perform stagingOperation, retrying
-// if the staging token changes during the write.  It never backs off.  It
-// returns the number of times it tried -- between 1 and options.MaxTries.
+// if the staging token changes during the write.  It never backs off.
 func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repository *RepositoryRecord, branchID BranchID,
 	options safeBranchWriteOptions, stagingOperation func(branch *Branch) error, operation string,
 ) error {
@@ -1839,6 +1842,47 @@ func (g *Graveler) safeBranchWrite(ctx context.Context, log logging.Logger, repo
 		return fmt.Errorf("safe branch write: %w (last failure %s)", ErrTooManyTries, err)
 	}
 	return nil
+}
+
+func (g *Graveler) Update(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, update ValueUpdateFunc, opts ...SetOptionsFunc) error {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrWriteToProtectedBranch
+	}
+
+	options := NewSetOptions(opts)
+	if repository.ReadOnly && !options.Force {
+		return ErrReadOnlyRepository
+	}
+
+	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "update_user_metadata"})
+
+	// committedValue, if non-nil is a value read from either uncommitted or committed.  Usually
+	// it is read from committed.  If there is a value on staging, that entry will be modified
+	// and committedValue will never be read.
+	var committedValue *Value
+
+	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
+		return g.StagingManager.Update(ctx, branch.StagingToken, key, func(currentValue *Value) (*Value, error) {
+			if currentValue == nil {
+				// Object not on staging: need to update committed value.
+				if committedValue == nil {
+					committedValue, err = g.Get(ctx, repository, Ref(branchID), key)
+					if err != nil {
+						// (Includes ErrNotFound)
+						return nil, fmt.Errorf("read from committed: %w", err)
+					}
+				}
+				// Get always returns a non-nil value or an error.
+				currentValue = committedValue
+			}
+			return update(currentValue)
+		})
+	}, "update_metadata")
+	return err
 }
 
 func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, branchID BranchID, key Key, opts ...SetOptionsFunc) error {
