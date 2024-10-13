@@ -1861,8 +1861,8 @@ func (g *Graveler) Update(ctx context.Context, repository *RepositoryRecord, bra
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "update_user_metadata"})
 
 	// committedValue, if non-nil is a value read from either uncommitted or committed.  Usually
-	// it it is read from committed.  If there is a value on staging, that entry will be
-	// modified and committedValue will never be read.
+	// it is read from committed.  If there is a value on staging, that entry will be modified
+	// and committedValue will never be read.
 	var committedValue *Value
 
 	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
