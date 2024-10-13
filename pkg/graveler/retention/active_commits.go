@@ -21,18 +21,28 @@ type CommitsMap struct {
 	ctx          context.Context
 	Log          logging.Logger
 	NumMisses    int64
-	CommitGetter *RepositoryCommitGetter
+	CommitGetter RepositoryCommitGetter
 	Map          map[graveler.CommitID]CommitNode
 }
 
-func NewCommitsMap(ctx context.Context, commitGetter *RepositoryCommitGetter) CommitsMap {
+func NewCommitsMap(ctx context.Context, commitGetter RepositoryCommitGetter) (CommitsMap, error) {
+	initialMap := make(map[graveler.CommitID]CommitNode)
+	it, err := commitGetter.List(ctx)
+	if err != nil {
+		return CommitsMap{}, fmt.Errorf("list existing commits into map: %w", err)
+	}
+	defer it.Close()
+	for it.Next() {
+		commit := it.Value()
+		initialMap[commit.CommitID] = nodeFromCommit(commit.Commit)
+	}
 	return CommitsMap{
 		ctx:          ctx,
 		Log:          logging.FromContext(ctx),
 		NumMisses:    int64(0),
 		CommitGetter: commitGetter,
-		Map:          make(map[graveler.CommitID]CommitNode),
-	}
+		Map:          initialMap,
+	}, nil
 }
 
 // Set sets a commit.  It will not be looked up again in CommitGetter.
@@ -52,6 +62,7 @@ func (c *CommitsMap) Get(id graveler.CommitID) (CommitNode, error) {
 	if err != nil {
 		return CommitNode{}, fmt.Errorf("get missing commit ID %s: %w", id, err)
 	}
+	ret = nodeFromCommit(commit)
 	c.Map[id] = ret
 	c.NumMisses++
 	c.Log.WithFields(logging.Fields{
@@ -59,7 +70,7 @@ func (c *CommitsMap) Get(id graveler.CommitID) (CommitNode, error) {
 		"created":   ret.CreationDate,
 		"age":       time.Since(ret.CreationDate),
 	}).Warn("Loaded single commit, probably new")
-	return nodeFromCommit(commit), nil
+	return ret, nil
 }
 
 // GetMap returns the entire map of commits.  It is probably incorrect to
@@ -88,22 +99,15 @@ func nodeFromCommit(commit *graveler.Commit) CommitNode {
 // GetGarbageCollectionCommits returns the sets of active commits, according to the repository's garbage collection rules.
 // See https://github.com/treeverse/lakeFS/issues/1932 for more details.
 // Upon completion, the given startingPointIterator is closed.
-func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCStartingPointIterator, commitGetter *RepositoryCommitGetter, rules *graveler.GarbageCollectionRules) (map[graveler.CommitID]graveler.MetaRangeID, error) {
+func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCStartingPointIterator, commitGetter RepositoryCommitGetter, rules *graveler.GarbageCollectionRules) (map[graveler.CommitID]graveler.MetaRangeID, error) {
 	// From each starting point in the given startingPointIterator, it iterates through its main ancestry.
 	// All commits reached are added to the active set, until and including the first commit performed before the start of the retention period.
 	processed := make(map[graveler.CommitID]time.Time)
 	activeMap := make(map[graveler.CommitID]struct{})
 
-	commitsIterator, err := commitGetter.List(ctx)
+	commitsMap, err := NewCommitsMap(ctx, commitGetter)
 	if err != nil {
-		return nil, err
-	}
-	commitsMap := NewCommitsMap(ctx, commitGetter)
-	defer commitsIterator.Close()
-	for commitsIterator.Next() {
-		commitRecord := commitsIterator.Value()
-		node := nodeFromCommit(commitRecord.Commit)
-		commitsMap.Map[commitRecord.CommitID] = node
+		return nil, fmt.Errorf("initial read commits: %w", err)
 	}
 
 	now := time.Now()

@@ -87,16 +87,21 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionUncommitted(ctx context.
 	}, stat.Size(), fd, block.PutOpts{})
 }
 
-type RepositoryCommitGetter struct {
+type RepositoryCommitGetter interface {
+	List(ctx context.Context) (graveler.CommitIterator, error)
+	Get(ctx context.Context, id graveler.CommitID) (*graveler.Commit, error)
+}
+
+type repositoryCommitGetter struct {
 	refManager graveler.RefManager
 	repository *graveler.RepositoryRecord
 }
 
-func (r *RepositoryCommitGetter) List(ctx context.Context) (graveler.CommitIterator, error) {
+func (r *repositoryCommitGetter) List(ctx context.Context) (graveler.CommitIterator, error) {
 	return r.refManager.ListCommits(ctx, r.repository)
 }
 
-func (r *RepositoryCommitGetter) Get(ctx context.Context, id graveler.CommitID) (*graveler.Commit, error) {
+func (r *repositoryCommitGetter) Get(ctx context.Context, id graveler.CommitID) (*graveler.Commit, error) {
 	return r.refManager.GetCommit(ctx, r.repository, id)
 }
 
@@ -153,7 +158,7 @@ func (m *GarbageCollectionManager) SaveRules(ctx context.Context, storageNamespa
 }
 
 func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules) (string, error) {
-	commitGetter := &RepositoryCommitGetter{
+	commitGetter := &repositoryCommitGetter{
 		refManager: m.refManager,
 		repository: repository,
 	}
