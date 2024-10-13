@@ -72,6 +72,9 @@ type Configuration struct {
 		EndpointURL lakefsconfig.OnlyString `mapstructure:"endpoint_url"`
 		Retries     RetriesCfg              `mapstructure:"retries"`
 	} `mapstructure:"server"`
+	Options struct {
+		Parallelism int `mapstructure:"parallelism"`
+	} `mapstructure:"Job"`
 	Metastore struct {
 		Type lakefsconfig.OnlyString `mapstructure:"type"`
 		Hive struct {
@@ -153,9 +156,10 @@ const (
 	parallelismFlagName   = "parallelism"
 	noProgressBarFlagName = "no-progress"
 
-	defaultSyncParallelism = 25
-	defaultSyncPresign     = true
-	defaultNoProgress      = false
+	defaultParallelismConfig = -1
+	defaultSyncParallelism   = 25
+	defaultSyncPresign       = true
+	defaultNoProgress        = false
 
 	myRepoExample   = "lakefs://my-repo"
 	myBucketExample = "s3://my-bucket"
@@ -574,6 +578,7 @@ func initConfig() {
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
 	viper.SetDefault("local.skip_non_regular_files", false)
+	viper.SetDefault("job.parallelism", defaultParallelismConfig)
 
 	cfgErr = viper.ReadInConfig()
 }

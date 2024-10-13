@@ -74,7 +74,11 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	defer s.progressBar.Stop()
 
 	wg, ctx := errgroup.WithContext(s.ctx)
-	for i := 0; i < s.cfg.SyncFlags.Parallelism; i++ {
+	parallelismToUse := s.cfg.Parallelism
+	if parallelismToUse <= 0 {
+		parallelismToUse = s.cfg.SyncFlags.Parallelism
+	}
+	for i := 0; i < parallelismToUse; i++ {
 		wg.Go(func() error {
 			for change := range changeSet {
 				if err := s.apply(ctx, rootPath, remote, change); err != nil {

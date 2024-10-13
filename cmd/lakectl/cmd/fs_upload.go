@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -21,6 +23,7 @@ var fsUploadCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
+		start := time.Now()
 		client := getClient()
 		pathURI, _ := getSyncArgs(args, true, false)
 		syncFlags := getSyncFlags(cmd, client)
@@ -63,6 +66,7 @@ var fsUploadCmd = &cobra.Command{
 		}()
 		s := local.NewSyncManager(ctx, client, getHTTPClient(), local.Config{
 			SyncFlags:           syncFlags,
+			Parallelism:         cfg.Options.Parallelism,
 			SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
 			IncludePerm:         false,
 		})
@@ -81,6 +85,9 @@ var fsUploadCmd = &cobra.Command{
 			Operation: "Upload",
 			Tasks:     s.Summary(),
 		})
+		finish := time.Since(start)
+		fmt.Printf("Execution time: %s\n", finish)
+
 	},
 }
 

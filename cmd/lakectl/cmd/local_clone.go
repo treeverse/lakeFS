@@ -88,6 +88,7 @@ var localCloneCmd = &cobra.Command{
 		sigCtx := localHandleSyncInterrupt(ctx, idx, string(cloneOperation))
 		s := local.NewSyncManager(sigCtx, client, getHTTPClient(), local.Config{
 			SyncFlags:           syncFlags,
+			Parallelism:         cfg.Options.Parallelism,
 			SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
 			IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
 			IncludeUID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,
