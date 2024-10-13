@@ -74,7 +74,7 @@ type Configuration struct {
 	} `mapstructure:"server"`
 	Options struct {
 		Parallelism int `mapstructure:"parallelism"`
-	} `mapstructure:"Job"`
+	} `mapstructure:"options"`
 	Metastore struct {
 		Type lakefsconfig.OnlyString `mapstructure:"type"`
 		Hive struct {
@@ -578,7 +578,7 @@ func initConfig() {
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
 	viper.SetDefault("local.skip_non_regular_files", false)
-	viper.SetDefault("job.parallelism", defaultParallelismConfig)
+	viper.SetDefault("options.parallelism", defaultParallelismConfig)
 
 	cfgErr = viper.ReadInConfig()
 }
