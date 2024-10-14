@@ -934,7 +934,7 @@ func (s *AuthService) ListUserExternalPrincipals(_ context.Context, _ string, _ 
 }
 
 func (s *AuthService) getSetupTimestamp(ctx context.Context) (time.Time, error) {
-	valWithPred, err := s.store.Get(ctx, []byte(ServerPartitionKey), []byte(auth.SetupTimestampKeyName))
+	valWithPred, err := s.store.Get(ctx, []byte(ServerPartitionKey), []byte(model.MetadataKeyPath(auth.SetupTimestampKeyName)))
 	if err != nil {
 		return time.Time{}, err
 	}
