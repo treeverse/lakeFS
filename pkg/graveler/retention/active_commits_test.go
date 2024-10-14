@@ -2,6 +2,8 @@ package retention
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sort"
 	"testing"
 	"time"
@@ -56,6 +58,111 @@ func findMainAncestryLeaves(now time.Time, heads map[string]int32, commits map[s
 		return res[i].CommitID < res[j].CommitID
 	})
 	return res
+}
+
+// fakeRepositoryCommitGetter is a RepositoryCommitGetter used to test CommitsMap.
+type fakeRepositoryCommitGetter struct {
+	// Commits is the list of pre-existing commits.
+	Commits []*graveler.CommitRecord
+	// AnotherCommit, if not nil, is returned from Get (but not List).
+	// It can only be returned once.
+	AnotherCommit *graveler.CommitRecord
+	// GetCalled is true after the first call to Get.
+	GetCalled bool
+}
+
+var errTooManyGets = errors.New("more than one Get on fakeRepositoryCommitGetter")
+
+func (c *fakeRepositoryCommitGetter) List(_ context.Context) (graveler.CommitIterator, error) {
+	return testutil.NewFakeCommitIterator(c.Commits), nil
+}
+
+func (c *fakeRepositoryCommitGetter) Get(_ context.Context, id graveler.CommitID) (*graveler.Commit, error) {
+	if c.AnotherCommit == nil {
+		return nil, fmt.Errorf("%w: Get(%s) when no other commits", graveler.ErrNotFound, id)
+	}
+	if id != c.AnotherCommit.CommitID {
+		return nil, fmt.Errorf("%w: Get(%s) when expecting Get(%s)", graveler.ErrNotFound, id, c.AnotherCommit.CommitID)
+	}
+	if c.GetCalled {
+		return nil, fmt.Errorf("%s: %w", id, errTooManyGets)
+	}
+	c.GetCalled = true
+	return c.AnotherCommit.Commit, nil
+}
+
+func TestCommitsMap(t *testing.T) {
+	cases := []struct {
+		Name         string
+		CommitGetter *fakeRepositoryCommitGetter
+	}{
+		{
+			Name: "FromList",
+			CommitGetter: &fakeRepositoryCommitGetter{
+				Commits: []*graveler.CommitRecord{
+					{
+						CommitID: "a",
+						Commit: &graveler.Commit{
+							MetaRangeID: graveler.MetaRangeID("metarange:A"),
+						},
+					},
+					{
+						CommitID: "b",
+						Commit: &graveler.Commit{
+							MetaRangeID: graveler.MetaRangeID("metarange:B"),
+						},
+					},
+				},
+				AnotherCommit: nil,
+			},
+		}, {
+			Name: "FromGet",
+			CommitGetter: &fakeRepositoryCommitGetter{
+				Commits: []*graveler.CommitRecord{
+					{
+						CommitID: "a",
+						Commit: &graveler.Commit{
+							MetaRangeID: graveler.MetaRangeID("metarange:A"),
+						},
+					},
+				},
+				AnotherCommit: &graveler.CommitRecord{
+					CommitID: "b",
+					Commit: &graveler.Commit{
+						MetaRangeID: graveler.MetaRangeID("metarange:B"),
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			commitsMap, err := NewCommitsMap(context.Background(), tc.CommitGetter)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			a, err := commitsMap.Get(graveler.CommitID("a"))
+			if err != nil {
+				t.Errorf("Failed to get a: %s", err)
+			}
+			if a.MetaRangeID != "metarange:A" {
+				t.Errorf("Got metarange %s for a, expected \"metarange:A\"", a.MetaRangeID)
+			}
+			b, err := commitsMap.Get(graveler.CommitID("b"))
+			if err != nil {
+				t.Errorf("Failed to get b: %s", err)
+			}
+			if b.MetaRangeID != "metarange:B" {
+				t.Errorf("Got metarange %s for b, expected \"metarange:B\"", b.MetaRangeID)
+			}
+			c, err := commitsMap.Get(graveler.CommitID("c"))
+			if !errors.Is(err, graveler.ErrNotFound) {
+				t.Errorf("Got node %+v, error %s for c, expected not found", c.MetaRangeID, err)
+			}
+		})
+	}
 }
 
 func TestActiveCommits(t *testing.T) {
@@ -264,7 +371,7 @@ func TestActiveCommits(t *testing.T) {
 
 			gcCommits, err := GetGarbageCollectionCommits(ctx, NewGCStartingPointIterator(
 				testutil.NewFakeCommitIterator(findMainAncestryLeaves(now, tst.headsRetentionDays, tst.commits)),
-				testutil.NewFakeBranchIterator(branches)), &RepositoryCommitGetter{
+				testutil.NewFakeBranchIterator(branches)), &repositoryCommitGetter{
 				refManager: refManagerMock,
 				repository: repositoryRecord,
 			}, garbageCollectionRules)
