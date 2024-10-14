@@ -7,6 +7,8 @@ package io.treeverse.lakefs.kv;
 
 // message data model for weak ownership
 message WeakOwnership {
+    // owner is a unique identifier for this particular instantiation.  Different concurrent owners
+    // must have different owner strings.  Easiest to set it to something random.
     string owner = 1;
     google.protobuf.Timestamp expires = 2;
     string comment = 3;
