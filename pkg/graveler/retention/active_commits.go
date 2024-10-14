@@ -109,6 +109,12 @@ func GetGarbageCollectionCommits(ctx context.Context, startingPointIterator *GCS
 	if err != nil {
 		return nil, fmt.Errorf("initial read commits: %w", err)
 	}
+	// Observe NumMisses.  This should not be a metric unless we see it happen a _lot_.
+	defer func() {
+		logging.FromContext(ctx).
+			WithField("num_misses", commitsMap.NumMisses).
+			Info("Commits map - misses are due to concurrent commits")
+	}()
 
 	now := time.Now()
 	defer startingPointIterator.Close()
