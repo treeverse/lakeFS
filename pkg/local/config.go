@@ -9,6 +9,7 @@ const (
 )
 
 type SyncFlags struct {
+	SetParallelism   bool
 	Parallelism      int
 	Presign          bool
 	PresignMultipart bool
