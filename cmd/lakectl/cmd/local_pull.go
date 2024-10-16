@@ -68,7 +68,6 @@ var localPullCmd = &cobra.Command{
 		sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(pullOperation))
 		s := local.NewSyncManager(sigCtx, client, getHTTPClient(), local.Config{
 			SyncFlags:           syncFlags,
-			Parallelism:         cfg.Options.Parallelism,
 			SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
 			IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
 			IncludeUID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,

@@ -63,7 +63,6 @@ var fsUploadCmd = &cobra.Command{
 		}()
 		s := local.NewSyncManager(ctx, client, getHTTPClient(), local.Config{
 			SyncFlags:           syncFlags,
-			Parallelism:         cfg.Options.Parallelism,
 			SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
 			IncludePerm:         false,
 		})

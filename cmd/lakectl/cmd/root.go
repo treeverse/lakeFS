@@ -248,11 +248,13 @@ func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.
 	if parallelism < 1 {
 		DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
 	}
-	setParallelism := cmd.Flags().Changed(parallelismFlagName)
+	changed := cmd.Flags().Changed(parallelismFlagName)
+	if viper.IsSet("options.parallelism") && !changed {
+		parallelism = cfg.Options.Parallelism
+	}
 
 	presignMode := getPresignMode(cmd, client)
 	return local.SyncFlags{
-		SetParallelism:   setParallelism,
 		Parallelism:      parallelism,
 		Presign:          presignMode.Enabled,
 		PresignMultipart: presignMode.Multipart,
@@ -579,7 +581,5 @@ func initConfig() {
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
 	viper.SetDefault("local.skip_non_regular_files", false)
-	viper.SetDefault("options.parallelism", defaultParallelism)
-
 	cfgErr = viper.ReadInConfig()
 }
