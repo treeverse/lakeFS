@@ -72,6 +72,9 @@ type Configuration struct {
 		EndpointURL lakefsconfig.OnlyString `mapstructure:"endpoint_url"`
 		Retries     RetriesCfg              `mapstructure:"retries"`
 	} `mapstructure:"server"`
+	Options struct {
+		Parallelism int `mapstructure:"parallelism"`
+	} `mapstructure:"options"`
 	Metastore struct {
 		Type lakefsconfig.OnlyString `mapstructure:"type"`
 		Hive struct {
@@ -153,9 +156,9 @@ const (
 	parallelismFlagName   = "parallelism"
 	noProgressBarFlagName = "no-progress"
 
-	defaultSyncParallelism = 25
-	defaultSyncPresign     = true
-	defaultNoProgress      = false
+	defaultParallelism = 25
+	defaultSyncPresign = true
+	defaultNoProgress  = false
 
 	myRepoExample   = "lakefs://my-repo"
 	myBucketExample = "s3://my-bucket"
@@ -178,7 +181,7 @@ func withRecursiveFlag(cmd *cobra.Command, usage string) {
 }
 
 func withParallelismFlag(cmd *cobra.Command) {
-	cmd.Flags().IntP(parallelismFlagName, "p", defaultSyncParallelism,
+	cmd.Flags().IntP(parallelismFlagName, "p", defaultParallelism,
 		"Max concurrent operations to perform")
 }
 
@@ -244,6 +247,10 @@ func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.
 	parallelism := Must(cmd.Flags().GetInt(parallelismFlagName))
 	if parallelism < 1 {
 		DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
+	}
+	changed := cmd.Flags().Changed(parallelismFlagName)
+	if viper.IsSet("options.parallelism") && !changed {
+		parallelism = cfg.Options.Parallelism
 	}
 
 	presignMode := getPresignMode(cmd, client)
@@ -574,6 +581,5 @@ func initConfig() {
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
 	viper.SetDefault("local.skip_non_regular_files", false)
-
 	cfgErr = viper.ReadInConfig()
 }
