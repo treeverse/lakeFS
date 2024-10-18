@@ -2715,7 +2715,6 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 
 	// copy data to a new physical address
 	dstEntry := *srcEntry
-	dstEntry.CreationDate = time.Now()
 	dstEntry.Path = destPath
 	dstEntry.AddressType = AddressTypeRelative
 	dstEntry.PhysicalAddress = c.PathProvider.NewPath()
@@ -2740,6 +2739,9 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	if err != nil {
 		return nil, err
 	}
+
+	// Update creation date only after actual copy!!!
+	dstEntry.CreationDate = time.Now()
 
 	// create entry for the final copy
 	err = c.CreateEntry(ctx, destRepository, destBranch, dstEntry, opts...)
