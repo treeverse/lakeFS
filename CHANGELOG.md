@@ -1,5 +1,16 @@
 # Changelog
 
+# v1.39.0
+
+:new: What's new:
+- lakectl log: add option to filter merge commits (#8142)
+- Add a deprecation and upgrade warning to python-legacy client (#8195)
+- Make update object metadata API atomic (#8264)
+
+:bug: Bugs fixed:
+- Fix: GC: Read commit explicitly when it is missing from prescanned commits (#8282)
+- Fix: Copy object mtime (#8291)
+
 # v1.38.0
 
 :new: What's new:
