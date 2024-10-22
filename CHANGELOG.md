@@ -1,6 +1,6 @@
 # Changelog
 
-# v1.39.0
+# v1.39.2
 
 :new: What's new:
 - lakectl log: add option to filter merge commits (#8142)
