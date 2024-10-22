@@ -2715,7 +2715,6 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 
 	// copy data to a new physical address
 	dstEntry := *srcEntry
-	dstEntry.CreationDate = time.Now()
 	dstEntry.Path = destPath
 	dstEntry.AddressType = AddressTypeRelative
 	dstEntry.PhysicalAddress = c.PathProvider.NewPath()
@@ -2740,6 +2739,11 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	if err != nil {
 		return nil, err
 	}
+
+	// Update creation date only after actual copy!!!
+	// The actual file upload can take a while and depend on many factors so we would like
+	// The mtime (creationDate) in lakeFS to be as close as possible to the mtime in the underlying storage
+	dstEntry.CreationDate = time.Now()
 
 	// create entry for the final copy
 	err = c.CreateEntry(ctx, destRepository, destBranch, dstEntry, opts...)
