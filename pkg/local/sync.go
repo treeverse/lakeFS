@@ -72,10 +72,9 @@ func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, htt
 func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *Change) error {
 	s.progressBar.Start()
 	defer s.progressBar.Stop()
-	wg, ctx := errgroup.WithContext(s.ctx)
-	parallelism := s.cfg.SyncFlags.Parallelism
 
-	for i := 0; i < parallelism; i++ {
+	wg, ctx := errgroup.WithContext(s.ctx)
+	for i := 0; i < s.cfg.SyncFlags.Parallelism; i++ {
 		wg.Go(func() error {
 			for change := range changeSet {
 				if err := s.apply(ctx, rootPath, remote, change); err != nil {
