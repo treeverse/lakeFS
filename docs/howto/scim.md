@@ -74,7 +74,7 @@ To set up your IdP, you'll need the lakeFS Cloud SCIM provisioning endpoint and 
 In the Entra ID admin dashboard, go to **Enterprise Applications** and choose the lakeFS Cloud enterprise application from the list. Then click **Provisioning** in the sidebar and then **Get Started**.
 
 1. In the provisioning settings set mode to **Automatic**
-2. In **Tenant URL** enter the URL from the lakeFS Cloud provisioning settings
+2. In **Tenant URL** enter the URL from the lakeFS Cloud provisioning settings. You will need to append `?aadOptscim062020` to the end of the URL to ensure proper integration with Entra ID.
 3. In **Secret Token** paste the token you copied in the previous step. If you haven't created a token yet, you may do so now
 4. Click **Test Connection**
 5. If the test fails, please ensure you've entered the correct SCIM endpoint URL from lakeFS Cloud and copied the token correctly. Otherwise, click "Save" at the top of the settings panel
