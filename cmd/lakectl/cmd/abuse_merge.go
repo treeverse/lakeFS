@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
+	"sync"
 	"syscall"
 	"time"
 
+	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -16,6 +17,57 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil/stress"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
+
+// removeBranches removes all branches whose names start with prefix, in
+// parallel.  It reports (all) failures but does not fail.
+func removeBranches(ctx context.Context, client *apigen.ClientWithResponses, parallelism int, repo, prefix string) {
+	toDelete := make(chan string)
+	pfx := apigen.PaginationPrefix(prefix)
+	after := apigen.PaginationAfter("")
+	go func() {
+		defer close(toDelete)
+		for {
+			resp, err := client.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{
+				Prefix: &pfx,
+				After:  &after,
+			})
+			if err != nil {
+				fmt.Printf("Failed to request to list branches %s/%s after %s: %s\n", repo, pfx, after, err)
+			}
+			if resp.JSON200 == nil {
+				fmt.Printf("Failed to list branches %s/%s after %s: %s\n", repo, pfx, after, resp.Status())
+				break
+			}
+			for _, result := range resp.JSON200.Results {
+				toDelete <- result.Id
+			}
+			if !resp.JSON200.Pagination.HasMore {
+				break
+			}
+			after = apigen.PaginationAfter(resp.JSON200.Pagination.NextOffset)
+		}
+	}()
+
+	wg := &sync.WaitGroup{}
+	wg.Add(parallelism)
+	for i := 0; i < parallelism; i++ {
+		go func() {
+			for branch := range toDelete {
+				resp, err := client.DeleteBranchWithResponse(ctx, repo, branch, &apigen.DeleteBranchParams{})
+				if err != nil {
+					fmt.Printf("Failed to request %s deletion: %s\n", branch, err)
+					continue
+				}
+				if resp.StatusCode() != http.StatusNoContent {
+					fmt.Printf("Failed to delete %s: %s\n", branch, resp.Status())
+					continue
+				}
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
 
 var abuseMergeCmd = &cobra.Command{
 	Use:               "merge <branch URI>",
@@ -30,16 +82,22 @@ var abuseMergeCmd = &cobra.Command{
 
 		fmt.Println("Source branch: ", u)
 
+		branchPrefix := "merge-" + nanoid.Must()
+		fmt.Println("Branch prefix: ", branchPrefix)
+
 		generator := stress.NewGenerator("merge", parallelism, stress.WithSignalHandlersFor(os.Interrupt, syscall.SIGTERM))
 
-		// generate randomly selected keys as input
+		client := getClient()
+
+		// generate branch names as input
 		generator.Setup(func(add stress.GeneratorAddFn) {
 			for i := 0; i < amount; i++ {
-				add(strconv.Itoa(i + 1))
+				add(fmt.Sprintf("%s-%04d", branchPrefix, i+1))
 			}
 		})
 
-		client := getClient()
+		defer removeBranches(cmd.Context(), client, parallelism, u.Repository, branchPrefix)
+
 		resp, err := client.GetRepositoryWithResponse(cmd.Context(), u.Repository)
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		if resp.JSON200 == nil {
