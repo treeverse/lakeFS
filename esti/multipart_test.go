@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -23,6 +24,11 @@ const (
 )
 
 func TestMultipartUpload(t *testing.T) {
+	// timeSlippage is a bound on the time difference between the local server and the S3
+	// server.  It is used to verify that the "Last-Modified" time is actually close to the
+	// CreateMultipartUpload time.
+	const timeSlippage = time.Millisecond * 150
+
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	file := "multipart_file"
@@ -36,6 +42,8 @@ func TestMultipartUpload(t *testing.T) {
 	require.NoError(t, err, "failed to create multipart upload")
 	logger.Info("Created multipart upload request")
 
+	uploadTime := time.Now()
+
 	parts := make([][]byte, multipartNumberOfParts)
 	var partsConcat []byte
 	for i := 0; i < multipartNumberOfParts; i++ {
@@ -44,6 +52,11 @@ func TestMultipartUpload(t *testing.T) {
 	}
 
 	completedParts := uploadMultipartParts(t, ctx, logger, resp, parts, 0)
+
+	// Object should have Last-Modified time at around time of MPU creation.  Server times
+	// after this Sleep will be more than timeSlippage away from uploadTime.
+	time.Sleep(2 * timeSlippage)
+
 	completeResponse, err := uploadMultipartComplete(ctx, svc, resp, completedParts)
 	require.NoError(t, err, "failed to complete multipart upload")
 
@@ -55,6 +68,14 @@ func TestMultipartUpload(t *testing.T) {
 	if !bytes.Equal(partsConcat, getResp.Body) {
 		t.Fatalf("uploaded object did not match")
 	}
+
+	statResp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{Path: file})
+	require.NoError(t, err, "failed to get object")
+	require.Equal(t, http.StatusOK, getResp.StatusCode())
+	lastModified := time.Unix(statResp.JSON200.Mtime, 0)
+	require.Less(t, lastModified.Sub(uploadTime).Abs(), timeSlippage,
+		"(remote) last modified time %s too far away from (local) upload time %s",
+		lastModified, uploadTime)
 }
 
 func TestMultipartUploadAbort(t *testing.T) {

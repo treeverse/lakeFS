@@ -384,6 +384,14 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 
 	writeTime := time.Now()
 	checksum := httputil.StripQuotesAndSpaces(mpuResp.ETag)
+	if mpuResp.MTime == nil {
+		// This can be _really_ wrong when the storage layer assigns the time of MPU
+		// creation.  For instance, the S3 block adapter takes sure to return an MTime
+		// from headObject to ensure that we do have a time here.
+		writeTime = time.Now()
+	} else {
+		writeTime = *mpuResp.MTime
+	}
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
 		Path(params.Path).
