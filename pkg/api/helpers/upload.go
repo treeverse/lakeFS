@@ -36,6 +36,9 @@ const DefaultUploadPartSize = MinUploadPartSize
 // DefaultUploadConcurrency is the default number of goroutines to spin up when uploading a multipart upload
 const DefaultUploadConcurrency = 5
 
+// DefaultUploadBufferSize is the default buffer size to use when copying data from a reader to a writer
+const DefaultUploadBufferSize = 32 * 1024
+
 // ClientUpload uploads contents as a file via lakeFS
 func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterface, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker) (*apigen.ObjectStats, error) {
 	pr, pw := io.Pipe()
@@ -70,7 +73,7 @@ func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterfac
 			_ = pw.CloseWithError(err)
 			return
 		}
-		if _, err := io.Copy(cw, contents); err != nil {
+		if err := copyBuffer(cw, contents, DefaultUploadBufferSize); err != nil {
 			_ = pw.CloseWithError(err)
 			return
 		}
@@ -98,6 +101,23 @@ func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterfac
 		return nil, ResponseAsError(resp)
 	}
 	return resp.JSON201, nil
+}
+
+func copyBuffer(dst io.Writer, src io.Reader, bufferSize int) error {
+	buf := make([]byte, bufferSize)
+	for {
+		n, err := src.Read(buf)
+		if err != nil && err != io.EOF {
+			return err
+		}
+		if n == 0 {
+			break
+		}
+		if _, err := dst.Write(buf[:n]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // PreSignUploader uploads contents as a file via lakeFS using presigned urls
