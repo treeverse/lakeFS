@@ -21,19 +21,21 @@ experimental
 > Standalone GC is only available for [lakeFS Enterprise]({% link enterprise/index.md %}).
 
 {: .note .warning }
-> Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC]({% link howto/garbage-collection/gc.md %}). Read through the [limitations](./standalone-gc.md#limitations) carefully and use at your own risk.
+> Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC]({% link howto/garbage-collection/gc.md %}). Read through the [limitations](./standalone-gc.md#limitations) carefully before using it.
 
 ## About
+
 Standalone GC is a limited version of the Spark-backed GC that runs without any external dependencies, as a standalone docker image.
 
-It only marks objects and does not delete them - Equivalent to the GC's [mark only mode]({% link howto/garbage-collection/gc.md %}#mark-only-mode). \
-More about that in the [Output](./standalone-gc.md#output) section.
-
 ## Limitations
+
 1. Except for the [Lab tests](./standalone-gc.md#lab-tests) performed, there are no further guarantees about the performance profile of the Standalone GC. 
 2. Horizontal scale is not supported - Only a single instance of `lakefs-sgc` can operate at a time on a given repository.
+3. It only marks objects and does not delete them - Equivalent to the GC's [mark only mode]({% link howto/garbage-collection/gc.md %}#mark-only-mode). \
+   More about that in the [Output](./standalone-gc.md#output) section.
 
 ### Lab tests
+
 <TODO: update with final results once ready>
 
 Repository spec:
@@ -53,16 +55,16 @@ In this setup, we measured:
 
 ## Installation
 
-### 1. Obtain Dockerhub token
+### Step 1: Obtain Dockerhub token
 As an enterprise customer, you should already have a dockerhub token for the `externallakefs` user.
 If not, contact us at ___ (TODO: add mail/whaterver).
 
-### 2. Login to docker with this token
+### Step 2: Login to dockerhub with this token
 ```bash
 docker login -u <your token>
 ```
 
-### 3. Download the docker image
+### Step 3: Download the docker image
 Download the image from the [lakefs-sgc](https://hub.docker.com/repository/docker/treeverse/lakefs-sgc/general) repository:
 ```bash
 docker pull treeverse/lakefs-sgc:tagname
@@ -160,15 +162,25 @@ _RUN_ID_ is generated during runtime by the Standalone GC. You can find it in th
 
 In this prefix, you'll find 3 objects:
 - `deleted.json` - Containing all marked objects in a json format. 
-- `deleted.parquet` - Containing all marked objects in a parquet format.
+- `deleted.parquet` - Containing all marked objects in a parquet format, with the following schema:
+   ```
+  ┌─────────────┬─────────────┬─────────┬─────────┬─────────┬─────────┐
+  │ column_name │ column_type │  null   │   key   │ default │  extra  │
+  │   varchar   │   varchar   │ varchar │ varchar │ varchar │ varchar │
+  ├─────────────┼─────────────┼─────────┼─────────┼─────────┼─────────┤
+  │ address     │ VARCHAR     │ YES     │         │         │         │
+  └─────────────┴─────────────┴─────────┴─────────┴─────────┴─────────┘
+  ```
 - `summary.json` - A small json summarizing the GC run. Example:
 ```json
 {
-  "run_id": "gcoca17haabs73f2gtq0",
-  "success": true,
-  "first_slice": "gcss5tpsrurs73cqi6e0",
-  "start_time": "2024-10-27T13:19:26.890099059Z",
-  "cutoff_time": "2024-10-27T07:19:26.890099059Z",
-  "num_deleted_objects": 33000
+    "run_id": "gcoca17haabs73f2gtq0",
+    "success": true,
+    "first_slice": "gcss5tpsrurs73cqi6e0",
+    "start_time": "2024-10-27T13:19:26.890099059Z",
+    "cutoff_time": "2024-10-27T07:19:26.890099059Z",
+    "num_deleted_objects": 33000
 }
 ```
+
+To delete the objects marked by the GC, you'll need to manually read the `deleted.parquet` or `deleted.json` files, and delete each address from AWS. 
