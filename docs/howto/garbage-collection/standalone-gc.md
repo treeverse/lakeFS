@@ -26,9 +26,30 @@ experimental
 ## About
 Standalone GC is a limited version of the Spark-backed GC that runs without any external dependencies, as a standalone docker image.
 
+It only marks objects and does not delete them - Equivalent to the GC's [mark only mode]({% link howto/garbage-collection/gc.md %}#mark-only-mode). \
+More about that in the [Output](./standalone-gc.md#output) section.
+
 ## Limitations
-1. Tested in-lab under the following conditions: <TODO: publish acceptance and performance test results once ready>.
+1. Except for the [Lab tests](./standalone-gc.md#lab-tests) performed, there are no further guarantees about the performance profile of the Standalone GC. 
 2. Horizontal scale is not supported - Only a single instance of `lakefs-sgc` can operate at a time on a given repository.
+
+### Lab tests
+<TODO: update with final results once ready>
+
+Repository spec:
+
+- 100k objects
+- < 200 commits
+- 1 branch
+
+Machine spec:
+- 4GiB RAM
+- 8 CPUs
+
+In this setup, we measured:
+
+- Time: ~1 minute
+- Disk space: 120MiB
 
 ## Installation
 
@@ -68,7 +89,7 @@ The following configuration keys are available:
 | `logging.files_keep`       | Number of files to keep for logs rotation (relevant only if `logging.output` is set to a file path | 100                            | number                                                  |
 | `cache_dir`                | Directory to use for caching data during run                                                       | ~/.lakefs-sgc/data             | string                                                  |
 | `aws.max_page_size`        | Max number of items per page when listing objects in AWS                                           | not set (AWS defaults to 1000) | number                                                  |
-| `objects_min_age`          | Tells the GC Ignore any object that is last modified within this time frame ("cutoff time")        | "6h"                           | duration                                                |
+| `objects_min_age`          | Ignore any object that is last modified within this time frame ("cutoff time")                     | "6h"                           | duration                                                |
 | `lakefs.endpoint_url`      | The URL to the lakeFS installation - should end with `/api/v1`                                     | NOT SET                        | URL                                                     |
 | `lakefs.access_key_id`     | Access key to the lakeFS installation                                                              | NOT SET                        | string                                                  |
 | `lakefs.secret_access_key` | Secret access key to the lakeFS installation                                                       | NOT SET                        | string                                                  |
@@ -128,4 +149,26 @@ docker run \
 -e LAKEFS_SGC_LAKEFS_SECRET_ACCESS_KEY=<your secret key> \
 -e LAKEFS_SGC_LOGGING_LEVEL=debug \
 treeverse/lakefs-sgc:<version> run <repository>
+```
+
+### Output
+`lakefs-sgc` will write its reports to `<REPOSITORY_STORAGE_NAMESPACE>/_lakefs/retention/gc/reports/<RUN_ID>/`. \
+_RUN_ID_ is generated during runtime by the Standalone GC. You can find it in the logs:
+```
+"Marking objects for deletion" ... run_id=gcoca17haabs73f2gtq0
+```
+
+In this prefix, you'll find 3 objects:
+- `deleted.json` - Containing all marked objects in a json format. 
+- `deleted.parquet` - Containing all marked objects in a parquet format.
+- `summary.json` - A small json summarizing the GC run. Example:
+```json
+{
+  "run_id": "gcoca17haabs73f2gtq0",
+  "success": true,
+  "first_slice": "gcss5tpsrurs73cqi6e0",
+  "start_time": "2024-10-27T13:19:26.890099059Z",
+  "cutoff_time": "2024-10-27T07:19:26.890099059Z",
+  "num_deleted_objects": 33000
+}
 ```
