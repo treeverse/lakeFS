@@ -23,6 +23,8 @@ experimental
 {: .note .warning }
 > Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC]({% link howto/garbage-collection/gc.md %}). Read through the [limitations](./standalone-gc.md#limitations) carefully before using it.
 
+{% include toc_2-3.html %}
+
 ## About
 
 Standalone GC is a limited version of the Spark-backed GC that runs without any external dependencies, as a standalone docker image.
@@ -59,7 +61,7 @@ In this setup, we measured:
 As an enterprise customer, you should already have a dockerhub token for the `externallakefs` user.
 If not, contact us at ___ (TODO: add mail/whaterver).
 
-### Step 2: Login to dockerhub with this token
+### Step 2: Login to Dockerhub with this token
 ```bash
 docker login -u <your token>
 ```
@@ -183,4 +185,5 @@ In this prefix, you'll find 3 objects:
 }
 ```
 
-To delete the objects marked by the GC, you'll need to manually read the `deleted.parquet` or `deleted.json` files, and delete each address from AWS. 
+### Deleting marked objects
+To delete the objects marked by the GC, you'll need to read the `deleted.parquet` or `deleted.json` files, and manually delete each address from AWS.
