@@ -26,8 +26,9 @@ const (
 func TestMultipartUpload(t *testing.T) {
 	// timeSlippage is a bound on the time difference between the local server and the S3
 	// server.  It is used to verify that the "Last-Modified" time is actually close to the
-	// CreateMultipartUpload time.
-	const timeSlippage = time.Millisecond * 150
+	// CreateMultipartUpload time.  BUT S3 provides this time only at a 1-second resolution.
+	// So a 1-second difference is possible.
+	const timeSlippage = time.Second
 
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
