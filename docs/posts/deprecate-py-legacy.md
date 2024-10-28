@@ -1,3 +1,9 @@
+---
+parent: posts
+date: 2024-10-28
+search_exclude: true
+---
+
 # :warning:  Deprecating `lakefs-client`, the legacy Python :snake: Client SDKs
 
 `lakefs-client` is now deprecated, and we will shortly publish its last
