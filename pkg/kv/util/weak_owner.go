@@ -262,7 +262,6 @@ func (w *WeakOwner) releaseIf(ctx context.Context, owner string, prefixedKey []b
 		log.Info("Lost ownership race before trying to release")
 		return nil
 	}
-	ownership.Owner = fmt.Sprintf("[released] %s", ownership.Owner)
 	// Set expiration to the beginning of time - definitely expired.
 	ownership.Expires.Reset()
 	err = kv.SetMsgIf(ctx, w.Store, weakOwnerPartition, prefixedKey, &ownership, predicate)

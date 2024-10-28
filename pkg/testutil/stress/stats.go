@@ -38,7 +38,7 @@ func (t *TotalStats) String() string {
 	if t.FirstError != nil {
 		ret = fmt.Sprintf("First error: %s\n", t.FirstError)
 	}
-	ret = ret + fmt.Sprintf("%d total with %d failures in %s\n%f successes/s\n%f failures/s",
+	ret += fmt.Sprintf("%d total with %d failures in %s\n%f successes/s\n%f failures/s",
 		t.NumTotal, t.NumErrors, t.Duration,
 		float64(t.NumTotal)/t.Duration.Seconds(),
 		float64(t.NumErrors)/t.Duration.Seconds(),
@@ -63,9 +63,6 @@ type ResultCollector struct {
 	totalCompleted   int64
 	totalErrors      int64
 	currentCompleted int64
-	// startTime is when collection started.  It is roughly equal to the
-	// start of the experiment.
-	startTime time.Time
 }
 
 func (rc *ResultCollector) flushCurrent() *Stats {
