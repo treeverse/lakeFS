@@ -12,6 +12,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -918,13 +919,13 @@ func (a *APIAuthService) Authorize(ctx context.Context, req *AuthorizationReques
 	if err != nil {
 		return nil, err
 	}
-
-	allowed := CheckPermissions(ctx, req.RequiredPermissions, req.Username, policies)
+	perm := &NeededPermissions{}
+	allowed, permissions := CheckPermissions(ctx, req.RequiredPermissions, req.Username, policies, perm)
 
 	if allowed != CheckAllow {
 		return &AuthorizationResponse{
 			Allowed: false,
-			Error:   ErrInsufficientPermissions,
+			Error:   errors.New(permissions.String()),
 		}, nil
 	}
 
@@ -1147,7 +1148,30 @@ func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, externalPr
 	}, nil
 }
 
-func CheckPermissions(ctx context.Context, node permissions.Node, username string, policies []*model.Policy) CheckResult {
+type NeededPermissions struct {
+	Denied       []model.Statement
+	Unauthorized []model.Statement
+}
+
+func (n *NeededPermissions) String() string {
+	if len(n.Denied) != 0 {
+		deniedStr := "denied from:\n"
+		for _, statement := range n.Denied {
+			deniedStr += strings.Join(statement.Action, "\n")
+		}
+		return deniedStr
+	}
+	if len(n.Unauthorized) != 0 {
+		permStr := "lacking permissions for:\n"
+		for _, statement := range n.Unauthorized {
+			permStr += strings.Join(statement.Action, "\n")
+		}
+		return permStr
+	}
+	return "--____"
+}
+
+func CheckPermissions(ctx context.Context, node permissions.Node, username string, policies []*model.Policy, perm *NeededPermissions) (CheckResult, *NeededPermissions) {
 	allowed := CheckNeutral
 	switch node.Type {
 	case permissions.NodeTypeNode:
@@ -1161,11 +1185,17 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 				for _, action := range stmt.Action {
 					if !wildcard.Match(action, node.Permission.Action) {
 						continue // not a matching action
+					} else {
+						perm.Unauthorized = append(perm.Unauthorized, stmt)
+
+						perm.Denied = append(perm.Denied, stmt)
+						fmt.Println("hihiihi")
 					}
 
 					if stmt.Effect == model.StatementEffectDeny {
 						// this is a "Deny" and it takes precedence
-						return CheckDeny
+						perm.Denied = append(perm.Denied, stmt)
+						return CheckDeny, perm
 					}
 
 					allowed = CheckAllow
@@ -1179,9 +1209,9 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 		// Denied - one of the permissions is Deny
 		// Natural - otherwise
 		for _, node := range node.Nodes {
-			result := CheckPermissions(ctx, node, username, policies)
+			result, perm := CheckPermissions(ctx, node, username, policies, perm)
 			if result == CheckDeny {
-				return CheckDeny
+				return CheckDeny, perm
 			}
 			if allowed != CheckAllow {
 				allowed = result
@@ -1194,18 +1224,18 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 		// Denied - one of the permissions is Deny
 		// Natural - otherwise
 		for _, node := range node.Nodes {
-			result := CheckPermissions(ctx, node, username, policies)
+			result, perm := CheckPermissions(ctx, node, username, policies, perm)
 			if result == CheckNeutral || result == CheckDeny {
-				return result
+				return result, perm
 			}
 		}
-		return CheckAllow
+		return CheckAllow, perm
 
 	default:
 		logging.FromContext(ctx).Error("unknown permission node type")
-		return CheckDeny
+		return CheckDeny, perm
 	}
-	return allowed
+	return allowed, perm
 }
 
 func interpolateUser(resource string, username string) string {

@@ -895,8 +895,8 @@ func (s *AuthService) Authorize(ctx context.Context, req *auth.AuthorizationRequ
 	if err != nil {
 		return nil, err
 	}
-
-	allowed := auth.CheckPermissions(ctx, req.RequiredPermissions, req.Username, policies)
+	perm := &auth.NeededPermissions{}
+	allowed, _ := auth.CheckPermissions(ctx, req.RequiredPermissions, req.Username, policies, perm)
 
 	if allowed != auth.CheckAllow {
 		return &auth.AuthorizationResponse{
