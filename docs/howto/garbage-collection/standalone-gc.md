@@ -59,7 +59,7 @@ In this setup, we measured:
 
 ### Step 1: Obtain Dockerhub token
 As an enterprise customer, you should already have a dockerhub token for the `externallakefs` user.
-If not, contact us at ___ (TODO: add mail/whaterver).
+If not, contact us at [support@treeverse.io](mailto:support@treeverse.io).
 
 ### Step 2: Login to Dockerhub with this token
 ```bash
@@ -69,7 +69,7 @@ docker login -u <your token>
 ### Step 3: Download the docker image
 Download the image from the [lakefs-sgc](https://hub.docker.com/repository/docker/treeverse/lakefs-sgc/general) repository:
 ```bash
-docker pull treeverse/lakefs-sgc:tagname
+docker pull treeverse/lakefs-sgc:<tag>
 ```
 
 ## Usage
@@ -81,22 +81,23 @@ to be set up correctly, and reads the AWS credentials from the machine.
 This means, you should set up your machine however AWS expects you to set it. \
 For example, by following their guide on [configuring the AWS CLI](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html).
 
+### MinIO Setup
+TODO
+
 ### Configuration
 The following configuration keys are available:
 
-| Key                        | Description                                                                                        | Default value                  | Possible values                                         |
-|----------------------------|----------------------------------------------------------------------------------------------------|--------------------------------|---------------------------------------------------------|
-| `logging.format`           | Logs output format                                                                                 | "text"                         | "text","json"                                           |
-| `logging.level`            | Logs level                                                                                         | "info"                         | "error","warn",info","debug","trace"                    |
-| `logging.output`           | Where to output the logs to                                                                        | "-"                            | "-" (stdout), "=" (stderr), or any string for file path |
-| `logging.file_max_size_mb` | Max file size for logs output (relevant only if `logging.output` is set to a file path)            | 102400 (100MiB)                | number                                                  |
-| `logging.files_keep`       | Number of files to keep for logs rotation (relevant only if `logging.output` is set to a file path | 100                            | number                                                  |
-| `cache_dir`                | Directory to use for caching data during run                                                       | ~/.lakefs-sgc/data             | string                                                  |
-| `aws.max_page_size`        | Max number of items per page when listing objects in AWS                                           | not set (AWS defaults to 1000) | number                                                  |
-| `objects_min_age`          | Ignore any object that is last modified within this time frame ("cutoff time")                     | "6h"                           | duration                                                |
-| `lakefs.endpoint_url`      | The URL to the lakeFS installation - should end with `/api/v1`                                     | NOT SET                        | URL                                                     |
-| `lakefs.access_key_id`     | Access key to the lakeFS installation                                                              | NOT SET                        | string                                                  |
-| `lakefs.secret_access_key` | Secret access key to the lakeFS installation                                                       | NOT SET                        | string                                                  |
+| Key                        | Description                                                                    | Default value      | Possible values                                         |
+|----------------------------|--------------------------------------------------------------------------------|--------------------|---------------------------------------------------------|
+| `logging.format`           | Logs output format                                                             | "text"             | "text","json"                                           |
+| `logging.level`            | Logs level                                                                     | "info"             | "error","warn",info","debug","trace"                    |
+| `logging.output`           | Where to output the logs to                                                    | "-"                | "-" (stdout), "=" (stderr), or any string for file path |
+| `cache_dir`                | Directory to use for caching data during run                                   | ~/.lakefs-sgc/data | string                                                  |
+| `aws.max_page_size`        | Max number of items per page when listing objects in AWS                       | 1000               | number                                                  |
+| `objects_min_age`          | Ignore any object that is last modified within this time frame ("cutoff time") | "6h"               | duration                                                |
+| `lakefs.endpoint_url`      | The URL to the lakeFS installation - should end with `/api/v1`                 | NOT SET            | URL                                                     |
+| `lakefs.access_key_id`     | Access key to the lakeFS installation                                          | NOT SET            | string                                                  |
+| `lakefs.secret_access_key` | Secret access key to the lakeFS installation                                   | NOT SET            | string                                                  |
 
 
 These keys can be provided in the following ways:
@@ -162,28 +163,27 @@ _RUN_ID_ is generated during runtime by the Standalone GC. You can find it in th
 "Marking objects for deletion" ... run_id=gcoca17haabs73f2gtq0
 ```
 
-In this prefix, you'll find 3 objects:
-- `deleted.json` - Containing all marked objects in a json format. 
-- `deleted.parquet` - Containing all marked objects in a parquet format, with the following schema:
+In this prefix, you'll find 2 objects:
+- `deleted.csv` - Containing all marked objects in a CSV containing one `address` column. Example:
+   ```csv
+   address
+   "data/gcnobu7n2efc74lfa5ug/csfnri7n2efc74lfa69g,_e7P9j-1ahTXtofw7tWwJUIhTfL0rEs_dvBrClzc_QE"
+   "data/gcnobu7n2efc74lfa5ug/csfnri7n2efc74lfa78g,mKZnS-5YbLzmK0pKsGGimdxxBlt8QZzCyw1QeQrFvFE"
+   ...
    ```
-  ┌─────────────┬─────────────┬─────────┬─────────┬─────────┬─────────┐
-  │ column_name │ column_type │  null   │   key   │ default │  extra  │
-  │   varchar   │   varchar   │ varchar │ varchar │ varchar │ varchar │
-  ├─────────────┼─────────────┼─────────┼─────────┼─────────┼─────────┤
-  │ address     │ VARCHAR     │ YES     │         │         │         │
-  └─────────────┴─────────────┴─────────┴─────────┴─────────┴─────────┘
-  ```
 - `summary.json` - A small json summarizing the GC run. Example:
-```json
-{
-    "run_id": "gcoca17haabs73f2gtq0",
-    "success": true,
-    "first_slice": "gcss5tpsrurs73cqi6e0",
-    "start_time": "2024-10-27T13:19:26.890099059Z",
-    "cutoff_time": "2024-10-27T07:19:26.890099059Z",
-    "num_deleted_objects": 33000
-}
-```
+   ```json
+   {
+       "run_id": "gcoca17haabs73f2gtq0",
+       "success": true,
+       "first_slice": "gcss5tpsrurs73cqi6e0",
+       "start_time": "2024-10-27T13:19:26.890099059Z",
+       "cutoff_time": "2024-10-27T07:19:26.890099059Z",
+       "num_deleted_objects": 33000
+   }
+   ```
 
 ### Deleting marked objects
+
+TODO: give instructions
 To delete the objects marked by the GC, you'll need to read the `deleted.parquet` or `deleted.json` files, and manually delete each address from AWS.
