@@ -10,11 +10,11 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/cache"
+	"github.com/treeverse/lakefs/pkg/distributed"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/kv/util"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -39,7 +39,7 @@ type Manager struct {
 	repoCache       cache.Cache
 	commitCache     cache.Cache
 	maxBatchDelay   time.Duration
-	branchOwnership *util.WeakOwner
+	branchOwnership *distributed.MostlyCorrectOwner
 }
 
 func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
@@ -69,13 +69,13 @@ func protoFromBranch(branchID graveler.BranchID, b *graveler.Branch) *graveler.B
 	return branch
 }
 
-// WeakBranchOwnershipParams configures weak ownership of branches.  Branch
-// correctness is safe _regardless_ of the values of these parameters.  They
-// exist solely to reduce expensive operations when multiple concurrent
-// updates race on the same branch.  Only one update can win a race, and
-// ownership prevents others from interfering by consuming resources on the
-// instance.
-type WeakBranchOwnershipParams struct {
+// BranchApproximateOwnershipParams configures mostly-correct ownership of
+// branches.  Branch correctness is safe _regardless_ of the values of these
+// parameters.  They exist solely to reduce expensive operations when
+// multiple concurrent updates race on the same branch.  Only one update can
+// win a race.  Approximately correct ownership means others will generally
+// back off and let that one update proceed.
+type BranchApproximateOwnershipParams struct {
 	// AcquireInterval is the interval at which to attempt to acquire
 	// ownership of a branch.  It is a bound on the latency of the time
 	// for one worker to acquire a branch when multiple operations race
@@ -95,26 +95,26 @@ type WeakBranchOwnershipParams struct {
 }
 
 type ManagerConfig struct {
-	Executor                  batch.Batcher
-	KVStore                   kv.Store
-	KVStoreLimited            kv.Store
-	AddressProvider           ident.AddressProvider
-	RepositoryCacheConfig     CacheConfig
-	CommitCacheConfig         CacheConfig
-	MaxBatchDelay             time.Duration
-	WeakBranchOwnershipParams WeakBranchOwnershipParams
+	Executor                         batch.Batcher
+	KVStore                          kv.Store
+	KVStoreLimited                   kv.Store
+	AddressProvider                  ident.AddressProvider
+	RepositoryCacheConfig            CacheConfig
+	CommitCacheConfig                CacheConfig
+	MaxBatchDelay                    time.Duration
+	BranchApproximateOwnershipParams BranchApproximateOwnershipParams
 }
 
 func NewRefManager(cfg ManagerConfig) *Manager {
-	var branchOwnership *util.WeakOwner
-	if cfg.WeakBranchOwnershipParams.RefreshInterval > 0 {
-		log := logging.ContextUnavailable().WithField("component", "RefManager weak branch ownership")
-		branchOwnership = util.NewWeakOwner(
+	var branchOwnership *distributed.MostlyCorrectOwner
+	if cfg.BranchApproximateOwnershipParams.RefreshInterval > 0 {
+		log := logging.ContextUnavailable().WithField("component", "RefManager approximate branch ownership")
+		branchOwnership = distributed.NewMostlyCorrectOwner(
 			log,
 			cfg.KVStore,
-			"run-refs/weak-branch-owner",
-			cfg.WeakBranchOwnershipParams.AcquireInterval,
-			cfg.WeakBranchOwnershipParams.RefreshInterval,
+			"run-refs/approximate-branch-owner",
+			cfg.BranchApproximateOwnershipParams.AcquireInterval,
+			cfg.BranchApproximateOwnershipParams.RefreshInterval,
 		)
 		log.Info("Initialized")
 	}

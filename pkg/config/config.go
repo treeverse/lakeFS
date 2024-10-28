@@ -142,8 +142,8 @@ type Database struct {
 	} `mapstructure:"cosmosdb"`
 }
 
-// WeakOwnership configures an approximate (weak) ownership.
-type WeakOwnership struct {
+// ApproximateOwnership configures an approximate ("mostly correct") ownership.
+type ApproximatelyCorrectOwnership struct {
 	Enabled bool          `mapstructure:"enabled"`
 	Refresh time.Duration `mapstructure:"refresh"`
 	Acquire time.Duration `mapstructure:"acquire"`
@@ -339,11 +339,11 @@ type Config struct {
 		MaxBatchDelay time.Duration `mapstructure:"max_batch_delay"`
 		// Parameters for tuning performance of concurrent branch
 		// update operations.  These do not affect correctness or
-		// liveness.  Internally this is "*weak* branch ownership"
-		// because this ownership may safely fail.  This distinction
-		// is unimportant during configuration, so use a shorter
-		// name.
-		BranchOwnership WeakOwnership `mapstructure:"branch_ownership"`
+		// liveness.  Internally this is "*most correct* branch
+		// ownership" because this ownership may safely fail.  This
+		// distinction is unimportant during configuration, so use a
+		// shorter name.
+		BranchOwnership ApproximatelyCorrectOwnership `mapstructure:"branch_ownership"`
 	} `mapstructure:"graveler"`
 	Gateways struct {
 		S3 struct {

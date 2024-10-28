@@ -1,4 +1,4 @@
-package util
+package distributed
 
 import (
 	"context"
@@ -13,9 +13,9 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const weakOwnerPartition = "weak-ownership"
+const mostlyCorrectOwnerPartition = "mc-ownership"
 
-// A WeakOwner uses a Store to allow roughly at most a single goroutine to
+// MostlyCorrectOwner uses a Store to allow roughly at most a single goroutine to
 // handle an operation for a key, across all processes sharing that store.
 // It can block but never deadlock.  "Rough" ownership means that when the
 // owner is too slow another owner might mistakenly be added.
@@ -25,10 +25,10 @@ const weakOwnerPartition = "weak-ownership"
 //   - single ownership is not required for correctness, AND
 //   - only one concurrent goroutine can succeed
 //
-// then using a WeakOwner can help improve performance by usually allowing
+// then using a MostlyCorrectOwner can help improve performance by usually allowing
 // only one goroutine into a critical section.  This reduces retries.
 //
-// WeakOwner works by setting an ownership key with timed expiration along
+// MostlyCorrectOwner works by setting an ownership key with timed expiration along
 // with a goroutine that refreshes expiration of that key.  This can fail:
 //
 //   - if clocks are not synchronized
@@ -37,14 +37,14 @@ const weakOwnerPartition = "weak-ownership"
 // So it *cannot* guarantee correctness.  However it usually works, and if
 // it does work, the owning goroutine wins all races by default.
 //
-// WeakOwner creates some additional load on its KV partition:
+// MostlyCorrectOwner creates some additional load on its KV partition:
 //
 //   - Acquiring ownership reads at least once and writes (SetIf) once.  If
 //     the key is already held, each acquisition reads once every
 //     acquireInterval and once every time ownership expires.
 //
 //   - Holding a lock reads and writes (SetIf) once every refreshInterval.
-type WeakOwner struct {
+type MostlyCorrectOwner struct {
 	// acquireInterval is the polling interval for acquiring ownership.
 	// Reducing it reduces some additional time to recover if an
 	// instance crashes while holding ownership.  Reducing it too much
@@ -69,12 +69,12 @@ type WeakOwner struct {
 	// goroutiness on multiple cooperating processes.
 	Store kv.Store
 	// Prefix is used to separate "locking" keys between different
-	// instances of WeakOwner.
+	// instances of MostlyCorrectOwner.
 	Prefix string
 }
 
-func NewWeakOwner(log logging.Logger, store kv.Store, prefix string, acquireInterval, refreshInterval time.Duration) *WeakOwner {
-	return &WeakOwner{
+func NewMostlyCorrectOwner(log logging.Logger, store kv.Store, prefix string, acquireInterval, refreshInterval time.Duration) *MostlyCorrectOwner {
+	return &MostlyCorrectOwner{
 		acquireInterval: acquireInterval,
 		refreshInterval: refreshInterval,
 		Log:             log,
@@ -96,7 +96,7 @@ func getJitter(interval time.Duration) time.Duration {
 }
 
 // refreshKey refreshes key for owner at interval until ctx is cancelled.
-func (w *WeakOwner) refreshKey(ctx context.Context, owner string, prefixedKey []byte) {
+func (w *MostlyCorrectOwner) refreshKey(ctx context.Context, owner string, prefixedKey []byte) {
 	// Always refresh before ownership expires.
 	//nolint:mnd
 	interval := w.refreshInterval / 2
@@ -123,8 +123,8 @@ func (w *WeakOwner) refreshKey(ctx context.Context, owner string, prefixedKey []
 			log.Trace("Cancelled; stop refreshing ownership")
 			return
 		case <-ticker.C:
-			ownership := WeakOwnership{}
-			predicate, err := kv.GetMsg(ctx, w.Store, weakOwnerPartition, prefixedKey, &ownership)
+			ownership := MostlyCorrectOwnership{}
+			predicate, err := kv.GetMsg(ctx, w.Store, mostlyCorrectOwnerPartition, prefixedKey, &ownership)
 			if err != nil {
 				log.WithError(err).Warn("Failed to get ownership message to refresh")
 				// Do NOT attempt to delete, to avoid
@@ -140,7 +140,7 @@ func (w *WeakOwner) refreshKey(ctx context.Context, owner string, prefixedKey []
 			}
 			expires := time.Now().Add(w.refreshInterval)
 			ownership.Expires = timestamppb.New(expires)
-			err = kv.SetMsgIf(ctx, w.Store, weakOwnerPartition, prefixedKey, &ownership, predicate)
+			err = kv.SetMsgIf(ctx, w.Store, mostlyCorrectOwnerPartition, prefixedKey, &ownership, predicate)
 			if err != nil {
 				log.WithError(err).Warn("Failed to set ownership message to refresh (keep going, may lose)")
 				continue
@@ -186,8 +186,8 @@ func checkOwnership(expires, now time.Time, getErr error) keyOwnership {
 	}
 }
 
-// startOwningKey blocks until it gets weak ownership of key in store.
-// This is a spin-wait (with sleeps) because of the KV interface.
+// startOwningKey blocks until it gets mostly-correct ownership of key in
+// store.  This is a spin-wait (with sleeps) because of the KV interface.
 //
 // TODO(ariels): Spin only once (maybe use WaitFor, or chain requests and
 // spin only on the first) when multiple goroutines all wait for the same
@@ -195,7 +195,7 @@ func checkOwnership(expires, now time.Time, getErr error) keyOwnership {
 //
 // TODO(ariels): Be fair, at least in the same process.  Chaining requests
 // and spinning only on the first would do this as well.
-func (w *WeakOwner) startOwningKey(ctx context.Context, owner string, prefixedKey []byte) error {
+func (w *MostlyCorrectOwner) startOwningKey(ctx context.Context, owner string, prefixedKey []byte) error {
 	log := w.Log.WithContext(ctx).WithFields(logging.Fields{
 		"owner":            owner,
 		"prefixed_key":     string(prefixedKey),
@@ -203,8 +203,8 @@ func (w *WeakOwner) startOwningKey(ctx context.Context, owner string, prefixedKe
 		"refresh_interval": w.refreshInterval,
 	})
 	for {
-		ownership := WeakOwnership{}
-		predicate, err := kv.GetMsg(ctx, w.Store, weakOwnerPartition, prefixedKey, &ownership)
+		ownership := MostlyCorrectOwnership{}
+		predicate, err := kv.GetMsg(ctx, w.Store, mostlyCorrectOwnerPartition, prefixedKey, &ownership)
 		if err != nil && !errors.Is(err, kv.ErrNotFound) {
 			return fmt.Errorf("start owning %s for %s: %w", prefixedKey, owner, err)
 		}
@@ -213,7 +213,7 @@ func (w *WeakOwner) startOwningKey(ctx context.Context, owner string, prefixedKe
 		free := checkOwnership(ownership.Expires.AsTime(), now, err)
 		if free != keyOwned {
 			expiryTime := now.Add(w.refreshInterval)
-			ownership = WeakOwnership{
+			ownership = MostlyCorrectOwnership{
 				Owner:   owner,
 				Expires: timestamppb.New(expiryTime),
 				Comment: fmt.Sprintf("%s@%v", owner, now),
@@ -223,7 +223,7 @@ func (w *WeakOwner) startOwningKey(ctx context.Context, owner string, prefixedKe
 				"expires":   expiryTime,
 				"now":       now,
 			}).Trace("Try to take ownership")
-			err = kv.SetMsgIf(ctx, w.Store, weakOwnerPartition, prefixedKey, &ownership, predicate)
+			err = kv.SetMsgIf(ctx, w.Store, mostlyCorrectOwnerPartition, prefixedKey, &ownership, predicate)
 			if err == nil {
 				log.Trace("Got ownership")
 				return nil
@@ -246,13 +246,13 @@ func (w *WeakOwner) startOwningKey(ctx context.Context, owner string, prefixedKe
 }
 
 // releaseIf releases prefixedKey if it has the owner.
-func (w *WeakOwner) releaseIf(ctx context.Context, owner string, prefixedKey []byte) error {
+func (w *MostlyCorrectOwner) releaseIf(ctx context.Context, owner string, prefixedKey []byte) error {
 	log := w.Log.WithContext(ctx).WithFields(logging.Fields{
 		"prefixed_key": string(prefixedKey),
 		"owner":        owner,
 	})
-	ownership := WeakOwnership{}
-	predicate, err := kv.GetMsg(ctx, w.Store, weakOwnerPartition, prefixedKey, &ownership)
+	ownership := MostlyCorrectOwnership{}
+	predicate, err := kv.GetMsg(ctx, w.Store, mostlyCorrectOwnerPartition, prefixedKey, &ownership)
 	if err != nil {
 		return fmt.Errorf("get ownership message %s to release it from %s: %w", string(prefixedKey), owner, err)
 	}
@@ -264,7 +264,7 @@ func (w *WeakOwner) releaseIf(ctx context.Context, owner string, prefixedKey []b
 	}
 	// Set expiration to the beginning of time - definitely expired.
 	ownership.Expires.Reset()
-	err = kv.SetMsgIf(ctx, w.Store, weakOwnerPartition, prefixedKey, &ownership, predicate)
+	err = kv.SetMsgIf(ctx, w.Store, mostlyCorrectOwnerPartition, prefixedKey, &ownership, predicate)
 	if errors.Is(err, kv.ErrPredicateFailed) {
 		log.WithFields(logging.Fields{
 			"prefixed_key": string(prefixedKey),
@@ -277,10 +277,11 @@ func (w *WeakOwner) releaseIf(ctx context.Context, owner string, prefixedKey []b
 	return err
 }
 
-// Own blocks until it gets weak ownership of key for owner.  Ownership will be refreshed at
-// resolution interval.  It returns a function to stop owning key.  Own appends its random slug to
-// owner, to identify the owner uniquely.
-func (w *WeakOwner) Own(ctx context.Context, owner, key string) (func(), error) {
+// Own blocks until it gets mostly-correct ownership of key for owner.
+// Ownership will be refreshed at resolution interval.  It returns a
+// function to stop owning key.  Own appends its random slug to owner, to
+// identify the owner uniquely.
+func (w *MostlyCorrectOwner) Own(ctx context.Context, owner, key string) (func(), error) {
 	owner = fmt.Sprintf("%s#%s", owner, nanoid.Must())
 	prefixedKey := []byte(fmt.Sprintf("%s/%s", w.Prefix, key))
 	err := w.startOwningKey(ctx, owner, prefixedKey)

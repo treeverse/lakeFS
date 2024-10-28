@@ -1,10 +1,11 @@
-package util_test
+package distributed_test
 
-// The Go race detector does not help test WeakOwner: a store like mem must
-// protect its data structures from races.  So every operation synchronizes
-// with every other operation - the race detector cannot detect races!
+// The Go race detector does not help test MostlyCorrectOwner: a store like
+// mem must protect its data structures from races.  So every operation
+// synchronizes with every other operation - the race detector cannot detect
+// races!
 //
-// Meanwhile mocks can help test WeakOwner behaviour when errors occur, but
+// Meanwhile mocks can help test MostlyCorrectOwner behaviour when errors occur, but
 // not that it actually behaves correctly.
 //
 // Instead, observe behaviour and test that.
@@ -18,15 +19,15 @@ import (
 
 	"github.com/go-test/deep"
 
+	"github.com/treeverse/lakefs/pkg/distributed"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
-	"github.com/treeverse/lakefs/pkg/kv/util"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-// TestWeakOwnerSingleThreaded tests behaviour with a single owner.
-func TestWeakOwnerSingleThreaded(t *testing.T) {
+// TestMostlyCorrectOwnerSingleThreaded tests behaviour with a single owner.
+func TestMostlyCorrectOwnerSingleThreaded(t *testing.T) {
 	// Fail quickly on deadlock
 	ctx, finish := context.WithTimeout(context.Background(), time.Second)
 	defer finish()
@@ -36,7 +37,7 @@ func TestWeakOwnerSingleThreaded(t *testing.T) {
 	}
 	log := logging.FromContext(ctx).WithField("test", t.Name())
 
-	w := util.NewWeakOwner(log, store, "p", 5*time.Millisecond, 10*time.Millisecond)
+	w := distributed.NewMostlyCorrectOwner(log, store, "p", 5*time.Millisecond, 10*time.Millisecond)
 
 	releaseAbc, err := w.Own(ctx, "me", "abc")
 	if err != nil {
@@ -86,10 +87,10 @@ func (o *Ordering[T]) Slice() []T {
 	return ret
 }
 
-// TestWeakOwnerConsecutive tests behaviour with a single owner - second
+// TestMostlyCorrectOwnerConsecutive tests behaviour with a single owner - second
 // Own() call should wait until the first is released.  But Own() never
 // times out on its own.
-func TestWeakOwnerConsecutiveReleased(t *testing.T) {
+func TestMostlyCorrectOwnerConsecutiveReleased(t *testing.T) {
 	// Fail quickly on deadlock
 	ctx, finish := context.WithTimeout(context.Background(), 2*time.Second)
 	defer finish()
@@ -99,7 +100,7 @@ func TestWeakOwnerConsecutiveReleased(t *testing.T) {
 	}
 	log := logging.FromContext(ctx).WithField("test", t.Name())
 
-	w := util.NewWeakOwner(log, store, "p", 5*time.Millisecond, 40*time.Millisecond)
+	w := distributed.NewMostlyCorrectOwner(log, store, "p", 5*time.Millisecond, 40*time.Millisecond)
 	events := Ordering[string]{}
 
 	releaseA, err := w.Own(ctx, "me", "xyz")

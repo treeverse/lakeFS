@@ -163,7 +163,7 @@ func setDefaults(cfgType string) {
 	//     additional write operation per branch operation acquiring
 	//     ownership.
 
-	// See comments on WeakOwner for how to compute these numbers.
+	// See additional comments on MostlyCorrectOwner for how to compute these numbers.
 	viper.SetDefault("graveler.branch_ownership.refresh", 400*time.Millisecond)
 	viper.SetDefault("graveler.branch_ownership.acquire", 150*time.Millisecond)
 
