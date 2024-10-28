@@ -54,6 +54,15 @@ func RequestID(r *http.Request) (*http.Request, string) {
 	return r, reqID
 }
 
+func RequestIDFromContext(ctx context.Context) *string {
+	resp := ctx.Value(RequestIDContextKey)
+	if resp == nil {
+		return nil
+	}
+	ret := resp.(string)
+	return &ret
+}
+
 func SourceIP(r *http.Request) string {
 	sourceIP, sourcePort, err := net.SplitHostPort(r.RemoteAddr)
 

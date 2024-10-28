@@ -352,7 +352,6 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 		return
 	}
 
-	writeTime := time.Now()
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
@@ -383,6 +382,7 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 		return
 	}
 
+	writeTime := time.Now()
 	checksum := httputil.StripQuotesAndSpaces(mpuResp.ETag)
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
