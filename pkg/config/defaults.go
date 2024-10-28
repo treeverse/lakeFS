@@ -147,6 +147,26 @@ func setDefaults(cfgType string) {
 	// 3ms of delay with ~300 requests/second per resource sounds like a reasonable tradeoff.
 	viper.SetDefault("graveler.max_batch_delay", 3*time.Millisecond)
 
+	viper.SetDefault("graveler.branch_ownership.enabled", false)
+	// ... but if branch ownership is enabled, set up some useful defaults!
+
+	// The single concurrent branch updater has these requirements from
+	// KV with these settings:
+	//
+	//   - Cleanly acquiring ownership performs 1 read operation and 1
+	//     write operation.  Releasing ownership performs another 1 read
+	//     operation and 1 write operation.
+	//
+	//   - While ownership is held, add 2.5 read and 2.5 write operation
+	//     per second, an additional ~7 read operations per second per
+	//     branch operation waiting to acquire ownership, and an
+	//     additional write operation per branch operation acquiring
+	//     ownership.
+
+	// See additional comments on MostlyCorrectOwner for how to compute these numbers.
+	viper.SetDefault("graveler.branch_ownership.refresh", 400*time.Millisecond)
+	viper.SetDefault("graveler.branch_ownership.acquire", 150*time.Millisecond)
+
 	viper.SetDefault("ugc.prepare_interval", time.Minute)
 	viper.SetDefault("ugc.prepare_max_file_size", 20*1024*1024)
 

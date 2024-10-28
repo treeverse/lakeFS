@@ -133,5 +133,6 @@ func (g *Generator) Run(fn WorkFn) {
 		}
 	}
 	fmt.Printf("%s\n\n", g.collector.Stats())
+	fmt.Println(g.collector.Total())
 	fmt.Printf("Histogram (ms):\n%s\n", g.collector.Histogram())
 }
