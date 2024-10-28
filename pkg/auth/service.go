@@ -12,7 +12,6 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -930,7 +929,7 @@ func (a *APIAuthService) Authorize(ctx context.Context, req *AuthorizationReques
 	if allowed != CheckAllow {
 		return &AuthorizationResponse{
 			Allowed: false,
-			Error:   errors.New(permissions.String()),
+			Error:   fmt.Errorf("%w\n%s", ErrInsufficientPermissions, permissions.String()),
 		}, nil
 	}
 
