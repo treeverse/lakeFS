@@ -24,11 +24,12 @@ const (
 )
 
 func TestMultipartUpload(t *testing.T) {
-	// timeSlippage is a bound on the time difference between the local server and the S3
-	// server.  It is used to verify that the "Last-Modified" time is actually close to the
-	// CreateMultipartUpload time.  BUT S3 provides this time only at a 1-second resolution.
-	// So a 1-second difference is possible.
-	const timeSlippage = time.Second
+	// timeResolution is a duration greater than the timestamp resolution of the backing
+	// store.  Multipart object on S3 is the time of create-MPU, waiting before completion
+	// ensures that lakeFS did not use the current time.  For other blockstores MPU
+	// completion time is used, meaning it will be hard to detect if the underlying and
+	// lakeFS objects share the same time.
+	const timeResolution = time.Second
 
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
@@ -43,8 +44,6 @@ func TestMultipartUpload(t *testing.T) {
 	require.NoError(t, err, "failed to create multipart upload")
 	logger.Info("Created multipart upload request")
 
-	uploadTime := time.Now()
-
 	parts := make([][]byte, multipartNumberOfParts)
 	var partsConcat []byte
 	for i := 0; i < multipartNumberOfParts; i++ {
@@ -54,9 +53,9 @@ func TestMultipartUpload(t *testing.T) {
 
 	completedParts := uploadMultipartParts(t, ctx, logger, resp, parts, 0)
 
-	// Object should have Last-Modified time at around time of MPU creation.  Server times
-	// after this Sleep will be more than timeSlippage away from uploadTime.
-	time.Sleep(2 * timeSlippage)
+	// On S3 the object should have Last-Modified time at around time of MPU creation.
+	// Ensure lakeFS fails the test if it fakes it by using the current time.
+	time.Sleep(2 * timeResolution)
 
 	completeResponse, err := uploadMultipartComplete(ctx, svc, resp, completedParts)
 	require.NoError(t, err, "failed to complete multipart upload")
@@ -70,13 +69,27 @@ func TestMultipartUpload(t *testing.T) {
 		t.Fatalf("uploaded object did not match")
 	}
 
-	statResp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{Path: file})
+	statResp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{Path: file, Presign: aws.Bool(true)})
 	require.NoError(t, err, "failed to get object")
-	require.Equal(t, http.StatusOK, getResp.StatusCode())
-	lastModified := time.Unix(statResp.JSON200.Mtime, 0)
-	require.Less(t, lastModified.Sub(uploadTime).Abs(), timeSlippage,
-		"(remote) last modified time %s too far away from (local) upload time %s",
-		lastModified, uploadTime)
+	require.Equal(t, http.StatusOK, getResp.StatusCode(), getResp.Status())
+
+	// Get last-modified from the underlying store.
+
+	presignedGetURL := statResp.JSON200.PhysicalAddress
+	res, err := http.Get(presignedGetURL)
+	require.NoError(t, err, "GET underlying")
+	// The presigned URL is usable only for GET, but we don't actually care about its body.
+	_ = res.Body.Close()
+	require.Equal(t, http.StatusOK, res.StatusCode, "%s: %s", presignedGetURL, res.Status)
+	lastModifiedString := res.Header.Get("Last-Modified")
+	underlyingLastModified, err := time.Parse(time.RFC1123, lastModifiedString)
+	require.NoError(t, err, "Last-Modified %s", lastModifiedString)
+	// Last-Modified header includes a timezone, which is typically "GMT" on AWS.  Now GMT
+	// _is equal to_ UTC!.  But Go is nothing if not cautious, and considers UTC and GMT to
+	// be different timezones.  So cannot compare with "==" and must use time.Time.Equal.
+	lakeFSMTime := time.Unix(statResp.JSON200.Mtime, 0)
+	require.True(t, lakeFSMTime.Equal(underlyingLastModified),
+		"lakeFS mtime %s should be same as on underlying object %s", lakeFSMTime, underlyingLastModified)
 }
 
 func TestMultipartUploadAbort(t *testing.T) {
