@@ -33,15 +33,16 @@ The lakeFS CSI (Container Storage Interface) Driver is an extension for Kubernet
 - Tested OS: BottleRocket-OS, Amazon Linux 2 and RHEL 8.
 - Minimal Kubernetes versions `>=1.23.0`. 
 - Tested Cluster providers EKS, Openshift (Partially).
-- Static provisioning only.
+- Static provisioning only explain below.
 - Setting Pods `securityContext` UID and GID (i.e `runAsUser: 1000`, `runAsGroup: 2000`) is very neuanced in nature and does not have wide coverage currently, not supported but might work.
 - Pod only supports access mode `ReadOnlyMany`
 
-**Static Provisioning only**
+**Static Provisioning only (Relevant for pods)**
 
+When requesting a mount from the CSI driver, the driver will create a `PersistentVolume` (PV) and `PersistentVolumeClaim` (PVC) for the Pod.
 The driver only supports Static Provisioning as of today, and you need an existing lakeFS repository to use.
 
-To use Static Provisioning, you should set `storageClassName` field of your `PersistentVolume (PV)` and `PersistentVolumeClaim (PVC)` to `""` (empty string). Also, in order to make sure no other PVCs can claim your PV, you should define a one-to-one mapping using `claimRef`:
+To use Static Provisioning, you should set `storageClassName` field of your `PersistentVolume (PV)` and `PersistentVolumeClaim (PVC)` to `""` (empty string). Also, in order to make sure no other PVCs can claim your PV, you should define a one-to-one mapping using `claimRef`.
 
 ## Requirements
 
