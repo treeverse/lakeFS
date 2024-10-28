@@ -45,6 +45,11 @@ type AuthorizationResponse struct {
 	Error   error
 }
 
+type NeededPermissions struct {
+	Denied       []model.Statement
+	Unauthorized []permissions.Node
+}
+
 // CheckResult - the final result for the authorization is accepted only if it's CheckAllow
 type CheckResult int
 
@@ -1148,11 +1153,6 @@ func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, externalPr
 	}, nil
 }
 
-type NeededPermissions struct {
-	Denied       []model.Statement
-	Unauthorized []model.Statement
-}
-
 func (n *NeededPermissions) String() string {
 	if len(n.Denied) != 0 {
 		deniedStr := "denied from:\n"
@@ -1163,16 +1163,17 @@ func (n *NeededPermissions) String() string {
 	}
 	if len(n.Unauthorized) != 0 {
 		permStr := "lacking permissions for:\n"
-		for _, statement := range n.Unauthorized {
-			permStr += strings.Join(statement.Action, "\n")
+		for _, node := range n.Unauthorized {
+			permStr += node.Permission.Action
 		}
 		return permStr
 	}
-	return "--____"
+	return ""
 }
 
 func CheckPermissions(ctx context.Context, node permissions.Node, username string, policies []*model.Policy, perm *NeededPermissions) (CheckResult, *NeededPermissions) {
 	allowed := CheckNeutral
+	hasPermission := false
 	switch node.Type {
 	case permissions.NodeTypeNode:
 		// check whether the permission is allowed, denied or natural (not allowed and not denied)
@@ -1185,22 +1186,23 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 				for _, action := range stmt.Action {
 					if !wildcard.Match(action, node.Permission.Action) {
 						continue // not a matching action
-					} else {
-						perm.Unauthorized = append(perm.Unauthorized, stmt)
-
-						perm.Denied = append(perm.Denied, stmt)
-						fmt.Println("hihiihi")
 					}
 
 					if stmt.Effect == model.StatementEffectDeny {
 						// this is a "Deny" and it takes precedence
 						perm.Denied = append(perm.Denied, stmt)
 						return CheckDeny, perm
+					} else {
+						hasPermission = true
+						allowed = CheckAllow
 					}
 
 					allowed = CheckAllow
 				}
 			}
+		}
+		if !hasPermission {
+			perm.Unauthorized = append(perm.Unauthorized, node)
 		}
 
 	case permissions.NodeTypeOr:
