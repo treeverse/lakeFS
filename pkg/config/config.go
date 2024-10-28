@@ -142,6 +142,13 @@ type Database struct {
 	} `mapstructure:"cosmosdb"`
 }
 
+// ApproximateOwnership configures an approximate ("mostly correct") ownership.
+type ApproximatelyCorrectOwnership struct {
+	Enabled bool          `mapstructure:"enabled"`
+	Refresh time.Duration `mapstructure:"refresh"`
+	Acquire time.Duration `mapstructure:"acquire"`
+}
+
 // Config - Output struct of configuration, used to validate.  If you read a key using a viper accessor
 // rather than accessing a field of this struct, that key will *not* be validated.  So don't
 // do that.
@@ -330,6 +337,13 @@ type Config struct {
 			RateLimit int `mapstructure:"rate_limit"`
 		} `mapstructure:"background"`
 		MaxBatchDelay time.Duration `mapstructure:"max_batch_delay"`
+		// Parameters for tuning performance of concurrent branch
+		// update operations.  These do not affect correctness or
+		// liveness.  Internally this is "*most correct* branch
+		// ownership" because this ownership may safely fail.  This
+		// distinction is unimportant during configuration, so use a
+		// shorter name.
+		BranchOwnership ApproximatelyCorrectOwnership `mapstructure:"branch_ownership"`
 	} `mapstructure:"graveler"`
 	Gateways struct {
 		S3 struct {

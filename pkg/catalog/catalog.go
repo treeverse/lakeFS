@@ -294,6 +294,17 @@ func (c *ctxCloser) Close() error {
 	return nil
 }
 
+func makeBranchApproximateOwnershipParams(cfg config.ApproximatelyCorrectOwnership) ref.BranchApproximateOwnershipParams {
+	if !cfg.Enabled {
+		// zero Durations => no branch ownership
+		return ref.BranchApproximateOwnershipParams{}
+	}
+	return ref.BranchApproximateOwnershipParams{
+		AcquireInterval: cfg.Acquire,
+		RefreshInterval: cfg.Refresh,
+	}
+}
+
 func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	ctx, cancelFn := context.WithCancel(ctx)
 	adapter, err := factory.BuildBlockAdapter(ctx, nil, cfg.Config)
@@ -364,13 +375,14 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	addressProvider := ident.NewHexAddressProvider()
 	refManager := ref.NewRefManager(
 		ref.ManagerConfig{
-			Executor:              executor,
-			KVStore:               cfg.KVStore,
-			KVStoreLimited:        storeLimiter,
-			AddressProvider:       addressProvider,
-			RepositoryCacheConfig: ref.CacheConfig(cfg.Config.Graveler.RepositoryCache),
-			CommitCacheConfig:     ref.CacheConfig(cfg.Config.Graveler.CommitCache),
-			MaxBatchDelay:         cfg.Config.Graveler.MaxBatchDelay,
+			Executor:                         executor,
+			KVStore:                          cfg.KVStore,
+			KVStoreLimited:                   storeLimiter,
+			AddressProvider:                  addressProvider,
+			RepositoryCacheConfig:            ref.CacheConfig(cfg.Config.Graveler.RepositoryCache),
+			CommitCacheConfig:                ref.CacheConfig(cfg.Config.Graveler.CommitCache),
+			MaxBatchDelay:                    cfg.Config.Graveler.MaxBatchDelay,
+			BranchApproximateOwnershipParams: makeBranchApproximateOwnershipParams(cfg.Config.Graveler.BranchOwnership),
 		})
 	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, cfg.Config.Committed.BlockStoragePrefix)
 	settingManager := settings.NewManager(refManager, cfg.KVStore)

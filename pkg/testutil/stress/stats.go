@@ -10,6 +10,7 @@ type collectorRequest int
 const (
 	collectorRequestStats collectorRequest = iota
 	collectorRequestHistogram
+	collectorRequestTotals
 )
 
 type Stats struct {
@@ -25,6 +26,26 @@ func (s *Stats) String() string {
 		float64(s.CurrentCompleted)/s.CurrentInterval.Seconds())
 }
 
+type TotalStats struct {
+	Duration   time.Duration
+	NumTotal   int64
+	NumErrors  int64
+	FirstError error
+}
+
+func (t *TotalStats) String() string {
+	var ret string
+	if t.FirstError != nil {
+		ret = fmt.Sprintf("First error: %s\n", t.FirstError)
+	}
+	ret += fmt.Sprintf("%d total with %d failures in %s\n%f successes/s\n%f failures/s",
+		t.NumTotal, t.NumErrors, t.Duration,
+		float64(t.NumTotal)/t.Duration.Seconds(),
+		float64(t.NumErrors)/t.Duration.Seconds(),
+	)
+	return ret
+}
+
 type ResultCollector struct {
 	// Results is the channel workers should write their output to
 	Results chan Result
@@ -33,8 +54,10 @@ type ResultCollector struct {
 	requests   chan collectorRequest
 	stats      chan *Stats
 	histograms chan *Histogram
+	totals     chan *TotalStats
 
 	// collected stats
+	firstError       error
 	lastFlush        time.Time
 	histogram        *Histogram
 	totalCompleted   int64
@@ -56,12 +79,18 @@ func (rc *ResultCollector) Stats() *Stats {
 	return <-rc.stats
 }
 
+func (rc *ResultCollector) Total() *TotalStats {
+	rc.requests <- collectorRequestTotals
+	return <-rc.totals
+}
+
 func (rc *ResultCollector) Histogram() *Histogram {
 	rc.requests <- collectorRequestHistogram
 	return <-rc.histograms
 }
 
 func (rc *ResultCollector) Collect() {
+	start := time.Now()
 	for {
 		select {
 		case result := <-rc.Results:
@@ -69,6 +98,9 @@ func (rc *ResultCollector) Collect() {
 			rc.currentCompleted++
 			if result.Error != nil {
 				rc.totalErrors++
+				if rc.firstError == nil {
+					rc.firstError = result.Error
+				}
 			} else {
 				rc.histogram.Add(result.Took.Milliseconds())
 			}
@@ -80,6 +112,13 @@ func (rc *ResultCollector) Collect() {
 				rc.stats <- rc.flushCurrent()
 				rc.currentCompleted = 0
 				rc.lastFlush = time.Now()
+			case collectorRequestTotals:
+				rc.totals <- &TotalStats{
+					Duration:   time.Since(start),
+					NumTotal:   rc.totalCompleted,
+					NumErrors:  rc.totalErrors,
+					FirstError: rc.firstError,
+				}
 			}
 		}
 	}
@@ -93,6 +132,7 @@ func NewResultCollector(workerResults chan Result) *ResultCollector {
 		requests:   make(chan collectorRequest),
 		stats:      make(chan *Stats),
 		histograms: make(chan *Histogram),
+		totals:     make(chan *TotalStats),
 		lastFlush:  time.Now(),
 		histogram:  NewHistogram(DefaultHistogramBuckets),
 	}

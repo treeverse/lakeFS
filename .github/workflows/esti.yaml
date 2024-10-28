@@ -825,6 +825,9 @@ jobs:
     name: Run latest lakeFS app on AWS S3
     needs: [deploy-image, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        branch_ownership: [false, true]
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -866,6 +869,7 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_GRAVELER_BRANCH_OWNERSHIP_ENABLED: ${{ matrix.branch_ownership }}
           LAKEFS_DATABASE_TYPE: postgres
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           ESTI_BLOCKSTORE_TYPE: s3

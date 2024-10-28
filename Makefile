@@ -206,6 +206,7 @@ gen-code: gen-api ## Run the generator for inline commands
 		./pkg/actions \
 		./pkg/auth/ \
 		./pkg/authentication \
+		./pkg/distributed \
 		./pkg/graveler \
 		./pkg/graveler/committed \
 		./pkg/graveler/sstable \
