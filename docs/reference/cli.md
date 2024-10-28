@@ -3032,6 +3032,25 @@ lakectl abuse list <source ref URI> [flags]
 
 
 
+### lakectl abuse merge
+
+Merge non-conflicting objects to the source branch in parallel
+
+```
+lakectl abuse merge <branch URI> [flags]
+```
+
+#### Options
+{:.no_toc}
+
+```
+      --amount int        amount of merges to perform (default 1000)
+  -h, --help              help for merge
+      --parallelism int   number of merges to perform in parallel (default 100)
+```
+
+
+
 ### lakectl abuse random-delete
 
 Delete keys from a file and generate random delete from the source ref for those keys.
