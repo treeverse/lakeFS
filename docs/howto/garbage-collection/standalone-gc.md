@@ -262,7 +262,7 @@ _RUN_ID_ is generated during runtime by the Standalone GC. You can find it in th
 
 In this prefix, you'll find 2 objects:
 - `deleted.csv` - Containing all marked objects in a CSV containing one `address` column. Example:
-   ```csv
+   ```
    address
    "data/gcnobu7n2efc74lfa5ug/csfnri7n2efc74lfa69g,_e7P9j-1ahTXtofw7tWwJUIhTfL0rEs_dvBrClzc_QE"
    "data/gcnobu7n2efc74lfa5ug/csfnri7n2efc74lfa78g,mKZnS-5YbLzmK0pKsGGimdxxBlt8QZzCyw1QeQrFvFE"
