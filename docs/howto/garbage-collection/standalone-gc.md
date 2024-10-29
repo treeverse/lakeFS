@@ -94,11 +94,14 @@ The following configuration keys are available:
 | `logging.output`           | Where to output the logs to                                                    | "-"                | "-" (stdout), "=" (stderr), or any string for file path |
 | `cache_dir`                | Directory to use for caching data during run                                   | ~/.lakefs-sgc/data | string                                                  |
 | `aws.max_page_size`        | Max number of items per page when listing objects in AWS                       | 1000               | number                                                  |
-| `objects_min_age`          | Ignore any object that is last modified within this time frame ("cutoff time") | "6h"               | duration                                                |
+| `objects_min_age`*         | Ignore any object that is last modified within this time frame ("cutoff time") | "6h"               | duration                                                |
 | `lakefs.endpoint_url`      | The URL to the lakeFS installation - should end with `/api/v1`                 | NOT SET            | URL                                                     |
 | `lakefs.access_key_id`     | Access key to the lakeFS installation                                          | NOT SET            | string                                                  |
 | `lakefs.secret_access_key` | Secret access key to the lakeFS installation                                   | NOT SET            | string                                                  |
 
+{: .note }
+> **WARNING:** Changing `objects_min_age` is dangerous and can lead to undesired behaviour, such as causing ongoing writes to fail.
+It's recommended to not change this property.
 
 These keys can be provided in the following ways:
 1. Config file: Create a YAML file with the keys, each `.` is a new nesting level. \
