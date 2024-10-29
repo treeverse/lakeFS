@@ -2,9 +2,9 @@ package esti
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -235,7 +235,7 @@ func TestCreateRepo_Unauthorized(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotNil(t, resp.JSON401)
-	if !errors.Is(errors.New(resp.JSON401.Message), auth.ErrInsufficientPermissions) {
+	if !strings.Contains(resp.JSON401.Message, auth.ErrInsufficientPermissions.Error()) {
 		t.Fatalf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
 	}
 }
@@ -256,7 +256,7 @@ func TestRepoMetadata_Unauthorized(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON401)
-		if !errors.Is(errors.New(resp.JSON401.Message), auth.ErrInsufficientPermissions) {
+		if !strings.Contains(resp.JSON401.Message, auth.ErrInsufficientPermissions.Error()) {
 			t.Errorf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
 		}
 	})
@@ -264,7 +264,7 @@ func TestRepoMetadata_Unauthorized(t *testing.T) {
 		resp, err := clt.DeleteRepositoryMetadataWithResponse(ctx, repo, apigen.DeleteRepositoryMetadataJSONRequestBody{Keys: []string{"foo"}})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON401)
-		if !errors.Is(errors.New(resp.JSON401.Message), auth.ErrInsufficientPermissions) {
+		if !strings.Contains(resp.JSON401.Message, auth.ErrInsufficientPermissions.Error()) {
 			t.Errorf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
 		}
 	})
@@ -273,7 +273,7 @@ func TestRepoMetadata_Unauthorized(t *testing.T) {
 		resp, err := clt.GetRepositoryMetadataWithResponse(ctx, repo)
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON401)
-		if !errors.Is(errors.New(resp.JSON401.Message), auth.ErrInsufficientPermissions) {
+		if !strings.Contains(resp.JSON401.Message, auth.ErrInsufficientPermissions.Error()) {
 			t.Errorf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
 		}
 	})
