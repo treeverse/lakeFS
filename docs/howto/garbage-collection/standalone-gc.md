@@ -188,5 +188,18 @@ In this prefix, you'll find 2 objects:
 
 ### Deleting marked objects
 
-TODO: give instructions
-To delete the objects marked by the GC, you'll need to read the `deleted.parquet` or `deleted.json` files, and manually delete each address from AWS.
+To delete the objects marked by the GC, you'll need to read the `deleted.csv` file, and manually delete each address from AWS.
+
+Example bash command to move all the marked objects to a different bucket on S3:
+```bash
+# Change these to your correct values
+storage_ns=<your storage namespace (s3://...)>
+output_bucket=<your output bucket>
+run_id=<GC run id>
+
+# Download the CSV file
+aws s3 cp "$storage_ns/_lakefs/retention/gc/reports/$run_id/deleted.csv" "./run_id-$run_id.csv"
+
+# Move all addresses to the output bucket under the run_id prefix
+cat run_id-$run_id.csv | tail -n +2 | head -n 10 | xargs -I {} aws s3 mv "$storage_ns/{}" "$output_bucket/run_id=$run_id/"
+```
