@@ -235,7 +235,8 @@ func TestCreateRepo_Unauthorized(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotNil(t, resp.JSON401)
-	if !errors.Is(err, auth.ErrInsufficientPermissions) {
+	var authErr error
+	if errors.As(err, &authErr) && !errors.Is(authErr, auth.ErrInsufficientPermissions) {
 		t.Fatalf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
 	}
 }
@@ -256,7 +257,8 @@ func TestRepoMetadata_Unauthorized(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON401)
-		if !errors.Is(err, auth.ErrInsufficientPermissions) {
+		var authErr error
+		if errors.As(err, &authErr) && !errors.Is(authErr, auth.ErrInsufficientPermissions) {
 			t.Errorf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
 		}
 	})
@@ -264,7 +266,8 @@ func TestRepoMetadata_Unauthorized(t *testing.T) {
 		resp, err := clt.DeleteRepositoryMetadataWithResponse(ctx, repo, apigen.DeleteRepositoryMetadataJSONRequestBody{Keys: []string{"foo"}})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON401)
-		if !errors.Is(err, auth.ErrInsufficientPermissions) {
+		var authErr error
+		if errors.As(err, &authErr) && !errors.Is(authErr, auth.ErrInsufficientPermissions) {
 			t.Errorf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
 		}
 	})
@@ -273,7 +276,8 @@ func TestRepoMetadata_Unauthorized(t *testing.T) {
 		resp, err := clt.GetRepositoryMetadataWithResponse(ctx, repo)
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON401)
-		if !errors.Is(err, auth.ErrInsufficientPermissions) {
+		var authErr error
+		if errors.As(err, &authErr) && !errors.Is(authErr, auth.ErrInsufficientPermissions) {
 			t.Errorf("expected error message %q, got %q", auth.ErrInsufficientPermissions.Error(), resp.JSON401.Message)
 		}
 	})
