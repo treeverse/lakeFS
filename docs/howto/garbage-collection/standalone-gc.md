@@ -61,7 +61,7 @@ If not, contact us at [support@treeverse.io](mailto:support@treeverse.io).
 
 ### Step 2: Login to Dockerhub with this token
 ```bash
-docker login -u <your token>
+docker login -u <token>
 ```
 
 ### Step 3: Download the docker image
@@ -146,7 +146,7 @@ An example setup for working with MinIO:
     ```
    [profile minio]
    region = us-east-1
-   endpoint_url = <your MinIO URL>
+   endpoint_url = <MinIO URL>
    s3 =
        signature_version = s3v4
     ```
@@ -154,8 +154,8 @@ An example setup for working with MinIO:
 2. Add an access and secret keys to your `~/.aws/credentials` file:
     ```
    [minio]
-   aws_access_key_id     = <your MinIO access key>
-   aws_secret_access_key = <your MinIO secret key>
+   aws_access_key_id     = <MinIO access key>
+   aws_secret_access_key = <MinIO secret key>
     ```
 3. Run the `lakefs-sgc` docker image and pass it the `minio` profile - see [example](./standalone-gc.md#mounting-the-aws-directory) below.
 
@@ -199,8 +199,8 @@ logging:
   level: debug
 lakefs:
   endpoint_url: https://your.url/api/v1
-  access_key_id: <your lakeFS access key>
-  secret_access_key: <your lakeFS secret key>
+  access_key_id: <lakeFS access key>
+  secret_access_key: <lakeFS secret key>
 ```
 
 ### Command line reference
@@ -229,9 +229,9 @@ docker run \
 -e AWS_SESSION_TOKEN="$(grep 'aws_session_token' ~/.aws/credentials | awk -F' = ' '{print $2}')" \
 -e AWS_ACCESS_KEY_ID="$(grep 'aws_access_key_id' ~/.aws/credentials | awk -F' = ' '{print $2}')" \
 -e AWS_SECRET_ACCESS_KEY="$(grep 'aws_secret_access_key' ~/.aws/credentials | awk -F' = ' '{print $2}')" \
--e LAKEFS_SGC_LAKEFS_ENDPOINT_URL=<your lakefs URL> \
--e LAKEFS_SGC_LAKEFS_ACCESS_KEY_ID=<your lakefs accesss key> \
--e LAKEFS_SGC_LAKEFS_SECRET_ACCESS_KEY=<your lakefs secret key> \
+-e LAKEFS_SGC_LAKEFS_ENDPOINT_URL=<lakefs endpoint URL> \
+-e LAKEFS_SGC_LAKEFS_ACCESS_KEY_ID=<lakefs accesss key> \
+-e LAKEFS_SGC_LAKEFS_SECRET_ACCESS_KEY=<lakefs secret key> \
 -e LAKEFS_SGC_LOGGING_LEVEL=debug \
 treeverse/lakefs-sgc:<tag> run <repository>
 ```
@@ -251,10 +251,10 @@ docker run \
 --network=host \
 -v ~/.aws:/home/lakefs-sgc/.aws \
 -e AWS_REGION=us-east-1 \
--e AWS_PROFILE=<your profile> \
--e LAKEFS_SGC_LAKEFS_ENDPOINT_URL=<your endpoint URL> \
--e LAKEFS_SGC_LAKEFS_ACCESS_KEY_ID=<your lakefs accesss key> \
--e LAKEFS_SGC_LAKEFS_SECRET_ACCESS_KEY=<your lakefs secret key> \
+-e AWS_PROFILE=<profile> \
+-e LAKEFS_SGC_LAKEFS_ENDPOINT_URL=<lakefs endpoint URL> \
+-e LAKEFS_SGC_LAKEFS_ACCESS_KEY_ID=<lakefs accesss key> \
+-e LAKEFS_SGC_LAKEFS_SECRET_ACCESS_KEY=<lakefs secret key> \
 -e LAKEFS_SGC_LOGGING_LEVEL=debug \
 treeverse/lakefs-sgc:<tag> run <repository>
 ```
@@ -292,8 +292,8 @@ To delete the objects marked by the GC, you'll need to read the `deleted.csv` fi
 Example bash command to move all the marked objects to a different bucket on S3:
 ```bash
 # Change these to your correct values
-storage_ns=<your storage namespace (s3://...)>
-output_bucket=<your output bucket (s3://...)>
+storage_ns=<storage namespace (s3://...)>
+output_bucket=<output bucket (s3://...)>
 run_id=<GC run id>
 
 # Download the CSV file
