@@ -187,7 +187,7 @@ These keys can be provided in the following ways:
 2. Environment variables: by setting `LAKEFS_SGC_<KEY>`, with uppercase letters and `.`s converted to `_`s. \
    For example `logging.level` will be:
    ```bash
-   export LAKEFS_SGC_LOGGING_LEVEL=info`
+   export LAKEFS_SGC_LOGGING_LEVEL=info
    ```
 
 Example (minimalistic) config file:
