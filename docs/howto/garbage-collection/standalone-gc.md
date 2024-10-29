@@ -41,8 +41,8 @@ Standalone GC is a limited version of the Spark-backed GC that runs without any 
 Repository spec:
 
 - 100k objects
-- < 200 commits
-- 1 branch
+- 250 commits
+- 100 branches
 
 Machine spec:
 - 4GiB RAM
@@ -51,7 +51,7 @@ Machine spec:
 In this setup, we measured:
 
 - Time: < 5m
-- Disk space: 120MiB
+- Disk space: 123MB
 
 ## Installation
 
@@ -72,6 +72,66 @@ docker pull treeverse/lakefs-sgc:<tag>
 
 ## Usage
 
+### Permissions
+To run `lakefs-sgc`, you'll need AWS and LakeFS users, with the following permissions:
+#### AWS
+The minimal required permissions on AWS are:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::<bucket>/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::<bucket>"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListAllMyBuckets"
+      ],
+      "Resource": [
+        "arn:aws:s3:::*"
+      ]
+    }
+  ]
+}
+```
+
+#### LakeFS
+The minimal required permissions on LakeFS are:
+```json
+{
+  "statement": [
+    {
+      "action": [
+        "fs:ReadConfig",
+        "fs:ReadRepository",
+        "retention:PrepareGarbageCollectionCommits",
+        "retention:PrepareGarbageCollectionUncommitted",
+        "fs:ListObjects",
+        "fs:ReadConfig"
+      ],
+      "effect": "allow",
+      "resource": "arn:lakefs:fs:::repository/<repository>"
+    }
+  ]
+}
+```
 ### AWS Credentials
 Currently, `lakefs-sgc` does not provide an option to explicitly set AWS credentials. It relies on the hosting machine
 to be set up correctly, and reads the AWS credentials from the machine.
