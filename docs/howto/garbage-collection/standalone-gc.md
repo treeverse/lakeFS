@@ -74,6 +74,7 @@ docker pull treeverse/lakefs-sgc:<tag>
 
 ### Permissions
 To run `lakefs-sgc`, you'll need AWS and LakeFS users, with the following permissions:
+
 #### AWS
 The minimal required permissions on AWS are:
 ```json
@@ -87,7 +88,7 @@ The minimal required permissions on AWS are:
         "s3:GetObject"
       ],
       "Resource": [
-        "arn:aws:s3:::<bucket>/*"
+        "arn:aws:s3:::some-bucket/some/prefix/*"
       ]
     },
     {
@@ -96,7 +97,7 @@ The minimal required permissions on AWS are:
         "s3:ListBucket"
       ],
       "Resource": [
-        "arn:aws:s3:::<bucket>"
+        "arn:aws:s3:::some-bucket"
       ]
     },
     {
@@ -111,6 +112,7 @@ The minimal required permissions on AWS are:
   ]
 }
 ```
+In this permissions file, the example repository storage namespace is `s3://some-bucket/some/prefix`.
 
 #### LakeFS
 The minimal required permissions on LakeFS are:
