@@ -23,7 +23,7 @@ experimental
 {: .note .warning }
 > Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC]({% link howto/garbage-collection/gc.md %}). Read through the [limitations](./standalone-gc.md#limitations) carefully before using it.
 
-{% include toc_2-3.html %}
+{% include toc_2-4.html %}
 
 ## About
 
@@ -37,8 +37,6 @@ Standalone GC is a limited version of the Spark-backed GC that runs without any 
    More about that in the [Output](./standalone-gc.md#output) section.
 
 ### Lab tests
-
-<TODO: update with final results once ready>
 
 Repository spec:
 
@@ -81,8 +79,25 @@ to be set up correctly, and reads the AWS credentials from the machine.
 This means, you should set up your machine however AWS expects you to set it. \
 For example, by following their guide on [configuring the AWS CLI](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html).
 
-### MinIO Setup
-TODO
+#### S3-compatible clients
+Naturally, this method of configuration allows for `lakefs-sgc` to work with any S3-compatible client (such as [MinIO](https://min.io/)). \
+An example setup for working with MinIO:
+1. Add a profile to your `~/.aws/config` file:
+    ```
+    [profile minio]
+    region = us-east-1
+    endpoint_url = <your MinIO URL>
+    s3 =
+        signature_version = s3v4
+    ```
+
+2. Add an access and secret keys to your `~/.aws/credentials` file:
+    ```
+    [minio]
+    aws_access_key_id     = <your MinIO access key>
+    aws_secret_access_key = <your MinIO secret key>
+    ```
+3. Run the `lakefs-sgc` docker image and pass it the `minio` profile - see [example](./standalone-gc.md#mounting-the-aws-directory) below.
 
 ### Configuration
 The following configuration keys are available:
@@ -143,8 +158,9 @@ Flags:
 - `--parallelism`: number of parallel downloads for metadataDir (default 10)
 - `--presign`: use pre-signed URLs when downloading/uploading data (recommended) (default true)
 
-### Example - docker run command
-Here's an example for running the `treeverse/lakefs-sgc` docker image, with AWS credentials parsed from the `~/.aws/credentials` file:
+### Example run commands
+
+#### Directly passing in credentials parsed from `~/.aws/credentials`
 
 ```bash
 docker run \
@@ -153,12 +169,28 @@ docker run \
 -e AWS_ACCESS_KEY_ID="$(grep 'aws_access_key_id' ~/.aws/credentials | awk -F' = ' '{print $2}')" \
 -e AWS_SECRET_ACCESS_KEY="$(grep 'aws_secret_access_key' ~/.aws/credentials | awk -F' = ' '{print $2}')" \
 -e LAKEFS_SGC_LAKEFS_ENDPOINT_URL=<your lakefs URL> \
--e LAKEFS_SGC_LAKEFS_ACCESS_KEY_ID=<your accesss key> \
--e LAKEFS_SGC_LAKEFS_SECRET_ACCESS_KEY=<your secret key> \
+-e LAKEFS_SGC_LAKEFS_ACCESS_KEY_ID=<your lakefs accesss key> \
+-e LAKEFS_SGC_LAKEFS_SECRET_ACCESS_KEY=<your lakefs secret key> \
 -e LAKEFS_SGC_LOGGING_LEVEL=debug \
-treeverse/lakefs-sgc:<version> run <repository>
+treeverse/lakefs-sgc:<tag> run <repository>
 ```
 
+#### Mounting the `~/.aws` directory
+
+When working with S3-compatible clients, it's often more convenient to mount the ~/.aws` file and pass in the desired profile:
+
+```bash
+docker run \
+--network=host \
+-v ~/.aws:/home/lakefs-sgc/.aws \
+-e AWS_REGION=us-east-1 \
+-e AWS_PROFILE=<your profile> \
+-e LAKEFS_SGC_LAKEFS_ENDPOINT_URL=<your endpoint URL> \
+-e LAKEFS_SGC_LAKEFS_ACCESS_KEY_ID=<your lakefs accesss key> \
+-e LAKEFS_SGC_LAKEFS_SECRET_ACCESS_KEY=<your lakefs secret key> \
+-e LAKEFS_SGC_LOGGING_LEVEL=debug \
+treeverse/lakefs-sgc:<tag> run <repository>
+```
 ### Output
 `lakefs-sgc` will write its reports to `<REPOSITORY_STORAGE_NAMESPACE>/_lakefs/retention/gc/reports/<RUN_ID>/`. \
 _RUN_ID_ is generated during runtime by the Standalone GC. You can find it in the logs:
