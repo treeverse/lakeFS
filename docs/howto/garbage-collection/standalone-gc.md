@@ -50,7 +50,7 @@ Machine spec:
 
 In this setup, we measured:
 
-- Time: ~1 minute
+- Time: < 5m
 - Disk space: 120MiB
 
 ## Installation
