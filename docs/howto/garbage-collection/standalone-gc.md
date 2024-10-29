@@ -84,18 +84,18 @@ Naturally, this method of configuration allows for `lakefs-sgc` to work with any
 An example setup for working with MinIO:
 1. Add a profile to your `~/.aws/config` file:
     ```
-    [profile minio]
-    region = us-east-1
-    endpoint_url = <your MinIO URL>
-    s3 =
-        signature_version = s3v4
+   [profile minio]
+   region = us-east-1
+   endpoint_url = <your MinIO URL>
+   s3 =
+       signature_version = s3v4
     ```
 
 2. Add an access and secret keys to your `~/.aws/credentials` file:
     ```
-    [minio]
-    aws_access_key_id     = <your MinIO access key>
-    aws_secret_access_key = <your MinIO secret key>
+   [minio]
+   aws_access_key_id     = <your MinIO access key>
+   aws_secret_access_key = <your MinIO secret key>
     ```
 3. Run the `lakefs-sgc` docker image and pass it the `minio` profile - see [example](./standalone-gc.md#mounting-the-aws-directory) below.
 
@@ -233,7 +233,7 @@ Example bash command to move all the marked objects to a different bucket on S3:
 ```bash
 # Change these to your correct values
 storage_ns=<your storage namespace (s3://...)>
-output_bucket=<your output bucket>
+output_bucket=<your output bucket (s3://...)>
 run_id=<GC run id>
 
 # Download the CSV file
