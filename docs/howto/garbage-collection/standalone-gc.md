@@ -34,7 +34,7 @@ Standalone GC is a limited version of the Spark-backed GC that runs without any 
 1. Except for the [Lab tests](./standalone-gc.md#lab-tests) performed, there are no further guarantees about the performance profile of the Standalone GC. 
 2. Horizontal scale is not supported - Only a single instance of `lakefs-sgc` can operate at a time on a given repository.
 3. It only marks objects and does not delete them - Equivalent to the GC's [mark only mode]({% link howto/garbage-collection/gc.md %}#mark-only-mode). \
-   More about that in the [Output](./standalone-gc.md#output) section.
+   More about that in the [Get the List of Objects Marked for Deletion](./standalone-gc.md#get-the-list-of-objects-marked-for-deletion) section.
 
 ### Lab tests
 
@@ -258,7 +258,7 @@ docker run \
 -e LAKEFS_SGC_LOGGING_LEVEL=debug \
 treeverse/lakefs-sgc:<tag> run <repository>
 ```
-### Output
+### Get the List of Objects Marked for Deletion
 `lakefs-sgc` will write its reports to `<REPOSITORY_STORAGE_NAMESPACE>/_lakefs/retention/gc/reports/<RUN_ID>/`. \
 _RUN_ID_ is generated during runtime by the Standalone GC. You can find it in the logs:
 ```
@@ -285,11 +285,13 @@ In this prefix, you'll find 2 objects:
    }
    ```
 
-### Deleting marked objects
+### Delete marked objects
 
 To delete the objects marked by the GC, you'll need to read the `deleted.csv` file, and manually delete each address from AWS.
 
-Example bash command to move all the marked objects to a different bucket on S3:
+It is recommended to move all the marked objects to a different bucket instead of deleting them directly.
+
+Here's an example bash script to perform this operation:
 ```bash
 # Change these to your correct values
 storage_ns=<storage namespace (s3://...)>
