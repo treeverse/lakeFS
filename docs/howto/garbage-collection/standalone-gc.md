@@ -102,17 +102,18 @@ An example setup for working with MinIO:
 ### Configuration
 The following configuration keys are available:
 
-| Key                        | Description                                                                    | Default value      | Possible values                                         |
-|----------------------------|--------------------------------------------------------------------------------|--------------------|---------------------------------------------------------|
-| `logging.format`           | Logs output format                                                             | "text"             | "text","json"                                           |
-| `logging.level`            | Logs level                                                                     | "info"             | "error","warn",info","debug","trace"                    |
-| `logging.output`           | Where to output the logs to                                                    | "-"                | "-" (stdout), "=" (stderr), or any string for file path |
-| `cache_dir`                | Directory to use for caching data during run                                   | ~/.lakefs-sgc/data | string                                                  |
-| `aws.max_page_size`        | Max number of items per page when listing objects in AWS                       | 1000               | number                                                  |
-| `objects_min_age`*         | Ignore any object that is last modified within this time frame ("cutoff time") | "6h"               | duration                                                |
-| `lakefs.endpoint_url`      | The URL to the lakeFS installation - should end with `/api/v1`                 | NOT SET            | URL                                                     |
-| `lakefs.access_key_id`     | Access key to the lakeFS installation                                          | NOT SET            | string                                                  |
-| `lakefs.secret_access_key` | Secret access key to the lakeFS installation                                   | NOT SET            | string                                                  |
+| Key                            | Description                                                                                                                                                   | Default value      | Possible values                                         |
+|--------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|---------------------------------------------------------|
+| `logging.format`               | Logs output format                                                                                                                                            | "text"             | "text","json"                                           |
+| `logging.level`                | Logs level                                                                                                                                                    | "info"             | "error","warn",info","debug","trace"                    |
+| `logging.output`               | Where to output the logs to                                                                                                                                   | "-"                | "-" (stdout), "=" (stderr), or any string for file path |
+| `cache_dir`                    | Directory to use for caching data during run                                                                                                                  | ~/.lakefs-sgc/data | string                                                  |
+| `aws.max_page_size`            | Max number of items per page when listing objects in AWS                                                                                                      | 1000               | number                                                  |
+| `aws.s3.addressing_path_style` | Whether or not to use [path-style](https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html#path-style-access) when reading objects from AWS | true               | boolean                                                 |
+| `objects_min_age`*             | Ignore any object that is last modified within this time frame ("cutoff time")                                                                                | "6h"               | duration                                                |
+| `lakefs.endpoint_url`          | The URL to the lakeFS installation - should end with `/api/v1`                                                                                                | NOT SET            | URL                                                     |
+| `lakefs.access_key_id`         | Access key to the lakeFS installation                                                                                                                         | NOT SET            | string                                                  |
+| `lakefs.secret_access_key`     | Secret access key to the lakeFS installation                                                                                                                  | NOT SET            | string                                                  |
 
 {: .note }
 > **WARNING:** Changing `objects_min_age` is dangerous and can lead to undesired behaviour, such as causing ongoing writes to fail.
@@ -177,8 +178,14 @@ treeverse/lakefs-sgc:<tag> run <repository>
 
 #### Mounting the `~/.aws` directory
 
-When working with S3-compatible clients, it's often more convenient to mount the ~/.aws` file and pass in the desired profile:
+When working with S3-compatible clients, it's often more convenient to mount the ~/.aws` file and pass in the desired profile.
 
+First, change the permissions for `~/.aws/*` to allow the docker container to read this directory:
+```bash
+chmod 644 ~/.aws/*
+```
+
+Then, run the docker image and mount `~/.aws` to the `lakefs-sgc` home directory on the docker container:
 ```bash
 docker run \
 --network=host \
