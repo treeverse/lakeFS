@@ -214,7 +214,7 @@ Flags:
 - `--parallelism`: number of parallel downloads for metadataDir (default 10)
 - `--presign`: use pre-signed URLs when downloading/uploading data (recommended) (default true)
 
-### Example run commands
+### How to Run Standalone GC
 
 #### Directly passing in credentials parsed from `~/.aws/credentials`
 
