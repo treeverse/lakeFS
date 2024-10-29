@@ -33,7 +33,7 @@ Standalone GC is a limited version of the Spark-backed GC that runs without any 
 
 1. Except for the [Lab tests](./standalone-gc.md#lab-tests) performed, there are no further guarantees about the performance profile of the Standalone GC. 
 2. Horizontal scale is not supported - Only a single instance of `lakefs-sgc` can operate at a time on a given repository.
-3. It only marks objects and does not delete them - Equivalent to the GC's [mark only mode]({% link howto/garbage-collection/gc.md %}#mark-only-mode). \
+3. Standalone GC only marks objects and does not delete them - Equivalent to the GC's [mark only mode]({% link howto/garbage-collection/gc.md %}#mark-only-mode). \
    More about that in the [Get the List of Objects Marked for Deletion](./standalone-gc.md#get-the-list-of-objects-marked-for-deletion) section.
 
 ### Lab tests
