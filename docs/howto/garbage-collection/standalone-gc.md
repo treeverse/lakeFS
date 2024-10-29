@@ -235,7 +235,7 @@ treeverse/lakefs-sgc:<tag> run <repository>
 
 #### Mounting the `~/.aws` directory
 
-When working with S3-compatible clients, it's often more convenient to mount the `~/.aws` file and pass in the desired profile.
+When working with S3-compatible clients, it's often more convenient to mount the `~/.aws` directory and pass in the desired profile.
 
 First, change the permissions for `~/.aws/*` to allow the docker container to read this directory:
 ```bash
