@@ -146,7 +146,7 @@ everest umount "./pets"
 
 ### How do I get started with lakeFS Mount (Everest)?
 
-lakeFS Mount is avaialble for lakeFS Cloud and lakeFS Enterprise customers. Once your setup is complete, [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to access the lakeFS Mounts (beta) binary and follow the provided docs.
+lakeFS Mount is avaialble for lakeFS Cloud and lakeFS Enterprise customers. Once your setup is complete, [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to access the lakeFS Mounts binary and follow the provided docs.
 
 * Want to try lakeFS Cloud? [Signup](https://lakefs.cloud/register) for a 30-day free trial.
 * Interested in lakeFS Enterprise? [Contact sales](https://lakefs.io/contact-sales/) for a 30-day free license.
