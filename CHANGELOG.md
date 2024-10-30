@@ -8,7 +8,7 @@
 - Add documentation for standalone (sparkless) GC (#8307)
 
 :bug: Bugs fixed:
-- Pass context to async tasks to keep context fields intact (#8320)
+- Pass request context to import operation sub tasks (#8320)
 
 # v1.39.2
 
