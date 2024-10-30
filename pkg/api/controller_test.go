@@ -5906,6 +5906,42 @@ func TestController_MergePullRequest(t *testing.T) {
 		require.NotNil(t, getResp.JSON200.ClosedDate)
 		require.True(t, time.Now().Sub(*getResp.JSON200.ClosedDate) < 1*time.Minute)
 	})
+
+	t.Run("conflict", func(t *testing.T) {
+		body := apigen.CreatePullRequestJSONRequestBody{
+			Description:       swag.String("My description"),
+			DestinationBranch: "main",
+			SourceBranch:      "branch_e",
+			Title:             "My title",
+		}
+		branchResp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+			Name:   body.SourceBranch,
+			Source: "main",
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, branchResp.StatusCode())
+
+		err = deps.catalog.CreateEntry(ctx, repo, body.SourceBranch, catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
+		require.NoError(t, err)
+		_, err = deps.catalog.Commit(ctx, repo, body.SourceBranch, "some message", DefaultUserID, nil, nil, nil, false)
+		require.NoError(t, err)
+
+		err = deps.catalog.CreateEntry(ctx, repo, body.DestinationBranch, catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr2", CreationDate: time.Now(), Size: 2, Checksum: "cksum2"})
+		require.NoError(t, err)
+		_, err = deps.catalog.Commit(ctx, repo, body.DestinationBranch, "some message", DefaultUserID, nil, nil, nil, false)
+		require.NoError(t, err)
+
+		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, body)
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON201, resp.Status())
+
+		// Update with wrong status
+		mergeResp, err := clt.MergePullRequestWithResponse(ctx, repo, resp.JSON201.Id)
+		require.NoError(t, err)
+		require.NotNil(t, mergeResp.JSON409, mergeResp.Status())
+		require.NotNil(t, mergeResp.Body)
+		require.Contains(t, string(mergeResp.Body), "conflict")
+	})
 }
 
 // pollRestoreStatus polls the restore status endpoint until the restore is complete or times out.
