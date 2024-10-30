@@ -2297,7 +2297,7 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 }
 
 func (c *Catalog) importAsync(ctx context.Context, repository *graveler.RepositoryRecord, branchID, importID string, params ImportRequest, logger logging.Logger) error {
-	ctx, cancel := context.WithCancel(ctx) // Need a new context for the async operations
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	importManager, err := NewImport(ctx, cancel, logger, c.KVStore, repository, importID)
