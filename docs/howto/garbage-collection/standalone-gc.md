@@ -121,10 +121,10 @@ The minimal required permissions on LakeFS are:
   "statement": [
     {
       "action": [
-        "fs:ReadConfig",
-        "fs:ReadRepository",
         "retention:PrepareGarbageCollectionCommits",
         "retention:PrepareGarbageCollectionUncommitted",
+        "fs:ReadConfig",
+        "fs:ReadRepository",
         "fs:ListObjects",
         "fs:ReadConfig"
       ],
@@ -212,8 +212,8 @@ Usage: \
 `lakefs-sgc run <repository>`
 
 Flags:
-- `--cache-dir`: directory to cache read files and metadataDir (default is $HOME/.lakefs-sgc/data/)
-- `--parallelism`: number of parallel downloads for metadataDir (default 10)
+- `--cache-dir`: directory to cache read files (default is `$HOME/.lakefs-sgc/data/`)
+- `--parallelism`: number of parallel downloads for metadata files (default 10)
 - `--presign`: use pre-signed URLs when downloading/uploading data (recommended) (default true)
 
 ### How to Run Standalone GC
@@ -235,7 +235,7 @@ treeverse/lakefs-sgc:<tag> run <repository>
 
 #### Mounting the `~/.aws` directory
 
-When working with S3-compatible clients, it's often more convenient to mount the ~/.aws` file and pass in the desired profile.
+When working with S3-compatible clients, it's often more convenient to mount the `~/.aws` directory and pass in the desired profile.
 
 First, change the permissions for `~/.aws/*` to allow the docker container to read this directory:
 ```bash
@@ -298,6 +298,6 @@ run_id=<GC run id>
 # Download the CSV file
 aws s3 cp "$storage_ns/_lakefs/retention/gc/reports/$run_id/deleted.csv" "./run_id-$run_id.csv"
 
-# Move all addresses to the output bucket under the run_id prefix
-cat run_id-$run_id.csv | tail -n +2 | head -n 10 | xargs -I {} aws s3 mv "$storage_ns/{}" "$output_bucket/run_id=$run_id/"
+# Move all addresses to the output bucket under the "run_id=$run_id" prefix
+cat run_id-$run_id.csv | tail -n +2 | xargs -I {} aws s3 mv "$storage_ns/{}" "$output_bucket/run_id=$run_id/"
 ```
