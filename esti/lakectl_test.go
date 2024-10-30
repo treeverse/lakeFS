@@ -535,14 +535,11 @@ func TestLakectlAuthUsers(t *testing.T) {
 }
 
 func TestLakectlIdentity(t *testing.T) {
-	userId := "user"
-
+	email := "email"
 	vars := map[string]string{
-		"USER_ID": userId,
+		"EMAIL": email,
 	}
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" identity", false, "lakectl_identity", vars)
-	email := "email"
-	vars["EMAIL"] = email
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" identity", false, "lakectl_identity_with_mail", vars)
 
 }
