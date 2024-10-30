@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -53,9 +54,11 @@ func TestMultipartUpload(t *testing.T) {
 
 	completedParts := uploadMultipartParts(t, ctx, logger, resp, parts, 0)
 
-	// On S3 the object should have Last-Modified time at around time of MPU creation.
-	// Ensure lakeFS fails the test if it fakes it by using the current time.
-	time.Sleep(2 * timeResolution)
+	if isBlockstoreType(block.BlockstoreTypeS3) == nil {
+		// Object should have Last-Modified time at around time of MPU creation.  Ensure
+		// lakeFS fails the test if it fakes it by using the current time.
+		time.Sleep(2 * timeResolution)
+	}
 
 	completeResponse, err := uploadMultipartComplete(ctx, svc, resp, completedParts)
 	require.NoError(t, err, "failed to complete multipart upload")
