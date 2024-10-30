@@ -1,5 +1,15 @@
 # Changelog
 
+# v1.40.0
+
+:new: What's new:
+- Added Parallelism configuration option to lakectl (#8283)
+- Experiment: Improve concurrent merge performance by weakly owning branch updates (#8268)
+- Add documentation for standalone (sparkless) GC (#8307)
+
+:bug: Bugs fixed:
+- Pass request context to import operation sub tasks (#8320)
+
 # v1.39.2
 
 :new: What's new:
