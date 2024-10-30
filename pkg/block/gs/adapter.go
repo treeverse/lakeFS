@@ -524,6 +524,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	lg.Debug("completed multipart upload")
 	return &block.CompleteMultiPartUploadResponse{
 		ETag:          targetAttrs.Etag,
+		MTime:         &targetAttrs.Created,
 		ContentLength: targetAttrs.Size,
 	}, nil
 }

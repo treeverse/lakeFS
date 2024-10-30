@@ -779,6 +779,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	etag := strings.Trim(aws.ToString(resp.ETag), `"`)
 	return &block.CompleteMultiPartUploadResponse{
 		ETag:             etag,
+		MTime:            headResp.LastModified,
 		ContentLength:    aws.ToInt64(headResp.ContentLength),
 		ServerSideHeader: extractSSHeaderCompleteMultipartUpload(resp),
 	}, nil

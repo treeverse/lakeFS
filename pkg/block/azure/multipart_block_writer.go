@@ -106,6 +106,7 @@ func completeMultipart(ctx context.Context, parts []block.MultipartPart, contain
 	etag := string(*res.ETag)
 	return &block.CompleteMultiPartUploadResponse{
 		ETag:          etag,
+		MTime:         res.LastModified,
 		ContentLength: size,
 	}, nil
 }
