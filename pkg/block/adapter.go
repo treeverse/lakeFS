@@ -96,10 +96,13 @@ type CreateMultiPartUploadResponse struct {
 	ServerSideHeader http.Header
 }
 
-// CompleteMultiPartUploadResponse complete multipart etag, content length and additional headers (implementation specific) currently it targets s3.
-// The ETag is a hex string value of the content checksum
+// CompleteMultiPartUploadResponse complete multipart etag, content length and additional headers (implementation specific).
 type CompleteMultiPartUploadResponse struct {
-	ETag             string
+	// ETag is a hex string value of the content checksum
+	ETag string
+	// MTime, if non-nil, is the creation time of the resulting object.  Typically the
+	// object store returns it on a Last-Modified header from some operations.
+	MTime            *time.Time
 	ContentLength    int64
 	ServerSideHeader http.Header
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -14,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -23,6 +25,13 @@ const (
 )
 
 func TestMultipartUpload(t *testing.T) {
+	// timeResolution is a duration greater than the timestamp resolution of the backing
+	// store.  Multipart object on S3 is the time of create-MPU, waiting before completion
+	// ensures that lakeFS did not use the current time.  For other blockstores MPU
+	// completion time is used, meaning it will be hard to detect if the underlying and
+	// lakeFS objects share the same time.
+	const timeResolution = time.Second
+
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	file := "multipart_file"
@@ -44,6 +53,13 @@ func TestMultipartUpload(t *testing.T) {
 	}
 
 	completedParts := uploadMultipartParts(t, ctx, logger, resp, parts, 0)
+
+	if isBlockstoreType(block.BlockstoreTypeS3) == nil {
+		// Object should have Last-Modified time at around time of MPU creation.  Ensure
+		// lakeFS fails the test if it fakes it by using the current time.
+		time.Sleep(2 * timeResolution)
+	}
+
 	completeResponse, err := uploadMultipartComplete(ctx, svc, resp, completedParts)
 	require.NoError(t, err, "failed to complete multipart upload")
 
@@ -55,6 +71,28 @@ func TestMultipartUpload(t *testing.T) {
 	if !bytes.Equal(partsConcat, getResp.Body) {
 		t.Fatalf("uploaded object did not match")
 	}
+
+	statResp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{Path: file, Presign: aws.Bool(true)})
+	require.NoError(t, err, "failed to get object")
+	require.Equal(t, http.StatusOK, getResp.StatusCode(), getResp.Status())
+
+	// Get last-modified from the underlying store.
+
+	presignedGetURL := statResp.JSON200.PhysicalAddress
+	res, err := http.Get(presignedGetURL)
+	require.NoError(t, err, "GET underlying")
+	// The presigned URL is usable only for GET, but we don't actually care about its body.
+	_ = res.Body.Close()
+	require.Equal(t, http.StatusOK, res.StatusCode, "%s: %s", presignedGetURL, res.Status)
+	lastModifiedString := res.Header.Get("Last-Modified")
+	underlyingLastModified, err := time.Parse(time.RFC1123, lastModifiedString)
+	require.NoError(t, err, "Last-Modified %s", lastModifiedString)
+	// Last-Modified header includes a timezone, which is typically "GMT" on AWS.  Now GMT
+	// _is equal to_ UTC!.  But Go is nothing if not cautious, and considers UTC and GMT to
+	// be different timezones.  So cannot compare with "==" and must use time.Time.Equal.
+	lakeFSMTime := time.Unix(statResp.JSON200.Mtime, 0)
+	require.True(t, lakeFSMTime.Equal(underlyingLastModified),
+		"lakeFS mtime %s should be same as on underlying object %s", lakeFSMTime, underlyingLastModified)
 }
 
 func TestMultipartUploadAbort(t *testing.T) {

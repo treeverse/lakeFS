@@ -40,9 +40,14 @@ func shouldReplaceMetadata(req *http.Request) bool {
 	return req.Header.Get(amzMetadataDirectiveHeaderPrefix) == "REPLACE"
 }
 
-func (o *PathOperation) finishUpload(req *http.Request, checksum, physicalAddress string, size int64, relative bool, metadata map[string]string, contentType string) error {
+func (o *PathOperation) finishUpload(req *http.Request, mTime *time.Time, checksum, physicalAddress string, size int64, relative bool, metadata map[string]string, contentType string) error {
+	var writeTime time.Time
+	if mTime == nil {
+		writeTime = time.Now()
+	} else {
+		writeTime = *mTime
+	}
 	// write metadata
-	writeTime := time.Now()
 	entry := catalog.NewDBEntryBuilder().
 		Path(o.Path).
 		RelativeAddress(relative).

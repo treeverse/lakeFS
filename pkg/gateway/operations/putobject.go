@@ -309,7 +309,7 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	// write metadata
 	metadata := amzMetaAsMetadata(req)
 	contentType := req.Header.Get("Content-Type")
-	err = o.finishUpload(req, blob.Checksum, blob.PhysicalAddress, blob.Size, true, metadata, contentType)
+	err = o.finishUpload(req, nil, blob.Checksum, blob.PhysicalAddress, blob.Size, true, metadata, contentType)
 	if errors.Is(err, graveler.ErrWriteToProtectedBranch) {
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrWriteToProtectedBranch))
 		return
