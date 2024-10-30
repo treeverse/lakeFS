@@ -1,0 +1,46 @@
+package cmd
+
+import (
+	"net/http"
+
+	"github.com/spf13/cobra"
+)
+
+const userInfoTemplate = `User id:          {{.UserID|yellow}}
+{{if .Email}}Email:            {{.Email|blue}}
+{{end}}Creation date:    {{.CreationDate|date}}
+`
+
+var identityCmd = &cobra.Command{
+	Use:               "identity",
+	Short:             "Show identity info",
+	Long:              "Show the info of the user cofigurated in lakectl",
+	Example:           "lakectl identity",
+	Args:              cobra.ExactArgs(0),
+	ValidArgsFunction: ValidArgsRepository,
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getClient()
+		resp, err := client.GetCurrentUserWithResponse(cmd.Context())
+		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
+		if resp.JSON200 == nil {
+			Die("Bad response from server", 1)
+		}
+
+		id := resp.JSON200.User.Id
+		name := resp.JSON200.User.FriendlyName
+		CreationDate := resp.JSON200.User.CreationDate
+		email := resp.JSON200.User.Email
+
+		Write(userInfoTemplate, struct {
+			UserID       string
+			Name         string
+			Email        string
+			CreationDate int64
+		}{UserID: id, CreationDate: CreationDate, Name: *name, Email: *email})
+
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(identityCmd)
+}

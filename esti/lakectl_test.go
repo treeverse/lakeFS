@@ -534,6 +534,19 @@ func TestLakectlAuthUsers(t *testing.T) {
 	runCmdAndVerifyResult(t, Lakectl()+" auth users delete --id "+userName, !isSupported, false, expected, vars)
 }
 
+func TestLakectlIdentity(t *testing.T) {
+	userId := "user"
+
+	vars := map[string]string{
+		"USER_ID": userId,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" identity", false, "lakectl_identity", vars)
+	email := "email"
+	vars["EMAIL"] = email
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" identity", false, "lakectl_identity_with_mail", vars)
+
+}
+
 func TestLakectlIngestS3(t *testing.T) {
 	// Specific S3 test - due to the limitation on ingest source type that has to match lakefs underlying block store,
 	// this test can only run on AWS setup, and therefore is skipped for other store types
