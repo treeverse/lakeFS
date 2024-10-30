@@ -18,7 +18,9 @@ experimental
 {: .label .label-red }
 
 {: .note }
-> Standalone GC is only available for [lakeFS Enterprise]({% link enterprise/index.md %}).
+> Standalone GC is only available for [lakeFS Enterprise]({% link enterprise/index.md %}). \
+Please verify with your account manager that your license includes this feature.
+
 
 {: .note .warning }
 > Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC]({% link howto/garbage-collection/gc.md %}). Read through the [limitations](./standalone-gc.md#limitations) carefully before using it.
