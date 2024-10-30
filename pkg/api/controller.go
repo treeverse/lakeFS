@@ -5383,12 +5383,6 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 
 	// Attempt to merge branches
 	reference, err := c.Catalog.Merge(ctx, repository, pr.Destination, pr.Source, user.Committer(), "", nil, "")
-	if errors.Is(err, graveler.ErrConflictFound) {
-		writeResponse(w, r, http.StatusConflict, apigen.MergeResult{
-			Reference: reference,
-		})
-		return
-	}
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
