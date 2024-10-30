@@ -2296,8 +2296,8 @@ func (c *Catalog) GetRange(ctx context.Context, repositoryID, rangeID string) (g
 	return c.Store.GetRange(ctx, repository, graveler.RangeID(rangeID))
 }
 
-func (c *Catalog) importAsync(repository *graveler.RepositoryRecord, branchID, importID string, params ImportRequest, logger logging.Logger) error {
-	ctx, cancel := context.WithCancel(context.Background()) // Need a new context for the async operations
+func (c *Catalog) importAsync(ctx context.Context, repository *graveler.RepositoryRecord, branchID, importID string, params ImportRequest, logger logging.Logger) error {
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	importManager, err := NewImport(ctx, cancel, logger, c.KVStore, repository, importID)
@@ -2419,7 +2419,9 @@ func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, par
 	// Run import
 	go func() {
 		logger := c.log(ctx).WithField("import_id", id)
-		err = c.importAsync(repository, branchID, id, params, logger)
+		// Passing context.WithoutCancel to avoid canceling the import operation when the wrapping Import function returns,
+		// and keep the context's fields intact for next operations (for example, PreCommitHook runs).
+		err = c.importAsync(context.WithoutCancel(ctx), repository, branchID, id, params, logger)
 		if err != nil {
 			logger.WithError(err).Error("import failure")
 		}
