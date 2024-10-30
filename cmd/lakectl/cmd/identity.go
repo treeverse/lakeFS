@@ -6,9 +6,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const userInfoTemplate = `User id:          {{.UserID|yellow}}
+const userInfoTemplate = `User ID:          {{.UserID|yellow}}
 {{if .Email}}Email:            {{.Email|blue}}
-{{end}}Creation date:    {{.CreationDate|date}}
+{{end}}Creation Date:    {{.CreationDate|date}}
 `
 
 var identityCmd = &cobra.Command{
@@ -41,6 +41,7 @@ var identityCmd = &cobra.Command{
 	},
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(identityCmd)
 }
