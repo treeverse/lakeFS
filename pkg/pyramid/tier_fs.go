@@ -160,7 +160,7 @@ func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, f
 		return fmt.Errorf("file stat %s: %w", originalPath, err)
 	}
 
-	if err := tfs.adapter.Put(ctx, tfs.objPointer(namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
+	if _, err = tfs.adapter.Put(ctx, tfs.objPointer(namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
 		return fmt.Errorf("adapter put %s %s: %w", namespace, filename, err)
 	}
 

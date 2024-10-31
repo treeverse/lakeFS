@@ -61,16 +61,16 @@ func (a *MockAdapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectP
 	return "", block.ErrOperationNotSupported
 }
 
-func (a *MockAdapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
+func (a *MockAdapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) (*block.PutResponse, error) {
 	data, err := io.ReadAll(reader)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	a.TotalSize += int64(len(data))
 	a.Count++
 	a.LastBucket = obj.StorageNamespace
 	a.LastStorageClass = opts.StorageClass
-	return nil
+	return &block.PutResponse{}, nil
 }
 
 func (a *MockAdapter) Exists(_ context.Context, _ block.ObjectPointer) (bool, error) {

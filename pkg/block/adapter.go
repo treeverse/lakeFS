@@ -150,11 +150,22 @@ type BlockstoreMetadata struct {
 	Region *string
 }
 
+type PutResponse struct {
+	Mtime *time.Time
+}
+
+func (r *PutResponse) GetMtime() time.Time {
+	if r != nil && r.Mtime != nil {
+		return *r.Mtime
+	}
+	return time.Now()
+}
+
 // Adapter abstract Storage Adapter for persistence of version controlled data. The methods generally map to S3 API methods
 // - Generally some type of Object Storage
 // - Can also be block storage or even in-memory
 type Adapter interface {
-	Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error
+	Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) (*PutResponse, error)
 	Get(ctx context.Context, obj ObjectPointer) (io.ReadCloser, error)
 
 	// GetWalker is never called on the server side.

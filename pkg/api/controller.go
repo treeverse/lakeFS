@@ -2108,7 +2108,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 		return err
 	}
 
-	if err := c.BlockAdapter.Put(ctx, obj, objLen, strings.NewReader(dummyData), block.PutOpts{}); err != nil {
+	if _, err := c.BlockAdapter.Put(ctx, obj, objLen, strings.NewReader(dummyData), block.PutOpts{}); err != nil {
 		return err
 	}
 
@@ -3227,11 +3227,10 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		}
 	}
 	// write metadata
-	writeTime := time.Now()
 	entryBuilder := catalog.NewDBEntryBuilder().
 		Path(params.Path).
 		PhysicalAddress(blob.PhysicalAddress).
-		CreationDate(writeTime).
+		CreationDate(blob.CreationDate).
 		Size(blob.Size).
 		Checksum(blob.Checksum).
 		ContentType(contentType)
@@ -3268,7 +3267,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 
 	response := apigen.ObjectStats{
 		Checksum:        blob.Checksum,
-		Mtime:           writeTime.Unix(),
+		Mtime:           blob.CreationDate.Unix(),
 		Path:            params.Path,
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
@@ -3825,7 +3824,7 @@ func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	err = c.BlockAdapter.Put(ctx, block.ObjectPointer{
+	_, err = c.BlockAdapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       fmt.Sprintf("%s/refs_manifest.json", c.Config.Committed.BlockStoragePrefix),
@@ -4165,7 +4164,7 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 func writeSymlink(ctx context.Context, repo *catalog.Repository, branch, path string, addresses []string, adapter block.Adapter) error {
 	address := fmt.Sprintf("%s/%s/%s/%s/symlink.txt", lakeFSPrefix, repo.Name, branch, path)
 	data := strings.Join(addresses, "\n")
-	err := adapter.Put(ctx, block.ObjectPointer{
+	_, err := adapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       address,
