@@ -2629,7 +2629,7 @@ func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, 
 		Identifier:       identifier,
 		IdentifierType:   block.IdentifierTypeFull,
 	}
-	err = c.BlockAdapter.Put(ctx, obj, size, fd, block.PutOpts{})
+	_, err = c.BlockAdapter.Put(ctx, obj, size, fd, block.PutOpts{})
 	if err != nil {
 		return "", err
 	}

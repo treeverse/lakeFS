@@ -87,11 +87,10 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat *cata
 		}
 
 		// create metadata entry
-		writeTime := time.Now()
 		entry := catalog.NewDBEntryBuilder().
 			Path(strings.TrimPrefix(contentPath, sampleRepoFSRootPath+"/")).
 			PhysicalAddress(blob.PhysicalAddress).
-			CreationDate(writeTime).
+			CreationDate(blob.CreationDate).
 			Size(blob.Size).
 			Checksum(blob.Checksum).
 			AddressType(catalog.AddressTypeRelative).

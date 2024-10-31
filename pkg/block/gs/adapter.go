@@ -154,24 +154,24 @@ func (o *storageObjectHandle) newComposer(a *Adapter, srcs ...*storage.ObjectHan
 	return c
 }
 
-func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, _ block.PutOpts) error {
+func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, _ block.PutOpts) (*block.PutResponse, error) {
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
 	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	h := storageObjectHandle{a.client.Bucket(bucket).Object(key)}
 	w := h.withWriteHandle(a).newWriter(ctx, a)
 	_, err = io.Copy(w, reader)
 	if err != nil {
-		return fmt.Errorf("io.Copy: %w", err)
+		return nil, fmt.Errorf("io.Copy: %w", err)
 	}
 	err = w.Close()
 	if err != nil {
-		return fmt.Errorf("writer.Close: %w", err)
+		return nil, fmt.Errorf("writer.Close: %w", err)
 	}
-	return nil
+	return &block.PutResponse{}, nil
 }
 
 func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer) (io.ReadCloser, error) {
@@ -654,7 +654,7 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeGS
 }
 
-func (a *Adapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMetadata, error) {
+func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
 	return nil, block.ErrOperationNotSupported
 }
 

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -217,19 +218,31 @@ func (a *Adapter) log(ctx context.Context) logging.Logger {
 	return logging.FromContext(ctx)
 }
 
-func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
+func getServerTimeFromResponseMetadata(metadata middleware.Metadata) time.Time {
+	value, ok := awsmiddleware.GetServerTime(metadata)
+	if ok {
+		return value
+	}
+
+	return time.Now()
+}
+
+func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) (*block.PutResponse, error) {
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
 
 	// for unknown size, we assume we like to stream content, will use s3manager to perform the request.
 	// we assume the caller may not have 1:1 request to s3 put object in this case as it may perform multipart upload
 	if sizeBytes == -1 {
-		return a.managerUpload(ctx, obj, reader, opts)
+		if err = a.managerUpload(ctx, obj, reader, opts); err != nil {
+			return nil, err
+		}
+		return &block.PutResponse{}, nil
 	}
 
 	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	putObject := s3.PutObjectInput{
@@ -258,13 +271,14 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		a.registerCaptureServerMiddleware(),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	etag := aws.ToString(resp.ETag)
 	if etag == "" {
-		return ErrMissingETag
+		return nil, ErrMissingETag
 	}
-	return nil
+	mtime := getServerTimeFromResponseMetadata(resp.ResultMetadata)
+	return &block.PutResponse{ModTime: &mtime}, nil
 }
 
 // retryMaxAttemptsByReader return s3 options function
