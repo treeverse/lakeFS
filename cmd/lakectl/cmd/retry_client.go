@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/x509"
 	"errors"
-	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -17,10 +16,6 @@ var (
 	redirectsErrorRe  = regexp.MustCompile(`stopped after \d+ redirects\z`)
 	schemeErrorRe     = regexp.MustCompile(`unsupported protocol scheme`)
 	notTrustedErrorRe = regexp.MustCompile(`certificate is not trusted`)
-
-	// We need to consume response bodies to maintain http connections, but
-	// limit the size we consume to respReadLimit.
-	respReadLimit = int64(4096) //nolint:mnd
 )
 
 func NewRetryClient(retriesCfg RetriesCfg, transport *http.Transport) *http.Client {
@@ -33,7 +28,6 @@ func NewRetryClient(retriesCfg RetriesCfg, transport *http.Transport) *http.Clie
 	retryClient.RetryWaitMin = retriesCfg.MinWaitInterval
 	retryClient.RetryWaitMax = retriesCfg.MaxWaitInterval
 	retryClient.CheckRetry = lakectlRetryPolicy
-	retryClient.ErrorHandler = customErrorHandler
 	return retryClient.StandardClient()
 }
 
@@ -76,12 +70,4 @@ func lakectlRetryPolicy(ctx context.Context, resp *http.Response, err error) (bo
 		return true, nil
 	}
 	return false, nil
-}
-
-func customErrorHandler(resp *http.Response, err error, _ int) (*http.Response, error) {
-	if resp != nil {
-		defer resp.Body.Close()
-		io.Copy(io.Discard, io.LimitReader(resp.Body, respReadLimit)) //nolint:errcheck
-	}
-	return resp, err
 }
