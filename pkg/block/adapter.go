@@ -151,12 +151,12 @@ type BlockstoreMetadata struct {
 }
 
 type PutResponse struct {
-	Mtime *time.Time
+	ModTime *time.Time
 }
 
 func (r *PutResponse) GetMtime() time.Time {
-	if r != nil && r.Mtime != nil {
-		return *r.Mtime
+	if r != nil && r.ModTime != nil {
+		return *r.ModTime
 	}
 	return time.Now()
 }

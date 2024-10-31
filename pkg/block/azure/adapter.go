@@ -210,7 +210,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 	if err != nil {
 		return nil, err
 	}
-	return &block.PutResponse{Mtime: res.LastModified}, nil
+	return &block.PutResponse{ModTime: res.LastModified}, nil
 }
 
 func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer) (io.ReadCloser, error) {

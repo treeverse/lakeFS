@@ -278,7 +278,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		return nil, ErrMissingETag
 	}
 	mtime := getServerTimeFromResponseMetadata(resp.ResultMetadata)
-	return &block.PutResponse{Mtime: &mtime}, nil
+	return &block.PutResponse{ModTime: &mtime}, nil
 }
 
 // retryMaxAttemptsByReader return s3 options function
