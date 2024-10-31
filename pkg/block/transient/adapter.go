@@ -24,9 +24,12 @@ func New(_ context.Context) *Adapter {
 	return &Adapter{}
 }
 
-func (a *Adapter) Put(_ context.Context, _ block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
+func (a *Adapter) Put(_ context.Context, _ block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) (*block.PutResponse, error) {
 	_, err := io.Copy(io.Discard, reader)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return &block.PutResponse{}, nil
 }
 
 func (a *Adapter) Get(_ context.Context, _ block.ObjectPointer) (io.ReadCloser, error) {
@@ -144,7 +147,7 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeTransient
 }
 
-func (a *Adapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMetadata, error) {
+func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
 	return nil, block.ErrOperationNotSupported
 }
 

@@ -81,10 +81,11 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionUncommitted(ctx context.
 		location += "/"
 	}
 	location += filename
-	return m.blockAdapter.Put(ctx, block.ObjectPointer{
+	_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
 		Identifier:     location,
 		IdentifierType: block.IdentifierTypeFull,
 	}, stat.Size(), fd, block.PutOpts{})
+	return err
 }
 
 type RepositoryCommitGetter interface {
@@ -150,11 +151,12 @@ func (m *GarbageCollectionManager) SaveRules(ctx context.Context, storageNamespa
 	if err != nil {
 		return err
 	}
-	return m.blockAdapter.Put(ctx, block.ObjectPointer{
+	_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: string(storageNamespace),
 		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
 		IdentifierType:   block.IdentifierTypeRelative,
 	}, int64(len(rulesBytes)), bytes.NewReader(rulesBytes), block.PutOpts{})
+	return err
 }
 
 func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Context, repository *graveler.RepositoryRecord, rules *graveler.GarbageCollectionRules) (string, error) {
@@ -203,7 +205,7 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	if err != nil {
 		return "", err
 	}
-	err = m.blockAdapter.Put(ctx, block.ObjectPointer{
+	_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
 		Identifier:     csvLocation,
 		IdentifierType: block.IdentifierTypeFull,
 	}, int64(len(commitsStr)), strings.NewReader(commitsStr), block.PutOpts{})

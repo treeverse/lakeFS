@@ -22,7 +22,7 @@ func (m *MetricsAdapter) InnerAdapter() Adapter {
 	return m.adapter
 }
 
-func (m *MetricsAdapter) Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error {
+func (m *MetricsAdapter) Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) (*PutResponse, error) {
 	ctx = httputil.SetClientTrace(ctx, m.adapter.BlockstoreType())
 	return m.adapter.Put(ctx, obj, sizeBytes, reader, opts)
 }

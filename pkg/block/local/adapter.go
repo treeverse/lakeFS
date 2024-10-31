@@ -152,21 +152,24 @@ func (l *Adapter) Path() string {
 	return l.path
 }
 
-func (l *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
+func (l *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) (*block.PutResponse, error) {
 	p, err := l.extractParamsFromObj(obj)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	p = filepath.Clean(p)
 	f, err := l.maybeMkdir(p, os.Create)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		_ = f.Close()
 	}()
 	_, err = io.Copy(f, reader)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return &block.PutResponse{}, nil
 }
 
 func (l *Adapter) Remove(_ context.Context, obj block.ObjectPointer) error {
@@ -243,7 +246,7 @@ func (l *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 	}
 	md5Read := block.NewHashingReader(r, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
-	err = l.Put(ctx, block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
+	_, err = l.Put(ctx, block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
 	if err != nil {
 		return nil, fmt.Errorf("copy put: %w", err)
 	}
@@ -263,7 +266,7 @@ func (l *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 	}
 	md5Read := block.NewHashingReader(r, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
-	err = l.Put(ctx, block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
+	_, err = l.Put(ctx, block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
 	if err != nil {
 		return nil, fmt.Errorf("copy range put: %w", err)
 	}
@@ -395,7 +398,7 @@ func (l *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int
 	}
 	md5Read := block.NewHashingReader(reader, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
-	err := l.Put(ctx, block.ObjectPointer{StorageNamespace: obj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
+	_, err := l.Put(ctx, block.ObjectPointer{StorageNamespace: obj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
 	etag := hex.EncodeToString(md5Read.Md5.Sum(nil))
 	return &block.UploadPartResponse{
 		ETag: etag,
@@ -522,7 +525,7 @@ func (l *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeLocal
 }
 
-func (l *Adapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMetadata, error) {
+func (l *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
 	return nil, block.ErrOperationNotSupported
 }
 
