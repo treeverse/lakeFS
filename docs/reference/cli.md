@@ -2067,6 +2067,35 @@ lakectl help [command] [flags]
 
 
 
+### lakectl identity
+
+Show identity info
+
+#### Synopsis
+{:.no_toc}
+
+Show the info of the user cofigurated in lakectl
+
+```
+lakectl identity [flags]
+```
+
+#### Examples
+{:.no_toc}
+
+```
+lakectl identity
+```
+
+#### Options
+{:.no_toc}
+
+```
+  -h, --help   help for identity
+```
+
+
+
 ### lakectl import
 
 Import data from external source to a destination branch
