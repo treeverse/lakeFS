@@ -1,5 +1,16 @@
 # Changelog
 
+# v1.41.0
+
+:new: What's new:
+* command to check current user in lakectl (#8322)
+
+:bug: Bugs fixed:
+* Use time of create MPU on backend storage as time of MPU (#8311)
+* Fix: Pull Requests merge errors (#8302)
+* Fix "http: read on closed response body" error (#8332)
+* Fix: Get mtime from storage server (#8329)
+
 # v1.40.0
 
 :new: What's new:
