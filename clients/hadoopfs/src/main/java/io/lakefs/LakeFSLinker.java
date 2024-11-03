@@ -24,12 +24,15 @@ public class LakeFSLinker {
         this.overwrite = overwrite;
     }
 
-    public void link(String eTag, long byteSize) throws IOException {
+    public void link(String eTag, long byteSize, Long modificationTimeMSecs) throws IOException {
         StagingApi staging = lakeFSClient.getStagingApi();
         StagingMetadata stagingMetadata =
-                new StagingMetadata().checksum(eTag).sizeBytes(byteSize).staging(stagingLocation);
+            new StagingMetadata().checksum(eTag).sizeBytes(byteSize).staging(stagingLocation);
+        if (modificationTimeMSecs != null) {
+            stagingMetadata = stagingMetadata.mtime(modificationTimeMSecs);
+        }
         try {
-            StagingApi.APIlinkPhysicalAddressRequest request = 
+            StagingApi.APIlinkPhysicalAddressRequest request =
                     staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), stagingMetadata);
             if (!overwrite) {
                 request.ifNoneMatch("*");

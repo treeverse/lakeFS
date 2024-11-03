@@ -49,6 +49,7 @@ public class MetadataClient {
             ObjectMetadata objectMetadata = new ObjectMetadata();
             objectMetadata.setContentLength(fileStatus.getLen());
             objectMetadata.setHeader("ETag", etag);
+            objectMetadata.setModificationTime(fileStatus.getModificationTime());
             return objectMetadata;
         } catch (InvocationTargetException | IllegalAccessException e) {
             LOG.debug("failed to get etag from file status", e);

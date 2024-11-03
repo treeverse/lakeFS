@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.lakefs.LakeFSLinker;
@@ -19,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
  * TODO(johnnyaug): support multipart uploads
  */
 public class LakeFSFileSystemOutputStream extends OutputStream {
+    private static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystemOutputStream.class);
     private final HttpURLConnection connection;
     private final ByteArrayOutputStream buffer;
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
@@ -50,6 +52,8 @@ public class LakeFSFileSystemOutputStream extends OutputStream {
         if (eTag == null) {
             throw new IOException("Failed to finish writing to presigned link. No ETag found.");
         }
+        Instant dateHeader = extractDate();
+        Long dateEpoch = dateHeader.?getEpochSecond()
         linker.link(eTag, buffer.size());
         if (connection.getResponseCode() > 299) {
             throw new IOException("Failed to finish writing to presigned link. Response code: "
@@ -74,5 +78,21 @@ public class LakeFSFileSystemOutputStream extends OutputStream {
             return StringUtils.strip(eTag, "\" ");
         }
         return null;
+    }
+
+    /**
+     * @return Parsed Date header if present, or null if not found
+     */
+    private Instant extractDate() {
+        String date = connection.GetHeaderField("Date");
+        if (date == null) {
+            return null;
+        }
+        try {
+            return Instant.parse(date);
+        } catch (java.time.format.DateTimeParseException e) {
+            LOG.warn("failed to parse date header {}: {}", date, e.message());
+            return null;
+        }
     }
 }

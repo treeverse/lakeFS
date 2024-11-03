@@ -58,7 +58,7 @@ class LinkOnCloseOutputStream extends OutputStream {
         // the underlying Hadoop FileSystem) so we can link it on lakeFS.
         if (!this.isLinked.getAndSet(true)) {
             ObjectMetadata objectMetadata = metadataClient.getObjectMetadata(physicalUri);
-            linker.link(objectMetadata.getETag(), objectMetadata.getContentLength());
+            linker.link(objectMetadata.getETag(), objectMetadata.getContentLength(), objectMetadata.getModificationTime());
         }
     }
 }
