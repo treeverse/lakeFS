@@ -1161,12 +1161,14 @@ func (n *NeededPermissions) String() string {
 				fmt.Fprintln(w, action)
 			}
 		}
+		return strings.TrimSpace(w.String())
 	}
 	if len(n.Unauthorized) != 0 {
 		fmt.Fprintln(w, "lacking permissions for:")
 		for _, node := range n.Unauthorized {
 			fmt.Fprintln(w, node.Permission.Action)
 		}
+		return strings.TrimSpace(w.String())
 	}
 	return strings.TrimSpace(w.String())
 }
