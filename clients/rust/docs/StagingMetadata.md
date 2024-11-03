@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **size_bytes** | **i64** |  | 
 **user_metadata** | Option<**std::collections::HashMap<String, String>**> |  | [optional]
 **content_type** | Option<**String**> | Object media type | [optional]
+**mtime** | Option<**i64**> | Unix Epoch in seconds.  May be ignored by server. | [optional]
 **force** | Option<**bool**> |  | [optional][default to false]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

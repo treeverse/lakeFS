@@ -35,8 +35,9 @@ class StagingMetadata(BaseModel):
     size_bytes: StrictInt = Field(...)
     user_metadata: Optional[Dict[str, StrictStr]] = None
     content_type: Optional[StrictStr] = Field(None, description="Object media type")
+    mtime: Optional[StrictInt] = Field(None, description="Unix Epoch in seconds.  May be ignored by server.")
     force: Optional[StrictBool] = False
-    __properties = ["staging", "checksum", "size_bytes", "user_metadata", "content_type", "force"]
+    __properties = ["staging", "checksum", "size_bytes", "user_metadata", "content_type", "mtime", "force"]
 
     class Config:
         """Pydantic configuration"""
@@ -82,6 +83,7 @@ class StagingMetadata(BaseModel):
             "size_bytes": obj.get("size_bytes"),
             "user_metadata": obj.get("user_metadata"),
             "content_type": obj.get("content_type"),
+            "mtime": obj.get("mtime"),
             "force": obj.get("force") if obj.get("force") is not None else False
         })
         return _obj
