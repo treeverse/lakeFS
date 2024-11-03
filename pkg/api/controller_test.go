@@ -34,11 +34,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -5355,6 +5357,155 @@ func TestController_CreateCommitRecord(t *testing.T) {
 	})
 }
 
+func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
+	ctx := context.Background()
+	testCases := []struct {
+		name     string
+		node     permissions.Node
+		username string
+		policies []*model.Policy
+		expected string
+	}{
+		{
+			name: "deny single action",
+			node: permissions.Node{
+				Type: permissions.NodeTypeNode,
+				Permission: permissions.Permission{
+					Action:   "fs:DeleteRepository",
+					Resource: "arn:lakefs:fs:::repository/repo1",
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:DeleteRepository"},
+							Resource: "arn:lakefs:fs:::repository/repo1",
+							Effect:   model.StatementEffectDeny,
+						},
+					},
+				},
+			},
+			expected: "denied from:\nfs:DeleteRepository",
+		}, /////////////////////////////////////////////////////////////////
+		{
+			name: "deny multiple actions",
+			node: permissions.Node{
+				Type: permissions.NodeTypeNode,
+				Permission: permissions.Permission{
+					Action:   "fs:DeleteRepository",
+					Resource: "arn:lakefs:fs:::repository/repo1",
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:DeleteRepository", "fs:CreateRepository"},
+							Resource: "arn:lakefs:fs:::repository/repo1",
+							Effect:   model.StatementEffectDeny,
+						},
+					},
+				},
+			},
+			expected: "denied from:\nfs:DeleteRepository\nfs:CreateRepository",
+		}, /////////////////////////////////////////////////////////////////
+		{
+			name: "neutral action",
+			node: permissions.Node{
+				Type: permissions.NodeTypeNode,
+				Permission: permissions.Permission{
+					Action:   "fs:ReadRepository",
+					Resource: "arn:lakefs:fs:::repository/repo1",
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:DeleteRepository"},
+							Resource: "arn:lakefs:fs:::repository/repo1",
+							Effect:   model.StatementEffectDeny,
+						},
+					},
+				},
+			},
+			expected: "lacking permissions for:\nfs:ReadRepository",
+		}, /////////////////////////////////////////////////////////////////
+		{
+			name: "node and no policy",
+			node: permissions.Node{
+				Type: permissions.NodeTypeAnd,
+				Nodes: []permissions.Node{
+					{
+						Type: permissions.NodeTypeNode,
+						Permission: permissions.Permission{
+							Action:   "fs:CreateRepository",
+							Resource: "*",
+						},
+					},
+					{
+						Type: permissions.NodeTypeNode,
+						Permission: permissions.Permission{
+							Action:   "fs:AttachStorageNamespace",
+							Resource: "*",
+						},
+					},
+				},
+			},
+			username: "user1",
+			expected: "lacking permissions for:\nfs:CreateRepository",
+		},
+		{
+			name: "node and one policy",
+			node: permissions.Node{
+				Type: permissions.NodeTypeAnd,
+				Nodes: []permissions.Node{
+					{
+						Type: permissions.NodeTypeNode,
+						Permission: permissions.Permission{
+							Action:   "fs:CreateRepository",
+							Resource: "*",
+						},
+					},
+					{
+						Type: permissions.NodeTypeNode,
+						Permission: permissions.Permission{
+							Action:   "fs:AttachStorageNamespace",
+							Resource: "*",
+						},
+					},
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:CreateRepository"},
+							Resource: "*",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
+				},
+			},
+			expected: "lacking permissions for:\nfs:AttachStorageNamespace",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			perm := &auth.NeededPermissions{}
+			result := auth.CheckPermissions(ctx, tc.node, tc.username, tc.policies, perm)
+			fmt.Println("expected:\n" + tc.expected)
+			fmt.Println("got:\n" + perm.String())
+			fmt.Println(result)
+			require.Equal(t, tc.expected, perm.String())
+		})
+	}
+}
 func TestController_CreatePullRequest(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
