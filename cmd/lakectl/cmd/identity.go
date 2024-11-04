@@ -28,13 +28,16 @@ var identityCmd = &cobra.Command{
 
 		id := resp.JSON200.User.Id
 		CreationDate := resp.JSON200.User.CreationDate
-		email := resp.JSON200.User.Email
+		email := ""
+		if resp.JSON200.User.Email != nil {
+			email = *resp.JSON200.User.Email
+		}
 
 		Write(userInfoTemplate, struct {
 			UserID       string
 			Email        string
 			CreationDate int64
-		}{UserID: id, CreationDate: CreationDate, Email: *email})
+		}{UserID: id, CreationDate: CreationDate, Email: email})
 
 	},
 }
