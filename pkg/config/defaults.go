@@ -170,5 +170,6 @@ func setDefaults(cfgType string) {
 	viper.SetDefault("ugc.prepare_interval", time.Minute)
 	viper.SetDefault("ugc.prepare_max_file_size", 20*1024*1024)
 
+	viper.SetDefault("usage_report.enabled", true)
 	viper.SetDefault("usage_report.flush_interval", 5*time.Minute)
 }
