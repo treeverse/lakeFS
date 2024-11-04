@@ -45,16 +45,19 @@ type AuthorizationResponse struct {
 }
 
 type NeededPermissions struct {
-	Denied       []model.Statement
-	Unauthorized []permissions.Node
+	// Denied is a list of actions the user was denied for the attempt.
+	Denied []string
+	// Unauthorized is a list of actions the user did not have for the attempt.
+	Unauthorized []string
 }
 
 // CheckResult - the final result for the authorization is accepted only if it's CheckAllow
 type CheckResult int
 
 const (
-	InvalidUserID = ""
-	MaxPage       = 1000
+	UserNotAllowed = "not allowed"
+	InvalidUserID  = ""
+	MaxPage        = 1000
 	// CheckAllow Permission allowed
 	CheckAllow CheckResult = iota
 	// CheckNeutral Permission neither allowed nor denied
@@ -929,7 +932,7 @@ func (a *APIAuthService) Authorize(ctx context.Context, req *AuthorizationReques
 	if allowed != CheckAllow {
 		return &AuthorizationResponse{
 			Allowed: false,
-			Error:   fmt.Errorf("%w\n%s", ErrInsufficientPermissions, perm.String()),
+			Error:   fmt.Errorf("%w: %s", ErrInsufficientPermissions, perm.String()),
 		}, nil
 	}
 
@@ -1153,24 +1156,13 @@ func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, externalPr
 }
 
 func (n *NeededPermissions) String() string {
-	w := &strings.Builder{}
 	if len(n.Denied) != 0 {
-		fmt.Fprintln(w, "denied from:")
-		for _, statement := range n.Denied {
-			for _, action := range statement.Action {
-				fmt.Fprintln(w, action)
-			}
-		}
-		return strings.TrimSpace(w.String())
+		return fmt.Sprintf("denied permissions to %s", strings.Join(n.Denied, ","))
 	}
 	if len(n.Unauthorized) != 0 {
-		fmt.Fprintln(w, "lacking permissions for:")
-		for _, node := range n.Unauthorized {
-			fmt.Fprintln(w, node.Permission.Action)
-		}
-		return strings.TrimSpace(w.String())
+		return fmt.Sprintf("denied permissions to %s", strings.Join(n.Unauthorized, ","))
 	}
-	return strings.TrimSpace(w.String())
+	return UserNotAllowed
 }
 
 func CheckPermissions(ctx context.Context, node permissions.Node, username string, policies []*model.Policy, perm *NeededPermissions) CheckResult {
@@ -1192,7 +1184,7 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 
 					if stmt.Effect == model.StatementEffectDeny {
 						// this is a "Deny" and it takes precedence
-						perm.Denied = append(perm.Denied, stmt)
+						perm.Denied = append(perm.Denied, action)
 						return CheckDeny
 					} else {
 						hasPermission = true
@@ -1202,7 +1194,7 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 			}
 		}
 		if !hasPermission {
-			perm.Unauthorized = append(perm.Unauthorized, node)
+			perm.Unauthorized = append(perm.Unauthorized, node.Permission.Action)
 		}
 
 	case permissions.NodeTypeOr:
