@@ -1157,7 +1157,7 @@ func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, externalPr
 
 func (n *MissingPermissions) String() string {
 	if len(n.Denied) != 0 {
-		return fmt.Sprintf("denied permissions to %s", strings.Join(n.Denied, ","))
+		return fmt.Sprintf("denied permission to %s", strings.Join(n.Denied, ","))
 	}
 	if len(n.Unauthorized) != 0 {
 		return fmt.Sprintf("missing permission to %s", strings.Join(n.Unauthorized, ","))

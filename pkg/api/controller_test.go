@@ -5387,10 +5387,10 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 					},
 				},
 			},
-			expected: "denied from:\nfs:DeleteRepository",
+			expected: "denied permission to fs:DeleteRepository",
 		}, /////////////////////////////////////////////////////////////////
 		{
-			name: "deny multiple actions",
+			name: "deny multiple actions, one concerning the request",
 			node: permissions.Node{
 				Type: permissions.NodeTypeNode,
 				Permission: permissions.Permission{
@@ -5410,7 +5410,7 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 					},
 				},
 			},
-			expected: "denied from:\nfs:DeleteRepository\nfs:CreateRepository",
+			expected: "denied permission to fs:DeleteRepository",
 		}, /////////////////////////////////////////////////////////////////
 		{
 			name: "neutral action",
@@ -5433,10 +5433,10 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 					},
 				},
 			},
-			expected: "lacking permissions for:\nfs:ReadRepository",
+			expected: "missing permission to fs:ReadRepository",
 		}, /////////////////////////////////////////////////////////////////
 		{
-			name: "node and no policy",
+			name: "nodeAnd no policy, returns first missing one",
 			node: permissions.Node{
 				Type: permissions.NodeTypeAnd,
 				Nodes: []permissions.Node{
@@ -5457,10 +5457,10 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 				},
 			},
 			username: "user1",
-			expected: "lacking permissions for:\nfs:CreateRepository",
+			expected: "missing permission to fs:CreateRepository",
 		},
 		{
-			name: "node and one policy",
+			name: "nodeAnd one policy, returns first missing policy",
 			node: permissions.Node{
 				Type: permissions.NodeTypeAnd,
 				Nodes: []permissions.Node{
@@ -5492,12 +5492,12 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 					},
 				},
 			},
-			expected: "lacking permissions for:\nfs:AttachStorageNamespace",
+			expected: "missing permission to fs:AttachStorageNamespace",
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			perm := &auth.NeededPermissions{}
+			perm := &auth.MissingPermissions{}
 			result := auth.CheckPermissions(ctx, tc.node, tc.username, tc.policies, perm)
 			fmt.Println("expected:\n" + tc.expected)
 			fmt.Println("got:\n" + perm.String())
