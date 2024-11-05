@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/hashicorp/go-retryablehttp"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -18,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/go-openapi/swag"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block/azure"
