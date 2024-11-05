@@ -214,6 +214,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
             "key": "key_example",
         },
         content_type="content_type_example",
+        mtime=1,
         force=False,
     ) # StagingMetadata | 
     if_none_match = "*" # str | Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported. (optional)

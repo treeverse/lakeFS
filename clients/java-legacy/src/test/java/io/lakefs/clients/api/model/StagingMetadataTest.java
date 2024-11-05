@@ -85,6 +85,14 @@ public class StagingMetadataTest {
     }
 
     /**
+     * Test the property 'mtime'
+     */
+    @Test
+    public void mtimeTest() {
+        // TODO: test mtime
+    }
+
+    /**
      * Test the property 'force'
      */
     @Test

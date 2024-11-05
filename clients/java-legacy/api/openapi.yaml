@@ -9209,6 +9209,7 @@ components:
         content_type: content_type
         checksum: checksum
         force: false
+        mtime: 6
         staging:
           physical_address: physical_address
           presigned_url: presigned_url
@@ -9230,6 +9231,10 @@ components:
         content_type:
           description: Object media type
           type: string
+        mtime:
+          description: Unix Epoch in seconds.  May be ignored by server.
+          format: int64
+          type: integer
         force:
           default: false
           type: boolean
