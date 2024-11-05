@@ -12,6 +12,8 @@ import (
 	"text/template"
 
 	"github.com/treeverse/lakefs/pkg/fileutil"
+	giterror "github.com/treeverse/lakefs/pkg/git/errors"
+	"github.com/treeverse/lakefs/pkg/git/internal"
 	"golang.org/x/exp/slices"
 )
 
@@ -39,7 +41,7 @@ type URL struct {
 func git(dir string, args ...string) (string, int, error) {
 	_, err := exec.LookPath("git") // assume git is in the path, otherwise consider as not having git support
 	if err != nil {
-		return "", 0, ErrNoGit
+		return "", 0, giterror.ErrNoGit
 	}
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
@@ -65,7 +67,7 @@ func IsRepository(dir string) bool {
 // GetRepositoryPath Returns the git repository root path if dir is a directory inside a git repository, otherwise returns error
 func GetRepositoryPath(dir string) (string, error) {
 	out, _, err := git(dir, "rev-parse", "--show-toplevel")
-	return handleOutput(out, err)
+	return internal.HandleOutput(out, err)
 }
 
 func createEntriesForIgnore(dir string, paths []string, exclude bool) ([]string, error) {
@@ -191,14 +193,14 @@ func Ignore(dir string, ignorePaths, excludePaths []string, marker string) (stri
 
 func CurrentCommit(path string) (string, error) {
 	out, _, err := git(path, "rev-parse", "--short", "HEAD")
-	return handleOutput(out, err)
+	return internal.HandleOutput(out, err)
 }
 
 func MetadataFor(path, ref string) (map[string]string, error) {
 	kv := make(map[string]string)
 	kv["git_commit_id"] = ref
 	originURL, err := Origin(path)
-	if errors.Is(err, ErrRemoteNotFound) {
+	if errors.Is(err, giterror.ErrRemoteNotFound) {
 		return kv, nil // no additional data to add
 	} else if err != nil {
 		return kv, err
@@ -231,7 +233,7 @@ func Origin(path string) (string, error) {
 		//	the exit status is 2"
 		return "", nil
 	}
-	return handleOutput(out, err)
+	return internal.HandleOutput(out, err)
 }
 
 func ParseURL(raw string) *URL {
@@ -243,18 +245,5 @@ func ParseURL(raw string) *URL {
 		Server:  matches[RemoteRegex.SubexpIndex("server")],
 		Owner:   matches[RemoteRegex.SubexpIndex("owner")],
 		Project: matches[RemoteRegex.SubexpIndex("project")],
-	}
-}
-
-func handleOutput(out string, err error) (string, error) {
-	switch {
-	case err == nil:
-		return strings.TrimSpace(out), nil
-	case strings.Contains(out, "not a git repository"):
-		return "", ErrNotARepository
-	case strings.Contains(out, "remote not found"):
-		return "", ErrRemoteNotFound
-	default:
-		return "", fmt.Errorf("%s: %w", out, err)
 	}
 }
