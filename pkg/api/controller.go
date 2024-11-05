@@ -769,6 +769,9 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	writeTime := time.Now()
+	if mtime := body.Mtime; mtime != nil {
+		writeTime = time.Unix(*mtime, 0)
+	}
 	fullPhysicalAddress := swag.StringValue(body.Staging.PhysicalAddress)
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, fullPhysicalAddress)
 
