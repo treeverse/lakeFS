@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/git"
+	giterror "github.com/treeverse/lakefs/pkg/git/errors"
 )
 
 func TestIsRepository(t *testing.T) {
@@ -57,7 +58,7 @@ func TestGetRepositoryPath(t *testing.T) {
 	}()
 
 	_, err = git.GetRepositoryPath(tmpdir)
-	require.ErrorIs(t, err, git.ErrNotARepository)
+	require.ErrorIs(t, err, giterror.ErrNotARepository)
 	_, err = git.GetRepositoryPath(tmpFile.Name())
 	require.Error(t, err)
 
@@ -90,7 +91,7 @@ func TestIgnore(t *testing.T) {
 
 	// Test we can't ignore if not a git repo
 	_, err = git.Ignore(tmpdir, []string{}, []string{}, marker)
-	require.ErrorIs(t, err, git.ErrNotARepository)
+	require.ErrorIs(t, err, giterror.ErrNotARepository)
 	_, err = git.Ignore(tmpFile.Name(), []string{}, []string{}, marker)
 	require.Error(t, err)
 

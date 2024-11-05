@@ -21,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/git"
+	giterror "github.com/treeverse/lakefs/pkg/git/errors"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/osinfo"
@@ -282,7 +283,7 @@ func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remot
 		gitRoot, err := git.GetRepositoryPath(localPath)
 		if err == nil {
 			localPath = gitRoot
-		} else if !(errors.Is(err, git.ErrNotARepository) || errors.Is(err, git.ErrNoGit)) { // allow support in environments with no git
+		} else if !(errors.Is(err, giterror.ErrNotARepository) || errors.Is(err, giterror.ErrNoGit)) { // allow support in environments with no git
 			DieErr(err)
 		}
 	}
