@@ -2112,8 +2112,12 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 		return err
 	}
 
-	_, err := c.BlockAdapter.Get(ctx, obj)
-	return err
+	s, err := c.BlockAdapter.Get(ctx, obj)
+	if err != nil {
+		return err
+	}
+	_ = s.Close()
+	return nil
 }
 
 func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, repository string, params apigen.DeleteRepositoryParams) {
