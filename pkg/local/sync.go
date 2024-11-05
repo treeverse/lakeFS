@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/go-retryablehttp"
 	"io"
 	"net/http"
 	"os"
@@ -47,13 +48,13 @@ type Tasks struct {
 type SyncManager struct {
 	ctx         context.Context
 	client      *apigen.ClientWithResponses
-	httpClient  *http.Client
+	httpClient  *retryablehttp.Client
 	progressBar *ProgressPool
 	tasks       Tasks
 	cfg         Config
 }
 
-func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, httpClient *http.Client, cfg Config) *SyncManager {
+func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, httpClient *retryablehttp.Client, cfg Config) *SyncManager {
 	sm := &SyncManager{
 		ctx:         ctx,
 		client:      client,

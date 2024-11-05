@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/go-retryablehttp"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -467,7 +468,7 @@ func sendStats(cmd *cobra.Command, cmdSuffix string) {
 	}
 }
 
-func getHTTPClient() *http.Client {
+func getHTTPClient() *retryablehttp.Client {
 	// Override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
 	// only to be immediately reopened.
@@ -475,7 +476,7 @@ func getHTTPClient() *http.Client {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
 	if !cfg.Server.Retries.Enabled {
-		return &http.Client{Transport: transport}
+		return NewRetryClient(RetriesCfg{MaxAttempts: 1}, transport)
 	}
 	return NewRetryClient(cfg.Server.Retries, transport)
 }
@@ -498,7 +499,7 @@ func getClient() *apigen.ClientWithResponses {
 	oss := osinfo.GetOSInfo()
 	client, err := apigen.NewClientWithResponses(
 		serverEndpoint,
-		apigen.WithHTTPClient(httpClient),
+		apigen.WithHTTPClient(httpClient.StandardClient()),
 		apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
 		apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
 			// This UA string structure is agreed upon
