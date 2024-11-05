@@ -1,15 +1,24 @@
 # Changelog
 
+# v1.42.0
+
+:new: What's new:
+- Optionally set mtime in linkPhysicalAddress (#8338)
+
+:bug: Bugs fixed:
+- Fix: EnsureStorageNamespace close reader (#8346)
+- Fix: Git package error handling (#8345)
+
 # v1.41.0
 
 :new: What's new:
-* command to check current user in lakectl (#8322)
+- command to check current user in lakectl (#8322)
 
 :bug: Bugs fixed:
-* Use time of create MPU on backend storage as time of MPU (#8311)
-* Fix: Pull Requests merge errors (#8302)
-* Fix "http: read on closed response body" error (#8332)
-* Fix: Get mtime from storage server (#8329)
+- Use time of create MPU on backend storage as time of MPU (#8311)
+- Fix: Pull Requests merge errors (#8302)
+- Fix "http: read on closed response body" error (#8332)
+- Fix: Get mtime from storage server (#8329)
 
 # v1.40.0
 
