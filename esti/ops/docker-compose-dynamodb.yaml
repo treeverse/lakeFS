@@ -28,6 +28,7 @@ services:
       - LAKEFS_DATABASE_DYNAMODB_AWS_REGION=us-east-1
       - LAKEFS_DATABASE_DYNAMODB_AWS_ACCESS_KEY_ID=AKIAIO5FODNN7EXAMPLE
       - LAKEFS_DATABASE_DYNAMODB_AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY
+      - LAKEFS_USAGE_REPORT_ENABLED=false
     entrypoint: ["/app/lakefs", "run"]
     extra_hosts:
       - "host.docker.internal:host-gateway"
