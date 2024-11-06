@@ -28,6 +28,7 @@ services:
       - AZURE_CLIENT_ID
       - AZURE_CLIENT_SECRET
       - AZURE_TENANT_ID
+      - LAKEFS_USAGE_REPORT_ENABLED=false
     entrypoint: ["/app/lakefs", "run"]
     extra_hosts:
       - "host.docker.internal:host-gateway"
