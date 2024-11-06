@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/go-openapi/swag"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
@@ -48,13 +47,13 @@ type Tasks struct {
 type SyncManager struct {
 	ctx         context.Context
 	client      *apigen.ClientWithResponses
-	httpClient  *retryablehttp.Client
+	httpClient  *http.Client
 	progressBar *ProgressPool
 	tasks       Tasks
 	cfg         Config
 }
 
-func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, httpClient *retryablehttp.Client, cfg Config) *SyncManager {
+func NewSyncManager(ctx context.Context, client *apigen.ClientWithResponses, httpClient *http.Client, cfg Config) *SyncManager {
 	sm := &SyncManager{
 		ctx:         ctx,
 		client:      client,

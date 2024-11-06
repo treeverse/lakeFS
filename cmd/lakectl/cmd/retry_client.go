@@ -18,7 +18,7 @@ var (
 	notTrustedErrorRe = regexp.MustCompile(`certificate is not trusted`)
 )
 
-func NewRetryClient(retriesCfg RetriesCfg, transport *http.Transport) *retryablehttp.Client {
+func NewRetryClient(retriesCfg RetriesCfg, transport *http.Transport) *http.Client {
 	retryClient := retryablehttp.NewClient()
 	if transport != nil {
 		retryClient.HTTPClient.Transport = transport
@@ -28,7 +28,7 @@ func NewRetryClient(retriesCfg RetriesCfg, transport *http.Transport) *retryable
 	retryClient.RetryWaitMin = retriesCfg.MinWaitInterval
 	retryClient.RetryWaitMax = retriesCfg.MaxWaitInterval
 	retryClient.CheckRetry = lakectlRetryPolicy
-	return retryClient
+	return retryClient.StandardClient()
 }
 
 // lakectl retry policy - we retry in the following cases:

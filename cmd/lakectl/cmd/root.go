@@ -13,7 +13,6 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/go-openapi/swag"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
@@ -468,7 +467,7 @@ func sendStats(cmd *cobra.Command, cmdSuffix string) {
 	}
 }
 
-func getHTTPClient() *retryablehttp.Client {
+func getHTTPClient() *http.Client {
 	// Override MaxIdleConnsPerHost to allow highly concurrent access to our API client.
 	// This is done to avoid accumulating many sockets in `TIME_WAIT` status that were closed
 	// only to be immediately reopened.
@@ -476,7 +475,7 @@ func getHTTPClient() *retryablehttp.Client {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
 	if !cfg.Server.Retries.Enabled {
-		return NewRetryClient(RetriesCfg{MaxAttempts: 1}, transport)
+		return &http.Client{Transport: transport}
 	}
 	return NewRetryClient(cfg.Server.Retries, transport)
 }
@@ -499,7 +498,7 @@ func getClient() *apigen.ClientWithResponses {
 	oss := osinfo.GetOSInfo()
 	client, err := apigen.NewClientWithResponses(
 		serverEndpoint,
-		apigen.WithHTTPClient(httpClient.StandardClient()),
+		apigen.WithHTTPClient(httpClient),
 		apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
 		apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
 			// This UA string structure is agreed upon

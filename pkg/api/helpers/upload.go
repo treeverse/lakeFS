@@ -17,7 +17,6 @@ import (
 	"strings"
 
 	"github.com/go-openapi/swag"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block/azure"
@@ -105,7 +104,7 @@ func ClientUpload(ctx context.Context, client apigen.ClientWithResponsesInterfac
 // It supports both multipart and single part uploads.
 type PreSignUploader struct {
 	Concurrency      int
-	HTTPClient       *retryablehttp.Client
+	HTTPClient       *http.Client
 	Client           apigen.ClientWithResponsesInterface
 	MultipartSupport bool
 }
@@ -125,7 +124,7 @@ type presignUpload struct {
 	numParts    int
 }
 
-func NewPreSignUploader(client apigen.ClientWithResponsesInterface, httpClient *retryablehttp.Client, multipartSupport bool) *PreSignUploader {
+func NewPreSignUploader(client apigen.ClientWithResponsesInterface, httpClient *http.Client, multipartSupport bool) *PreSignUploader {
 	return &PreSignUploader{
 		Concurrency:      DefaultUploadConcurrency,
 		HTTPClient:       httpClient,
@@ -301,7 +300,7 @@ func (u *presignUpload) initMultipart(ctx context.Context) (*apigen.PresignMulti
 }
 
 func (u *presignUpload) uploadPart(ctx context.Context, partReader *io.SectionReader, partURL string) (string, error) {
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPut, partURL, partReader)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, partURL, partReader)
 	if err != nil {
 		return "", err
 	}
@@ -341,7 +340,8 @@ func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, 
 		// Passing Reader with content length == 0 results in 501 Not Implemented
 		body = u.reader
 	}
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPut, preSignURL, body)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, preSignURL, body)
 	if err != nil {
 		return nil, err
 	}
@@ -403,7 +403,7 @@ func (u *presignUpload) Upload(ctx context.Context) (*apigen.ObjectStats, error)
 	return u.uploadObject(ctx)
 }
 
-func ClientUploadPreSign(ctx context.Context, client apigen.ClientWithResponsesInterface, httpClient *retryablehttp.Client, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, presignMultipartSupport bool) (*apigen.ObjectStats, error) {
+func ClientUploadPreSign(ctx context.Context, client apigen.ClientWithResponsesInterface, httpClient *http.Client, repoID, branchID, objPath string, metadata map[string]string, contentType string, contents io.ReadSeeker, presignMultipartSupport bool) (*apigen.ObjectStats, error) {
 	// upload loop, retry on conflict
 	uploader := NewPreSignUploader(client, httpClient, presignMultipartSupport)
 	for {
