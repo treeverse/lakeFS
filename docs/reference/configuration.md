@@ -310,7 +310,7 @@ An object describing the local (on-disk) cache of metadata from permanent storag
 
 ### usage_report
 
-* `usage_report.enabled` `(bool : false)` - Store API and Gateway usage reports into key-value store.
+* `usage_report.enabled` `(bool : true)` - Store API and Gateway usage reports into key-value store.
 * `usage_report.flush_interval` `(duration : 5m)` - Sets interval for flushing in-memory usage data to key-value store.
 
 ### ui
