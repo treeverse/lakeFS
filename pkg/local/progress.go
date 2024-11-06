@@ -135,7 +135,6 @@ func NewProgressPool() *ProgressPool {
 type fileWrapper struct {
 	file   io.Seeker
 	reader io.Reader
-	closer io.Closer
 }
 
 func (f fileWrapper) Read(p []byte) (n int, err error) {
