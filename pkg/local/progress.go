@@ -144,3 +144,7 @@ func (f fileWrapper) Read(p []byte) (n int, err error) {
 func (f fileWrapper) Seek(offset int64, whence int) (int64, error) {
 	return f.file.Seek(offset, whence)
 }
+
+func (f fileWrapper) Close() error {
+	return nil
+}
