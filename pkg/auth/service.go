@@ -1160,7 +1160,7 @@ func (n *MissingPermissions) String() string {
 		return fmt.Sprintf("denied permission to %s", strings.Join(n.Denied, ","))
 	}
 	if len(n.Unauthorized) != 0 {
-		return fmt.Sprintf("missing permission to %s", strings.Join(n.Unauthorized, ","))
+		return fmt.Sprintf("not allowed to %s", strings.Join(n.Unauthorized, ","))
 	}
 	return UserNotAllowed
 }
@@ -1186,10 +1186,10 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 						// this is a "Deny" and it takes precedence
 						permAudit.Denied = append(permAudit.Denied, action)
 						return CheckDeny
-					} else {
-						hasPermission = true
-						allowed = CheckAllow
 					}
+					hasPermission = true
+					allowed = CheckAllow
+
 				}
 			}
 		}

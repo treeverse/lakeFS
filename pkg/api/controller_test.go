@@ -5388,7 +5388,7 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 				},
 			},
 			expected: "denied permission to fs:DeleteRepository",
-		}, /////////////////////////////////////////////////////////////////
+		},
 		{
 			name: "deny multiple actions, one concerning the request",
 			node: permissions.Node{
@@ -5411,8 +5411,7 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 				},
 			},
 			expected: "denied permission to fs:DeleteRepository",
-		}, /////////////////////////////////////////////////////////////////
-		{
+		}, {
 			name: "neutral action",
 			node: permissions.Node{
 				Type: permissions.NodeTypeNode,
@@ -5433,9 +5432,8 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 					},
 				},
 			},
-			expected: "missing permission to fs:ReadRepository",
-		}, /////////////////////////////////////////////////////////////////
-		{
+			expected: "not allowed to fs:ReadRepository",
+		}, {
 			name: "nodeAnd no policy, returns first missing one",
 			node: permissions.Node{
 				Type: permissions.NodeTypeAnd,
@@ -5457,9 +5455,8 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 				},
 			},
 			username: "user1",
-			expected: "missing permission to fs:CreateRepository",
-		},
-		{
+			expected: "not allowed to fs:CreateRepository",
+		}, {
 			name: "nodeAnd one policy, returns first missing policy",
 			node: permissions.Node{
 				Type: permissions.NodeTypeAnd,
@@ -5492,7 +5489,7 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 					},
 				},
 			},
-			expected: "missing permission to fs:AttachStorageNamespace",
+			expected: "not allowed to fs:AttachStorageNamespace",
 		},
 	}
 	for _, tc := range testCases {
