@@ -12,6 +12,10 @@ redirect_from:
 
 {% include toc_2-3.html %}
 
+{: .warning }
+> If you are still using the [legacy Python `lakefs-client`][legacy-pypi], it's
+> time to upgrade!  This client is [deprecated][legacy-deprecated] and will be removed
+> soon.
 
 **High Level Python SDK**  <span class="badge mr-1">New</span>
 We've just released a new High Level Python SDK library, and we're super excited to tell you about it! Continue reading to get the
@@ -604,3 +608,6 @@ s3.head_object(Bucket='example-repo', Key='main/example-file.parquet')
 # 'ETag': '"2398bc5880e535c61f7624ad6f138d62"',
 # 'Metadata': {}}
 ```
+
+[legacy-deprecated]:  https://docs.lakefs.io/posts/deprecate-py-legacy.html
+[legacy-pypi]:  https://pypi.org/project/lakefs-client/
