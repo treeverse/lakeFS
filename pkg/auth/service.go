@@ -1189,7 +1189,6 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 					}
 					hasPermission = true
 					allowed = CheckAllow
-
 				}
 			}
 		}
