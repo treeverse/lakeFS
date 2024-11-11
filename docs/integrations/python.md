@@ -23,7 +23,7 @@ full story!
 Though our previous SDK client is still supported and maintained, we highly recommend using the new High Level SDK.
 **For previous Python SDKs follow these links:**
 [lakefs-sdk](https://pydocs-sdk.lakefs.io)
-[legacy-sdk](https://pydocs.lakefs.io) (Depracated)
+[legacy-sdk](https://pydocs.lakefs.io) (Deprecated)
 {: .note }
 
 There are three primary ways to work with lakeFS from Python:
@@ -609,5 +609,5 @@ s3.head_object(Bucket='example-repo', Key='main/example-file.parquet')
 # 'Metadata': {}}
 ```
 
-[legacy-deprecated]:  https://docs.lakefs.io/posts/deprecate-py-legacy.html
+[legacy-deprecated]:  /posts/deprecate-py-legacy.html
 [legacy-pypi]:  https://pypi.org/project/lakefs-client/
