@@ -40,12 +40,10 @@ For more information, see [how uncommitted data is managed in lakeFS][representi
 
 ## Operate directly on the storage
 Storage operations can become a bottleneck when operating on large datasets. In such cases, it can be beneficial to perform
-only versioning operations on lakeFS, while performing storage reads/writes directly on the object store. 
-
-lakeFS offers multiple ways to do that: 
+only versioning operations on lakeFS, while performing storage reads/writes directly on the object store.  
 
 ### Writing directly to the object store
-In addition to importing large, batch-generated datasets, we may want to to add a few new files after an initial import, 
+In addition to importing large, batch-generated datasets using [zero-copy import](#use-zero-copy-import), we may want to to add a few new files after an initial import, 
 or to modify existing files. lakeFS allows “uploading” changes to a dataset. Unlike an import, in the case of an upload, 
 lakeFS is in control of the actual location the file is stored at in the backing object store. This will not modify any 
 directories you may have “imported” the dataset from originally, and you will need to use lakeFS to get consistent views
