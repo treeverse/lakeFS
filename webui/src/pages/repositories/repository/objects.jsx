@@ -244,6 +244,13 @@ function extractChecksumFromResponse(response) {
   }
   return ""
 }
+const calculateMD5Checksum = async (file) => {
+  const arrayBuffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('MD5', arrayBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+};
 
 const uploadFile = async (config, repo, reference, path, file, onProgress) => {
   const fpath = destinationPath(path, file);
@@ -252,6 +259,8 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
       if (config.blockstore_type === "azure") {
           additionalHeaders = { "x-ms-blob-type": "BlockBlob" }
       }
+	const md5Checksum = await calculateMD5Checksum(file);
+	additionalHeaders['Content-MD5'] = btoa(md5Checksum)
     const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
     const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders)
     if (uploadResponse.status >= 400) {
