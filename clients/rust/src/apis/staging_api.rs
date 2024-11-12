@@ -42,7 +42,7 @@ pub enum LinkPhysicalAddressError {
 }
 
 
-pub async fn get_physical_address(configuration: &configuration::Configuration, repository: &str, branch: &str, path: &str, presign: Option<bool>) -> Result<models::StagingLocation, Error<GetPhysicalAddressError>> {
+pub async fn get_physical_address(configuration: &configuration::Configuration, repository: &str, branch: &str, path: &str, presign: Option<bool>, checksum: Option<&str>) -> Result<models::StagingLocation, Error<GetPhysicalAddressError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -53,6 +53,9 @@ pub async fn get_physical_address(configuration: &configuration::Configuration, 
     local_var_req_builder = local_var_req_builder.query(&[("path", &path.to_string())]);
     if let Some(ref local_var_str) = presign {
         local_var_req_builder = local_var_req_builder.query(&[("presign", &local_var_str.to_string())]);
+    }
+    if let Some(ref local_var_str) = checksum {
+        local_var_req_builder = local_var_req_builder.query(&[("checksum", &local_var_str.to_string())]);
     }
     if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
         local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());

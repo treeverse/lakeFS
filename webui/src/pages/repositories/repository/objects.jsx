@@ -44,6 +44,7 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import pMap from "p-map";
+import CryptoJS from "crypto-js";
 
 const README_FILE_NAME = "README.md";
 const REPOSITORY_AGE_BEFORE_GC = 14;
@@ -244,34 +245,76 @@ function extractChecksumFromResponse(response) {
   }
   return ""
 }
-const calculateMD5Checksum = async (file) => {
-  const arrayBuffer = await file.arrayBuffer();
-  const hashBuffer = await crypto.subtle.digest('MD5', arrayBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
-};
+// const calculateMD5Checksum = async (file) => {
+//   const arrayBuffer = await file.arrayBuffer();
+//   const hashBuffer = await crypto.subtle.digest('MD5', arrayBuffer);
+//   const hashArray = Array.from(new Uint8Array(hashBuffer));
+//   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+//   return hashHex;
+// };
 
+// const uploadFile = async (config, repo, reference, path, file, onProgress) => {
+//   const fpath = destinationPath(path, file);
+//   if (config.pre_sign_support_ui) {
+//       let additionalHeaders;
+//       if (config.blockstore_type === "azure") {
+//           additionalHeaders = { "x-ms-blob-type": "BlockBlob" }
+//       }
+// 	const arrayBuffer = await file.arrayBuffer();
+// 	const hashBuffer = await crypto.subtle.digest('MD5', arrayBuffer);
+// 	const md5ChecksumBase64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+// 	additionalHeaders['Content-MD5'] = md5ChecksumBase64;
+//     const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
+// 	//console.log("sum: ", md5Checksum)
+//     const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders)
+//     if (uploadResponse.status >= 400) {
+//       throw new Error(`Error uploading file: HTTP ${status}`)
+//     }
+//     const checksum = extractChecksumFromResponse(uploadResponse)
+//     await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
+//   } else {
+//     await objects.upload(repo.id, reference.id, fpath, file, onProgress);
+//   }
+// };
 const uploadFile = async (config, repo, reference, path, file, onProgress) => {
+  console.log("Starting uploadFile...");
+  
   const fpath = destinationPath(path, file);
+  console.log("Destination path:", fpath);
+  
   if (config.pre_sign_support_ui) {
-      let additionalHeaders;
-      if (config.blockstore_type === "azure") {
-          additionalHeaders = { "x-ms-blob-type": "BlockBlob" }
-      }
-	const md5Checksum = await calculateMD5Checksum(file);
-	additionalHeaders['Content-MD5'] = btoa(md5Checksum)
-    const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
-    const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders)
-    if (uploadResponse.status >= 400) {
-      throw new Error(`Error uploading file: HTTP ${status}`)
+    let additionalHeaders = {};
+
+    if (config.blockstore_type === "azure") {
+      additionalHeaders["x-ms-blob-type"] = "BlockBlob";
+      console.log("Azure storage detected, setting BlockBlob header");
     }
-    const checksum = extractChecksumFromResponse(uploadResponse)
+    
+      // Convert the file to a string for MD5 hashing
+	const arrayBuffer = await file.arrayBuffer();
+	const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
+	const md5Checksum = CryptoJS.MD5(wordArray).toString(CryptoJS.enc.Base64);
+	additionalHeaders["Content-MD5"] = md5Checksum;
+	console.log("MD5 Checksum (Base64):", md5Checksum);
+
+    
+    const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui, md5Checksum);
+    const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders);
+
+    if (uploadResponse.status >= 400) {
+      throw new Error(`Error uploading file: HTTP ${uploadResponse.status}`);
+    }
+
+    const checksum = extractChecksumFromResponse(uploadResponse);
     await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
   } else {
+    console.log("Pre-sign support is disabled, using direct upload.");
     await objects.upload(repo.id, reference.id, fpath, file, onProgress);
   }
+
+  console.log("uploadFile completed successfully.");
 };
+
 
 const destinationPath = (path, file) => {
   return `${path ? path : ""}${file.path.replace(/\\/g, '/').replace(/^\//, '')}`;

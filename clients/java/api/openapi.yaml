@@ -4781,6 +4781,13 @@ paths:
         schema:
           type: boolean
         style: form
+      - explode: true
+        in: query
+        name: checksum
+        required: false
+        schema:
+          type: string
+        style: form
       responses:
         "200":
           content:

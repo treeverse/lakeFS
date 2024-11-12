@@ -427,8 +427,9 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	var req *v4.PresignedHTTPRequest
 	if mode == block.PreSignModeWrite {
 		putObjectInput := &s3.PutObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String(key),
+			Bucket:     aws.String(bucket),
+			Key:        aws.String(key),
+			ContentMD5: aws.String(*obj.Checksum),
 		}
 		req, err = presigner.PresignPutObject(ctx, putObjectInput, func(o *s3.PresignOptions) {
 			captureExpiresPresigner.Presigner = o.Presigner

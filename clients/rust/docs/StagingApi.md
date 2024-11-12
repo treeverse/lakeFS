@@ -11,7 +11,7 @@ Method | HTTP request | Description
 
 ## get_physical_address
 
-> models::StagingLocation get_physical_address(repository, branch, path, presign)
+> models::StagingLocation get_physical_address(repository, branch, path, presign, checksum)
 generate an address to which the client can upload an object
 
 ### Parameters
@@ -23,6 +23,7 @@ Name | Type | Description  | Required | Notes
 **branch** | **String** |  | [required] |
 **path** | **String** | relative to the branch | [required] |
 **presign** | Option<**bool**> |  |  |
+**checksum** | Option<**String**> |  |  |
 
 ### Return type
 

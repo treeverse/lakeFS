@@ -45,8 +45,10 @@ public class StagingApiTest {
         String branch = null;
         String path = null;
         Boolean presign = null;
+        String checksum = null;
         StagingLocation response = api.getPhysicalAddress(repository, branch, path)
                 .presign(presign)
+                .checksum(checksum)
                 .execute();
         // TODO: test validations
     }

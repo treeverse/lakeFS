@@ -65,7 +65,7 @@ const DefaultPreSignExpiryDuration = 15 * time.Minute
 type ObjectPointer struct {
 	StorageNamespace string
 	Identifier       string
-
+	Checksum         *string
 	// Indicates whether the Identifier is relative to the StorageNamespace,
 	// full address to an object, or unknown.
 	IdentifierType IdentifierType

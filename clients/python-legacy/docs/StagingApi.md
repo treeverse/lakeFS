@@ -76,6 +76,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     branch = "branch_example" # str | 
     path = "path_example" # str | relative to the branch
     presign = True # bool |  (optional)
+    checksum = "checksum_example" # str |  (optional)
 
     # example passing only required values which don't have defaults set
     try:
@@ -89,7 +90,7 @@ with lakefs_client.ApiClient(configuration) as api_client:
     # and optional values
     try:
         # generate an address to which the client can upload an object
-        api_response = api_instance.get_physical_address(repository, branch, path, presign=presign)
+        api_response = api_instance.get_physical_address(repository, branch, path, presign=presign, checksum=checksum)
         pprint(api_response)
     except lakefs_client.ApiException as e:
         print("Exception when calling StagingApi->get_physical_address: %s\n" % e)
@@ -104,6 +105,7 @@ Name | Type | Description  | Notes
  **branch** | **str**|  |
  **path** | **str**| relative to the branch |
  **presign** | **bool**|  | [optional]
+ **checksum** | **str**|  | [optional]
 
 ### Return type
 

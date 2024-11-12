@@ -661,38 +661,79 @@ class Pulls {
 export const uploadWithProgress = (url, file, method = 'POST', onProgress = null, additionalHeaders = null) => {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+
+        // Log the URL and method
+        console.log(`Starting upload: ${method} ${url}`);
+        
         xhr.upload.addEventListener('progress', event => {
             if (onProgress) {
-                onProgress((event.loaded / event.total) * 100);
+                const progress = (event.loaded / event.total) * 100;
+                console.log(`Upload Progress: ${progress.toFixed(2)}%`);
+                onProgress(progress);
             }
         });
+
+        // Log Content-MD5 if available
+        if (additionalHeaders && additionalHeaders['Content-MD5']) {
+            console.log(`Content-MD5: ${additionalHeaders['Content-MD5']}`);
+        }
+
+        // Add load event listener to capture success response
         xhr.addEventListener('load', () => {
-            resolve({
-                status: xhr.status,
-                body: xhr.responseText,
-                contentType: xhr.getResponseHeader('Content-Type'),
-                etag: xhr.getResponseHeader('ETag'),
-                contentMD5: xhr.getResponseHeader('Content-MD5'),
-            })
+            console.log("Upload complete. Status:", xhr.status);
+            if (xhr.status >= 200 && xhr.status < 300) {
+                console.log("Response body:", xhr.responseText);
+                resolve({
+                    status: xhr.status,
+                    body: xhr.responseText,
+                    contentType: xhr.getResponseHeader('Content-Type'),
+                    etag: xhr.getResponseHeader('ETag'),
+                    contentMD5: xhr.getResponseHeader('Content-MD5'),
+                });
+            } else {
+                console.error(`Upload failed with status ${xhr.status}:`, xhr.responseText);
+                reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText}`));
+            }
         });
-        xhr.addEventListener('error', () => reject(new Error('Upload Failed')));
-        xhr.addEventListener('abort', () => reject(new Error('Upload Aborted')));
+
+        // Add error event listener for network issues
+        xhr.addEventListener('error', () => {
+            console.error("Network error during upload.");
+            reject(new Error('Upload Failed due to network error.'));
+        });
+
+        // Add abort event listener
+        xhr.addEventListener('abort', () => {
+            console.warn("Upload aborted by user or network.");
+            reject(new Error('Upload Aborted'));
+        });
+
+        // Open connection
         xhr.open(method, url, true);
+        
+        // Set headers and log each one
         xhr.setRequestHeader('Accept', 'application/json');
         xhr.setRequestHeader('X-Lakefs-Client', 'lakefs-webui/__buildVersion');
         if (additionalHeaders) {
-            Object.keys(additionalHeaders).map(key => xhr.setRequestHeader(key, additionalHeaders[key]))
+            Object.keys(additionalHeaders).forEach(key => {
+                console.log(`Setting header ${key}: ${additionalHeaders[key]}`);
+                xhr.setRequestHeader(key, additionalHeaders[key]);
+            });
         }
+
+        // Send the file
         if (url.startsWith(API_ENDPOINT)) {
-            // swagger API requires a form with a "content" field
+            console.log("Sending file as multipart form-data.");
             const data = new FormData();
             data.append('content', file);
             xhr.send(data);
         } else {
+            console.log("Sending file as raw binary data.");
             xhr.send(file);
         }
     });
 };
+
 
 class Objects {
 
@@ -1124,9 +1165,9 @@ class Statistics {
 }
 
 class Staging {
-    async get(repoId, branchId, path, presign = false) {
-        const query = qs({path, presign});
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
+    async get(repoId, branchId, path, presign = false,checksum = null) {
+    const query = qs({ path, presign,checksum });
+    const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
             method: 'GET'
         });
         if (response.status !== 200) {

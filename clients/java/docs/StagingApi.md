@@ -10,7 +10,7 @@ All URIs are relative to */api/v1*
 
 <a id="getPhysicalAddress"></a>
 # **getPhysicalAddress**
-> StagingLocation getPhysicalAddress(repository, branch, path).presign(presign).execute();
+> StagingLocation getPhysicalAddress(repository, branch, path).presign(presign).checksum(checksum).execute();
 
 generate an address to which the client can upload an object
 
@@ -61,9 +61,11 @@ public class Example {
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
     Boolean presign = true; // Boolean | 
+    String checksum = "checksum_example"; // String | 
     try {
       StagingLocation result = apiInstance.getPhysicalAddress(repository, branch, path)
             .presign(presign)
+            .checksum(checksum)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -85,6 +87,7 @@ public class Example {
 | **branch** | **String**|  | |
 | **path** | **String**| relative to the branch | |
 | **presign** | **Boolean**|  | [optional] |
+| **checksum** | **String**|  | [optional] |
 
 ### Return type
 

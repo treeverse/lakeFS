@@ -4524,6 +4524,11 @@ paths:
           required: false
           schema:
             type: boolean
+        - in: query
+          name: checksum
+          required: false
+          schema:
+            type: string
       responses:
         200:
           description: physical address for staging area
