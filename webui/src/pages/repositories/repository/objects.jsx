@@ -227,24 +227,24 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
   );
 };
 
-function extractChecksumFromResponse(response) {
-  if (response.contentMD5) {
-    // convert base64 to hex
-    const raw = atob(response.contentMD5)
-    let result = '';
-    for (let i = 0; i < raw.length; i++) {
-      const hex = raw.charCodeAt(i).toString(16);
-      result += (hex.length === 2 ? hex : '0' + hex);
-    }
-    return result;
-  }
+// function extractChecksumFromResponse(response) {
+//   if (response.contentMD5) {
+//     // convert base64 to hex
+//     const raw = atob(response.contentMD5)
+//     let result = '';
+//     for (let i = 0; i < raw.length; i++) {
+//       const hex = raw.charCodeAt(i).toString(16);
+//       result += (hex.length === 2 ? hex : '0' + hex);
+//     }
+//     return result;
+//   }
 
-  if (response.etag) {
-    // drop any quote and space
-    return response.etag.replace(/[" ]+/g, "");
-  }
-  return ""
-}
+//   if (response.etag) {
+//     // drop any quote and space
+//     return response.etag.replace(/[" ]+/g, "");
+//   }
+//   return ""
+// }
 // const calculateMD5Checksum = async (file) => {
 //   const arrayBuffer = await file.arrayBuffer();
 //   const hashBuffer = await crypto.subtle.digest('MD5', arrayBuffer);
@@ -305,8 +305,8 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
       throw new Error(`Error uploading file: HTTP ${uploadResponse.status}`);
     }
 
-    const checksum = extractChecksumFromResponse(uploadResponse);
-    await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
+    //const checksum = extractChecksumFromResponse(uploadResponse);
+    await staging.link(repo.id, reference.id, fpath, getResp, md5Checksum, file.size, file.type);
   } else {
     console.log("Pre-sign support is disabled, using direct upload.");
     await objects.upload(repo.id, reference.id, fpath, file, onProgress);
