@@ -895,13 +895,13 @@ func (s *AuthService) Authorize(ctx context.Context, req *auth.AuthorizationRequ
 	if err != nil {
 		return nil, err
 	}
-
-	allowed := auth.CheckPermissions(ctx, req.RequiredPermissions, req.Username, policies)
+	permAudit := &auth.MissingPermissions{}
+	allowed := auth.CheckPermissions(ctx, req.RequiredPermissions, req.Username, policies, permAudit)
 
 	if allowed != auth.CheckAllow {
 		return &auth.AuthorizationResponse{
 			Allowed: false,
-			Error:   auth.ErrInsufficientPermissions,
+			Error:   fmt.Errorf("%w: %s", auth.ErrInsufficientPermissions, permAudit.String()),
 		}, nil
 	}
 
