@@ -236,7 +236,6 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
       additionalHeaders["x-ms-blob-type"] = "BlockBlob";
       console.log("Azure storage detected, setting BlockBlob header");
     }
-    
       // Convert the file to a string for MD5 hashing
 	const arrayBuffer = await file.arrayBuffer();
 	const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
@@ -249,16 +248,11 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
     if (uploadResponse.status >= 400) {
       throw new Error(`Error uploading file: HTTP ${uploadResponse.status}`);
     }
-
     await staging.link(repo.id, reference.id, fpath, getResp, md5Checksum, file.size, file.type);
   } else {
-    console.log("Pre-sign support is disabled, using direct upload.");
     await objects.upload(repo.id, reference.id, fpath, file, onProgress);
   }
-
-  console.log("uploadFile completed successfully.");
 };
-
 
 const destinationPath = (path, file) => {
   return `${path ? path : ""}${file.path.replace(/\\/g, '/').replace(/^\//, '')}`;
