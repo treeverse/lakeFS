@@ -227,61 +227,8 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
   );
 };
 
-// function extractChecksumFromResponse(response) {
-//   if (response.contentMD5) {
-//     // convert base64 to hex
-//     const raw = atob(response.contentMD5)
-//     let result = '';
-//     for (let i = 0; i < raw.length; i++) {
-//       const hex = raw.charCodeAt(i).toString(16);
-//       result += (hex.length === 2 ? hex : '0' + hex);
-//     }
-//     return result;
-//   }
-
-//   if (response.etag) {
-//     // drop any quote and space
-//     return response.etag.replace(/[" ]+/g, "");
-//   }
-//   return ""
-// }
-// const calculateMD5Checksum = async (file) => {
-//   const arrayBuffer = await file.arrayBuffer();
-//   const hashBuffer = await crypto.subtle.digest('MD5', arrayBuffer);
-//   const hashArray = Array.from(new Uint8Array(hashBuffer));
-//   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-//   return hashHex;
-// };
-
-// const uploadFile = async (config, repo, reference, path, file, onProgress) => {
-//   const fpath = destinationPath(path, file);
-//   if (config.pre_sign_support_ui) {
-//       let additionalHeaders;
-//       if (config.blockstore_type === "azure") {
-//           additionalHeaders = { "x-ms-blob-type": "BlockBlob" }
-//       }
-// 	const arrayBuffer = await file.arrayBuffer();
-// 	const hashBuffer = await crypto.subtle.digest('MD5', arrayBuffer);
-// 	const md5ChecksumBase64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
-// 	additionalHeaders['Content-MD5'] = md5ChecksumBase64;
-//     const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
-// 	//console.log("sum: ", md5Checksum)
-//     const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders)
-//     if (uploadResponse.status >= 400) {
-//       throw new Error(`Error uploading file: HTTP ${status}`)
-//     }
-//     const checksum = extractChecksumFromResponse(uploadResponse)
-//     await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
-//   } else {
-//     await objects.upload(repo.id, reference.id, fpath, file, onProgress);
-//   }
-// };
-const uploadFile = async (config, repo, reference, path, file, onProgress) => {
-  console.log("Starting uploadFile...");
-  
-  const fpath = destinationPath(path, file);
-  console.log("Destination path:", fpath);
-  
+const uploadFile = async (config, repo, reference, path, file, onProgress) => {  
+  const fpath = destinationPath(path, file);  
   if (config.pre_sign_support_ui) {
     let additionalHeaders = {};
 
@@ -295,8 +242,6 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
 	const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
 	const md5Checksum = CryptoJS.MD5(wordArray).toString(CryptoJS.enc.Base64);
 	additionalHeaders["Content-MD5"] = md5Checksum;
-	console.log("MD5 Checksum (Base64):", md5Checksum);
-
     
     const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui, md5Checksum);
     const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders);
@@ -305,7 +250,6 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
       throw new Error(`Error uploading file: HTTP ${uploadResponse.status}`);
     }
 
-    //const checksum = extractChecksumFromResponse(uploadResponse);
     await staging.link(repo.id, reference.id, fpath, getResp, md5Checksum, file.size, file.type);
   } else {
     console.log("Pre-sign support is disabled, using direct upload.");
