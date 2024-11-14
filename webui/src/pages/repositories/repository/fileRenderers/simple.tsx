@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import React, { FC, useContext } from "react";
 import Alert from "react-bootstrap/Alert";
 import { humanSize } from "../../../../lib/components/repository/tree";
 import { useAPI } from "../../../../lib/hooks/api";
@@ -16,6 +16,8 @@ import {
 
 import "react-ipynb-renderer/dist/styles/default.css";
 import { useMarkdownProcessor } from "./useMarkdownProcessor";
+import { AppContext } from "../../../../lib/hooks/appContext";
+import { dark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 export const ObjectTooLarge: FC<RendererComponent> = ({ path, sizeBytes }) => {
   return (
@@ -81,10 +83,12 @@ export const TextRenderer: FC<RendererComponentWithText> = ({
   fileExtension,
   text,
 }) => {
+  const {state} = useContext(AppContext);
   const language = guessLanguage(fileExtension, contentType) ?? "plaintext";
+
   return (
     <SyntaxHighlighter
-      style={syntaxHighlightStyle}
+      style={state.settings.darkMode ? dark : syntaxHighlightStyle}
       language={language}
       showInlineLineNumbers={true}
       showLineNumbers={true}
