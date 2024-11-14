@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	nanoid "github.com/matoous/go-nanoid/v2"
 	"io"
 	"math"
 	"math/rand"
@@ -58,4 +59,8 @@ func (r *randomReader) Read(p []byte) (int, error) {
 // NewRandomReader returns a reader that will return size bytes from rand.
 func NewRandomReader(rand *rand.Rand, size int64) io.Reader {
 	return &randomReader{rand: rand, remaining: size}
+}
+
+func UniqueName() string {
+	return nanoid.MustGenerate(chars, charsSize)
 }

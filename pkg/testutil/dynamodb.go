@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/ory/dockertest/v3"
 	dc "github.com/ory/dockertest/v3/docker"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -81,14 +80,9 @@ func UniqueKVTableName() string {
 	return "kvstore_" + UniqueName()
 }
 
-func UniqueName() string {
-	return nanoid.MustGenerate(chars, charsSize)
-}
-
 func GetDynamoDBProd(ctx context.Context, tb testing.TB) kv.Store {
-	table := UniqueKVTableName()
 	testParams := &kvparams.DynamoDB{
-		TableName: table,
+		TableName: UniqueKVTableName(),
 		ScanLimit: DynamoDBScanLimit,
 		AwsRegion: "us-east-1",
 	}
@@ -101,7 +95,7 @@ func GetDynamoDBProd(ctx context.Context, tb testing.TB) kv.Store {
 		defer store.Close()
 		err = store.(*dynamodb.Store).DropTable()
 		if err != nil {
-			tb.Fatalf("failed to delete table from DB %s %s", table, err)
+			tb.Fatalf("failed to delete table from DB %v %s", table, err)
 		}
 	})
 	return store
