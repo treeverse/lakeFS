@@ -1,12 +1,13 @@
 package testutil
 
 import (
-	nanoid "github.com/matoous/go-nanoid/v2"
 	"io"
 	"math"
 	"math/rand"
 	"strings"
 	"unicode/utf8"
+
+	nanoid "github.com/matoous/go-nanoid/v2"
 )
 
 // RandomRune returns a random Unicode rune from rand, weighting at least
