@@ -28,8 +28,7 @@ func GetCosmosDBInstance() (string, func(), error) {
 		Repository: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator",
 		Tag:        "latest",
 		Env: []string{
-			"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=20",
-			"AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true",
+			"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=100",
 		},
 		ExposedPorts: []string{CosmosDBLocalPort},
 	}
