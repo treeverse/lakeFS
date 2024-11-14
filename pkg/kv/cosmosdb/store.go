@@ -458,7 +458,18 @@ func (e *EntriesIterator) Next() bool {
 // The reason we switch the batch size is to avoid issues like https://github.com/treeverse/lakeFS/issues/7864
 // as opposed to the exponential backoff approach in dynamoDB here we use a dynamic page size and let Cosmos DB manage paging.
 func (e *EntriesIterator) handleBatchSizeChange() error {
-	e.startKey = e.entry.Key
+	if e.entry != nil {
+		e.startKey = e.entry.Key
+	} else {
+		e.store.logger.WithFields(logging.Fields{
+			"batchSize":          e.batchSize,
+			"partitionKey":       string(e.partitionKey),
+			"currEntryIdx":       e.currEntryIdx,
+			"startKey":           e.startKey,
+			"currPage.Items len": len(e.currPage.Items),
+		}).Warning("handleBatchSizeChange called when e.entry is nil")
+		e.startKey = nil
+	}
 	e.batchSize = dynamicPageSize
 	return e.runQuery(false)
 }
@@ -480,10 +491,7 @@ func (e *EntriesIterator) SeekGE(key []byte) {
 		}
 		return bytes.Compare(key, currentKey) <= 0
 	})
-	if idx == -1 {
-		// not found, set to the end
-		e.currEntryIdx = len(e.currPage.Items)
-	}
+	// sort.Search states that if condition not met it returns n for list of size n. not found, set to the end
 	e.currEntryIdx = idx - 1
 }
 

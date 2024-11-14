@@ -3,15 +3,17 @@ package testutil
 import (
 	"crypto/tls"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
 )
 
 const (
 	CosmosDBLocalPort = "8081"
+	maxWait           = 5 * time.Minute // Cosmosdb emulator takes time to start
 )
 
 var cosmosdbLocalURI string
@@ -25,18 +27,10 @@ func GetCosmosDBInstance() (string, func(), error) {
 	cosmosdbDockerRunOptions := &dockertest.RunOptions{
 		Repository: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator",
 		Tag:        "latest",
-		Env: []string{"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=5",
-			"AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true",
-			"AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=127.0.0.1"},
-		PortBindings: map[docker.Port][]docker.PortBinding{
-			"8081/tcp":  {{HostPort: CosmosDBLocalPort}},
-			"10251/tcp": {{HostPort: "10251"}},
-			"10252/tcp": {{HostPort: "10252"}},
-			"10253/tcp": {{HostPort: "10253"}},
-			"10254/tcp": {{HostPort: "10254"}},
-			"10255/tcp": {{HostPort: "10255"}},
+		Env: []string{
+			"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=100",
 		},
-		ExposedPorts: []string{CosmosDBLocalPort, "10251", "10252", "10253", "10254", "10255"},
+		ExposedPorts: []string{CosmosDBLocalPort},
 	}
 
 	resource, err := dockerPool.RunWithOptions(cosmosdbDockerRunOptions)
@@ -49,20 +43,24 @@ func GetCosmosDBInstance() (string, func(), error) {
 	closer := func() {
 		err = dockerPool.Purge(resource)
 		if err != nil {
-			panic("could not kill cosmosdb local container")
+			fmt.Println("could not kill cosmosdb local container :%w", err)
 		}
 	}
 
 	// expire, just to make sure
 	err = resource.Expire(dbContainerTimeoutSeconds)
 	if err != nil {
+		defer closer() // defer so that error is logged appropriately
 		return "", nil, fmt.Errorf("could not expire cosmosdb local emulator: %w", err)
 	}
 	p, err := url.JoinPath(cosmosdbLocalURI, "/_explorer/emulator.pem")
 	if err != nil {
+		defer closer()
 		return "", nil, fmt.Errorf("joining urls: %w", err)
 	}
 
+	dockerPool.MaxWait = maxWait
+	log.Printf("Waiting up to %v for emulator to start", dockerPool.MaxWait)
 	err = dockerPool.Retry(func() error {
 		// waiting for cosmosdb container to be ready by issuing an HTTP get request with
 		// exponential backoff retry. The response is not really meaningful for that case
@@ -78,9 +76,9 @@ func GetCosmosDBInstance() (string, func(), error) {
 		return nil
 	})
 	if err != nil {
+		defer closer()
 		return "", nil, fmt.Errorf("could not connect to cosmosdb emulator at %s: %w", cosmosdbLocalURI, err)
 	}
 
-	// return DB URI
 	return cosmosdbLocalURI, closer, nil
 }
