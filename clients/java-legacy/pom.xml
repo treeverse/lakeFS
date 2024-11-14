@@ -7,7 +7,7 @@
     <name>api-client</name>
     <version>0.1.0-SNAPSHOT</version>
     <url>https://lakefs.io</url>
-    <description>lakeFS OpenAPI Java client legacy SDK</description>
+    <description>[EOL] Do NOT use: lakeFS OpenAPI Java client legacy SDK</description>
     <scm>
         <connection>scm:git:git@github.com:treeverse/lakeFS.git</connection>
         <developerConnection>scm:git:git@github.com:treeverse/lakeFS.git</developerConnection>
