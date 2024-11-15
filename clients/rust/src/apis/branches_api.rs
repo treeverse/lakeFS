@@ -298,7 +298,7 @@ pub async fn get_branch(configuration: &configuration::Configuration, repository
     }
 }
 
-pub async fn list_branches(configuration: &configuration::Configuration, repository: &str, prefix: Option<&str>, after: Option<&str>, amount: Option<i32>) -> Result<models::RefList, Error<ListBranchesError>> {
+pub async fn list_branches(configuration: &configuration::Configuration, repository: &str, prefix: Option<&str>, after: Option<&str>, amount: Option<i32>, show_hidden: Option<bool>) -> Result<models::RefList, Error<ListBranchesError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -314,6 +314,9 @@ pub async fn list_branches(configuration: &configuration::Configuration, reposit
     }
     if let Some(ref local_var_str) = amount {
         local_var_req_builder = local_var_req_builder.query(&[("amount", &local_var_str.to_string())]);
+    }
+    if let Some(ref local_var_str) = show_hidden {
+        local_var_req_builder = local_var_req_builder.query(&[("show_hidden", &local_var_str.to_string())]);
     }
     if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
         local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());

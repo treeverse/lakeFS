@@ -41,7 +41,8 @@ class TestBranchCreation(unittest.TestCase):
             return BranchCreation(
                 name = '', 
                 source = '', 
-                force = True
+                force = True, 
+                hidden = True
             )
         else :
             return BranchCreation(

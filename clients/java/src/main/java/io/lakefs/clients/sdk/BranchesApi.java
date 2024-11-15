@@ -1101,7 +1101,7 @@ public class BranchesApi {
     public APIgetBranchRequest getBranch(String repository, String branch) {
         return new APIgetBranchRequest(repository, branch);
     }
-    private okhttp3.Call listBranchesCall(String repository, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call listBranchesCall(String repository, String prefix, String after, Integer amount, Boolean showHidden, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -1139,6 +1139,10 @@ public class BranchesApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("amount", amount));
         }
 
+        if (showHidden != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("show_hidden", showHidden));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -1159,26 +1163,26 @@ public class BranchesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call listBranchesValidateBeforeCall(String repository, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call listBranchesValidateBeforeCall(String repository, String prefix, String after, Integer amount, Boolean showHidden, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling listBranches(Async)");
         }
 
-        return listBranchesCall(repository, prefix, after, amount, _callback);
+        return listBranchesCall(repository, prefix, after, amount, showHidden, _callback);
 
     }
 
 
-    private ApiResponse<RefList> listBranchesWithHttpInfo(String repository, String prefix, String after, Integer amount) throws ApiException {
-        okhttp3.Call localVarCall = listBranchesValidateBeforeCall(repository, prefix, after, amount, null);
+    private ApiResponse<RefList> listBranchesWithHttpInfo(String repository, String prefix, String after, Integer amount, Boolean showHidden) throws ApiException {
+        okhttp3.Call localVarCall = listBranchesValidateBeforeCall(repository, prefix, after, amount, showHidden, null);
         Type localVarReturnType = new TypeToken<RefList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call listBranchesAsync(String repository, String prefix, String after, Integer amount, final ApiCallback<RefList> _callback) throws ApiException {
+    private okhttp3.Call listBranchesAsync(String repository, String prefix, String after, Integer amount, Boolean showHidden, final ApiCallback<RefList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = listBranchesValidateBeforeCall(repository, prefix, after, amount, _callback);
+        okhttp3.Call localVarCall = listBranchesValidateBeforeCall(repository, prefix, after, amount, showHidden, _callback);
         Type localVarReturnType = new TypeToken<RefList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -1189,6 +1193,7 @@ public class BranchesApi {
         private String prefix;
         private String after;
         private Integer amount;
+        private Boolean showHidden;
 
         private APIlistBranchesRequest(String repository) {
             this.repository = repository;
@@ -1225,6 +1230,16 @@ public class BranchesApi {
         }
 
         /**
+         * Set showHidden
+         * @param showHidden  (optional, default to false)
+         * @return APIlistBranchesRequest
+         */
+        public APIlistBranchesRequest showHidden(Boolean showHidden) {
+            this.showHidden = showHidden;
+            return this;
+        }
+
+        /**
          * Build call for listBranches
          * @param _callback ApiCallback API callback
          * @return Call to execute
@@ -1240,7 +1255,7 @@ public class BranchesApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return listBranchesCall(repository, prefix, after, amount, _callback);
+            return listBranchesCall(repository, prefix, after, amount, showHidden, _callback);
         }
 
         /**
@@ -1258,7 +1273,7 @@ public class BranchesApi {
          </table>
          */
         public RefList execute() throws ApiException {
-            ApiResponse<RefList> localVarResp = listBranchesWithHttpInfo(repository, prefix, after, amount);
+            ApiResponse<RefList> localVarResp = listBranchesWithHttpInfo(repository, prefix, after, amount, showHidden);
             return localVarResp.getData();
         }
 
@@ -1277,7 +1292,7 @@ public class BranchesApi {
          </table>
          */
         public ApiResponse<RefList> executeWithHttpInfo() throws ApiException {
-            return listBranchesWithHttpInfo(repository, prefix, after, amount);
+            return listBranchesWithHttpInfo(repository, prefix, after, amount, showHidden);
         }
 
         /**
@@ -1296,7 +1311,7 @@ public class BranchesApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<RefList> _callback) throws ApiException {
-            return listBranchesAsync(repository, prefix, after, amount, _callback);
+            return listBranchesAsync(repository, prefix, after, amount, showHidden, _callback);
         }
     }
 

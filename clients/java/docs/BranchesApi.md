@@ -514,7 +514,7 @@ public class Example {
 
 <a id="listBranches"></a>
 # **listBranches**
-> RefList listBranches(repository).prefix(prefix).after(after).amount(amount).execute();
+> RefList listBranches(repository).prefix(prefix).after(after).amount(amount).showHidden(showHidden).execute();
 
 list branches
 
@@ -565,11 +565,13 @@ public class Example {
     String prefix = "prefix_example"; // String | return items prefixed with this value
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
+    Boolean showHidden = false; // Boolean | 
     try {
       RefList result = apiInstance.listBranches(repository)
             .prefix(prefix)
             .after(after)
             .amount(amount)
+            .showHidden(showHidden)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -591,6 +593,7 @@ public class Example {
 | **prefix** | **String**| return items prefixed with this value | [optional] |
 | **after** | **String**| return items after this value | [optional] |
 | **amount** | **Integer**| how many items to return | [optional] [default to 100] |
+| **showHidden** | **Boolean**|  | [optional] [default to false] |
 
 ### Return type
 

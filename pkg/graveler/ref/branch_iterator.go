@@ -23,9 +23,10 @@ type BranchSimpleIterator struct {
 	repoPartition string
 	value         *graveler.BranchRecord
 	err           error
+	showHidden    bool
 }
 
-func NewBranchSimpleIterator(ctx context.Context, store kv.Store, repo *graveler.RepositoryRecord) (*BranchSimpleIterator, error) {
+func NewBranchSimpleIterator(ctx context.Context, store kv.Store, repo *graveler.RepositoryRecord, opts graveler.ListOptions) (*BranchSimpleIterator, error) {
 	repoPartition := graveler.RepoPartition(repo)
 	it, err := kv.NewPrimaryIterator(ctx, store, (&graveler.BranchData{}).ProtoReflect().Type(),
 		repoPartition, []byte(graveler.BranchPath("")), kv.IteratorOptionsFrom([]byte("")))
@@ -40,6 +41,7 @@ func NewBranchSimpleIterator(ctx context.Context, store kv.Store, repo *graveler
 		repoPartition: repoPartition,
 		value:         nil,
 		err:           nil,
+		showHidden:    opts.ShowHidden,
 	}, nil
 }
 
@@ -47,26 +49,30 @@ func (bi *BranchSimpleIterator) Next() bool {
 	if bi.Err() != nil {
 		return false
 	}
-	if !bi.itr.Next() {
-		bi.value = nil
-		return false
+	for {
+		if !bi.itr.Next() {
+			bi.value = nil
+			return false
+		}
+		entry := bi.itr.Entry()
+		if entry == nil {
+			bi.err = graveler.ErrInvalid
+			return false
+		}
+		value, ok := entry.Value.(*graveler.BranchData)
+		if !ok {
+			bi.err = graveler.ErrReadingFromStore
+			return false
+		}
+		if value.Hidden && !bi.showHidden { // Skip hidden branches if showHidden is false
+			continue
+		}
+		bi.value = &graveler.BranchRecord{
+			BranchID: graveler.BranchID(value.Id),
+			Branch:   branchFromProto(value),
+		}
+		return true
 	}
-	entry := bi.itr.Entry()
-	if entry == nil {
-		bi.err = graveler.ErrInvalid
-		return false
-	}
-	value, ok := entry.Value.(*graveler.BranchData)
-	if !ok {
-		bi.err = graveler.ErrReadingFromStore
-		return false
-	}
-
-	bi.value = &graveler.BranchRecord{
-		BranchID: graveler.BranchID(value.Id),
-		Branch:   branchFromProto(value),
-	}
-	return true
 }
 
 func (bi *BranchSimpleIterator) SeekGE(id graveler.BranchID) {
@@ -111,12 +117,12 @@ func (b *BranchByCommitIterator) SortByCommitID(i, j int) bool {
 	return b.values[i].CommitID.String() <= b.values[j].CommitID.String()
 }
 
-func NewBranchByCommitIterator(ctx context.Context, store kv.Store, repo *graveler.RepositoryRecord) (*BranchByCommitIterator, error) {
+func NewBranchByCommitIterator(ctx context.Context, store kv.Store, repo *graveler.RepositoryRecord, opts graveler.ListOptions) (*BranchByCommitIterator, error) {
 	bi := &BranchByCommitIterator{
 		ctx:    ctx,
 		values: make([]*graveler.BranchRecord, 0),
 	}
-	itr, err := NewBranchSimpleIterator(ctx, store, repo)
+	itr, err := NewBranchSimpleIterator(ctx, store, repo, opts)
 	if err != nil {
 		return nil, err
 	}
