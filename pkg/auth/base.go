@@ -60,8 +60,8 @@ var statementByName = map[string]model.Statement{
 			"ci:Read*",
 			"retention:Get*",
 			"branches:Get*",
-			"pr:Get*",
 			"pr:Read*",
+			"pr:List*",
 			permissions.ReadConfigAction,
 		},
 
