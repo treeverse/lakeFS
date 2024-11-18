@@ -695,7 +695,7 @@ components:
           default: false
         hidden:
           type: boolean
-          description: When set, branch will not show up when listing branches by default
+          description: *EXPERIMENTAL* When set, branch will not show up when listing branches by default.          
           default: false
 
     TagCreation:
