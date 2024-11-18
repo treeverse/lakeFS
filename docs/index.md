@@ -10,7 +10,7 @@ redirect_from: /downloads.html
 <img src="{{ site.baseurl }}/assets/img/waving-axolotl-transparent.gif" width="90"/>
 
 
-**lakeFS brings software engineering best practices and applies them to data engineering.** 
+**lakeFS brings software engineering best practices and applies them to data.** 
 
 lakeFS provides version control over the data lake, and uses Git-like semantics to create and access those versions. If you know git, you'll be right at home with lakeFS.
 
