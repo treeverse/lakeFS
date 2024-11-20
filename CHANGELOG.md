@@ -1,5 +1,15 @@
 # Changelog
 
+# v1.43.0
+
+:new: What's new:
+- Support Dark Mode for Text Viewer (#8371)
+
+:bug: Bugs fixed:
+- Fix: lakectl FS upload big files cause OOM (#8349)
+- Fix: CosmosDB panic in handleBatchSizeChange(#8367)
+- Fix: RepoManagementReadAll pull requests permissions (#8374)
+
 # v1.42.0
 
 :new: What's new:
