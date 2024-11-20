@@ -759,7 +759,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 	test.RefManager.EXPECT().GetRepository(gomock.Any(), graveler.RepositoryID(repositoryID)).MinTimes(1).Return(repository, nil)
 
 	// expect tracked addresses does not list branches, so remove one and keep at least the first
-	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any()).MinTimes(1).Return(gUtils.NewFakeBranchIterator(branches), nil)
+	test.RefManager.EXPECT().ListBranches(gomock.Any(), gomock.Any(), gomock.Any()).MinTimes(1).Return(gUtils.NewFakeBranchIterator(branches), nil)
 	for i := 0; i < len(branches); i++ {
 		sort.Slice(records[i], func(ii, jj int) bool {
 			return bytes.Compare(records[i][ii].Key, records[i][jj].Key) < 0
