@@ -9,7 +9,7 @@ Method | HTTP request | Description
 
 
 # **get_physical_address**
-> StagingLocation get_physical_address(repository, branch, path, presign=presign, checksum=checksum)
+> StagingLocation get_physical_address(repository, branch, path, presign=presign)
 
 generate an address to which the client can upload an object
 
@@ -77,11 +77,10 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     branch = 'branch_example' # str | 
     path = 'path_example' # str | relative to the branch
     presign = True # bool |  (optional)
-    checksum = 'checksum_example' # str |  (optional)
 
     try:
         # generate an address to which the client can upload an object
-        api_response = api_instance.get_physical_address(repository, branch, path, presign=presign, checksum=checksum)
+        api_response = api_instance.get_physical_address(repository, branch, path, presign=presign)
         print("The response of StagingApi->get_physical_address:\n")
         pprint(api_response)
     except Exception as e:
@@ -99,7 +98,6 @@ Name | Type | Description  | Notes
  **branch** | **str**|  | 
  **path** | **str**| relative to the branch | 
  **presign** | **bool**|  | [optional] 
- **checksum** | **str**|  | [optional] 
 
 ### Return type
 

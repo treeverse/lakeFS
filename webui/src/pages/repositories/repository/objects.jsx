@@ -240,10 +240,9 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
 	const arrayBuffer = await file.arrayBuffer();
 	const wordArray = CryptoJS.lib.WordArray.create(arrayBuffer);
 	const md5Checksum = CryptoJS.MD5(wordArray).toString(CryptoJS.enc.Base64);
-	additionalHeaders["Content-MD5"] = md5Checksum;
     
-    const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui, md5Checksum);
-    const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders);
+    const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
+    const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress);
 
     if (uploadResponse.status >= 400) {
       throw new Error(`Error uploading file: HTTP ${uploadResponse.status}`);

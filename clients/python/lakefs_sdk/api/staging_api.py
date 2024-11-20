@@ -55,13 +55,13 @@ class StagingApi(object):
         self.api_client = api_client
 
     @validate_arguments
-    def get_physical_address(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], presign : Optional[StrictBool] = None, checksum : Optional[StrictStr] = None, **kwargs) -> StagingLocation:  # noqa: E501
+    def get_physical_address(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], presign : Optional[StrictBool] = None, **kwargs) -> StagingLocation:  # noqa: E501
         """generate an address to which the client can upload an object  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.get_physical_address(repository, branch, path, presign, checksum, async_req=True)
+        >>> thread = api.get_physical_address(repository, branch, path, presign, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -72,8 +72,6 @@ class StagingApi(object):
         :type path: str
         :param presign:
         :type presign: bool
-        :param checksum:
-        :type checksum: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request. If one
@@ -88,16 +86,16 @@ class StagingApi(object):
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
             raise ValueError("Error! Please call the get_physical_address_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.get_physical_address_with_http_info(repository, branch, path, presign, checksum, **kwargs)  # noqa: E501
+        return self.get_physical_address_with_http_info(repository, branch, path, presign, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def get_physical_address_with_http_info(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], presign : Optional[StrictBool] = None, checksum : Optional[StrictStr] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def get_physical_address_with_http_info(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], presign : Optional[StrictBool] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """generate an address to which the client can upload an object  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.get_physical_address_with_http_info(repository, branch, path, presign, checksum, async_req=True)
+        >>> thread = api.get_physical_address_with_http_info(repository, branch, path, presign, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -108,8 +106,6 @@ class StagingApi(object):
         :type path: str
         :param presign:
         :type presign: bool
-        :param checksum:
-        :type checksum: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -141,8 +137,7 @@ class StagingApi(object):
             'repository',
             'branch',
             'path',
-            'presign',
-            'checksum'
+            'presign'
         ]
         _all_params.extend(
             [
@@ -184,9 +179,6 @@ class StagingApi(object):
 
         if _params.get('presign') is not None:  # noqa: E501
             _query_params.append(('presign', _params['presign']))
-
-        if _params.get('checksum') is not None:  # noqa: E501
-            _query_params.append(('checksum', _params['checksum']))
 
         # process the header parameters
         _header_params = dict(_params.get('_headers', {}))

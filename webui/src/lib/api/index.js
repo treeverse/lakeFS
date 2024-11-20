@@ -671,8 +671,6 @@ export const uploadWithProgress = (url, file, method = 'POST', onProgress = null
                 status: xhr.status,
                 body: xhr.responseText,
                 contentType: xhr.getResponseHeader('Content-Type'),
-                etag: xhr.getResponseHeader('ETag'),
-                contentMD5: xhr.getResponseHeader('Content-MD5'),
             })
         });
         xhr.addEventListener('error', () => reject(new Error('Upload Failed')));

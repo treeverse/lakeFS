@@ -10,7 +10,7 @@ Method | HTTP request | Description
 
 <a name="getPhysicalAddress"></a>
 # **getPhysicalAddress**
-> StagingLocation getPhysicalAddress(repository, branch, path, presign, checksum)
+> StagingLocation getPhysicalAddress(repository, branch, path, presign)
 
 generate an address to which the client can upload an object
 
@@ -61,9 +61,8 @@ public class Example {
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
     Boolean presign = true; // Boolean | 
-    String checksum = "checksum_example"; // String | 
     try {
-      StagingLocation result = apiInstance.getPhysicalAddress(repository, branch, path, presign, checksum);
+      StagingLocation result = apiInstance.getPhysicalAddress(repository, branch, path, presign);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling StagingApi#getPhysicalAddress");
@@ -84,7 +83,6 @@ Name | Type | Description  | Notes
  **branch** | **String**|  |
  **path** | **String**| relative to the branch |
  **presign** | **Boolean**|  | [optional]
- **checksum** | **String**|  | [optional]
 
 ### Return type
 

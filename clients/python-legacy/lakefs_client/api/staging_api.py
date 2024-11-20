@@ -60,7 +60,6 @@ class StagingApi(object):
                     'branch',
                     'path',
                     'presign',
-                    'checksum',
                 ],
                 'required': [
                     'repository',
@@ -88,22 +87,18 @@ class StagingApi(object):
                         (str,),
                     'presign':
                         (bool,),
-                    'checksum':
-                        (str,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'branch': 'branch',
                     'path': 'path',
                     'presign': 'presign',
-                    'checksum': 'checksum',
                 },
                 'location_map': {
                     'repository': 'path',
                     'branch': 'path',
                     'path': 'query',
                     'presign': 'query',
-                    'checksum': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -218,7 +213,6 @@ class StagingApi(object):
 
         Keyword Args:
             presign (bool): [optional]
-            checksum (str): [optional]
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object

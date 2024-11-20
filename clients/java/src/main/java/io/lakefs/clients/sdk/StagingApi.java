@@ -75,7 +75,7 @@ public class StagingApi {
         this.localCustomBaseUrl = customBaseUrl;
     }
 
-    private okhttp3.Call getPhysicalAddressCall(String repository, String branch, String path, Boolean presign, String checksum, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call getPhysicalAddressCall(String repository, String branch, String path, Boolean presign, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -110,10 +110,6 @@ public class StagingApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("presign", presign));
         }
 
-        if (checksum != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("checksum", checksum));
-        }
-
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -134,7 +130,7 @@ public class StagingApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call getPhysicalAddressValidateBeforeCall(String repository, String branch, String path, Boolean presign, String checksum, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call getPhysicalAddressValidateBeforeCall(String repository, String branch, String path, Boolean presign, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling getPhysicalAddress(Async)");
@@ -150,20 +146,20 @@ public class StagingApi {
             throw new ApiException("Missing the required parameter 'path' when calling getPhysicalAddress(Async)");
         }
 
-        return getPhysicalAddressCall(repository, branch, path, presign, checksum, _callback);
+        return getPhysicalAddressCall(repository, branch, path, presign, _callback);
 
     }
 
 
-    private ApiResponse<StagingLocation> getPhysicalAddressWithHttpInfo(String repository, String branch, String path, Boolean presign, String checksum) throws ApiException {
-        okhttp3.Call localVarCall = getPhysicalAddressValidateBeforeCall(repository, branch, path, presign, checksum, null);
+    private ApiResponse<StagingLocation> getPhysicalAddressWithHttpInfo(String repository, String branch, String path, Boolean presign) throws ApiException {
+        okhttp3.Call localVarCall = getPhysicalAddressValidateBeforeCall(repository, branch, path, presign, null);
         Type localVarReturnType = new TypeToken<StagingLocation>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call getPhysicalAddressAsync(String repository, String branch, String path, Boolean presign, String checksum, final ApiCallback<StagingLocation> _callback) throws ApiException {
+    private okhttp3.Call getPhysicalAddressAsync(String repository, String branch, String path, Boolean presign, final ApiCallback<StagingLocation> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = getPhysicalAddressValidateBeforeCall(repository, branch, path, presign, checksum, _callback);
+        okhttp3.Call localVarCall = getPhysicalAddressValidateBeforeCall(repository, branch, path, presign, _callback);
         Type localVarReturnType = new TypeToken<StagingLocation>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -174,7 +170,6 @@ public class StagingApi {
         private final String branch;
         private final String path;
         private Boolean presign;
-        private String checksum;
 
         private APIgetPhysicalAddressRequest(String repository, String branch, String path) {
             this.repository = repository;
@@ -189,16 +184,6 @@ public class StagingApi {
          */
         public APIgetPhysicalAddressRequest presign(Boolean presign) {
             this.presign = presign;
-            return this;
-        }
-
-        /**
-         * Set checksum
-         * @param checksum  (optional)
-         * @return APIgetPhysicalAddressRequest
-         */
-        public APIgetPhysicalAddressRequest checksum(String checksum) {
-            this.checksum = checksum;
             return this;
         }
 
@@ -218,7 +203,7 @@ public class StagingApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return getPhysicalAddressCall(repository, branch, path, presign, checksum, _callback);
+            return getPhysicalAddressCall(repository, branch, path, presign, _callback);
         }
 
         /**
@@ -236,7 +221,7 @@ public class StagingApi {
          </table>
          */
         public StagingLocation execute() throws ApiException {
-            ApiResponse<StagingLocation> localVarResp = getPhysicalAddressWithHttpInfo(repository, branch, path, presign, checksum);
+            ApiResponse<StagingLocation> localVarResp = getPhysicalAddressWithHttpInfo(repository, branch, path, presign);
             return localVarResp.getData();
         }
 
@@ -255,7 +240,7 @@ public class StagingApi {
          </table>
          */
         public ApiResponse<StagingLocation> executeWithHttpInfo() throws ApiException {
-            return getPhysicalAddressWithHttpInfo(repository, branch, path, presign, checksum);
+            return getPhysicalAddressWithHttpInfo(repository, branch, path, presign);
         }
 
         /**
@@ -274,7 +259,7 @@ public class StagingApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<StagingLocation> _callback) throws ApiException {
-            return getPhysicalAddressAsync(repository, branch, path, presign, checksum, _callback);
+            return getPhysicalAddressAsync(repository, branch, path, presign, _callback);
         }
     }
 

@@ -705,7 +705,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 			StorageNamespace: repo.StorageNamespace,
 			Identifier:       address,
 			IdentifierType:   block.IdentifierTypeRelative,
-			Checksum:         params.Checksum,
+			//Checksum:         params.Checksum,
 		}, block.PreSignModeWrite)
 		if err != nil {
 			writeError(w, r, http.StatusInternalServerError, err)
