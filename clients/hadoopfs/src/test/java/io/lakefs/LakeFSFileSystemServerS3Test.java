@@ -9,11 +9,9 @@ import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.utils.ObjectLocation;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.Path;
 
-import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.model.*;
 
 import org.junit.Assert;
@@ -29,20 +27,12 @@ import static org.mockserver.model.HttpResponse.response;
 import static org.mockserver.model.JsonBody.json;
 
 import java.io.*;
-import java.net.URL;
 import java.util.Date;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
 @RunWith(Parameterized.class)
 public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
     static private final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystemServerS3Test.class);
-
-    public static interface PhysicalAddressCreator {
-        default void initConfiguration(Configuration conf) {}
-        String createGetPhysicalAddress(S3FSTestBase o, String key);
-        StagingLocation createPutStagingLocation(S3FSTestBase o, String namespace, String repo, String branch, String path);
-    }
 
     @Parameters(name="{1}")
     public static Iterable<Object[]> data() {
@@ -57,67 +47,10 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
     @Parameter(0)
     public PhysicalAddressCreator pac;
 
-    static private class SimplePhysicalAddressCreator implements PhysicalAddressCreator {
-        public String createGetPhysicalAddress(S3FSTestBase o, String key) {
-            return o.s3Url(key);
-        }
-
-        public StagingLocation createPutStagingLocation(S3FSTestBase o, String namespace, String repo, String branch, String path) {
-            String fullPath = String.format("%s/%s/%s/%s/%s-object",
-                                            o.sessionId(), namespace, repo, branch, path);
-            return new StagingLocation().physicalAddress(o.s3Url(fullPath));
-        }
-    }
-
-    static private class PresignedPhysicalAddressCreator implements PhysicalAddressCreator {
-        public void initConfiguration(Configuration conf) {
-            conf.set("fs.lakefs.access.mode", "presigned");
-        }
-
-        protected Date getExpiration() {
-            return new Date(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1));
-        }
-
-        public String createGetPhysicalAddress(S3FSTestBase o, String key) {
-            Date expiration = getExpiration();
-            URL presignedUrl =
-                o.s3Client.generatePresignedUrl(new GeneratePresignedUrlRequest(o.s3Bucket, key)
-                                              .withMethod(HttpMethod.GET)
-                                              .withExpiration(expiration));
-            return presignedUrl.toString();
-        }
-
-        public StagingLocation createPutStagingLocation(S3FSTestBase o, String namespace, String repo, String branch, String path) {
-            String fullPath = String.format("%s/%s/%s/%s/%s-object",
-                                            o.sessionId(), namespace, repo, branch, path);
-            Date expiration = getExpiration();
-            URL presignedUrl =
-                o.s3Client.generatePresignedUrl(new GeneratePresignedUrlRequest(o.s3Bucket, fullPath)
-                                              .withMethod(HttpMethod.PUT)
-                                              .withExpiration(expiration));
-            return new StagingLocation()
-                .physicalAddress(o.s3Url(fullPath))
-                .presignedUrl(presignedUrl.toString());
-        }
-    }
-
     @Override
     protected void moreHadoopSetup() {
         super.moreHadoopSetup();
         pac.initConfiguration(conf);
-    }
-
-    // Return a location under namespace for this getPhysicalAddress call.
-    protected StagingLocation mockGetPhysicalAddress(String repo, String branch, String path, String namespace) {
-        StagingLocation stagingLocation =
-            pac.createPutStagingLocation(this, namespace, repo, branch, path);
-        mockServerClient.when(request()
-                              .withMethod("GET")
-                              .withPath(String.format("/repositories/%s/branches/%s/staging/backing", repo, branch))
-                              .withQueryStringParameter("path", path))
-            .respond(response().withStatusCode(200)
-                     .withBody(gson.toJson(stagingLocation)));
-        return stagingLocation;
     }
 
     @Test

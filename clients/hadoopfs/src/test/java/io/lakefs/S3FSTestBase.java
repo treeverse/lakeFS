@@ -3,6 +3,7 @@ package io.lakefs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.HttpMethod;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
@@ -14,8 +15,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.conf.Configuration;
 
 import io.lakefs.clients.sdk.model.*;
+
+import static org.mockserver.model.HttpResponse.response;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -27,6 +31,9 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
+import java.net.URL;
+import java.util.concurrent.TimeUnit;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -36,6 +43,8 @@ import java.util.List;
  */
 public abstract class S3FSTestBase extends FSTestBase {
     static private final Logger LOG = LoggerFactory.getLogger(S3FSTestBase.class);
+
+    protected PhysicalAddressCreator pac = new SimplePhysicalAddressCreator();
 
     protected String s3Endpoint;
     protected AmazonS3 s3Client;
@@ -125,5 +134,68 @@ public abstract class S3FSTestBase extends FSTestBase {
         conf.set(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, S3_SECRET_ACCESS_KEY);
         conf.set(org.apache.hadoop.fs.s3a.Constants.ENDPOINT, s3Endpoint);
         conf.set(org.apache.hadoop.fs.s3a.Constants.BUFFER_DIR, "/tmp/s3a");
+    }
+
+    public static interface PhysicalAddressCreator {
+        default void initConfiguration(Configuration conf) {}
+        String createGetPhysicalAddress(S3FSTestBase o, String key);
+        StagingLocation createPutStagingLocation(S3FSTestBase o, String namespace, String repo, String branch, String path);
+    }
+
+    protected static class SimplePhysicalAddressCreator implements PhysicalAddressCreator {
+        public String createGetPhysicalAddress(S3FSTestBase o, String key) {
+            return o.s3Url(key);
+        }
+
+        public StagingLocation createPutStagingLocation(S3FSTestBase o, String namespace, String repo, String branch, String path) {
+            String fullPath = String.format("%s/%s/%s/%s/%s-object",
+                                            o.sessionId(), namespace, repo, branch, path);
+            return new StagingLocation().physicalAddress(o.s3Url(fullPath));
+        }
+    }
+
+    protected static class PresignedPhysicalAddressCreator implements PhysicalAddressCreator {
+        public void initConfiguration(Configuration conf) {
+            conf.set("fs.lakefs.access.mode", "presigned");
+        }
+
+        protected Date getExpiration() {
+            return new Date(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1));
+        }
+
+        public String createGetPhysicalAddress(S3FSTestBase o, String key) {
+            Date expiration = getExpiration();
+            URL presignedUrl =
+                o.s3Client.generatePresignedUrl(new GeneratePresignedUrlRequest(o.s3Bucket, key)
+                                              .withMethod(HttpMethod.GET)
+                                              .withExpiration(expiration));
+            return presignedUrl.toString();
+        }
+
+        public StagingLocation createPutStagingLocation(S3FSTestBase o, String namespace, String repo, String branch, String path) {
+            String fullPath = String.format("%s/%s/%s/%s/%s-object",
+                                            o.sessionId(), namespace, repo, branch, path);
+            Date expiration = getExpiration();
+            URL presignedUrl =
+                o.s3Client.generatePresignedUrl(new GeneratePresignedUrlRequest(o.s3Bucket, fullPath)
+                                              .withMethod(HttpMethod.PUT)
+                                              .withExpiration(expiration));
+            return new StagingLocation()
+                .physicalAddress(o.s3Url(fullPath))
+                .presignedUrl(presignedUrl.toString());
+        }
+    }
+
+    // Return a location under namespace for this getPhysicalAddress call.
+    protected StagingLocation mockGetPhysicalAddress(String repo, String branch, String path, String namespace) {
+        StagingLocation stagingLocation =
+            pac.createPutStagingLocation(this, namespace, repo, branch, path);
+        mockServerClient.when(request()
+                              .withMethod("GET")
+                              .withPath(String.format("/repositories/%s/branches/%s/staging/backing", repo, branch))
+                              .withQueryStringParameter("path", path))
+            .respond(response().withStatusCode(200)
+                     .withBody(gson.toJson(stagingLocation)));
+        return stagingLocation;
     }
 }
