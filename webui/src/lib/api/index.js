@@ -671,8 +671,7 @@ export const uploadWithProgress = (url, file, method = 'POST', onProgress = null
                 status: xhr.status,
                 body: xhr.responseText,
                 contentType: xhr.getResponseHeader('Content-Type'),
-                rawHeaders: xhr.getAllResponseHeaders(), // add raw headers here
-                xhr: xhr, 
+                rawHeaders: xhr.getAllResponseHeaders(), // add raw headers 
             });
         });
         xhr.addEventListener('error', () => reject(new Error('Upload Failed')));
@@ -1124,9 +1123,9 @@ class Statistics {
 }
 
 class Staging {
-    async get(repoId, branchId, path, presign = false,checksum = null) {
-    const query = qs({ path, presign,checksum });
-    const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
+    async get(repoId, branchId, path, presign = false) {
+		const query = qs({path, presign});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
             method: 'GET'
         });
         if (response.status !== 200) {

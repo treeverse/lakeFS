@@ -226,13 +226,13 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
   );
 };
 
-const extractChecksumFromRawHeaders = (rawHeaders) => {
-  const headersString = typeof rawHeaders === 'string' ? rawHeaders : rawHeaders.toString();
-  const cleanedHeadersString = headersString.trim();
-  const headerLines = cleanedHeadersString.split('\n');
+function extractChecksumFromResponse(rawHeaders) {
+    const headersString = typeof rawHeaders === 'string' ? rawHeaders : rawHeaders.toString();
+    const cleanedHeadersString = headersString.trim();
+    const headerLines = cleanedHeadersString.split('\n');
+    const parsedHeaders = {};
 
-  const parsedHeaders = {};
-  headerLines.forEach((line) => {
+    headerLines.forEach((line) => {
     const [key, value] = line.split(':', 2).map((part) => part.trim());
     if (key && value) {
       parsedHeaders[key.toLowerCase()] = value; 
@@ -240,39 +240,33 @@ const extractChecksumFromRawHeaders = (rawHeaders) => {
   });
 
   if (parsedHeaders['content-md5']) {
-    console.log("Found content-md5:", parsedHeaders['content-md5']);
     return parsedHeaders['content-md5'];
   }
-
   // fallback to ETag
   if (parsedHeaders['etag']) {
     const cleanedEtag = parsedHeaders['etag'].replace(/"/g, ''); 
     return cleanedEtag;
   }
   return null;
-};
+}
 
 const uploadFile = async (config, repo, reference, path, file, onProgress) => {  
-  const fpath = destinationPath(path, file);  
-  if (config.pre_sign_support_ui) {
-    let additionalHeaders = {};
-
-    if (config.blockstore_type === "azure") {
-      additionalHeaders["x-ms-blob-type"] = "BlockBlob";
-      console.log("Azure storage detected, setting BlockBlob header");
+    const fpath = destinationPath(path, file);  
+    if (config.pre_sign_support_ui) {
+        let additionalHeaders;
+        if (config.blockstore_type === "azure") {
+            additionalHeaders = { "x-ms-blob-type": "BlockBlob" }
+        }
+        const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
+        const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders);
+        const checksum = extractChecksumFromResponse(uploadResponse.rawHeaders);
+        if (uploadResponse.status >= 400) {
+            throw new Error(`Error uploading file: HTTP ${uploadResponse.status}`);
+        }
+        await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
+    } else {
+        await objects.upload(repo.id, reference.id, fpath, file, onProgress);
     }
-    
-    const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
-    const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress);
-	const checksum = extractChecksumFromRawHeaders(uploadResponse.rawHeaders);
-
-    if (uploadResponse.status >= 400) {
-      throw new Error(`Error uploading file: HTTP ${uploadResponse.status}`);
-    }
-    await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
-  } else {
-    await objects.upload(repo.id, reference.id, fpath, file, onProgress);
-  }
 };
 
 const destinationPath = (path, file) => {
