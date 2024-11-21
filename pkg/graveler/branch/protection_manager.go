@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gobwas/glob"
-	"github.com/treeverse/lakefs/pkg/cache"
+	"github.com/treeverse/lakefs/modules/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
 )

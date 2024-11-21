@@ -6,8 +6,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/treeverse/lakefs/modules/cache"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 

@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/treeverse/lakefs/modules/cache"
 	"github.com/treeverse/lakefs/pkg/batch"
-	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/distributed"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"

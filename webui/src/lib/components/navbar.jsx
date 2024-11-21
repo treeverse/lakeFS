@@ -9,6 +9,7 @@ import {Navbar, Nav, NavDropdown} from "react-bootstrap";
 import Container from "react-bootstrap/Container";
 import {useLoginConfigContext} from "../hooks/conf";
 import {FeedPersonIcon} from "@primer/octicons-react";
+import {usePluginManager} from "../../exported/plugins/pluginsContext";
 
 const NavUserInfo = () => {
     const { user, loading, error } = useUser();
@@ -65,6 +66,9 @@ const TopNavLink = ({ href, children }) => {
 };
 
 const TopNav = ({logged = true}) => {
+    const pluginManager = usePluginManager();
+    const pluginTabs = pluginManager.appTabs?.tabs;
+
     if (!logged) {
         return (
             <Navbar variant="dark" bg="dark" expand="md">
@@ -90,6 +94,9 @@ const TopNav = ({logged = true}) => {
                          navbarScroll>
                         <TopNavLink href="/repositories">Repositories</TopNavLink>
                         <TopNavLink href="/auth">Administration</TopNavLink>
+                        {pluginTabs?.map((tab) => (
+                            <TopNavLink href={"/" + tab.id}>{tab.name}</TopNavLink>
+                        ))}
                     </Nav>
 
                     <DarkModeToggle/>

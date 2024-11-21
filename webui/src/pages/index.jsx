@@ -45,8 +45,12 @@ import Setup from "./setup";
 import {AuthLayout} from "../lib/components/auth/layout";
 import RepositoryActionPage from "./repositories/repository/actions/run";
 import {WithAppContext} from "../lib/hooks/appContext";
+import {usePluginManager} from "../exported/plugins/pluginsContext";
 
 export const IndexPage = () => {
+    const pluginManager = usePluginManager();
+    const pluginTabs = pluginManager.appTabs?.tabs;
+
     return (
         <Router>
             <WithAppContext>
@@ -114,6 +118,11 @@ export const IndexPage = () => {
                                 </Route>
                             </Route>
                         </Route>
+                        {pluginTabs?.map((tab) => (
+                            <Route path={tab.id} element={<Layout logged={true}/>}>
+                                <Route index element={<tab.component/>}/>
+                            </Route>
+                        ))}
                         <Route path="/setup" element={<Layout logged={false}/>}>
                             <Route index element={<Setup/>}/>
                             <Route path="*" element={<Setup/>}/>

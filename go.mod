@@ -23,7 +23,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/hnlq715/golang-lru v0.3.0
+	github.com/hnlq715/golang-lru v0.4.0
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible
 	github.com/jedib0t/go-pretty/v6 v6.5.9
 	github.com/manifoldco/promptui v0.9.0
