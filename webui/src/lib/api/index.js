@@ -671,7 +671,9 @@ export const uploadWithProgress = (url, file, method = 'POST', onProgress = null
                 status: xhr.status,
                 body: xhr.responseText,
                 contentType: xhr.getResponseHeader('Content-Type'),
-            })
+                rawHeaders: xhr.getAllResponseHeaders(), // add raw headers here
+                xhr: xhr, 
+            });
         });
         xhr.addEventListener('error', () => reject(new Error('Upload Failed')));
         xhr.addEventListener('abort', () => reject(new Error('Upload Aborted')));

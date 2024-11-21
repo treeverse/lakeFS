@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "crypto-js": "^4.2.0",
-    "js-md5": "^0.8.3"
-  }
-}
