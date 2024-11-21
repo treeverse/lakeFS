@@ -290,7 +290,7 @@ The authentication works by querying the LDAP server for user information and au
 
 **For Helm:** set the following attributes in the Helm chart values, for lakeFS `lakefsConfig.*` and `fluffyConfig.*` for fluffy. 
 
-**Non-Helm:** If not using Helm use the YAML below to directly update the configuration file for each service.
+**No Helm:** If not using Helm use the YAML below to directly update the configuration file for each service.
 
 **lakeFS Configuration:**
 
@@ -325,7 +325,7 @@ auth:
 
 Fluffy Configuration file:
 
-`$fluffy run -c ./lakefs.yaml`
+`$fluffy run -c ./fluffy.yaml`
 
 ```yaml
 logging:
@@ -347,31 +347,32 @@ auth:
     connection_timeout_seconds: 15
     request_timeout_seconds: 7
 ```
-### Troubleshooting LDAP issues
 
-**Inspecting Logs**
+## Troubleshooting LDAP issues
+
+### Inspecting Logs
 
 If you encounter LDAP connection errors, you should inspect the **fluffy container** logs to get more information.
 
-**Authentication issues:** 
+### Authentication issues
 
 Auth issues (e.g. user not found, invalid credentials) can be debugged with the [ldapwhoami](https://www.unix.com/man-page/osx/1/ldapwhoami) CLI tool. 
 
 The Examples are based on the fluffy config above:
 
-1. Verify that the main bind user can connect:
+To verify that the main bind user can connect:
   
 ```sh 
 ldapwhoami -H ldap://ldap.company.com:636 -D "uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -x -W
 ```
 
-2. Verify that a specific lakeFS user `dev-user` can connect:
+To verify that a specific lakeFS user `dev-user` can connect:
 
 ```sh 
 ldapwhoami -H ldap://ldap.company.com:636 -D "uid=dev-user,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -x -W
 ```
 
-**User not found issue:** 
+### User not found issue
 
 Upon a login request in fluffy, the bind user will search for the user in the LDAP server. If the user is not found it will be presented in the logs.
 
