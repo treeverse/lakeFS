@@ -667,18 +667,23 @@ func (mr *MockVersionControllerMockRecorder) Import(ctx, repository, destination
 }
 
 // ListBranches mocks base method.
-func (m *MockVersionController) ListBranches(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
+func (m *MockVersionController) ListBranches(ctx context.Context, repository *graveler.RepositoryRecord, opts ...graveler.ListOptionsFunc) (graveler.BranchIterator, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListBranches", ctx, repository)
+	varargs := []interface{}{ctx, repository}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListBranches", varargs...)
 	ret0, _ := ret[0].(graveler.BranchIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListBranches indicates an expected call of ListBranches.
-func (mr *MockVersionControllerMockRecorder) ListBranches(ctx, repository interface{}) *gomock.Call {
+func (mr *MockVersionControllerMockRecorder) ListBranches(ctx, repository interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBranches", reflect.TypeOf((*MockVersionController)(nil).ListBranches), ctx, repository)
+	varargs := append([]interface{}{ctx, repository}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBranches", reflect.TypeOf((*MockVersionController)(nil).ListBranches), varargs...)
 }
 
 // ListRepositories mocks base method.
@@ -2398,18 +2403,18 @@ func (mr *MockRefManagerMockRecorder) GetTag(ctx, repository, tagID interface{})
 }
 
 // ListBranches mocks base method.
-func (m *MockRefManager) ListBranches(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
+func (m *MockRefManager) ListBranches(ctx context.Context, repository *graveler.RepositoryRecord, opts graveler.ListOptions) (graveler.BranchIterator, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListBranches", ctx, repository)
+	ret := m.ctrl.Call(m, "ListBranches", ctx, repository, opts)
 	ret0, _ := ret[0].(graveler.BranchIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListBranches indicates an expected call of ListBranches.
-func (mr *MockRefManagerMockRecorder) ListBranches(ctx, repository interface{}) *gomock.Call {
+func (mr *MockRefManagerMockRecorder) ListBranches(ctx, repository, opts interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBranches", reflect.TypeOf((*MockRefManager)(nil).ListBranches), ctx, repository)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBranches", reflect.TypeOf((*MockRefManager)(nil).ListBranches), ctx, repository, opts)
 }
 
 // ListCommits mocks base method.

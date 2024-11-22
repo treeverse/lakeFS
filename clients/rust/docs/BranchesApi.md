@@ -168,7 +168,7 @@ Name | Type | Description  | Required | Notes
 
 ## list_branches
 
-> models::RefList list_branches(repository, prefix, after, amount)
+> models::RefList list_branches(repository, prefix, after, amount, show_hidden)
 list branches
 
 ### Parameters
@@ -180,6 +180,7 @@ Name | Type | Description  | Required | Notes
 **prefix** | Option<**String**> | return items prefixed with this value |  |
 **after** | Option<**String**> | return items after this value |  |
 **amount** | Option<**i32**> | how many items to return |  |[default to 100]
+**show_hidden** | Option<**bool**> |  |  |[default to false]
 
 ### Return type
 

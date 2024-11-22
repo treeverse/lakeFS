@@ -18,6 +18,9 @@ pub struct BranchCreation {
     pub source: String,
     #[serde(rename = "force", skip_serializing_if = "Option::is_none")]
     pub force: Option<bool>,
+    /// When set, branch will not show up when listing branches by default. *EXPERIMENTAL*
+    #[serde(rename = "hidden", skip_serializing_if = "Option::is_none")]
+    pub hidden: Option<bool>,
 }
 
 impl BranchCreation {
@@ -26,6 +29,7 @@ impl BranchCreation {
             name,
             source,
             force: None,
+            hidden: None,
         }
     }
 }

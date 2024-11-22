@@ -61,4 +61,12 @@ public class BranchCreationTest {
         // TODO: test force
     }
 
+    /**
+     * Test the property 'hidden'
+     */
+    @Test
+    public void hiddenTest() {
+        // TODO: test hidden
+    }
+
 }

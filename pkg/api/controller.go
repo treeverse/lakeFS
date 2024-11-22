@@ -2578,8 +2578,13 @@ func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, reposi
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "list_branches", r, repository, "", "")
-
-	res, hasMore, err := c.Catalog.ListBranches(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After))
+	res, hasMore, err := c.Catalog.ListBranches(
+		ctx,
+		repository,
+		paginationPrefix(params.Prefix),
+		paginationAmount(params.Amount),
+		paginationAfter(params.After),
+		graveler.WithShowHidden(swag.BoolValue(params.ShowHidden)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2610,7 +2615,14 @@ func (c *Controller) CreateBranch(w http.ResponseWriter, r *http.Request, body a
 	ctx := r.Context()
 	c.LogAction(ctx, "create_branch", r, repository, body.Name, "")
 
-	commitLog, err := c.Catalog.CreateBranch(ctx, repository, body.Name, body.Source, graveler.WithForce(swag.BoolValue(body.Force)))
+	commitLog, err := c.Catalog.CreateBranch(
+		ctx,
+		repository,
+		body.Name,
+		body.Source,
+		graveler.WithForce(swag.BoolValue(body.Force)),
+		graveler.WithHidden(swag.BoolValue(body.Hidden)),
+	)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

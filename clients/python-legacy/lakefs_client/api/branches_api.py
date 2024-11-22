@@ -410,6 +410,7 @@ class BranchesApi(object):
                     'prefix',
                     'after',
                     'amount',
+                    'show_hidden',
                 ],
                 'required': [
                     'repository',
@@ -441,18 +442,22 @@ class BranchesApi(object):
                         (str,),
                     'amount':
                         (int,),
+                    'show_hidden':
+                        (bool,),
                 },
                 'attribute_map': {
                     'repository': 'repository',
                     'prefix': 'prefix',
                     'after': 'after',
                     'amount': 'amount',
+                    'show_hidden': 'show_hidden',
                 },
                 'location_map': {
                     'repository': 'path',
                     'prefix': 'query',
                     'after': 'query',
                     'amount': 'query',
+                    'show_hidden': 'query',
                 },
                 'collection_format_map': {
                 }
@@ -976,6 +981,7 @@ class BranchesApi(object):
             prefix (str): return items prefixed with this value. [optional]
             after (str): return items after this value. [optional]
             amount (int): how many items to return. [optional] if omitted the server will use the default value of 100
+            show_hidden (bool): [optional] if omitted the server will use the default value of False
             _return_http_data_only (bool): response data without head status
                 code and headers. Default is True.
             _preload_content (bool): if False, the urllib3.HTTPResponse object
