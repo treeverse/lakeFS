@@ -729,7 +729,7 @@ func (c *Catalog) DeleteBranch(ctx context.Context, repositoryID string, branch 
 	return c.Store.DeleteBranch(ctx, repository, branchID, opts...)
 }
 
-func (c *Catalog) ListBranches(ctx context.Context, repositoryID string, prefix string, limit int, after string) ([]*Branch, bool, error) {
+func (c *Catalog) ListBranches(ctx context.Context, repositoryID string, prefix string, limit int, after string, opts ...graveler.ListOptionsFunc) ([]*Branch, bool, error) {
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
@@ -744,7 +744,7 @@ func (c *Catalog) ListBranches(ctx context.Context, repositoryID string, prefix 
 	if limit < 0 || limit > ListBranchesLimitMax {
 		limit = ListBranchesLimitMax
 	}
-	it, err := c.Store.ListBranches(ctx, repository)
+	it, err := c.Store.ListBranches(ctx, repository, opts...)
 	if err != nil {
 		return nil, false, err
 	}

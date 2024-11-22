@@ -41,6 +41,10 @@ public class BranchCreation {
   @SerializedName(SERIALIZED_NAME_FORCE)
   private Boolean force = false;
 
+  public static final String SERIALIZED_NAME_HIDDEN = "hidden";
+  @SerializedName(SERIALIZED_NAME_HIDDEN)
+  private Boolean hidden = false;
+
 
   public BranchCreation name(String name) {
     
@@ -111,6 +115,29 @@ public class BranchCreation {
   }
 
 
+  public BranchCreation hidden(Boolean hidden) {
+    
+    this.hidden = hidden;
+    return this;
+  }
+
+   /**
+   * When set, branch will not show up when listing branches by default. *EXPERIMENTAL*
+   * @return hidden
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "When set, branch will not show up when listing branches by default. *EXPERIMENTAL*")
+
+  public Boolean getHidden() {
+    return hidden;
+  }
+
+
+  public void setHidden(Boolean hidden) {
+    this.hidden = hidden;
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -122,12 +149,13 @@ public class BranchCreation {
     BranchCreation branchCreation = (BranchCreation) o;
     return Objects.equals(this.name, branchCreation.name) &&
         Objects.equals(this.source, branchCreation.source) &&
-        Objects.equals(this.force, branchCreation.force);
+        Objects.equals(this.force, branchCreation.force) &&
+        Objects.equals(this.hidden, branchCreation.hidden);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, source, force);
+    return Objects.hash(name, source, force, hidden);
   }
 
   @Override
@@ -137,6 +165,7 @@ public class BranchCreation {
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    source: ").append(toIndentedString(source)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
+    sb.append("    hidden: ").append(toIndentedString(hidden)).append("\n");
     sb.append("}");
     return sb.toString();
   }

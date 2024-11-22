@@ -693,6 +693,10 @@ components:
         force:
           type: boolean
           default: false
+        hidden:
+          type: boolean
+          description: When set, branch will not show up when listing branches by default. *EXPERIMENTAL*          
+          default: false
 
     TagCreation:
       type: object
@@ -3544,6 +3548,12 @@ paths:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
+        - in: query
+          name: show_hidden
+          schema:
+            type: boolean
+            default: false
+            description: When set - list all branches including hidden branches. *EXPERIMENTAL*
       responses:
         200:
           description: branch list

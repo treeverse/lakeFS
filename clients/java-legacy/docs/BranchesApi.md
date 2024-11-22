@@ -504,7 +504,7 @@ Name | Type | Description  | Notes
 
 <a name="listBranches"></a>
 # **listBranches**
-> RefList listBranches(repository, prefix, after, amount)
+> RefList listBranches(repository, prefix, after, amount, showHidden)
 
 list branches
 
@@ -555,8 +555,9 @@ public class Example {
     String prefix = "prefix_example"; // String | return items prefixed with this value
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
+    Boolean showHidden = false; // Boolean | 
     try {
-      RefList result = apiInstance.listBranches(repository, prefix, after, amount);
+      RefList result = apiInstance.listBranches(repository, prefix, after, amount, showHidden);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling BranchesApi#listBranches");
@@ -577,6 +578,7 @@ Name | Type | Description  | Notes
  **prefix** | **String**| return items prefixed with this value | [optional]
  **after** | **String**| return items after this value | [optional]
  **amount** | **Integer**| how many items to return | [optional] [default to 100]
+ **showHidden** | **Boolean**|  | [optional] [default to false]
 
 ### Return type
 

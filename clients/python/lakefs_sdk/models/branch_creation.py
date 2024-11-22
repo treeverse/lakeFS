@@ -32,7 +32,8 @@ class BranchCreation(BaseModel):
     name: StrictStr = Field(...)
     source: StrictStr = Field(...)
     force: Optional[StrictBool] = False
-    __properties = ["name", "source", "force"]
+    hidden: Optional[StrictBool] = Field(False, description="When set, branch will not show up when listing branches by default. *EXPERIMENTAL*")
+    __properties = ["name", "source", "force", "hidden"]
 
     class Config:
         """Pydantic configuration"""
@@ -72,7 +73,8 @@ class BranchCreation(BaseModel):
         _obj = BranchCreation.parse_obj({
             "name": obj.get("name"),
             "source": obj.get("source"),
-            "force": obj.get("force") if obj.get("force") is not None else False
+            "force": obj.get("force") if obj.get("force") is not None else False,
+            "hidden": obj.get("hidden") if obj.get("hidden") is not None else False
         })
         return _obj
 

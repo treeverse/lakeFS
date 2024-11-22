@@ -140,7 +140,8 @@ public class BranchesApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
-                RefList response = api.listBranches(repository, prefix, after, amount);
+        Boolean showHidden = null;
+                RefList response = api.listBranches(repository, prefix, after, amount, showHidden);
         // TODO: test validations
     }
     

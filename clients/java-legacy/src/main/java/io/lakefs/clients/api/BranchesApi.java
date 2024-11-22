@@ -830,6 +830,7 @@ public class BranchesApi {
      * @param prefix return items prefixed with this value (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
+     * @param showHidden  (optional, default to false)
      * @param _callback Callback for upload/download progress
      * @return Call to execute
      * @throws ApiException If fail to serialize the request body object
@@ -843,7 +844,7 @@ public class BranchesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call listBranchesCall(String repository, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+    public okhttp3.Call listBranchesCall(String repository, String prefix, String after, Integer amount, Boolean showHidden, final ApiCallback _callback) throws ApiException {
         Object localVarPostBody = null;
 
         // create path and map variables
@@ -868,6 +869,10 @@ public class BranchesApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("amount", amount));
         }
 
+        if (showHidden != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("show_hidden", showHidden));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -887,7 +892,7 @@ public class BranchesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call listBranchesValidateBeforeCall(String repository, String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call listBranchesValidateBeforeCall(String repository, String prefix, String after, Integer amount, Boolean showHidden, final ApiCallback _callback) throws ApiException {
         
         // verify the required parameter 'repository' is set
         if (repository == null) {
@@ -895,7 +900,7 @@ public class BranchesApi {
         }
         
 
-        okhttp3.Call localVarCall = listBranchesCall(repository, prefix, after, amount, _callback);
+        okhttp3.Call localVarCall = listBranchesCall(repository, prefix, after, amount, showHidden, _callback);
         return localVarCall;
 
     }
@@ -907,6 +912,7 @@ public class BranchesApi {
      * @param prefix return items prefixed with this value (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
+     * @param showHidden  (optional, default to false)
      * @return RefList
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -919,8 +925,8 @@ public class BranchesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public RefList listBranches(String repository, String prefix, String after, Integer amount) throws ApiException {
-        ApiResponse<RefList> localVarResp = listBranchesWithHttpInfo(repository, prefix, after, amount);
+    public RefList listBranches(String repository, String prefix, String after, Integer amount, Boolean showHidden) throws ApiException {
+        ApiResponse<RefList> localVarResp = listBranchesWithHttpInfo(repository, prefix, after, amount, showHidden);
         return localVarResp.getData();
     }
 
@@ -931,6 +937,7 @@ public class BranchesApi {
      * @param prefix return items prefixed with this value (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
+     * @param showHidden  (optional, default to false)
      * @return ApiResponse&lt;RefList&gt;
      * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
      * @http.response.details
@@ -943,8 +950,8 @@ public class BranchesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public ApiResponse<RefList> listBranchesWithHttpInfo(String repository, String prefix, String after, Integer amount) throws ApiException {
-        okhttp3.Call localVarCall = listBranchesValidateBeforeCall(repository, prefix, after, amount, null);
+    public ApiResponse<RefList> listBranchesWithHttpInfo(String repository, String prefix, String after, Integer amount, Boolean showHidden) throws ApiException {
+        okhttp3.Call localVarCall = listBranchesValidateBeforeCall(repository, prefix, after, amount, showHidden, null);
         Type localVarReturnType = new TypeToken<RefList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
@@ -956,6 +963,7 @@ public class BranchesApi {
      * @param prefix return items prefixed with this value (optional)
      * @param after return items after this value (optional)
      * @param amount how many items to return (optional, default to 100)
+     * @param showHidden  (optional, default to false)
      * @param _callback The callback to be executed when the API call finishes
      * @return The request call
      * @throws ApiException If fail to process the API call, e.g. serializing the request body object
@@ -969,9 +977,9 @@ public class BranchesApi {
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
-    public okhttp3.Call listBranchesAsync(String repository, String prefix, String after, Integer amount, final ApiCallback<RefList> _callback) throws ApiException {
+    public okhttp3.Call listBranchesAsync(String repository, String prefix, String after, Integer amount, Boolean showHidden, final ApiCallback<RefList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = listBranchesValidateBeforeCall(repository, prefix, after, amount, _callback);
+        okhttp3.Call localVarCall = listBranchesValidateBeforeCall(repository, prefix, after, amount, showHidden, _callback);
         Type localVarReturnType = new TypeToken<RefList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;

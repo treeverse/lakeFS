@@ -3115,6 +3115,15 @@ paths:
           minimum: -1
           type: integer
         style: form
+      - explode: true
+        in: query
+        name: show_hidden
+        required: false
+        schema:
+          default: false
+          description: When set - list all branches including hidden branches. *EXPERIMENTAL*
+          type: boolean
+        style: form
       responses:
         "200":
           content:
@@ -8248,6 +8257,7 @@ components:
       type: object
     BranchCreation:
       example:
+        hidden: false
         name: name
         force: false
         source: source
@@ -8258,6 +8268,11 @@ components:
           type: string
         force:
           default: false
+          type: boolean
+        hidden:
+          default: false
+          description: When set, branch will not show up when listing branches by
+            default. *EXPERIMENTAL*
           type: boolean
       required:
       - name
