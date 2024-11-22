@@ -3553,7 +3553,7 @@ paths:
           schema:
             type: boolean
             default: false
-            description: When set - list all branches including hidden branches
+            description: When set - list all branches including hidden branches. *EXPERIMENTAL*
       responses:
         200:
           description: branch list

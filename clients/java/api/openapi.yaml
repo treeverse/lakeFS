@@ -3121,7 +3121,7 @@ paths:
         required: false
         schema:
           default: false
-          description: When set - list all branches including hidden branches
+          description: When set - list all branches including hidden branches. *EXPERIMENTAL*
           type: boolean
         style: form
       responses:
