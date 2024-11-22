@@ -146,7 +146,7 @@ class BranchCreation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
-            hidden (bool): When set, branch will not show up when listing branches by default. [optional] if omitted the server will use the default value of False  # noqa: E501
+            hidden (bool): When set, branch will not show up when listing branches by default. *EXPERIMENTAL*. [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)
@@ -235,7 +235,7 @@ class BranchCreation(ModelNormal):
                                 through its discriminator because we passed in
                                 _visited_composed_classes = (Animal,)
             force (bool): [optional] if omitted the server will use the default value of False  # noqa: E501
-            hidden (bool): When set, branch will not show up when listing branches by default. [optional] if omitted the server will use the default value of False  # noqa: E501
+            hidden (bool): When set, branch will not show up when listing branches by default. *EXPERIMENTAL*. [optional] if omitted the server will use the default value of False  # noqa: E501
         """
 
         _check_type = kwargs.pop('_check_type', True)

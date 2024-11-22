@@ -8246,7 +8246,7 @@ components:
         hidden:
           default: false
           description: "When set, branch will not show up when listing branches by\
-            \ default"
+            \ default. *EXPERIMENTAL*"
           type: boolean
       required:
       - name

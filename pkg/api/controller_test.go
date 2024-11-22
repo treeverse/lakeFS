@@ -1502,8 +1502,9 @@ func TestController_ListBranchesHandler(t *testing.T) {
 		if len(results) != 2 {
 			t.Fatalf("expected 2 branches to return, got %d", len(results))
 		}
-		require.Equal(t, results[0].Id, "main3")
-		require.Equal(t, results[1].Id, "main5")
+		expectedRefs := []string{"main3", "main5"}
+		gotRefs := []string{results[0].Id, results[1].Id}
+		require.Equal(t, expectedRefs, gotRefs)
 
 		// List all branches
 		resp, err = clt.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{
@@ -1516,8 +1517,9 @@ func TestController_ListBranchesHandler(t *testing.T) {
 		if len(results) != 2 {
 			t.Fatalf("expected 2 branches to return, got %d", len(results))
 		}
-		require.Equal(t, results[0].Id, "main2")
-		require.Equal(t, results[1].Id, "main3")
+		expectedRefs = []string{"main2", "main3"}
+		gotRefs = []string{results[0].Id, results[1].Id}
+		require.Equal(t, expectedRefs, gotRefs)
 	})
 
 	t.Run("list branches repo doesnt exist", func(t *testing.T) {

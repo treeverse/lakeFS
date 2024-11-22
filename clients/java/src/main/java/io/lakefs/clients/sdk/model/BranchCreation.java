@@ -141,7 +141,7 @@ public class BranchCreation {
   }
 
    /**
-   * When set, branch will not show up when listing branches by default
+   * When set, branch will not show up when listing branches by default. *EXPERIMENTAL*
    * @return hidden
   **/
   @javax.annotation.Nullable

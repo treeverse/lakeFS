@@ -32,7 +32,7 @@ class BranchCreation(BaseModel):
     name: StrictStr = Field(...)
     source: StrictStr = Field(...)
     force: Optional[StrictBool] = False
-    hidden: Optional[StrictBool] = Field(False, description="When set, branch will not show up when listing branches by default")
+    hidden: Optional[StrictBool] = Field(False, description="When set, branch will not show up when listing branches by default. *EXPERIMENTAL*")
     __properties = ["name", "source", "force", "hidden"]
 
     class Config:
