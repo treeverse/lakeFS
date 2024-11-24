@@ -42,17 +42,15 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
                 {new PresignedPhysicalAddressCreator(), "presigned"}});
     }
 
+    @Parameter(0)
+    public PhysicalAddressCreator pac;
+
     @Parameter(1)
     public String unusedAddressCreatorType;
 
-    @Parameter(0)
-    public PhysicalAddressCreator pacParam;
-
     @Override
-    // pac is defined in a superclass but parametrized here.
-    protected void setPac() {
-        pac = pacParam;
-        LOG.info("Set pac!");
+    protected PhysicalAddressCreator getPac() {
+        return pac;
     }
 
     @Test
@@ -115,7 +113,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
             mockGetPhysicalAddress("repo", "main", "dir1/dir2/dir3/", "repo-base/emptyDir");
 
         ObjectStats newStats = makeObjectStats("dir1/dir2/dir3/")
-            .physicalAddress(pac.createGetPhysicalAddress(this, "repo-base/dir12"));
+            .physicalAddress(getPac().createGetPhysicalAddress(this, "repo-base/dir12"));
         mockStatObject("repo", "main", "dir1/dir2/dir3/", newStats);
 
         mockServerClient.when(request()
@@ -144,7 +142,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
 
         mockStatObjectNotFound("repo", "main", "sub1/sub2/create.me");
         ObjectStats stats = makeObjectStats("sub1/sub2/create.me/")
-            .physicalAddress(pac.createGetPhysicalAddress(this, "repo-base/sub1/sub2/create.me"));
+            .physicalAddress(getPac().createGetPhysicalAddress(this, "repo-base/sub1/sub2/create.me"));
         mockStatObject("repo", "main", "sub1/sub2/create.me/", stats);
 
         Exception e =
@@ -169,7 +167,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         String contents = "The quick brown fox jumps over the lazy dog.";
         byte[] contentsBytes = contents.getBytes();
         String physicalPath = sessionId() + "/repo-base/open";
-        String physicalKey = pac.createGetPhysicalAddress(this, physicalPath);
+        String physicalKey = getPac().createGetPhysicalAddress(this, physicalPath);
         int readBufferSize = 5;
         Path path = new Path("lakefs://repo/main/read.me");
 
@@ -220,7 +218,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
 
             String path = String.format("lakefs://repo/main/%s-x", suffix);
             ObjectStats stats = makeObjectStats(suffix + "-x")
-                .physicalAddress(pac.createGetPhysicalAddress(this, key))
+                .physicalAddress(getPac().createGetPhysicalAddress(this, key))
                 .sizeBytes((long) contentsBytes.length);
             mockStatObject("repo", "main", suffix + "-x", stats);
 

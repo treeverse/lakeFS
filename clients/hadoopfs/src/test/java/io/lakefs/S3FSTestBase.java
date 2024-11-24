@@ -44,8 +44,6 @@ import java.util.List;
 public abstract class S3FSTestBase extends FSTestBase {
     static private final Logger LOG = LoggerFactory.getLogger(S3FSTestBase.class);
 
-    protected PhysicalAddressCreator pac = new SimplePhysicalAddressCreator();
-
     protected String s3Endpoint;
     protected AmazonS3 s3Client;
 
@@ -127,10 +125,9 @@ public abstract class S3FSTestBase extends FSTestBase {
         }
     }
 
-    protected void setPac() {}
+    protected abstract PhysicalAddressCreator getPac();
 
     protected void moreHadoopSetup() {
-        setPac();
         s3ClientSetup();
 
         conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem");
@@ -138,7 +135,7 @@ public abstract class S3FSTestBase extends FSTestBase {
         conf.set(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, S3_SECRET_ACCESS_KEY);
         conf.set(org.apache.hadoop.fs.s3a.Constants.ENDPOINT, s3Endpoint);
         conf.set(org.apache.hadoop.fs.s3a.Constants.BUFFER_DIR, "/tmp/s3a");
-        pac.initConfiguration(conf);
+        getPac().initConfiguration(conf);
 
         LOG.info("Setup done!");
     }
@@ -196,7 +193,7 @@ public abstract class S3FSTestBase extends FSTestBase {
     // Return a location under namespace for this getPhysicalAddress call.
     protected StagingLocation mockGetPhysicalAddress(String repo, String branch, String path, String namespace) {
         StagingLocation stagingLocation =
-            pac.createPutStagingLocation(this, namespace, repo, branch, path);
+            getPac().createPutStagingLocation(this, namespace, repo, branch, path);
         mockServerClient.when(request()
                               .withMethod("GET")
                               .withPath(String.format("/repositories/%s/branches/%s/staging/backing", repo, branch))
