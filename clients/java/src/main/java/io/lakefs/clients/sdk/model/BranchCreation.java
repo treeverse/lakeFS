@@ -64,6 +64,10 @@ public class BranchCreation {
   @SerializedName(SERIALIZED_NAME_FORCE)
   private Boolean force = false;
 
+  public static final String SERIALIZED_NAME_HIDDEN = "hidden";
+  @SerializedName(SERIALIZED_NAME_HIDDEN)
+  private Boolean hidden = false;
+
   public BranchCreation() {
   }
 
@@ -129,6 +133,27 @@ public class BranchCreation {
     this.force = force;
   }
 
+
+  public BranchCreation hidden(Boolean hidden) {
+    
+    this.hidden = hidden;
+    return this;
+  }
+
+   /**
+   * When set, branch will not show up when listing branches by default. *EXPERIMENTAL*
+   * @return hidden
+  **/
+  @javax.annotation.Nullable
+  public Boolean getHidden() {
+    return hidden;
+  }
+
+
+  public void setHidden(Boolean hidden) {
+    this.hidden = hidden;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -186,13 +211,14 @@ public class BranchCreation {
     BranchCreation branchCreation = (BranchCreation) o;
     return Objects.equals(this.name, branchCreation.name) &&
         Objects.equals(this.source, branchCreation.source) &&
-        Objects.equals(this.force, branchCreation.force)&&
+        Objects.equals(this.force, branchCreation.force) &&
+        Objects.equals(this.hidden, branchCreation.hidden)&&
         Objects.equals(this.additionalProperties, branchCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, source, force, additionalProperties);
+    return Objects.hash(name, source, force, hidden, additionalProperties);
   }
 
   @Override
@@ -202,6 +228,7 @@ public class BranchCreation {
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    source: ").append(toIndentedString(source)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
+    sb.append("    hidden: ").append(toIndentedString(hidden)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -228,6 +255,7 @@ public class BranchCreation {
     openapiFields.add("name");
     openapiFields.add("source");
     openapiFields.add("force");
+    openapiFields.add("hidden");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

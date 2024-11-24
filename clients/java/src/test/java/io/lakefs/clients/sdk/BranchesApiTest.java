@@ -131,10 +131,12 @@ public class BranchesApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
+        Boolean showHidden = null;
         RefList response = api.listBranches(repository)
                 .prefix(prefix)
                 .after(after)
                 .amount(amount)
+                .showHidden(showHidden)
                 .execute();
         // TODO: test validations
     }
