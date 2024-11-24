@@ -142,7 +142,7 @@ If the change should not be included in the changelog, label it with `exclude-ch
 ### Non-User-Facing Changes:
 1. Code refactoring: Restructuring the codebase without changing its external behavior.
 1. Backend optimizations: Improvements to server-side processes that don't noticeably affect performance.
-1. Database schema changes: Modifications to the data structure that don't alter the user interface.
+1. Database schema changes: Modifications to the data structure that don't alter the user interface **and** do not require data migration.
 1. Development tooling updates: Changes to build processes or development environments.
 1. Internal API: Adding/Altering APIs tagged as internal.
 1. Documentation updates.
