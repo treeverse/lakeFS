@@ -49,10 +49,10 @@ public abstract class S3FSTestBase extends FSTestBase {
     protected String s3Endpoint;
     protected AmazonS3 s3Client;
 
-    private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2021-06-07T21-40-51Z");
+    private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2024-11-07T00-52-20Z");
 
     @Rule
-    public final GenericContainer s3 = new GenericContainer(MINIO.toString()).
+    public final GenericContainer s3 = new GenericContainer(MINIO).
         withCommand("minio", "server", "/data").
         withEnv("MINIO_ROOT_USER", S3_ACCESS_KEY_ID).
         withEnv("MINIO_ROOT_PASSWORD", S3_SECRET_ACCESS_KEY).
@@ -74,7 +74,7 @@ public abstract class S3FSTestBase extends FSTestBase {
 
         ClientConfiguration clientConfiguration = new ClientConfiguration()
                 .withSignerOverride("AWSS3V4SignerType");
-        s3Endpoint = String.format("http://s3.local.lakefs.io:%d", s3.getMappedPort(9000));
+        s3Endpoint = String.format("http://s3.local.lakefs.io:%d/", s3.getMappedPort(9000));
 
         s3Client = new AmazonS3Client(creds, clientConfiguration);
 
@@ -85,7 +85,8 @@ public abstract class S3FSTestBase extends FSTestBase {
 
         s3Bucket = makeS3BucketName();
         s3Base = String.format("s3://%s/", s3Bucket);
-        LOG.info("S3: bucket {} => base URL {}", s3Bucket, s3Base);
+        LOG.info("S3 [endpoint {}]: bucket {} => base URL {}",
+                 s3Endpoint, s3Bucket, s3Base);
 
         CreateBucketRequest cbr = new CreateBucketRequest(s3Bucket);
         s3Client.createBucket(cbr);
@@ -126,7 +127,10 @@ public abstract class S3FSTestBase extends FSTestBase {
         }
     }
 
+    protected void setPac() {}
+
     protected void moreHadoopSetup() {
+        setPac();
         s3ClientSetup();
 
         conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem");
@@ -134,6 +138,9 @@ public abstract class S3FSTestBase extends FSTestBase {
         conf.set(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, S3_SECRET_ACCESS_KEY);
         conf.set(org.apache.hadoop.fs.s3a.Constants.ENDPOINT, s3Endpoint);
         conf.set(org.apache.hadoop.fs.s3a.Constants.BUFFER_DIR, "/tmp/s3a");
+        pac.initConfiguration(conf);
+
+        LOG.info("Setup done!");
     }
 
     public static interface PhysicalAddressCreator {

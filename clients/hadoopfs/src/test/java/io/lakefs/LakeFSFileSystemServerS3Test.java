@@ -15,6 +15,7 @@ import org.apache.hadoop.fs.Path;
 import com.amazonaws.services.s3.model.*;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -45,12 +46,13 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
     public String unusedAddressCreatorType;
 
     @Parameter(0)
-    public PhysicalAddressCreator pac;
+    public PhysicalAddressCreator pacParam;
 
     @Override
-    protected void moreHadoopSetup() {
-        super.moreHadoopSetup();
-        pac.initConfiguration(conf);
+    // pac is defined in a superclass but parametrized here.
+    protected void setPac() {
+        pac = pacParam;
+        LOG.info("Set pac!");
     }
 
     @Test
