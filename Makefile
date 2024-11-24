@@ -154,17 +154,6 @@ sdk-rust: api/swagger.yml  ## Generate SDK for Rust client - openapi generator v
 		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageName=lakefs_sdk,packageVersion=$(PACKAGE_VERSION),packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/rust \
 		-o /mnt/clients/rust
 
-client-java-legacy: api/swagger.yml api/java-gen-ignore  ## Generate legacy SDK for Java (and Scala) client
-	rm -rf clients/java-legacy
-	$(OPENAPI_LEGACY_GENERATOR) generate \
-		-i /mnt/$< \
-		--ignore-file-override /mnt/api/java-gen-ignore \
-		-g java \
-		--invoker-package io.lakefs.clients.api \
-		--http-user-agent "lakefs-java-sdk/$(PACKAGE_VERSION)-legacy" \
-		--additional-properties hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='api-client',artifactDescription='lakeFS OpenAPI Java client legacy SDK',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.api,modelPackage=io.lakefs.clients.api.model,mainPackage=io.lakefs.clients.api,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
-		-o /mnt/clients/java-legacy
-
 client-java: api/swagger.yml api/java-gen-ignore  ## Generate SDK for Java (and Scala) client
 	rm -rf clients/java
 	mkdir -p clients/java
@@ -177,8 +166,8 @@ client-java: api/swagger.yml api/java-gen-ignore  ## Generate SDK for Java (and 
 		--additional-properties disallowAdditionalPropertiesIfNotPresent=false,useSingleRequestParameter=true,hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='sdk',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.sdk,modelPackage=io.lakefs.clients.sdk.model,mainPackage=io.lakefs.clients.sdk,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
 		-o /mnt/clients/java
 
-.PHONY: clients client-python sdk-python-legacy sdk-python client-java client-java-legacy
-clients: client-python client-java client-java-legacy sdk-rust
+.PHONY: clients client-python sdk-python-legacy sdk-python client-java
+clients: client-python client-java sdk-rust
 
 package-python: package-python-client package-python-sdk
 
