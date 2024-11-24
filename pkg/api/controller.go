@@ -1988,7 +1988,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 	// Since this is a read-only repository, there is no harm in case the storage namespace we are using is already
-	//used by another repository or if we don't have write permissions for this namespace.
+	// used by another repository or if we don't have write permissions for this namespace.
 	if !swag.BoolValue(body.ReadOnly) {
 		if err := c.ensureStorageNamespace(ctx, body.StorageNamespace); err != nil {
 			var (
