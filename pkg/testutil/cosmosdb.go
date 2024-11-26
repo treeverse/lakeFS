@@ -24,9 +24,10 @@ func GetCosmosDBInstance() (string, func(), error) {
 		return "", nil, fmt.Errorf("could not connect to Docker: %w", err)
 	}
 
+	// test
 	cosmosdbDockerRunOptions := &dockertest.RunOptions{
 		Repository: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator",
-		Tag:        "vnext-preview",
+		Tag:        "latest",
 		Env: []string{
 			"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=100",
 		},
