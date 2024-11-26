@@ -159,7 +159,7 @@ for r in repos:
 ```
 
 
-[external-principal-admin]:  {% link reference/cli.md %}#external
+[external-principal-admin]:  {% link reference/api.md %}#external
 [login-api]: {% link reference/api.md %}#auth/externalPrincipalLogin
 [lakefs-hadoopfs]:  {% link integrations/spark.md %}#lakefs-hadoop-filesystem
 [lakefs-spark]:  {% link integrations/spark.md %}#usage-with-temporaryawscredentialslakefstokenprovider
