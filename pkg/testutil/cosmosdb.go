@@ -26,7 +26,7 @@ func GetCosmosDBInstance() (string, func(), error) {
 
 	cosmosdbDockerRunOptions := &dockertest.RunOptions{
 		Repository: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator",
-		Tag:        "latest",
+		Tag:        "vnext-preview",
 		Env: []string{
 			"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=100",
 		},
