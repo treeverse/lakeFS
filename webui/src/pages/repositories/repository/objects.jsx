@@ -230,22 +230,22 @@ function extractChecksumFromResponse(rawHeaders) {
     const headersString = typeof rawHeaders === 'string' ? rawHeaders : rawHeaders.toString();
     const cleanedHeadersString = headersString.trim();
     const headerLines = cleanedHeadersString.split('\n');
-    const parsedHeaders = {};
-
-    headerLines.forEach((line) => {
-    const [key, value] = line.split(':', 2).map((part) => part.trim());
-    if (key && value) {
-      parsedHeaders[key.toLowerCase()] = value; 
-    }
-  });
-
+    const parsedHeaders = headerLines.reduce((acc, line) => {
+        let [key, ...value] = line.split(':'); // split into key and the rest of the value
+        key = key.trim(); 
+        value = value.join(':').trim(); 
+        if (key && value) {
+            acc[key.toLowerCase()] = value;
+        }
+        return acc;
+    }, {});
   if (parsedHeaders['content-md5']) {
     return parsedHeaders['content-md5'];
   }
   // fallback to ETag
   if (parsedHeaders['etag']) {
-    const cleanedEtag = parsedHeaders['etag'].replace(/"/g, ''); 
-    return cleanedEtag;
+	// drop any quote and space
+    return parsedHeaders['etag'].replace(/"/g, ''); 
   }
   return null;
 }
@@ -259,10 +259,10 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
         }
         const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
         const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders);
-        const checksum = extractChecksumFromResponse(uploadResponse.rawHeaders);
         if (uploadResponse.status >= 400) {
             throw new Error(`Error uploading file: HTTP ${uploadResponse.status}`);
         }
+		const checksum = extractChecksumFromResponse(uploadResponse.rawHeaders);
         await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
     } else {
         await objects.upload(repo.id, reference.id, fpath, file, onProgress);
