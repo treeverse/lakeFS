@@ -1,9 +1,9 @@
 import argparse
 import sys
 
-import lakefs_client
-from lakefs_client import models
-from lakefs_client.client import LakeFSClient
+import lakefs_sdk
+from lakefs_sdk import models
+from lakefs_sdk.client import LakeFSClient
 from python_on_whales import docker
 from tenacity import retry, stop_after_attempt, wait_fixed
 
@@ -48,7 +48,7 @@ def main():
         submit_flags = ["--jars", "/target/client.jar"]
 
     lfs_client = LakeFSClient(
-        lakefs_client.Configuration(username=lakefs_access_key,
+        lakefs_sdk.Configuration(username=lakefs_access_key,
                                     password=lakefs_secret_key,
                                     host='http://localhost:8000'))
     wait_for_setup(lfs_client)
