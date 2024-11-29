@@ -63,6 +63,8 @@ func Serve(cfg *config.Config, catalog *catalog.Catalog, middlewareAuthenticator
 	r.Mount("/metrics", promhttp.Handler())
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/openapi.json", http.HandlerFunc(swaggerSpecHandler))
+	// TODO: communicate with the team to check the design, it could be a breaking change
+	r.Mount("/resources/openapi.yaml", http.HandlerFunc(openAPISpecHandler)) // it seems that the above path could be also moved to under /resources as well
 	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.Auth.LogoutRedirectURL))
 
@@ -92,6 +94,10 @@ func swaggerSpecHandler(w http.ResponseWriter, _ *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = io.Copy(w, reader)
+}
+
+func openAPISpecHandler(w http.ResponseWriter, _ *http.Request) {
+	// TODO: implement me
 }
 
 // OapiRequestValidatorWithOptions Creates middleware to validate request by swagger spec.
