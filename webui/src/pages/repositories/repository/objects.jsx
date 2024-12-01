@@ -240,6 +240,7 @@ function extractChecksumFromResponse(rawHeaders) {
         return acc;
     }, {});
   if (parsedHeaders['content-md5']) {
+    // drop any quote and space
     return parsedHeaders['content-md5'];
   }
   // fallback to ETag
@@ -262,7 +263,10 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
         if (uploadResponse.status >= 400) {
             throw new Error(`Error uploading file: HTTP ${uploadResponse.status}`);
         }
-		const checksum = extractChecksumFromResponse(uploadResponse.rawHeaders);
+        const checksum = extractChecksumFromResponse(uploadResponse.rawHeaders);
+        if (checksum === null) {
+            throw new Error(`CORS settings error. Must configure "exposedHeaders" field`);
+        }
         await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
     } else {
         await objects.upload(repo.id, reference.id, fpath, file, onProgress);
