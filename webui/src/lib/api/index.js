@@ -668,10 +668,17 @@ export const uploadWithProgress = (url, file, method = 'POST', onProgress = null
         });
         xhr.addEventListener('load', () => {
             resolve({
+                status: xhr.status,
+                body: xhr.responseText,
                 rawHeaders: xhr.getAllResponseHeaders(), // add raw headers 
             });
         });
-        xhr.addEventListener('error', () => reject(new Error('Upload Failed')));
+        xhr.addEventListener('error', () => resolve({
+            status: xhr.status,
+            body: xhr.responseText,
+            rawHeaders: xhr.getAllResponseHeaders(),
+            error: new Error('Upload Failed'),
+        }));
         xhr.addEventListener('abort', () => reject(new Error('Upload Aborted')));
         xhr.open(method, url, true);
         xhr.setRequestHeader('Accept', 'application/json');
@@ -1121,7 +1128,7 @@ class Statistics {
 
 class Staging {
     async get(repoId, branchId, path, presign = false) {
-		const query = qs({path, presign});
+        const query = qs({path, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
             method: 'GET'
         });
