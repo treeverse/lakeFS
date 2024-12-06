@@ -24,7 +24,7 @@ def get_spark_submit_cmd(submit_flags, spark_config, jar_name, jar_args):
 
 @retry(wait=wait_fixed(1), stop=stop_after_attempt(7))
 def wait_for_setup(lfs_client):
-    repositories = lfs_client.repositories.list_repositories()
+    repositories = lfs_client.repositories_api.list_repositories()
     assert len(repositories.results) >= 0
 
 def main():
@@ -52,7 +52,7 @@ def main():
                                     password=lakefs_secret_key,
                                     host='http://localhost:8000'))
     wait_for_setup(lfs_client)
-    lfs_client.repositories.create_repository(
+    lfs_client.repositories_api.create_repository(
         models.RepositoryCreation(name=args.repository,
                                   storage_namespace=args.storage_namespace,
                                   default_branch='main',))
