@@ -19,7 +19,7 @@ import Alert from "react-bootstrap/Alert";
 import { BsCloudArrowUp } from "react-icons/bs";
 
 import {humanSize, Tree} from "../../../lib/components/repository/tree";
-import {objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress} from "../../../lib/api";
+import {objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress, parseRawHeaders} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -226,21 +226,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
   );
 };
 
-function parseRawHeaders(rawHeaders){
-    const headersString = typeof rawHeaders === 'string' ? rawHeaders : rawHeaders.toString();
-    const cleanedHeadersString = headersString.trim();
-    const headerLines = cleanedHeadersString.split('\n');
-    const parsedHeaders = headerLines.reduce((acc, line) => {
-        let [key, ...value] = line.split(':'); // split into key and the rest of the value
-        key = key.trim(); 
-        value = value.join(':').trim(); 
-        if (key && value) {
-            acc[key.toLowerCase()] = value;
-        }
-        return acc;
-    }, {});
-    return parsedHeaders
-}
+
 
 function extractChecksumFromResponse(parsedHeaders) {
   if (parsedHeaders['content-md5']) {
@@ -263,16 +249,20 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
             additionalHeaders = { "x-ms-blob-type": "BlockBlob" }
         }
         const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
-        const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders);
-        if (uploadResponse.status >= 400) {
-            throw new Error(`Error uploading file: HTTP ${uploadResponse.status}`);
-        }
-        const parsedHeaders = parseRawHeaders(uploadResponse.rawHeaders);
-        const checksum = extractChecksumFromResponse(parsedHeaders);
-        if (checksum === null) {
-            throw new Error(`CORS settings error. Check documentation for more info.`);
-        }
-        await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
+		try {
+			const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders);
+			const parsedHeaders = parseRawHeaders(uploadResponse.rawHeaders);
+			const checksum = extractChecksumFromResponse(parsedHeaders);
+			await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
+		} catch(error) {
+			if (error.status >= 400) {
+				throw new Error(`Error uploading file: HTTP ${error.status}`);
+			}
+			if (error.status === 0) {
+				throw new Error(`CORS settings error. Check documentation for more info.`);
+			}
+			throw error;
+		}
     } else {
         await objects.upload(repo.id, reference.id, fpath, file, onProgress);
     }
