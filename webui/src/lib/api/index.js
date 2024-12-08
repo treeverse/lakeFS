@@ -670,6 +670,7 @@ export const uploadWithProgress = (url, file, method = 'POST', onProgress = null
             resolve({
                 status: xhr.status,
                 body: xhr.responseText,
+                contentType: xhr.getResponseHeader('Content-Type'),
                 rawHeaders: xhr.getAllResponseHeaders(), // add raw headers 
             });
         });

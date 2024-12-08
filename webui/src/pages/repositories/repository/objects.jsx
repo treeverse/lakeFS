@@ -226,7 +226,7 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
   );
 };
 
-function extractChecksumFromResponse(rawHeaders) {
+function parseRawHeaders(rawHeaders){
     const headersString = typeof rawHeaders === 'string' ? rawHeaders : rawHeaders.toString();
     const cleanedHeadersString = headersString.trim();
     const headerLines = cleanedHeadersString.split('\n');
@@ -239,13 +239,17 @@ function extractChecksumFromResponse(rawHeaders) {
         }
         return acc;
     }, {});
+    return parsedHeaders
+}
+
+function extractChecksumFromResponse(parsedHeaders) {
   if (parsedHeaders['content-md5']) {
     // drop any quote and space
     return parsedHeaders['content-md5'];
   }
   // fallback to ETag
   if (parsedHeaders['etag']) {
-	// drop any quote and space
+    // drop any quote and space
     return parsedHeaders['etag'].replace(/"/g, ''); 
   }
   return null;
@@ -263,9 +267,10 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
         if (uploadResponse.status >= 400) {
             throw new Error(`Error uploading file: HTTP ${uploadResponse.status}`);
         }
-        const checksum = extractChecksumFromResponse(uploadResponse.rawHeaders);
+        const parsedHeaders = parseRawHeaders(uploadResponse.rawHeaders);
+        const checksum = extractChecksumFromResponse(parsedHeaders);
         if (checksum === null) {
-            throw new Error(`CORS settings error. Must configure "exposedHeaders" field`);
+            throw new Error(`CORS settings error. Check documentation for more info.`);
         }
         await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
     } else {
