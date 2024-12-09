@@ -40,7 +40,7 @@ end
 
     delta_client:
         - get_table: function(repo, ref, prefix)
-    
+
     path_transformer: function(path) used for transforming path scheme (ex: Azure https to abfss)
 
 ]]
@@ -128,6 +128,9 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                         elseif entry.remove ~= nil then
                             entry.remove.path = physical_path
                         end
+                    elseif code == 404 and entry.remove ~= nil then
+                        -- If the object is not found, and the entry is a remove entry, we can assume it was vacuumed
+                        print(string.format("REMOVE entry object `%s` wasn't found. Assuming vacuum.", unescaped_path))
                     else
                         error("failed stat_object with code: " .. tostring(code) .. ", and path: " .. unescaped_path)
                     end
