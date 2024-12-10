@@ -256,7 +256,7 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
       await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
     } catch(error) {
         if (error.status >= 400) {
-	       throw new Error(`Error uploading file: HTTP ${error.status}`);
+          throw new Error(`Error uploading file: HTTP ${error.status}`);
         }     
         if (error.status === 0) {
            throw new Error(`CORS settings error. Check documentation for more info.`);
