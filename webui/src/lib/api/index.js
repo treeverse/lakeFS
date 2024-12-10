@@ -55,6 +55,22 @@ export const defaultAPIHeaders = {
     "X-Lakefs-Client": "lakefs-webui/__buildVersion",
 };
 
+export const parseRawHeaders = (rawHeaders) => {
+    const headersString = typeof rawHeaders === 'string' ? rawHeaders : rawHeaders.toString();
+    const cleanedHeadersString = headersString.trim();
+    const headerLines = cleanedHeadersString.split('\n');
+    const parsedHeaders = headerLines.reduce((acc, line) => {
+        let [key, ...value] = line.split(':'); // split into key and the rest of the value
+        key = key.trim(); 
+        value = value.join(':').trim(); 
+        if (key && value) {
+            acc[key.toLowerCase()] = value;
+        }
+        return acc;
+    }, {});
+    return parsedHeaders;
+};
+
 const authenticationError = "error authenticating request"
 
 const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
@@ -670,12 +686,15 @@ export const uploadWithProgress = (url, file, method = 'POST', onProgress = null
             resolve({
                 status: xhr.status,
                 body: xhr.responseText,
-                contentType: xhr.getResponseHeader('Content-Type'),
-                etag: xhr.getResponseHeader('ETag'),
-                contentMD5: xhr.getResponseHeader('Content-MD5'),
-            })
+                rawHeaders: xhr.getAllResponseHeaders(), // add raw headers 
+            });
         });
-        xhr.addEventListener('error', () => reject(new Error('Upload Failed')));
+        xhr.addEventListener('error', () => reject({
+            message: 'Upload Failed',
+            status: xhr.status,
+            body: xhr.responseText,
+            rawHeaders: xhr.getAllResponseHeaders(),
+        }));
         xhr.addEventListener('abort', () => reject(new Error('Upload Aborted')));
         xhr.open(method, url, true);
         xhr.setRequestHeader('Accept', 'application/json');
@@ -749,8 +768,9 @@ class Objects {
     async upload(repoId, branchId, path, fileObject, onProgressFn = null) {
         const query = qs({path});
         const uploadUrl = `${API_ENDPOINT}/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?` + query;
-        const {status, body, contentType} = await uploadWithProgress(uploadUrl, fileObject, 'POST', onProgressFn)
+        const {status, body, rawHeaders} = await uploadWithProgress(uploadUrl, fileObject, 'POST', onProgressFn)
         if (status !== 201) {
+            const contentType = rawHeaders ? parseRawHeaders(rawHeaders)['content-type'] : undefined;
             if (contentType === "application/json" && body) {
                 const responseData = JSON.parse(body)
                 throw new Error(responseData.message)
