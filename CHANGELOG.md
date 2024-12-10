@@ -1,5 +1,18 @@
 # Changelog
 
+# v1.44.0
+
+**Note:**
+The legacy Java client has been discontinued as of this release. Its development, distribution, and codebase have been terminated.
+
+:new: What's new:
+- Support for hidden branches (#8375)
+
+:bug: Bugs fixed:
+- Fix: Auth no endpoint error (#8407)
+- Fix: Delta Exporter- Handle vacuumed objects correctly (#8409)
+- Fix: Allow pre-signed upload via the web UI (#8365)
+
 # v1.43.0
 
 :new: What's new:
