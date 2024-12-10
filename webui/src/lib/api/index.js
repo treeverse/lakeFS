@@ -770,7 +770,7 @@ class Objects {
         const uploadUrl = `${API_ENDPOINT}/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?` + query;
         const {status, body, rawHeaders} = await uploadWithProgress(uploadUrl, fileObject, 'POST', onProgressFn)
         if (status !== 201) {
-			const contentType = rawHeaders ? parseRawHeaders(rawHeaders)['content-type'] : undefined;
+            const contentType = rawHeaders ? parseRawHeaders(rawHeaders)['content-type'] : undefined;
             if (contentType === "application/json" && body) {
                 const responseData = JSON.parse(body)
                 throw new Error(responseData.message)

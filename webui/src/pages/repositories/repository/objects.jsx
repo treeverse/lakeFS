@@ -236,35 +236,35 @@ function extractChecksumFromResponse(parsedHeaders) {
   // fallback to ETag
   if (parsedHeaders['etag']) {
     // drop any quote and space
-    return parsedHeaders['etag'].replace(/"/g, ''); 
+    return parsedHeaders['etag'].replace(/[" ]+/g, "");
   }
   return null;
 }
 
 const uploadFile = async (config, repo, reference, path, file, onProgress) => {  
-    const fpath = destinationPath(path, file);  
-    if (config.pre_sign_support_ui) {
-        let additionalHeaders;
-        if (config.blockstore_type === "azure") {
-            additionalHeaders = { "x-ms-blob-type": "BlockBlob" }
+  const fpath = destinationPath(path, file);  
+  if (config.pre_sign_support_ui) {
+    let additionalHeaders;
+    if (config.blockstore_type === "azure") {
+      additionalHeaders = { "x-ms-blob-type": "BlockBlob" }
+    }
+    const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
+    try {
+      const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders);
+      const parsedHeaders = parseRawHeaders(uploadResponse.rawHeaders);
+      const checksum = extractChecksumFromResponse(parsedHeaders);
+      await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
+    } catch(error) {
+        if (error.status >= 400) {
+	       throw new Error(`Error uploading file: HTTP ${error.status}`);
+        }     
+        if (error.status === 0) {
+           throw new Error(`CORS settings error. Check documentation for more info.`);
         }
-        const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
-		try {
-			const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders);
-			const parsedHeaders = parseRawHeaders(uploadResponse.rawHeaders);
-			const checksum = extractChecksumFromResponse(parsedHeaders);
-			await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
-		} catch(error) {
-			if (error.status >= 400) {
-				throw new Error(`Error uploading file: HTTP ${error.status}`);
-			}
-			if (error.status === 0) {
-				throw new Error(`CORS settings error. Check documentation for more info.`);
-			}
-			throw error;
-		}
-    } else {
-        await objects.upload(repo.id, reference.id, fpath, file, onProgress);
+    throw error;
+    }
+  } else {
+    await objects.upload(repo.id, reference.id, fpath, file, onProgress);
     }
 };
 
