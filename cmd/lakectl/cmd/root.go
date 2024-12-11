@@ -463,7 +463,7 @@ func sendStats(cmd *cobra.Command, cmdSuffix string) {
 			errStr = resp.Status()
 		}
 		if errStr != "" {
-			_, _ = fmt.Fprintf(os.Stderr, "Warning: failed sending statistics: %s\n", errStr)
+			logging.ContextUnavailable().Debugf("Warning: failed sending statistics: %s\n", errStr)
 		}
 	}
 }
