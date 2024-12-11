@@ -151,6 +151,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 			Username:     u.Username,
 			CreationDate: u.CreatedAt.Unix(),
 			Email:        u.Email,
+			FriendlyName: u.FriendlyName,
 		})
 	}
 	writeResponse(w, http.StatusOK, response)
