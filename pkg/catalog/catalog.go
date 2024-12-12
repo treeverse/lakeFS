@@ -611,23 +611,22 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after
 	for it.Next() {
 		record := it.Value()
 
-		if !strings.HasPrefix(string(record.RepositoryID), prefix) {
-			break
-		}
+		if strings.Contains(string(record.RepositoryID), prefix) {
 
-		if record.RepositoryID == afterRepositoryID {
-			continue
-		}
-		repos = append(repos, &Repository{
-			Name:             record.RepositoryID.String(),
-			StorageNamespace: record.StorageNamespace.String(),
-			DefaultBranch:    record.DefaultBranchID.String(),
-			CreationDate:     record.CreationDate,
-			ReadOnly:         record.ReadOnly,
-		})
-		// collect limit +1 to return limit and has more
-		if len(repos) >= limit+1 {
-			break
+			if record.RepositoryID == afterRepositoryID {
+				continue
+			}
+			repos = append(repos, &Repository{
+				Name:             record.RepositoryID.String(),
+				StorageNamespace: record.StorageNamespace.String(),
+				DefaultBranch:    record.DefaultBranchID.String(),
+				CreationDate:     record.CreationDate,
+				ReadOnly:         record.ReadOnly,
+			})
+			// collect limit +1 to return limit and has more
+			if len(repos) >= limit+1 {
+				break
+			}
 		}
 	}
 	if err := it.Err(); err != nil {
