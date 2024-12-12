@@ -610,9 +610,7 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after
 	var repos []*Repository
 	for it.Next() {
 		record := it.Value()
-
 		if strings.Contains(string(record.RepositoryID), prefix) {
-
 			if record.RepositoryID == afterRepositoryID {
 				continue
 			}
