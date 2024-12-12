@@ -12,6 +12,7 @@ import {Checkbox, DataTable, DebouncedFormControl, AlertError, Loading} from "..
 const resolveEntityDisplayName = (ent) => {
     // for users
     if (ent?.email?.length) return ent.email;
+    if (ent?.friendly_name?.length) return ent.friendly_name;
     // for groups
     if (ent?.name?.length) return ent.name;
     return ent.id;
