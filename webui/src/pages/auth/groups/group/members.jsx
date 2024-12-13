@@ -63,7 +63,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                             Remove
                         </ConfirmationButton>
                     }]}
-                    results={results}
+                    results={results.sort((a,b) => resolveDisplayName(a).localeCompare(resolveDisplayName(b)))}
                     emptyState={'No users found'}
                 />
 
