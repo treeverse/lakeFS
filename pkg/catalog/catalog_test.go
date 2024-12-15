@@ -75,10 +75,12 @@ func TestCatalog_ListRepositories(t *testing.T) {
 		{RepositoryID: "repo1", Repository: &graveler.Repository{StorageNamespace: "storage1", CreationDate: now, DefaultBranchID: "main1"}},
 		{RepositoryID: "repo2", Repository: &graveler.Repository{StorageNamespace: "storage2", CreationDate: now, DefaultBranchID: "main2"}},
 		{RepositoryID: "repo3", Repository: &graveler.Repository{StorageNamespace: "storage3", CreationDate: now, DefaultBranchID: "main3"}},
+		{RepositoryID: "repo22", Repository: &graveler.Repository{StorageNamespace: "storage4", CreationDate: now, DefaultBranchID: "main4"}},
 	}
 	type args struct {
-		limit int
-		after string
+		limit  int
+		after  string
+		prefix string
 	}
 	tests := []struct {
 		name        string
@@ -90,13 +92,15 @@ func TestCatalog_ListRepositories(t *testing.T) {
 		{
 			name: "all",
 			args: args{
-				limit: -1,
-				after: "",
+				limit:  -1,
+				after:  "",
+				prefix: "",
 			},
 			want: []*catalog.Repository{
 				{Name: "repo1", StorageNamespace: "storage1", DefaultBranch: "main1", CreationDate: now},
 				{Name: "repo2", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
 				{Name: "repo3", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
+				{Name: "repo22", StorageNamespace: "storage4", DefaultBranch: "main4", CreationDate: now},
 			},
 			wantHasMore: false,
 			wantErr:     false,
@@ -104,8 +108,9 @@ func TestCatalog_ListRepositories(t *testing.T) {
 		{
 			name: "first",
 			args: args{
-				limit: 1,
-				after: "",
+				limit:  1,
+				after:  "",
+				prefix: "",
 			},
 			want: []*catalog.Repository{
 				{Name: "repo1", StorageNamespace: "storage1", DefaultBranch: "main1", CreationDate: now},
@@ -116,8 +121,9 @@ func TestCatalog_ListRepositories(t *testing.T) {
 		{
 			name: "second",
 			args: args{
-				limit: 1,
-				after: "repo1",
+				limit:  1,
+				after:  "repo1",
+				prefix: "",
 			},
 			want: []*catalog.Repository{
 				{Name: "repo2", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
@@ -128,12 +134,28 @@ func TestCatalog_ListRepositories(t *testing.T) {
 		{
 			name: "last2",
 			args: args{
-				limit: 10,
-				after: "repo1",
+				limit:  10,
+				after:  "repo1",
+				prefix: "",
 			},
 			want: []*catalog.Repository{
 				{Name: "repo2", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
 				{Name: "repo3", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
+				{Name: "repo22", StorageNamespace: "storage4", DefaultBranch: "main4", CreationDate: now},
+			},
+			wantHasMore: false,
+			wantErr:     false,
+		},
+		{
+			name: "o2",
+			args: args{
+				limit:  -1,
+				after:  "",
+				prefix: "o2",
+			},
+			want: []*catalog.Repository{
+				{Name: "repo2", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
+				{Name: "repo22", StorageNamespace: "storage4", DefaultBranch: "main4", CreationDate: now},
 			},
 			wantHasMore: false,
 			wantErr:     false,
@@ -151,7 +173,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 			}
 			// test method
 			ctx := context.Background()
-			got, hasMore, err := c.ListRepositories(ctx, tt.args.limit, "", tt.args.after)
+			got, hasMore, err := c.ListRepositories(ctx, tt.args.limit, tt.args.prefix, tt.args.after)
 			if tt.wantErr && err == nil {
 				t.Fatal("ListRepositories err nil, expected error")
 			}
