@@ -132,6 +132,20 @@ func TestCatalog_ListRepositories(t *testing.T) {
 			wantErr:     false,
 		},
 		{
+			name: "third",
+			args: args{
+				limit:  -1,
+				after:  "repo2",
+				prefix: "",
+			},
+			want: []*catalog.Repository{
+				{Name: "repo3", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
+				{Name: "repo22", StorageNamespace: "storage4", DefaultBranch: "main4", CreationDate: now},
+			},
+			wantHasMore: false,
+			wantErr:     false,
+		},
+		{
 			name: "last2",
 			args: args{
 				limit:  10,

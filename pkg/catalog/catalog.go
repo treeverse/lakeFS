@@ -598,7 +598,9 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after
 	defer it.Close()
 	// seek for first item
 	afterRepositoryID := graveler.RepositoryID(after)
-
+	if after != "" {
+		it.SeekGE(afterRepositoryID)
+	}
 	var repos []*Repository
 	for it.Next() {
 		record := it.Value()
