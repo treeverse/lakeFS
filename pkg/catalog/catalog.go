@@ -603,9 +603,6 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after
 	if afterRepositoryID > startPos {
 		startPos = afterRepositoryID
 	}
-	if startPos != "" {
-		it.SeekGE(startPos)
-	}
 
 	var repos []*Repository
 	for it.Next() {
