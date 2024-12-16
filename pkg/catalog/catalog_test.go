@@ -155,6 +155,20 @@ func TestCatalog_ListRepositories(t *testing.T) {
 			wantErr:     false,
 		},
 		{
+			name: "prefix",
+			args: args{
+				limit:        1,
+				after:        "",
+				prefix:       "repo",
+				searchString: "",
+			},
+			want: []*catalog.Repository{
+				{Name: "repo1", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
+			},
+			wantHasMore: true,
+			wantErr:     false,
+		},
+		{
 			name: "last2",
 			args: args{
 				limit:        10,

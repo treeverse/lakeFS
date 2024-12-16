@@ -598,12 +598,23 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, searc
 	defer it.Close()
 	// seek for first item
 	afterRepositoryID := graveler.RepositoryID(after)
-	if after != "" {
-		it.SeekGE(afterRepositoryID)
+	prefixRepositoryID := graveler.RepositoryID(prefix)
+	startPos := prefixRepositoryID
+	if afterRepositoryID > startPos {
+		startPos = afterRepositoryID
 	}
+	if startPos != "" {
+		it.SeekGE(startPos)
+	}
+
 	var repos []*Repository
 	for it.Next() {
 		record := it.Value()
+
+		if !strings.HasPrefix(string(record.RepositoryID), prefix) {
+			break
+		}
+
 		if strings.Contains(string(record.RepositoryID), searchString) {
 			if record.RepositoryID == afterRepositoryID {
 				continue
