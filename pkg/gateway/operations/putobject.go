@@ -2,6 +2,7 @@ package operations
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -20,6 +21,7 @@ import (
 )
 
 const (
+	IfNoneMatchHeader     = "If-None-Match"
 	CopySourceHeader      = "x-amz-copy-source"
 	CopySourceRangeHeader = "x-amz-copy-source-range"
 	QueryParamUploadID    = "uploadId"
@@ -30,7 +32,8 @@ type PutObject struct{}
 
 func (controller *PutObject) RequiredPermissions(req *http.Request, repoID, _, destPath string) (permissions.Node, error) {
 	copySource := req.Header.Get(CopySourceHeader)
-
+	noneMatch := req.Header.Get(CopySourceHeader)
+	fmt.Println(copySource, noneMatch)
 	if len(copySource) == 0 {
 		return permissions.Node{
 			Permission: permissions.Permission{
@@ -298,6 +301,11 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("put_object", o.Principal, o.Repository.Name, o.Reference)
 	storageClass := StorageClassFromHeader(req.Header)
 	opts := block.PutOpts{StorageClass: storageClass}
+	err := o.checkIfAbsent(req)
+	if err != nil {
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrObjectExists))
+		return
+	}
 	address := o.PathProvider.NewPath()
 	blob, err := upload.WriteBlob(req.Context(), o.BlockStore, o.Repository.StorageNamespace, address, req.Body, req.ContentLength, opts)
 	if err != nil {
@@ -324,4 +332,25 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	}
 	o.SetHeader(w, "ETag", httputil.ETag(blob.Checksum))
 	w.WriteHeader(http.StatusOK)
+}
+
+func (o *PathOperation) checkIfAbsent(req *http.Request) error {
+	Header := req.Header.Get(IfNoneMatchHeader)
+	fmt.Println("o.path", o.Path)
+	fmt.Println("Header ", Header)
+	switch Header {
+	case "":
+		return nil
+	case "*":
+		_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
+		if err == nil {
+			return errors.New("path exists in storage")
+		}
+	default:
+		_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, Header, catalog.GetEntryParams{})
+		if err == nil {
+			return errors.New("path exists in storage")
+		}
+	}
+	return nil
 }

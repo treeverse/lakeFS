@@ -169,6 +169,7 @@ const (
 
 	// S3 extended errors.
 	ErrContentSHA256Mismatch
+	ErrObjectExists
 
 	// Lakefs errors
 	ERRLakeFSNotSupported
@@ -756,7 +757,11 @@ var Codes = errorCodeMap{
 		Description:    "Invalid version found in the request",
 		HTTPStatusCode: http.StatusNotFound,
 	},
-
+	ErrObjectExists: {
+		Code:           "ErrObjectExists",
+		Description:    "Object path already exists in DB",
+		HTTPStatusCode: http.StatusNotModified,
+	},
 	// LakeFS errors
 	ERRLakeFSNotSupported: {
 		Code:           "ERRLakeFSNotSupported",
