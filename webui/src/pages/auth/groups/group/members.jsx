@@ -4,9 +4,9 @@ import Button from "react-bootstrap/Button";
 
 import {GroupHeader} from "../../../../lib/components/auth/nav";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
-import {auth} from "../../../../lib/api";
+import {auth, MAX_LISTING_AMOUNT} from "../../../../lib/api";
 import {Paginator} from "../../../../lib/components/pagination";
-import {AttachModal} from "../../../../lib/components/auth/forms";
+import {AttachModal, ResolveEntityDisplayName} from "../../../../lib/components/auth/forms";
 import {ConfirmationButton} from "../../../../lib/components/modals";
 import {
     ActionGroup,
@@ -26,15 +26,37 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
     const [refresh, setRefresh] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [attachError, setAttachError] = useState(null);
-
+    const [allUsers, setAllUsers] = useState([]);
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
         return auth.listGroupMembers(groupId, after);
     }, [groupId, after, refresh]);
-
     useEffect(() => {
         setAttachError(null);
     }, [refresh]);
 
+    const setAllUsersFromLakeFS = async () => {
+        if (allUsers.length > 0) {
+            return allUsers
+        }
+        after = ""
+        let hasMore = true
+        let usersList = []
+        do {
+            let results = await auth.listUsers("", after, MAX_LISTING_AMOUNT);
+            usersList = usersList.concat(results.results);
+            after = results.pagination.next_offset;
+            hasMore = results.pagination.has_more;
+        }
+        while (hasMore);
+        usersList.sort((a, b) => ResolveEntityDisplayName(a).localeCompare(ResolveEntityDisplayName(b)));
+        setAllUsers(usersList)
+        return usersList
+    }
+    const searchUsers = async (prefix, maxResults) => {
+        let allUsersList = await setAllUsersFromLakeFS()
+        let filteredUsers = allUsersList.filter(user => ResolveEntityDisplayName(user).startsWith(prefix));
+        return filteredUsers.slice(0, maxResults);
+    };
     let content;
     if (loading) content = <Loading/>;
     else if (error) content=  <AlertError error={error}/>;
@@ -75,7 +97,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                     filterPlaceholder={'Find User...'}
                     modalTitle={'Add to Group'}
                     addText={'Add to Group'}
-                    searchFn={prefix => auth.listUsers(prefix, "", 5).then(res => res.results)}
+                    searchFn={prefix => searchUsers(prefix, 5).then(res => res)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
                         Promise.all(selected.map(user => auth.addUserToGroup(user.id, groupId)))

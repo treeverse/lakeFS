@@ -9,7 +9,7 @@ import {SearchIcon} from "@primer/octicons-react";
 import {useAPI} from "../../hooks/api";
 import {Checkbox, DataTable, DebouncedFormControl, AlertError, Loading} from "../controls";
 
-const resolveEntityDisplayName = (ent) => {
+export const ResolveEntityDisplayName = (ent) => {
     // for users
     if (ent?.email?.length) return ent.email;
     if (ent?.friendly_name?.length) return ent.friendly_name;
@@ -50,7 +50,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
                             onAdd={() => setSelected([...selected, ent])}
                             onRemove={() => setSelected(selected.filter(selectedEnt => selectedEnt.id !== ent.id))}
                             name={'selected'}/>,
-                        <strong>{resolveEntityDisplayName(ent)}</strong>
+                        <strong>{ResolveEntityDisplayName(ent)}</strong>
                     ]}/>
 
                 <div className="mt-3">
@@ -59,7 +59,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
                         <strong>Selected: </strong>
                         {(selected.map(item => (
                             <Badge key={item.id} pill variant="primary" className="me-1">
-                                {resolveEntityDisplayName(item)}
+                                {ResolveEntityDisplayName(item)}
                             </Badge>
                         )))}
                     </p>
