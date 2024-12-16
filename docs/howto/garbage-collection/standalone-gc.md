@@ -18,9 +18,7 @@ experimental
 {: .label .label-red }
 
 {: .note }
-> Standalone GC is only available for [lakeFS Enterprise]({% link enterprise/index.md %}). \
-Please verify with your account manager that your license includes this feature.
-
+> Standalone GC is only available for [lakeFS Enterprise]({% link enterprise/index.md %}).
 
 {: .note .warning }
 > Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC]({% link howto/garbage-collection/gc.md %}). For large scale environments, we recommend using the Spark-backed solution.
@@ -30,7 +28,7 @@ Please verify with your account manager that your license includes this feature.
 ## What is Standalone GC? 
 
 Standalone GC is a simplified version of the Spark-backed GC that runs without any external dependencies, delivered as a standalone
-docker image. It supports S3 and self-managed S3 compatible storages such as MinIO.    
+docker image. It supports S3 and [self-managed S3 compatible storages](#s3-compatible-clients) such as MinIO.    
 
 ## Limitations
 
@@ -38,13 +36,18 @@ docker image. It supports S3 and self-managed S3 compatible storages such as Min
 2. **Mark phase only**: Standalone GC supports only the mark phase, identifying objects for deletion but not executing 
 the sweep stage to delete them. It functions similarly to the GC's [mark-only mode]({% link howto/garbage-collection/gc.md %}#mark-only-mode).
 
-## How to install Standalone GC?
+## Installation 
 
 ### Step 1: Obtain Dockerhub token
 
+#### lakeFS Enterprise customers 
 
-As an enterprise customer, you should already have a dockerhub token for the `externallakefs` user.
-If not, contact us at [support@treeverse.io](mailto:support@treeverse.io).
+Contact your account manager to verify that Standalone GC is included in your license. Then use your dockerhub token for 
+the `externallakefs` user.
+
+#### New to lakeFS Enterprise
+
+Please [contact us](https://lakefs.io/contact-sales/) to get trial access to Standalone GC.
 
 ### Step 2: Login to Dockerhub with this token
 
@@ -53,17 +56,20 @@ docker login -u <token>
 ```
 
 ### Step 3: Download the docker image
+
 Download the image from the [lakefs-sgc](https://hub.docker.com/repository/docker/treeverse/lakefs-sgc/general) repository:
 ```bash
 docker pull treeverse/lakefs-sgc:<tag>
 ```
 
-## Usage
+## Setup
 
 ### Permissions
-To run `lakefs-sgc`, you'll need AWS and LakeFS users, with the following permissions:
+
+To run `lakefs-sgc`, you'll need AWS and lakeFS users, with the following permissions:
 
 #### AWS
+
 The minimal required permissions on AWS are:
 ```json
 {
@@ -102,7 +108,8 @@ The minimal required permissions on AWS are:
 ```
 In this permissions file, the example repository storage namespace is `s3://some-bucket/some/prefix`.
 
-#### LakeFS
+#### lakeFS
+
 The minimal required permissions on LakeFS are:
 ```json
 {
@@ -122,15 +129,17 @@ The minimal required permissions on LakeFS are:
   ]
 }
 ```
+
 ### AWS Credentials
+
 Currently, `lakefs-sgc` does not provide an option to explicitly set AWS credentials. It relies on the hosting machine
 to be set up correctly, and reads the AWS credentials from the machine.
 
-This means, you should set up your machine however AWS expects you to set it. \
-For example, by following their guide on [configuring the AWS CLI](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html).
+This means that you should set up your machine however AWS expects you to set it. For example, by following [this guide](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html).
 
 #### S3-compatible clients
-Naturally, this method of configuration allows for `lakefs-sgc` to work with any S3-compatible client (such as [MinIO](https://min.io/)). \
+
+The way `lakefs-sgc` works with AWS credentials enables it to work with any S3-compatible client (such as [MinIO](https://min.io/)). \
 An example setup for working with MinIO:
 1. Add a profile to your `~/.aws/config` file:
     ```
@@ -150,6 +159,7 @@ An example setup for working with MinIO:
 3. Run the `lakefs-sgc` docker image and pass it the `minio` profile - see [example](./standalone-gc.md#mounting-the-aws-directory) below.
 
 ### Configuration
+
 The following configuration keys are available:
 
 | Key                            | Description                                                                                                                                                   | Default value      | Possible values                                         |
@@ -188,23 +198,9 @@ lakefs:
   secret_access_key: <lakeFS secret key>
 ```
 
-### Command line reference
+## How to Run Standalone GC?
 
-#### Flags:
-- `-c, --config`: config file to use (default is $HOME/.lakefs-sgc.yaml)
-
-#### Commands:
-**run**
-
-Usage: \
-`lakefs-sgc run <repository>`
-
-Flags:
-- `--cache-dir`: directory to cache read files (default is `$HOME/.lakefs-sgc/data/`)
-- `--parallelism`: number of parallel downloads for metadata files (default 10)
-- `--presign`: use pre-signed URLs when downloading/uploading data (recommended) (default true)
-
-### How to Run Standalone GC
+To run standalone GC, choose the method you prefer to pass AWS credentials and invoke the commands below.  
 
 #### Directly passing in credentials parsed from `~/.aws/credentials`
 
@@ -243,7 +239,25 @@ docker run \
 -e LAKEFS_SGC_LOGGING_LEVEL=debug \
 treeverse/lakefs-sgc:<tag> run <repository>
 ```
+
+### Command line reference
+
+#### Flags
+- `-c, --config`: config file to use (default is $HOME/.lakefs-sgc.yaml)
+
+#### Commands
+**run**
+
+Usage: \
+`lakefs-sgc run <repository>`
+
+Flags:
+- `--cache-dir`: directory to cache read files (default is `$HOME/.lakefs-sgc/data/`)
+- `--parallelism`: number of parallel downloads for metadata files (default 10)
+- `--presign`: use pre-signed URLs when downloading/uploading data (recommended) (default true)
+
 ### Get the List of Objects Marked for Deletion
+
 `lakefs-sgc` will write its reports to `<REPOSITORY_STORAGE_NAMESPACE>/_lakefs/retention/gc/reports/<RUN_ID>/`. \
 _RUN_ID_ is generated during runtime by the Standalone GC. You can find it in the logs:
 ```
