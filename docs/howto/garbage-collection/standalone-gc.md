@@ -200,6 +200,23 @@ lakefs:
 
 ## How to Run Standalone GC?
 
+### Command line reference
+
+#### Flags
+- `-c, --config`: config file to use (default is $HOME/.lakefs-sgc.yaml)
+
+#### Commands
+**run**
+
+Usage: \
+`lakefs-sgc run <repository>`
+
+Flags:
+- `--cache-dir`: directory to cache read files (default is `$HOME/.lakefs-sgc/data/`)
+- `--parallelism`: number of parallel downloads for metadata files (default 10)
+- `--presign`: use pre-signed URLs when downloading/uploading data (recommended) (default true)
+
+
 To run standalone GC, choose the method you prefer to pass AWS credentials and invoke the commands below.  
 
 #### Directly passing in credentials parsed from `~/.aws/credentials`
@@ -240,22 +257,6 @@ docker run \
 treeverse/lakefs-sgc:<tag> run <repository>
 ```
 
-### Command line reference
-
-#### Flags
-- `-c, --config`: config file to use (default is $HOME/.lakefs-sgc.yaml)
-
-#### Commands
-**run**
-
-Usage: \
-`lakefs-sgc run <repository>`
-
-Flags:
-- `--cache-dir`: directory to cache read files (default is `$HOME/.lakefs-sgc/data/`)
-- `--parallelism`: number of parallel downloads for metadata files (default 10)
-- `--presign`: use pre-signed URLs when downloading/uploading data (recommended) (default true)
-
 ### Get the List of Objects Marked for Deletion
 
 `lakefs-sgc` will write its reports to `<REPOSITORY_STORAGE_NAMESPACE>/_lakefs/retention/gc/reports/<RUN_ID>/`. \
@@ -288,9 +289,10 @@ In this prefix, you'll find 2 objects:
 
 To delete the objects marked by the GC, you'll need to read the `deleted.csv` file, and manually delete each address from AWS.
 
-It is recommended to move all the marked objects to a different bucket instead of deleting them directly.
+We recommend to start by backing up the marked objects on a different bucket before deleting them. Then, deleting them directly from 
+the backup location. 
 
-Here's an example bash script to perform this operation:
+Here's an example bash script to perform a backup:
 ```bash
 # Change these to your correct values
 storage_ns=<storage namespace (s3://...)>
