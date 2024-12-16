@@ -585,7 +585,7 @@ func (c *Catalog) DeleteRepositoryMetadata(ctx context.Context, repository strin
 
 // ListRepositories list repository information, the bool returned is true when more repositories can be listed.
 // In this case, pass the last repository name as 'after' on the next call to ListRepositories
-func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after string) ([]*Repository, bool, error) {
+func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, searchString, after string) ([]*Repository, bool, error) {
 	// normalize limit
 	if limit < 0 || limit > ListRepositoriesLimitMax {
 		limit = ListRepositoriesLimitMax
@@ -604,7 +604,7 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after
 	var repos []*Repository
 	for it.Next() {
 		record := it.Value()
-		if strings.Contains(string(record.RepositoryID), prefix) {
+		if strings.Contains(string(record.RepositoryID), searchString) {
 			if record.RepositoryID == afterRepositoryID {
 				continue
 			}

@@ -72,15 +72,18 @@ func TestCatalog_ListRepositories(t *testing.T) {
 	// prepare data tests
 	now := time.Now()
 	gravelerData := []*graveler.RepositoryRecord{
-		{RepositoryID: "repo1", Repository: &graveler.Repository{StorageNamespace: "storage1", CreationDate: now, DefaultBranchID: "main1"}},
-		{RepositoryID: "repo2", Repository: &graveler.Repository{StorageNamespace: "storage2", CreationDate: now, DefaultBranchID: "main2"}},
-		{RepositoryID: "repo3", Repository: &graveler.Repository{StorageNamespace: "storage3", CreationDate: now, DefaultBranchID: "main3"}},
+		{RepositoryID: "re", Repository: &graveler.Repository{StorageNamespace: "storage1", CreationDate: now, DefaultBranchID: "main1"}},
+		{RepositoryID: "repo1", Repository: &graveler.Repository{StorageNamespace: "storage2", CreationDate: now, DefaultBranchID: "main2"}},
+		{RepositoryID: "repo2", Repository: &graveler.Repository{StorageNamespace: "storage3", CreationDate: now, DefaultBranchID: "main3"}},
 		{RepositoryID: "repo22", Repository: &graveler.Repository{StorageNamespace: "storage4", CreationDate: now, DefaultBranchID: "main4"}},
+		{RepositoryID: "repo23", Repository: &graveler.Repository{StorageNamespace: "storage5", CreationDate: now, DefaultBranchID: "main5"}},
+		{RepositoryID: "repo3", Repository: &graveler.Repository{StorageNamespace: "storage6", CreationDate: now, DefaultBranchID: "main6"}},
 	}
 	type args struct {
-		limit  int
-		after  string
-		prefix string
+		limit        int
+		after        string
+		prefix       string
+		searchString string
 	}
 	tests := []struct {
 		name        string
@@ -92,15 +95,18 @@ func TestCatalog_ListRepositories(t *testing.T) {
 		{
 			name: "all",
 			args: args{
-				limit:  -1,
-				after:  "",
-				prefix: "",
+				limit:        -1,
+				after:        "",
+				prefix:       "",
+				searchString: "",
 			},
 			want: []*catalog.Repository{
-				{Name: "repo1", StorageNamespace: "storage1", DefaultBranch: "main1", CreationDate: now},
-				{Name: "repo2", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
-				{Name: "repo3", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
+				{Name: "re", StorageNamespace: "storage1", DefaultBranch: "main1", CreationDate: now},
+				{Name: "repo1", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
+				{Name: "repo2", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
 				{Name: "repo22", StorageNamespace: "storage4", DefaultBranch: "main4", CreationDate: now},
+				{Name: "repo23", StorageNamespace: "storage5", DefaultBranch: "main5", CreationDate: now},
+				{Name: "repo3", StorageNamespace: "storage6", DefaultBranch: "main6", CreationDate: now},
 			},
 			wantHasMore: false,
 			wantErr:     false,
@@ -108,12 +114,13 @@ func TestCatalog_ListRepositories(t *testing.T) {
 		{
 			name: "first",
 			args: args{
-				limit:  1,
-				after:  "",
-				prefix: "",
+				limit:        1,
+				after:        "",
+				prefix:       "",
+				searchString: "",
 			},
 			want: []*catalog.Repository{
-				{Name: "repo1", StorageNamespace: "storage1", DefaultBranch: "main1", CreationDate: now},
+				{Name: "re", StorageNamespace: "storage1", DefaultBranch: "main1", CreationDate: now},
 			},
 			wantHasMore: true,
 			wantErr:     false,
@@ -121,12 +128,13 @@ func TestCatalog_ListRepositories(t *testing.T) {
 		{
 			name: "second",
 			args: args{
-				limit:  1,
-				after:  "repo1",
-				prefix: "",
+				limit:        1,
+				after:        "re",
+				prefix:       "",
+				searchString: "",
 			},
 			want: []*catalog.Repository{
-				{Name: "repo2", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
+				{Name: "repo1", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
 			},
 			wantHasMore: true,
 			wantErr:     false,
@@ -134,55 +142,60 @@ func TestCatalog_ListRepositories(t *testing.T) {
 		{
 			name: "third",
 			args: args{
-				limit:  -1,
-				after:  "repo2",
-				prefix: "",
+				limit:        2,
+				after:        "repo1",
+				prefix:       "",
+				searchString: "",
 			},
 			want: []*catalog.Repository{
-				{Name: "repo3", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
+				{Name: "repo2", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
 				{Name: "repo22", StorageNamespace: "storage4", DefaultBranch: "main4", CreationDate: now},
 			},
-			wantHasMore: false,
+			wantHasMore: true,
 			wantErr:     false,
 		},
 		{
 			name: "last2",
 			args: args{
-				limit:  10,
-				after:  "repo1",
-				prefix: "",
+				limit:        10,
+				after:        "repo22",
+				prefix:       "",
+				searchString: "",
 			},
 			want: []*catalog.Repository{
-				{Name: "repo2", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
-				{Name: "repo3", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
-				{Name: "repo22", StorageNamespace: "storage4", DefaultBranch: "main4", CreationDate: now},
+				{Name: "repo23", StorageNamespace: "storage5", DefaultBranch: "main5", CreationDate: now},
+				{Name: "repo3", StorageNamespace: "storage6", DefaultBranch: "main6", CreationDate: now},
 			},
 			wantHasMore: false,
 			wantErr:     false,
 		},
 		{
-			name: "o2",
+			name: "common_searchString",
 			args: args{
-				limit:  -1,
-				after:  "",
-				prefix: "o2",
+				limit:        -1,
+				after:        "",
+				prefix:       "",
+				searchString: "o2",
 			},
 			want: []*catalog.Repository{
-				{Name: "repo2", StorageNamespace: "storage2", DefaultBranch: "main2", CreationDate: now},
+				{Name: "repo2", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
 				{Name: "repo22", StorageNamespace: "storage4", DefaultBranch: "main4", CreationDate: now},
+				{Name: "repo23", StorageNamespace: "storage5", DefaultBranch: "main5", CreationDate: now},
 			},
 			wantHasMore: false,
 			wantErr:     false,
 		},
 		{
-			name: "after o2",
+			name: "after_and_searchString",
 			args: args{
-				limit:  -1,
-				after:  "repo2",
-				prefix: "o2",
+				limit:        -1,
+				after:        "repo2",
+				prefix:       "",
+				searchString: "o2",
 			},
 			want: []*catalog.Repository{
 				{Name: "repo22", StorageNamespace: "storage4", DefaultBranch: "main4", CreationDate: now},
+				{Name: "repo23", StorageNamespace: "storage5", DefaultBranch: "main5", CreationDate: now},
 			},
 			wantHasMore: false,
 			wantErr:     false,
@@ -200,7 +213,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 			}
 			// test method
 			ctx := context.Background()
-			got, hasMore, err := c.ListRepositories(ctx, tt.args.limit, tt.args.prefix, tt.args.after)
+			got, hasMore, err := c.ListRepositories(ctx, tt.args.limit, tt.args.prefix, tt.args.searchString, tt.args.after)
 			if tt.wantErr && err == nil {
 				t.Fatal("ListRepositories err nil, expected error")
 			}
@@ -211,7 +224,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 				t.Errorf("ListRepositories hasMore %t, expected %t", hasMore, tt.wantHasMore)
 			}
 			if diff := deep.Equal(got, tt.want); diff != nil {
-				t.Error("ListRepositories diff found:", diff)
+				t.Error("ListRepositories diff found:\n", diff)
 			}
 		})
 	}
