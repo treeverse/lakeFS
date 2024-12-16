@@ -23,45 +23,31 @@ Please verify with your account manager that your license includes this feature.
 
 
 {: .note .warning }
-> Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC]({% link howto/garbage-collection/gc.md %}). Read through the [limitations](./standalone-gc.md#limitations) carefully before using it.
+> Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC]({% link howto/garbage-collection/gc.md %}). For large scale environments, we recommend using the Spark-backed solution.
 
-{% include toc_2-4.html %}
+{% include toc_2-3.html %}
 
-## About
+## What is Standalone GC? 
 
-Standalone GC is a limited version of the Spark-backed GC that runs without any external dependencies, as a standalone docker image.
+Standalone GC is a simplified version of the Spark-backed GC that runs without any external dependencies, delivered as a standalone
+docker image. It supports S3 and self-managed S3 compatible storages such as MinIO.    
 
 ## Limitations
 
-1. Except for the [Lab tests](./standalone-gc.md#lab-tests) performed, there are no further guarantees about the performance profile of the Standalone GC. 
-2. Horizontal scale is not supported - Only a single instance of `lakefs-sgc` can operate at a time on a given repository.
-3. Standalone GC only marks objects and does not delete them - Equivalent to the GC's [mark only mode]({% link howto/garbage-collection/gc.md %}#mark-only-mode). \
-   More about that in the [Get the List of Objects Marked for Deletion](./standalone-gc.md#get-the-list-of-objects-marked-for-deletion) section.
+1. **No horizontal scalability**: Only a single instance of `lakefs-sgc` can operate on a given repository at a time.
+2. **Mark phase only**: Standalone GC supports only the mark phase, identifying objects for deletion but not executing 
+the sweep stage to delete them. It functions similarly to the GC's [mark-only mode]({% link howto/garbage-collection/gc.md %}#mark-only-mode).
 
-### Lab tests
-
-Repository spec:
-
-- 100k objects
-- 250 commits
-- 100 branches
-
-Machine spec:
-- 4GiB RAM
-- 8 CPUs
-
-In this setup, we measured:
-
-- Time: < 5m
-- Disk space: 123MB
-
-## Installation
+## How to install Standalone GC?
 
 ### Step 1: Obtain Dockerhub token
+
+
 As an enterprise customer, you should already have a dockerhub token for the `externallakefs` user.
 If not, contact us at [support@treeverse.io](mailto:support@treeverse.io).
 
 ### Step 2: Login to Dockerhub with this token
+
 ```bash
 docker login -u <token>
 ```
@@ -303,3 +289,23 @@ aws s3 cp "$storage_ns/_lakefs/retention/gc/reports/$run_id/deleted.csv" "./run_
 # Move all addresses to the output bucket under the "run_id=$run_id" prefix
 cat run_id-$run_id.csv | tail -n +2 | xargs -I {} aws s3 mv "$storage_ns/{}" "$output_bucket/run_id=$run_id/"
 ```
+
+## Lab tests
+
+Standalone GC was tested on the lakeFS setup below.   
+
+#### Repository spec
+
+- 100k objects
+- 250 commits
+- 100 branches
+
+#### Machine spec
+
+- 4GiB RAM
+- 8 CPUs
+
+#### Testing results
+
+- Time: < 5m
+- Disk space: 123MB
