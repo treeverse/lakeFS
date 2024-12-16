@@ -1894,7 +1894,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 	ctx := r.Context()
 	c.LogAction(ctx, "list_repos", r, "", "", "")
 
-	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), "", paginationAfter(params.After))
+	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), paginationSearch(params.Search), paginationAfter(params.After))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -5465,6 +5465,13 @@ func paginationPrefix(v *apigen.PaginationPrefix) string {
 }
 
 func paginationDelimiter(v *apigen.PaginationDelimiter) string {
+	if v == nil {
+		return ""
+	}
+	return string(*v)
+}
+
+func paginationSearch(v *apigen.PaginationSearchString) string {
 	if v == nil {
 		return ""
 	}

@@ -868,7 +868,7 @@ public class Example {
 
 <a id="listRepositories"></a>
 # **listRepositories**
-> RepositoryList listRepositories().prefix(prefix).after(after).amount(amount).execute();
+> RepositoryList listRepositories().prefix(prefix).after(after).amount(amount).search(search).execute();
 
 list repositories
 
@@ -918,11 +918,13 @@ public class Example {
     String prefix = "prefix_example"; // String | return items prefixed with this value
     String after = "after_example"; // String | return items after this value
     Integer amount = 100; // Integer | how many items to return
+    String search = "search_example"; // String | string for searching relevant entries
     try {
       RepositoryList result = apiInstance.listRepositories()
             .prefix(prefix)
             .after(after)
             .amount(amount)
+            .search(search)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -943,6 +945,7 @@ public class Example {
 | **prefix** | **String**| return items prefixed with this value | [optional] |
 | **after** | **String**| return items after this value | [optional] |
 | **amount** | **Integer**| how many items to return | [optional] [default to 100] |
+| **search** | **String**| string for searching relevant entries | [optional] |
 
 ### Return type
 

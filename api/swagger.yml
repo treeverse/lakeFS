@@ -70,6 +70,13 @@ components:
       description: delimiter used to group common prefixes by
       schema:
         type: string
+
+    PaginationSearchString:
+      in: query
+      name: search
+      description: string for searching relevant entries
+      schema:
+        type: string
     
     IfNoneMatch:
       in: header
@@ -695,7 +702,7 @@ components:
           default: false
         hidden:
           type: boolean
-          description: When set, branch will not show up when listing branches by default. *EXPERIMENTAL*          
+          description: When set, branch will not show up when listing branches by default. *EXPERIMENTAL*
           default: false
 
     TagCreation:
@@ -1705,7 +1712,7 @@ components:
         - installation_id
         - reports
 
-    ExternalPrincipalList: 
+    ExternalPrincipalList:
       type: object
       required:
         - pagination
@@ -2668,11 +2675,11 @@ paths:
         - experimental
       operationId: createUserExternalPrincipal
       summary: attach external principal to user
-      requestBody: 
+      requestBody:
         required: false
-        content: 
-          application/json: 
-            schema: 
+        content:
+          application/json:
+            schema:
               $ref: "#/components/schemas/ExternalPrincipalCreation"
       responses:
         201:
@@ -2753,7 +2760,7 @@ paths:
         - external
         - experimental
       operationId: getExternalPrincipal
-      summary: describe external principal by id 
+      summary: describe external principal by id
       responses:
         200:
           description: external principal
@@ -2899,7 +2906,7 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-        
+
   /repositories:
     get:
       tags:
@@ -2908,6 +2915,7 @@ paths:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
+        - $ref: "#/components/parameters/PaginationSearchString"
       operationId: listRepositories
       summary: list repositories
       responses:
@@ -4564,10 +4572,10 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/StagingMetadata"
-              
+
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
-          
+
       responses:
         200:
           # This actually violates HTTP, which requires returning 201 if a new object was

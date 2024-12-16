@@ -12,11 +12,11 @@ servers:
   - url: "/api/v1"
     description: lakeFS server endpoint
 security:
-  - jwt_token: []
-  - basic_auth: []
-  - cookie_auth: []
-  - oidc_auth: []
-  - saml_auth: []
+  - jwt_token: [ ]
+  - basic_auth: [ ]
+  - cookie_auth: [ ]
+  - oidc_auth: [ ]
+  - saml_auth: [ ]
 components:
   securitySchemes:
     basic_auth:
@@ -68,6 +68,13 @@ components:
       in: query
       name: delimiter
       description: delimiter used to group common prefixes by
+      schema:
+        type: string
+
+    PaginationSearchString:
+      in: query
+      name: search
+      description: string for searching relevant entries
       schema:
         type: string
     
@@ -298,7 +305,7 @@ components:
           type: string
         path_type:
           type: string
-          enum: [common_prefix, object]
+          enum: [ common_prefix, object ]
         physical_address:
           type: string
           description: |
@@ -442,12 +449,12 @@ components:
       properties:
         type:
           type: string
-          enum: [added, removed, changed, conflict, prefix_changed]
+          enum: [ added, removed, changed, conflict, prefix_changed ]
         path:
           type: string
         path_type:
           type: string
-          enum: [common_prefix, object]
+          enum: [ common_prefix, object ]
         size_bytes:
           type: integer
           description: represents the size of the added/changed/deleted entry
@@ -473,7 +480,7 @@ components:
       properties:
         type:
           type: string
-          enum: [object, common_prefix, reset]
+          enum: [ object, common_prefix, reset ]
           description: What to reset according to path.
         path:
           type: string
@@ -695,7 +702,7 @@ components:
           default: false
         hidden:
           type: boolean
-          description: When set, branch will not show up when listing branches by default. *EXPERIMENTAL*          
+          description: When set, branch will not show up when listing branches by default. *EXPERIMENTAL*
           default: false
 
     TagCreation:
@@ -742,7 +749,7 @@ components:
         error:
           type: string
         refs:
-            $ref: "#/components/schemas/RefsDump"
+          $ref: "#/components/schemas/RefsDump"
 
     RepositoryRestoreStatus:
       type: object
@@ -901,7 +908,7 @@ components:
             RBAC will remain enabled on GUI if "external".  That only works
             with an external auth service.
           type: string
-          enum: [none, simplified, external]
+          enum: [ none, simplified, external ]
         login_url:
           description: primary URL to use for login.
           type: string
@@ -934,7 +941,7 @@ components:
       properties:
         state:
           type: string
-          enum: [initialized, not_initialized]
+          enum: [ initialized, not_initialized ]
         comm_prefs_missing:
           type: boolean
           description: true if the comm prefs are missing.
@@ -1148,7 +1155,7 @@ components:
       properties:
         effect:
           type: string
-          enum: [allow, deny]
+          enum: [ allow, deny ]
         resource:
           type: string
         action:
@@ -1278,7 +1285,7 @@ components:
           type: string
         status:
           type: string
-          enum: [failed, completed]
+          enum: [ failed, completed ]
         commit_id:
           type: string
 
@@ -1318,7 +1325,7 @@ components:
           format: date-time
         status:
           type: string
-          enum: [failed, completed]
+          enum: [ failed, completed ]
 
     HookRunList:
       type: object
@@ -1705,7 +1712,7 @@ components:
         - installation_id
         - reports
 
-    ExternalPrincipalList: 
+    ExternalPrincipalList:
       type: object
       required:
         - pagination
@@ -1760,36 +1767,36 @@ components:
     
     PullRequest:
       allOf:
-          - $ref: '#/components/schemas/PullRequestBasic'
-          - required:
+        - $ref: '#/components/schemas/PullRequestBasic'
+        - required:
             - status
             - title
             - description
-          - type: object
-            required:
-              - id
-              - creation_date
-              - author
-              - source_branch
-              - destination_branch
-            properties:
-              id:
-                type: string
-              creation_date:
-                type: string
-                format: date-time
-              author:
-                type: string
-              source_branch:
-                type: string
-              destination_branch:
-                type: string
-              merged_commit_id:
-                type: string
-                description: the commit id of merged PRs
-              closed_date:
-                type: string
-                format: date-time
+        - type: object
+          required:
+            - id
+            - creation_date
+            - author
+            - source_branch
+            - destination_branch
+          properties:
+            id:
+              type: string
+            creation_date:
+              type: string
+              format: date-time
+            author:
+              type: string
+            source_branch:
+              type: string
+            destination_branch:
+              type: string
+            merged_commit_id:
+              type: string
+              description: the commit id of merged PRs
+            closed_date:
+              type: string
+              format: date-time
 
     PullRequestsList:
       type: object
@@ -1836,7 +1843,7 @@ paths:
         - internal
       operationId: setupCommPrefs
       summary: setup communications preferences
-      security: []
+      security: [ ]
       requestBody:
         required: true
         content:
@@ -1869,7 +1876,7 @@ paths:
         - internal
       operationId: getSetupState
       summary: check if the lakeFS installation is already set up
-      security: []
+      security: [ ]
       responses:
         200:
           description: lakeFS setup state
@@ -1886,7 +1893,7 @@ paths:
         - internal
       operationId: setup
       summary: setup lakeFS and create a first user
-      security: []
+      security: [ ]
       requestBody:
         required: true
         content:
@@ -1933,7 +1940,7 @@ paths:
         - auth
       operationId: login
       summary: perform a login
-      security: [] # No authentication
+      security: [ ] # No authentication
       requestBody:
         content:
           application/json:
@@ -1966,7 +1973,7 @@ paths:
         - auth
       operationId: externalPrincipalLogin
       summary: perform a login using an external authenticator
-      security: []
+      security: [ ]
       requestBody:
         content:
           application/json:
@@ -1998,7 +2005,7 @@ paths:
         - experimental
       operationId: stsLogin # change to stsLogin
       summary: perform a login with STS
-      security: []
+      security: [ ]
       requestBody:
         required: true
         content:
@@ -2025,7 +2032,7 @@ paths:
         - internal
       operationId: getAuthCapabilities
       summary: list authentication capabilities supported
-      security: []
+      security: [ ]
       responses:
         200:
           description: auth capabilities
@@ -2668,11 +2675,11 @@ paths:
         - experimental
       operationId: createUserExternalPrincipal
       summary: attach external principal to user
-      requestBody: 
+      requestBody:
         required: false
-        content: 
-          application/json: 
-            schema: 
+        content:
+          application/json:
+            schema:
               $ref: "#/components/schemas/ExternalPrincipalCreation"
       responses:
         201:
@@ -2753,7 +2760,7 @@ paths:
         - external
         - experimental
       operationId: getExternalPrincipal
-      summary: describe external principal by id 
+      summary: describe external principal by id
       responses:
         200:
           description: external principal
@@ -2899,7 +2906,7 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-        
+
   /repositories:
     get:
       tags:
@@ -2908,6 +2915,7 @@ paths:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
+        - $ref: "#/components/parameters/PaginationSearchString"
       operationId: listRepositories
       summary: list repositories
       responses:
@@ -4142,7 +4150,7 @@ paths:
         name: type
         schema:
           type: string
-          enum: [two_dot, three_dot]
+          enum: [ two_dot, three_dot ]
           default: three_dot
 
     get:
@@ -4564,10 +4572,10 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/StagingMetadata"
-              
+
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
-          
+
       responses:
         200:
           # This actually violates HTTP, which requires returning 201 if a new object was
@@ -5927,7 +5935,7 @@ paths:
   /healthcheck:
     get:
       operationId: healthCheck
-      security: []
+      security: [ ]
       tags:
         - healthCheck
       description: check that the API server is up and running
