@@ -103,7 +103,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
             searchFn={(prefix) =>
               auth.listGroups(prefix, "", 5).then((res) => res.results)
             }
-            resolveEntityFN={resolveGroupDisplayName}
+            resolveEntityFn={resolveGroupDisplayName}
             onHide={() => setShowAddModal(false)}
             onAttach={(selected) => {
               Promise.all(

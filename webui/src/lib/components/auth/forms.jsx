@@ -10,7 +10,7 @@ import {useAPI} from "../../hooks/api";
 import {Checkbox, DataTable, DebouncedFormControl, AlertError, Loading} from "../controls";
 
 
-export const AttachModal = ({ show, searchFn, onAttach, onHide, resolveEntityFN = (ent => ent.id), addText = "Add",
+export const AttachModal = ({ show, searchFn, resolveEntityFn = (ent => ent.id), onAttach, onHide , addText = "Add",
                           emptyState = 'No matches', modalTitle = 'Add', headers = ['Select', 'ID'],
                      filterPlaceholder = 'Filter...'}) => {
     const search = useRef(null);
@@ -42,7 +42,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, resolveEntityFN 
                             onAdd={() => setSelected([...selected, ent])}
                             onRemove={() => setSelected(selected.filter(selectedEnt => selectedEnt.id !== ent.id))}
                             name={'selected'}/>,
-                        <strong>{resolveEntityFN(ent)}</strong>
+                        <strong>{resolveEntityFn(ent)}</strong>
                     ]}/>
 
                 <div className="mt-3">
@@ -51,7 +51,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, resolveEntityFN 
                         <strong>Selected: </strong>
                         {(selected.map(item => (
                             <Badge key={item.id} pill variant="primary" className="me-1">
-                                {resolveEntityFN(item)}
+                                {resolveEntityFn(item)}
                             </Badge>
                         )))}
                     </p>

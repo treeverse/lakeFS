@@ -4,7 +4,7 @@ import Button from "react-bootstrap/Button";
 
 import {GroupHeader} from "../../../../lib/components/auth/nav";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
-import {auth, MAX_LISTING_AMOUNT} from "../../../../lib/api";
+import {auth} from "../../../../lib/api";
 import {Paginator} from "../../../../lib/components/pagination";
 import {AttachModal} from "../../../../lib/components/auth/forms";
 import {ConfirmationButton} from "../../../../lib/components/modals";
@@ -20,6 +20,7 @@ import {
 import {useRouter} from "../../../../lib/hooks/router";
 import {Link} from "../../../../lib/components/nav";
 import {resolveUserDisplayName} from "../../../../lib/utils";
+import {allUsersFromLakeFS} from "../../../../lib/components/auth/users";
 
 
 const GroupMemberList = ({ groupId, after, onPaginate }) => {
@@ -34,30 +35,13 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
         setAttachError(null);
     }, [refresh]);
 
-    const allUsersFromLakeFS = async (resolveUserDisplayNameFN = (user => user.id)) => {
-        if (allUsers.length > 0) {
-            return allUsers
-        }
-        after = ""
-        let hasMore = true
-        let usersList = []
-        try {
-            do {
-                const results = await auth.listUsers("", after, MAX_LISTING_AMOUNT);
-                usersList = usersList.concat(results.results);
-                after = results.pagination.next_offset;
-                hasMore = results.pagination.has_more;
-            } while (hasMore);
-            usersList.sort((a, b) => resolveUserDisplayNameFN(a).localeCompare(resolveUserDisplayNameFN(b)));
-            setAllUsers(usersList);
-            return usersList;
-        } catch (error) {
-            console.error("Error fetching users:", error);
-            return [];
-        }
-    }
+
     const searchUsers = async (prefix, maxResults, resolveUserDisplayNameFN = (user => user.id)) => {
-        let allUsersList = await allUsersFromLakeFS(resolveUserDisplayNameFN)
+        let allUsersList = allUsers;
+        if (allUsersList.length == 0) {
+            allUsersList = await allUsersFromLakeFS(resolveUserDisplayNameFN)
+            setAllUsers(allUsersList)
+        }
         let filteredUsers = allUsersList.filter(user => resolveUserDisplayNameFN(user).startsWith(prefix));
         return filteredUsers.slice(0, maxResults);
     };
@@ -101,7 +85,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                     filterPlaceholder={'Find User...'}
                     modalTitle={'Add to Group'}
                     addText={'Add to Group'}
-                    resolveEntityFN={resolveUserDisplayName}
+                    resolveEntityFn={resolveUserDisplayName}
                     searchFn={prefix => searchUsers(prefix, 5, resolveUserDisplayName).then(res => res)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
