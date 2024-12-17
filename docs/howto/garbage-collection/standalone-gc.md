@@ -25,7 +25,7 @@ experimental
 
 {% include toc_2-3.html %}
 
-## What is Standalone GC? 
+## What is Standalone GC?
 
 Standalone GC is a simplified version of the Spark-backed GC that runs without any external dependencies, delivered as a standalone
 docker image. It supports S3 and [self-managed S3 compatible storages](#s3-compatible-clients) such as MinIO.    
@@ -64,13 +64,22 @@ docker pull treeverse/lakefs-sgc:<tag>
 
 ## Setup
 
+### Credentials
+
+Standalone GC supports S3 and S3-compatible storage backends and relies on AWS credentials for authentication.
+
+Currently, `lakefs-sgc` does not allow you to explicitly set AWS credentials within the tool itself. Instead, it reads 
+credentials from the hosting machine’s environment. This means you must ensure the machine is properly configured with AWS credentials beforehand.
+
+To set up credentials, follow AWS guidelines, such as those outlined in [this guide](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html). 
+
 ### Permissions
 
-To run `lakefs-sgc`, you'll need AWS and lakeFS users, with the following permissions:
+To run `lakefs-sgc`, you need both AWS (or S3-compatible) storage and lakeFS user permissions as outlined below:
 
-#### AWS
+#### Storage permissions
 
-The minimal required permissions on AWS are:
+The minimum required permissions for AWS or S3-compatible storage are:
 ```json
 {
   "Version": "2012-10-17",
@@ -106,11 +115,11 @@ The minimal required permissions on AWS are:
   ]
 }
 ```
-In this permissions file, the example repository storage namespace is `s3://some-bucket/some/prefix`.
+In this example, the repository storage namespace is `s3://some-bucket/some/prefix`.
 
-#### lakeFS
+#### lakeFS permissions
 
-The minimal required permissions on LakeFS are:
+The minimum required permissions for lakeFS are:
 ```json
 {
   "statement": [
@@ -130,17 +139,11 @@ The minimal required permissions on LakeFS are:
 }
 ```
 
-### AWS Credentials
+#### Using S3-compatible clients
 
-Currently, `lakefs-sgc` does not provide an option to explicitly set AWS credentials. It relies on the hosting machine
-to be set up correctly, and reads the AWS credentials from the machine.
+`lakefs-sgc` leverages AWS credentials to work seamlessly with S3-compatible storage solutions, such as [MinIO](https://min.io/). 
+Follow the steps below to set up and use `lakefs-sgc` with an S3-compatible client:
 
-This means that you should set up your machine however AWS expects you to set it. For example, by following [this guide](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html).
-
-#### S3-compatible clients
-
-The way `lakefs-sgc` works with AWS credentials enables it to work with any S3-compatible client (such as [MinIO](https://min.io/)). \
-An example setup for working with MinIO:
 1. Add a profile to your `~/.aws/config` file:
     ```
    [profile minio]
