@@ -18,67 +18,60 @@ experimental
 {: .label .label-red }
 
 {: .note }
-> Standalone GC is only available for [lakeFS Enterprise]({% link enterprise/index.md %}). \
-Please verify with your account manager that your license includes this feature.
-
+> Standalone GC is only available for [lakeFS Enterprise]({% link enterprise/index.md %}).
 
 {: .note .warning }
-> Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC]({% link howto/garbage-collection/gc.md %}). Read through the [limitations](./standalone-gc.md#limitations) carefully before using it.
+> Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC]({% link howto/garbage-collection/gc.md %}). For large scale environments, we recommend using the Spark-backed solution.
 
-{% include toc_2-4.html %}
+{% include toc_2-3.html %}
 
-## About
+## What is Standalone GC?
 
-Standalone GC is a limited version of the Spark-backed GC that runs without any external dependencies, as a standalone docker image.
+Standalone GC is a simplified version of the Spark-backed GC that runs without any external dependencies, delivered as a standalone
+docker image. It supports S3 and [self-managed S3 compatible storages](#using-s3-compatible-clients) such as MinIO.    
 
 ## Limitations
 
-1. Except for the [Lab tests](./standalone-gc.md#lab-tests) performed, there are no further guarantees about the performance profile of the Standalone GC. 
-2. Horizontal scale is not supported - Only a single instance of `lakefs-sgc` can operate at a time on a given repository.
-3. Standalone GC only marks objects and does not delete them - Equivalent to the GC's [mark only mode]({% link howto/garbage-collection/gc.md %}#mark-only-mode). \
-   More about that in the [Get the List of Objects Marked for Deletion](./standalone-gc.md#get-the-list-of-objects-marked-for-deletion) section.
+1. **No horizontal scalability**: Only a single instance of `lakefs-sgc` can operate on a given repository at a time.
+2. **Mark phase only**: Standalone GC supports only the mark phase, identifying objects for deletion but not executing 
+the sweep stage to delete them. It functions similarly to the GC's [mark-only mode]({% link howto/garbage-collection/gc.md %}#mark-only-mode).
+3. Only supports AWS S3 and S3-compatible object storages. However, supporting Azure blob and GCS are in our roadmap.
 
-### Lab tests
-
-Repository spec:
-
-- 100k objects
-- 250 commits
-- 100 branches
-
-Machine spec:
-- 4GiB RAM
-- 8 CPUs
-
-In this setup, we measured:
-
-- Time: < 5m
-- Disk space: 123MB
-
-## Installation
+## Installation 
 
 ### Step 1: Obtain Dockerhub token
-As an enterprise customer, you should already have a dockerhub token for the `externallakefs` user.
-If not, contact us at [support@treeverse.io](mailto:support@treeverse.io).
+
+#### lakeFS Enterprise customers 
+
+Contact your account manager to verify that Standalone GC is included in your license. Then use your dockerhub token for 
+the `externallakefs` user.
+
+#### New to lakeFS Enterprise
+
+Please [contact us](https://lakefs.io/contact-sales/) to get trial access to Standalone GC.
 
 ### Step 2: Login to Dockerhub with this token
+
 ```bash
 docker login -u <token>
 ```
 
 ### Step 3: Download the docker image
+
 Download the image from the [lakefs-sgc](https://hub.docker.com/repository/docker/treeverse/lakefs-sgc/general) repository:
 ```bash
 docker pull treeverse/lakefs-sgc:<tag>
 ```
 
-## Usage
+## Setup
 
 ### Permissions
-To run `lakefs-sgc`, you'll need AWS and LakeFS users, with the following permissions:
 
-#### AWS
-The minimal required permissions on AWS are:
+To run `lakefs-sgc`, you need both AWS (or S3-compatible) storage and lakeFS user permissions as outlined below:
+
+#### Storage permissions
+
+The minimum required permissions for AWS or S3-compatible storage are:
 ```json
 {
   "Version": "2012-10-17",
@@ -114,10 +107,11 @@ The minimal required permissions on AWS are:
   ]
 }
 ```
-In this permissions file, the example repository storage namespace is `s3://some-bucket/some/prefix`.
+In this example, the repository storage namespace is `s3://some-bucket/some/prefix`.
 
-#### LakeFS
-The minimal required permissions on LakeFS are:
+#### lakeFS permissions
+
+The minimum required permissions for lakeFS are:
 ```json
 {
   "statement": [
@@ -136,16 +130,18 @@ The minimal required permissions on LakeFS are:
   ]
 }
 ```
-### AWS Credentials
-Currently, `lakefs-sgc` does not provide an option to explicitly set AWS credentials. It relies on the hosting machine
-to be set up correctly, and reads the AWS credentials from the machine.
 
-This means, you should set up your machine however AWS expects you to set it. \
-For example, by following their guide on [configuring the AWS CLI](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html).
+### Credentials
 
-#### S3-compatible clients
-Naturally, this method of configuration allows for `lakefs-sgc` to work with any S3-compatible client (such as [MinIO](https://min.io/)). \
-An example setup for working with MinIO:
+Standalone GC supports S3 and S3-compatible storage backends and relies on AWS credentials for authentication. To set up
+credentials on the `lakefs-sgc` docker container, follow AWS guidelines, such as those outlined in [this guide](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html).
+For details on how to pass credentials to `lakefs-sgc`, refer to the instructions in [How to Run Standalone GC](#how-to-run-standalone-gc).
+
+### Using S3-compatible clients
+
+`lakefs-sgc` leverages AWS credentials to work seamlessly with S3-compatible storage solutions, such as [MinIO](https://min.io/). 
+Follow the steps below to set up and use `lakefs-sgc` with an S3-compatible client:
+
 1. Add a profile to your `~/.aws/config` file:
     ```
    [profile minio]
@@ -164,6 +160,7 @@ An example setup for working with MinIO:
 3. Run the `lakefs-sgc` docker image and pass it the `minio` profile - see [example](./standalone-gc.md#mounting-the-aws-directory) below.
 
 ### Configuration
+
 The following configuration keys are available:
 
 | Key                            | Description                                                                                                                                                   | Default value      | Possible values                                         |
@@ -202,12 +199,14 @@ lakefs:
   secret_access_key: <lakeFS secret key>
 ```
 
+## How to Run Standalone GC?
+
 ### Command line reference
 
-#### Flags:
+#### Flags
 - `-c, --config`: config file to use (default is $HOME/.lakefs-sgc.yaml)
 
-#### Commands:
+#### Commands
 **run**
 
 Usage: \
@@ -218,7 +217,8 @@ Flags:
 - `--parallelism`: number of parallel downloads for metadata files (default 10)
 - `--presign`: use pre-signed URLs when downloading/uploading data (recommended) (default true)
 
-### How to Run Standalone GC
+
+To run standalone GC, choose the method you prefer to pass AWS credentials and invoke the commands below.  
 
 #### Directly passing in credentials parsed from `~/.aws/credentials`
 
@@ -257,7 +257,9 @@ docker run \
 -e LAKEFS_SGC_LOGGING_LEVEL=debug \
 treeverse/lakefs-sgc:<tag> run <repository>
 ```
+
 ### Get the List of Objects Marked for Deletion
+
 `lakefs-sgc` will write its reports to `<REPOSITORY_STORAGE_NAMESPACE>/_lakefs/retention/gc/reports/<RUN_ID>/`. \
 _RUN_ID_ is generated during runtime by the Standalone GC. You can find it in the logs:
 ```
@@ -286,13 +288,12 @@ In this prefix, you'll find 2 objects:
 
 ### Delete marked objects
 
-To delete the objects marked by the GC, you'll need to read the `deleted.csv` file, and manually delete each address from AWS.
+We recommend starting by backing up the marked objects to a different bucket before deleting them. After ensuring the 
+backup is complete, you can proceed to delete the objects directly from the backup location.
 
-It is recommended to move all the marked objects to a different bucket instead of deleting them directly.
-
-Here's an example bash script to perform this operation:
+Use the following script to backup marked objects to another bucket:
 ```bash
-# Change these to your correct values
+# Update these variables with your actual values
 storage_ns=<storage namespace (s3://...)>
 output_bucket=<output bucket (s3://...)>
 run_id=<GC run id>
@@ -303,3 +304,35 @@ aws s3 cp "$storage_ns/_lakefs/retention/gc/reports/$run_id/deleted.csv" "./run_
 # Move all addresses to the output bucket under the "run_id=$run_id" prefix
 cat run_id-$run_id.csv | tail -n +2 | xargs -I {} aws s3 mv "$storage_ns/{}" "$output_bucket/run_id=$run_id/"
 ```
+
+To delete the marked objects, use the following script:
+```bash
+# Update these variables with your actual values
+output_bucket=<output bucket (s3://...)>
+run_id=<GC run id>
+
+aws s3 rm $output_bucket/run_id=$run_id --recursive
+```
+
+{: .note }
+> Tip: Remember to periodically delete the backups to actually reduce storage costs.
+
+## Lab tests
+
+Standalone GC was tested on the lakeFS setup below.   
+
+#### Repository spec
+
+- 100k objects
+- 250 commits
+- 100 branches
+
+#### Machine spec
+
+- 4GiB RAM
+- 8 CPUs
+
+#### Testing results
+
+- Time: < 5m
+- Disk space: 123MB
