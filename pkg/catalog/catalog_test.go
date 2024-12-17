@@ -112,7 +112,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name: "first",
+			name: "firstCatalog",
 			args: args{
 				limit:        1,
 				after:        "",
@@ -126,7 +126,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name: "second",
+			name: "secondCatalog",
 			args: args{
 				limit:        1,
 				after:        "re",
@@ -140,7 +140,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name: "third",
+			name: "thirdCatalog",
 			args: args{
 				limit:        2,
 				after:        "repo1",
@@ -194,6 +194,35 @@ func TestCatalog_ListRepositories(t *testing.T) {
 			want: []*catalog.Repository{
 				{Name: "repo2", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
 				{Name: "repo22", StorageNamespace: "storage4", DefaultBranch: "main4", CreationDate: now},
+				{Name: "repo23", StorageNamespace: "storage5", DefaultBranch: "main5", CreationDate: now},
+			},
+			wantHasMore: false,
+			wantErr:     false,
+		},
+		{
+			name: "common_pagedSearchString1",
+			args: args{
+				limit:        2,
+				after:        "",
+				prefix:       "",
+				searchString: "o2",
+			},
+			want: []*catalog.Repository{
+				{Name: "repo2", StorageNamespace: "storage3", DefaultBranch: "main3", CreationDate: now},
+				{Name: "repo22", StorageNamespace: "storage4", DefaultBranch: "main4", CreationDate: now},
+			},
+			wantHasMore: true,
+			wantErr:     false,
+		},
+		{
+			name: "common_pagedSearchString2",
+			args: args{
+				limit:        2,
+				after:        "repo22",
+				prefix:       "",
+				searchString: "o2",
+			},
+			want: []*catalog.Repository{
 				{Name: "repo23", StorageNamespace: "storage5", DefaultBranch: "main5", CreationDate: now},
 			},
 			wantHasMore: false,
