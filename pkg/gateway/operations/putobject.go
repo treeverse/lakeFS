@@ -339,12 +339,12 @@ func (o *PathOperation) checkIfAbsent(req *http.Request) error {
 	case "*":
 		_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
 		if err == nil {
-			return errors.New("path exists in storage")
+			return gatewayErrors.ErrObjectExists
 		}
 	default:
 		_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, Header, catalog.GetEntryParams{})
 		if err == nil {
-			return errors.New("path exists in storage")
+			return gatewayErrors.ErrObjectExists
 		}
 	}
 	return nil
