@@ -28,13 +28,14 @@ experimental
 ## What is Standalone GC?
 
 Standalone GC is a simplified version of the Spark-backed GC that runs without any external dependencies, delivered as a standalone
-docker image. It supports S3 and [self-managed S3 compatible storages](#s3-compatible-clients) such as MinIO.    
+docker image. It supports S3 and [self-managed S3 compatible storages](#using-s3-compatible-clients) such as MinIO.    
 
 ## Limitations
 
 1. **No horizontal scalability**: Only a single instance of `lakefs-sgc` can operate on a given repository at a time.
 2. **Mark phase only**: Standalone GC supports only the mark phase, identifying objects for deletion but not executing 
 the sweep stage to delete them. It functions similarly to the GC's [mark-only mode]({% link howto/garbage-collection/gc.md %}#mark-only-mode).
+3. Only supports AWS S3 and S3-compatible object storages. However, supporting Azure blob and GCS are in our roadmap.
 
 ## Installation 
 
@@ -133,7 +134,7 @@ The minimum required permissions for lakeFS are:
 ### Credentials
 
 Standalone GC supports S3 and S3-compatible storage backends and relies on AWS credentials for authentication. To set up
-credentials, follow AWS guidelines, such as those outlined in [this guide](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html).
+credentials on the `lakefs-sgc` docker container, follow AWS guidelines, such as those outlined in [this guide](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html).
 For details on how to pass credentials to `lakefs-sgc`, refer to the instructions in [How to Run Standalone GC](#how-to-run-standalone-gc).
 
 ### Using S3-compatible clients
