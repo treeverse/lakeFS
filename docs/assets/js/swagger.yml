@@ -12,11 +12,11 @@ servers:
   - url: "/api/v1"
     description: lakeFS server endpoint
 security:
-  - jwt_token: [ ]
-  - basic_auth: [ ]
-  - cookie_auth: [ ]
-  - oidc_auth: [ ]
-  - saml_auth: [ ]
+  - jwt_token: []
+  - basic_auth: []
+  - cookie_auth: []
+  - oidc_auth: []
+  - saml_auth: []
 components:
   securitySchemes:
     basic_auth:
