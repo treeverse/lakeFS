@@ -19,22 +19,32 @@ import {
 } from "../../../../lib/components/controls";
 import {useRouter} from "../../../../lib/hooks/router";
 import {Link} from "../../../../lib/components/nav";
-import {resolveDisplayName} from "../../../../lib/utils";
+import {resolveUserDisplayName} from "../../../../lib/utils";
+import {allUsersFromLakeFS} from "../../../../lib/components/auth/users";
 
 
 const GroupMemberList = ({ groupId, after, onPaginate }) => {
     const [refresh, setRefresh] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [attachError, setAttachError] = useState(null);
-
+    const [allUsers, setAllUsers] = useState([]);
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
         return auth.listGroupMembers(groupId, after);
     }, [groupId, after, refresh]);
-
     useEffect(() => {
         setAttachError(null);
     }, [refresh]);
 
+
+    const searchUsers = async (prefix, maxResults, resolveUserDisplayNameFN = (user => user.id)) => {
+        let allUsersList = allUsers;
+        if (allUsersList.length == 0) {
+            allUsersList = await allUsersFromLakeFS(resolveUserDisplayNameFN)
+            setAllUsers(allUsersList)
+        }
+        let filteredUsers = allUsersList.filter(user => resolveUserDisplayNameFN(user).startsWith(prefix));
+        return filteredUsers.slice(0, maxResults);
+    };
     let content;
     if (loading) content = <Loading/>;
     else if (error) content=  <AlertError error={error}/>;
@@ -45,7 +55,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                 <DataTable
                     keyFn={user => user.id}
                     rowFn={user => [
-                        <Link href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>{resolveDisplayName(user)}</Link>,
+                        <Link href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>{resolveUserDisplayName(user)}</Link>,
                         <FormattedDate dateValue={user.creation_date}/>
                     ]}
                     headers={['User ID', 'Created At']}
@@ -54,7 +64,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                         buttonFn: user => <ConfirmationButton
                             size="sm"
                             variant="outline-danger"
-                            msg={<span>Are you sure you{'\''}d like to remove user <strong>{resolveDisplayName(user)}</strong> from group <strong>{groupId}</strong>?</span>}
+                            msg={<span>Are you sure you{'\''}d like to remove user <strong>{resolveUserDisplayName(user)}</strong> from group <strong>{groupId}</strong>?</span>}
                             onConfirm={() => {
                                 auth.removeUserFromGroup(user.id, groupId)
                                     .catch(error => alert(error))
@@ -75,7 +85,8 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                     filterPlaceholder={'Find User...'}
                     modalTitle={'Add to Group'}
                     addText={'Add to Group'}
-                    searchFn={prefix => auth.listUsers(prefix, "", 5).then(res => res.results)}
+                    resolveEntityFn={resolveUserDisplayName}
+                    searchFn={prefix => searchUsers(prefix, 5, resolveUserDisplayName).then(res => res)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
                         Promise.all(selected.map(user => auth.addUserToGroup(user.id, groupId)))

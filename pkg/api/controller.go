@@ -1112,6 +1112,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 			Id:           u.Username,
 			Email:        u.Email,
 			CreationDate: u.CreatedAt.Unix(),
+			FriendlyName: u.FriendlyName,
 		})
 	}
 	writeResponse(w, r, http.StatusOK, response)
