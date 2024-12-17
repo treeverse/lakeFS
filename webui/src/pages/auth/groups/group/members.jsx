@@ -6,7 +6,7 @@ import {GroupHeader} from "../../../../lib/components/auth/nav";
 import {useAPIWithPagination} from "../../../../lib/hooks/api";
 import {auth, MAX_LISTING_AMOUNT} from "../../../../lib/api";
 import {Paginator} from "../../../../lib/components/pagination";
-import {AttachModal, ResolveEntityDisplayName} from "../../../../lib/components/auth/forms";
+import {AttachModal} from "../../../../lib/components/auth/forms";
 import {ConfirmationButton} from "../../../../lib/components/modals";
 import {
     ActionGroup,
@@ -19,7 +19,7 @@ import {
 } from "../../../../lib/components/controls";
 import {useRouter} from "../../../../lib/hooks/router";
 import {Link} from "../../../../lib/components/nav";
-import {resolveDisplayName} from "../../../../lib/utils";
+import {resolveUserDisplayName} from "../../../../lib/utils";
 
 
 const GroupMemberList = ({ groupId, after, onPaginate }) => {
@@ -34,7 +34,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
         setAttachError(null);
     }, [refresh]);
 
-    const setAllUsersFromLakeFS = async () => {
+    const allUsersFromLakeFS = async (resolveUserDisplayNameFN = (user => user.id)) => {
         if (allUsers.length > 0) {
             return allUsers
         }
@@ -48,7 +48,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                 after = results.pagination.next_offset;
                 hasMore = results.pagination.has_more;
             } while (hasMore);
-            usersList.sort((a, b) => ResolveEntityDisplayName(a).localeCompare(ResolveEntityDisplayName(b)));
+            usersList.sort((a, b) => resolveUserDisplayNameFN(a).localeCompare(resolveUserDisplayNameFN(b)));
             setAllUsers(usersList);
             return usersList;
         } catch (error) {
@@ -56,9 +56,9 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
             return [];
         }
     }
-    const searchUsers = async (prefix, maxResults) => {
-        let allUsersList = await setAllUsersFromLakeFS()
-        let filteredUsers = allUsersList.filter(user => ResolveEntityDisplayName(user).startsWith(prefix));
+    const searchUsers = async (prefix, maxResults, resolveUserDisplayNameFN = (user => user.id)) => {
+        let allUsersList = await allUsersFromLakeFS(resolveUserDisplayNameFN)
+        let filteredUsers = allUsersList.filter(user => resolveUserDisplayNameFN(user).startsWith(prefix));
         return filteredUsers.slice(0, maxResults);
     };
     let content;
@@ -71,7 +71,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                 <DataTable
                     keyFn={user => user.id}
                     rowFn={user => [
-                        <Link href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>{resolveDisplayName(user)}</Link>,
+                        <Link href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>{resolveUserDisplayName(user)}</Link>,
                         <FormattedDate dateValue={user.creation_date}/>
                     ]}
                     headers={['User ID', 'Created At']}
@@ -80,7 +80,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                         buttonFn: user => <ConfirmationButton
                             size="sm"
                             variant="outline-danger"
-                            msg={<span>Are you sure you{'\''}d like to remove user <strong>{resolveDisplayName(user)}</strong> from group <strong>{groupId}</strong>?</span>}
+                            msg={<span>Are you sure you{'\''}d like to remove user <strong>{resolveUserDisplayName(user)}</strong> from group <strong>{groupId}</strong>?</span>}
                             onConfirm={() => {
                                 auth.removeUserFromGroup(user.id, groupId)
                                     .catch(error => alert(error))
@@ -101,7 +101,8 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                     filterPlaceholder={'Find User...'}
                     modalTitle={'Add to Group'}
                     addText={'Add to Group'}
-                    searchFn={prefix => searchUsers(prefix, 5).then(res => res)}
+                    resolveEntityFN={resolveUserDisplayName}
+                    searchFn={prefix => searchUsers(prefix, 5, resolveUserDisplayName).then(res => res)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
                         Promise.all(selected.map(user => auth.addUserToGroup(user.id, groupId)))
