@@ -2,7 +2,6 @@ package operations
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -32,8 +31,6 @@ type PutObject struct{}
 
 func (controller *PutObject) RequiredPermissions(req *http.Request, repoID, _, destPath string) (permissions.Node, error) {
 	copySource := req.Header.Get(CopySourceHeader)
-	noneMatch := req.Header.Get(CopySourceHeader)
-	fmt.Println(copySource, noneMatch)
 	if len(copySource) == 0 {
 		return permissions.Node{
 			Permission: permissions.Permission{
@@ -336,8 +333,6 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 
 func (o *PathOperation) checkIfAbsent(req *http.Request) error {
 	Header := req.Header.Get(IfNoneMatchHeader)
-	fmt.Println("o.path", o.Path)
-	fmt.Println("Header ", Header)
 	switch Header {
 	case "":
 		return nil
