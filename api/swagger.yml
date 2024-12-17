@@ -71,7 +71,7 @@ components:
       schema:
         type: string
 
-    PaginationSearchString:
+    SearchString:
       in: query
       name: search
       description: string for searching relevant entries
@@ -2915,7 +2915,7 @@ paths:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
-        - $ref: "#/components/parameters/PaginationSearchString"
+        - $ref: "#/components/parameters/SearchString"
       operationId: listRepositories
       summary: list repositories
       responses:

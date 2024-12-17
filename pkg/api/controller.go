@@ -5471,7 +5471,7 @@ func paginationDelimiter(v *apigen.PaginationDelimiter) string {
 	return string(*v)
 }
 
-func paginationSearch(v *apigen.PaginationSearchString) string {
+func paginationSearch(v *apigen.SearchString) string {
 	if v == nil {
 		return ""
 	}
