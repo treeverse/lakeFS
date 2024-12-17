@@ -94,6 +94,11 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
+	err = o.checkIfAbsent(req)
+	if err != nil {
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrObjectExists))
+		return
+	}
 	objName := multiPart.PhysicalAddress
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{logging.PhysicalAddressFieldKey: objName}))
 	xmlMultipartComplete, err := io.ReadAll(req.Body)
