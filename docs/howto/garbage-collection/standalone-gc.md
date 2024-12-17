@@ -290,14 +290,12 @@ In this prefix, you'll find 2 objects:
 
 ### Delete marked objects
 
-To delete the objects marked by the GC, you'll need to read the `deleted.csv` file, and manually delete each address from AWS.
+We recommend starting by backing up the marked objects to a different bucket before deleting them. After ensuring the 
+backup is complete, you can proceed to delete the objects directly from the backup location.
 
-We recommend to start by backing up the marked objects on a different bucket before deleting them. Then, deleting them directly from 
-the backup location. 
-
-Here's an example bash script to perform a backup:
+Use the following script to backup marked objects to another bucket:
 ```bash
-# Change these to your correct values
+# Update these variables with your actual values
 storage_ns=<storage namespace (s3://...)>
 output_bucket=<output bucket (s3://...)>
 run_id=<GC run id>
@@ -308,6 +306,18 @@ aws s3 cp "$storage_ns/_lakefs/retention/gc/reports/$run_id/deleted.csv" "./run_
 # Move all addresses to the output bucket under the "run_id=$run_id" prefix
 cat run_id-$run_id.csv | tail -n +2 | xargs -I {} aws s3 mv "$storage_ns/{}" "$output_bucket/run_id=$run_id/"
 ```
+
+To delete the marked objects, use the following script:
+```bash
+# Update these variables with your actual values
+output_bucket=<output bucket (s3://...)>
+run_id=<GC run id>
+
+aws s3 rm $output_bucket/run_id=$run_id --recursive
+```
+
+{: .note }
+> Tip: Remember to periodically delete the backups to actually reduce storage costs.
 
 ## Lab tests
 
