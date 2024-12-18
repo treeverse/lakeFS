@@ -191,7 +191,7 @@ const RepositoriesPage = () => {
     const [showActionsBar, setShowActionsBar] = useState(false);
 
     const routerPfx = (router.query.search) ? router.query.search : "";
-    const [search, setsearch] = useDebouncedState(
+    const [search, setSearch] = useDebouncedState(
         routerPfx,
         (search) => router.push({pathname: `/repositories`, query: {search}})
     );
@@ -255,7 +255,7 @@ const RepositoriesPage = () => {
                                     placeholder="Find a repository..."
                                     autoFocus
                                     value={search}
-                                    onChange={event => setsearch(event.target.value)}
+                                    onChange={event => setSearch(event.target.value)}
                                 />
                             </InputGroup>
                         </Col>
