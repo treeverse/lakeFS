@@ -61,8 +61,8 @@ export const parseRawHeaders = (rawHeaders) => {
     const headerLines = cleanedHeadersString.split('\n');
     const parsedHeaders = headerLines.reduce((acc, line) => {
         let [key, ...value] = line.split(':'); // split into key and the rest of the value
-        key = key.trim(); 
-        value = value.join(':').trim(); 
+        key = key.trim();
+        value = value.join(':').trim();
         if (key && value) {
             acc[key.toLowerCase()] = value;
         }
@@ -458,8 +458,8 @@ class Repositories {
         return response.json();
     }
 
-    async list(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({prefix, after, amount});
+    async list(search = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({search, after, amount});
         const response = await apiRequest(`/repositories?${query}`);
         if (response.status !== 200) {
             throw new Error(`could not list repositories: ${await extractError(response)}`);

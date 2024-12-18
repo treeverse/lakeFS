@@ -437,7 +437,7 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 		for hasMore {
 			var err error
 			var repos []*catalog.Repository
-			repos, hasMore, err = c.ListRepositories(ctx, -1, "", next)
+			repos, hasMore, err = c.ListRepositories(ctx, -1, "", "", next)
 			if err != nil {
 				logger.WithError(err).Fatal("Checking existing repositories failed")
 			}
