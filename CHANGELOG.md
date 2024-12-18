@@ -1,5 +1,14 @@
 # Changelog
 
+# v1.45.0
+
+**Note:**
+The legacy Python client has been discontinued as of this release. Its development, distribution, and codebase have been terminated.
+
+:new: What's new:
+- Remove Python Legacy Client (#8410)
+- Add friendly name to list group members response (#8413)
+
 # v1.44.0
 
 **Note:**
