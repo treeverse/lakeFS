@@ -749,7 +749,7 @@ components:
         error:
           type: string
         refs:
-            $ref: "#/components/schemas/RefsDump"
+          $ref: "#/components/schemas/RefsDump"
 
     RepositoryRestoreStatus:
       type: object
@@ -1479,7 +1479,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ common_prefix, object ]
+          enum: [common_prefix, object]
           description: Path type, can either be 'common_prefix' or 'object'
         path:
           type: string
@@ -1759,7 +1759,7 @@ components:
       properties:
         status:
           type: string
-          enum: [ open, closed, merged ]
+          enum: [open, closed, merged]
         title:
           type: string
         description:
@@ -1767,36 +1767,36 @@ components:
     
     PullRequest:
       allOf:
-          - $ref: '#/components/schemas/PullRequestBasic'
-          - required:
+        - $ref: '#/components/schemas/PullRequestBasic'
+        - required:
             - status
             - title
             - description
-          - type: object
-            required:
-              - id
-              - creation_date
-              - author
-              - source_branch
-              - destination_branch
-            properties:
-              id:
-                type: string
-              creation_date:
-                type: string
-                format: date-time
-              author:
-                type: string
-              source_branch:
-                type: string
-              destination_branch:
-                type: string
-              merged_commit_id:
-                type: string
-                description: the commit id of merged PRs
-              closed_date:
-                type: string
-                format: date-time
+        - type: object
+          required:
+            - id
+            - creation_date
+            - author
+            - source_branch
+            - destination_branch
+          properties:
+            id:
+              type: string
+            creation_date:
+              type: string
+              format: date-time
+            author:
+              type: string
+            source_branch:
+              type: string
+            destination_branch:
+              type: string
+            merged_commit_id:
+              type: string
+              description: the commit id of merged PRs
+            closed_date:
+              type: string
+              format: date-time
 
     PullRequestsList:
       type: object
@@ -5763,7 +5763,7 @@ paths:
           name: status
           schema:
             type: string
-            enum: [ open, closed, all ]
+            enum: [open, closed, all]
             default: all
             description: filter pull requests by status
       responses:
