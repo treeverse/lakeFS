@@ -1965,6 +1965,14 @@ paths:
           minimum: -1
           type: integer
         style: form
+      - description: string for searching relevant entries
+        explode: true
+        in: query
+        name: search
+        required: false
+        schema:
+          type: string
+        style: form
       responses:
         "200":
           content:
@@ -7383,6 +7391,15 @@ components:
       explode: true
       in: query
       name: delimiter
+      required: false
+      schema:
+        type: string
+      style: form
+    SearchString:
+      description: string for searching relevant entries
+      explode: true
+      in: query
+      name: search
       required: false
       schema:
         type: string

@@ -70,6 +70,13 @@ components:
       description: delimiter used to group common prefixes by
       schema:
         type: string
+
+    SearchString:
+      in: query
+      name: search
+      description: string for searching relevant entries
+      schema:
+        type: string
     
     IfNoneMatch:
       in: header
@@ -695,7 +702,7 @@ components:
           default: false
         hidden:
           type: boolean
-          description: When set, branch will not show up when listing branches by default. *EXPERIMENTAL*          
+          description: When set, branch will not show up when listing branches by default. *EXPERIMENTAL*
           default: false
 
     TagCreation:
@@ -742,7 +749,7 @@ components:
         error:
           type: string
         refs:
-            $ref: "#/components/schemas/RefsDump"
+          $ref: "#/components/schemas/RefsDump"
 
     RepositoryRestoreStatus:
       type: object
@@ -1472,7 +1479,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ common_prefix, object ]
+          enum: [common_prefix, object]
           description: Path type, can either be 'common_prefix' or 'object'
         path:
           type: string
@@ -1705,7 +1712,7 @@ components:
         - installation_id
         - reports
 
-    ExternalPrincipalList: 
+    ExternalPrincipalList:
       type: object
       required:
         - pagination
@@ -1752,7 +1759,7 @@ components:
       properties:
         status:
           type: string
-          enum: [ open, closed, merged ]
+          enum: [open, closed, merged]
         title:
           type: string
         description:
@@ -1760,36 +1767,36 @@ components:
     
     PullRequest:
       allOf:
-          - $ref: '#/components/schemas/PullRequestBasic'
-          - required:
+        - $ref: '#/components/schemas/PullRequestBasic'
+        - required:
             - status
             - title
             - description
-          - type: object
-            required:
-              - id
-              - creation_date
-              - author
-              - source_branch
-              - destination_branch
-            properties:
-              id:
-                type: string
-              creation_date:
-                type: string
-                format: date-time
-              author:
-                type: string
-              source_branch:
-                type: string
-              destination_branch:
-                type: string
-              merged_commit_id:
-                type: string
-                description: the commit id of merged PRs
-              closed_date:
-                type: string
-                format: date-time
+        - type: object
+          required:
+            - id
+            - creation_date
+            - author
+            - source_branch
+            - destination_branch
+          properties:
+            id:
+              type: string
+            creation_date:
+              type: string
+              format: date-time
+            author:
+              type: string
+            source_branch:
+              type: string
+            destination_branch:
+              type: string
+            merged_commit_id:
+              type: string
+              description: the commit id of merged PRs
+            closed_date:
+              type: string
+              format: date-time
 
     PullRequestsList:
       type: object
@@ -2668,11 +2675,11 @@ paths:
         - experimental
       operationId: createUserExternalPrincipal
       summary: attach external principal to user
-      requestBody: 
+      requestBody:
         required: false
-        content: 
-          application/json: 
-            schema: 
+        content:
+          application/json:
+            schema:
               $ref: "#/components/schemas/ExternalPrincipalCreation"
       responses:
         201:
@@ -2753,7 +2760,7 @@ paths:
         - external
         - experimental
       operationId: getExternalPrincipal
-      summary: describe external principal by id 
+      summary: describe external principal by id
       responses:
         200:
           description: external principal
@@ -2899,7 +2906,7 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-        
+
   /repositories:
     get:
       tags:
@@ -2908,6 +2915,7 @@ paths:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
+        - $ref: "#/components/parameters/SearchString"
       operationId: listRepositories
       summary: list repositories
       responses:
@@ -4564,10 +4572,10 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/StagingMetadata"
-              
+
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
-          
+
       responses:
         200:
           # This actually violates HTTP, which requires returning 201 if a new object was
@@ -5755,7 +5763,7 @@ paths:
           name: status
           schema:
             type: string
-            enum: [ open, closed, all ]
+            enum: [open, closed, all]
             default: all
             description: filter pull requests by status
       responses:

@@ -1678,7 +1678,7 @@ public class RepositoriesApi {
     public APIgetRepositoryMetadataRequest getRepositoryMetadata(String repository) {
         return new APIgetRepositoryMetadataRequest(repository);
     }
-    private okhttp3.Call listRepositoriesCall(String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call listRepositoriesCall(String prefix, String after, Integer amount, String search, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -1715,6 +1715,10 @@ public class RepositoriesApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("amount", amount));
         }
 
+        if (search != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("search", search));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -1735,21 +1739,21 @@ public class RepositoriesApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call listRepositoriesValidateBeforeCall(String prefix, String after, Integer amount, final ApiCallback _callback) throws ApiException {
-        return listRepositoriesCall(prefix, after, amount, _callback);
+    private okhttp3.Call listRepositoriesValidateBeforeCall(String prefix, String after, Integer amount, String search, final ApiCallback _callback) throws ApiException {
+        return listRepositoriesCall(prefix, after, amount, search, _callback);
 
     }
 
 
-    private ApiResponse<RepositoryList> listRepositoriesWithHttpInfo(String prefix, String after, Integer amount) throws ApiException {
-        okhttp3.Call localVarCall = listRepositoriesValidateBeforeCall(prefix, after, amount, null);
+    private ApiResponse<RepositoryList> listRepositoriesWithHttpInfo(String prefix, String after, Integer amount, String search) throws ApiException {
+        okhttp3.Call localVarCall = listRepositoriesValidateBeforeCall(prefix, after, amount, search, null);
         Type localVarReturnType = new TypeToken<RepositoryList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call listRepositoriesAsync(String prefix, String after, Integer amount, final ApiCallback<RepositoryList> _callback) throws ApiException {
+    private okhttp3.Call listRepositoriesAsync(String prefix, String after, Integer amount, String search, final ApiCallback<RepositoryList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = listRepositoriesValidateBeforeCall(prefix, after, amount, _callback);
+        okhttp3.Call localVarCall = listRepositoriesValidateBeforeCall(prefix, after, amount, search, _callback);
         Type localVarReturnType = new TypeToken<RepositoryList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -1759,6 +1763,7 @@ public class RepositoriesApi {
         private String prefix;
         private String after;
         private Integer amount;
+        private String search;
 
         private APIlistRepositoriesRequest() {
         }
@@ -1794,6 +1799,16 @@ public class RepositoriesApi {
         }
 
         /**
+         * Set search
+         * @param search string for searching relevant entries (optional)
+         * @return APIlistRepositoriesRequest
+         */
+        public APIlistRepositoriesRequest search(String search) {
+            this.search = search;
+            return this;
+        }
+
+        /**
          * Build call for listRepositories
          * @param _callback ApiCallback API callback
          * @return Call to execute
@@ -1808,7 +1823,7 @@ public class RepositoriesApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return listRepositoriesCall(prefix, after, amount, _callback);
+            return listRepositoriesCall(prefix, after, amount, search, _callback);
         }
 
         /**
@@ -1825,7 +1840,7 @@ public class RepositoriesApi {
          </table>
          */
         public RepositoryList execute() throws ApiException {
-            ApiResponse<RepositoryList> localVarResp = listRepositoriesWithHttpInfo(prefix, after, amount);
+            ApiResponse<RepositoryList> localVarResp = listRepositoriesWithHttpInfo(prefix, after, amount, search);
             return localVarResp.getData();
         }
 
@@ -1843,7 +1858,7 @@ public class RepositoriesApi {
          </table>
          */
         public ApiResponse<RepositoryList> executeWithHttpInfo() throws ApiException {
-            return listRepositoriesWithHttpInfo(prefix, after, amount);
+            return listRepositoriesWithHttpInfo(prefix, after, amount, search);
         }
 
         /**
@@ -1861,7 +1876,7 @@ public class RepositoriesApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<RepositoryList> _callback) throws ApiException {
-            return listRepositoriesAsync(prefix, after, amount, _callback);
+            return listRepositoriesAsync(prefix, after, amount, search, _callback);
         }
     }
 
