@@ -459,7 +459,6 @@ class Repositories {
     }
 
     async list(search = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        console.log("list search ", search)
         const query = qs({search, after, amount});
         const response = await apiRequest(`/repositories?${query}`);
         if (response.status !== 200) {
