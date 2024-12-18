@@ -38,7 +38,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
 
     const searchUsers = async (prefix, maxResults, resolveUserDisplayNameFN = (user => user.id)) => {
         let allUsersList = allUsers;
-        if (allUsersList.length == 0) {
+        if (allUsersList.length === 0) {
             allUsersList = await allUsersFromLakeFS(resolveUserDisplayNameFN)
             setAllUsers(allUsersList)
         }
