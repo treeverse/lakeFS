@@ -30,25 +30,25 @@ See below for detailed instructions for using different technologies with lakeFS
     <tr>
         <td width="25%" align=center><a href="./aws_cli.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/cli.png" alt="cli logo"/><br/>AWS CLI</a></td>
         <td width="25%" align=center><a href="./cloudera.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/cloudera.png" alt="cloudera logo"/><br/>Cloudera</a></td>
+        <td width="25%" align=center><a href="./databricks.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/databricks.png" alt="Databricks Logo"/><br/>Databricks</a></td>
         <td width="25%" align=center><a href="./delta.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/delta-lake.png" alt="delta lake logo"/><br/>Delta Lake</a></td>
-        <td width="25%" align=center><a href="./git.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/git.png" alt="git logo"/><br/>Git</a></td>
     </tr>
     <tr>
         <td width="25%" align=center><a href="./dremio.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/dremio.png" alt="dremio logo"/><br/>Dremio</a></td>
         <td width="25%" align=center><a href="./duckdb.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/duckdb.png" alt="duckdb logo"/><br/>DuckDB</a></td>
+        <td width="25%" align=center><a href="./git.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/git.png" alt="git logo"/><br/>Git</a></td>
         <td width="25%" align=center><a href="./glue_hive_metastore.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/glue.png" alt="glue logo"/><br/>Glue / Hive metastore</a></td>
-        <td width="25%" align=center><a href="./kubeflow.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/kubeflow.png" alt="kubeflow logo"/><br/>Kubeflow</a></td>
-    </tr>
-    <tr>
-        <td width="25%" align=center><a href="./presto_trino.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/trino_presto.png" alt="presto and trino logos"/><br/>Presto / Trino</a></td>
-        <td width="25%" align=center><a href="./python.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/python.png" alt="python logo"/><br/>Python</a></td>
-        <td width="25%" align=center><a href="./r.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/r.png" alt="r logo"/><br/>R</a></td>
-        <td width="25%" align=center><a href="./vertex_ai.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/vertex_ai.png" alt="Vertex AI Logo"/><br/>Vertex AI</a></td>
     </tr>
     <tr>
         <td width="25%" align=center><a href="./huggingface_datasets.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/huggingface.png" alt="Hugging Face Logo"/><br/>HuggingFace Datasets</a></td>
-        <td width="25%" align=center><a href="./databricks.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/databricks.png" alt="Databricks Logo"/><br/>Databricks</a></td>
-        <td width="25%" align=center></td>
+        <td width="25%" align=center><a href="./kubeflow.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/kubeflow.png" alt="kubeflow logo"/><br/>Kubeflow</a></td>
+        <td width="25%" align=center><a href="./presto_trino.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/trino_presto.png" alt="presto and trino logos"/><br/>Presto / Trino</a></td>
+        <td width="25%" align=center><a href="./python.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/python.png" alt="python logo"/><br/>Python</a></td>
+    </tr>
+    <tr>
+        <td width="25%" align=center><a href="./r.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/r.png" alt="r logo"/><br/>R</a></td>
+        <td width="25%" align=center><a href="./red_hat_openshift_ai.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/red_hat_openshift_ai.png" alt="Red Hat OpenShift AI Logo"/><br/>Red Hat OpenShift AI</a></td>
+        <td width="25%" align=center><a href="./vertex_ai.html"><img width=120 src="{{ site.baseurl }}/assets/img/logos/vertex_ai.png" alt="Vertex AI Logo"/><br/>Vertex AI</a></td>
         <td width="25%" align=center></td>
     </tr>
 </table>
