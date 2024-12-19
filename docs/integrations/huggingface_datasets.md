@@ -10,7 +10,7 @@ parent: Integrations
 {% include toc_2-3.html %}
 
 
-[HuggingFace 🤗 Datasets](https://www.kubeflow.org/docs/about/kubeflow/) is a library for easily accessing and sharing datasets for Audio, Computer Vision, and Natural Language Processing (NLP) tasks.
+[HuggingFace 🤗 Datasets](https://huggingface.co/docs/datasets) is a library for easily accessing and sharing datasets for Audio, Computer Vision, and Natural Language Processing (NLP) tasks.
 
 🤗 Datasets supports access to [cloud storage](https://huggingface.co/docs/datasets/en/filesystems) providers through [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) FileSystem implementations.
 
