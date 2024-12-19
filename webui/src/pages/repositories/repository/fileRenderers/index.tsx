@@ -2,6 +2,7 @@ import React, {FC} from "react";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import {FileType, RendererComponent} from "./types";
 import {DuckDBRenderer} from "./data";
+import { NotebookRenderer } from "./notebook";
 import {
     ImageRenderer,
     IpynbRenderer,
@@ -150,9 +151,18 @@ export function guessType(contentType: string | null, fileExtension: string | nu
     return FileType.UNSUPPORTED
 }
 
-export const ObjectRenderer: FC<RendererComponent> = (props: RendererComponent) => {
+export const ObjectRendererInternal: FC<RendererComponent> = (props: RendererComponent) => {
    const fileType = guessType(props.contentType, props.fileExtension)
     if (fileType !== FileType.DATA && props.sizeBytes > MAX_FILE_SIZE)
         return Renderers[FileType.TOO_LARGE](props)
     return Renderers[fileType](props)
 }
+export const ObjectRenderer: FC<RendererComponent> = (props: RendererComponent) => {
+    return (
+        <>
+        <NotebookRenderer {...props}/>
+        <ObjectRendererInternal {...props}/>
+        </>
+    )
+ }
+ 
