@@ -1,6 +1,11 @@
 {
   "name": "lakefs-ui",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "main": "dist_npm/index.es.js",
+  "types": "dist_npm/index.es.js",
+  "files": [
+    "dist_npm"
+  ],
   "engines": {
     "node": ">= 18"
   },
@@ -11,6 +16,7 @@
   "scripts": {
     "dev": "vite",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build",
+    "build-npm": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build --mode npm",
     "build-watch": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build --watch",
     "serve": "vite preview",
     "test": "vitest run",
