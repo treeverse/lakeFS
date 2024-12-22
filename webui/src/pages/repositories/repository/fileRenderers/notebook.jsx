@@ -17,7 +17,6 @@ import "ace-builds/src-noconflict/theme-github";
 // import "ace-builds/src-noconflict/ext-language_tools";
 import "ace-builds/src-min-noconflict/ext-language_tools";
 import { PyodideContext } from "../../../../lib/hooks/pyodideContext";
-import { exec } from "child_process";
 
 
 const cellStyle = {
