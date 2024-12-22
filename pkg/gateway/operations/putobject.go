@@ -349,7 +349,9 @@ func (o *PathOperation) checkIfAbsent(req *http.Request) (bool, error) {
 		if err == nil {
 			return false, gatewayErrors.ErrPreconditionFailed
 		}
-		return false, nil
+		if !errors.Is(err, graveler.ErrNotFound) {
+			return false, gatewayErrors.ErrInternalError
+		}
 	}
 	return false, gatewayErrors.ErrNotImplemented
 }

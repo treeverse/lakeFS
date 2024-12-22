@@ -756,6 +756,7 @@ var Codes = errorCodeMap{
 		Description:    "Invalid version found in the request",
 		HTTPStatusCode: http.StatusNotFound,
 	},
+
 	// LakeFS errors
 	ERRLakeFSNotSupported: {
 		Code:           "ERRLakeFSNotSupported",
