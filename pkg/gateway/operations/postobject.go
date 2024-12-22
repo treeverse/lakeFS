@@ -94,9 +94,13 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
-	err = o.checkIfAbsent(req)
-	if err != nil {
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrObjectExists))
+	allowOverWrite, err := o.checkIfAbsent(req)
+	if errors.Is(err, gatewayErrors.ErrPreconditionFailed) {
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
+		return
+	}
+	if errors.Is(err, gatewayErrors.ErrNotImplemented) {
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNotImplemented))
 		return
 	}
 	objName := multiPart.PhysicalAddress
@@ -129,7 +133,11 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		return
 	}
 	checksum := strings.Split(resp.ETag, "-")[0]
-	err = o.finishUpload(req, resp.MTime, checksum, objName, resp.ContentLength, true, multiPart.Metadata, multiPart.ContentType)
+	err = o.finishUpload(req, resp.MTime, checksum, objName, resp.ContentLength, true, multiPart.Metadata, multiPart.ContentType, allowOverWrite)
+	if errors.Is(err, graveler.ErrPreconditionFailed) {
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
+		return
+	}
 	if errors.Is(err, graveler.ErrWriteToProtectedBranch) {
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrWriteToProtectedBranch))
 		return

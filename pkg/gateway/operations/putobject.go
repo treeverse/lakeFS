@@ -298,9 +298,13 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("put_object", o.Principal, o.Repository.Name, o.Reference)
 	storageClass := StorageClassFromHeader(req.Header)
 	opts := block.PutOpts{StorageClass: storageClass}
-	err := o.checkIfAbsent(req)
-	if err != nil {
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrObjectExists))
+	allowOverWrite, err := o.checkIfAbsent(req)
+	if errors.Is(err, gatewayErrors.ErrPreconditionFailed) {
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
+		return
+	}
+	if errors.Is(err, gatewayErrors.ErrNotImplemented) {
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNotImplemented))
 		return
 	}
 	address := o.PathProvider.NewPath()
@@ -314,7 +318,11 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	// write metadata
 	metadata := amzMetaAsMetadata(req)
 	contentType := req.Header.Get("Content-Type")
-	err = o.finishUpload(req, &blob.CreationDate, blob.Checksum, blob.PhysicalAddress, blob.Size, true, metadata, contentType)
+	err = o.finishUpload(req, &blob.CreationDate, blob.Checksum, blob.PhysicalAddress, blob.Size, true, metadata, contentType, allowOverWrite)
+	if errors.Is(err, graveler.ErrPreconditionFailed) {
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
+		return
+	}
 	if errors.Is(err, graveler.ErrWriteToProtectedBranch) {
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrWriteToProtectedBranch))
 		return
@@ -331,21 +339,17 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (o *PathOperation) checkIfAbsent(req *http.Request) error {
+func (o *PathOperation) checkIfAbsent(req *http.Request) (bool, error) {
 	Header := req.Header.Get(IfNoneMatchHeader)
-	switch Header {
-	case "":
-		return nil
-	case "*":
+	if Header == "" {
+		return true, nil
+	}
+	if Header == "*" {
 		_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
 		if err == nil {
-			return gatewayErrors.ErrObjectExists
+			return false, gatewayErrors.ErrPreconditionFailed
 		}
-	default:
-		_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, Header, catalog.GetEntryParams{})
-		if err == nil {
-			return gatewayErrors.ErrObjectExists
-		}
+		return false, nil
 	}
-	return nil
+	return false, gatewayErrors.ErrNotImplemented
 }
