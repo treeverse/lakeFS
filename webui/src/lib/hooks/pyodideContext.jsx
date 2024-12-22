@@ -26,7 +26,8 @@ export const WithPyodideContext = ({ children }) => {
             // patches http tests 
             await pyodideRef.current.loadPackage("urllib3");
             await pyodideRef.current.loadPackage("requests");
-            // ^^^^ 
+            //  override stdout hook https://pyodide.org/en/stable/usage/api/js-api.html#pyodide.setStdout
+            // pyodideRef.current.setStdout({ batched: (msg) => console.log(">>>>>>>>> [batched] " + msg) });
             console.log("1 init: loading micropip");
             await pyodideRef.current.loadPackage('micropip');
             console.log("2 init: using micropip");

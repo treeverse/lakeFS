@@ -1,8 +1,9 @@
 /* eslint-disable */
 import React, {
     useCallback,
-    // useEffect, 
+    useRef,
     useContext,
+    useEffect,
     useState
 } from "react";
 import Form from "react-bootstrap/Form";
@@ -27,6 +28,7 @@ const cellStyle = {
 };
 
 const EditorToolbar = ({ onRun, onClear }) => {
+    const [loading, setLoading] = useState(false);
     const runButton = (
         <Button type="submit" variant="success" disabled={false}>
             <ChevronRightIcon /> {" "}
@@ -36,8 +38,8 @@ const EditorToolbar = ({ onRun, onClear }) => {
     return (
         <div style={toolbarStyle}>
             {/* <button onClick={onRun} style={buttonStyle}>Run</button> */}
-            {button}
-            <button onClick={onClear} style={buttonStyle}>Clear</button>
+            {runButton}
+            <button type="reset" onClick={onClear} style={buttonStyle}>Clear</button>
             {/* Add more buttons as needed */}
         </div>
     );
@@ -81,64 +83,92 @@ export const NotebookRenderer = ({ repoId, refId, path, fileExtension }) => {
     const { pyodide, isPyodideLoaded } = useContext(PyodideContext);
     const [error, setError] = useState(null);
     const [code, setCode] = useState(null);
+    const [stdout, setStdout] = useState(null);
     const [output, setOutput] = useState(null);
-    const [loading, setLoading] = useState(false);
-    let content;
-
-    const handleSubmit = useCallback((event) => {
-        event.preventDefault()
-        execCellCode(code, output);
-    }, [])
-
-    const handleRun = useCallback(() => {
-    }, [])
+    const [loading, setLoading] = useState(false);  
+    const outputRef = useRef([]);
+    const appendOutput = (msg) => {
+        console.log("APPEND OUTPUT CALLED: msg=", msg, "curr output pre append: ", output)
+        setStdout(stdout + "\n" + msg);
+        setOutput(output + "\n" + msg);
+        outputRef.current.push(msg);
+    }; 
+    useEffect(() => { 
+        if(pyodide) {
+            pyodide.setStdout({ batched: appendOutput });
+            console.log("pyodide -> set stdout hook")
+        }
+    }, [pyodide, isPyodideLoaded]);
 
     const clearOutputs = () => {
         setOutput("");
+        outputRef.current = [];
         setError(null);
     }
 
     const execCellCode = async (codeContent, currOutput) => {
-        clearOutputs();
         if (isPyodideLoaded && pyodide) {
             try {
                 console.log("1111111111 codeContent: ", codeContent)
                 const result = await pyodide.runPythonAsync(codeContent);
                 console.log("222222222 output: ", result)
-                if (!result) {
-                    setError("No output returned.");
-                    return;
-                }
-                setOutput(currOutput + "\n" + result.toString());
+                let strResultOutput = !result ? "No output returned." : result.toString();
+                setOutput(strResultOutput);
                 setError(null);
+                if (result){
+                    outputRef.current.push(result.toString());
+                }
             } catch (err) {
-                setError("Thrown Error: " + err.toString());
+                setError("Pyodide Error: " + err.toString());
             }
         } else {
             setError("Pyodide is not loaded yet.");
         }
     }
+    const handleSubmit = useCallback((event) => {
+        console.log("handleSubmit form code")
+        event.preventDefault()
+        execCellCode(code, output);
+    }, [code, output, error ]);
+
     const button = (
         <Button type="submit" variant="success" disabled={false}>
             <ChevronRightIcon /> {" "}
             {loading ? "Running..." : "Run"}
         </Button>
     );
-    if (error) {
-        content = <AlertError error={error} />;
-    } else {
-        content = (
-            <>
-                <div className="object-viewer-sql-results">
-                    <h3>Output:</h3>
-                    {output}
-                </div>
-            </>
-        );
+    const renderOutputRef = () => {
+        return outputRef.current.map((msg, idx) => { return <div key={idx}>{msg}</div> })
+    }
+    const renderOutputContent = (currOutput, currError) => {
+        if (currError) {
+            return <AlertError error={currError} />;
+        } else if (currOutput) {
+            return (
+                <>
+                    <div className="object-viewer-sql-results">
+                        <h3>Output:</h3>
+                        {currOutput}
+                        <h3>Stdout:</h3>
+                        {stdout}
+                        <h3>Combined-Output-Ref:</h3>
+                        {renderOutputRef()}
+                    </div>
+                </>
+            );
+        } else {
+            return (
+                <>
+                    <div className="object-viewer-sql-results">
+                        <h3>Clean No Output</h3>
+                    </div>
+                </>
+            );
+        }
     }
     return (
         <div>
-            <Form onSubmit={handleSubmit}>
+            <Form onSubmit={handleSubmit} onReset={clearOutputs}>
                 <Form.Group className="mt-2 mb-1" controlId="objectQuery">
                     <h1>Cell </h1>
                     <div>
@@ -148,6 +178,7 @@ export const NotebookRenderer = ({ repoId, refId, path, fileExtension }) => {
                                 // execCellCode(content, output);
                             }
                             } onClear={() => {
+                                console.log("onClear runs <EditorToolbar />")
                                 clearOutputs()
                             }} />
                             <div style={editorContainerStyle}>
@@ -179,9 +210,9 @@ export const NotebookRenderer = ({ repoId, refId, path, fileExtension }) => {
                 </Form.Group>
 
                 <div className="d-flex mb-4">
-                    <div className="d-flex flex-fill justify-content-start">
+                    {/* <div className="d-flex flex-fill justify-content-start">
                         {button}
-                    </div>
+                    </div> */}
 
                     <div className="d-flex justify-content-end">
                         <p className="text-muted text-end powered-by">
@@ -196,7 +227,7 @@ export const NotebookRenderer = ({ repoId, refId, path, fileExtension }) => {
 
             </Form>
             <div className="mt-3">
-                {content}
+                {renderOutputContent(output, error)}
             </div>
         </div>
     )

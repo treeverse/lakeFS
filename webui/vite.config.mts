@@ -30,7 +30,9 @@ export default ({ command }) => {
 
   // in development
   if (command === 'serve' || command === 'test') {
+    console.log("IN DEVELOPMENT!!! ")
     return {
+      clearScreen: false,
       ...baseConfig,
       server: {
         port: 3000,
