@@ -201,7 +201,7 @@ func TestS3IfNoneMatch(t *testing.T) {
 		{Path: "object1", Content: "data", IfNoneMatch: "", ExpectError: false},
 		{Path: "object1", Content: "data", IfNoneMatch: "*", ExpectError: true},
 		{Path: "object2", Content: "data", IfNoneMatch: "*", ExpectError: false},
-		{Path: "object2", Content: "data", IfNoneMatch: "", ExpectError: false},
+		{Path: "object2", Content: "data", IfNoneMatch: "", ExpectError: true},
 		{Path: "object3", Content: "data", IfNoneMatch: "hi", ExpectError: true},
 	}
 
@@ -213,13 +213,8 @@ func TestS3IfNoneMatch(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for tc := range objects {
-				opts := minio.PutObjectOptions{
-					UserMetadata: make(map[string]string),
-				}
-				if tc.IfNoneMatch != "" {
-					opts.UserMetadata["If-None-Match"] = tc.IfNoneMatch
-				}
-
+				opts := minio.PutObjectOptions{}
+				opts.SetMatchETagExcept(tc.IfNoneMatch)
 				_, err := client.PutObject(ctx, repo, tc.Path, strings.NewReader(tc.Content), int64(len(tc.Content)), opts)
 				if (err != nil) != tc.ExpectError {
 					t.Errorf("unexpected error for Path %s with If-None-Match %q: %v", tc.Path, tc.IfNoneMatch, err)
