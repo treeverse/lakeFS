@@ -198,11 +198,11 @@ func TestS3IfNoneMatch(t *testing.T) {
 	}
 
 	testCases := []TestCase{
-		{Path: "object1", Content: "data1", IfNoneMatch: "", ExpectError: false},
-		{Path: "object1", Content: "data2", IfNoneMatch: "*", ExpectError: false},
-		{Path: "object2", Content: "data3", IfNoneMatch: "*", ExpectError: false},
-		{Path: "object2", Content: "data3", IfNoneMatch: "*", ExpectError: false},
-		{Path: "object3", Content: "data4", IfNoneMatch: "hi", ExpectError: false},
+		{Path: "object1", Content: "data", IfNoneMatch: "", ExpectError: false},
+		{Path: "object1", Content: "data", IfNoneMatch: "*", ExpectError: true},
+		{Path: "object2", Content: "data", IfNoneMatch: "*", ExpectError: false},
+		{Path: "object2", Content: "data", IfNoneMatch: "", ExpectError: false},
+		{Path: "object3", Content: "data", IfNoneMatch: "hi", ExpectError: true},
 	}
 
 	objects := make(chan TestCase, parallelism*2)
