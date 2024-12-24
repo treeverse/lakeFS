@@ -218,7 +218,7 @@ func TestS3IfNoneMatch(t *testing.T) {
 				}
 
 				if tc.IfNoneMatch != "" {
-					opts.UserMetadata["X-Amz-If-None-Match"] = tc.IfNoneMatch
+					opts.Header().Add("If-None-Match", tc.IfNoneMatch)
 				}
 
 				_, err := client.PutObject(ctx, repo, tc.Path, strings.NewReader(tc.Content), int64(len(tc.Content)), opts)
