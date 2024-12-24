@@ -341,7 +341,13 @@ class Auth {
         }
         return response.json();
     }
-
+    async getCredentials(userId, accessKeyId) { 
+        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/credentials/${encodeURIComponent(accessKeyId)}`);
+        if (response.status !== 200) {
+            throw new Error(`could not get credentials: ${await extractError(response)}`);
+        }
+        return response.json();
+    }
     async listCredentials(userId, after, amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount});
         const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/credentials?` + query);

@@ -7,6 +7,7 @@ export const WithPyodideContext = ({ children }) => {
     const pyodideRef = useRef(null);
 
     useEffect(() => {
+        // console.log("!!!!!!!!!!!!!! ENVY PENVY: ", process.env.REACT_APP_LAKEFS_ACCESS_KEY_ID)
         const loadPyodideAndPackages = async () => {
             pyodideRef.current = await window.loadPyodide({
                 indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/',
