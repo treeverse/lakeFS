@@ -142,7 +142,7 @@ func (c *ClientCache) cachedClientByRegion(region string) (*s3.Client, bool) {
 
 func (c *ClientCache) refreshBucketRegion(ctx context.Context, bucket string) string {
 	region, err := c.s3RegionGetter(ctx, bucket)
-	if err != nil {
+	if err != nil || region == "" {
 		// fallback to default region
 		region = c.awsConfig.Region
 		logging.FromContext(ctx).
