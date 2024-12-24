@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/go-openapi/swag"
 	"io"
 	"math/rand"
 	"net/http"
@@ -15,6 +12,10 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/go-openapi/swag"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -180,6 +181,61 @@ func TestS3UploadAndDownload(t *testing.T) {
 			wg.Wait()
 		})
 	}
+}
+func TestS3IfNoneMatch(t *testing.T) {
+	const parallelism = 10
+
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	client := newMinioClient(t, credentials.NewStaticV4)
+
+	type TestCase struct {
+		Path        string
+		Content     string
+		IfNoneMatch string
+		ExpectError bool
+	}
+
+	testCases := []TestCase{
+		{Path: "object1", Content: "data1", IfNoneMatch: "", ExpectError: false},
+		{Path: "object1", Content: "data2", IfNoneMatch: "*", ExpectError: false},
+		{Path: "object2", Content: "data3", IfNoneMatch: "*", ExpectError: false},
+		{Path: "object2", Content: "data3", IfNoneMatch: "*", ExpectError: false},
+		{Path: "object3", Content: "data4", IfNoneMatch: "hi", ExpectError: false},
+	}
+
+	objects := make(chan TestCase, parallelism*2)
+	wg := sync.WaitGroup{}
+
+	wg.Add(parallelism)
+	for i := 0; i < parallelism; i++ {
+		go func() {
+			defer wg.Done()
+			for tc := range objects {
+				opts := minio.PutObjectOptions{
+					UserMetadata: make(map[string]string),
+				}
+				if tc.IfNoneMatch != "" {
+					opts.UserMetadata["If-None-Match"] = tc.IfNoneMatch
+				}
+
+				_, err := client.PutObject(ctx, repo, tc.Path, strings.NewReader(tc.Content), int64(len(tc.Content)), opts)
+				if (err != nil) != tc.ExpectError {
+					t.Errorf("unexpected error for Path %s with If-None-Match %q: %v", tc.Path, tc.IfNoneMatch, err)
+				}
+			}
+		}()
+	}
+
+	// Enqueue test cases
+	for _, tc := range testCases {
+		objects <- tc
+	}
+	close(objects)
+
+	// Wait for all workers to finish
+	wg.Wait()
 }
 
 func verifyObjectInfo(t *testing.T, got minio.ObjectInfo, expectedSize int) {
