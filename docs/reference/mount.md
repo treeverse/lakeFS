@@ -170,13 +170,6 @@ The minimal RBAC permissions required for mounting a prefix from a lakeFS reposi
   "statement": [
     {
       "action": [
-        "fs:ReadObject"
-      ],
-      "effect": "allow",
-      "resource": "arn:lakefs:fs:::repository/<repository-name>/object/<prefix>"
-    },
-    {
-      "action": [
         "fs:ListObjects",
         "fs:ReadCommit",
         "fs:ReadRepository"
