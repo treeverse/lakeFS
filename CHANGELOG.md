@@ -4,7 +4,6 @@
 
 :new: What's new:
 - Feature: Repository Search by Substring (#8417)
-- adjusted dockerfile so that build args can be provided (#8420)
 
 # v1.45.0
 
