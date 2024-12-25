@@ -1,5 +1,10 @@
 # Changelog
 
+# v1.46.0
+
+:new: What's new:
+- Feature: Repository Search by Substring (#8417)
+
 # v1.45.0
 
 **Note:**
