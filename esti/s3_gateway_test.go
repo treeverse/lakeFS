@@ -188,8 +188,8 @@ func TestS3IfNoneMatch(t *testing.T) {
 
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
-
-	client := createS3Client(endpointURL, t)
+	endpoint := "http://localhost:8000"
+	client := createS3Client(endpoint, t)
 	bucketName := "test-bucket"
 	_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
 		Bucket: aws.String(bucketName),
