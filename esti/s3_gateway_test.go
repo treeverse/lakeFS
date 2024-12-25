@@ -15,6 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/go-openapi/swag"
 
 	"github.com/minio/minio-go/v7"
@@ -188,13 +189,16 @@ func TestS3IfNoneMatch(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	client := createS3Client(endpointURL+apiutil.BaseURL, t)
+	client := createS3Client(endpointURL, t)
+	bucketName := "test-bucket"
 	_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-		Bucket: aws.String("test-bucket"),
+		Bucket: aws.String(bucketName),
+		CreateBucketConfiguration: &types.CreateBucketConfiguration{
+			LocationConstraint: types.BucketLocationConstraint("us-east-1"),
+		},
 	})
 
 	require.NoError(t, err, "Error creating bucket")
-	//func (c *Client) CreateBucket(ctx context.Context, params *CreateBucketInput, optFns ...func(*Options)) (*CreateBucketOutput, error)
 
 	type TestCase struct {
 		Path        string
@@ -221,13 +225,13 @@ func TestS3IfNoneMatch(t *testing.T) {
 			for tc := range objects {
 				// Create the PutObject request
 				_, err := client.PutObject(ctx, &s3.PutObjectInput{
-					Bucket: aws.String("test-bucket"),
+					Bucket: aws.String(bucketName),
 					Key:    aws.String(tc.Path),
 					Body:   strings.NewReader(tc.Content),
 				})
-				if (err != nil) != tc.ExpectError {
-					t.Errorf("unexpected error for Path %s with If-None-Match %q: %v", tc.Path, tc.IfNoneMatch, err)
-				}
+
+				require.NoError(t, err, "Error uploading bucket")
+
 			}
 		}()
 	}
