@@ -188,7 +188,13 @@ func TestS3IfNoneMatch(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	client := newMinioClient(t, credentials.NewStaticV4)
+	client := createS3Client(endpointURL+apiutil.BaseURL, t)
+	_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
+		Bucket: aws.String("test-bucket"),
+	})
+
+	require.NoError(t, err, "Error creating bucket")
+	//func (c *Client) CreateBucket(ctx context.Context, params *CreateBucketInput, optFns ...func(*Options)) (*CreateBucketOutput, error)
 
 	type TestCase struct {
 		Path        string
@@ -213,15 +219,12 @@ func TestS3IfNoneMatch(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for tc := range objects {
-				opts := minio.PutObjectOptions{
-					UserMetadata: map[string]string{},
-				}
-
-				if tc.IfNoneMatch != "" {
-					opts.UserMetadata["If-None-Match"] = tc.IfNoneMatch
-				}
-
-				_, err := client.PutObject(ctx, repo, tc.Path, strings.NewReader(tc.Content), int64(len(tc.Content)), opts)
+				// Create the PutObject request
+				_, err := client.PutObject(ctx, &s3.PutObjectInput{
+					Bucket: aws.String("test-bucket"),
+					Key:    aws.String(tc.Path),
+					Body:   strings.NewReader(tc.Content),
+				})
 				if (err != nil) != tc.ExpectError {
 					t.Errorf("unexpected error for Path %s with If-None-Match %q: %v", tc.Path, tc.IfNoneMatch, err)
 				}
