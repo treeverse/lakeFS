@@ -29,31 +29,31 @@ This functionality is currently in limited support and is a Read-Only file syste
 
 * **Simplified Data Loading**: With lakeFS Mount, there's no need to write custom data loaders or use special SDKs. You can use your existing tools to read files directly from the filesystem.
 * **Handle Large-scale Data Without changing Work Habits**: Seamlessly scale from a few local files to millions without changing your tools or workflow. Use the same code from early experimentation all the way to production.
-* **Enhanced Data Loading Efficiency**: lakeFS Mount supports billions of files and offers fast data fetching, making it ideal for optimizing GPU utilization and other performance-sensitive tasks. 
+* **Enhanced Data Loading Efficiency**: lakeFS Mount supports billions of files and offers fast data fetching, making it ideal for optimizing GPU utilization and other performance-sensitive tasks.
 
 ## Requirements
 
 - For enterprise installations: lakeFS Version `1.25.0` or higher.
-  
+
 ### OS and Protocol Support
 
-Currently the implemented protocols are `nfs` and `fuse`. 
+Currently the implemented protocols are `nfs` and `fuse`.
 - NFS V3 (Network File System) is supported on macOS.
-- FUSE is supported on Linux (no root required). 
+- FUSE is supported on Linux (no root required).
 
-## Authentication with lakeFS 
+## Authentication with lakeFS
 
 The authentication with the target lakeFS server is equal to [lakectl CLI][lakectl].
 Searching for lakeFS credentials and server endpoint in the following order:
 - Command line flags `--lakectl-access-key-id`, `--lakectl-secret-access-key` and `--lakectl-server-url`
 - `LAKECTL_*` Environment variables
 - `~/.lakectl.yaml` Configuration file or via `--lakectl-config` flag
-  
+
 ## Command Line Interface
 
 ### Mount Command
 
-The `mount` command is used to mount a lakeFS repository to a local directory, it does it in 2 steps: 
+The `mount` command is used to mount a lakeFS repository to a local directory, it does it in 2 steps:
 - Step 1: Starting a server that listens on a local address and serves the data from the remote lakeFS repository.
 - Step 2:  Running the required mount command on the OS level to connect the server to the local directory.
 
@@ -163,6 +163,32 @@ lakeFS Mount supports Linux and MacOS. Windows support is on the roadmap.
 
 You can use lakeFS’s existing [Role-Based Access Control mechanism](../security/rbac.md), which includes repository and path-level policies. lakeFS Mount translates filesystem operations into lakeFS API operations and authorizes them based on these policies.
 
+The minimal RBAC permissions required for mounting a prefix from a lakeFS repository looks like this:
+```json
+{
+  "id": "MountPolicy",
+  "statement": [
+    {
+      "action": [
+        "fs:ReadObject"
+      ],
+      "effect": "allow",
+      "resource": "arn:lakefs:fs:::repository/<repository-name>/object/<prefix>/*"
+    },
+    {
+      "action": [
+        "fs:ListObjects",
+        "fs:ReadCommit",
+        "fs:ReadRepository"
+
+      ],
+      "effect": "allow",
+      "resource": "arn:lakefs:fs:::repository/<repository-name>"
+    }
+  ]
+}
+```
+
 ### Does data pass through the lakeFS server when using lakeFS Mount?
 
 lakeFS Mount leverages  pre-signed URLs to read data directly from the underlying object store, meaning data doesn’t  pass through the lakeFS server. By default, presign is enabled. To disable it, use:
@@ -191,7 +217,7 @@ It is perfectly safe to mount a lakeFS path within a Git repository.
 lakeFS Mount prevents git from adding mounted objects to the git repository (i.e when running `git add -A`) by adding a virtual `.gitignore` file to the mounted directory.
 
 
-The .gitignore file will also instruct Git to ignore all files except `.everest/source` and in its absence, it will try to find a `.everest/source` file in the destination folder, and read the lakeFS URI from there. 
+The .gitignore file will also instruct Git to ignore all files except `.everest/source` and in its absence, it will try to find a `.everest/source` file in the destination folder, and read the lakeFS URI from there.
 Since `.everest/source` is in source control, it will mount the same lakeFS commit every time!
 
 ### I’m already using lakectl local for working with lakeFS data locally, why should I use lakeFS Mount?
