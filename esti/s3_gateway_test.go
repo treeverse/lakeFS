@@ -193,14 +193,14 @@ func setHTTPHeaders(ifNoneMatch string) func(*middleware.Stack) error {
 		) {
 			if req, ok := in.Request.(*http.Request); ok {
 				// Add the If-None-Match header
-				req.Header.Add("If-None-Match", ifNoneMatch)
+				req.Header.Set("If-None-Match", ifNoneMatch)
+				fmt.Printf("Set If-None-Match header: %s\n", ifNoneMatch) // Debug logging
 			}
 			// Continue with the next middleware handler
 			return next.HandleBuild(ctx, in)
 		}), middleware.Before)
 	}
 }
-
 func TestS3IfNoneMatch(t *testing.T) {
 	const parallelism = 10
 
@@ -239,6 +239,7 @@ func TestS3IfNoneMatch(t *testing.T) {
 					Key:    aws.String(tc.Path),
 					Body:   strings.NewReader(tc.Content),
 				}
+				fmt.Printf("Sending PutObject request for Path: %s with If-None-Match: %s\n", tc.Path, tc.IfNoneMatch) // Debug logging
 				_, err := s3Client.PutObject(ctx, input, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
 
 				if tc.ExpectError {
