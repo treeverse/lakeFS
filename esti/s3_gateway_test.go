@@ -183,12 +183,29 @@ func TestS3UploadAndDownload(t *testing.T) {
 		})
 	}
 }
+
+//	func setHTTPHeaders() func(*middleware.Stack) error {
+//		return func(stack *middleware.Stack) error {
+//			return stack.Build.Add(middleware.BuildMiddlewareFunc("AddIfNoneMatchHeader", func(
+//				ctx context.Context, in middleware.BuildInput, next middleware.BuildHandler,
+//			) (
+//				middleware.BuildOutput, middleware.Metadata, error,
+//			) {
+//				if req, ok := in.Request.(*smithyhttp.Request); ok {
+//					// Add the If-None-Match header
+//					req.Header.Add("If-None-Match",req.)
+//				}
+//				// Continue with the next middleware handler
+//				return next.HandleBuild(ctx, in)
+//			}), middleware.Before)
+//		}
+//	}
 func TestS3IfNoneMatch(t *testing.T) {
 	const parallelism = 10
 
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
-	endpoint := "http://localhost:8000"
+	endpoint := "http://lakefs:8000"
 	client := createS3Client(endpoint, t)
 	bucketName := "test-bucket"
 	_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
