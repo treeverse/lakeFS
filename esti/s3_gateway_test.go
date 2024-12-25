@@ -15,7 +15,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/go-openapi/swag"
 
 	"github.com/minio/minio-go/v7"
@@ -205,17 +204,9 @@ func TestS3IfNoneMatch(t *testing.T) {
 
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
-	endpoint := "http://lakefs:8000"
-	client := createS3Client(endpoint, t)
-	bucketName := "test-bucket"
-	_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-		Bucket: aws.String(bucketName),
-		CreateBucketConfiguration: &types.CreateBucketConfiguration{
-			LocationConstraint: types.BucketLocationConstraint("us-east-1"),
-		},
-	})
 
-	require.NoError(t, err, "Error creating bucket")
+	s3Endpoint := viper.GetString("s3_endpoint")
+	s3Client := createS3Client(s3Endpoint, t)
 
 	type TestCase struct {
 		Path        string
@@ -241,8 +232,8 @@ func TestS3IfNoneMatch(t *testing.T) {
 			defer wg.Done()
 			for tc := range objects {
 				// Create the PutObject request
-				_, err := client.PutObject(ctx, &s3.PutObjectInput{
-					Bucket: aws.String(bucketName),
+				_, err := s3Client.PutObject(ctx, &s3.PutObjectInput{
+					Bucket: aws.String(repo),
 					Key:    aws.String(tc.Path),
 					Body:   strings.NewReader(tc.Content),
 				})
