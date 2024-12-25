@@ -15,6 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/smithy-go/middleware"
 	"github.com/go-openapi/swag"
 
 	"github.com/minio/minio-go/v7"
@@ -183,22 +184,23 @@ func TestS3UploadAndDownload(t *testing.T) {
 	}
 }
 
-//	func setHTTPHeaders() func(*middleware.Stack) error {
-//		return func(stack *middleware.Stack) error {
-//			return stack.Build.Add(middleware.BuildMiddlewareFunc("AddIfNoneMatchHeader", func(
-//				ctx context.Context, in middleware.BuildInput, next middleware.BuildHandler,
-//			) (
-//				middleware.BuildOutput, middleware.Metadata, error,
-//			) {
-//				if req, ok := in.Request.(*smithyhttp.Request); ok {
-//					// Add the If-None-Match header
-//					req.Header.Add("If-None-Match",req.)
-//				}
-//				// Continue with the next middleware handler
-//				return next.HandleBuild(ctx, in)
-//			}), middleware.Before)
-//		}
-//	}
+func setHTTPHeaders(ifNoneMatch string) func(*middleware.Stack) error {
+	return func(stack *middleware.Stack) error {
+		return stack.Build.Add(middleware.BuildMiddlewareFunc("AddIfNoneMatchHeader", func(
+			ctx context.Context, in middleware.BuildInput, next middleware.BuildHandler,
+		) (
+			middleware.BuildOutput, middleware.Metadata, error,
+		) {
+			if req, ok := in.Request.(*http.Request); ok {
+				// Add the If-None-Match header
+				req.Header.Add("If-None-Match", ifNoneMatch)
+			}
+			// Continue with the next middleware handler
+			return next.HandleBuild(ctx, in)
+		}), middleware.Before)
+	}
+}
+
 func TestS3IfNoneMatch(t *testing.T) {
 	const parallelism = 10
 
@@ -232,14 +234,19 @@ func TestS3IfNoneMatch(t *testing.T) {
 			defer wg.Done()
 			for tc := range objects {
 				// Create the PutObject request
-				_, err := s3Client.PutObject(ctx, &s3.PutObjectInput{
+				input := &s3.PutObjectInput{
 					Bucket: aws.String(repo),
 					Key:    aws.String(tc.Path),
 					Body:   strings.NewReader(tc.Content),
+				}
+				_, err := s3Client.PutObject(ctx, input, func(o *s3.Options) {
+					o.APIOptions = append(o.APIOptions, setHTTPHeaders(tc.IfNoneMatch))
 				})
-
-				require.NoError(t, err, "Error uploading bucket")
-
+				if tc.ExpectError {
+					require.Error(t, err, "was expecting an error")
+				} else {
+					require.NoError(t, err, "wasn't expecting error")
+				}
 			}
 		}()
 	}
