@@ -341,6 +341,11 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 }
 
 func (o *PathOperation) checkIfAbsent(req *http.Request) (bool, error) {
+	for key, values := range req.Header {
+		for _, value := range values {
+			fmt.Printf("HEADER: %s = %s\n", key, value)
+		}
+	}
 	Header := req.Header.Get(IfNoneMatchHeader)
 	fmt.Println("HEADER: ", Header)
 	if Header == "" {
