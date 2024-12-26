@@ -352,6 +352,8 @@ func (o *PathOperation) checkIfAbsent(req *http.Request) (bool, error) {
 		}
 		if !errors.Is(err, graveler.ErrNotFound) {
 			return false, gatewayErrors.ErrInternalError
+		} else {
+			return true, nil
 		}
 	}
 	fmt.Printf("got here with header %s", Header)
