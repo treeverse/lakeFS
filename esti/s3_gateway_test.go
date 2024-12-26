@@ -19,6 +19,7 @@ import (
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/go-openapi/swag"
+	"github.com/thanhpk/randstr"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -208,6 +209,7 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
+	multipartNumberOfParts := 7
 	type TestCase struct {
 		Path        string
 		Content     string
@@ -230,6 +232,9 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 		logger.Info("Created multipart upload request")
 
 		parts := make([][]byte, multipartNumberOfParts)
+		for i := 0; i < multipartNumberOfParts; i++ {
+			parts[i] = randstr.Bytes(multipartPartSize + i)
+		}
 
 		completedParts := uploadMultipartParts(t, ctx, s3Client, logger, resp, parts, 0)
 
