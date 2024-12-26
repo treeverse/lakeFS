@@ -210,6 +210,7 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
 	multipartNumberOfParts := 7
+	multipartPartSize := 5 * 1024 * 1024
 	type TestCase struct {
 		Path        string
 		Content     string
@@ -220,6 +221,7 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 	testCases := []TestCase{
 		{Path: "main/object1", Content: "data", IfNoneMatch: "", ExpectError: false},
 		{Path: "main/object1", Content: "data", IfNoneMatch: "*", ExpectError: true},
+		{Path: "main/object1", Content: "data", IfNoneMatch: "", ExpectError: false},
 	}
 	for _, tc := range testCases {
 		input := &s3.CreateMultipartUploadInput{
@@ -251,13 +253,12 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 				Parts: completedParts,
 			},
 		}
-		completeResponse, err := s3Client.CompleteMultipartUpload(ctx, completeInput, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
+		_, err = s3Client.CompleteMultipartUpload(ctx, completeInput, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
 		if tc.ExpectError {
 			require.Error(t, err, "was expecting an error with path %s and header %s in test case # %s", tc.Path, tc.IfNoneMatch)
 		} else {
 			require.NoError(t, err, "wasn't expecting error with path %s and header %s in test case # %s", tc.Path, tc.IfNoneMatch)
 		}
-		logger.WithField("key", aws.ToString(completeResponse.Key)).Info("Completed multipart request successfully")
 	}
 }
 
