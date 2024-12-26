@@ -203,7 +203,6 @@ func setHTTPHeaders(ifNoneMatch string) func(*middleware.Stack) error {
 	}
 }
 func TestS3IfNoneMatch(t *testing.T) {
-	const parallelism = 10
 
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
@@ -224,41 +223,23 @@ func TestS3IfNoneMatch(t *testing.T) {
 		{Path: "main/object2", Content: "data", IfNoneMatch: "*", ExpectError: false},
 		{Path: "main/object2", Content: "data", IfNoneMatch: "", ExpectError: false},
 		{Path: "main/object2", Content: "data", IfNoneMatch: "*", ExpectError: true},
+		{Path: "main/object3", Content: "data", IfNoneMatch: "hi", ExpectError: true},
 	}
-
-	objects := make(chan TestCase, parallelism*2)
-	wg := sync.WaitGroup{}
-
-	wg.Add(parallelism)
-	for i := 0; i < parallelism; i++ {
-		go func() {
-			defer wg.Done()
-			for tc := range objects {
-				// Create the PutObject request
-				input := &s3.PutObjectInput{
-					Bucket: aws.String(repo),
-					Key:    aws.String(tc.Path),
-					Body:   strings.NewReader(tc.Content),
-				}
-				fmt.Printf("Sending PutObject request for Path: %s with If-None-Match: %s\n", tc.Path, tc.IfNoneMatch) // Debug logging
-				_, err := s3Client.PutObject(ctx, input, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
-
-				if tc.ExpectError {
-					require.Error(t, err, "was expecting an error")
-				} else {
-					require.NoError(t, err, "wasn't expecting error")
-				}
-			}
-		}()
-	}
-	// Enqueue test cases
 	for _, tc := range testCases {
-		objects <- tc
-	}
-	close(objects)
+		input := &s3.PutObjectInput{
+			Bucket: aws.String(repo),
+			Key:    aws.String(tc.Path),
+			Body:   strings.NewReader(tc.Content),
+		}
+		fmt.Printf("Sending PutObject request for Path: %s with If-None-Match: %s\n", tc.Path, tc.IfNoneMatch) // Debug logging
+		_, err := s3Client.PutObject(ctx, input, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
 
-	// Wait for all workers to finish
-	wg.Wait()
+		if tc.ExpectError {
+			require.Error(t, err, "was expecting an error")
+		} else {
+			require.NoError(t, err, "wasn't expecting error")
+		}
+	}
 }
 
 func verifyObjectInfo(t *testing.T, got minio.ObjectInfo, expectedSize int) {
