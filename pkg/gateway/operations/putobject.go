@@ -2,6 +2,7 @@ package operations
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -353,5 +354,6 @@ func (o *PathOperation) checkIfAbsent(req *http.Request) (bool, error) {
 			return false, gatewayErrors.ErrInternalError
 		}
 	}
+	fmt.Printf("got here with header %s", Header)
 	return false, gatewayErrors.ErrNotImplemented
 }
