@@ -298,14 +298,20 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("put_object", o.Principal, o.Repository.Name, o.Reference)
 	storageClass := StorageClassFromHeader(req.Header)
 	opts := block.PutOpts{StorageClass: storageClass}
-	allowOverWrite, err := o.checkIfAbsent(req)
-	if errors.Is(err, gatewayErrors.ErrPreconditionFailed) {
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
-		return
-	}
-	if errors.Is(err, gatewayErrors.ErrNotImplemented) {
+	// before uploading object, check whether if-none-match header is added,
+	// in order to not overwrite object
+	allowOverwrite, err := o.checkIfAbsent(req)
+	if err != nil {
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNotImplemented))
 		return
+	}
+	if !allowOverwrite {
+		_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
+		if err == nil {
+			// In case object exists in catalog, no error returns
+			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
+			return
+		}
 	}
 	address := o.PathProvider.NewPath()
 	blob, err := upload.WriteBlob(req.Context(), o.BlockStore, o.Repository.StorageNamespace, address, req.Body, req.ContentLength, opts)
@@ -318,7 +324,7 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	// write metadata
 	metadata := amzMetaAsMetadata(req)
 	contentType := req.Header.Get("Content-Type")
-	err = o.finishUpload(req, &blob.CreationDate, blob.Checksum, blob.PhysicalAddress, blob.Size, true, metadata, contentType, allowOverWrite)
+	err = o.finishUpload(req, &blob.CreationDate, blob.Checksum, blob.PhysicalAddress, blob.Size, true, metadata, contentType, allowOverwrite)
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
 		return
@@ -340,20 +346,12 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 }
 
 func (o *PathOperation) checkIfAbsent(req *http.Request) (bool, error) {
-	Header := req.Header.Get(IfNoneMatchHeader)
-	if Header == "" {
+	headerValue := req.Header.Get(IfNoneMatchHeader)
+	if headerValue == "" {
 		return true, nil
 	}
-	if Header == "*" {
-		_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
-		if err == nil {
-			return false, gatewayErrors.ErrPreconditionFailed
-		}
-		if !errors.Is(err, graveler.ErrNotFound) {
-			return false, gatewayErrors.ErrInternalError
-		} else {
-			return true, nil
-		}
+	if headerValue == "*" {
+		return false, nil
 	}
 	return false, gatewayErrors.ErrNotImplemented
 }

@@ -186,18 +186,6 @@ func TestS3UploadAndDownload(t *testing.T) {
 		})
 	}
 }
-func uploadMultipartCompleteIfNoneMatch(ctx context.Context, svc *s3.Client, resp *s3.CreateMultipartUploadOutput, completedParts []types.CompletedPart) (*s3.CompleteMultipartUploadOutput, error) {
-	completeInput := &s3.CompleteMultipartUploadInput{
-		Bucket:   resp.Bucket,
-		Key:      resp.Key,
-		UploadId: resp.UploadId,
-		MultipartUpload: &types.CompletedMultipartUpload{
-			Parts: completedParts,
-		},
-	}
-	return svc.CompleteMultipartUpload(ctx, completeInput)
-}
-
 func TestMultipartUploadIfNoneMatch(t *testing.T) {
 	// timeResolution is a duration greater than the timestamp resolution of the backing
 	// store.  Multipart object on S3 is the time of create-MPU, waiting before completion
@@ -272,9 +260,7 @@ func setHTTPHeaders(ifNoneMatch string) func(*middleware.Stack) error {
 			if req, ok := in.Request.(*smithyhttp.Request); ok {
 				// Add the If-None-Match header
 				req.Header.Set("If-None-Match", ifNoneMatch)
-				fmt.Printf("Set If-None-Match header: %s\n", ifNoneMatch) // Debug logging
 			}
-			// Continue with the next middleware handler
 			return next.HandleBuild(ctx, in)
 		}), middleware.Before)
 	}
