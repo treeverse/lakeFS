@@ -235,9 +235,9 @@ func TestS3IfNoneMatch(t *testing.T) {
 		_, err := s3Client.PutObject(ctx, input, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
 
 		if tc.ExpectError {
-			require.Error(t, err, "was expecting an error")
+			require.Error(t, err, "was expecting an error with path %s and header %s", tc.Path, tc.IfNoneMatch)
 		} else {
-			require.NoError(t, err, "wasn't expecting error")
+			require.NoError(t, err, "wasn't expecting error with path %s and header %s", tc.Path, tc.IfNoneMatch)
 		}
 	}
 }
