@@ -231,7 +231,7 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 
 		parts := make([][]byte, multipartNumberOfParts)
 
-		completedParts := uploadMultipartParts(t, ctx, logger, resp, parts, 0)
+		completedParts := uploadMultipartParts(t, ctx, s3Client, logger, resp, parts, 0)
 
 		if isBlockstoreType(block.BlockstoreTypeS3) == nil {
 			// Object should have Last-Modified time at around time of MPU creation.  Ensure
