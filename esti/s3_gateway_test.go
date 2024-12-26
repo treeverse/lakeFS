@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go/middleware"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/go-openapi/swag"
 
 	"github.com/minio/minio-go/v7"
@@ -191,7 +192,7 @@ func setHTTPHeaders(ifNoneMatch string) func(*middleware.Stack) error {
 		) (
 			middleware.BuildOutput, middleware.Metadata, error,
 		) {
-			if req, ok := in.Request.(*http.Request); ok {
+			if req, ok := in.Request.(*smithyhttp.Request); ok {
 				// Add the If-None-Match header
 				req.Header.Set("If-None-Match", ifNoneMatch)
 				fmt.Printf("Set If-None-Match header: %s\n", ifNoneMatch) // Debug logging
