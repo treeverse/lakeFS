@@ -15,6 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/go-openapi/swag"
@@ -182,6 +183,76 @@ func TestS3UploadAndDownload(t *testing.T) {
 			close(objects)
 			wg.Wait()
 		})
+	}
+}
+func uploadMultipartCompleteIfNoneMatch(ctx context.Context, svc *s3.Client, resp *s3.CreateMultipartUploadOutput, completedParts []types.CompletedPart) (*s3.CompleteMultipartUploadOutput, error) {
+	completeInput := &s3.CompleteMultipartUploadInput{
+		Bucket:   resp.Bucket,
+		Key:      resp.Key,
+		UploadId: resp.UploadId,
+		MultipartUpload: &types.CompletedMultipartUpload{
+			Parts: completedParts,
+		},
+	}
+	return svc.CompleteMultipartUpload(ctx, completeInput)
+}
+
+func TestMultipartUploadIfNoneMatch(t *testing.T) {
+	// timeResolution is a duration greater than the timestamp resolution of the backing
+	// store.  Multipart object on S3 is the time of create-MPU, waiting before completion
+	// ensures that lakeFS did not use the current time.  For other blockstores MPU
+	// completion time is used, meaning it will be hard to detect if the underlying and
+	// lakeFS objects share the same time.
+	const timeResolution = time.Second
+	ctx, logger, repo := setupTest(t)
+	defer tearDownTest(repo)
+	type TestCase struct {
+		Path        string
+		Content     string
+		IfNoneMatch string
+		ExpectError bool
+	}
+	// s3Endpoint := viper.GetString("s3_endpoint")
+	// s3Client := createS3Client(s3Endpoint, t)
+	defer tearDownTest(repo)
+	testCases := []TestCase{
+		{Path: "main/object1", Content: "data", IfNoneMatch: "", ExpectError: false},
+		{Path: "main/object1", Content: "data", IfNoneMatch: "*", ExpectError: true},
+	}
+	for _, tc := range testCases {
+		input := &s3.CreateMultipartUploadInput{
+			Bucket: aws.String(repo),
+			Key:    aws.String(tc.Path),
+		}
+
+		resp, err := svc.CreateMultipartUpload(ctx, input)
+		require.NoError(t, err, "failed to create multipart upload")
+		logger.Info("Created multipart upload request")
+
+		parts := make([][]byte, multipartNumberOfParts)
+
+		completedParts := uploadMultipartParts(t, ctx, logger, resp, parts, 0)
+
+		if isBlockstoreType(block.BlockstoreTypeS3) == nil {
+			// Object should have Last-Modified time at around time of MPU creation.  Ensure
+			// lakeFS fails the test if it fakes it by using the current time.
+			time.Sleep(2 * timeResolution)
+		}
+		completeInput := &s3.CompleteMultipartUploadInput{
+			Bucket:   resp.Bucket,
+			Key:      resp.Key,
+			UploadId: resp.UploadId,
+			MultipartUpload: &types.CompletedMultipartUpload{
+				Parts: completedParts,
+			},
+		}
+		completeResponse, err := svc.CompleteMultipartUpload(ctx, completeInput, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
+		if tc.ExpectError {
+			require.Error(t, err, "was expecting an error with path %s and header %s in test case # %s", tc.Path, tc.IfNoneMatch)
+		} else {
+			require.NoError(t, err, "wasn't expecting error with path %s and header %s in test case # %s", tc.Path, tc.IfNoneMatch)
+		}
+		logger.WithField("key", aws.ToString(completeResponse.Key)).Info("Completed multipart request successfully")
 	}
 }
 
