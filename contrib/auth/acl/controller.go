@@ -86,6 +86,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body ap
 	g, err := c.Auth.CreateGroup(ctx, &model.Group{
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
+		Description: body.Description,
 	})
 	if c.handleAPIError(w, err) {
 		return
@@ -93,6 +94,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body ap
 	response := apigen.Group{
 		CreationDate: g.CreatedAt.Unix(),
 		Name:         g.DisplayName,
+		Description:  g.Description,
 	}
 	writeResponse(w, http.StatusCreated, response)
 }
@@ -124,6 +126,7 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 	response := apigen.Group{
 		Name:         g.DisplayName,
 		CreationDate: g.CreatedAt.Unix(),
+		Description:  g.Description,
 	}
 	writeResponse(w, http.StatusOK, response)
 }

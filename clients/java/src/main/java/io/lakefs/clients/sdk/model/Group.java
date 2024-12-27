@@ -60,6 +60,10 @@ public class Group {
   @SerializedName(SERIALIZED_NAME_NAME)
   private String name;
 
+  public static final String SERIALIZED_NAME_DESCRIPTION = "description";
+  @SerializedName(SERIALIZED_NAME_DESCRIPTION)
+  private String description;
+
   public static final String SERIALIZED_NAME_CREATION_DATE = "creation_date";
   @SerializedName(SERIALIZED_NAME_CREATION_DATE)
   private Long creationDate;
@@ -106,6 +110,27 @@ public class Group {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+
+  public Group description(String description) {
+    
+    this.description = description;
+    return this;
+  }
+
+   /**
+   * Get description
+   * @return description
+  **/
+  @javax.annotation.Nullable
+  public String getDescription() {
+    return description;
+  }
+
+
+  public void setDescription(String description) {
+    this.description = description;
   }
 
 
@@ -186,13 +211,14 @@ public class Group {
     Group group = (Group) o;
     return Objects.equals(this.id, group.id) &&
         Objects.equals(this.name, group.name) &&
+        Objects.equals(this.description, group.description) &&
         Objects.equals(this.creationDate, group.creationDate)&&
         Objects.equals(this.additionalProperties, group.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, creationDate, additionalProperties);
+    return Objects.hash(id, name, description, creationDate, additionalProperties);
   }
 
   @Override
@@ -201,6 +227,7 @@ public class Group {
     sb.append("class Group {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
+    sb.append("    description: ").append(toIndentedString(description)).append("\n");
     sb.append("    creationDate: ").append(toIndentedString(creationDate)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
@@ -227,6 +254,7 @@ public class Group {
     openapiFields = new HashSet<String>();
     openapiFields.add("id");
     openapiFields.add("name");
+    openapiFields.add("description");
     openapiFields.add("creation_date");
 
     // a set of required properties/fields (JSON key names)
@@ -260,6 +288,9 @@ public class Group {
       }
       if ((jsonObj.get("name") != null && !jsonObj.get("name").isJsonNull()) && !jsonObj.get("name").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("name").toString()));
+      }
+      if ((jsonObj.get("description") != null && !jsonObj.get("description").isJsonNull()) && !jsonObj.get("description").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `description` to be a primitive type in the JSON string but got `%s`", jsonObj.get("description").toString()));
       }
   }
 

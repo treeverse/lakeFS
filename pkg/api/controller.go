@@ -899,6 +899,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body ap
 	}
 
 	g := &model.Group{
+		Description: body.Description,
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
 	}
@@ -910,6 +911,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body ap
 		CreationDate: createdGroup.CreatedAt.Unix(),
 		Name:         swag.String(createdGroup.DisplayName),
 		Id:           createdGroup.ID,
+		Description:  createdGroup.Description,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -959,6 +961,7 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 
 	response := apigen.Group{
 		Id:           g.DisplayName,
+		Description:  g.Description,
 		CreationDate: g.CreatedAt.Unix(),
 	}
 	writeResponse(w, r, http.StatusOK, response)

@@ -20,6 +20,7 @@ message UserData {
 message GroupData {
     google.protobuf.Timestamp created_at = 1;
     string display_name = 2;
+    string description = 3;
 }
 
 // message data model for model.ACL struct
