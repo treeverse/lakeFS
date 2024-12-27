@@ -6,6 +6,8 @@ import {BreadcrumbItem} from "react-bootstrap";
 import {useLoginConfigContext} from "../../hooks/conf";
 
 import {Link, NavItem} from "../nav";
+import {useAPI} from "../../hooks/api";
+import {auth} from "../../api";
 
 
 export const UserNav = ({ userId, page = 'groups' }) => {
@@ -39,20 +41,41 @@ export const UserNav = ({ userId, page = 'groups' }) => {
 
 export const GroupNav = ({ groupId, page = 'groups' }) => {
     const {RBAC: rbac} = useLoginConfigContext();
+
+    const {response, loading, error} = useAPI(() => {
+        return auth.getGroup(groupId);
+    }, [groupId]);
+
+    const group = response;
+
+    function getDescription() {
+        if (loading) return <span>...</span>;
+        if (error) return <span className="text-danger">{error.message}</span>;
+        return group && group.description;
+    }
+
     return (
         <>
             {rbac === 'simplified' ?
-            <Link component={NavItem} active={page === 'members'} href={{pathname: '/auth/groups/:groupId/members', params: {groupId}}}>
-                Group Memberships
-            </Link> :
-        <Nav justify variant="tabs">
-            <Link component={NavItem} active={page === 'members'} href={{pathname: '/auth/groups/:groupId/members', params: {groupId}}}>
-                Group Memberships
-            </Link>
-             <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/groups/:groupId/policies', params: {groupId}}}>
-                Attached Policies
-            </Link>
-        </Nav>}
+                <Link component={NavItem} active={page === 'members'}
+                      href={{pathname: '/auth/groups/:groupId/members', params: {groupId}}}>
+                    Group Memberships
+                </Link>
+                :
+                <div>
+                    <h6 className="mb-4">Group description: {getDescription()}</h6>
+                    <Nav justify variant="tabs">
+                        <Link component={NavItem} active={page === 'members'}
+                              href={{pathname: '/auth/groups/:groupId/members', params: {groupId}}}>
+                            Group Memberships
+                        </Link>
+                        <Link component={NavItem} active={page === 'policies'}
+                              href={{pathname: '/auth/groups/:groupId/policies', params: {groupId}}}>
+                            Attached Policies
+                        </Link>
+                    </Nav>
+                </div>
+            }
         </>
     );
 };

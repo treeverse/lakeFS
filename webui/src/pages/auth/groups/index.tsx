@@ -19,7 +19,11 @@ import {
 import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
 import {EntityActionModal} from "../../../lib/components/auth/forms";
-import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from "../validation";
+import {
+    disallowPercentSign,
+    INVALID_GROUP_NAME_ERROR_MESSAGE,
+    INVALID_GROUP_DESCRIPTION_ERROR_MESSAGE
+} from "../validation";
 import {useLoginConfigContext} from "../../../lib/hooks/conf";
 import {useAuthOutletContext} from "../../../lib/components/auth/layout";
 
@@ -160,8 +164,8 @@ const GroupsContainer = () => {
             <EntityActionModal
                 show={showCreate}
                 onHide={() => setShowCreate(false)}
-                onAction={groupName => {
-                    return auth.createGroup(groupName).then(() => {
+                onAction={(groupName, groupDesc) => {
+                    return auth.createGroup(groupName, groupDesc).then(() => {
                         setSelected([]);
                         setShowCreate(false);
                         setRefresh(!refresh);
@@ -171,6 +175,9 @@ const GroupsContainer = () => {
                 placeholder="Group Name (e.g. 'DataTeam')"
                 actionName={"Create"}
                 validationFunction={disallowPercentSign(INVALID_GROUP_NAME_ERROR_MESSAGE)}
+                showExtraField={true}
+                extraPlaceholder="Group Description (optional)"
+                extraValidationFunction={disallowPercentSign(INVALID_GROUP_DESCRIPTION_ERROR_MESSAGE)}
             />
 
             <DataTable

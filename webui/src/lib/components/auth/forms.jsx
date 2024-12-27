@@ -91,13 +91,26 @@ export const AttachModal = ({ show, searchFn, resolveEntityFn = (ent => ent.id),
     );
 };
 
-export const EntityActionModal = ({ show, onHide, onAction, title, placeholder, actionName, validationFunction = null }) => {
+export const EntityActionModal = ({
+                                      show,
+                                      onHide,
+                                      onAction,
+                                      title,
+                                      placeholder,
+                                      actionName,
+                                      validationFunction = null,
+                                      showExtraField = false,
+                                      extraPlaceholder = "",
+                                      extraValidationFunction = null
+                                  }) => {
     const [error, setError] = useState(null);
     const idField = useRef(null);
+    const extraField = useRef(null);
 
     useEffect(() => {
-        if (!!idField.current && idField.current.value === "")
+        if (!!idField.current && idField.current.value === "") {
             idField.current.focus();
+        }
     });
 
     const onSubmit = () => {
@@ -108,7 +121,14 @@ export const EntityActionModal = ({ show, onHide, onAction, title, placeholder, 
                 return;
             }
         }
-        onAction(idField.current.value).catch(err => setError(err));
+        if (showExtraField && extraValidationFunction) {
+            const validationResult = extraValidationFunction(extraField.current.value);
+            if (!validationResult.isValid) {
+                setError(validationResult.errorMessage);
+                return;
+            }
+        }
+        onAction(idField.current.value, extraField.current.value).catch(err => setError(err));
     };
 
     return (
@@ -123,6 +143,9 @@ export const EntityActionModal = ({ show, onHide, onAction, title, placeholder, 
                     onSubmit()
                 }}>
                     <FormControl ref={idField} autoFocus placeholder={placeholder} type="text"/>
+                    {showExtraField &&
+                        <FormControl ref={extraField} placeholder={extraPlaceholder} type="text" className="mt-3"/>
+                    }
                 </Form>
 
                 {(!!error) && <AlertError className="mt-3" error={error}/>}
