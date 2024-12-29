@@ -187,12 +187,6 @@ func TestS3UploadAndDownload(t *testing.T) {
 	}
 }
 func TestMultipartUploadIfNoneMatch(t *testing.T) {
-	// timeResolution is a duration greater than the timestamp resolution of the backing
-	// store.  Multipart object on S3 is the time of create-MPU, waiting before completion
-	// ensures that lakeFS did not use the current time.  For other blockstores MPU
-	// completion time is used, meaning it will be hard to detect if the underlying and
-	// lakeFS objects share the same time.
-	const timeResolution = time.Second
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
@@ -210,8 +204,10 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 		{Path: "main/object1", Content: "data", IfNoneMatch: "", ExpectError: false},
 		{Path: "main/object1", Content: "data", IfNoneMatch: "*", ExpectError: true},
 		{Path: "main/object1", Content: "data", IfNoneMatch: "", ExpectError: false},
+		{Path: "main/object1", Content: "data", IfNoneMatch: "", ExpectError: false},
+		{Path: "main/object2", Content: "data", IfNoneMatch: "*", ExpectError: false},
 	}
-	for _, tc := range testCases {
+	for i, tc := range testCases {
 		input := &s3.CreateMultipartUploadInput{
 			Bucket: aws.String(repo),
 			Key:    aws.String(tc.Path),
@@ -228,11 +224,6 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 
 		completedParts := uploadMultipartParts(t, ctx, s3Client, logger, resp, parts, 0)
 
-		if isBlockstoreType(block.BlockstoreTypeS3) == nil {
-			// Object should have Last-Modified time at around time of MPU creation.  Ensure
-			// lakeFS fails the test if it fakes it by using the current time.
-			time.Sleep(2 * timeResolution)
-		}
 		completeInput := &s3.CompleteMultipartUploadInput{
 			Bucket:   resp.Bucket,
 			Key:      resp.Key,
@@ -243,9 +234,9 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 		}
 		_, err = s3Client.CompleteMultipartUpload(ctx, completeInput, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
 		if tc.ExpectError {
-			require.Error(t, err, "was expecting an error with path %s and header %s in test case # %s", tc.Path, tc.IfNoneMatch)
+			require.Error(t, err, "was expecting an error with path %s and header %s in test case # %d", tc.Path, tc.IfNoneMatch, i+1)
 		} else {
-			require.NoError(t, err, "wasn't expecting error with path %s and header %s in test case # %s", tc.Path, tc.IfNoneMatch)
+			require.NoError(t, err, "wasn't expecting error with path %s and header %s in test case # %d", tc.Path, tc.IfNoneMatch, i+1)
 		}
 	}
 }
@@ -267,7 +258,7 @@ func setHTTPHeaders(ifNoneMatch string) func(*middleware.Stack) error {
 }
 func TestS3IfNoneMatch(t *testing.T) {
 
-	ctx, _, repo := setupTest(t)
+	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	s3Endpoint := viper.GetString("s3_endpoint")
@@ -286,7 +277,7 @@ func TestS3IfNoneMatch(t *testing.T) {
 		{Path: "main/object2", Content: "data", IfNoneMatch: "*", ExpectError: false},
 		{Path: "main/object2", Content: "data", IfNoneMatch: "", ExpectError: false},
 		{Path: "main/object2", Content: "data", IfNoneMatch: "*", ExpectError: true},
-		{Path: "main/object3", Content: "data", IfNoneMatch: "hi", ExpectError: true},
+		{Path: "main/object3", Content: "data", IfNoneMatch: "unsupported string", ExpectError: true},
 	}
 	for i, tc := range testCases {
 		input := &s3.PutObjectInput{
@@ -294,13 +285,13 @@ func TestS3IfNoneMatch(t *testing.T) {
 			Key:    aws.String(tc.Path),
 			Body:   strings.NewReader(tc.Content),
 		}
-		fmt.Printf("Sending PutObject request for Path: %s with If-None-Match: %s\n", tc.Path, tc.IfNoneMatch) // Debug logging
+		logger.Info("Sending PutObject request for Path: %s with If-None-Match: %s\n", tc.Path, tc.IfNoneMatch)
 		_, err := s3Client.PutObject(ctx, input, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
 
 		if tc.ExpectError {
-			require.Error(t, err, "was expecting an error with path %s and header %s in test case # %s", tc.Path, tc.IfNoneMatch, i+1)
+			require.Error(t, err, "was expecting an error with path %s and header %s in test case # %d", tc.Path, tc.IfNoneMatch, i+1)
 		} else {
-			require.NoError(t, err, "wasn't expecting error with path %s and header %s in test case # %s", tc.Path, tc.IfNoneMatch, i+1)
+			require.NoError(t, err, "wasn't expecting error with path %s and header %s in test case # %d", tc.Path, tc.IfNoneMatch, i+1)
 		}
 	}
 }
