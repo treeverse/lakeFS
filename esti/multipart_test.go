@@ -166,7 +166,7 @@ func reverse(s string) string {
 	return string(runes)
 }
 
-func uploadMultipartParts(t *testing.T, ctx context.Context, svc *s3.Client, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte, firstIndex int) []types.CompletedPart {
+func uploadMultipartParts(t *testing.T, ctx context.Context, client *s3.Client, logger logging.Logger, resp *s3.CreateMultipartUploadOutput, parts [][]byte, firstIndex int) []types.CompletedPart {
 	count := len(parts)
 	completedParts := make([]types.CompletedPart, count)
 	errs := make([]error, count)
@@ -176,7 +176,7 @@ func uploadMultipartParts(t *testing.T, ctx context.Context, svc *s3.Client, log
 		go func(i int) {
 			defer wg.Done()
 			partNumber := firstIndex + i + 1
-			completedParts[i], errs[i] = uploadMultipartPart(ctx, logger, svc, resp, parts[i], partNumber)
+			completedParts[i], errs[i] = uploadMultipartPart(ctx, logger, client, resp, parts[i], partNumber)
 		}(i)
 	}
 	wg.Wait()

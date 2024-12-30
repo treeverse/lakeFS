@@ -36,10 +36,12 @@ import (
 type GetCredentials = func(id, secret, token string) *credentials.Credentials
 
 const (
-	numUploads           = 100
-	randomDataPathLength = 1020
-	branch               = "main"
-	gatewayTestPrefix    = branch + "/data/"
+	numUploads              = 100
+	randomDataPathLength    = 1020
+	branch                  = "main"
+	gatewayTestPrefix       = branch + "/data/"
+	errorPreconditionFailed = "An error occurred (PreconditionFailed) when calling the PutObject operation: At least one of the pre-conditions you specified did not hold"
+	errorNotImplemented     = "An error occurred (NotImplemented) when calling the PutObject operation: A header you provided implies functionality that is not implemented"
 )
 
 func newMinioClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
@@ -194,20 +196,17 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 	multipartNumberOfParts := 7
 	multipartPartSize := 5 * 1024 * 1024
 	type TestCase struct {
-		Path        string
-		Content     string
-		IfNoneMatch string
-		ExpectError bool
+		Path          string
+		IfNoneMatch   string
+		ExpectedError string
 	}
 
 	testCases := []TestCase{
-		{Path: "main/object1", Content: "data", IfNoneMatch: "", ExpectError: false},
-		{Path: "main/object1", Content: "data", IfNoneMatch: "*", ExpectError: true},
-		{Path: "main/object1", Content: "data", IfNoneMatch: "", ExpectError: false},
-		{Path: "main/object1", Content: "data", IfNoneMatch: "", ExpectError: false},
-		{Path: "main/object2", Content: "data", IfNoneMatch: "*", ExpectError: false},
+		{Path: "main/object1", IfNoneMatch: "", ExpectedError: ""},
+		{Path: "main/object1", IfNoneMatch: "*", ExpectedError: errorPreconditionFailed},
+		{Path: "main/object2", IfNoneMatch: "*", ExpectedError: ""},
 	}
-	for i, tc := range testCases {
+	for _, tc := range testCases {
 		input := &s3.CreateMultipartUploadInput{
 			Bucket: aws.String(repo),
 			Key:    aws.String(tc.Path),
@@ -215,7 +214,6 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 
 		resp, err := s3Client.CreateMultipartUpload(ctx, input)
 		require.NoError(t, err, "failed to create multipart upload")
-		logger.Info("Created multipart upload request")
 
 		parts := make([][]byte, multipartNumberOfParts)
 		for i := 0; i < multipartNumberOfParts; i++ {
@@ -233,11 +231,8 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 			},
 		}
 		_, err = s3Client.CompleteMultipartUpload(ctx, completeInput, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
-		if tc.ExpectError {
-			require.Error(t, err, "was expecting an error with path %s and header %s in test case # %d", tc.Path, tc.IfNoneMatch, i+1)
-		} else {
-			require.NoError(t, err, "wasn't expecting error with path %s and header %s in test case # %d", tc.Path, tc.IfNoneMatch, i+1)
-		}
+		require.ErrorContains(t, err, tc.ExpectedError)
+
 	}
 }
 
@@ -258,41 +253,33 @@ func setHTTPHeaders(ifNoneMatch string) func(*middleware.Stack) error {
 }
 func TestS3IfNoneMatch(t *testing.T) {
 
-	ctx, logger, repo := setupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
 
 	type TestCase struct {
-		Path        string
-		Content     string
-		IfNoneMatch string
-		ExpectError bool
+		Path          string
+		IfNoneMatch   string
+		ExpectedError string
 	}
 
 	testCases := []TestCase{
-		{Path: "main/object1", Content: "data", IfNoneMatch: "", ExpectError: false},
-		{Path: "main/object1", Content: "data", IfNoneMatch: "*", ExpectError: true},
-		{Path: "main/object2", Content: "data", IfNoneMatch: "*", ExpectError: false},
-		{Path: "main/object2", Content: "data", IfNoneMatch: "", ExpectError: false},
-		{Path: "main/object2", Content: "data", IfNoneMatch: "*", ExpectError: true},
-		{Path: "main/object3", Content: "data", IfNoneMatch: "unsupported string", ExpectError: true},
+		{Path: "main/object1", IfNoneMatch: "", ExpectedError: ""},
+		{Path: "main/object1", IfNoneMatch: "*", ExpectedError: errorPreconditionFailed},
+		{Path: "main/object2", IfNoneMatch: "*", ExpectedError: ""},
+		{Path: "main/object2", IfNoneMatch: "", ExpectedError: ""},
+		{Path: "main/object3", IfNoneMatch: "unsupported string", ExpectedError: errorNotImplemented},
 	}
-	for i, tc := range testCases {
+	for _, tc := range testCases {
 		input := &s3.PutObjectInput{
 			Bucket: aws.String(repo),
 			Key:    aws.String(tc.Path),
-			Body:   strings.NewReader(tc.Content),
 		}
-		logger.Info("Sending PutObject request for Path: %s with If-None-Match: %s\n", tc.Path, tc.IfNoneMatch)
 		_, err := s3Client.PutObject(ctx, input, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
+		require.ErrorContains(t, err, tc.ExpectedError)
 
-		if tc.ExpectError {
-			require.Error(t, err, "was expecting an error with path %s and header %s in test case # %d", tc.Path, tc.IfNoneMatch, i+1)
-		} else {
-			require.NoError(t, err, "wasn't expecting error with path %s and header %s in test case # %d", tc.Path, tc.IfNoneMatch, i+1)
-		}
 	}
 }
 
