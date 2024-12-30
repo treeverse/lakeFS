@@ -571,18 +571,22 @@ func TestAPIAuthService_GetUser(t *testing.T) {
 func TestAPIAuthService_GetGroup(t *testing.T) {
 	mockClient, s := NewTestApiService(t, false)
 	tests := []struct {
-		name               string
-		groupName          string
-		responseStatusCode int
-		responseName       string
-		expectedErr        error
+		name                string
+		groupName           string
+		groupDescription    string
+		responseStatusCode  int
+		responseName        string
+		responseDescription string
+		expectedErr         error
 	}{
 		{
-			name:               "successful",
-			groupName:          "foo",
-			responseName:       "foo",
-			responseStatusCode: http.StatusOK,
-			expectedErr:        nil,
+			name:                "successful",
+			groupName:           "foo",
+			groupDescription:    "foo group",
+			responseName:        "foo",
+			responseDescription: "foo group",
+			responseStatusCode:  http.StatusOK,
+			expectedErr:         nil,
 		},
 		{
 			name:               "invalid_group",
@@ -603,7 +607,8 @@ func TestAPIAuthService_GetGroup(t *testing.T) {
 					StatusCode: tt.responseStatusCode,
 				},
 				JSON200: &auth.Group{
-					Name: tt.responseName,
+					Name:        tt.responseName,
+					Description: swag.String(tt.responseDescription),
 				},
 			}
 			mockClient.EXPECT().GetGroupWithResponse(gomock.Any(), tt.groupName).Return(response, nil)
@@ -617,6 +622,9 @@ func TestAPIAuthService_GetGroup(t *testing.T) {
 			}
 			if group.DisplayName != tt.responseName {
 				t.Errorf("expected response group name:%s, got:%s", tt.responseName, group.DisplayName)
+			}
+			if swag.StringValue(group.Description) != tt.responseDescription {
+				t.Errorf("expected response group description:%s, got:%s", tt.responseDescription, swag.StringValue(group.Description))
 			}
 		})
 	}
