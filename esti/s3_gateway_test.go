@@ -40,8 +40,8 @@ const (
 	randomDataPathLength    = 1020
 	branch                  = "main"
 	gatewayTestPrefix       = branch + "/data/"
-	errorPreconditionFailed = "An error occurred (PreconditionFailed) when calling the PutObject operation: At least one of the pre-conditions you specified did not hold"
-	errorNotImplemented     = "An error occurred (NotImplemented) when calling the PutObject operation: A header you provided implies functionality that is not implemented"
+	errorPreconditionFailed = "At least one of the pre-conditions you specified did not hold"
+	errorNotImplemented     = "A header you provided implies functionality that is not implemented"
 )
 
 func newMinioClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
