@@ -130,17 +130,17 @@ const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo, creatingRepo, create
     );
 };
 
-const RepositoryList = ({ onPaginate, prefix, after, refresh, onCreateSampleRepo, onCreateEmptyRepo, toggleShowActionsBar, creatingRepo, createRepoError }) => {
+const RepositoryList = ({ onPaginate, search, after, refresh, onCreateSampleRepo, onCreateEmptyRepo, toggleShowActionsBar, creatingRepo, createRepoError }) => {
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
-        return repositories.list(prefix, after);
-    }, [refresh, prefix, after]);
+        return repositories.list(search, after);
+    }, [refresh, search, after]);
     useEffect(() => {
       toggleShowActionsBar();
     }, [toggleShowActionsBar]);
     if (loading) return <Loading/>;
     if (error) return <AlertError error={error}/>;
-    if (!after && !prefix && results.length === 0) {
+    if (!after && !search && results.length === 0) {
         return <GetStarted onCreateSampleRepo={onCreateSampleRepo} onCreateEmptyRepo={onCreateEmptyRepo} creatingRepo={creatingRepo} createRepoError={createRepoError}/>;
     }
 
@@ -190,10 +190,10 @@ const RepositoriesPage = () => {
     const [creatingRepo, setCreatingRepo] = useState(false);
     const [showActionsBar, setShowActionsBar] = useState(false);
 
-    const routerPfx = (router.query.prefix) ? router.query.prefix : "";
-    const [prefix, setPrefix] = useDebouncedState(
+    const routerPfx = (router.query.search) ? router.query.search : "";
+    const [search, setSearch] = useDebouncedState(
         routerPfx,
-        (prefix) => router.push({pathname: `/repositories`, query: {prefix}})
+        (search) => router.push({pathname: `/repositories`, query: {search}})
     );
 
     const { response, error: err, loading } = useAPI(() => config.getStorageConfig());
@@ -254,8 +254,8 @@ const RepositoriesPage = () => {
                                 <Form.Control
                                     placeholder="Find a repository..."
                                     autoFocus
-                                    value={prefix}
-                                    onChange={event => setPrefix(event.target.value)}
+                                    value={search}
+                                    onChange={event => setSearch(event.target.value)}
                                 />
                             </InputGroup>
                         </Col>
@@ -267,12 +267,12 @@ const RepositoriesPage = () => {
             </ActionsBar> }
 
                 <RepositoryList
-                    prefix={routerPfx}
+                    search={routerPfx}
                     refresh={refresh}
                     after={(router.query.after) ? router.query.after : ""}
                     onPaginate={after => {
                         const query = {after};
-                        if (router.query.prefix) query.prefix = router.query.prefix;
+                        if (router.query.search) query.search = router.query.search;
                         router.push({pathname: `/repositories`, query});
                     }}
                     onCreateSampleRepo={createSampleRepoButtonCallback}

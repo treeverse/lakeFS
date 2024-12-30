@@ -483,7 +483,7 @@ pub async fn get_repository_metadata(configuration: &configuration::Configuratio
     }
 }
 
-pub async fn list_repositories(configuration: &configuration::Configuration, prefix: Option<&str>, after: Option<&str>, amount: Option<i32>) -> Result<models::RepositoryList, Error<ListRepositoriesError>> {
+pub async fn list_repositories(configuration: &configuration::Configuration, prefix: Option<&str>, after: Option<&str>, amount: Option<i32>, search: Option<&str>) -> Result<models::RepositoryList, Error<ListRepositoriesError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -499,6 +499,9 @@ pub async fn list_repositories(configuration: &configuration::Configuration, pre
     }
     if let Some(ref local_var_str) = amount {
         local_var_req_builder = local_var_req_builder.query(&[("amount", &local_var_str.to_string())]);
+    }
+    if let Some(ref local_var_str) = search {
+        local_var_req_builder = local_var_req_builder.query(&[("search", &local_var_str.to_string())]);
     }
     if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
         local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());

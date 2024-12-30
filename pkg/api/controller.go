@@ -1112,6 +1112,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 			Id:           u.Username,
 			Email:        u.Email,
 			CreationDate: u.CreatedAt.Unix(),
+			FriendlyName: u.FriendlyName,
 		})
 	}
 	writeResponse(w, r, http.StatusOK, response)
@@ -1893,7 +1894,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 	ctx := r.Context()
 	c.LogAction(ctx, "list_repos", r, "", "", "")
 
-	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), paginationAfter(params.After))
+	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), search(params.Search), paginationAfter(params.After))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -5464,6 +5465,13 @@ func paginationPrefix(v *apigen.PaginationPrefix) string {
 }
 
 func paginationDelimiter(v *apigen.PaginationDelimiter) string {
+	if v == nil {
+		return ""
+	}
+	return string(*v)
+}
+
+func search(v *apigen.SearchString) string {
 	if v == nil {
 		return ""
 	}
