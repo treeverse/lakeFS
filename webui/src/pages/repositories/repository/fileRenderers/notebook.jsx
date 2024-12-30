@@ -26,6 +26,8 @@ import "ace-builds/src-noconflict/theme-github";
 import "ace-builds/src-min-noconflict/ext-language_tools";
 import { PyodideContext } from "../../../../lib/hooks/pyodideContext";
 import { guessType } from ".";
+import { DuckDBRenderer } from "./data";
+const snippetStatObjectLabel = "Stat current object";
 const snippetReadObjectLabel = "Read current object";
 const snippetNumpyMatplotlibLabel = "Numpy + Matplotlib";
 const snippetMicropipListLabel = "pip list";
@@ -95,23 +97,12 @@ const cellStyle = {
     overflow: 'hidden',
 };
 
-const EditorToolbar = ({ onRun, onClear, onSnippet, loading }) => {
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    const ctrlLabelKeyBinding = isMac ? "Cmd" : "Ctrl";
-    const [selectedSnippet, setSelectedSnippet] = useState(null);
-    const runButton = (
-        <Button type="submit" variant="success" style={{ margin: '3px' }} disabled={loading}>
-            <ChevronRightIcon /> {" "}
-            {loading ? "Loading..." : `Run (${ctrlLabelKeyBinding}+Enter)`}
-        </Button>
-    );
-    const clearButton = (
-        <Button type="reset" variant="danger" style={{ margin: '3px' }} disabled={false} onClick={() => setSelectedSnippet(null)}>
-            <TrashIcon /> {" "}
-            Clear
-        </Button>
-    );
+const EditorToolbar = ({ onRun, onClear, onSnippet, loading, loadingMode, defaultSnippetLabel }) => {
     const snippets = [
+        {
+            label: snippetStatObjectLabel,
+            icon: <InfoIcon />,
+        },
         {
             label: snippetReadObjectLabel,
             icon: <InfoIcon />,
@@ -136,11 +127,34 @@ const EditorToolbar = ({ onRun, onClear, onSnippet, loading }) => {
             label: snippetMagicLoadLocal,
             icon: <InfoIcon />,
         }
-    ]
+    ];
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const ctrlLabelKeyBinding = isMac ? "Cmd" : "Ctrl";
+    const [selectedSnippet, setSelectedSnippet] = useState(snippets.find(snippet => snippet.label === defaultSnippetLabel) || null);
+    const runButton = (
+        <Button type="submit" variant="success" style={{ margin: '3px' }} disabled={loading}>
+            <ChevronRightIcon /> {" "}
+            {loading ? loadingMode : `Run (${ctrlLabelKeyBinding}+Enter)`}
+        </Button>
+    );
+    const clearButton = (
+        <Button type="reset" variant="danger" style={{ margin: '3px' }} disabled={false} onClick={() => setSelectedSnippet(null)}>
+            <TrashIcon /> {" "}
+            Clear
+        </Button>
+    );
+    useEffect(() => {
+        if(snippets.find(snippet => snippet.label === defaultSnippetLabel)){
+            onSnippet(snippets.find(snippet => snippet.label === defaultSnippetLabel));
+        }
+    }, [defaultSnippetLabel]);
     return (
         <div style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: '#f5f5f5', padding: '5px' }}>
             <div style={{ ...toolbarStyle, justifyContent: 'flex-start' }}>
-                <DropdownButton id="dropdown-basic-button" title={selectedSnippet ? "Example: " + selectedSnippet.label : "Examples (Python)"}>
+                <DropdownButton 
+                id="dropdown-basic-button" 
+                title={selectedSnippet ? "Example: " + selectedSnippet.label : "Examples (Python)"}
+                >
                     {snippets.map((snippet, idx) => {
                         return (
                             <Dropdown.Item key={idx} style={buttonStyle} variant="secondary" onClick={() => {
@@ -198,6 +212,7 @@ show_b64_image(img_b64)`;
 }
 const microPiplistSnippet = `import micropip
 micropip.list()`;
+
 const readCurrParquetTpl = (repoId, refId, path, fileExtension) => {
     let warn = "";
     if (guessType(null, fileExtension) != FileType.PARQUET) {
@@ -210,25 +225,34 @@ obj = ref.object(path="${path}")
 df = pd.read_parquet(obj.reader(mode='rb'))
 df.head()`;
 }
-const initialCodeReadObjectTpl = (repoId, refId, path) => {
+const statsCurrentObjectTpl = (repoId, refId, path) => {
     return `# Example: Read Current Object
 import lakefs
 ref = lakefs.repository("${repoId}").branch("${refId}")
 obj = ref.object(path="${path}")
+print(obj.stat())`;
+}
+const initialCodeReadObjectTpl = (repoId, refId, path) => {
+    return `# Example: Read Current Object
+import lakefs
+ref = lakefs.repository("${repoId}").branch("${refId}")
+obj = ref.object(path = "${path}")
 print("--- object stats ---")
 print(obj.stat())
 print("--- read object ---")
 try:
-  print(obj.reader(mode='r').read())
+    print(obj.reader(mode = 'r').read())
 except UnicodeDecodeError:
-  # if reading iamge / parquet etc obj.reader(mode='rb')
-  print("Invalid UTF-8, try binary 'mode=rb'")
+  # if reading iamge / parquet etc obj.reader(mode = 'rb')
+    print("Invalid UTF-8, try binary 'mode=rb'")
 `;
 }
 const magicLoadLocalScriptSnippet = () => {
     return `# load local python script file(s)
-# %%load_local file1.py file2.py file3.py
-%%load_local hello_world.py`;
+# %% load_local file1.py file2.py file3.py
+%%load_local hello_world.py
+# assuming function say_hello is defined in hello_world.py
+say_hello("axolotl")`;
 }
 const numpyMatplotlibSnippet = () => {
     return `
@@ -240,13 +264,13 @@ x = np.linspace(0, 2 * np.pi, 100)  # 100 values from 0 to 2π
 y = np.sin(x)  # sine of each x value
 
 # Create the plot
-plt.plot(x, y) 
+plt.plot(x, y)
 plt.xlabel('x')
 plt.ylabel('y')
 plt.title('Plot Title')
 
 # show plot as image (runtime utility function)
-# TODO: the default interactive plt.show() also works but weird. 
+# TODO: the default interactive plt.show() also works but weird.
 show_plot()`;
 };
 
@@ -313,7 +337,7 @@ export const NotebookRenderer = ({ repoId, refId, path, fileExtension }) => {
     const { pyodide, isPyodideLoaded } = useContext(PyodideContext);
     const [error, setError] = useState(null);
     const initialCodeContent = initialCodeReadObjectTpl(repoId, refId, path);
-    const [code, setCode] = useState(initialCodeContent);
+    const [code, setCode] = useState("");
     const [output, setOutput] = useState(null);
     const [loading, setLoading] = useState(false);
     const outputRef = useRef([]);
@@ -391,7 +415,7 @@ export const NotebookRenderer = ({ repoId, refId, path, fileExtension }) => {
         setCode("");
         clearOutputs();
     }
-    
+
     const handleMagic = async ({ funcName, args }, repo, ref, presign) => {
         switch (funcName) {
             case "load_local":
@@ -405,7 +429,7 @@ export const NotebookRenderer = ({ repoId, refId, path, fileExtension }) => {
                     // extract the extentions from the file path
                     const extension = filePath.split('.').pop();
                     if (guessType(null, extension) !== FileType.IPYNB && extension !== 'py') {
-                        throw new Error(`load_local: only '.py' file extension; current not supported: ${extension}`);
+                        throw new Error(`load_local: only '.py' file extension; current not supported: ${extension} `);
                     }
                     console.log(`start loading file: '${filePath}'`);
                     const obj = await objects.get(repo, ref, filePath, presign);
@@ -427,7 +451,7 @@ export const NotebookRenderer = ({ repoId, refId, path, fileExtension }) => {
                 clearOutputs();
                 break;
             default:
-                console.log(`Invalid magic command: ${funcName}`);
+                console.log(`Invalid magic command: ${funcName} `);
         }
     }
     const execCellCode = async (editorContent) => {
@@ -444,8 +468,8 @@ export const NotebookRenderer = ({ repoId, refId, path, fileExtension }) => {
                         const presign = false;
                         try {
                             await handleMagic(cmd, repoId, refId, presign);
-                        }catch(err){
-                            throw new Error(`Error executing magic '${cmd.funcName}': ${err}`);
+                        } catch (err) {
+                            throw new Error(`Error executing magic '${cmd.funcName}': ${err} `);
                         }
                         console.log('Magic command executed.');
                     } else {
@@ -508,7 +532,9 @@ export const NotebookRenderer = ({ repoId, refId, path, fileExtension }) => {
                     <div>
                         <div style={cellStyle}>
                             <EditorToolbar
+                                defaultSnippetLabel={snippetStatObjectLabel}
                                 loading={loading || !isPyodideLoaded}
+                                loadingMode={!isPyodideLoaded ? "Loading pyodide" : "Executing"}
                                 onSnippet={(snippet) => {
                                     clearAll();
                                     if (snippet.label === snippetReadObjectLabel) {
@@ -520,13 +546,12 @@ export const NotebookRenderer = ({ repoId, refId, path, fileExtension }) => {
                                     } else if (snippet.label === snippetReadCurrentParquetLabel) {
                                         setCode(readCurrParquetTpl(repoId, refId, path, fileExtension));
                                     } else if (snippet.label === snippetReadCurrentImageLabel) {
-                                        console.log(" RENDERING IMAGE MKAY?")
-                                        console.log(readCurrentImageSnippetTpl(repoId, refId, path, fileExtension));
                                         setCode(readCurrentImageSnippetTpl(repoId, refId, path, fileExtension));
                                     } else if (snippet.label === snippetMagicLoadLocal) {
                                         setCode(magicLoadLocalScriptSnippet());
-
-                                    } else
+                                    } else if (snippet.label === snippetStatObjectLabel) {
+                                        setCode(statsCurrentObjectTpl(repoId, refId, path));
+                                    }else
                                         setCode("TODO: " + snippet.label)
                                 }
                                 }
@@ -555,10 +580,10 @@ export const NotebookRenderer = ({ repoId, refId, path, fileExtension }) => {
                                     name="blah2"
                                     onLoad={(editor) => { console.log("ace editor loaded") }}
                                     onChange={(newCode) => { setCode(newCode) }}
-                                    defaultValue={initialCodeReadObjectTpl(repoId, refId, path)}
+                                    //defaultValue={}
                                     fontSize={14}
                                     width="100%"
-                                    height="200px"
+                                    height="300px"
                                     // lineHeight={19}
                                     showPrintMargin={true}
                                     showGutter={true}
