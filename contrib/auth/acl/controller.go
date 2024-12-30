@@ -75,6 +75,7 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params a
 	for _, g := range groups {
 		response.Results = append(response.Results, apigen.Group{
 			Name:         g.DisplayName,
+			Description:  g.Description,
 			CreationDate: g.CreatedAt.Unix(),
 		})
 	}

@@ -873,6 +873,7 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params a
 		response.Results = append(response.Results, apigen.Group{
 			Id:           g.ID,
 			Name:         swag.String(g.DisplayName),
+			Description:  g.Description,
 			CreationDate: g.CreatedAt.Unix(),
 		})
 	}

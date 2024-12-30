@@ -467,6 +467,7 @@ func (a *APIAuthService) ListGroups(ctx context.Context, params *model.Paginatio
 		groups[i] = &model.Group{
 			CreatedAt:   time.Unix(r.CreationDate, 0),
 			DisplayName: r.Name,
+			Description: r.Description,
 			ID:          groupIDOrDisplayName(r),
 		}
 	}
