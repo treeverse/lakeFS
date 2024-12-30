@@ -382,7 +382,8 @@ export const NotebookRenderer = ({ repoId, refId, path, fileExtension }) => {
         if (pyodide && user && !authCookie) {
             const cookie = getAuthCookie();
             // no need in cookie, the browser sends the cookies as part of the request, so only the API endpoint is needed
-            pyodide.runPythonAsync(initLakeFSPythonPatchBrowserDefaultAuthTpl("http://localhost:3000")).then(() => {
+            const lakeFSHost = `${window.location.protocol}//${window.location.host}`
+            pyodide.runPythonAsync(initLakeFSPythonPatchBrowserDefaultAuthTpl(lakeFSHost)).then(() => {
                 setAuthCookie(cookie);
                 pyodide.runPythonAsync(initRuntimePatches()).then(() => {
                     console.log("success initiating runtime")
