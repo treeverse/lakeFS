@@ -174,7 +174,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ matrix.lakefs_version }}
-      REPO: treeverse
+      REGISTRY: treeverse
       SPARK_TAG: 3
     steps:
       - name: Check-out code
@@ -207,7 +207,7 @@ jobs:
         with:
           compose-directory: test/spark
         env:
-          REPO: treeverse
+          REGISTRY: treeverse
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           LAKEFS_DATABASE_TYPE: postgres
@@ -252,7 +252,7 @@ jobs:
       CLIENT_VERSION: ${{ matrix.client_version }}
       TAG: ${{ needs.deploy-image.outputs.tag }}
       IMAGE_ID: ${{ needs.deploy-image.outputs.image_id }}
-      REPO: treeverse
+      REGISTRY: treeverse
       SPARK_TAG: 3
     steps:
       - name: Check-out code
@@ -297,7 +297,7 @@ jobs:
         with:
           compose-directory: test/spark
         env:
-          REPO: treeverse
+          REGISTRY: treeverse
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           LAKEFS_DATABASE_TYPE: postgres

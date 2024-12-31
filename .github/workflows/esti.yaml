@@ -281,7 +281,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -328,7 +328,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
 
     steps:
       - name: Check-out code
@@ -438,7 +438,7 @@ jobs:
             sonnet_jar: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       SPARK_TAG: ${{ matrix.spark.tag }}
     steps:
       - name: Check-out code
@@ -547,7 +547,7 @@ jobs:
     env:
       LAKEFS_TAG: ${{ needs.deploy-image.outputs.tag }}
       EXPORT_TAG: ${{ needs.deploy-rclone-export-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
 
     steps:
       - name: Check-out code
@@ -596,7 +596,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -654,7 +654,7 @@ jobs:
     needs: [check-secrets, deploy-image, login-to-amazon-ecr]
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -694,7 +694,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       SPARK_TAG: 3.2.1
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
       - name: Check-out code
@@ -753,7 +753,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       LAKEFS_DATABASE_CONNECTION_STRING: "" # Override lakeFS docker compose settings
@@ -830,7 +830,7 @@ jobs:
         branch_ownership: [false, true]
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
@@ -904,7 +904,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
@@ -958,7 +958,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -1019,7 +1019,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -1098,7 +1098,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       LAKEFS_INSTALLATION_ACCESS_KEY_ID: AKIAIOSFDNN7EXAMPLEQ
       LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
@@ -1398,7 +1398,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
