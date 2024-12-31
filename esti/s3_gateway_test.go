@@ -233,6 +233,8 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 		_, err = s3Client.CompleteMultipartUpload(ctx, completeInput, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
 		if tc.ExpectedError != "" {
 			require.ErrorContains(t, err, tc.ExpectedError)
+		} else {
+			require.NoError(t, err, "expected no error but got %w")
 		}
 	}
 }
@@ -281,6 +283,8 @@ func TestS3IfNoneMatch(t *testing.T) {
 		_, err := s3Client.PutObject(ctx, input, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
 		if tc.ExpectedError != "" {
 			require.ErrorContains(t, err, tc.ExpectedError)
+		} else {
+			require.NoError(t, err, "expected no error but got %w")
 		}
 	}
 }
