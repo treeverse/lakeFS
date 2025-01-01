@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -40,7 +41,7 @@ func shouldReplaceMetadata(req *http.Request) bool {
 	return req.Header.Get(amzMetadataDirectiveHeaderPrefix) == "REPLACE"
 }
 
-func (o *PathOperation) finishUpload(req *http.Request, mTime *time.Time, checksum, physicalAddress string, size int64, relative bool, metadata map[string]string, contentType string) error {
+func (o *PathOperation) finishUpload(req *http.Request, mTime *time.Time, checksum, physicalAddress string, size int64, relative bool, metadata map[string]string, contentType string, allowOverwrite bool) error {
 	var writeTime time.Time
 	if mTime == nil {
 		writeTime = time.Now()
@@ -59,7 +60,7 @@ func (o *PathOperation) finishUpload(req *http.Request, mTime *time.Time, checks
 		ContentType(contentType).
 		Build()
 
-	err := o.Catalog.CreateEntry(req.Context(), o.Repository.Name, o.Reference, entry)
+	err := o.Catalog.CreateEntry(req.Context(), o.Repository.Name, o.Reference, entry, graveler.WithIfAbsent(!allowOverwrite))
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not update metadata")
 		return err
