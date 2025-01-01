@@ -316,7 +316,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	uploadPartInput := &s3.UploadPartInput{
 		Bucket:        aws.String(bucket),
 		Key:           aws.String(key),
-		PartNumber:    aws.Int32(int32(partNumber)),
+		PartNumber:    aws.Int32(int32(partNumber)), //nolint:gosec
 		UploadId:      aws.String(uploadID),
 		Body:          reader,
 		ContentLength: aws.Int64(sizeBytes),
@@ -481,7 +481,7 @@ func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectP
 		Bucket:     aws.String(bucket),
 		Key:        aws.String(key),
 		UploadId:   aws.String(uploadID),
-		PartNumber: aws.Int32(int32(partNumber)),
+		PartNumber: aws.Int32(int32(partNumber)), //nolint:gosec
 	}
 	uploadPart, err := presigner.PresignUploadPart(ctx, uploadInput)
 	if err != nil {
@@ -609,7 +609,7 @@ func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.
 	uploadPartCopyObject := s3.UploadPartCopyInput{
 		Bucket:     aws.String(bucket),
 		Key:        aws.String(key),
-		PartNumber: aws.Int32(int32(partNumber)),
+		PartNumber: aws.Int32(int32(partNumber)), //nolint:gosec
 		UploadId:   aws.String(uploadID),
 		CopySource: aws.String(fmt.Sprintf("%s/%s", srcKey.GetStorageNamespace(), srcKey.GetKey())),
 	}
@@ -752,7 +752,7 @@ func convertFromBlockMultipartUploadCompletion(multipartList *block.MultipartUpl
 	for _, p := range multipartList.Part {
 		parts = append(parts, types.CompletedPart{
 			ETag:       aws.String(p.ETag),
-			PartNumber: aws.Int32(int32(p.PartNumber)),
+			PartNumber: aws.Int32(int32(p.PartNumber)), //nolint:gosec
 		})
 	}
 	return &types.CompletedMultipartUpload{Parts: parts}
