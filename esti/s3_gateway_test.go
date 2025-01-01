@@ -202,9 +202,9 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 	}
 
 	testCases := []TestCase{
-		{Path: "main/object1", IfNoneMatch: "", ExpectedError: ""},
+		{Path: "main/object1"},
 		{Path: "main/object1", IfNoneMatch: "*", ExpectedError: errorPreconditionFailed},
-		{Path: "main/object2", IfNoneMatch: "*", ExpectedError: ""},
+		{Path: "main/object2", IfNoneMatch: "*"},
 	}
 	for _, tc := range testCases {
 		input := &s3.CreateMultipartUploadInput{
@@ -269,10 +269,10 @@ func TestS3IfNoneMatch(t *testing.T) {
 	}
 
 	testCases := []TestCase{
-		{Path: "main/object1", IfNoneMatch: "", ExpectedError: ""},
+		{Path: "main/object1"},
 		{Path: "main/object1", IfNoneMatch: "*", ExpectedError: errorPreconditionFailed},
-		{Path: "main/object2", IfNoneMatch: "*", ExpectedError: ""},
-		{Path: "main/object2", IfNoneMatch: "", ExpectedError: ""},
+		{Path: "main/object2", IfNoneMatch: "*"},
+		{Path: "main/object2"},
 		{Path: "main/object3", IfNoneMatch: "unsupported string", ExpectedError: errorNotImplemented},
 	}
 	for _, tc := range testCases {

@@ -298,13 +298,15 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("put_object", o.Principal, o.Repository.Name, o.Reference)
 	storageClass := StorageClassFromHeader(req.Header)
 	opts := block.PutOpts{StorageClass: storageClass}
-	// before uploading object, check whether if-none-match header is added,
-	// in order to not overwrite object
+	// check and validate whether if-none-match header provided
 	allowOverwrite, err := o.checkIfAbsent(req)
 	if err != nil {
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNotImplemented))
 		return
 	}
+	// before writing body, ensure preconditions - this means we essentially check for object existence twice:
+	// once here, before uploading the body to save resources and time,
+	// and then graveler will check again when passed a SetOptions.
 	if !allowOverwrite {
 		_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
 		if err == nil {
