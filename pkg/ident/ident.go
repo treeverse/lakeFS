@@ -120,9 +120,6 @@ func (b *AddressWriter) MarshalStringOpt(v string) *AddressWriter {
 }
 
 func (b *AddressWriter) MarshalInt64(v int64) *AddressWriter {
-	if v < 0 { // Should never reach
-		panic("value is negative")
-	}
 	MarshalUint64(b, uint64(v)) //nolint:gosec
 	return b
 }
