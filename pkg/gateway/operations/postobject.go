@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
@@ -94,6 +95,23 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
 		return
 	}
+	// check and validate whether if-none-match header provided
+	allowOverwrite, err := o.checkIfAbsent(req)
+	if err != nil {
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNotImplemented))
+		return
+	}
+	// before writing body, ensure preconditions - this means we essentially check for object existence twice:
+	// once here, before uploading the body to save resources and time,
+	// and then graveler will check again when passed a SetOptions.
+	if !allowOverwrite {
+		_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
+		if err == nil {
+			// In case object exists in catalog, no error returns
+			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
+			return
+		}
+	}
 	objName := multiPart.PhysicalAddress
 	req = req.WithContext(logging.AddFields(req.Context(), logging.Fields{logging.PhysicalAddressFieldKey: objName}))
 	xmlMultipartComplete, err := io.ReadAll(req.Body)
@@ -124,7 +142,11 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 		return
 	}
 	checksum := strings.Split(resp.ETag, "-")[0]
-	err = o.finishUpload(req, resp.MTime, checksum, objName, resp.ContentLength, true, multiPart.Metadata, multiPart.ContentType)
+	err = o.finishUpload(req, resp.MTime, checksum, objName, resp.ContentLength, true, multiPart.Metadata, multiPart.ContentType, allowOverwrite)
+	if errors.Is(err, graveler.ErrPreconditionFailed) {
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
+		return
+	}
 	if errors.Is(err, graveler.ErrWriteToProtectedBranch) {
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrWriteToProtectedBranch))
 		return
