@@ -22,7 +22,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.22.6"
+          go-version: "1.23"
         id: go
 
       - uses: actions/setup-node@v4
@@ -78,7 +78,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.22.6"
+          go-version: "1.23"
         id: go
 
       - name: Retrieve generated code
