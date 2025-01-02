@@ -34,11 +34,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
@@ -1480,7 +1482,7 @@ func TestController_ListBranchesHandler(t *testing.T) {
 
 		for i := 0; i < 7; i++ {
 			branchName := "main" + strconv.Itoa(i+1)
-			_, err := deps.catalog.CreateBranch(ctx, repo, branchName, "main")
+			_, err := deps.catalog.CreateBranch(ctx, repo, branchName, "main", graveler.WithHidden(i%2 != 0))
 			testutil.MustDo(t, "create branch "+branchName, err)
 		}
 		resp, err := clt.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{
@@ -1500,11 +1502,24 @@ func TestController_ListBranchesHandler(t *testing.T) {
 		if len(results) != 2 {
 			t.Fatalf("expected 2 branches to return, got %d", len(results))
 		}
-		retReference := results[0]
-		const expectedID = "main2"
-		if retReference.Id != expectedID {
-			t.Fatalf("expected '%s' as the first result for the second page, got '%s' instead", expectedID, retReference.Id)
+		expectedRefs := []string{"main3", "main5"}
+		gotRefs := []string{results[0].Id, results[1].Id}
+		require.Equal(t, expectedRefs, gotRefs)
+
+		// List all branches
+		resp, err = clt.ListBranchesWithResponse(ctx, repo, &apigen.ListBranchesParams{
+			After:      apiutil.Ptr[apigen.PaginationAfter]("main1"),
+			Amount:     apiutil.Ptr[apigen.PaginationAmount](2),
+			ShowHidden: swag.Bool(true),
+		})
+		verifyResponseOK(t, resp, err)
+		results = resp.JSON200.Results
+		if len(results) != 2 {
+			t.Fatalf("expected 2 branches to return, got %d", len(results))
 		}
+		expectedRefs = []string{"main2", "main3"}
+		gotRefs = []string{results[0].Id, results[1].Id}
+		require.Equal(t, expectedRefs, gotRefs)
 	})
 
 	t.Run("list branches repo doesnt exist", func(t *testing.T) {
@@ -1701,156 +1716,168 @@ func TestController_BranchesDiffBranchHandler(t *testing.T) {
 func TestController_CreateBranchHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
-	t.Run("create branch and diff refs success", func(t *testing.T) {
-		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
-		testutil.Must(t, err)
-		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "a/b"}))
-		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, false)
-		testutil.Must(t, err)
+	for _, hidden := range []bool{true, false} {
+		t.Run(fmt.Sprintf("hidden=%v", hidden), func(t *testing.T) {
+			t.Run("create branch and diff refs success", func(t *testing.T) {
+				repo := testUniqueRepoName()
+				_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
+				testutil.Must(t, err)
+				testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "a/b"}))
+				_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, false)
+				testutil.Must(t, err)
 
-		const newBranchName = "main2"
-		resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
-			Name:   newBranchName,
-			Source: "main",
+				const newBranchName = "main2"
+				resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+					Name:   newBranchName,
+					Source: "main",
+					Hidden: swag.Bool(hidden),
+				})
+				verifyResponseOK(t, resp, err)
+				reference := string(resp.Body)
+				if len(reference) == 0 {
+					t.Fatalf("branch %s creation got no reference", newBranchName)
+				}
+				const objPath = "some/path"
+				const content = "hello world!"
+
+				uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(content), repo, newBranchName)
+				verifyResponseOK(t, uploadResp, err)
+
+				if _, err := deps.catalog.Commit(ctx, repo, "main2", "commit 1", "some_user", nil, nil, nil, false); err != nil {
+					t.Fatalf("failed to commit 'repo1': %s", err)
+				}
+				resp2, err := clt.DiffRefsWithResponse(ctx, repo, "main", newBranchName, &apigen.DiffRefsParams{})
+				verifyResponseOK(t, resp2, err)
+				results := resp2.JSON200.Results
+				if len(results) != 1 {
+					t.Fatalf("unexpected length of results: %d", len(results))
+				}
+				if results[0].Path != objPath {
+					t.Fatalf("wrong result: %s", results[0].Path)
+				}
+			})
+
+			t.Run("create branch missing commit", func(t *testing.T) {
+				repo := testUniqueRepoName()
+				_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
+				testutil.Must(t, err)
+				resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+					Name:   "main3",
+					Source: "a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447",
+					Hidden: swag.Bool(hidden),
+				})
+				if err != nil {
+					t.Fatal("CreateBranch failed with error:", err)
+				}
+				if resp.JSON404 == nil {
+					t.Fatal("CreateBranch expected to fail with not found")
+				}
+			})
+
+			t.Run("create branch missing repo", func(t *testing.T) {
+				repo := testUniqueRepoName()
+				resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+					Name:   "main8",
+					Source: "main",
+					Hidden: swag.Bool(hidden),
+				})
+				if err != nil {
+					t.Fatal("CreateBranch failed with error:", err)
+				}
+				if resp.JSON404 == nil {
+					t.Fatal("CreateBranch expected not found")
+				}
+			})
+
+			t.Run("create branch conflict with branch", func(t *testing.T) {
+				repo := testUniqueRepoName()
+				_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
+				testutil.Must(t, err)
+
+				resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+					Name:   "main",
+					Source: "main",
+					Hidden: swag.Bool(hidden),
+				})
+				if err != nil {
+					t.Fatal("CreateBranch failed with error:", err)
+				}
+				if resp.JSON409 == nil {
+					t.Fatal("CreateBranch expected conflict")
+				}
+			})
+
+			t.Run("create branch conflict with tag", func(t *testing.T) {
+				repo := testUniqueRepoName()
+				_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
+				testutil.Must(t, err)
+
+				name := "tag123"
+				_, err = deps.catalog.CreateTag(ctx, repo, name, "main")
+				testutil.Must(t, err)
+
+				resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+					Name:   name,
+					Source: "main",
+					Hidden: swag.Bool(hidden),
+				})
+				if err != nil {
+					t.Fatal("CreateBranch failed with error:", err)
+				}
+				if resp.JSON409 == nil {
+					t.Fatal("CreateBranch expected conflict")
+				}
+			})
+
+			t.Run("create branch conflict with commit", func(t *testing.T) {
+				repo := testUniqueRepoName()
+				_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
+				testutil.Must(t, err)
+
+				log, err := deps.catalog.GetCommit(ctx, repo, "main")
+				testutil.Must(t, err)
+
+				resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+					Name:   log.Reference,
+					Source: "main",
+					Hidden: swag.Bool(hidden),
+				})
+				if err != nil {
+					t.Fatal("CreateBranch failed with error:", err)
+				}
+				if resp.JSON409 == nil {
+					t.Fatal("CreateBranch expected conflict, got", resp.Status())
+				}
+			})
+
+			t.Run("read-only repository", func(t *testing.T) {
+				repo := testUniqueRepoName()
+				_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", true)
+				testutil.Must(t, err)
+				testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "a/b"}, graveler.WithForce(true)))
+				_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, false, graveler.WithForce(true))
+				testutil.Must(t, err)
+
+				const newBranchName = "main2"
+				resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+					Name:   newBranchName,
+					Source: "main",
+					Hidden: swag.Bool(hidden),
+				})
+				testutil.Must(t, err)
+				if resp.StatusCode() != http.StatusForbidden {
+					t.Fatal("CreateBranch expected 403 forbidden, got", resp.Status())
+				}
+				resp, err = clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+					Name:   newBranchName,
+					Source: "main",
+					Force:  swag.Bool(true),
+					Hidden: swag.Bool(hidden),
+				})
+				verifyResponseOK(t, resp, err)
+			})
 		})
-		verifyResponseOK(t, resp, err)
-		reference := string(resp.Body)
-		if len(reference) == 0 {
-			t.Fatalf("branch %s creation got no reference", newBranchName)
-		}
-		const objPath = "some/path"
-		const content = "hello world!"
-
-		uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(content), repo, newBranchName)
-		verifyResponseOK(t, uploadResp, err)
-
-		if _, err := deps.catalog.Commit(ctx, repo, "main2", "commit 1", "some_user", nil, nil, nil, false); err != nil {
-			t.Fatalf("failed to commit 'repo1': %s", err)
-		}
-		resp2, err := clt.DiffRefsWithResponse(ctx, repo, "main", newBranchName, &apigen.DiffRefsParams{})
-		verifyResponseOK(t, resp2, err)
-		results := resp2.JSON200.Results
-		if len(results) != 1 {
-			t.Fatalf("unexpected length of results: %d", len(results))
-		}
-		if results[0].Path != objPath {
-			t.Fatalf("wrong result: %s", results[0].Path)
-		}
-	})
-
-	t.Run("create branch missing commit", func(t *testing.T) {
-		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
-		testutil.Must(t, err)
-		resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
-			Name:   "main3",
-			Source: "a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447",
-		})
-		if err != nil {
-			t.Fatal("CreateBranch failed with error:", err)
-		}
-		if resp.JSON404 == nil {
-			t.Fatal("CreateBranch expected to fail with not found")
-		}
-	})
-
-	t.Run("create branch missing repo", func(t *testing.T) {
-		repo := testUniqueRepoName()
-		resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
-			Name:   "main8",
-			Source: "main",
-		})
-		if err != nil {
-			t.Fatal("CreateBranch failed with error:", err)
-		}
-		if resp.JSON404 == nil {
-			t.Fatal("CreateBranch expected not found")
-		}
-	})
-
-	t.Run("create branch conflict with branch", func(t *testing.T) {
-		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
-		testutil.Must(t, err)
-
-		resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
-			Name:   "main",
-			Source: "main",
-		})
-		if err != nil {
-			t.Fatal("CreateBranch failed with error:", err)
-		}
-		if resp.JSON409 == nil {
-			t.Fatal("CreateBranch expected conflict")
-		}
-	})
-
-	t.Run("create branch conflict with tag", func(t *testing.T) {
-		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
-		testutil.Must(t, err)
-
-		name := "tag123"
-		_, err = deps.catalog.CreateTag(ctx, repo, name, "main")
-		testutil.Must(t, err)
-
-		resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
-			Name:   name,
-			Source: "main",
-		})
-		if err != nil {
-			t.Fatal("CreateBranch failed with error:", err)
-		}
-		if resp.JSON409 == nil {
-			t.Fatal("CreateBranch expected conflict")
-		}
-	})
-
-	t.Run("create branch conflict with commit", func(t *testing.T) {
-		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", false)
-		testutil.Must(t, err)
-
-		log, err := deps.catalog.GetCommit(ctx, repo, "main")
-		testutil.Must(t, err)
-
-		resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
-			Name:   log.Reference,
-			Source: "main",
-		})
-		if err != nil {
-			t.Fatal("CreateBranch failed with error:", err)
-		}
-		if resp.JSON409 == nil {
-			t.Fatal("CreateBranch expected conflict, got", resp.Status())
-		}
-	})
-
-	t.Run("read-only repository", func(t *testing.T) {
-		repo := testUniqueRepoName()
-		_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, "foo1"), "main", true)
-		testutil.Must(t, err)
-		testutil.Must(t, deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "a/b"}, graveler.WithForce(true)))
-		_, err = deps.catalog.Commit(ctx, repo, "main", "first commit", "test", nil, nil, nil, false, graveler.WithForce(true))
-		testutil.Must(t, err)
-
-		const newBranchName = "main2"
-		resp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
-			Name:   newBranchName,
-			Source: "main",
-		})
-		testutil.Must(t, err)
-		if resp.StatusCode() != http.StatusForbidden {
-			t.Fatal("CreateBranch expected 403 forbidden, got", resp.Status())
-		}
-		resp, err = clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
-			Name:   newBranchName,
-			Source: "main",
-			Force:  swag.Bool(true),
-		})
-		verifyResponseOK(t, resp, err)
-	})
+	}
 }
 
 func TestController_DiffRefsHandler(t *testing.T) {
@@ -5355,6 +5382,152 @@ func TestController_CreateCommitRecord(t *testing.T) {
 	})
 }
 
+func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
+	ctx := context.Background()
+	testCases := []struct {
+		name     string
+		node     permissions.Node
+		username string
+		policies []*model.Policy
+		expected string
+	}{
+		{
+			name: "deny single action",
+			node: permissions.Node{
+				Type: permissions.NodeTypeNode,
+				Permission: permissions.Permission{
+					Action:   "fs:DeleteRepository",
+					Resource: "arn:lakefs:fs:::repository/repo1",
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:DeleteRepository"},
+							Resource: "arn:lakefs:fs:::repository/repo1",
+							Effect:   model.StatementEffectDeny,
+						},
+					},
+				},
+			},
+			expected: "denied permission to fs:DeleteRepository",
+		},
+		{
+			name: "deny multiple actions, one concerning the request",
+			node: permissions.Node{
+				Type: permissions.NodeTypeNode,
+				Permission: permissions.Permission{
+					Action:   "fs:DeleteRepository",
+					Resource: "arn:lakefs:fs:::repository/repo1",
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:DeleteRepository", "fs:CreateRepository"},
+							Resource: "arn:lakefs:fs:::repository/repo1",
+							Effect:   model.StatementEffectDeny,
+						},
+					},
+				},
+			},
+			expected: "denied permission to fs:DeleteRepository",
+		}, {
+			name: "neutral action",
+			node: permissions.Node{
+				Type: permissions.NodeTypeNode,
+				Permission: permissions.Permission{
+					Action:   "fs:ReadRepository",
+					Resource: "arn:lakefs:fs:::repository/repo1",
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:DeleteRepository"},
+							Resource: "arn:lakefs:fs:::repository/repo1",
+							Effect:   model.StatementEffectDeny,
+						},
+					},
+				},
+			},
+			expected: "not allowed to fs:ReadRepository",
+		}, {
+			name: "nodeAnd no policy, returns first missing one",
+			node: permissions.Node{
+				Type: permissions.NodeTypeAnd,
+				Nodes: []permissions.Node{
+					{
+						Type: permissions.NodeTypeNode,
+						Permission: permissions.Permission{
+							Action:   "fs:CreateRepository",
+							Resource: "*",
+						},
+					},
+					{
+						Type: permissions.NodeTypeNode,
+						Permission: permissions.Permission{
+							Action:   "fs:AttachStorageNamespace",
+							Resource: "*",
+						},
+					},
+				},
+			},
+			username: "user1",
+			expected: "not allowed to fs:CreateRepository",
+		}, {
+			name: "nodeAnd one policy, returns first missing policy",
+			node: permissions.Node{
+				Type: permissions.NodeTypeAnd,
+				Nodes: []permissions.Node{
+					{
+						Type: permissions.NodeTypeNode,
+						Permission: permissions.Permission{
+							Action:   "fs:CreateRepository",
+							Resource: "*",
+						},
+					},
+					{
+						Type: permissions.NodeTypeNode,
+						Permission: permissions.Permission{
+							Action:   "fs:AttachStorageNamespace",
+							Resource: "*",
+						},
+					},
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:CreateRepository"},
+							Resource: "*",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
+				},
+			},
+			expected: "not allowed to fs:AttachStorageNamespace",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			perm := &auth.MissingPermissions{}
+			result := auth.CheckPermissions(ctx, tc.node, tc.username, tc.policies, perm)
+			fmt.Println("expected:\n" + tc.expected)
+			fmt.Println("got:\n" + perm.String())
+			fmt.Println(result)
+			require.Equal(t, tc.expected, perm.String())
+		})
+	}
+}
 func TestController_CreatePullRequest(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
@@ -5905,6 +6078,42 @@ func TestController_MergePullRequest(t *testing.T) {
 		require.Equal(t, mergeResp.JSON200.Reference, *getResp.JSON200.MergedCommitId)
 		require.NotNil(t, getResp.JSON200.ClosedDate)
 		require.True(t, time.Now().Sub(*getResp.JSON200.ClosedDate) < 1*time.Minute)
+	})
+
+	t.Run("conflict", func(t *testing.T) {
+		body := apigen.CreatePullRequestJSONRequestBody{
+			Description:       swag.String("My description"),
+			DestinationBranch: "main",
+			SourceBranch:      "branch_e",
+			Title:             "My title",
+		}
+		branchResp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+			Name:   body.SourceBranch,
+			Source: "main",
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, branchResp.StatusCode())
+
+		err = deps.catalog.CreateEntry(ctx, repo, body.SourceBranch, catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"})
+		require.NoError(t, err)
+		_, err = deps.catalog.Commit(ctx, repo, body.SourceBranch, "some message", DefaultUserID, nil, nil, nil, false)
+		require.NoError(t, err)
+
+		err = deps.catalog.CreateEntry(ctx, repo, body.DestinationBranch, catalog.DBEntry{Path: "foo/bar2", PhysicalAddress: "bar2addr2", CreationDate: time.Now(), Size: 2, Checksum: "cksum2"})
+		require.NoError(t, err)
+		_, err = deps.catalog.Commit(ctx, repo, body.DestinationBranch, "some message", DefaultUserID, nil, nil, nil, false)
+		require.NoError(t, err)
+
+		resp, err := clt.CreatePullRequestWithResponse(ctx, repo, body)
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON201, resp.Status())
+
+		// Update with wrong status
+		mergeResp, err := clt.MergePullRequestWithResponse(ctx, repo, resp.JSON201.Id)
+		require.NoError(t, err)
+		require.NotNil(t, mergeResp.JSON409, mergeResp.Status())
+		require.NotNil(t, mergeResp.Body)
+		require.Contains(t, string(mergeResp.Body), "conflict")
 	})
 }
 

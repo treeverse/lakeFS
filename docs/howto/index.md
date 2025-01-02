@@ -33,6 +33,10 @@ has_toc: false
 
 * [Branch Protection](/howto/protect-branches.html) prevents commits directly to a branch. This is a good way to enforce good practice and make sure that changes to important branches are only done by a merge.
 
+## Pull Requests
+
+* Improve collaboration over data with [Pull Requests](/howto/pull-requests.html).
+
 ## lakeFS Sizing Guide
 
 * This [comprehensive guide](/howto/sizing-guide.html) details all you need to know to correctly size and test your lakeFS deployment for production use at scale, including: 

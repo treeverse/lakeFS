@@ -21,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/git"
+	giterror "github.com/treeverse/lakefs/pkg/git/errors"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/osinfo"
@@ -72,6 +73,9 @@ type Configuration struct {
 		EndpointURL lakefsconfig.OnlyString `mapstructure:"endpoint_url"`
 		Retries     RetriesCfg              `mapstructure:"retries"`
 	} `mapstructure:"server"`
+	Options struct {
+		Parallelism int `mapstructure:"parallelism"`
+	} `mapstructure:"options"`
 	Metastore struct {
 		Type lakefsconfig.OnlyString `mapstructure:"type"`
 		Hive struct {
@@ -153,9 +157,9 @@ const (
 	parallelismFlagName   = "parallelism"
 	noProgressBarFlagName = "no-progress"
 
-	defaultSyncParallelism = 25
-	defaultSyncPresign     = true
-	defaultNoProgress      = false
+	defaultParallelism = 25
+	defaultSyncPresign = true
+	defaultNoProgress  = false
 
 	myRepoExample   = "lakefs://my-repo"
 	myBucketExample = "s3://my-bucket"
@@ -178,7 +182,7 @@ func withRecursiveFlag(cmd *cobra.Command, usage string) {
 }
 
 func withParallelismFlag(cmd *cobra.Command) {
-	cmd.Flags().IntP(parallelismFlagName, "p", defaultSyncParallelism,
+	cmd.Flags().IntP(parallelismFlagName, "p", defaultParallelism,
 		"Max concurrent operations to perform")
 }
 
@@ -245,6 +249,10 @@ func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.
 	if parallelism < 1 {
 		DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
 	}
+	changed := cmd.Flags().Changed(parallelismFlagName)
+	if viper.IsSet("options.parallelism") && !changed {
+		parallelism = cfg.Options.Parallelism
+	}
 
 	presignMode := getPresignMode(cmd, client)
 	return local.SyncFlags{
@@ -275,7 +283,7 @@ func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remot
 		gitRoot, err := git.GetRepositoryPath(localPath)
 		if err == nil {
 			localPath = gitRoot
-		} else if !(errors.Is(err, git.ErrNotARepository) || errors.Is(err, git.ErrNoGit)) { // allow support in environments with no git
+		} else if !(errors.Is(err, giterror.ErrNotARepository) || errors.Is(err, giterror.ErrNoGit)) { // allow support in environments with no git
 			DieErr(err)
 		}
 	}
@@ -455,7 +463,7 @@ func sendStats(cmd *cobra.Command, cmdSuffix string) {
 			errStr = resp.Status()
 		}
 		if errStr != "" {
-			_, _ = fmt.Fprintf(os.Stderr, "Warning: failed sending statistics: %s\n", errStr)
+			logging.ContextUnavailable().Debugf("Warning: failed sending statistics: %s\n", errStr)
 		}
 	}
 }
@@ -574,6 +582,5 @@ func initConfig() {
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
 	viper.SetDefault("local.skip_non_regular_files", false)
-
 	cfgErr = viper.ReadInConfig()
 }

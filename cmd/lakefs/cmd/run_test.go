@@ -14,6 +14,7 @@ import (
 func TestGetAuthService(t *testing.T) {
 	t.Run("maintain_inviter", func(t *testing.T) {
 		cfg := &config.Config{}
+		cfg.Auth.UIConfig.RBAC = config.AuthRBACInternal
 		cfg.Auth.API.Endpoint = "http://localhost:8000"
 		cfg.Auth.API.SkipHealthCheck = true
 		service := cmd.NewAuthService(context.Background(), cfg, logging.ContextUnavailable(), nil, nil)

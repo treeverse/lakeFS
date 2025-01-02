@@ -17,7 +17,7 @@ func gcWriteUncommitted(ctx context.Context, store Store, repository *graveler.R
 	}
 	pw.CompressionType = parquet.CompressionCodec_GZIP
 
-	branchIterator, err := store.ListBranches(ctx, repository)
+	branchIterator, err := store.ListBranches(ctx, repository, graveler.WithShowHidden(true))
 	if err != nil {
 		return nil, false, err
 	}

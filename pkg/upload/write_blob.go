@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"io"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/block"
 )
@@ -13,12 +14,13 @@ type Blob struct {
 	RelativePath    bool
 	Checksum        string
 	Size            int64
+	CreationDate    time.Time
 }
 
 func WriteBlob(ctx context.Context, adapter block.Adapter, bucketName, address string, body io.Reader, contentLength int64, opts block.PutOpts) (*Blob, error) {
 	// handle the upload itself
 	hashReader := block.NewHashingReader(body, block.HashFunctionMD5, block.HashFunctionSHA256)
-	err := adapter.Put(ctx, block.ObjectPointer{
+	res, err := adapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: bucketName,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       address,
@@ -32,5 +34,6 @@ func WriteBlob(ctx context.Context, adapter block.Adapter, bucketName, address s
 		RelativePath:    true,
 		Checksum:        checksum,
 		Size:            hashReader.CopiedSize,
+		CreationDate:    res.GetMtime(),
 	}, nil
 }

@@ -399,9 +399,9 @@ S3-compatible API with the S3A FileSystem.
 
 Define your SQL Warehouse configurations in the following way:
 
-1. In the top right, select `Admin Settings` and then `SQL warehouse settings`.
+1. In the top right, select `Admin Settings` and then `Compute`, and `SQL warehouses`.
 
-2. Under `Data Access Configuration` add the following key-value pairs for 
+2. Under `Data Access Properties` add the following key-value pairs for 
    each lakeFS repository you want to access:
 
 ```

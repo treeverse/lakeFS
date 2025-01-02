@@ -352,7 +352,6 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 		return
 	}
 
-	writeTime := time.Now()
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
@@ -383,7 +382,14 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 		return
 	}
 
+	writeTime := time.Now()
 	checksum := httputil.StripQuotesAndSpaces(mpuResp.ETag)
+	// Anything else can be _really_ wrong when the storage layer assigns the time of MPU
+	// creation.  For instance, the S3 block adapter makes sure to return an MTime from
+	// headObject to ensure that we do have a time here.
+	if mpuResp.MTime != nil {
+		writeTime = *mpuResp.MTime
+	}
 	entryBuilder := catalog.NewDBEntryBuilder().
 		CommonLevel(false).
 		Path(params.Path).
@@ -763,6 +769,9 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	writeTime := time.Now()
+	if mtime := body.Mtime; mtime != nil {
+		writeTime = time.Unix(*mtime, 0)
+	}
 	fullPhysicalAddress := swag.StringValue(body.Staging.PhysicalAddress)
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, fullPhysicalAddress)
 
@@ -1103,6 +1112,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 			Id:           u.Username,
 			Email:        u.Email,
 			CreationDate: u.CreatedAt.Unix(),
+			FriendlyName: u.FriendlyName,
 		})
 	}
 	writeResponse(w, r, http.StatusOK, response)
@@ -1884,7 +1894,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 	ctx := r.Context()
 	c.LogAction(ctx, "list_repos", r, "", "", "")
 
-	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), paginationAfter(params.After))
+	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), search(params.Search), paginationAfter(params.After))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -1978,7 +1988,8 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		writeResponse(w, r, http.StatusCreated, response)
 		return
 	}
-
+	// Since this is a read-only repository, there is no harm in case the storage namespace we use is already used by
+	// another repository or if we don't have write permissions for this namespace.
 	if !swag.BoolValue(body.ReadOnly) {
 		if err := c.ensureStorageNamespace(ctx, body.StorageNamespace); err != nil {
 			var (
@@ -2102,12 +2113,16 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 		return err
 	}
 
-	if err := c.BlockAdapter.Put(ctx, obj, objLen, strings.NewReader(dummyData), block.PutOpts{}); err != nil {
+	if _, err := c.BlockAdapter.Put(ctx, obj, objLen, strings.NewReader(dummyData), block.PutOpts{}); err != nil {
 		return err
 	}
 
-	_, err := c.BlockAdapter.Get(ctx, obj)
-	return err
+	s, err := c.BlockAdapter.Get(ctx, obj)
+	if err != nil {
+		return err
+	}
+	_ = s.Close()
+	return nil
 }
 
 func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, repository string, params apigen.DeleteRepositoryParams) {
@@ -2565,8 +2580,13 @@ func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, reposi
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "list_branches", r, repository, "", "")
-
-	res, hasMore, err := c.Catalog.ListBranches(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After))
+	res, hasMore, err := c.Catalog.ListBranches(
+		ctx,
+		repository,
+		paginationPrefix(params.Prefix),
+		paginationAmount(params.Amount),
+		paginationAfter(params.After),
+		graveler.WithShowHidden(swag.BoolValue(params.ShowHidden)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2597,7 +2617,14 @@ func (c *Controller) CreateBranch(w http.ResponseWriter, r *http.Request, body a
 	ctx := r.Context()
 	c.LogAction(ctx, "create_branch", r, repository, body.Name, "")
 
-	commitLog, err := c.Catalog.CreateBranch(ctx, repository, body.Name, body.Source, graveler.WithForce(swag.BoolValue(body.Force)))
+	commitLog, err := c.Catalog.CreateBranch(
+		ctx,
+		repository,
+		body.Name,
+		body.Source,
+		graveler.WithForce(swag.BoolValue(body.Force)),
+		graveler.WithHidden(swag.BoolValue(body.Hidden)),
+	)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3221,11 +3248,10 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		}
 	}
 	// write metadata
-	writeTime := time.Now()
 	entryBuilder := catalog.NewDBEntryBuilder().
 		Path(params.Path).
 		PhysicalAddress(blob.PhysicalAddress).
-		CreationDate(writeTime).
+		CreationDate(blob.CreationDate).
 		Size(blob.Size).
 		Checksum(blob.Checksum).
 		ContentType(contentType)
@@ -3262,7 +3288,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 
 	response := apigen.ObjectStats{
 		Checksum:        blob.Checksum,
-		Mtime:           writeTime.Unix(),
+		Mtime:           blob.CreationDate.Unix(),
 		Path:            params.Path,
 		PathType:        entryTypeObject,
 		PhysicalAddress: qk.Format(),
@@ -3819,7 +3845,7 @@ func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	err = c.BlockAdapter.Put(ctx, block.ObjectPointer{
+	_, err = c.BlockAdapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       fmt.Sprintf("%s/refs_manifest.json", c.Config.Committed.BlockStoragePrefix),
@@ -4159,7 +4185,7 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 func writeSymlink(ctx context.Context, repo *catalog.Repository, branch, path string, addresses []string, adapter block.Adapter) error {
 	address := fmt.Sprintf("%s/%s/%s/%s/symlink.txt", lakeFSPrefix, repo.Name, branch, path)
 	data := strings.Join(addresses, "\n")
-	err := adapter.Put(ctx, block.ObjectPointer{
+	_, err := adapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       address,
@@ -5377,12 +5403,6 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 
 	// Attempt to merge branches
 	reference, err := c.Catalog.Merge(ctx, repository, pr.Destination, pr.Source, user.Committer(), "", nil, "")
-	if errors.Is(err, graveler.ErrConflictFound) {
-		writeResponse(w, r, http.StatusConflict, apigen.MergeResult{
-			Reference: reference,
-		})
-		return
-	}
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -5445,6 +5465,13 @@ func paginationPrefix(v *apigen.PaginationPrefix) string {
 }
 
 func paginationDelimiter(v *apigen.PaginationDelimiter) string {
+	if v == nil {
+		return ""
+	}
+	return string(*v)
+}
+
+func search(v *apigen.SearchString) string {
 	if v == nil {
 		return ""
 	}

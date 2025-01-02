@@ -78,20 +78,20 @@ func getKey(obj block.ObjectPointer) string {
 	return fmt.Sprintf("%s:%s", obj.StorageNamespace, obj.Identifier)
 }
 
-func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
+func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) (*block.PutResponse, error) {
 	if err := verifyObjectPointer(obj); err != nil {
-		return err
+		return nil, err
 	}
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	data, err := io.ReadAll(reader)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	key := getKey(obj)
 	a.data[key] = data
 	a.properties[key] = block.Properties(opts)
-	return nil
+	return &block.PutResponse{}, nil
 }
 
 func (a *Adapter) Get(_ context.Context, obj block.ObjectPointer) (io.ReadCloser, error) {
@@ -339,7 +339,7 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeMem
 }
 
-func (a *Adapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMetadata, error) {
+func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
 	return nil, block.ErrOperationNotSupported
 }
 

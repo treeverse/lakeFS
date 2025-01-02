@@ -96,10 +96,13 @@ type CreateMultiPartUploadResponse struct {
 	ServerSideHeader http.Header
 }
 
-// CompleteMultiPartUploadResponse complete multipart etag, content length and additional headers (implementation specific) currently it targets s3.
-// The ETag is a hex string value of the content checksum
+// CompleteMultiPartUploadResponse complete multipart etag, content length and additional headers (implementation specific).
 type CompleteMultiPartUploadResponse struct {
-	ETag             string
+	// ETag is a hex string value of the content checksum
+	ETag string
+	// MTime, if non-nil, is the creation time of the resulting object.  Typically the
+	// object store returns it on a Last-Modified header from some operations.
+	MTime            *time.Time
 	ContentLength    int64
 	ServerSideHeader http.Header
 }
@@ -147,11 +150,22 @@ type BlockstoreMetadata struct {
 	Region *string
 }
 
+type PutResponse struct {
+	ModTime *time.Time
+}
+
+func (r *PutResponse) GetMtime() time.Time {
+	if r != nil && r.ModTime != nil {
+		return *r.ModTime
+	}
+	return time.Now()
+}
+
 // Adapter abstract Storage Adapter for persistence of version controlled data. The methods generally map to S3 API methods
 // - Generally some type of Object Storage
 // - Can also be block storage or even in-memory
 type Adapter interface {
-	Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error
+	Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) (*PutResponse, error)
 	Get(ctx context.Context, obj ObjectPointer) (io.ReadCloser, error)
 
 	// GetWalker is never called on the server side.

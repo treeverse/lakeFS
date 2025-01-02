@@ -1344,13 +1344,13 @@ class RepositoriesApi(object):
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def list_repositories(self, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, **kwargs) -> RepositoryList:  # noqa: E501
+    def list_repositories(self, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, search : Annotated[Optional[StrictStr], Field(description="string for searching relevant entries")] = None, **kwargs) -> RepositoryList:  # noqa: E501
         """list repositories  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.list_repositories(prefix, after, amount, async_req=True)
+        >>> thread = api.list_repositories(prefix, after, amount, search, async_req=True)
         >>> result = thread.get()
 
         :param prefix: return items prefixed with this value
@@ -1359,6 +1359,8 @@ class RepositoriesApi(object):
         :type after: str
         :param amount: how many items to return
         :type amount: int
+        :param search: string for searching relevant entries
+        :type search: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request. If one
@@ -1373,16 +1375,16 @@ class RepositoriesApi(object):
         kwargs['_return_http_data_only'] = True
         if '_preload_content' in kwargs:
             raise ValueError("Error! Please call the list_repositories_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data")
-        return self.list_repositories_with_http_info(prefix, after, amount, **kwargs)  # noqa: E501
+        return self.list_repositories_with_http_info(prefix, after, amount, search, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def list_repositories_with_http_info(self, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def list_repositories_with_http_info(self, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, search : Annotated[Optional[StrictStr], Field(description="string for searching relevant entries")] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """list repositories  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.list_repositories_with_http_info(prefix, after, amount, async_req=True)
+        >>> thread = api.list_repositories_with_http_info(prefix, after, amount, search, async_req=True)
         >>> result = thread.get()
 
         :param prefix: return items prefixed with this value
@@ -1391,6 +1393,8 @@ class RepositoriesApi(object):
         :type after: str
         :param amount: how many items to return
         :type amount: int
+        :param search: string for searching relevant entries
+        :type search: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -1421,7 +1425,8 @@ class RepositoriesApi(object):
         _all_params = [
             'prefix',
             'after',
-            'amount'
+            'amount',
+            'search'
         ]
         _all_params.extend(
             [
@@ -1460,6 +1465,9 @@ class RepositoriesApi(object):
 
         if _params.get('amount') is not None:  # noqa: E501
             _query_params.append(('amount', _params['amount']))
+
+        if _params.get('search') is not None:  # noqa: E501
+            _query_params.append(('search', _params['search']))
 
         # process the header parameters
         _header_params = dict(_params.get('_headers', {}))

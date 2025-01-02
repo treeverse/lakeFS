@@ -38,7 +38,7 @@ func testAdapterGetRange(t *testing.T, adapter block.Adapter, storageNamespace s
 	ctx := context.Background()
 	part1 := "this is the first part "
 	part2 := "this is the last part"
-	err := adapter.Put(ctx, block.ObjectPointer{
+	_, err := adapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: storageNamespace,
 		Identifier:       "test_file",
 		IdentifierType:   block.IdentifierTypeRelative,
@@ -88,7 +88,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 
 	for i := 0; i < filesAndFolders; i++ {
 		for j := 0; j < filesAndFolders; j++ {
-			err := adapter.Put(ctx, block.ObjectPointer{
+			_, err := adapter.Put(ctx, block.ObjectPointer{
 				StorageNamespace: storageNamespace,
 				Identifier:       fmt.Sprintf("%s/folder_%d/test_file_%d", testPrefix, filesAndFolders-i-1, filesAndFolders-j-1),
 				IdentifierType:   block.IdentifierTypeRelative,
@@ -97,7 +97,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 		}
 	}
 
-	err := adapter.Put(ctx, block.ObjectPointer{
+	_, err := adapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: storageNamespace,
 		Identifier:       fmt.Sprintf("%s/folder_0.txt", testPrefix),
 		IdentifierType:   block.IdentifierTypeRelative,

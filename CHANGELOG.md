@@ -1,5 +1,83 @@
 # Changelog
 
+# v1.46.0
+
+:new: What's new:
+- Feature: Repository Search by Substring (#8417)
+
+# v1.45.0
+
+**Note:**
+The legacy Python client has been discontinued as of this release. Its development, distribution, and codebase have been terminated.
+
+:new: What's new:
+- Remove Python Legacy Client (#8410)
+- Add friendly name to list group members response (#8413)
+
+# v1.44.0
+
+**Note:**
+The legacy Java client has been discontinued as of this release. Its development, distribution, and codebase have been terminated.
+
+:new: What's new:
+- Support for hidden branches (#8375)
+
+:bug: Bugs fixed:
+- Fix: Auth no endpoint error (#8407)
+- Fix: Delta Exporter- Handle vacuumed objects correctly (#8409)
+- Fix: Allow pre-signed upload via the web UI (#8365)
+
+# v1.43.0
+
+:new: What's new:
+- Support Dark Mode for Text Viewer (#8371)
+
+:bug: Bugs fixed:
+- Fix: lakectl FS upload big files cause OOM (#8349)
+- Fix: CosmosDB panic in handleBatchSizeChange(#8367)
+- Fix: RepoManagementReadAll pull requests permissions (#8374)
+
+# v1.42.0
+
+:new: What's new:
+- Optionally set mtime in linkPhysicalAddress (#8338)
+
+:bug: Bugs fixed:
+- Fix: EnsureStorageNamespace close reader (#8346)
+- Fix: Git package error handling (#8345)
+
+# v1.41.0
+
+:new: What's new:
+- command to check current user in lakectl (#8322)
+
+:bug: Bugs fixed:
+- Use time of create MPU on backend storage as time of MPU (#8311)
+- Fix: Pull Requests merge errors (#8302)
+- Fix "http: read on closed response body" error (#8332)
+- Fix: Get mtime from storage server (#8329)
+
+# v1.40.0
+
+:new: What's new:
+- Added Parallelism configuration option to lakectl (#8283)
+- Experiment: Improve concurrent merge performance by weakly owning branch updates (#8268)
+- Add documentation for standalone (sparkless) GC (#8307)
+
+:bug: Bugs fixed:
+- Pass request context to import operation sub tasks (#8320)
+
+# v1.39.2
+
+:new: What's new:
+- lakectl log: add option to filter merge commits (#8142)
+- Add a deprecation and upgrade warning to python-legacy client (#8195)
+- Make update object metadata API atomic (#8264)
+
+:bug: Bugs fixed:
+- Fix: GC: Read commit explicitly when it is missing from prescanned commits (#8282)
+- Fix: Copy object mtime (#8291)
+
 # v1.38.0
 
 :new: What's new:

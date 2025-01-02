@@ -12,7 +12,7 @@ import {auth} from "../../lib/api";
 import {useState} from "react";
 import {CredentialsShowModal, CredentialsTable} from "../../lib/components/auth/credentials";
 import {useRouter} from "../../lib/hooks/router";
-import {resolveDisplayName} from "../../lib/utils";
+import {resolveUserDisplayName} from "../../lib/utils";
 
 const CredentialsContainer = () => {
     const router = useRouter();
@@ -40,7 +40,7 @@ const CredentialsContainer = () => {
                     <ConfirmationButton
                         variant="success"
                         modalVariant="success"
-                        msg={<span>Create a new Access Key for user <strong>{resolveDisplayName(user)}</strong>?</span>}
+                        msg={<span>Create a new Access Key for user <strong>{resolveUserDisplayName(user)}</strong>?</span>}
                         onConfirm={hide => {
                             createKey()
                                 .then(key => { setCreatedKey(key) })

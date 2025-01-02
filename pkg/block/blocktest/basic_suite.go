@@ -44,7 +44,7 @@ func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, ex
 				IdentifierType:   c.identifierType,
 			}
 
-			err := adapter.Put(ctx, obj, size, strings.NewReader(contents), block.PutOpts{})
+			_, err := adapter.Put(ctx, obj, size, strings.NewReader(contents), block.PutOpts{})
 			require.NoError(t, err)
 
 			reader, err := adapter.Get(ctx, obj)
@@ -73,8 +73,8 @@ func testAdapterCopy(t *testing.T, adapter block.Adapter, storageNamespace strin
 		Identifier:       "export/to/dst",
 		IdentifierType:   block.IdentifierTypeRelative,
 	}
-
-	require.NoError(t, adapter.Put(ctx, src, int64(len(contents)), strings.NewReader(contents), block.PutOpts{}))
+	_, err := adapter.Put(ctx, src, int64(len(contents)), strings.NewReader(contents), block.PutOpts{})
+	require.NoError(t, err)
 
 	require.NoError(t, adapter.Copy(ctx, src, dst))
 	reader, err := adapter.Get(ctx, dst)
@@ -134,7 +134,8 @@ func testAdapterRemove(t *testing.T, adapter block.Adapter, storageNamespace str
 					Identifier:       tt.name + "/" + p,
 					IdentifierType:   block.IdentifierTypeRelative,
 				}
-				require.NoError(t, adapter.Put(ctx, obj, int64(len(content)), strings.NewReader(content), block.PutOpts{}))
+				_, err := adapter.Put(ctx, obj, int64(len(content)), strings.NewReader(content), block.PutOpts{})
+				require.NoError(t, err)
 			}
 
 			// test Remove
@@ -163,14 +164,14 @@ func testAdapterExists(t *testing.T, adapter block.Adapter, storageNamespace str
 	// TODO (niro): Test abs paths
 	const contents = "exists"
 	ctx := context.Background()
-	err := adapter.Put(ctx, block.ObjectPointer{
+	_, err := adapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: storageNamespace,
 		Identifier:       contents,
 		IdentifierType:   block.IdentifierTypeRelative,
 	}, int64(len(contents)), strings.NewReader(contents), block.PutOpts{})
 	require.NoError(t, err)
 
-	err = adapter.Put(ctx, block.ObjectPointer{
+	_, err = adapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: storageNamespace,
 		Identifier:       "nested/and/" + contents,
 		IdentifierType:   block.IdentifierTypeRelative,

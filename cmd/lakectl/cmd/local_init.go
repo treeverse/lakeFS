@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/git"
+	giterror "github.com/treeverse/lakefs/pkg/git/errors"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -50,7 +51,7 @@ func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIg
 			gitDir, err := git.GetRepositoryPath(dir)
 			if err != nil {
 				// report an error only if it's not a git repository
-				if !errors.Is(err, git.ErrNotARepository) && !errors.Is(err, git.ErrNoGit) {
+				if !errors.Is(err, giterror.ErrNotARepository) && !errors.Is(err, giterror.ErrNoGit) {
 					return "", err
 				}
 			} else if gitDir == dir {
@@ -79,7 +80,7 @@ func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIg
 		ignoreFile, err := git.Ignore(dir, []string{dir}, []string{filepath.Join(dir, local.IndexFileName)}, local.IgnoreMarker)
 		if err == nil {
 			fmt.Println("Location added to", ignoreFile)
-		} else if !(errors.Is(err, git.ErrNotARepository) || errors.Is(err, git.ErrNoGit)) {
+		} else if !(errors.Is(err, giterror.ErrNotARepository) || errors.Is(err, giterror.ErrNoGit)) {
 			return "", err
 		}
 	}

@@ -75,6 +75,10 @@ public class StagingMetadata {
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
   private String contentType;
 
+  public static final String SERIALIZED_NAME_MTIME = "mtime";
+  @SerializedName(SERIALIZED_NAME_MTIME)
+  private Long mtime;
+
   public static final String SERIALIZED_NAME_FORCE = "force";
   @SerializedName(SERIALIZED_NAME_FORCE)
   private Boolean force = false;
@@ -195,6 +199,27 @@ public class StagingMetadata {
   }
 
 
+  public StagingMetadata mtime(Long mtime) {
+    
+    this.mtime = mtime;
+    return this;
+  }
+
+   /**
+   * Unix Epoch in seconds.  May be ignored by server.
+   * @return mtime
+  **/
+  @javax.annotation.Nullable
+  public Long getMtime() {
+    return mtime;
+  }
+
+
+  public void setMtime(Long mtime) {
+    this.mtime = mtime;
+  }
+
+
   public StagingMetadata force(Boolean force) {
     
     this.force = force;
@@ -275,13 +300,14 @@ public class StagingMetadata {
         Objects.equals(this.sizeBytes, stagingMetadata.sizeBytes) &&
         Objects.equals(this.userMetadata, stagingMetadata.userMetadata) &&
         Objects.equals(this.contentType, stagingMetadata.contentType) &&
+        Objects.equals(this.mtime, stagingMetadata.mtime) &&
         Objects.equals(this.force, stagingMetadata.force)&&
         Objects.equals(this.additionalProperties, stagingMetadata.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(staging, checksum, sizeBytes, userMetadata, contentType, force, additionalProperties);
+    return Objects.hash(staging, checksum, sizeBytes, userMetadata, contentType, mtime, force, additionalProperties);
   }
 
   @Override
@@ -293,6 +319,7 @@ public class StagingMetadata {
     sb.append("    sizeBytes: ").append(toIndentedString(sizeBytes)).append("\n");
     sb.append("    userMetadata: ").append(toIndentedString(userMetadata)).append("\n");
     sb.append("    contentType: ").append(toIndentedString(contentType)).append("\n");
+    sb.append("    mtime: ").append(toIndentedString(mtime)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
@@ -322,6 +349,7 @@ public class StagingMetadata {
     openapiFields.add("size_bytes");
     openapiFields.add("user_metadata");
     openapiFields.add("content_type");
+    openapiFields.add("mtime");
     openapiFields.add("force");
 
     // a set of required properties/fields (JSON key names)

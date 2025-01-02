@@ -283,13 +283,31 @@ auth:
   <div markdown="1" id="ldap">
 ## LDAP
 
-In order for Fluffy to work, the following values must be configured. Update (or override) the following attributes in the chart's `values.yaml` file.
-1. Replace `lakefsConfig.auth.remote_authenticator.endpoint` with the lakeFS server URL combined with the `api/v1/ldap/login` suffix (e.g `http://lakefs.company.com/api/v1/ldap/login`)
-2. Repalce `fluffyConfig.auth.ldap.remote_authenticator.server_endpoint` with your LDAP server endpoint  (e.g `ldaps://ldap.ldap-address.com:636`)
-3. Replace `fluffyConfig.auth.ldap.remote_authenticator.bind_dn` with the LDAP bind user/permissions to query your LDAP server.
-4. Replace `fluffyConfig.auth.ldap.remote_authenticator.user_base_dn` with the user base to search users in.
+Fluffy is incharge of providing LDAP authentication for lakeFS Enterprise. 
+The authentication works by querying the LDAP server for user information and authenticating the user based on the provided credentials.
 
-lakeFS Server Configuration (Update in helm's `values.yaml` file):
+**Important:** An administrative bind user must be configured. It should have search permissions for the LDAP server that will be used to query the LDAP server for user information.
+
+**For Helm:** set the following attributes in the Helm chart values, for lakeFS `lakefsConfig.*` and `fluffyConfig.*` for fluffy. 
+
+**No Helm:** If not using Helm use the YAML below to directly update the configuration file for each service.
+
+**lakeFS Configuration:**
+
+1. Replace `auth.remote_authenticator.enabled` with `true`
+2. Replace `auth.remote_authenticator.endpoint` with the fluffy authentication server URL combined with the `api/v1/ldap/login` suffix (e.g `http://lakefs.company.com/api/v1/ldap/login`)
+
+**fluffy Configuration:**
+
+See [Fluffy configuration][fluffy-configuration] reference.
+
+1. Repalce `auth.ldap.remote_authenticator.server_endpoint` with your LDAP server endpoint  (e.g `ldaps://ldap.ldap-address.com:636`)
+2. Replace `auth.ldap.remote_authenticator.bind_dn` with the LDAP bind user/permissions to query your LDAP server.
+3. Replace `auth.ldap.remote_authenticator.user_base_dn` with the user base to search users in.
+
+**lakeFS Server Configuration file:**
+
+`$lakefs run -c ./lakefs.yaml`
 
 ```yaml
 # Important: make sure to include the rest of your lakeFS Configuration here!
@@ -305,7 +323,9 @@ auth:
       - internal_auth_session
 ```
 
-Fluffy Configuration (Update in helm's `values.yaml` file):
+Fluffy Configuration file:
+
+`$fluffy run -c ./fluffy.yaml`
 
 ```yaml
 logging:
@@ -319,14 +339,63 @@ auth:
   post_login_redirect_url: /
   ldap: 
     server_endpoint: 'ldaps://ldap.company.com:636'
-    bind_dn: uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com
+    bind_dn: uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com
     bind_password: '<ldap pwd>'
     username_attribute: uid
-    user_base_dn: ou=Users,o=<org-id>,dc=<company>,dc=com
+    user_base_dn: ou=<some-ou>,o=<org-id>,dc=<company>,dc=com
     user_filter: (objectClass=inetOrgPerson)
     connection_timeout_seconds: 15
     request_timeout_seconds: 7
 ```
+
+## Troubleshooting LDAP issues
+
+### Inspecting Logs
+
+If you encounter LDAP connection errors, you should inspect the **fluffy container** logs to get more information.
+
+### Authentication issues
+
+Auth issues (e.g. user not found, invalid credentials) can be debugged with the [ldapwhoami](https://www.unix.com/man-page/osx/1/ldapwhoami) CLI tool. 
+
+The Examples are based on the fluffy config above:
+
+To verify that the main bind user can connect:
+  
+```sh 
+ldapwhoami -H ldap://ldap.company.com:636 -D "uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -x -W
+```
+
+To verify that a specific lakeFS user `dev-user` can connect:
+
+```sh 
+ldapwhoami -H ldap://ldap.company.com:636 -D "uid=dev-user,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -x -W
+```
+
+### User not found issue
+
+Upon a login request in fluffy, the bind user will search for the user in the LDAP server. If the user is not found it will be presented in the logs.
+
+We can search the user using [ldapsearch](https://docs.ldap.com/ldap-sdk/docs/tool-usages/ldapsearch.html) CLI tool. 
+
+Search ALL users in the base DN (no filters):
+
+**Note:** `-b` is the `user_base_dn`, `-D` is `bind_dn` and `-w` is `bind_password` from the fluffy configuration.
+
+```sh
+ldapsearch -H ldap://ldap.company.com:636 -x -b "ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -D "uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -w '<bind_user_pwd>'
+```
+
+If the user is found, we should now use filters for the specific user the same way fluffy does it and expect to see the user. 
+
+For example, to repdocue the same search as fluffy does:
+- user `dev-user` set from `uid` attribute in LDAP 
+- Fluffy configuration values: `user_filter: (objectClass=inetOrgPerson)` and `username_attribute: uid`
+
+```sh
+ldapsearch -H ldap://ldap.company.com:636 -x -b "ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -D "uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -w '<bind_user_pwd>' "(&(uid=dev-user)(objectClass=inetOrgPerson))"
+```
+
   </div>
 </div>
 
@@ -345,3 +414,4 @@ Notes:
 * Fluffy docker image: replace the `fluffy.image.privateRegistry.secretToken` with real token to dockerhub for the fluffy docker image.
 
 [rbac-preconfigured]:  {% link security/rbac.md %}#preconfigured-groups
+[fluffy-configuration]: {% link enterprise/configuration.md %}#fluffy-server-configuration

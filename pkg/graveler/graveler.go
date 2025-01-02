@@ -194,6 +194,8 @@ type SetOptions struct {
 	Force bool
 	// AllowEmpty set to true will allow committing an empty commit.
 	AllowEmpty bool
+	// Hidden Will create the branch with the hidden property
+	Hidden bool
 }
 
 type SetOptionsFunc func(opts *SetOptions)
@@ -221,6 +223,34 @@ func WithForce(v bool) SetOptionsFunc {
 func WithAllowEmpty(v bool) SetOptionsFunc {
 	return func(opts *SetOptions) {
 		opts.AllowEmpty = v
+	}
+}
+
+func WithHidden(v bool) SetOptionsFunc {
+	return func(opts *SetOptions) {
+		opts.Hidden = v
+	}
+}
+
+// ListOptions controls list request defaults
+type ListOptions struct {
+	// Shows entities marked as hidden
+	ShowHidden bool
+}
+
+type ListOptionsFunc func(opts *ListOptions)
+
+func NewListOptions(opts []ListOptionsFunc) *ListOptions {
+	options := &ListOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	return options
+}
+
+func WithShowHidden(v bool) ListOptionsFunc {
+	return func(opts *ListOptions) {
+		opts.ShowHidden = v
 	}
 }
 
@@ -456,6 +486,7 @@ type Branch struct {
 	SealedTokens []StagingToken
 	// CompactedBaseMetaRangeID - the MetaRangeID of the last compaction's
 	CompactedBaseMetaRangeID MetaRangeID
+	Hidden                   bool
 }
 
 // BranchRecord holds BranchID with the associated Branch data
@@ -602,7 +633,7 @@ type VersionController interface {
 	Log(ctx context.Context, repository *RepositoryRecord, commitID CommitID, firstParent bool, since *time.Time) (CommitIterator, error)
 
 	// ListBranches lists branches on repositories
-	ListBranches(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error)
+	ListBranches(ctx context.Context, repository *RepositoryRecord, opts ...ListOptionsFunc) (BranchIterator, error)
 
 	// DeleteBranch deletes branch from repository
 	DeleteBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, opts ...SetOptionsFunc) error
@@ -896,7 +927,7 @@ type RefManager interface {
 	DeleteBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) error
 
 	// ListBranches lists branches
-	ListBranches(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error)
+	ListBranches(ctx context.Context, repository *RepositoryRecord, opts ListOptions) (BranchIterator, error)
 
 	// GCBranchIterator TODO (niro): Remove when DB implementation is deleted
 	// GCBranchIterator temporary WA to support both DB and KV GC BranchIterator, which iterates over branches by order of commit ID
@@ -1251,6 +1282,7 @@ func (g *Graveler) CreateBranch(ctx context.Context, repository *RepositoryRecor
 		CommitID:     reference.CommitID,
 		StagingToken: GenerateStagingToken(repository.RepositoryID, branchID),
 		SealedTokens: make([]StagingToken, 0),
+		Hidden:       options.Hidden,
 	}
 	storageNamespace := repository.StorageNamespace
 	var preRunID string
@@ -1527,8 +1559,9 @@ func (g *Graveler) Log(ctx context.Context, repository *RepositoryRecord, commit
 	return g.RefManager.Log(ctx, repository, commitID, firstParent, since)
 }
 
-func (g *Graveler) ListBranches(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error) {
-	return g.RefManager.ListBranches(ctx, repository)
+func (g *Graveler) ListBranches(ctx context.Context, repository *RepositoryRecord, opts ...ListOptionsFunc) (BranchIterator, error) {
+	options := NewListOptions(opts)
+	return g.RefManager.ListBranches(ctx, repository, *options)
 }
 
 func (g *Graveler) DeleteBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, opts ...SetOptionsFunc) error {
@@ -3392,7 +3425,7 @@ func (g *Graveler) DumpCommits(ctx context.Context, repository *RepositoryRecord
 }
 
 func (g *Graveler) DumpBranches(ctx context.Context, repository *RepositoryRecord) (*MetaRangeID, error) {
-	iter, err := g.RefManager.ListBranches(ctx, repository)
+	iter, err := g.RefManager.ListBranches(ctx, repository, ListOptions{ShowHidden: true})
 	if err != nil {
 		return nil, err
 	}

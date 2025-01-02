@@ -57,14 +57,20 @@ type Shutter interface {
 	Shutdown(context.Context) error
 }
 
-var errSimplifiedOrExternalAuth = errors.New(`cannot set auth.ui_config.rbac to non-simplified without setting an external auth service`)
+var (
+	errAuthNoEndpoint = errors.New("cannot set auth.ui_config.rbac to non-basic without setting an external auth service endpoint")
+	errInvalidAuth    = errors.New("invalid auth configuration")
+)
 
 func checkAuthModeSupport(cfg *config.Config) error {
 	if cfg.IsAuthBasic() { // Basic mode
 		return nil
 	}
-	if !cfg.IsAuthUISimplified() && !cfg.IsAuthTypeAPI() {
-		return errSimplifiedOrExternalAuth
+	if !cfg.IsAuthUISimplified() && !cfg.IsAdvancedAuth() {
+		return fmt.Errorf("%s: %w", cfg.Auth.UIConfig.RBAC, errInvalidAuth)
+	}
+	if !cfg.IsAuthTypeAPI() {
+		return errAuthNoEndpoint
 	}
 	return nil
 }
@@ -431,7 +437,7 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 		for hasMore {
 			var err error
 			var repos []*catalog.Repository
-			repos, hasMore, err = c.ListRepositories(ctx, -1, "", next)
+			repos, hasMore, err = c.ListRepositories(ctx, -1, "", "", next)
 			if err != nil {
 				logger.WithError(err).Fatal("Checking existing repositories failed")
 			}
