@@ -1,5 +1,10 @@
 # Changelog
 
+# v1.47.0
+
+:new: What's new:
+- S3 GW: Support PutIfAbsent (#8428)
+
 # v1.46.0
 
 :new: What's new:
