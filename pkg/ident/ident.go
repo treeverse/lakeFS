@@ -46,28 +46,28 @@ func marshalType(h hash.Hash, addressType AddressType) {
 
 func MarshalBytes(h hash.Hash, v []byte) {
 	marshalType(h, AddressTypeBytes)
-	MarshalUint64(h, uint64(len(v)))
+	MarshalInt64(h, int64(len(v)))
 	_, _ = h.Write(v)
 }
 
 func MarshalString(h hash.Hash, v string) {
 	marshalType(h, AddressTypeString)
-	MarshalUint64(h, uint64(len(v)))
+	MarshalInt64(h, int64(len(v)))
 	_, _ = h.Write([]byte(v))
 }
 
-func MarshalUint64(h hash.Hash, v uint64) {
+func MarshalInt64(h hash.Hash, v int64) {
 	const int64Bytes = 8
 	marshalType(h, AddressTypeInt64)
 	_, _ = h.Write([]byte{int64Bytes})
 	bytes := make([]byte, int64Bytes)
-	binary.BigEndian.PutUint64(bytes, v)
+	binary.BigEndian.PutUint64(bytes, uint64(v)) //nolint:gosec
 	_, _ = h.Write(bytes)
 }
 
 func MarshalStringSlice(h hash.Hash, v []string) {
 	marshalType(h, AddressTypeStringSlice)
-	MarshalUint64(h, uint64(len(v)))
+	MarshalInt64(h, int64(len(v)))
 	for _, item := range v {
 		MarshalString(h, item)
 	}
@@ -75,7 +75,7 @@ func MarshalStringSlice(h hash.Hash, v []string) {
 
 func MarshalStringMap(h hash.Hash, v map[string]string) {
 	marshalType(h, AddressTypeStringMap)
-	MarshalUint64(h, uint64(len(v)))
+	MarshalInt64(h, int64(len(v)))
 	keys := make([]string, len(v))
 	i := 0
 	for k := range v {
@@ -120,7 +120,7 @@ func (b *AddressWriter) MarshalStringOpt(v string) *AddressWriter {
 }
 
 func (b *AddressWriter) MarshalInt64(v int64) *AddressWriter {
-	MarshalUint64(b, uint64(v)) //nolint:gosec
+	MarshalInt64(b, v)
 	return b
 }
 
