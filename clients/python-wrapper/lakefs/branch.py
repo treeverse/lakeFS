@@ -152,7 +152,7 @@ class Branch(_BaseBranch):
             res = self._client.sdk_client.branches_api.cherry_pick(self._repo_id, self._id, cherry_pick_creation)
             return Commit(**res.dict())
 
-    def create(self, source_reference: ReferenceType, exist_ok: bool = False) -> Branch:
+    def create(self, source_reference: ReferenceType, exist_ok: bool = False, **kwargs) -> Branch:
         """
         Create a new branch in lakeFS from this object
 
@@ -180,7 +180,7 @@ class Branch(_BaseBranch):
             return e
 
         reference_id = source_reference if isinstance(source_reference, str) else source_reference.id
-        branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=reference_id)
+        branch_creation = lakefs_sdk.BranchCreation(name=self._id, source=reference_id, **kwargs)
         with api_exception_handler(handle_conflict):
             self._client.sdk_client.branches_api.create_branch(self._repo_id, branch_creation)
         return self
@@ -342,7 +342,7 @@ class _Transaction(_BaseBranch):
         self._source_branch = branch_id
 
         tx_name = self._get_tx_name()
-        self._tx_branch = Branch(repository_id, tx_name, client).create(branch_id)
+        self._tx_branch = Branch(repository_id, tx_name, client).create(branch_id, hidden=True)
         super().__init__(repository_id, tx_name, client)
 
     @property
