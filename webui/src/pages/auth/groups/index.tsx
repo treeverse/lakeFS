@@ -19,11 +19,7 @@ import {
 import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
 import {EntityActionModal} from "../../../lib/components/auth/forms";
-import {
-    disallowPercentSign,
-    INVALID_GROUP_NAME_ERROR_MESSAGE,
-    INVALID_GROUP_DESCRIPTION_ERROR_MESSAGE
-} from "../validation";
+import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from "../validation";
 import {useLoginConfigContext} from "../../../lib/hooks/conf";
 import {useAuthOutletContext} from "../../../lib/components/auth/layout";
 
@@ -177,7 +173,6 @@ const GroupsContainer = () => {
                 validationFunction={disallowPercentSign(INVALID_GROUP_NAME_ERROR_MESSAGE)}
                 showExtraField={true}
                 extraPlaceholder="Group Description (optional)"
-                extraValidationFunction={disallowPercentSign(INVALID_GROUP_DESCRIPTION_ERROR_MESSAGE)}
             />
 
             <DataTable
