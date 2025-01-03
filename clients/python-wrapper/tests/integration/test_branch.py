@@ -121,7 +121,7 @@ def test_transaction(setup_repo):
     with test_branch.transact(commit_message="my transaction", commit_metadata={"foo": "bar"}) as tx:
         assert tx.get_commit().id == test_branch.head.id
         # Verify tx-branch not listed
-        branches = [b for b in repo.branches()]
+        branches = list(repo.branches())
         assert len(branches) == 1
         assert tx.id not in branches
         upload_data(tx, path_and_data1)
