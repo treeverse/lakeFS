@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## v0.8.0
+
+:new: What's new:
+
+- Use hidden branch in transactions (#8459)
+
+:bug: Bugs fixed:
+
+- Fix objects() return type (#8154)
+
 ## v0.7.1
 
 :bug: Bugs fixed
