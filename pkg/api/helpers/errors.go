@@ -19,9 +19,8 @@ var (
 	ErrUnsupportedProtocol = errors.New("unsupported protocol")
 
 	// ErrRequestFailed is an error returned for failing lakeFS server replies.
-	ErrRequestFailed   = errors.New("request failed")
-	ErrConflict        = errors.New("conflict")
-	ErrProtectedBranch = errors.New("writing to protected branch")
+	ErrRequestFailed = errors.New("request failed")
+	ErrConflict      = errors.New("conflict")
 )
 
 const minHTTPErrorStatusCode = 400
