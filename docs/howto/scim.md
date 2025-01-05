@@ -78,6 +78,10 @@ In the Entra ID admin dashboard, go to **Enterprise Applications** and choose th
 3. In **Secret Token** paste the token you copied in the previous step. If you haven't created a token yet, you may do so now
 4. Click **Test Connection**
 5. If the test fails, please ensure you've entered the correct SCIM endpoint URL from lakeFS Cloud and copied the token correctly. Otherwise, click "Save" at the top of the settings panel
+6. Configure provisioning attribute mappings
+
+## Required Attributes
+The LakeFS SCIM implementation has a number of attributes that it expects to see in requests. Missing, incorrect, or extraneous attributes will generally result in a 400 error code. The User attribute requires username, externalId, emails, and active. The group attribute requires displayName, externalId, and members.
 
 {: .note}
 > **Note:** lakeFS Cloud is designed to work with the default attribute mapping for users and groups provided by Entra ID.
