@@ -18,7 +18,6 @@ social:
     - https://www.linkedin.com/company/treeverse/
     - https://twitter.com/lakeFS
     - https://github.com/treeverse/lakeFS
-    - https://data-folks.masto.host/@lakeFS
 
 # Add an image with absolute path to each page by default 
 # so that Twitter cards work
@@ -103,8 +102,6 @@ footer_social:
     - "https://github.com/treeverse/lakeFS"
   "twitter":
     - "https://twitter.com/lakeFS"
-  "mastodon":
-    - "https://data-folks.masto.host/@lakeFS"
   "slack":
     - "https://lakefs.io/slack"
 
