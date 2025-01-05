@@ -20,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block/azure"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"golang.org/x/sync/errgroup"
 )
@@ -387,7 +388,7 @@ func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, 
 		return linkResp.JSON200, nil
 	}
 	if linkResp.JSON403 != nil {
-		return nil, fmt.Errorf("link object to backing store: %w (%s)", ErrProtectedBranch, linkResp.Status())
+		return nil, graveler.ErrWriteToProtectedBranch
 	}
 	if linkResp.JSON409 != nil {
 		return nil, ErrConflict
