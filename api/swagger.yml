@@ -690,10 +690,10 @@ components:
           type: boolean
           default: true
           description: |
-            If set, set only the destination branch as a parent, which
-            "squashes" the merge to appear as a single commit on the
-            destination branch.
-
+            If set, set only the destination branch as a parent, which "squashes" the merge to
+            appear as a single commit on the destination branch.  The source commit is no longer
+            a part of the merge commit; consider adding it to the 'metadata' or 'message'
+            fields.
     BranchCreation:
       type: object
       required:

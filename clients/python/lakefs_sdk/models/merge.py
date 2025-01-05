@@ -34,7 +34,7 @@ class Merge(BaseModel):
     strategy: Optional[StrictStr] = Field(None, description="In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict")
     force: Optional[StrictBool] = Field(False, description="Allow merge into a read-only branch or into a branch with the same content")
     allow_empty: Optional[StrictBool] = Field(False, description="Allow merge when the branches have the same content")
-    squash_merge: Optional[StrictBool] = Field(True, description="If set, set only the destination branch as a parent, which \"squashes\" the merge to appear as a single commit on the destination branch. ")
+    squash_merge: Optional[StrictBool] = Field(True, description="If set, set only the destination branch as a parent, which \"squashes\" the merge to appear as a single commit on the destination branch.  The source commit is no longer a part of the merge commit; consider adding it to the 'metadata' or 'message' fields. ")
     __properties = ["message", "metadata", "strategy", "force", "allow_empty", "squash_merge"]
 
     class Config:

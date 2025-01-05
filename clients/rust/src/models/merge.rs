@@ -25,7 +25,7 @@ pub struct Merge {
     /// Allow merge when the branches have the same content
     #[serde(rename = "allow_empty", skip_serializing_if = "Option::is_none")]
     pub allow_empty: Option<bool>,
-    /// If set, set only the destination branch as a parent, which \"squashes\" the merge to appear as a single commit on the destination branch. 
+    /// If set, set only the destination branch as a parent, which \"squashes\" the merge to appear as a single commit on the destination branch.  The source commit is no longer a part of the merge commit; consider adding it to the 'metadata' or 'message' fields. 
     #[serde(rename = "squash_merge", skip_serializing_if = "Option::is_none")]
     pub squash_merge: Option<bool>,
 }
