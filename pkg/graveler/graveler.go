@@ -196,6 +196,9 @@ type SetOptions struct {
 	AllowEmpty bool
 	// Hidden Will create the branch with the hidden property
 	Hidden bool
+	// SquashMerge causes merge commits to be "squashed", losing parent
+	// information about the merged-from branch.
+	SquashMerge bool
 }
 
 type SetOptionsFunc func(opts *SetOptions)
@@ -229,6 +232,12 @@ func WithAllowEmpty(v bool) SetOptionsFunc {
 func WithHidden(v bool) SetOptionsFunc {
 	return func(opts *SetOptions) {
 		opts.Hidden = v
+	}
+}
+
+func WithSquashMerge(v bool) SetOptionsFunc {
+	return func(opts *SetOptions) {
+		opts.SquashMerge = v
 	}
 }
 
@@ -2926,7 +2935,11 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		commit.Committer = commitParams.Committer
 		commit.Message = commitParams.Message
 		commit.MetaRangeID = metaRangeID
-		commit.Parents = []CommitID{toCommit.CommitID, fromCommit.CommitID}
+		if options.SquashMerge {
+			commit.Parents = []CommitID{toCommit.CommitID}
+		} else {
+			commit.Parents = []CommitID{toCommit.CommitID, fromCommit.CommitID}
+		}
 		if toCommit.Generation > fromCommit.Generation {
 			commit.Generation = toCommit.Generation + 1
 		} else {

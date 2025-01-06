@@ -74,6 +74,10 @@ public class Merge {
   @SerializedName(SERIALIZED_NAME_ALLOW_EMPTY)
   private Boolean allowEmpty = false;
 
+  public static final String SERIALIZED_NAME_SQUASH_MERGE = "squash_merge";
+  @SerializedName(SERIALIZED_NAME_SQUASH_MERGE)
+  private Boolean squashMerge = true;
+
   public Merge() {
   }
 
@@ -189,6 +193,27 @@ public class Merge {
     this.allowEmpty = allowEmpty;
   }
 
+
+  public Merge squashMerge(Boolean squashMerge) {
+    
+    this.squashMerge = squashMerge;
+    return this;
+  }
+
+   /**
+   * If set, set only the destination branch as a parent, which \&quot;squashes\&quot; the merge to appear as a single commit on the destination branch.  The source commit is no longer a part of the merge commit; consider adding it to the &#39;metadata&#39; or &#39;message&#39; fields.  This behaves like a GitHub or GitLab \&quot;squash merge\&quot;, or in Git terms &#39;git merge --squash; git commit ...&#39;. 
+   * @return squashMerge
+  **/
+  @javax.annotation.Nullable
+  public Boolean getSquashMerge() {
+    return squashMerge;
+  }
+
+
+  public void setSquashMerge(Boolean squashMerge) {
+    this.squashMerge = squashMerge;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -248,13 +273,14 @@ public class Merge {
         Objects.equals(this.metadata, merge.metadata) &&
         Objects.equals(this.strategy, merge.strategy) &&
         Objects.equals(this.force, merge.force) &&
-        Objects.equals(this.allowEmpty, merge.allowEmpty)&&
+        Objects.equals(this.allowEmpty, merge.allowEmpty) &&
+        Objects.equals(this.squashMerge, merge.squashMerge)&&
         Objects.equals(this.additionalProperties, merge.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(message, metadata, strategy, force, allowEmpty, additionalProperties);
+    return Objects.hash(message, metadata, strategy, force, allowEmpty, squashMerge, additionalProperties);
   }
 
   @Override
@@ -266,6 +292,7 @@ public class Merge {
     sb.append("    strategy: ").append(toIndentedString(strategy)).append("\n");
     sb.append("    force: ").append(toIndentedString(force)).append("\n");
     sb.append("    allowEmpty: ").append(toIndentedString(allowEmpty)).append("\n");
+    sb.append("    squashMerge: ").append(toIndentedString(squashMerge)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -294,6 +321,7 @@ public class Merge {
     openapiFields.add("strategy");
     openapiFields.add("force");
     openapiFields.add("allow_empty");
+    openapiFields.add("squash_merge");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
