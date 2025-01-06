@@ -1,7 +1,7 @@
 version: "3"
 services:
   lakefs:
-    image: "${REPO:-treeverse}/lakefs:${TAG:-dev}"
+    image: "${REGISTRY:-treeverse}/${REPO:-lakefs}:${TAG:-dev}"
     command: "${COMMAND:-run}"
     ports:
       - "8000:8000"
@@ -29,7 +29,6 @@ services:
       - AZURE_CLIENT_SECRET
       - AZURE_TENANT_ID
       - LAKEFS_USAGE_REPORT_ENABLED=false
-    entrypoint: ["/app/lakefs", "run"]
     extra_hosts:
       - "host.docker.internal:host-gateway"
     
@@ -56,6 +55,7 @@ services:
       - ESTI_BINARIES_DIR=/app
       - ESTI_GOTEST_FLAGS
       - ESTI_FLAGS
+      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC}
       - ESTI_LARGE_OBJECT_PATH
       - ESTI_FORCE_PATH_STYLE
       - ESTI_AZURE_STORAGE_ACCOUNT
@@ -66,7 +66,7 @@ services:
       - -c
       - |
         apk add --no-cache util-linux
-        go test -timeout 20m -v $ESTI_GOTEST_FLAGS ./esti --system-tests $ESTI_FLAGS --skip=".*GC"
+        go test -timeout 20m -v $$ESTI_GOTEST_FLAGS ./esti --system-tests $$ESTI_FLAGS --skip $$ESTI_SKIP_TESTS
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro
