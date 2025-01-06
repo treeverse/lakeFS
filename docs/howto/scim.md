@@ -81,7 +81,19 @@ In the Entra ID admin dashboard, go to **Enterprise Applications** and choose th
 6. Configure provisioning attribute mappings(this determines which attributes are sent to the lakeFS SCIM endpoint)
 
 ## Required Attributes
-The LakeFS SCIM implementation has a number of attributes that it expects to see in requests. Missing, incorrect, or extraneous attributes will generally result in a 400 error code. The User attribute requires username, externalId, emails, and active. The group attribute requires displayName, externalId, and members.
+The LakeFS SCIM implementation has a number of attributes that it expects to see in requests. Missing, incorrect, or extraneous attributes will generally result in a 400 error code.
+
+### User Resource Attributes
+  * username: Unique identifier for the User, typically used by the user to directly authenticate to the service provider. Each User MUST include a non-empty userName value. This identifier MUST be unique across the service provider's entire set of Users. REQUIRED.
+  * externalId: A String that is an identifier for the resource as defined by the provisioning client. REQUIRED.
+  * emails: Email addresses for the user. The value SHOULD be canonicalized by the service provider, e.g., 'bjensen@example.com' instead of 'bjensen@EXAMPLE.COM'. Canonical type values of 'work', 'home', and 'other'. One should be marked as primary. REQUIRED.
+  * active: A Boolean value indicating the User's administrative status.
+
+### Group Resource Attributes
+  * displayName: A human-readable name for the Group. REQUIRED.
+  * externalId: A String that is an identifier for the resource as defined by the provisioning client. REQUIRED.
+  * members: A list of members of the Group.
+
 
 {: .note}
 > **Note:** lakeFS Cloud is designed to work with the default attribute mapping for users and groups provided by Entra ID.
