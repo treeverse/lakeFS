@@ -1,7 +1,7 @@
 version: "3"
 services:
   lakefs:
-    image: "${REPO:-treeverse}/lakefs:${TAG:-dev}"
+    image: "${REGISTRY:-treeverse}/${REPO:-lakefs}:${TAG:-dev}"
     command: "${COMMAND:-run}"
     ports:
       - "8000:8000"
@@ -29,7 +29,6 @@ services:
       - LAKEFS_DATABASE_DYNAMODB_AWS_ACCESS_KEY_ID=AKIAIO5FODNN7EXAMPLE
       - LAKEFS_DATABASE_DYNAMODB_AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY
       - LAKEFS_USAGE_REPORT_ENABLED=false
-    entrypoint: ["/app/lakefs", "run"]
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -64,13 +63,15 @@ services:
       - ESTI_POST_MIGRATE
       - ESTI_GOTEST_FLAGS
       - ESTI_FLAGS
+      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC}
+      - LAKEFS_ROOT
     working_dir: /lakefs
     command:
       - /bin/sh
       - -c
       - |
         apk add --no-cache util-linux
-        go test -v $ESTI_GOTEST_FLAGS ./esti --system-tests $ESTI_FLAGS --skip=".*GC"
+        go test -v $$ESTI_GOTEST_FLAGS ./esti --system-tests $$ESTI_FLAGS --skip $$ESTI_SKIP_TESTS
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro
