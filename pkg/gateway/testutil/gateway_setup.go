@@ -7,10 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/gateway"
@@ -25,14 +23,12 @@ import (
 )
 
 type Dependencies struct {
-	blocks  block.Adapter
 	auth    *FakeAuthService
 	catalog *catalog.Catalog
 }
 
 func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string) (http.Handler, *Dependencies) {
 	ctx := context.Background()
-	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 
 	store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
 	testutil.MustDo(t, "open kv store", err)
