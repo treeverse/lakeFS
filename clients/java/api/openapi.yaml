@@ -8697,12 +8697,15 @@ components:
     Group:
       example:
         name: name
+        description: description
         id: id
         creation_date: 0
       properties:
         id:
           type: string
         name:
+          type: string
+        description:
           type: string
         creation_date:
           description: Unix Epoch in seconds
@@ -8721,9 +8724,11 @@ components:
           results: 0
         results:
         - name: name
+          description: description
           id: id
           creation_date: 0
         - name: name
+          description: description
           id: id
           creation_date: 0
       properties:
@@ -8840,9 +8845,12 @@ components:
       type: object
     GroupCreation:
       example:
+        description: description
         id: id
       properties:
         id:
+          type: string
+        description:
           type: string
       required:
       - id

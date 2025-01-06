@@ -134,6 +134,7 @@ type Group struct {
 	ID          string    `db:"id"`
 	CreatedAt   time.Time `db:"created_at"`
 	DisplayName string    `db:"display_name" json:"display_name"`
+	Description *string   `db:"description" json:"description"`
 }
 
 type DBGroup struct {
@@ -264,6 +265,7 @@ func GroupFromProto(pb *GroupData) *Group {
 		CreatedAt:   pb.CreatedAt.AsTime(),
 		DisplayName: pb.DisplayName,
 		ID:          pb.DisplayName,
+		Description: &pb.Description,
 	}
 }
 
@@ -271,6 +273,7 @@ func ProtoFromGroup(g *Group) *GroupData {
 	return &GroupData{
 		CreatedAt:   timestamppb.New(g.CreatedAt),
 		DisplayName: g.DisplayName,
+		Description: swag.StringValue(g.Description),
 	}
 }
 

@@ -300,10 +300,21 @@ class Auth {
         }
     }
 
-    async createGroup(groupName) {
-        const response = await apiRequest(`/auth/groups`, {method: 'POST', body: JSON.stringify({id: groupName})});
+    async createGroup(groupName, groupDescription) {
+        const response = await apiRequest(`/auth/groups`, {method: 'POST', body: JSON.stringify({
+                id: groupName,
+                description: groupDescription
+        })});
         if (response.status !== 201) {
             throw new Error(await extractError(response));
+        }
+        return response.json();
+    }
+
+    async getGroup(groupId) {
+        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}`);
+        if (response.status !== 200) {
+            throw new Error(`could not get groups: ${await extractError(response)}`);
         }
         return response.json();
     }

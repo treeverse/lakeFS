@@ -39,7 +39,8 @@ class TestGroupCreation(unittest.TestCase):
         model = lakefs_sdk.models.group_creation.GroupCreation()  # noqa: E501
         if include_optional :
             return GroupCreation(
-                id = ''
+                id = '', 
+                description = ''
             )
         else :
             return GroupCreation(

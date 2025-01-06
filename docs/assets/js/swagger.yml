@@ -1046,6 +1046,8 @@ components:
           type: string
         name:
           type: string
+        description:
+          type: string
         creation_date:
           type: integer
           format: int64
@@ -1144,6 +1146,8 @@ components:
         - id
       properties:
         id:
+          type: string
+        description:
           type: string
 
     Statement:

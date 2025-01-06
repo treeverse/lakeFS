@@ -160,8 +160,8 @@ const GroupsContainer = () => {
             <EntityActionModal
                 show={showCreate}
                 onHide={() => setShowCreate(false)}
-                onAction={groupName => {
-                    return auth.createGroup(groupName).then(() => {
+                onAction={(groupName, groupDesc) => {
+                    return auth.createGroup(groupName, groupDesc).then(() => {
                         setSelected([]);
                         setShowCreate(false);
                         setRefresh(!refresh);
@@ -171,6 +171,8 @@ const GroupsContainer = () => {
                 placeholder="Group Name (e.g. 'DataTeam')"
                 actionName={"Create"}
                 validationFunction={disallowPercentSign(INVALID_GROUP_NAME_ERROR_MESSAGE)}
+                showExtraField={true}
+                extraPlaceholder="Group Description (optional)"
             />
 
             <DataTable
