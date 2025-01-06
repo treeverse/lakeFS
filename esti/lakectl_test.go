@@ -224,31 +224,69 @@ func TestLakectlMerge(t *testing.T) {
 	commitMessage := "first commit to main"
 	vars["MESSAGE"] = commitMessage
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
+
+	// create new feature branch
 	featureBranch := "feature"
-	branchVars := map[string]string{
+	featureBranchVars := map[string]string{
 		"REPO":          repoName,
 		"STORAGE":       storage,
 		"SOURCE_BRANCH": mainBranch,
 		"DEST_BRANCH":   featureBranch,
 	}
 
-	t.Run("merge with commit message and meta", func(t *testing.T) {
-		// create new branch 'feature'
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+featureBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", branchVars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+featureBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", featureBranchVars)
 
-		// update 'file1' on 'main' and commit
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k_other lakefs://"+repoName+"/"+mainBranch+"/"+filePath1, false, "lakectl_fs_upload", vars)
-		commitMessage = "file update on main branch"
-		vars["MESSAGE"] = commitMessage
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
+	// update 'file1' on feature branch and commit
+	vars["FILE_PATH"] = filePath1
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k_other lakefs://"+repoName+"/"+featureBranch+"/"+filePath1, false, "lakectl_fs_upload", vars)
+	commitMessage = "file update on feature branch"
+	vars["BRANCH"] = featureBranch
+	vars["MESSAGE"] = commitMessage
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+featureBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
 
-		commitMessage = "merge commit"
-		vars["MESSAGE"] = commitMessage
-		meta := "key1=value1,key2=value2"
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+mainBranch+" lakefs://"+repoName+"/"+featureBranch+" -m '"+commitMessage+"' --meta "+meta, false, "lakectl_merge_success", branchVars)
+	// update 'file2' on 'main' and commit
+	vars["FILE_PATH"] = filePath2
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k_other lakefs://"+repoName+"/"+featureBranch+"/"+filePath2, false, "lakectl_fs_upload", vars)
+	commitMessage = "another file update on main branch"
+	vars["MESSAGE"] = commitMessage
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+featureBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
 
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log --amount 1 lakefs://"+repoName+"/"+featureBranch, false, "lakectl_merge_with_commit", vars)
-	})
+	cases := []struct {
+		Name   string
+		Squash bool
+	}{
+		{Name: "regular", Squash: false},
+		{Name: "squash", Squash: true},
+	}
+	for _, tc := range cases {
+		t.Run("merge with commit message and meta "+tc.Name, func(t *testing.T) {
+			destBranch := "dest-" + tc.Name
+			destBranchVars := map[string]string{
+				"REPO":          repoName,
+				"STORAGE":       storage,
+				"SOURCE_BRANCH": mainBranch,
+				"DEST_BRANCH":   destBranch,
+			}
+			// create new destBranch from main, before the additions to main.
+			RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+destBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", destBranchVars)
+
+			commitMessage = "merge commit"
+			vars["MESSAGE"] = commitMessage
+			meta := "key1=value1,key2=value2"
+			squash := ""
+			if tc.Squash {
+				squash = "--squash"
+			}
+			destBranchVars["SOURCE_BRANCH"] = featureBranch
+			RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+featureBranch+" lakefs://"+repoName+"/"+destBranch+" -m '"+commitMessage+"' --meta "+meta+" "+squash, false, "lakectl_merge_success", destBranchVars)
+
+			golden := "lakectl_merge_with_commit"
+			if tc.Squash {
+				golden = "lakectl_merge_with_squashed_commit"
+			}
+			RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log --amount 1 lakefs://"+repoName+"/"+destBranch, false, golden, vars)
+		})
+	}
 }
 
 func TestLakectlMergeAndStrategies(t *testing.T) {
