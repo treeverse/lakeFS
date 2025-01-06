@@ -16,6 +16,8 @@ pub struct Group {
     pub id: String,
     #[serde(rename = "name", skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(rename = "description", skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     /// Unix Epoch in seconds
     #[serde(rename = "creation_date")]
     pub creation_date: i64,
@@ -26,6 +28,7 @@ impl Group {
         Group {
             id,
             name: None,
+            description: None,
             creation_date,
         }
     }

@@ -45,4 +45,12 @@ public class GroupCreationTest {
         // TODO: test id
     }
 
+    /**
+     * Test the property 'description'
+     */
+    @Test
+    public void descriptionTest() {
+        // TODO: test description
+    }
+
 }

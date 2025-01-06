@@ -14,12 +14,15 @@ use crate::models;
 pub struct GroupCreation {
     #[serde(rename = "id")]
     pub id: String,
+    #[serde(rename = "description", skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 impl GroupCreation {
     pub fn new(id: String) -> GroupCreation {
         GroupCreation {
             id,
+            description: None,
         }
     }
 }

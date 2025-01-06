@@ -48,6 +48,7 @@ class TestGroupList(unittest.TestCase):
                     lakefs_sdk.models.group.Group(
                         id = '', 
                         name = '', 
+                        description = '', 
                         creation_date = 56, )
                     ]
             )
@@ -62,6 +63,7 @@ class TestGroupList(unittest.TestCase):
                     lakefs_sdk.models.group.Group(
                         id = '', 
                         name = '', 
+                        description = '', 
                         creation_date = 56, )
                     ],
         )

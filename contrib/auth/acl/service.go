@@ -432,8 +432,9 @@ func (s *AuthService) CreateGroup(ctx context.Context, group *model.Group) (*mod
 		return nil, fmt.Errorf("save group (groupKey %s): %w", groupKey, err)
 	}
 	retGroup := &model.Group{
-		DisplayName: group.DisplayName,
 		ID:          group.DisplayName,
+		DisplayName: group.DisplayName,
+		Description: group.Description,
 		CreatedAt:   group.CreatedAt,
 	}
 	return retGroup, nil

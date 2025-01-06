@@ -41,6 +41,7 @@ class TestGroup(unittest.TestCase):
             return Group(
                 id = '', 
                 name = '', 
+                description = '', 
                 creation_date = 56
             )
         else :

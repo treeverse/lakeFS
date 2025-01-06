@@ -364,7 +364,8 @@ func (a *APIAuthService) UpdateUserFriendlyName(ctx context.Context, userID stri
 func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) (*model.Group, error) {
 	ctx = httputil.SetClientTrace(ctx, "api_auth")
 	resp, err := a.apiClient.CreateGroupWithResponse(ctx, CreateGroupJSONRequestBody{
-		Id: group.DisplayName,
+		Id:          group.DisplayName,
+		Description: group.Description,
 	})
 	if err != nil {
 		a.logger.WithError(err).WithField("group", group).Error("failed to create group")
@@ -378,6 +379,7 @@ func (a *APIAuthService) CreateGroup(ctx context.Context, group *model.Group) (*
 		CreatedAt:   time.Unix(resp.JSON201.CreationDate, 0),
 		DisplayName: resp.JSON201.Name,
 		ID:          groupIDOrDisplayName(*resp.JSON201),
+		Description: resp.JSON201.Description,
 	}, nil
 }
 
@@ -441,6 +443,7 @@ func (a *APIAuthService) GetGroup(ctx context.Context, groupID string) (*model.G
 		CreatedAt:   time.Unix(resp.JSON200.CreationDate, 0),
 		DisplayName: resp.JSON200.Name,
 		ID:          groupIDOrDisplayName(*resp.JSON200),
+		Description: resp.JSON200.Description,
 	}, nil
 }
 
@@ -464,6 +467,7 @@ func (a *APIAuthService) ListGroups(ctx context.Context, params *model.Paginatio
 		groups[i] = &model.Group{
 			CreatedAt:   time.Unix(r.CreationDate, 0),
 			DisplayName: r.Name,
+			Description: r.Description,
 			ID:          groupIDOrDisplayName(r),
 		}
 	}
