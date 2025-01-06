@@ -69,7 +69,7 @@ You can choose from the the following options:
 version: "3"
 services:
   lakefs:
-    image: "treeverse/lakefs:1.25.0"
+    image: "treeverse/lakefs:latest"
     command: "RUN"
     ports:
       - "8080:8080"
@@ -102,7 +102,7 @@ services:
       POSTGRES_PASSWORD: lakefs
 
   fluffy:
-    image: "${FLUFFY_REPO:-treeverse}/fluffy:${TAG:-0.4.4}"
+    image: "${FLUFFY_REPO:-treeverse}/fluffy:${TAG:-latest}"
     command: "${COMMAND:-run}"
     ports:
       - "8000:8000"
@@ -160,7 +160,7 @@ LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
 version: "3"
 services:
   lakefs:
-    image: "treeverse/lakefs:1.25.0"
+    image: "treeverse/lakefs:latest"
     command: "RUN"
     ports:
       - "8080:8080"
@@ -196,7 +196,7 @@ services:
       POSTGRES_PASSWORD: lakefs
 
   fluffy:
-    image: "${FLUFFY_REPO:-treeverse}/fluffy:${TAG:-0.4.4}"
+    image: "${FLUFFY_REPO:-treeverse}/fluffy:${TAG:-latest}"
     command: "${COMMAND:-run}"
     ports:
       - "8000:8000"
