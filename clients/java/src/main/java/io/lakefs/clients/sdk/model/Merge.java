@@ -201,7 +201,7 @@ public class Merge {
   }
 
    /**
-   * If set, set only the destination branch as a parent, which \&quot;squashes\&quot; the merge to appear as a single commit on the destination branch.  The source commit is no longer a part of the merge commit; consider adding it to the &#39;metadata&#39; or &#39;message&#39; fields. 
+   * If set, set only the destination branch as a parent, which \&quot;squashes\&quot; the merge to appear as a single commit on the destination branch.  The source commit is no longer a part of the merge commit; consider adding it to the &#39;metadata&#39; or &#39;message&#39; fields.  This behaves like a GitHub or GitLab \&quot;squash merge\&quot;, or in Git terms &#39;git merge --squash; git commit ...&#39;. 
    * @return squashMerge
   **/
   @javax.annotation.Nullable
