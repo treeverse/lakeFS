@@ -34,7 +34,8 @@ class Merge(BaseModel):
     strategy: Optional[StrictStr] = Field(None, description="In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ('dest-wins') or from the source branch('source-wins'). In case no selection is made, the merge process will fail in case of a conflict")
     force: Optional[StrictBool] = Field(False, description="Allow merge into a read-only branch or into a branch with the same content")
     allow_empty: Optional[StrictBool] = Field(False, description="Allow merge when the branches have the same content")
-    __properties = ["message", "metadata", "strategy", "force", "allow_empty"]
+    squash_merge: Optional[StrictBool] = Field(True, description="If set, set only the destination branch as a parent, which \"squashes\" the merge to appear as a single commit on the destination branch.  The source commit is no longer a part of the merge commit; consider adding it to the 'metadata' or 'message' fields.  This behaves like a GitHub or GitLab \"squash merge\", or in Git terms 'git merge --squash; git commit ...'. ")
+    __properties = ["message", "metadata", "strategy", "force", "allow_empty", "squash_merge"]
 
     class Config:
         """Pydantic configuration"""
@@ -76,7 +77,8 @@ class Merge(BaseModel):
             "metadata": obj.get("metadata"),
             "strategy": obj.get("strategy"),
             "force": obj.get("force") if obj.get("force") is not None else False,
-            "allow_empty": obj.get("allow_empty") if obj.get("allow_empty") is not None else False
+            "allow_empty": obj.get("allow_empty") if obj.get("allow_empty") is not None else False,
+            "squash_merge": obj.get("squash_merge") if obj.get("squash_merge") is not None else True
         })
         return _obj
 

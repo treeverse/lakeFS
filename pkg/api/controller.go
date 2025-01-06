@@ -4809,6 +4809,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		swag.StringValue(body.Strategy),
 		graveler.WithForce(swag.BoolValue(body.Force)),
 		graveler.WithAllowEmpty(swag.BoolValue(body.AllowEmpty)),
+		graveler.WithSquashMerge(swag.BoolValue(body.SquashMerge)),
 	)
 
 	if errors.Is(err, graveler.ErrConflictFound) {

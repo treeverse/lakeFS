@@ -686,7 +686,15 @@ components:
           type: boolean
           default: false
           description: Allow merge when the branches have the same content
-
+        squash_merge:
+          type: boolean
+          default: true
+          description: |
+            If set, set only the destination branch as a parent, which "squashes" the merge to
+            appear as a single commit on the destination branch.  The source commit is no longer
+            a part of the merge commit; consider adding it to the 'metadata' or 'message'
+            fields.  This behaves like a GitHub or GitLab "squash merge", or in Git terms 'git
+            merge --squash; git commit ...'.
     BranchCreation:
       type: object
       required:

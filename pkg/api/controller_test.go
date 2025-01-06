@@ -3797,6 +3797,77 @@ func TestController_MergeIntoExplicitBranch(t *testing.T) {
 	}
 }
 
+func namer(number int) func(name string) string {
+	return func(name string) string {
+		return fmt.Sprint(name, number)
+	}
+}
+
+func TestController_MergeSquashing(t *testing.T) {
+	const numCommits = 3
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	// setup env
+	repo := testUniqueRepoName()
+	_, err := deps.catalog.CreateRepository(ctx, repo, onBlock(deps, repo), "main", false)
+	testutil.Must(t, err)
+	base, err := deps.catalog.CreateBranch(ctx, repo, "branch", "main")
+	testutil.Must(t, err)
+	baseCommit := base.Reference
+
+	for commitNumber := 1; commitNumber <= numCommits; commitNumber++ {
+		n := namer(commitNumber)
+		err = deps.catalog.CreateEntry(ctx, repo, "branch", catalog.DBEntry{Path: n("foo/bar"), PhysicalAddress: n("bar-addr"), CreationDate: time.Now(), Size: 1, Checksum: n("checksum")})
+		testutil.Must(t, err)
+		_, err = deps.catalog.Commit(ctx, repo, "branch", "some message", DefaultUserID, nil, nil, nil, false)
+		testutil.Must(t, err)
+	}
+
+	cases := []struct {
+		Name               string
+		Squash             bool
+		ExpectedNumCommits int
+	}{{
+		Name:   "regular",
+		Squash: false,
+		// Commits: 1 "created repository", numCommits on branch, 1 merge.
+		ExpectedNumCommits: numCommits + 2,
+	}, {
+		Name:   "squash",
+		Squash: true,
+		// Commits: 1 "created repository", 1 merge.
+		ExpectedNumCommits: 2,
+	}}
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			destinationBranch := "main-" + tc.Name
+
+			_, err := deps.catalog.CreateBranch(ctx, repo, destinationBranch, "main")
+			testutil.Must(t, err)
+
+			mergeResp, err := clt.MergeIntoBranchWithResponse(ctx, repo, "branch", destinationBranch, apigen.MergeIntoBranchJSONRequestBody{SquashMerge: &tc.Squash})
+			testutil.MustDo(t, "perform merge into branch", err)
+			if !apiutil.IsStatusCodeOK(mergeResp.StatusCode()) {
+				t.Fatal("merge request failed", mergeResp.Status())
+			}
+
+			commits, hasMore, err := deps.catalog.ListCommits(ctx, repo, destinationBranch, catalog.LogParams{Amount: numCommits + 5, StopAt: baseCommit})
+			testutil.MustDo(t, "log from merged commit", err)
+			if hasMore {
+				t.Errorf("Got pagination after %d results when no pagination expected", len(commits))
+			}
+
+			if len(commits) != tc.ExpectedNumCommits {
+				for i, commit := range commits {
+					t.Log(i, "  ", commit)
+				}
+				t.Errorf("Got %d commits when expecting %d", len(commits), tc.ExpectedNumCommits)
+			}
+		})
+	}
+}
+
 func TestController_MergeDirtyBranch(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()

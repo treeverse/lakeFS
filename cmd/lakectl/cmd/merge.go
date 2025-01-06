@@ -42,6 +42,7 @@ var mergeCmd = &cobra.Command{
 		strategy := Must(cmd.Flags().GetString("strategy"))
 		force := Must(cmd.Flags().GetBool("force"))
 		allowEmpty := Must(cmd.Flags().GetBool("allow-empty"))
+		squash := Must(cmd.Flags().GetBool("squash"))
 
 		fmt.Println("Source:", sourceRef)
 		fmt.Println("Destination:", destinationRef)
@@ -54,11 +55,12 @@ var mergeCmd = &cobra.Command{
 		}
 
 		body := apigen.MergeIntoBranchJSONRequestBody{
-			Message:    &message,
-			Metadata:   &apigen.Merge_Metadata{AdditionalProperties: kvPairs},
-			Strategy:   &strategy,
-			Force:      &force,
-			AllowEmpty: &allowEmpty,
+			Message:     &message,
+			Metadata:    &apigen.Merge_Metadata{AdditionalProperties: kvPairs},
+			Strategy:    &strategy,
+			Force:       &force,
+			AllowEmpty:  &allowEmpty,
+			SquashMerge: &squash,
 		}
 
 		resp, err := client.MergeIntoBranchWithResponse(cmd.Context(), destinationRef.Repository, sourceRef.Ref, destinationRef.Ref, body)
@@ -89,6 +91,7 @@ func init() {
 	flags.String("strategy", "", "In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch (\"dest-wins\") or from the source branch(\"source-wins\"). In case no selection is made, the merge process will fail in case of a conflict")
 	flags.Bool("force", false, "Allow merge into a read-only branch or into a branch with the same content")
 	flags.Bool("allow-empty", false, "Allow merge when the branches have the same content")
+	flags.Bool("squash", false, "Squash all changes from source into a single commit on destination")
 	withCommitFlags(mergeCmd, true)
 	rootCmd.AddCommand(mergeCmd)
 }
