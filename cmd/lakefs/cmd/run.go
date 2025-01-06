@@ -339,21 +339,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("could not initialize authenticator for S3 gateway")
 		}
 
-		s3gatewayHandler := gateway.NewHandler(
-			cfg.Gateways.S3.Region,
-			c,
-			multipartTracker,
-			blockStore,
-			authService,
-			cfg.Gateways.S3.DomainNames,
-			bufferedCollector,
-			upload.DefaultPathProvider,
-			s3FallbackURL,
-			cfg.Logging.AuditLogLevel,
-			cfg.Logging.TraceRequestHeaders,
-			cfg.Gateways.S3.VerifyUnsupported,
-			cfg.IsAdvancedAuth(),
-		)
+		s3gatewayHandler := gateway.NewHandler(cfg.Gateways.S3.Region, c, multipartTracker, authService, cfg.Gateways.S3.DomainNames, bufferedCollector, upload.DefaultPathProvider, s3FallbackURL, cfg.Logging.AuditLogLevel, cfg.Logging.TraceRequestHeaders, cfg.Gateways.S3.VerifyUnsupported, cfg.IsAdvancedAuth())
 		s3gatewayHandler = apiAuthenticator(s3gatewayHandler)
 
 		bufferedCollector.Start(ctx)

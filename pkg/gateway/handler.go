@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/multipart"
@@ -55,14 +54,13 @@ type ServerContext struct {
 	bareDomains       []string
 	catalog           *catalog.Catalog
 	multipartTracker  multipart.Tracker
-	blockStore        block.Adapter
 	authService       auth.GatewayService
 	stats             stats.Collector
 	pathProvider      upload.PathProvider
 	verifyUnsupported bool
 }
 
-func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool, verifyUnsupported bool, isAdvancedAuth bool) http.Handler {
+func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool, verifyUnsupported bool, isAdvancedAuth bool) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -82,7 +80,6 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 		multipartTracker:  multipartTracker,
 		region:            region,
 		bareDomains:       bareDomains,
-		blockStore:        blockStore,
 		authService:       authService,
 		stats:             stats,
 		pathProvider:      pathProvider,

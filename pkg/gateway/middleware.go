@@ -118,7 +118,6 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 			FQDN:              getBareDomain(stripPort(req.Host), sc.bareDomains),
 			Catalog:           sc.catalog,
 			MultipartTracker:  sc.multipartTracker,
-			BlockStore:        sc.blockStore,
 			Auth:              sc.authService,
 			VerifyUnsupported: sc.verifyUnsupported,
 			Incr: func(action, userID, repository, ref string) {

@@ -39,9 +39,6 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	defer store.Close()
 	multipartTracker := multipart.NewTracker(store)
 
-	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
-	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
-
 	conf, err := config.NewConfig("")
 	testutil.MustDo(t, "config", err)
 
@@ -63,10 +60,9 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	_, err = c.CreateRepository(ctx, repoName, storageNamespace, "main", false)
 	testutil.Must(t, err)
 
-	handler := gateway.NewHandler(authService.Region, c, multipartTracker, blockAdapter, authService, []string{authService.BareDomain}, &stats.NullCollector{}, upload.DefaultPathProvider, nil, config.DefaultLoggingAuditLogLevel, true, false, false)
+	handler := gateway.NewHandler(authService.Region, c, multipartTracker, authService, []string{authService.BareDomain}, &stats.NullCollector{}, upload.DefaultPathProvider, nil, config.DefaultLoggingAuditLogLevel, true, false, false)
 
 	return handler, &Dependencies{
-		blocks:  blockAdapter,
 		auth:    authService,
 		catalog: c,
 	}
