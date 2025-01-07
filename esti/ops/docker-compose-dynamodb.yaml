@@ -38,7 +38,7 @@ services:
       - "6432:8000"
 
   esti:
-    image: "golang:1.22.6-alpine3.20"
+    image: "golang:1.23-alpine"
     links:
       - lakefs:s3.local.lakefs.io
       - lakefs:testmultipartupload.s3.local.lakefs.io

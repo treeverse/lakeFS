@@ -437,9 +437,9 @@ func (cp CommitParents) AsStringSlice() []string {
 const FirstCommitMsg = "Repository created"
 
 // CommitVersion used to track changes in Commit schema. Each version is change that a constant describes.
-type CommitVersion int
+type CommitVersion int32
 
-type CommitGeneration int64
+type CommitGeneration int32
 
 const (
 	CommitVersionInitial CommitVersion = iota
@@ -2170,14 +2170,14 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 		}
 
 		var branchMetaRangeID MetaRangeID
-		var parentGeneration int
+		var parentGeneration int32
 		if branch.CommitID != "" {
 			branchCommit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
 			if err != nil {
 				return nil, fmt.Errorf("get commit: %w", err)
 			}
 			branchMetaRangeID = branchCommit.MetaRangeID
-			parentGeneration = int(branchCommit.Generation)
+			parentGeneration = int32(branchCommit.Generation)
 		}
 		commit.Generation = CommitGeneration(parentGeneration + 1)
 		if params.SourceMetaRange != nil {
@@ -2536,7 +2536,7 @@ func (g *Graveler) resetKey(ctx context.Context, repository *RepositoryRecord, b
 		return g.StagingManager.Set(ctx, st, key, committed, false)
 		// entry not committed and changed in staging area => override with tombstone
 		// If not committed and staging == tombstone => ignore
-	} else if !isCommitted && uncommittedValue != nil {
+	} else if uncommittedValue != nil {
 		return g.deleteAndNotify(ctx, repository.RepositoryID, BranchRecord{branchID, branch}, key, false)
 	}
 
@@ -3688,7 +3688,7 @@ func (c *commitValueIterator) setValue() bool {
 	}
 	commit := c.src.Value()
 	data, err := proto.Marshal(&CommitData{
-		Version:      int32(commit.Version),
+		Version:      int32(commit.Version), //nolint:gosec
 		Id:           string(commit.CommitID),
 		Committer:    commit.Committer,
 		Message:      commit.Message,

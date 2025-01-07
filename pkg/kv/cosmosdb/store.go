@@ -517,7 +517,7 @@ func (e *EntriesIterator) runQuery(includeStartKey bool) error {
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(e.partitionKey))
 	e.queryPager = e.store.containerClient.NewQueryItemsPager(query, pk, &azcosmos.QueryOptions{
 		ConsistencyLevel: e.store.consistencyLevel.ToPtr(),
-		PageSizeHint:     int32(e.batchSize),
+		PageSizeHint:     int32(e.batchSize), //nolint:gosec
 		QueryParameters: []azcosmos.QueryParameter{{
 			Name:  "@start",
 			Value: encoding.EncodeToString(e.startKey),

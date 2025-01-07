@@ -226,7 +226,7 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 			n += n0
 			buf = buf[n0:]
 			// Update bytes to be read of the current chunk before verifying chunk's signature.
-			cr.n -= uint64(n0)
+			cr.n -= uint64(n0) //nolint:gosec
 
 			// If we're at the end of a chunk.
 			if cr.n == 0 {

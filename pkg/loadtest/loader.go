@@ -216,7 +216,6 @@ func (t *Loader) streamRequests(in <-chan vegeta.Target) <-chan error {
 	go func() {
 		defer close(errs)
 		for tgt := range in {
-			tgt := tgt // pin
 			err := encoder.Encode(&tgt)
 			if err != nil {
 				errs <- err
