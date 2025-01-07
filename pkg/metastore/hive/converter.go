@@ -98,7 +98,7 @@ func sortColumnsLocalToHive(columns []*metastore.Order) []*hive_metastore.Order 
 	for i, column := range columns {
 		res[i] = &hive_metastore.Order{
 			Col:   column.Col,
-			Order: int32(column.Order),
+			Order: int32(column.Order), //nolint:gosec
 		}
 	}
 	return res
@@ -124,9 +124,9 @@ func TableLocalToHive(table *metastore.Table) *hive_metastore.Table {
 		DbName:         table.DBName,
 		TableName:      table.TableName,
 		Owner:          table.Owner,
-		CreateTime:     int32(table.CreateTime),
-		LastAccessTime: int32(table.LastAccessTime),
-		Retention:      int32(table.Retention),
+		CreateTime:     int32(table.CreateTime),     //nolint:gosec
+		LastAccessTime: int32(table.LastAccessTime), //nolint:gosec
+		Retention:      int32(table.Retention),      //nolint:gosec
 		Sd:             sd,
 
 		PartitionKeys:    columnsLocalToHive(table.PartitionKeys),
@@ -192,8 +192,8 @@ func PartitionLocalToHive(partition *metastore.Partition) *hive_metastore.Partit
 		Values:         partition.Values,
 		DbName:         partition.DBName,
 		TableName:      partition.TableName,
-		CreateTime:     int32(partition.CreateTime),
-		LastAccessTime: int32(partition.LastAccessTime),
+		CreateTime:     int32(partition.CreateTime),     //nolint:gosec
+		LastAccessTime: int32(partition.LastAccessTime), //nolint:gosec
 		Sd:             sd,
 		Parameters:     partition.Parameters,
 		Privileges:     privileges,
@@ -211,7 +211,7 @@ func SDLocalToHive(sd *metastore.StorageDescriptor) *hive_metastore.StorageDescr
 		InputFormat:            sd.InputFormat,
 		OutputFormat:           sd.OutputFormat,
 		Compressed:             sd.Compressed,
-		NumBuckets:             int32(sd.NumBuckets),
+		NumBuckets:             int32(sd.NumBuckets), //nolint:gosec
 		SerdeInfo:              serDeLocalToHive(sd.SerdeInfo),
 		BucketCols:             sd.BucketCols,
 		SortCols:               sortColumnsLocalToHive(sd.SortCols),

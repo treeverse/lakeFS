@@ -151,7 +151,7 @@ func getBaseLibrary(output io.StringWriter) []glua.RegistryFunction {
 				var stats runtime.MemStats
 				runtime.ReadMemStats(&stats)
 				l.PushNumber(float64(stats.HeapAlloc >> 10))
-				l.PushInteger(int(stats.HeapAlloc & 0x3ff))
+				l.PushInteger(int(stats.HeapAlloc & 0x3ff)) //nolint:gosec
 				return 2
 			default:
 				l.PushInteger(-1)

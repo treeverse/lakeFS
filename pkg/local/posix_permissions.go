@@ -54,7 +54,7 @@ func GetDefaultPermissions(isDir bool) POSIXPermissions {
 	}
 	return POSIXPermissions{
 		POSIXOwnership: *defaultOwnership,
-		Mode:           os.FileMode(mode),
+		Mode:           os.FileMode(mode), //nolint:gosec
 	}
 }
 

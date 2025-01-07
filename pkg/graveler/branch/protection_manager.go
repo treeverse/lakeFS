@@ -51,7 +51,6 @@ func (m *ProtectionManager) IsBlocked(ctx context.Context, repository *graveler.
 		return false, err
 	}
 	for pattern, blockedActions := range rules.BranchPatternToBlockedActions {
-		pattern := pattern
 		matcher, err := m.matchers.GetOrSet(pattern, func() (v interface{}, err error) {
 			return glob.Compile(pattern)
 		})

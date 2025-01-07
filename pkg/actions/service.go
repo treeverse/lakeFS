@@ -343,7 +343,6 @@ func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task
 func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord, tasks [][]*Task) error {
 	var g multierror.Group
 	for _, actionTasks := range tasks {
-		actionTasks := actionTasks // pin
 		g.Go(func() error {
 			var actionErr error
 			for _, task := range actionTasks {

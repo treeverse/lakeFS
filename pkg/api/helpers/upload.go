@@ -191,7 +191,6 @@ func (u *presignUpload) uploadMultipart(ctx context.Context) (*apigen.ObjectStat
 	g.SetLimit(u.uploader.Concurrency)
 
 	for i := 0; i < u.numParts; i++ {
-		i := i // pinning
 		g.Go(func() error {
 			etag, err := u.uploadPart(grpCtx, parts[i].Reader, parts[i].URL)
 			if err != nil {

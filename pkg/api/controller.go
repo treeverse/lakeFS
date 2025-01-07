@@ -195,7 +195,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 
 	// check valid number of parts
 	if params.Parts != nil {
-		if *params.Parts < 0 || int32(*params.Parts) > manager.MaxUploadParts {
+		if *params.Parts < 0 || int32(*params.Parts) > manager.MaxUploadParts { //nolint:gosec
 			writeError(w, r, http.StatusBadRequest, fmt.Sprintf("parts can be between 0 and %d", manager.MaxUploadParts))
 			return
 		}
@@ -2339,11 +2339,11 @@ func (c *Controller) SetGCRules(w http.ResponseWriter, r *http.Request, body api
 	}
 	ctx := r.Context()
 	rules := &graveler.GarbageCollectionRules{
-		DefaultRetentionDays: int32(body.DefaultRetentionDays),
+		DefaultRetentionDays: int32(body.DefaultRetentionDays), //nolint:gosec
 		BranchRetentionDays:  make(map[string]int32),
 	}
 	for _, rule := range body.Branches {
-		rules.BranchRetentionDays[rule.BranchId] = int32(rule.RetentionDays)
+		rules.BranchRetentionDays[rule.BranchId] = int32(rule.RetentionDays) //nolint:gosec
 	}
 	err := c.Catalog.SetGarbageCollectionRules(ctx, repository, rules)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -3039,7 +3039,7 @@ func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, 
 		writeError(w, r, http.StatusUnauthorized, "missing user")
 		return
 	}
-	err = c.Catalog.CreateCommitRecord(ctx, repository, body.CommitId, body.Version, body.Committer, body.Message, body.MetarangeId, body.CreationDate, body.Parents, body.Metadata.AdditionalProperties, int(body.Generation), graveler.WithForce(swag.BoolValue(body.Force)))
+	err = c.Catalog.CreateCommitRecord(ctx, repository, body.CommitId, body.Version, body.Committer, body.Message, body.MetarangeId, body.CreationDate, body.Parents, body.Metadata.AdditionalProperties, int32(body.Generation), graveler.WithForce(swag.BoolValue(body.Force))) //nolint:gosec
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -5219,7 +5219,7 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 			UserID: user.Username,
 			Client: client,
 		}
-		c.Collector.CollectEvents(ev, uint64(statsEv.Count))
+		c.Collector.CollectEvents(ev, uint64(statsEv.Count)) //nolint:gosec
 
 		c.Logger.WithContext(ctx).WithFields(logging.Fields{
 			"class":   ev.Class,

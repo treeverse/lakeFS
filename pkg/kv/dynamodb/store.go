@@ -521,7 +521,7 @@ func (e *EntriesIterator) runQuery(limit int) {
 		ReturnConsumedCapacity:    types.ReturnConsumedCapacityTotal,
 	}
 
-	queryInput.Limit = aws.Int32(int32(limit))
+	queryInput.Limit = aws.Int32(int32(limit)) //nolint:gosec
 	e.store.logger.
 		WithField("partition_key", e.partitionKey).
 		WithField("limit", limit).
