@@ -1,5 +1,11 @@
 # Changelog
 
+# v1.48.0
+
+:new: What's new:
+- Upgrade to Golang 1.23 (#8452)
+- Add "squash merge" support to merge API (#8464)
+
 # v1.47.0
 
 :new: What's new:
