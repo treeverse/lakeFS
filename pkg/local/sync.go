@@ -140,7 +140,7 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 		if errors.Is(err, syscall.EISDIR) && sizeBytes == 0 {
 			return nil // no further action required!
 		}
-		return fmt.Errorf("could not create file '%s': %w", destination, err)
+		return helpers.ResponseAsError(err) //fmt.Errorf("could not create file '%s': %w", destination, err)
 	}
 	defer func() {
 		err = f.Close()
@@ -193,7 +193,8 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 
 		_, err = io.Copy(f, barReader)
 		if err != nil {
-			return fmt.Errorf("could not write file '%s': %w", destination, err)
+			return helpers.ResponseAsError(err)
+			// return fmt.Errorf("could not write file '%s': %w", destination, err)
 		}
 	}
 	return nil
@@ -388,7 +389,8 @@ func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change 
 		return
 	}
 	if resp.StatusCode() != http.StatusNoContent {
-		return fmt.Errorf("could not delete object: HTTP %d: %w", resp.StatusCode(), helpers.ErrRequestFailed)
+		return helpers.ResponseAsError(resp)
+		//return fmt.Errorf("could not delete object: HTTP %d: %w", resp.StatusCode(), helpers.ErrRequestFailed)
 	}
 	return
 }
