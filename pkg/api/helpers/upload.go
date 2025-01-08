@@ -389,7 +389,7 @@ func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, 
 	if linkResp.JSON409 != nil {
 		return nil, ErrConflict
 	}
-	return nil, fmt.Errorf("link object to backing store: %w (%s)", ErrRequestFailed, linkResp.Status())
+	return nil, fmt.Errorf("link object to backing store: %w (%s)", ResponseAsError(linkResp), linkResp.Status())
 }
 
 func (u *presignUpload) Upload(ctx context.Context) (*apigen.ObjectStats, error) {
