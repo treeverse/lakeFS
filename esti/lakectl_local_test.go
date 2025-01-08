@@ -542,9 +542,9 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 				fd, err = os.Create(filepath.Join(dataDir, "test.txt"))
 				require.NoError(t, err)
 				require.NoError(t, fd.Close())
-				RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
-				RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ subdir/test.txt", vars)
-				RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ subdir-a/test.txt", vars)
+				RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added  ║ test.txt", vars)
+				RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added  ║ subdir/test.txt", vars)
+				RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added  ║ subdir-a/test.txt", vars)
 
 			} else {
 				require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
@@ -553,7 +553,7 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 			}
 
 			// Commit changes to branch
-			RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test", false, "cannot write to protected branch", vars)
+			RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test"+dataDir, false, "cannot write to protected branch", vars)
 			runCmd(t, Lakectl()+" branch-protect delete lakefs://"+repoName+"/  "+vars["BRANCH"], false, false, vars)
 
 		})
