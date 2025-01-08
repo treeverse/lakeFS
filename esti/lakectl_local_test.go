@@ -566,7 +566,7 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 			localCreateTestData(t, vars, append(objects, deleted))
 
 			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
-			runCmd(t, Lakectl()+" branch-protect add  "+tt.name, false, false, vars)
+			runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+"/  "+tt.name, false, false, vars)
 
 			vars["LOCAL_DIR"] = dataDir
 			vars["PREFIX"] = ""
@@ -594,7 +594,7 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ subdir-a/test.txt", vars)
 
 			// Commit changes to branch
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test"+presign+dataDir, false, "cannot write to protected branch", vars)
+			RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test"+presign+dataDir, false, "cannot write to protected branch", vars)
 
 			// // Check no diff after commit
 			// RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
