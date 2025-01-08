@@ -140,7 +140,7 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 		if errors.Is(err, syscall.EISDIR) && sizeBytes == 0 {
 			return nil // no further action required!
 		}
-		fmt.Errorf("could not create file '%s': %w", destination, err)
+		return fmt.Errorf("could not create file '%s': %w", destination, err)
 	}
 	defer func() {
 		err = f.Close()
