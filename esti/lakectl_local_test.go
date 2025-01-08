@@ -566,7 +566,7 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 			localCreateTestData(t, vars, append(objects, deleted))
 
 			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
-			runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+"/ "+tt.name, false, false, vars)
+			runCmd(t, Lakectl()+" branch-protect add  "+tt.name, false, false, vars)
 
 			vars["LOCAL_DIR"] = dataDir
 			vars["PREFIX"] = ""
