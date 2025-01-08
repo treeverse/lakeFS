@@ -383,18 +383,13 @@ func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, 
 	if err != nil {
 		return nil, fmt.Errorf("link object to backing store: %w", err)
 	}
-
 	if linkResp.JSON200 != nil {
 		return linkResp.JSON200, nil
 	}
-	return nil, ResponseAsError(linkResp)
-	// if linkResp.JSON403 != nil {
-	// 	return nil, graveler.ErrWriteToProtectedBranch
-	// }
-	// if linkResp.JSON409 != nil {
-	// 	return nil, ErrConflict
-	// }
-	// return nil, fmt.Errorf("link object to backing store: %w (%s)", ErrRequestFailed, linkResp.Status())
+	if linkResp.JSON409 != nil {
+		return nil, ErrConflict
+	}
+	return nil, fmt.Errorf("link object to backing store: %w (%s)", ErrRequestFailed, linkResp.Status())
 }
 
 func (u *presignUpload) Upload(ctx context.Context) (*apigen.ObjectStats, error) {
