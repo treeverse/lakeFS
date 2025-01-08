@@ -565,14 +565,15 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 
 			localCreateTestData(t, vars, append(objects, deleted))
 
-			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
-			runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+"/  "+tt.name, false, false, vars)
-
 			vars["LOCAL_DIR"] = dataDir
 			vars["PREFIX"] = ""
 			vars["BRANCH"] = tt.name
 			vars["REF"] = tt.name
 			presign := fmt.Sprintf(" --pre-sign=%v ", tt.presign)
+
+			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+			runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+"/  "+tt.name, false, false, vars)
+
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+presign+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
@@ -596,8 +597,6 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 			// Commit changes to branch
 			RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test"+presign+dataDir, false, "cannot write to protected branch", vars)
 
-			// // Check no diff after commit
-			// RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
 		})
 	}
 
