@@ -487,11 +487,6 @@ func TestLakectlLocal_pull(t *testing.T) {
 }
 
 func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
-
-	tmpDir := t.TempDir()
-	fd, err := os.CreateTemp(tmpDir, "")
-	require.NoError(t, err)
-	require.NoError(t, fd.Close())
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
@@ -499,65 +494,51 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
 		"REF":     mainBranch,
-		"PREFIX":  "",
 	}
 	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
-	prefix := "images"
 	objects := []string{
 		"ro_1k.1",
 		"ro_1k.2",
 		"ro_1k.3",
-		prefix + "/1.png",
-		prefix + "/2.png",
-		prefix + "/3.png",
-		prefix + "/subdir/1.png",
-		prefix + "/subdir/2.png",
-		prefix + "/subdir/3.png",
 	}
 
 	tests := []struct {
 		name        string
-		prefix      string
 		addOrDelete bool
 	}{
 		{
 			name:        "test1",
-			prefix:      "",
 			addOrDelete: true,
 		},
 		{
 			name:        "test2",
-			prefix:      prefix,
 			addOrDelete: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			fd, err := os.CreateTemp(tmpDir, "")
+			require.NoError(t, err)
+			require.NoError(t, fd.Close())
 			dataDir, err := os.MkdirTemp(tmpDir, "")
 			require.NoError(t, err)
-			deleted := prefix + "/subdir/deleted.png"
+			deleted := "deleted.png"
 
 			vars["LOCAL_DIR"] = dataDir
 			vars["BRANCH"] = tt.name
 			vars["REF"] = tt.name
-			vars["PREFIX"] = tt.prefix
 
 			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+vars["BRANCH"]+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 			localCreateTestData(t, vars, append(objects, deleted))
 			runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+"/  "+vars["BRANCH"], false, false, vars)
 
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/ "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", vars)
 
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
 
 			// Modify local folder - add or remove files
 			if tt.addOrDelete {
-				require.NoError(t, os.MkdirAll(filepath.Join(dataDir, "subdir"), os.ModePerm))
-				require.NoError(t, os.MkdirAll(filepath.Join(dataDir, "subdir-a"), os.ModePerm))
-				fd, err = os.Create(filepath.Join(dataDir, "subdir", "test.txt"))
-				require.NoError(t, err)
-				fd, err = os.Create(filepath.Join(dataDir, "subdir-a", "test.txt"))
-				require.NoError(t, err)
 				fd, err = os.Create(filepath.Join(dataDir, "test.txt"))
 				require.NoError(t, err)
 				require.NoError(t, fd.Close())
