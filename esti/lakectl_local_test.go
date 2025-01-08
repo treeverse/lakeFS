@@ -596,6 +596,7 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 
 			// Commit changes to branch
 			RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test"+presign+dataDir, false, "cannot write to protected branch", vars)
+			runCmd(t, Lakectl()+" branch-protect delete lakefs://"+repoName+"/  "+tt.name, false, false, vars)
 
 		})
 	}
