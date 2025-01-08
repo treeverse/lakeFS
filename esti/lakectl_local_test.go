@@ -512,7 +512,7 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 		"REF":     mainBranch,
 		"PREFIX":  "",
 	}
-
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
 	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 	prefix := "images"
 	objects := []string{
