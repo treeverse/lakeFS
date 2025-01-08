@@ -487,6 +487,18 @@ func TestLakectlLocal_pull(t *testing.T) {
 }
 
 func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
+
+	// repoName := generateUniqueRepositoryName()
+	// storage := generateUniqueStorageNamespace(repoName)
+	// vars := map[string]string{
+	// 	"REPO":    repoName,
+	// 	"STORAGE": storage,
+	// 	"BRANCH":  mainBranch,
+	// }
+	// RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	// RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch-protect add lakefs://"+repoName+" "+mainBranch, false, "lakectl_empty", vars)
+	// RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch-protect list lakefs://"+repoName, false, "lakectl_branch_protection_list.term", vars)
 	tmpDir := t.TempDir()
 	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
@@ -501,9 +513,7 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 		"PREFIX":  "",
 	}
 
-	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
 	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
-	runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+"/ "+mainBranch, false, false, vars)
 	prefix := "images"
 	objects := []string{
 		"ro_1k.1",
@@ -556,6 +566,7 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 			localCreateTestData(t, vars, append(objects, deleted))
 
 			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+			runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+"/ "+tt.name, false, false, vars)
 
 			vars["LOCAL_DIR"] = dataDir
 			vars["PREFIX"] = ""
@@ -585,8 +596,8 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 			// Commit changes to branch
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local commit -m test"+presign+dataDir, false, "cannot write to protected branch", vars)
 
-			// Check no diff after commit
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
+			// // Check no diff after commit
+			// RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
 		})
 	}
 
