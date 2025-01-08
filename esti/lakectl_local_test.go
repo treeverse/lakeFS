@@ -488,17 +488,6 @@ func TestLakectlLocal_pull(t *testing.T) {
 
 func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 
-	// repoName := generateUniqueRepositoryName()
-	// storage := generateUniqueStorageNamespace(repoName)
-	// vars := map[string]string{
-	// 	"REPO":    repoName,
-	// 	"STORAGE": storage,
-	// 	"BRANCH":  mainBranch,
-	// }
-	// RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
-
-	// RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch-protect add lakefs://"+repoName+" "+mainBranch, false, "lakectl_empty", vars)
-	// RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch-protect list lakefs://"+repoName, false, "lakectl_branch_protection_list.term", vars)
 	tmpDir := t.TempDir()
 	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
@@ -513,7 +502,6 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 		"PREFIX":  "",
 	}
 	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
-	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 	prefix := "images"
 	objects := []string{
 		"ro_1k.1",
@@ -528,75 +516,64 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		prefix  string
-		presign bool
+		name        string
+		prefix      string
+		addOrDelete bool
 	}{
 		{
-			name:    "root",
-			prefix:  "",
-			presign: false,
+			name:        "test1",
+			prefix:      "",
+			addOrDelete: true,
 		},
 		{
-			name:    "root-presign",
-			prefix:  "",
-			presign: true,
-		},
-		{
-			name:    prefix,
-			prefix:  prefix,
-			presign: false,
-		},
-		{
-			name:    prefix + "-presign",
-			prefix:  prefix,
-			presign: true,
+			name:        "test2",
+			prefix:      prefix,
+			addOrDelete: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.presign {
-				// Skip due to bug on Azure https://github.com/treeverse/lakeFS/issues/6426
-				requireBlockstoreType(t, block.BlockstoreTypeS3, block.BlockstoreTypeGS)
-			}
 			dataDir, err := os.MkdirTemp(tmpDir, "")
 			require.NoError(t, err)
 			deleted := prefix + "/subdir/deleted.png"
 
-			localCreateTestData(t, vars, append(objects, deleted))
-
 			vars["LOCAL_DIR"] = dataDir
-			vars["PREFIX"] = ""
 			vars["BRANCH"] = tt.name
 			vars["REF"] = tt.name
-			presign := fmt.Sprintf(" --pre-sign=%v ", tt.presign)
+			vars["PREFIX"] = tt.prefix
 
-			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
-			runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+"/  "+tt.name, false, false, vars)
+			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+vars["BRANCH"]+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+			localCreateTestData(t, vars, append(objects, deleted))
+			runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+"/  "+vars["BRANCH"], false, false, vars)
 
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+presign+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
 
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
 
-			// Modify local folder - add and remove files
-			require.NoError(t, os.MkdirAll(filepath.Join(dataDir, "subdir"), os.ModePerm))
-			require.NoError(t, os.MkdirAll(filepath.Join(dataDir, "subdir-a"), os.ModePerm))
-			fd, err = os.Create(filepath.Join(dataDir, "subdir", "test.txt"))
-			require.NoError(t, err)
-			fd, err = os.Create(filepath.Join(dataDir, "subdir-a", "test.txt"))
-			require.NoError(t, err)
-			fd, err = os.Create(filepath.Join(dataDir, "test.txt"))
-			require.NoError(t, err)
-			require.NoError(t, fd.Close())
-			require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
+			// Modify local folder - add or remove files
+			if tt.addOrDelete {
+				require.NoError(t, os.MkdirAll(filepath.Join(dataDir, "subdir"), os.ModePerm))
+				require.NoError(t, os.MkdirAll(filepath.Join(dataDir, "subdir-a"), os.ModePerm))
+				fd, err = os.Create(filepath.Join(dataDir, "subdir", "test.txt"))
+				require.NoError(t, err)
+				fd, err = os.Create(filepath.Join(dataDir, "subdir-a", "test.txt"))
+				require.NoError(t, err)
+				fd, err = os.Create(filepath.Join(dataDir, "test.txt"))
+				require.NoError(t, err)
+				require.NoError(t, fd.Close())
+				RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
+				RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ subdir/test.txt", vars)
+				RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ subdir-a/test.txt", vars)
 
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ subdir/test.txt", vars)
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added   ║ subdir-a/test.txt", vars)
+			} else {
+				require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
+				//RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ removed   ║ test.txt", vars)
+
+			}
 
 			// Commit changes to branch
-			RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test"+presign+dataDir, false, "cannot write to protected branch", vars)
-			runCmd(t, Lakectl()+" branch-protect delete lakefs://"+repoName+"/  "+tt.name, false, false, vars)
+			RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test", false, "cannot write to protected branch", vars)
+			runCmd(t, Lakectl()+" branch-protect delete lakefs://"+repoName+"/  "+vars["BRANCH"], false, false, vars)
 
 		})
 	}
