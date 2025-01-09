@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 
@@ -26,6 +27,10 @@ var (
 
 func TestCosmosDB(t *testing.T) {
 	kvtest.DriverTest(t, func(t testing.TB, ctx context.Context) kv.Store {
+		if runtime.GOOS == "darwin" {
+			t.Skipf("this test hangs for macOS users, and fails. skipping - see Issue#8476 for more details")
+		}
+
 		t.Helper()
 
 		databaseClient, err := client.NewDatabase(testParams.Database)
@@ -56,6 +61,11 @@ func TestCosmosDB(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
+	if runtime.GOOS == "darwin" {
+		// this part hangs for macOS users, and fails. skipping - see Issue#8476 for more details
+		return
+	}
+
 	databaseURI, cleanupFunc, err := testutil.GetCosmosDBInstance()
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
