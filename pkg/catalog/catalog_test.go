@@ -316,6 +316,7 @@ func TestCatalog_ListBranches(t *testing.T) {
 		{BranchID: "branch1", Branch: &graveler.Branch{CommitID: "commit1"}},
 		{BranchID: "branch2", Branch: &graveler.Branch{CommitID: "commit2"}},
 		{BranchID: "branch3", Branch: &graveler.Branch{CommitID: "commit3"}},
+		{BranchID: "that_branch", Branch: &graveler.Branch{CommitID: "commit4"}},
 	}
 	type args struct {
 		prefix string
@@ -336,17 +337,19 @@ func TestCatalog_ListBranches(t *testing.T) {
 				{Name: "branch1", Reference: "commit1"},
 				{Name: "branch2", Reference: "commit2"},
 				{Name: "branch3", Reference: "commit3"},
+				{Name: "that_branch", Reference: "commit4"},
 			},
 			wantHasMore: false,
 			wantErr:     false,
 		},
 		{
 			name: "exact",
-			args: args{limit: 3},
+			args: args{limit: 4},
 			want: []*catalog.Branch{
 				{Name: "branch1", Reference: "commit1"},
 				{Name: "branch2", Reference: "commit2"},
 				{Name: "branch3", Reference: "commit3"},
+				{Name: "that_branch", Reference: "commit4"},
 			},
 			wantHasMore: false,
 			wantErr:     false,
@@ -370,9 +373,21 @@ func TestCatalog_ListBranches(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name: "last2",
+			name: "tail",
 			args: args{limit: 10, after: "branch1"},
 			want: []*catalog.Branch{
+				{Name: "branch2", Reference: "commit2"},
+				{Name: "branch3", Reference: "commit3"},
+				{Name: "that_branch", Reference: "commit4"},
+			},
+			wantHasMore: false,
+			wantErr:     false,
+		},
+		{
+			name: "prefix",
+			args: args{limit: -1, prefix: "branch"},
+			want: []*catalog.Branch{
+				{Name: "branch1", Reference: "commit1"},
 				{Name: "branch2", Reference: "commit2"},
 				{Name: "branch3", Reference: "commit3"},
 			},
