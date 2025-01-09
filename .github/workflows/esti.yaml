@@ -73,7 +73,7 @@ jobs:
 
         # must upload artifact in order to download generated later
       - name: Store generated code
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: generated-code
           path: /tmp/generated.tar.gz
@@ -90,7 +90,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -209,7 +209,7 @@ jobs:
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -398,7 +398,7 @@ jobs:
         working-directory: clients/hadoopfs
         run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package -DskipTests
       - name: Store lakeFS HadoopFS
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: lakefs-hadoopfs
           path: clients/hadoopfs/target/client.jar
@@ -420,7 +420,7 @@ jobs:
         working-directory: test/spark/app
         run: sbt package
       - name: Store Spark App
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: spark-apps
           path: test/spark/app/target/
@@ -445,13 +445,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download lakeFS HadoopFS
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: lakefs-hadoopfs
           path: clients/hadoopfs/target
 
       - name: Download Spark App
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: spark-apps
           path: test/spark/app/target/
@@ -767,7 +767,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -843,7 +843,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -917,7 +917,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -974,7 +974,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -1038,7 +1038,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -1218,7 +1218,7 @@ jobs:
           BASE_URL: http://localhost:8000
         working-directory: webui
         run: npx playwright test --project=common
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: (success() || failure())
         with:
           name: playwright-report
@@ -1337,7 +1337,7 @@ jobs:
           BASE_URL: http://localhost:8000
         working-directory: webui
         run: npx playwright test --project=quickstart
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: (success() || failure())
         with:
           name: playwright-report
