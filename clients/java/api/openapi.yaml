@@ -8219,7 +8219,7 @@ components:
       example:
         metadata:
           key: metadata
-        squash_merge: true
+        squash_merge: false
         force: false
         message: message
         strategy: strategy
@@ -8247,7 +8247,7 @@ components:
           description: Allow merge when the branches have the same content
           type: boolean
         squash_merge:
-          default: true
+          default: false
           description: |
             If set, set only the destination branch as a parent, which "squashes" the merge to
             appear as a single commit on the destination branch.  The source commit is no longer
