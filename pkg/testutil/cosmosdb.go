@@ -61,6 +61,7 @@ func GetCosmosDBInstance() (string, func(), error) {
 
 	dockerPool.MaxWait = maxWait
 	log.Printf("Waiting up to %v for emulator to start", dockerPool.MaxWait)
+	// Note: this hangs for macOS users, and fails. See https://github.com/treeverse/lakeFS/issues/8476
 	err = dockerPool.Retry(func() error {
 		// waiting for cosmosdb container to be ready by issuing an HTTP get request with
 		// exponential backoff retry. The response is not really meaningful for that case
