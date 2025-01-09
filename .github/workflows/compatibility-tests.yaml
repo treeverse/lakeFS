@@ -43,7 +43,7 @@ jobs:
           tar -czf /tmp/generated.tar.gz .
 
       - name: Store generated code
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
             name: generated-code
             path: /tmp/generated.tar.gz
@@ -54,7 +54,7 @@ jobs:
           mvn -Passembly -DfinalName=client -DskipTests --batch-mode --update-snapshots package
 
       - name: Store client assembly
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: client-assembly
           path: clients/hadoopfs/target/client.jar
@@ -108,7 +108,7 @@ jobs:
           outputs: type=docker,dest=/tmp/lakefs.tar
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: lakefs-image
           path: /tmp/lakefs.tar
