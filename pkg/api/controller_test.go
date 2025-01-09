@@ -3826,19 +3826,25 @@ func TestController_MergeSquashing(t *testing.T) {
 
 	cases := []struct {
 		Name               string
-		Squash             bool
+		Squash             *bool
 		ExpectedNumCommits int
 	}{{
 		Name:   "regular",
-		Squash: false,
+		Squash: swag.Bool(false),
 		// Commits: 1 "created repository", numCommits on branch, 1 merge.
 		ExpectedNumCommits: numCommits + 2,
 	}, {
 		Name:   "squash",
-		Squash: true,
+		Squash: swag.Bool(true),
 		// Commits: 1 "created repository", 1 merge.
 		ExpectedNumCommits: 2,
+	}, {
+		Name:   "default",
+		Squash: nil,
+		// Commits: 1 "created repository", 1 merge.
+		ExpectedNumCommits: numCommits + 2,
 	}}
+
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			destinationBranch := "main-" + tc.Name
@@ -3846,7 +3852,7 @@ func TestController_MergeSquashing(t *testing.T) {
 			_, err := deps.catalog.CreateBranch(ctx, repo, destinationBranch, "main")
 			testutil.Must(t, err)
 
-			mergeResp, err := clt.MergeIntoBranchWithResponse(ctx, repo, "branch", destinationBranch, apigen.MergeIntoBranchJSONRequestBody{SquashMerge: &tc.Squash})
+			mergeResp, err := clt.MergeIntoBranchWithResponse(ctx, repo, "branch", destinationBranch, apigen.MergeIntoBranchJSONRequestBody{SquashMerge: tc.Squash})
 			testutil.MustDo(t, "perform merge into branch", err)
 			if !apiutil.IsStatusCodeOK(mergeResp.StatusCode()) {
 				t.Fatal("merge request failed", mergeResp.Status())
