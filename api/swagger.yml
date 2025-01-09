@@ -688,7 +688,7 @@ components:
           description: Allow merge when the branches have the same content
         squash_merge:
           type: boolean
-          default: true
+          default: false
           description: |
             If set, set only the destination branch as a parent, which "squashes" the merge to
             appear as a single commit on the destination branch.  The source commit is no longer

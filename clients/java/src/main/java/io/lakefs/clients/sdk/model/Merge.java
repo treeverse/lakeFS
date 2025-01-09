@@ -76,7 +76,7 @@ public class Merge {
 
   public static final String SERIALIZED_NAME_SQUASH_MERGE = "squash_merge";
   @SerializedName(SERIALIZED_NAME_SQUASH_MERGE)
-  private Boolean squashMerge = true;
+  private Boolean squashMerge = false;
 
   public Merge() {
   }
