@@ -738,9 +738,8 @@ func TestLakectlFsUpload_protectedBranch(t *testing.T) {
 	runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+"/  '*'", false, false, vars)
 	RunCmdAndVerifyContainsText(t, Lakectl()+" branch-protect list lakefs://"+repoName+"/ ", false, "*", vars)
 
-	vars["FILE_PATH"] = "data/ro/ro_1k.0_sep/"
+	vars["FILE_PATH"] = "data/ro/ro_1k.0"
 	RunCmdAndVerifyFailure(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "cannot write to protected branch", vars)
-
 }
 
 func TestLakectlFsPresign(t *testing.T) {
