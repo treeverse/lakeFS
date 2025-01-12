@@ -1037,7 +1037,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 			}, apigen.CreateRepositoryJSONRequestBody{
 				DefaultBranch:    apiutil.Ptr("main"),
 				Name:             repoName,
-				StorageNamespace: onBlock(deps, "foo-bucket-1"),
+				StorageNamespace: onBlock(deps, "foo-bucket-2"),
 			})
 		verifyResponseOK(t, resp, err)
 
