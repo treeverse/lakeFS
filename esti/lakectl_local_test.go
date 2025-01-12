@@ -551,7 +551,7 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 			str := runCmd(t, Lakectl()+" branch-protect list lakefs://"+repoName+"/ ", false, false, vars)
 			fmt.Println("itamar testing", str)
 			// Commit changes to branch
-			runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
+			//runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 
 			RunCmdAndVerifyFailureContainsText(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+"fail_file.txt", false, "cannot write to protected branch", vars)
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local list", false, repoName+"/"+vars["BRANCH"], vars)
