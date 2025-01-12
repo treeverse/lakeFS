@@ -503,16 +503,16 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		addOrDelete bool
+		name   string
+		Delete bool
 	}{
 		{
-			name:        "test1",
-			addOrDelete: true,
+			name:   "test1",
+			Delete: true,
 		},
 		{
-			name:        "test2",
-			addOrDelete: false,
+			name:   "test2",
+			Delete: false,
 		},
 	}
 	for _, tt := range tests {
@@ -538,16 +538,14 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
 
 			// Modify local folder - add or remove files
-			if tt.addOrDelete {
+			if tt.Delete {
+				require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
+
+			} else {
 				fd, err = os.Create(filepath.Join(dataDir, "test.txt"))
 				require.NoError(t, err)
 				require.NoError(t, fd.Close())
 				RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added  ║ test.txt", vars)
-
-			} else {
-				require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
-				//RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ removed   ║ test.txt", vars)
-
 			}
 			runCmdAndVerifyContainsText(t, Lakectl()+" branch-protect list lakefs://"+repoName+"/ ", false, false, vars["BRANCH"], vars)
 			// Commit changes to branch
