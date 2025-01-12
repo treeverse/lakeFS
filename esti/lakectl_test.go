@@ -726,6 +726,22 @@ func getStorageConfig(t *testing.T) *apigen.StorageConfig {
 	}
 	return storageResp.JSON200
 }
+func TestLakectlFsUpload_protectedBranch(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+"/  '*'", false, false, vars)
+	RunCmdAndVerifyContainsText(t, Lakectl()+" branch-protect list lakefs://"+repoName+"/ ", false, "*", vars)
+
+	vars["FILE_PATH"] = "data/ro/ro_1k.0_sep/"
+	RunCmdAndVerifyFailure(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "cannot write to protected branch", vars)
+
+}
 
 func TestLakectlFsPresign(t *testing.T) {
 	config := getStorageConfig(t)
