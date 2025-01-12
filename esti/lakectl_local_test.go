@@ -531,7 +531,7 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 
 			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+vars["BRANCH"]+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 			localCreateTestData(t, vars, append(objects, deleted))
-			runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+"/  *", false, false, vars)
+			runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+"/  '*'", false, false, vars)
 
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/ "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", vars)
 
@@ -552,7 +552,7 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 			fmt.Println("itamar testing", str)
 			// Commit changes to branch
 			RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test "+dataDir, false, "cannot write to protected branch", vars)
-			runCmd(t, Lakectl()+" branch-protect delete lakefs://"+repoName+"/  *", false, false, vars)
+			//runCmd(t, Lakectl()+" branch-protect delete lakefs://"+repoName+"/  \"*\"", false, false, vars)
 
 		})
 	}
